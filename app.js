@@ -1,201 +1,160 @@
-/* ALTER v0.7 — beautiful pixel art + modern animation (breathe, blink, hop, particle bursts).
-   Big-3 identity onboarding, candy palette, Energy off-green. $0, localStorage. */
+/* ALTER v0.9 — Toggl-style time tracking + Streaks-style habits + auto-adjusting
+   priority schedule (falls behind → reflows from now, drops lowest priority). $0, localStorage. */
 (function () {
   "use strict";
   var el = function (id) { return document.getElementById(id); };
-  var KEY = "alter_v4";
+  var KEY = "alter_plan2";
+  var DAY_END = 24 * 60; // minutes; the day "runs out" at midnight
 
-  var PILLARS = [
-    { k: "energy", label: "Energy", em: "⚡", color: "#ff8a1e", bg: "linear-gradient(180deg,#ffe0a8,#ffb35e)",
-      identities: ["World-class athlete", "Calm & centered", "Unstoppable energy", "Lean & strong", "Fully rested", "A disciplined machine"],
-      virtues: ["Discipline", "Zest", "Temperance", "Vitality", "Consistency", "Grit"],
-      behaviors: [{ k: "move", em: "🏃", label: "Move" }, { k: "sleep", em: "😴", label: "Sleep" }, { k: "eat", em: "🥗", label: "Eat well" }, { k: "breathe", em: "🌬️", label: "Breathe" }, { k: "hydrate", em: "💧", label: "Hydrate" }, { k: "cold", em: "🧊", label: "Cold shower" }, { k: "walk", em: "🚶", label: "Walk" }, { k: "tidy", em: "🧹", label: "Tidy", task: true }] },
-    { k: "work", label: "Work", em: "💼", color: "#2a8fe0", bg: "linear-gradient(180deg,#aadcff,#7cc2f5)",
-      identities: ["The one who ships", "A world-class creator", "Wealthy & free", "Deeply focused", "A bold operator", "A relentless builder"],
-      virtues: ["Courage", "Focus", "Discipline", "Wisdom", "Grit", "Boldness"],
-      behaviors: [{ k: "focus", em: "🧠", label: "Deep work" }, { k: "send", em: "✦", label: "Ship/send", send: true }, { k: "create", em: "🎨", label: "Create" }, { k: "learn", em: "📚", label: "Learn" }, { k: "money", em: "💰", label: "Money" }, { k: "plan", em: "🗒️", label: "Plan" }] },
-    { k: "love", label: "Love", em: "❤️", color: "#ff3f93", bg: "linear-gradient(180deg,#ffc2de,#ff9ac8)",
-      identities: ["Present & warm", "Joyful & playful", "Deeply connected", "A generous heart", "Open & loving", "Endlessly grateful"],
-      virtues: ["Love", "Gratitude", "Hope", "Presence", "Compassion", "Joy"],
-      behaviors: [{ k: "connect", em: "💬", label: "Connect" }, { k: "gratitude", em: "🙏", label: "Gratitude" }, { k: "rest", em: "🛋️", label: "Rest" }, { k: "play", em: "🎮", label: "Play" }, { k: "call", em: "📞", label: "Reach out" }] }
-  ];
-  var HOB = { color: "#9a4fe0", bg: "linear-gradient(180deg,#e0c2ff,#c89af0)", opts: [{ k: "guitar", em: "🎸", label: "Guitar" }, { k: "draw", em: "✏️", label: "Draw" }, { k: "read", em: "📖", label: "Read" }, { k: "cook", em: "🍳", label: "Cook" }, { k: "photo", em: "📷", label: "Photo" }, { k: "write", em: "✍️", label: "Write" }, { k: "dance", em: "💃", label: "Dance" }, { k: "code", em: "💻", label: "Code" }] };
-  var KRY = { color: "#ff4d4d", bg: "linear-gradient(180deg,#ffc4c4,#ff9a9a)", opts: [{ k: "weed", em: "🌿", label: "Weed" }, { k: "scroll", em: "📱", label: "Scrolling" }, { k: "porn", em: "🔞", label: "Porn" }, { k: "cigs", em: "🚬", label: "Cigarettes" }, { k: "sugar", em: "🍬", label: "Sugar" }, { k: "booze", em: "🍷", label: "Alcohol" }, { k: "junk", em: "🍔", label: "Junk food" }] };
-  var SUBTASKS = ["Make the bed", "Clear the table", "Laundry", "Sweep the floor", "Clear the desk"];
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function key(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function todayK() { return key(new Date()); }
+  function tomK() { var d = new Date(); d.setDate(d.getDate() + 1); return key(d); }
+  function uid() { return "x" + Math.random().toString(36).slice(2, 8); }
+  function nowMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
+  function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
+  function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
+  function daysSince(k) { if (!k) return 999; return Math.round((new Date(todayK() + "T00:00:00") - new Date(k + "T00:00:00")) / 86400000); }
 
-  var ALL = {};
-  PILLARS.forEach(function (p) { p.behaviors.forEach(function (g) { ALL[g.k] = { g: g, color: p.color, pillar: p }; }); });
-  HOB.opts.forEach(function (g) { ALL[g.k] = { g: g, color: HOB.color, hobby: true }; });
-  KRY.opts.forEach(function (g) { ALL[g.k] = { g: g, color: "#1fb877", anti: true }; });
+  var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move" }, { id: "deep", e: "🧠", l: "Deep work" }, { id: "tidy", e: "🧹", l: "Tidy space" }, { id: "read", e: "📖", l: "Read" }, { id: "breathe", e: "🌬️", l: "Breathe" }, { id: "send", e: "✦", l: "Ship one thing" }];
+  var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
+  var QUICK = ["Work", "Break", "Eat", "Errand", "Scroll", "Rest"];
+  var DURS = [5, 15, 25, 45, 60, 90];
+  var PRIOS = [{ v: 3, l: "Must", c: "#ff5fa8" }, { v: 2, l: "Should", c: "#8a5cf0" }, { v: 1, l: "Nice", c: "#b9b0cf" }];
+  function prioC(v) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].v === v) return PRIOS[i].c; return "#8a5cf0"; }
 
-  function freshState() { return { onboarded: false, identity: {}, virtues: {}, behaviors: [], hobbies: [], kryptonites: [], total: 0, today: 0, sends: 0, sentToday: false, lastDay: dayKey(), lastKind: null }; }
-  function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
   var S;
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || freshState(); } catch (e) { S = freshState(); } if (S.lastDay !== dayKey()) { S.today = 0; S.sentToday = false; S.lastDay = dayKey(); } }
+  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null }; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
-  function phase() { var h = new Date().getHours(); return h < 11 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night"; }
-  function greeting() { var p = phase(); return (p === "night" ? "hey" : p) + " 🌸"; }
-  function moveLabel() { var p = phase(); return p === "evening" ? "how'd today go?" : p === "night" ? "one for the night" : "what's the move?"; }
+  function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
+  function logs(k) { return (S.log[k] = S.log[k] || []); }
+  function doneMap(k) { return (S.habitDone[k] = S.habitDone[k] || {}); }
+  function phase() { var h = new Date().getHours(); return h < 5 ? "night" : h < 11 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night"; }
+  function undone() { var dm = doneMap(todayK()); return S.habits.filter(function (h) { return !dm[h.id]; }); }
+  function messy() { return daysSince(S.lastTidy) >= 2; }
+  function streak(id) { var d = new Date(); if (!(S.habitDone[key(d)] || {})[id]) d.setDate(d.getDate() - 1); var n = 0; for (;;) { if ((S.habitDone[key(d)] || {})[id]) { n++; d.setDate(d.getDate() - 1); } else break; } return n; }
 
-  // ---- pixel canvas + animation ------------------------------------------
-  var LW = 176, LH = 312, ctx, stage, T0 = performance.now(), flashT = 0, hopT = 0, P = [];
-  var CX = 88, HEADY = 214, GROUND = 254;
-  function fit() {
-    stage = el("stage"); ctx = stage.getContext("2d");
-    var SC = Math.max(1, Math.min(6, Math.floor(Math.min(window.innerWidth / LW, window.innerHeight / LH))));
-    stage.width = LW * SC; stage.height = LH * SC; stage.style.width = (LW * SC) + "px"; stage.style.height = (LH * SC) + "px"; stage.style.imageRendering = "pixelated";
-    ctx.setTransform(SC, 0, 0, SC, 0, 0); ctx.imageSmoothingEnabled = false;
-  }
-  function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x | 0, y | 0, w | 0, h | 0); }
-
-  function render() {
-    var t = (performance.now() - T0) / 1000, night = phase() === "night", active = S.today > 0;
-    // banded candy sky (parallax depth)
-    var sky = night ? ["#566fc0", "#6f6fc8", "#8d7fd2", "#b187ca", "#d493c4"] : ["#79c2ff", "#97b3ff", "#b9a4f5", "#e0a4e6", "#ffb0d6"];
-    for (var s = 0; s < 5; s++) px(0, Math.floor(s * (GROUND) / 5), LW, Math.ceil(GROUND / 5) + 1, sky[s]);
-    // sun glow
-    var sxp = 140, syp = 58;
-    ctx.globalAlpha = .25; px(sxp - 16, syp - 16, 32, 32, night ? "#fff6da" : "#ffe79a"); ctx.globalAlpha = .5; px(sxp - 10, syp - 10, 20, 20, night ? "#fff6da" : "#ffe79a"); ctx.globalAlpha = 1;
-    px(sxp - 6, syp - 7, 12, 14, night ? "#fff6da" : "#ffd23a"); px(sxp - 7, syp - 5, 14, 10, night ? "#fff6da" : "#ffd23a");
-    // far hills
-    px(0, 196, LW, 60, night ? "#9a7fc8" : "#e6a8e0"); px(0, 196, LW, 2, night ? "#b39ad8" : "#f0c0ec");
-    // clouds (two parallax layers, animated)
-    clouds(t * 5, 44, 0); clouds(t * 2.4 + 70, 84, 1);
-    // foreground hill (candy, no green)
-    px(0, GROUND - 6, LW, LH - GROUND + 6, "#cf86e8"); px(0, GROUND - 6, LW, 4, "#df9ff0"); px(0, GROUND - 6, LW, 1, "#f0c8f8");
-    for (var gx = 0; gx < LW; gx += 6) px(gx, GROUND - 8, 1, 3, "#df9ff0"); // grass tufts
-    // earned decor
-    if (S.total >= 1) flower(30, GROUND - 4, "#ff5fa8"); if (S.total >= 2) flower(150, GROUND, "#ffd23a");
-    if (S.total >= 4) flower(58, GROUND + 8, "#7fd0ff"); if (S.total >= 6) flower(120, GROUND + 4, "#b06ff0");
-    // ambient twinkle
-    for (var k = 0; k < 4; k++) { var tw = (Math.sin(t * 2 + k * 1.7) + 1) / 2; ctx.globalAlpha = .3 + tw * .6; px(24 + k * 38, 30 + (k % 2) * 16, 2, 2, night ? "#fff" : "#fff7c8"); ctx.globalAlpha = 1; }
-    // character
-    var bob = Math.round(Math.sin(t * 1.9) * 1.2);
-    var hop = hopT > 0 ? -Math.round(Math.sin((0.42 - hopT) / 0.42 * Math.PI) * 8) : 0;
-    var blink = (t % 3.6) < 0.14;
-    drawChar(CX - 15, GROUND, bob + hop, blink, active);
-    // particles (in front)
-    for (var i = P.length - 1; i >= 0; i--) { var p = P[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.10; p.life -= 0.022;
-      if (p.life <= 0) { P.splice(i, 1); continue; } ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); px(p.x, p.y, 2, 2, p.c); ctx.globalAlpha = 1; }
-    if (flashT > 0) flashT -= 1 / 60; if (hopT > 0) hopT -= 1 / 60;
-    requestAnimationFrame(render);
-  }
-  function clouds(off, y, layer) {
-    var base = off % (LW + 50) - 25;
-    for (var n = 0; n < 2; n++) { var cx = base + n * 100; if (cx > LW + 20) cx -= (LW + 50); if (cx < -30) cx += (LW + 50);
-      var c = layer ? "#ffffff" : "#fdf2ff"; px(cx + 4, y, 16, 6, c); px(cx, y + 3, 24, 6, c); px(cx + 8, y - 3, 10, 5, c); px(cx + 2, y + 2, 4, 4, c); }
-  }
-  function flower(x, y, c) { px(x + 2, y - 4, 1, 4, "#cf86e8"); px(x, y - 6, 2, 2, c); px(x + 3, y - 6, 2, 2, c); px(x + 1, y - 8, 2, 2, c); px(x + 1, y - 6, 2, 2, "#fff3a0"); }
-
-  function drawChar(x, footY, dy, blink, active) {
-    var y = footY - 50 + dy;
-    var sk = "#ffe0c4", sk2 = "#f0c2a0", hr = "#8a5ec0", hr2 = "#6e4aa0", hi = "#b48ee0", dr = "#ff5fa8", dr2 = "#e0407e", drh = "#ff9ec8", ol = "#3a2f4a", sh = "#5a4a72";
-    ctx.globalAlpha = .15; px(x + 5, footY, 20, 3, "#3a2f4a"); ctx.globalAlpha = 1;
-    px(x + 9, y + 38, 5, 9, sk); px(x + 9, y + 38, 2, 9, sk2); px(x + 16, y + 38, 5, 9, sk); px(x + 16, y + 38, 2, 9, sk2);
-    px(x + 8, footY - 2, 7, 3, sh); px(x + 15, footY - 2, 7, 3, sh); px(x + 8, footY - 2, 7, 1, "#7a6a92");
-    px(x + 6, y + 24, 18, 16, dr); px(x + 4, y + 34, 22, 6, dr); px(x + 6, y + 24, 18, 3, drh); px(x + 4, y + 37, 22, 3, dr2); px(x + 18, y + 24, 6, 13, dr2);
-    px(x + 2, y + 25, 4, 9, sk); px(x + 2, y + 25, 2, 9, sk2); px(x + 24, y + 25, 4, 9, sk); px(x + 12, y + 20, 6, 4, sk2);
-    px(x + 6, y - 2, 16, 2, ol); px(x + 4, y, 20, 2, ol); px(x + 2, y + 2, 24, 16, ol); px(x + 4, y + 18, 20, 2, ol); px(x + 7, y + 20, 14, 2, ol);
-    px(x + 7, y, 14, 2, sk); px(x + 5, y + 2, 18, 2, sk); px(x + 3, y + 4, 22, 11, sk); px(x + 5, y + 15, 18, 3, sk); px(x + 8, y + 18, 12, 2, sk); px(x + 4, y + 13, 20, 3, sk2);
-    px(x + 4, y - 2, 20, 5, hr); px(x + 2, y + 2, 3, 9, hr); px(x + 23, y + 2, 3, 9, hr); px(x + 4, y - 2, 20, 2, hi); px(x + 2, y + 2, 2, 5, hi); px(x + 4, y + 2, 20, 1, hr2);
-    if (blink) { px(x + 6, y + 10, 6, 1, ol); px(x + 16, y + 10, 6, 1, ol); }
-    else { px(x + 6, y + 6, 6, 8, "#fff"); px(x + 16, y + 6, 6, 8, "#fff"); px(x + 8, y + 8, 4, 5, "#3a9ae6"); px(x + 18, y + 8, 4, 5, "#3a9ae6"); px(x + 8, y + 11, 4, 2, "#2a6fc0"); px(x + 18, y + 11, 4, 2, "#2a6fc0"); px(x + 9, y + 9, 2, 3, "#23203a"); px(x + 19, y + 9, 2, 3, "#23203a"); px(x + 9, y + 8, 1, 1, "#fff"); px(x + 19, y + 8, 1, 1, "#fff"); }
-    ctx.globalAlpha = .6; px(x + 3, y + 13, 4, 3, "#ff8fb5"); px(x + 21, y + 13, 4, 3, "#ff8fb5"); ctx.globalAlpha = 1;
-    px(x + 12, y + 16, 4, 1, "#c4567e"); px(x + 11, y + 15, 1, 1, "#c4567e"); px(x + 16, y + 15, 1, 1, "#c4567e");
-    if (active) { ctx.globalAlpha = .14; px(x - 3, y - 4, 34, 56, "#fff3a0"); ctx.globalAlpha = 1; }
-    if (flashT > 0) { ctx.globalAlpha = Math.min(.7, flashT * 1.8); px(x - 3, y - 4, 34, 58, "#fff"); ctx.globalAlpha = 1; }
+  // ---- auto-adjusting priority schedule ----------------------------------
+  function schedule(k) {
+    var pend = blocks(k).filter(function (b) { return !b.done; }).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    function fit(list) { var cur = nowMin(), out = []; list.forEach(function (b) { var st = Math.max(cur, hm(b.time)); out.push({ b: b, st: st }); cur = st + (b.mins || 30); }); return { sched: out, end: cur }; }
+    var active = pend.slice(), bumped = [], r = fit(active);
+    while (r.end > DAY_END && active.length) {
+      var lp = 99, idx = 0; // drop lowest priority; tiebreak the latest one
+      for (var i = 0; i < active.length; i++) { var pr = active[i].prio || 2; if (pr < lp || (pr === lp && hm(active[i].time) >= hm(active[idx].time))) { lp = Math.min(lp, pr); if ((active[i].prio || 2) <= lp) idx = i; } }
+      bumped.push(active.splice(idx, 1)[0]); r = fit(active);
+    }
+    return { sched: r.sched, bumped: bumped, over: Math.max(0, r.end - DAY_END) };
   }
 
-  function spawnBurst(big) {
-    var n = big ? 20 : 12, cols = big ? ["#fff27a", "#ffd23a", "#fff", "#ff9ec8", "#ffe79a"] : ["#fff27a", "#ff8fc7", "#7fd0ff", "#fff"];
-    for (var i = 0; i < n; i++) { var a = Math.random() * Math.PI * 2, sp = .5 + Math.random() * 2.4;
-      P.push({ x: CX + (Math.random() * 16 - 8), y: HEADY + (Math.random() * 12 - 4), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5, life: 1, c: cols[(Math.random() * cols.length) | 0] }); }
+  // ---- proactive ----------------------------------------------------------
+  function proactive() {
+    var p = phase(), und = undone(), sc = schedule(todayK()), out = { chips: [] };
+    if (sc.bumped.length) { out.kicker = "running tight"; out.line = "You're over by " + dur(sc.over) + " today."; out.sub = "I bumped " + sc.bumped.length + " low-priority " + (sc.bumped.length === 1 ? "slot" : "slots") + " so the important stuff survives."; out.primary = { label: "Review today", fn: function () { window.scrollTo({ top: 220, behavior: "smooth" }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); return out; }
+    if (p === "night") { out.kicker = "tonight"; out.line = "It's " + fmt(nowMin()) + " — set tomorrow up."; out.sub = "five minutes now and the morning runs itself."; out.primary = { label: "Plan tomorrow ✨", fn: function () { planSheet(tomK(), "tomorrow"); } }; out.chips.push({ label: "Plan rest of tonight", fn: function () { planSheet(todayK(), "tonight"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — block out today?"; out.sub = und.length + " habits waiting · " + (blocks(todayK()).length ? blocks(todayK()).length + " slots set" : "nothing scheduled"); out.primary = { label: "Plan your day ☀️", fn: function () { planSheet(todayK(), "today"); } }; if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "Plan the day 🎯", fn: function () { planSheet(todayK(), "today"); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "Log what you're doing", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    return out;
   }
 
-  function mirror() {
-    if (S.lastKind && ALL[S.lastKind] && ALL[S.lastKind].anti) return "you stayed free. that's a real win — feel it.";
-    if (S.lastKind === "send") return "you shipped it. that's the whole game — go live.";
-    if (!S.lastKind && S.today === 0) { var p = phase();
-      if (p === "morning") return "morning. recommit, then one small move.";
-      if (p === "evening") return "evening. what did you actually move today?";
-      if (p === "night") return "it's late — one gentle thing, or just rest."; return "you're here. what's one small move?"; }
-    if (S.today >= 3) return "three real moves in. that's a good day, up close.";
-    return "logged. that's how it builds — one step.";
-  }
-  function reward(color, big) { flashT = big ? .5 : .3; hopT = .42; spawnBurst(big);
-    try { if (navigator.vibrate) navigator.vibrate(big ? [10, 40, 12] : [13]); } catch (e) {}
-    var b = el("bloom"); b.style.background = "radial-gradient(circle at 50% 52%," + (color || "#ff5fa8") + ",transparent 64%)";
-    b.style.transition = "none"; b.style.opacity = big ? "0.55" : "0.4"; requestAnimationFrame(function () { b.style.transition = "opacity 1.1s ease-out"; b.style.opacity = "0"; }); }
-  function logGoal(key, keepOpen) { var r = ALL[key]; if (!r) return; var send = !!r.g.send;
-    S.total += 1; S.today += 1; S.lastKind = key; if (send) { S.sends += 1; S.sentToday = true; }
-    reward(r.anti ? "#1fb877" : (send ? "#ffd23a" : r.color), send); save(); paintHome(); if (!keepOpen) closeSheet(); }
+  // ---- render -------------------------------------------------------------
+  function add(p, tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; p.appendChild(e); return e; }
+  function dot(c) { var s = document.createElement("span"); s.style.cssText = "width:9px;height:9px;border-radius:50%;flex:none;background:" + c; return s; }
 
-  function paintHome() { el("greet").textContent = greeting(); el("mirror").querySelector("span").textContent = mirror(); el("moveBtn").textContent = moveLabel();
-    var dot = document.querySelector("#lume .dot"); if (dot) { dot.style.opacity = Math.min(1, .25 + S.today * .22); dot.style.boxShadow = "0 0 " + (4 + S.today * 3) + "px var(--yellow)"; } }
-  function openSheet() { buildSheet(); el("sheet").classList.add("on"); }
+  function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + " 👋"; }
+  function renderHero() { var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
+
+  function renderToday() {
+    var L = el("todayList"); L.innerHTML = ""; var k = todayK();
+    var doneB = blocks(k).filter(function (b) { return b.done; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    var sc = schedule(k);
+    if (!blocks(k).length) { add(L, "div", "empty", "No slots yet. Tap “+ time slot” to block your time."); }
+    doneB.forEach(function (b) { row(L, b, hm(b.time), true, false); });
+    sc.sched.forEach(function (o) { row(L, o.b, o.st, false, Math.abs(o.st - hm(o.b.time)) > 1); });
+    sc.bumped.forEach(function (b) {
+      var r = add(L, "div", "blk"); r.style.opacity = ".55";
+      add(r, "div", "tm", "bumped"); var ti = add(r, "div", "ti", b.title); ti.style.textDecoration = "line-through";
+      var mv = add(r, "div", "del", "→ tmrw"); mv.style.cssText = "color:var(--accent);font-size:12px;font-weight:600;"; mv.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); blocks(tomK()).push(b); save(); renderAll(); };
+    });
+    function row(P, b, st, done, moved) {
+      var r = add(P, "div", "blk" + (done ? " done" : ""));
+      var tm = add(r, "div", "tm", fmt(st) + "–" + fmt(st + (b.mins || 30))); if (moved) tm.title = "moved from " + fmt(hm(b.time));
+      var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio || 2))); var sp = document.createElement("span"); sp.textContent = b.title + (moved ? "  ⤵" : ""); ti.appendChild(sp);
+      var ck = add(r, "div", "ck" + (done ? " on" : ""), done ? "✓" : ""); ck.onclick = function () { b.done = !b.done; save(); renderAll(); };
+      var d = add(r, "div", "del", "✕"); d.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); renderAll(); };
+    }
+    // tracked log
+    var LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }); var tot = 0;
+    logs(k).forEach(function (e) { tot += e.mins || 0; });
+    if (!lg.length) add(LG, "div", "empty", "Nothing tracked yet — hit “What are you doing?”");
+    lg.forEach(function (e) { var r = add(LG, "div", "logi"); add(r, "div", "lt", fmt(hm(e.time))); add(r, "div", "ln", e.title); add(r, "div", "lm", dur(e.mins || 0)); });
+    el("trackTotal").textContent = tot ? dur(tot) : "";
+  }
+
+  function renderTom() { var L = el("tomList"); L.innerHTML = ""; var arr = blocks(tomK()).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }); if (!arr.length) { add(L, "div", "empty", "Plan tomorrow tonight — future-you says thanks."); return; }
+    arr.forEach(function (b) { var r = add(L, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio || 2))); var sp = document.createElement("span"); sp.textContent = b.title; ti.appendChild(sp); var d = add(r, "div", "del", "✕"); d.onclick = function () { var a = blocks(tomK()); a.splice(a.indexOf(b), 1); save(); renderTom(); }; }); }
+
+  function renderHabits() { var L = el("habitList"); L.innerHTML = ""; var dm = doneMap(todayK()), done = 0;
+    S.habits.forEach(function (hb) { var on = !!dm[hb.id]; if (on) done++; var r = add(L, "div", "hab" + (on ? " done" : "")); add(r, "div", "he", hb.e); add(r, "div", "hn", hb.l); var st = streak(hb.id); if (st > 1) { var s = add(r, "div", null, "🔥 " + st); s.style.cssText = "font-size:13px;color:var(--amber);font-weight:600;margin-right:2px;"; } add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); r.onclick = function () { toggleHabit(hb.id); }; });
+    el("habitProg").textContent = done + "/" + S.habits.length + " today"; }
+  function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); save(); renderHabits(); renderHero(); }
+
+  function renderAll() { renderHeader(); renderHero(); renderToday(); renderTom(); renderHabits(); }
+
+  // ---- sheets -------------------------------------------------------------
+  function openSheet() { el("sheet").classList.add("on"); }
   function closeSheet() { el("sheet").classList.remove("on"); }
-  function grp(title, color) { var h = document.createElement("div"); h.textContent = title; h.style.cssText = "font-size:13px;color:" + color + ";font-weight:700;margin:10px 2px 8px;"; return h; }
-  function tileBtn(g, onClick, send) { var b = document.createElement("button"); b.className = "tile" + (send ? " send" : ""); b.innerHTML = '<span class="em">' + g.em + "</span>" + g.label; b.onclick = onClick; return b; }
-  function buildSheet() {
-    el("sheetT").textContent = "what did you do?"; var body = el("sheetBody"); body.innerHTML = "";
-    PILLARS.forEach(function (p) { var mine = p.behaviors.filter(function (g) { return S.behaviors.indexOf(g.k) !== -1; }); if (!mine.length) return;
-      body.appendChild(grp(p.em + " " + p.label, p.color)); var grid = document.createElement("div"); grid.className = "grid";
-      mine.forEach(function (g) { grid.appendChild(tileBtn(g, function () { g.task ? buildSubtasks(g) : logGoal(g.k); }, g.send)); }); body.appendChild(grid); });
-    if (S.hobbies.length) { body.appendChild(grp("🎈 Hobbies", HOB.color)); var hg = document.createElement("div"); hg.className = "grid";
-      HOB.opts.filter(function (g) { return S.hobbies.indexOf(g.k) !== -1; }).forEach(function (g) { hg.appendChild(tileBtn(g, function () { logGoal(g.k); })); }); body.appendChild(hg); }
-    if (S.kryptonites.length) { body.appendChild(grp("💪 Stayed strong", "#1fb877")); var kg = document.createElement("div"); kg.className = "grid";
-      KRY.opts.filter(function (g) { return S.kryptonites.indexOf(g.k) !== -1; }).forEach(function (g) { kg.appendChild(tileBtn({ em: "✊", label: "No " + g.label.toLowerCase() }, function () { logGoal(g.k); })); }); body.appendChild(kg); }
-    if (!body.children.length) body.appendChild(grp("set up your goals to log here", "#8a7ba0"));
-  }
-  function buildSubtasks(g) { el("sheetT").textContent = "tidy — one small step at a time"; var body = el("sheetBody"); body.innerHTML = ""; var picked = {};
-    SUBTASKS.forEach(function (label, i) { var item = document.createElement("div"); item.className = "subitem"; item.innerHTML = '<span class="box"></span><span>' + label + "</span>";
-      item.onclick = function () { if (picked[i]) return; picked[i] = true; item.classList.add("done"); logGoal(g.k, true); }; body.appendChild(item); });
-    var back = document.createElement("button"); back.className = "back"; back.textContent = "done"; back.onclick = closeSheet; body.appendChild(back); }
 
-  var STEPS = [{ intro: true }];
-  PILLARS.forEach(function (p) {
-    STEPS.push({ color: p.color, bg: p.bg, title: p.em + " your " + p.label + " identity", sub: "who are you becoming? pick the ones that fit", store: "id_" + p.k, opts: p.identities.map(function (x) { return { label: x }; }), chips: true });
-    STEPS.push({ color: p.color, bg: p.bg, title: p.em + " " + p.label + " virtues", sub: "what you'll recommit to every morning", store: "vt_" + p.k, opts: p.virtues.map(function (x) { return { label: x }; }), chips: true });
-    STEPS.push({ color: p.color, bg: p.bg, title: p.em + " " + p.label + " behaviors", sub: "what you'll actually do", store: "bh_" + p.k, opts: p.behaviors, grid: true });
-  });
-  STEPS.push({ color: HOB.color, bg: HOB.bg, title: "🎈 your hobbies", sub: "what lights you up?", store: "hob", opts: HOB.opts, grid: true });
-  STEPS.push({ color: KRY.color, bg: KRY.bg, title: "💥 your kryptonites", sub: "what do you want to break free from? we'll make it feel like escape, not sacrifice", store: "kry", opts: KRY.opts, grid: true });
-
-  var si = 0, sel = {};
-  function pickSet(store) { return (sel[store] = sel[store] || {}); }
-  function startOb() { el("ob").classList.add("on"); el("moveBtn").style.display = "none"; el("hud").style.opacity = "0"; el("mirror").style.opacity = "0"; renderStep(); }
-  function finishOb() {
-    function arr(s) { var o = pickSet(s); return Object.keys(o).filter(function (k) { return o[k]; }); }
-    S.identity = { energy: arr("id_energy"), work: arr("id_work"), love: arr("id_love") };
-    S.virtues = { energy: arr("vt_energy"), work: arr("vt_work"), love: arr("vt_love") };
-    S.behaviors = arr("bh_energy").concat(arr("bh_work"), arr("bh_love"));
-    S.hobbies = arr("hob"); S.kryptonites = arr("kry"); S.onboarded = true; save();
-    el("ob").classList.remove("on"); el("moveBtn").style.display = ""; el("hud").style.opacity = "1"; el("mirror").style.opacity = "1"; paintHome();
+  function nowSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "What are you doing?");
+    var chosen = { title: "", habitId: null, mins: 25 };
+    var c1 = add(B, "div", "pchips");
+    S.habits.forEach(function (h) { var x = add(c1, "div", "pchip", h.e + " " + h.l); x.onclick = function () { sel(x, c1); chosen.title = h.l; chosen.habitId = h.id; }; });
+    QUICK.forEach(function (q) { var x = add(c1, "div", "pchip", q); x.onclick = function () { sel(x, c1); chosen.title = q; chosen.habitId = null; }; });
+    var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "…or type it"; txt.style.cssText = "width:100%;margin-bottom:14px;"; txt.oninput = function () { chosen.title = txt.value; chosen.habitId = null; clearSel(c1); }; B.appendChild(txt);
+    add(B, "div", "lbl", "How long did it take?");
+    var c2 = add(B, "div", "pchips"); DURS.forEach(function (m, i) { var x = add(c2, "div", "pchip" + (m === 25 ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { sel(x, c2); chosen.mins = m; }; });
+    add(B, "button", "done2", "Log it ⏱️").onclick = function () { if (!chosen.title.trim()) return; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: chosen.title.trim(), mins: chosen.mins, habitId: chosen.habitId }); if (chosen.habitId) doneMap(todayK())[chosen.habitId] = true; save(); closeSheet(); renderAll(); };
+    function sel(x, parent) { clearSel(parent); x.classList.add("on"); }
+    function clearSel(parent) { Array.prototype.forEach.call(parent.children, function (n) { n.classList.remove("on"); }); }
   }
-  function renderStep() {
-    var st = STEPS[si], line = el("obLine"), ctl = el("obCtl"); ctl.innerHTML = ""; el("ob").scrollTop = 0;
-    var bar = document.querySelector("#obBar i"); if (bar) bar.style.width = Math.round((si / (STEPS.length - 1)) * 100) + "%";
-    if (st.intro) { el("ob").style.background = "linear-gradient(180deg,#79c2ff,#ffb0d6)";
-      line.innerHTML = "let's build who you're becoming 🌟<small>three parts — Energy, Work, Love. for each: your identity, the virtues you recommit each morning, then the behaviors. then hobbies + what you're quitting.</small>";
-      ctl.appendChild(obBtn("start →", "#ff3f93", function () { si = 1; renderStep(); })); return; }
-    el("ob").style.background = st.bg; line.innerHTML = st.title + "<small>" + st.sub + "</small>";
-    var ps = pickSet(st.store);
-    if (st.chips) { st.opts.forEach(function (o) { var on = !!ps[o.label]; var b = document.createElement("button"); b.textContent = o.label; b.style.cssText = chipCss(on, st.color);
-      b.onclick = function () { ps[o.label] = !ps[o.label]; renderStep(); }; ctl.appendChild(b); }); }
-    else { var grid = document.createElement("div"); grid.className = "grid"; st.opts.forEach(function (o) { var on = !!ps[o.k]; var b = document.createElement("button"); b.className = "tile"; b.innerHTML = '<span class="em">' + o.em + "</span>" + o.label;
-      if (on) { b.style.background = st.color; b.style.color = "#fff"; b.style.borderColor = st.color; } b.onclick = function () { ps[o.k] = !ps[o.k]; renderStep(); }; grid.appendChild(b); }); ctl.appendChild(grid); }
-    var last = si === STEPS.length - 1;
-    ctl.appendChild(obBtn(last ? "let's go ✨" : "next →", st.color, function () { if (last) finishOb(); else { si += 1; renderStep(); } }));
-  }
-  function obBtn(label, color, fn) { var b = document.createElement("button"); b.className = "obBtn"; b.textContent = label; b.style.background = color; b.style.boxShadow = "0 10px 26px " + color + "66, inset 0 2px 0 rgba(255,255,255,.4)"; b.onclick = fn; return b; }
-  function chipCss(on, color) { return "width:100%;max-width:440px;margin:0 auto 10px;display:block;padding:15px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .08s;" +
-    (on ? "background:" + color + ";border:3px solid #fff;color:#fff;box-shadow:0 8px 20px " + color + "55;" : "background:rgba(255,255,255,.9);border:3px solid rgba(255,255,255,.95);color:#5a4a72;"); }
 
-  function init() {
-    load(); fit(); window.addEventListener("resize", fit);
-    el("greet").style.background = "#ffe0c2"; el("lume").style.background = "#cfeaff"; el("mirror").querySelector("span").style.background = "#ffe6f3";
-    el("moveBtn").onclick = openSheet; el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); }; el("sheetClose").onclick = closeSheet;
-    paintHome(); requestAnimationFrame(render); if (!S.onboarded) startOb();
+  function planSheet(k, label) {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "Plan " + label);
+    var st = { prio: 2 };
+    var frm = add(B, "div", "frm");
+    var time = document.createElement("input"); time.type = "time"; var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); time.value = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Laundry, Gym, Deep work…";
+    frm.appendChild(time); frm.appendChild(txt);
+    add(B, "div", "lbl", "How long?"); var c2 = add(B, "div", "pchips"); st.mins = 30; DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === 30 ? "" : ""), m < 60 ? m + "m" : (m / 60) + "h"); if (m === 60) x.classList.add("on"); x.onclick = function () { Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); st.mins = m; }; }); st.mins = 60;
+    add(B, "div", "lbl", "Priority — least important gets dropped if you run out of time"); var c3 = add(B, "div", "pchips");
+    PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === 2 ? " on" : ""), p.l); x.style.borderColor = p.c; x.onclick = function () { Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); st.prio = p.v; }; });
+    var list = add(B, "div"); list.style.marginTop = "12px";
+    function refresh() { list.innerHTML = ""; blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); var sp = document.createElement("span"); sp.textContent = b.title; ti.appendChild(sp); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); refresh(); }; }); }
+    function addIt() { var v = txt.value.trim(); if (!v) return; blocks(k).push({ id: uid(), time: time.value, mins: st.mins, title: v, prio: st.prio, done: false }); save(); txt.value = ""; refresh(); }
+    var go = add(frm, "button", "go", "+"); go.onclick = addIt; txt.addEventListener("keydown", function (e) { if (e.key === "Enter") addIt(); });
+    refresh();
+    add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); };
+  }
+
+  function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {};
+    TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy" }); save(); }; });
+    add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
+
+  function habitSheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Add a habit"); var frm = add(B, "div", "frm"); var emo = document.createElement("input"); emo.type = "text"; emo.value = "⭐"; emo.style.cssText = "width:64px;text-align:center;"; var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Meditate, Guitar, No scrolling…"; frm.appendChild(emo); frm.appendChild(txt);
+    add(B, "button", "done2", "Add habit").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v }); save(); closeSheet(); renderHabits(); }; }
+
+  function init() { load();
+    el("nowBtn").onclick = nowSheet;
+    el("planToday").onclick = function () { planSheet(todayK(), phase() === "night" ? "tonight" : "today"); };
+    el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
+    el("addHabit").onclick = habitSheet;
+    el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
+    renderAll();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
