@@ -87,12 +87,27 @@
   .pchip.on{background:var(--purple);color:#fff;}
   .lbl{font-family:var(--bub);font-size:13px;color:var(--ink);font-weight:700;margin:4px 2px 8px;}
   .subi{display:flex;align-items:center;gap:12px;padding:11px 6px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;margin-bottom:8px;font-size:15px;font-weight:600;cursor:pointer;}
+  .c-stats{background:#ffd9a8;}
+  .statrow{display:flex;align-items:center;gap:10px;padding:7px 2px;}
+  .statrow .se{font-size:21px;width:26px;text-align:center;flex:none;}
+  .statrow .sn{font-family:var(--bub);font-weight:800;font-size:14px;width:72px;flex:none;}
+  .statrow .sb{flex:1;}
+  .bar{height:14px;border:2.5px solid var(--ink);border-radius:9px;background:#fff;overflow:hidden;}
+  .bar i{display:block;height:100%;}
+  .statrow .sl{font-family:var(--bub);font-weight:800;font-size:12.5px;flex:none;}
+  .pull{display:flex;align-items:center;gap:9px;padding:7px 2px;font-weight:600;font-size:14px;}
 </style>
 </head>
 <body>
   <div id="screen">
     <header><div id="date"></div><div id="hello"></div></header>
     <div id="hero"></div>
+    <section class="panel c-stats">
+      <div class="cardhead"><h3>⚔️ Your stats</h3><span class="meta" id="statLvl"></span></div>
+      <div id="statList"></div>
+      <div class="divlab" id="pullLab" style="display:none"><span>Pulls (vices, last 7d)</span></div>
+      <div id="pullList"></div>
+    </section>
     <div id="nowCard" class="panel">
       <div class="nl">⏱️ Right now</div>
       <div class="ns" id="nowSub">tap to log what you're doing &amp; how long it took.</div>
