@@ -1,5 +1,5 @@
-/* ALTER v1.1 — gamified tile-drill picker, self-rated stat baselines (1–10),
-   Toggl multitask timers, Streaks habits, auto-adjust priority schedule, proactive engine. $0. */
+/* ALTER v1.3 — RPG character: sub-attribute self-assessment + pixel avatar,
+   gamified picker, Toggl multitask timers, Streaks habits, auto-adjust schedule, proactive. $0. */
 (function () {
   "use strict";
   var el = function (id) { return document.getElementById(id); };
@@ -23,6 +23,7 @@
   var DURS = [15, 30, 45, 60, 90, 120];
   var PRIOS = [{ v: 3, l: "Must", c: "#ff4fa0" }, { v: 2, l: "Should", c: "#8a5cf0" }, { v: 1, l: "Nice", c: "#b9b0cf" }];
   function prioC(v) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].v === v) return PRIOS[i].c; return "#8a5cf0"; }
+  var FACES = ["😞", "😕", "😐", "🙂", "💪"];
   var CATS = [
     { k: "energy", label: "Energy", e: "⚡", color: "#ff8a1e", groups: [
       { g: "Fitness", tasks: [{ l: "Run", e: "🏃", id: "move" }, { l: "Gym", e: "🏋️", id: "move" }, { l: "Walk", e: "🚶" }, { l: "Yoga", e: "🧘" }, { l: "Stretch", e: "🤸" }, { l: "Cycle", e: "🚴" }, { l: "Swim", e: "🏊" }, { l: "Sports", e: "⚽" }, { l: "Hike", e: "🥾" }] },
@@ -59,7 +60,15 @@
   var TITLE2CAT = {}, TITLE2META = {};
   CATS.forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { TITLE2CAT[t.l.toLowerCase()] = c.k; TITLE2META[t.l.toLowerCase()] = { title: t.l, catK: c.k, emoji: t.e, color: c.color, habitId: t.id || null }; }); }); });
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
-  var STATDEF = [{ k: "vit", e: "💪", l: "Vitality", c: "#ff8a1e", q: "how in-shape do you feel?" }, { k: "craft", e: "🛠️", l: "Craft", c: "#2a9fe0", q: "how productive / on-craft?" }, { k: "heart", e: "❤️", l: "Heart", c: "#ff4fa0", q: "how connected to people?" }, { k: "spark", e: "✨", l: "Spark", c: "#9a5cf0", q: "how alive / playful?" }, { k: "order", e: "🧹", l: "Order", c: "#23c98a", q: "how in-order is your space/life?" }];
+  var STATS = [
+    { k: "vit", e: "💪", l: "Body", c: "#ff8a1e", subs: [{ k: "str", l: "Strength", q: "How strong is your body?" }, { k: "sta", l: "Stamina", q: "Your cardio & energy?" }, { k: "slp", l: "Sleep", q: "Sleep quality?" }, { k: "nut", l: "Nutrition", q: "How clean is your diet?" }] },
+    { k: "craft", e: "🛠️", l: "Craft", c: "#2a9fe0", subs: [{ k: "foc", l: "Focus", q: "Can you focus deeply?" }, { k: "out", l: "Output", q: "Are you shipping?" }, { k: "skl", l: "Skill", q: "Growing your craft?" }, { k: "dis", l: "Discipline", q: "How disciplined?" }] },
+    { k: "heart", e: "❤️", l: "Heart", c: "#ff4fa0", subs: [{ k: "conn", l: "Connection", q: "Close to people?" }, { k: "self", l: "Self-love", q: "Kind to yourself?" }, { k: "give", l: "Generosity", q: "Giving to others?" }] },
+    { k: "spark", e: "✨", l: "Spark", c: "#9a5cf0", subs: [{ k: "crea", l: "Creativity", q: "Feeling creative?" }, { k: "play", l: "Play", q: "Room for fun?" }, { k: "curi", l: "Curiosity", q: "Learning new things?" }] },
+    { k: "order", e: "🧹", l: "Order", c: "#23c98a", subs: [{ k: "space", l: "Space", q: "Is your space in order?" }, { k: "money", l: "Finances", q: "Money under control?" }, { k: "rout", l: "Routine", q: "Steady routines?" }] },
+    { k: "mind", e: "🧠", l: "Mind", c: "#6a5cf0", subs: [{ k: "calm", l: "Calm", q: "How calm / regulated?" }, { k: "awar", l: "Awareness", q: "Present & aware?" }, { k: "free", l: "Freedom", q: "Free from your vices?" }] }
+  ];
+  var STAT_XPSRC = { vit: "energy", craft: "work", heart: "love", spark: "hobby" };
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null }; }
@@ -72,17 +81,26 @@
   function undone() { var dm = doneMap(todayK()); return S.habits.filter(function (h) { return !dm[h.id]; }); }
   function messy() { return daysSince(S.lastTidy) >= 2; }
   function streak(id) { var d = new Date(); if (!(S.habitDone[key(d)] || {})[id]) d.setDate(d.getDate() - 1); var n = 0; for (;;) { if ((S.habitDone[key(d)] || {})[id]) { n++; d.setDate(d.getDate() - 1); } else break; } return n; }
-
-  // ---- stats (baseline self-rating + behavior) ---------------------------
   function catOf(e) { return e.catK || TITLE2CAT[(e.title || "").toLowerCase()] || (e.habitId ? HABIT2CAT[e.habitId] : null); }
   function isTidy(e) { return e.habitId === "tidy" || /tidy|laundry|bed|table|desk|trash|vacuum|sweep|clean|dishes/i.test(e.title || ""); }
   function habitCount(id, days) { var n = 0; days.forEach(function (k) { if ((S.habitDone[k] || {})[id]) n++; }); return n; }
+  var FITSET = {}; CATS[0].groups[0].tasks.forEach(function (t) { FITSET[t.l.toLowerCase()] = 1; });
+  function weeklyWorkouts() { var n = habitCount("move", lastDays(7)); lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { if (FITSET[(e.title || "").toLowerCase()]) n++; }); }); return n; }
+
   function stats() {
-    var d14 = lastDays(14), m = { energy: 0, work: 0, love: 0, hobby: 0, vice: 0 }, tidyMin = 0;
-    d14.forEach(function (k) { logs(k).forEach(function (e) { var c = catOf(e); if (c && m[c] != null) m[c] += e.mins || 0; if (isTidy(e)) tidyMin += e.mins || 0; }); });
-    var xp = { vit: m.energy + habitCount("move", d14) * 15 + habitCount("breathe", d14) * 8, craft: m.work + habitCount("deep", d14) * 15 + habitCount("send", d14) * 25, heart: m.love, spark: m.hobby + habitCount("read", d14) * 10, order: tidyMin + habitCount("tidy", d14) * 25 };
+    var d14 = lastDays(14), m = { energy: 0, work: 0, love: 0, hobby: 0, vice: 0 }, tidyMin = 0, meditMin = 0;
+    d14.forEach(function (k) { logs(k).forEach(function (e) { var c = catOf(e); if (c && m[c] != null) m[c] += e.mins || 0; if (isTidy(e)) tidyMin += e.mins || 0; if (/meditate|breathe/i.test(e.title || "")) meditMin += e.mins || 0; }); });
+    var bxp = { vit: m.energy + habitCount("move", d14) * 15 + habitCount("breathe", d14) * 8, craft: m.work + habitCount("deep", d14) * 15 + habitCount("send", d14) * 25, heart: m.love, spark: m.hobby + habitCount("read", d14) * 10, order: tidyMin + habitCount("tidy", d14) * 25, mind: meditMin + habitCount("breathe", d14) * 10 - Math.floor(m.vice / 4) };
     var base = S.baseline || {};
-    var out = STATDEF.map(function (s) { var b = base[s.k] || 1, x = xp[s.k] || 0, lv = b + Math.floor(x / 120), pct = Math.round((x % 120) / 120 * 100); var o = { k: s.k, e: s.e, l: s.l, c: s.c, lv: lv, pct: pct }; if (s.k === "order" && messy()) o.note = daysSince(S.lastTidy) > 6 ? "messy" : "untidy"; return o; });
+    var out = STATS.map(function (s) {
+      var subs = s.subs.map(function (sb) { return { l: sb.l, v: base[sb.k] || 3 }; });
+      var avg = subs.reduce(function (a, x) { return a + x.v; }, 0) / subs.length;
+      var bl = Math.round(avg * 2); // 1-5 -> ~2-10
+      var x = Math.max(0, bxp[s.k] || 0), lv = bl + Math.floor(x / 120), pct = Math.round((x % 120) / 120 * 100);
+      var o = { k: s.k, e: s.e, l: s.l, c: s.c, lv: lv, pct: pct, subs: subs };
+      if (s.k === "order" && messy()) o.note = daysSince(S.lastTidy) > 6 ? "messy" : "untidy";
+      return o;
+    });
     var d7 = lastDays(7), vm = {};
     d7.forEach(function (k) { logs(k).forEach(function (e) { if (catOf(e) === "vice") vm[e.title] = (vm[e.title] || 0) + (e.mins || 0); }); });
     var pulls = Object.keys(vm).map(function (t) { var min = vm[t], r = min < 30 ? { l: "light", e: "😌", c: "#23c98a" } : min < 150 ? { l: "moderate", e: "😬", c: "#ff9f1c" } : { l: "strong", e: "🔴", c: "#ff4d4d" }; return { title: t, min: min, rate: r }; }).sort(function (a, b) { return b.min - a.min; });
@@ -96,10 +114,7 @@
     ["Deep work", "Run", "Eat healthy", "Read", "Tidy", "Guitar", "Meditate", "Programming"].forEach(function (t) { if (out.length < n && !cnt[t]) { var mtt = TITLE2META[t.toLowerCase()]; if (mtt) out.push(mtt); } });
     return out.slice(0, n);
   }
-  var FITSET = {}; CATS[0].groups[0].tasks.forEach(function (t) { FITSET[t.l.toLowerCase()] = 1; });
-  function weeklyWorkouts() { var n = habitCount("move", lastDays(7)); lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { if (FITSET[(e.title || "").toLowerCase()]) n++; }); }); return n; }
 
-  // ---- schedule ----------------------------------------------------------
   function schedule(k) {
     var pend = blocks(k).filter(function (b) { return !b.done; }).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
     function fit(list) { var cur = nowMin(), out = []; list.forEach(function (b) { var st = Math.max(cur, hm(b.time)); out.push({ b: b, st: st }); cur = st + (b.mins || 30); }); return { sched: out, end: cur }; }
@@ -110,7 +125,7 @@
 
   function proactive() {
     var p = phase(), und = undone(), sc = schedule(todayK()), out = { chips: [] };
-    if (sc.bumped.length) { out.kicker = "running tight"; out.line = "Over by " + dur(sc.over) + " today."; out.sub = "I bumped " + sc.bumped.length + " low-priority " + (sc.bumped.length === 1 ? "slot" : "slots") + " so what matters survives."; out.primary = { label: "Review today", fn: function () { window.scrollTo({ top: 280, behavior: "smooth" }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); return out; }
+    if (sc.bumped.length) { out.kicker = "running tight"; out.line = "Over by " + dur(sc.over) + " today."; out.sub = "I bumped " + sc.bumped.length + " low-priority " + (sc.bumped.length === 1 ? "slot" : "slots") + " so what matters survives."; out.primary = { label: "Review today", fn: function () { window.scrollTo({ top: 320, behavior: "smooth" }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); return out; }
     if (p === "night") { out.kicker = "tonight"; out.line = "It's " + fmt(nowMin()) + " — set tomorrow up."; out.sub = "five minutes now and the morning runs itself."; out.primary = { label: "Plan tomorrow ✨", fn: function () { planSheet(tomK(), "tomorrow"); } }; out.chips.push({ label: "Plan rest of tonight", fn: function () { planSheet(todayK(), "tonight"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — block out today?"; out.sub = und.length + " habits waiting · " + (blocks(todayK()).length ? blocks(todayK()).length + " slots set" : "nothing scheduled"); out.primary = { label: "Plan your day ☀️", fn: function () { planSheet(todayK(), "today"); } }; if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "Plan the day 🎯", fn: function () { planSheet(todayK(), "today"); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
@@ -125,16 +140,44 @@
   function subCard(c, gr) { var d = document.createElement("div"); d.className = "subcat"; d.style.borderColor = c.color; d.innerHTML = '<div class="bce">' + (gr.tasks[0].e || "•") + '</div><div class="scl">' + gr.g + "</div>"; return d; }
   function taskTile(parent, meta, selected, onClick) { var x = add(parent, "div", "gtile" + (selected ? " on" : "")); x.style.borderColor = meta.color; if (selected) x.style.background = meta.color; add(x, "div", "ge", meta.emoji || "•"); add(x, "div", "gl", meta.title); x.onclick = onClick; return x; }
 
+  // ---- pixel avatar ------------------------------------------------------
+  var actx, AW = 56, AH = 70, AT0 = performance.now(), avLevel = 1;
+  function avatarFit() { var c = el("avatar"); if (!c) return; actx = c.getContext("2d"); var SC = 2; c.width = AW * SC; c.height = AH * SC; c.style.width = (AW * SC) + "px"; c.style.height = (AH * SC) + "px"; c.style.imageRendering = "pixelated"; actx.setTransform(SC, 0, 0, SC, 0, 0); actx.imageSmoothingEnabled = false; }
+  function apx(x, y, w, h, c) { actx.fillStyle = c; actx.fillRect(x | 0, y | 0, w | 0, h | 0); }
+  function avatarLoop() { if (!actx) { requestAnimationFrame(avatarLoop); return; } var t = (performance.now() - AT0) / 1000; var bob = Math.round(Math.sin(t * 1.9) * 1.2), blink = (t % 3.8) < 0.14;
+    actx.clearRect(0, 0, AW, AH);
+    var aura = avLevel >= 12 ? "#ffd23a" : avLevel >= 7 ? "#b48ee0" : avLevel >= 4 ? "#7fd0ff" : null;
+    if (aura) { actx.globalAlpha = .18; apx(6, 6, AW - 12, AH - 10, aura); actx.globalAlpha = 1; }
+    drawAv(AW / 2 - 14, AH - 8, bob, blink); requestAnimationFrame(avatarLoop); }
+  function drawAv(x, footY, dy, blink) {
+    var y = footY - 50 + dy, sk = "#ffe0c4", sk2 = "#f0c2a0", hr = "#8a5ec0", hi = "#b48ee0", dr = "#ff5fa8", dr2 = "#e0407e", drh = "#ff9ec8", ol = "#3a2f4a", sh = "#5a4a72";
+    actx.globalAlpha = .15; apx(x + 5, footY, 18, 3, "#3a2f4a"); actx.globalAlpha = 1;
+    apx(x + 9, y + 38, 5, 9, sk); apx(x + 16, y + 38, 5, 9, sk); apx(x + 8, footY - 2, 7, 3, sh); apx(x + 15, footY - 2, 7, 3, sh);
+    apx(x + 6, y + 24, 18, 16, dr); apx(x + 4, y + 34, 22, 6, dr); apx(x + 6, y + 24, 18, 3, drh); apx(x + 4, y + 37, 22, 3, dr2); apx(x + 18, y + 24, 6, 13, dr2);
+    apx(x + 2, y + 25, 4, 9, sk); apx(x + 24, y + 25, 4, 9, sk); apx(x + 12, y + 20, 6, 4, sk2);
+    apx(x + 6, y - 2, 16, 2, ol); apx(x + 4, y, 20, 2, ol); apx(x + 2, y + 2, 24, 16, ol); apx(x + 4, y + 18, 20, 2, ol); apx(x + 7, y + 20, 14, 2, ol);
+    apx(x + 7, y, 14, 2, sk); apx(x + 5, y + 2, 18, 2, sk); apx(x + 3, y + 4, 22, 11, sk); apx(x + 5, y + 15, 18, 3, sk); apx(x + 8, y + 18, 12, 2, sk); apx(x + 4, y + 13, 20, 3, sk2);
+    apx(x + 4, y - 2, 20, 5, hr); apx(x + 2, y + 2, 3, 9, hr); apx(x + 23, y + 2, 3, 9, hr); apx(x + 4, y - 2, 20, 2, hi);
+    if (blink) { apx(x + 6, y + 10, 6, 1, ol); apx(x + 16, y + 10, 6, 1, ol); }
+    else { apx(x + 6, y + 6, 6, 8, "#fff"); apx(x + 16, y + 6, 6, 8, "#fff"); apx(x + 8, y + 8, 4, 5, "#3a9ae6"); apx(x + 18, y + 8, 4, 5, "#3a9ae6"); apx(x + 9, y + 9, 2, 3, "#23203a"); apx(x + 19, y + 9, 2, 3, "#23203a"); apx(x + 9, y + 8, 1, 1, "#fff"); apx(x + 19, y + 8, 1, 1, "#fff"); }
+    actx.globalAlpha = .6; apx(x + 3, y + 13, 4, 3, "#ff8fb5"); apx(x + 21, y + 13, 4, 3, "#ff8fb5"); actx.globalAlpha = 1;
+    apx(x + 12, y + 16, 4, 1, "#c4567e");
+  }
+
+  // ---- render ------------------------------------------------------------
   function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + " 👋"; }
   function renderHero() { var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
 
   function renderStats() {
     var L = el("statList"); L.innerHTML = "";
-    if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Set your levels & goals →"); b.style.marginTop = "2px"; b.onclick = goalsSheet; return; }
-    var st = stats(); el("statLvl").textContent = "Lv " + st.level;
+    if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Create your character →"); b.style.marginTop = "2px"; b.onclick = charSheet; avLevel = 1; return; }
+    var st = stats(); el("statLvl").textContent = "Lv " + st.level; avLevel = st.level;
     if (S.profile) { var parts = []; if (S.profile.exWant != null) parts.push("🏃 " + weeklyWorkouts() + "/" + S.profile.exWant + " this wk"); if (S.profile.weight) parts.push("⚖️ " + S.profile.weight + (S.profile.weightGoal ? "→" + S.profile.weightGoal : "") + "kg"); if (S.profile.goals) parts.push("🎯 " + S.profile.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   ")); }
-    st.list.forEach(function (s) { var r = add(L, "div", "statrow"); add(r, "div", "se", s.e); add(r, "div", "sn", s.l); var bw = add(r, "div", "sb"); var bar = add(bw, "div", "bar"); add(bar, "i").style.cssText = "width:" + Math.max(6, s.pct) + "%;height:100%;background:" + s.c; add(r, "div", "sl", "Lv " + s.lv + (s.note ? " · " + s.note : "")); });
-    var re = add(L, "button", "add", "edit goals"); re.style.marginTop = "6px"; re.onclick = goalsSheet;
+    st.list.forEach(function (s) {
+      var r = add(L, "div", "statrow"); add(r, "div", "se", s.e); add(r, "div", "sn", s.l); var bw = add(r, "div", "sb"); var bar = add(bw, "div", "bar"); add(bar, "i").style.cssText = "width:" + Math.max(6, s.pct) + "%;height:100%;background:" + s.c; add(r, "div", "sl", "Lv " + s.lv + (s.note ? " · " + s.note : ""));
+      var sub = add(L, "div", "subline"); s.subs.forEach(function (x) { var p = add(sub, "span", "subpill", x.l + " " + x.v); p.style.borderColor = s.c; });
+    });
+    var re = add(L, "button", "add", "edit character"); re.style.marginTop = "8px"; re.onclick = charSheet;
     var pl = el("pullList"), lab = el("pullLab"); pl.innerHTML = "";
     if (st.pulls.length) { lab.style.display = "flex"; st.pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); add(r, "div", null, v.rate.e + " " + v.title).style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
   }
@@ -160,45 +203,31 @@
 
   function renderAll() { renderHeader(); renderNow(); renderHero(); renderStats(); renderToday(); renderTom(); renderHabits(); }
 
-  // ---- gamified picker (used by timers + plan) ---------------------------
+  // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
     var picked = {}, view = { cat: null, group: null };
     function count() { return Object.keys(picked).length; }
     function draw() {
-      B.innerHTML = "";
-      add(B, "div", "sttl", opts.title(count()));
-      if (opts.head) opts.head(B, draw);
+      B.innerHTML = ""; add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, draw);
       if (view.cat == null) {
         if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { var ky = t.catK + "|" + t.title; taskTile(fg, t, !!picked[ky], function () { opts.onTask(t, picked, draw); }); }); } }
         add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CATS.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; draw(); }; cg.appendChild(card); });
         if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (v) opts.onTask({ title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }, picked, draw); }; }
       } else if (view.group == null) {
-        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; draw(); };
-        add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; draw(); }; sg.appendChild(card); });
+        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; draw(); }; add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; draw(); }; sg.appendChild(card); });
       } else {
-        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; draw(); };
-        add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { var meta = { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }; var ky = meta.catK + "|" + meta.title; taskTile(tg, meta, !!picked[ky], function () { opts.onTask(meta, picked, draw); }); });
+        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; draw(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { var meta = { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }; var ky = meta.catK + "|" + meta.title; taskTile(tg, meta, !!picked[ky], function () { opts.onTask(meta, picked, draw); }); });
       }
       if (opts.foot) opts.foot(B, picked, count());
     }
     draw();
   }
-
-  function nowSheet() {
-    pickerSheet({
-      title: function (n) { return n ? "Start " + n + (n === 1 ? " timer" : " timers") + " ⏱️" : "What are you doing? ⏱️"; },
-      frequent: true, custom: true,
-      onTask: function (t, picked, draw) { var ky = t.catK + "|" + t.title; if (picked[ky]) delete picked[ky]; else picked[ky] = t; draw(); },
-      foot: function (B, picked, n) { if (n) add(B, "button", "done2", "Start " + n + " ▶").onclick = function () { Object.keys(picked).forEach(function (k) { startTimer(picked[k]); }); closeSheet(); renderNow(); }; }
-    });
-  }
-
+  function nowSheet() { pickerSheet({ title: function (n) { return n ? "Start " + n + (n === 1 ? " timer" : " timers") + " ⏱️" : "What are you doing? ⏱️"; }, frequent: true, custom: true, onTask: function (t, picked, draw) { var ky = t.catK + "|" + t.title; if (picked[ky]) delete picked[ky]; else picked[ky] = t; draw(); }, foot: function (B, picked, n) { if (n) add(B, "button", "done2", "Start " + n + " ▶").onclick = function () { Object.keys(picked).forEach(function (k) { startTimer(picked[k]); }); closeSheet(); renderNow(); }; } }); }
   function planSheet(k, label) {
     var cfg = { mins: 60, prio: 2 }; var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes());
     function advance() { var m = hm(cfg.time) + cfg.mins; if (m >= 1439) m = 1439; cfg.time = pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
-    pickerSheet({
-      title: function () { return "Plan " + label; }, frequent: true, custom: true,
+    pickerSheet({ title: function () { return "Plan " + label; }, frequent: true, custom: true,
       head: function (B, draw) {
         var frm = add(B, "div", "frm"); var time = document.createElement("input"); time.type = "time"; time.value = cfg.time; time.onchange = function () { cfg.time = time.value; }; frm.appendChild(time); var dl = document.createElement("span"); dl.style.cssText = "align-self:center;font-weight:800;font-family:var(--bub);"; dl.textContent = "• " + dur(cfg.mins); frm.appendChild(dl);
         add(B, "div", "lbl", "duration"); var c2 = add(B, "div", "pchips"); DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === cfg.mins ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { cfg.mins = m; draw(); }; });
@@ -206,12 +235,7 @@
         add(B, "div", "lbl", "tap to drop it at " + fmt(hm(cfg.time)) + " — they stack back-to-back");
       },
       onTask: function (t, picked, draw) { blocks(k).push({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, done: false }); advance(); save(); draw(); },
-      foot: function (B) {
-        var list = add(B, "div"); list.style.marginTop = "10px";
-        blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); add(ti, "span", null, b.title); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); planSheet(k, label); }; });
-        add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); };
-      }
-    });
+      foot: function (B) { var list = add(B, "div"); list.style.marginTop = "10px"; blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); add(ti, "span", null, b.title); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); planSheet(k, label); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; } });
   }
 
   // ---- timers ------------------------------------------------------------
@@ -224,30 +248,40 @@
     else { add(C, "div", "nl", "⏱️ Right now"); add(C, "div", "ns", "tap to start a timer — stack several if you're multitasking."); var bb = add(C, "button", null, "What are you doing?"); bb.id = "nowBtn"; bb.onclick = nowSheet; }
   }
 
-  // ---- other sheets ------------------------------------------------------
+  // ---- character creation (multi-step) -----------------------------------
   function openSheet() { el("sheet").classList.add("on"); }
   function closeSheet() { el("sheet").classList.remove("on"); }
-  function goalsSheet() {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "You & your goals");
-    var base = {}, prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {};
-    prof.exNow = prof.exNow == null ? 1 : prof.exNow; prof.exWant = prof.exWant == null ? 4 : prof.exWant;
-    add(B, "div", "lbl", "🏃 workouts per week — now vs goal");
-    var ef = add(B, "div", "frm"); ef.appendChild(stepper("now", prof.exNow, 0, 14, function (v) { prof.exNow = v; })); ef.appendChild(stepper("goal", prof.exWant, 0, 14, function (v) { prof.exWant = v; }));
-    add(B, "div", "lbl", "⚖️ weight & goal (kg, optional)");
-    var wf = add(B, "div", "frm"); var w1 = numIn("weight"); if (prof.weight) w1.value = prof.weight; var w2 = numIn("goal"); if (prof.weightGoal) w2.value = prof.weightGoal; wf.appendChild(w1); wf.appendChild(w2);
-    add(B, "div", "lbl", "🎯 your main goal(s)");
-    var g = document.createElement("input"); g.type = "text"; g.placeholder = "e.g. get lean, ship the app, quit weed"; g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) g.value = prof.goals; B.appendChild(g);
-    add(B, "div", "lbl", "where you are now (1–10) — sets your levels");
-    STATDEF.forEach(function (s) { base[s.k] = (S.baseline && S.baseline[s.k]) || 5; var r = add(B, "div", "rate"); add(r, "div", "re", s.e); add(r, "div", "rn", s.l); var sl = document.createElement("input"); sl.type = "range"; sl.min = 1; sl.max = 10; sl.step = 1; sl.value = base[s.k]; var rv = document.createElement("span"); rv.className = "rv"; rv.textContent = base[s.k]; sl.oninput = function () { base[s.k] = +sl.value; rv.textContent = sl.value; }; r.appendChild(sl); r.appendChild(rv); });
-    add(B, "button", "done2", "Save ✨").onclick = function () { S.baseline = base; prof.weight = w1.value ? +w1.value : null; prof.weightGoal = w2.value ? +w2.value : null; prof.goals = g.value.trim() || null; S.profile = prof; save(); closeSheet(); renderStats(); };
+  function charSheet() {
+    var B = el("sheetBody"); var step = 0, total = STATS.length + 1;
+    var base = {}; STATS.forEach(function (s) { s.subs.forEach(function (sb) { base[sb.k] = (S.baseline && S.baseline[sb.k]) || 3; }); });
+    var prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {}; prof.exNow = prof.exNow == null ? 1 : prof.exNow; prof.exWant = prof.exWant == null ? 4 : prof.exWant;
+    openSheet();
+    function draw() {
+      B.innerHTML = ""; var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(step / (total - 1) * 100) + "%";
+      if (step === 0) {
+        add(B, "div", "sttl", "🎮 Create your character"); add(B, "div", "lbl", "🏃 workouts per week — now vs goal");
+        var ef = add(B, "div", "frm"); ef.appendChild(stepper("now", prof.exNow, 0, 14, function (v) { prof.exNow = v; })); ef.appendChild(stepper("goal", prof.exWant, 0, 14, function (v) { prof.exWant = v; }));
+        add(B, "div", "lbl", "⚖️ weight & goal (kg, optional)"); var wf = add(B, "div", "frm"); var w1 = numIn("weight"); if (prof.weight) w1.value = prof.weight; var w2 = numIn("goal"); if (prof.weightGoal) w2.value = prof.weightGoal; wf.appendChild(w1); wf.appendChild(w2); prof._w1 = w1; prof._w2 = w2;
+        add(B, "div", "lbl", "🎯 your main goal(s)"); var g = document.createElement("input"); g.type = "text"; g.placeholder = "e.g. get lean, ship the app, quit weed"; g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) g.value = prof.goals; B.appendChild(g); prof._g = g;
+      } else {
+        var s = STATS[step - 1]; add(B, "div", "sttl", s.e + " " + s.l); add(B, "div", "lbl", "rate each — your honest read right now");
+        s.subs.forEach(function (sb) { add(B, "div", "qline", sb.q); var fr = add(B, "div", "facerow"); FACES.forEach(function (f, i) { var v = i + 1; var x = add(fr, "div", "face" + (base[sb.k] === v ? " on" : ""), f); if (base[sb.k] === v) x.style.borderColor = s.c; x.onclick = function () { base[sb.k] = v; draw(); }; }); });
+      }
+      var nav = add(B, "div", "frm"); nav.style.marginTop = "6px";
+      if (step > 0) { var bk = add(nav, "button", "add", "← back"); bk.onclick = function () { step--; draw(); }; }
+      var nx = add(nav, "button", "done2", step === total - 1 ? "Create ✨" : "Next →"); nx.style.flex = "1";
+      nx.onclick = function () { if (step === 0) { prof.weight = prof._w1.value ? +prof._w1.value : null; prof.weightGoal = prof._w2.value ? +prof._w2.value : null; prof.goals = prof._g.value.trim() || null; } if (step < total - 1) { step++; draw(); } else { delete prof._w1; delete prof._w2; delete prof._g; S.baseline = base; S.profile = prof; save(); closeSheet(); renderStats(); } };
+    }
     function numIn(ph) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; i.style.cssText = "width:84px;"; return i; }
     function stepper(label, val, min, max, on) { var w = document.createElement("div"); w.style.cssText = "display:flex;align-items:center;gap:7px;border:2.5px solid var(--ink);border-radius:13px;padding:6px 9px;background:#fff;"; var lab = document.createElement("span"); lab.textContent = label; lab.style.cssText = "font-size:12px;font-weight:700;color:var(--soft);"; var num = document.createElement("span"); num.textContent = val; num.style.cssText = "font-family:var(--bub);font-weight:800;width:18px;text-align:center;"; function mkb(t, f) { var b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "width:26px;height:26px;border:2px solid var(--ink);border-radius:8px;background:#f3eefe;font-weight:800;cursor:pointer;"; b.onclick = f; return b; } w.appendChild(lab); w.appendChild(mkb("−", function () { if (val > min) { val--; num.textContent = val; on(val); } })); w.appendChild(num); w.appendChild(mkb("+", function () { if (val < max) { val++; num.textContent = val; on(val); } })); return w; }
+    draw();
   }
+
   function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {}; TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy", catK: "energy", color: "#ff8a1e" }); save(); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
   function habitSheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Add a habit"); var frm = add(B, "div", "frm"); var emo = document.createElement("input"); emo.type = "text"; emo.value = "⭐"; emo.style.cssText = "width:64px;text-align:center;"; var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Meditate, Guitar, No scrolling…"; frm.appendChild(emo); frm.appendChild(txt); add(B, "button", "done2", "Add habit").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v }); save(); closeSheet(); renderHabits(); }; }
 
   function init() {
-    load();
+    load(); avatarFit(); requestAnimationFrame(avatarLoop);
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
     el("planToday").onclick = function () { planSheet(todayK(), phase() === "night" ? "tonight" : "today"); };
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };

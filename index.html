@@ -112,6 +112,16 @@
   .rate .re{font-size:21px;width:26px;text-align:center;flex:none;} .rate .rn{font-family:var(--bub);font-weight:800;font-size:13px;width:64px;flex:none;}
   .rate input[type=range]{flex:1;accent-color:var(--purple);} .rate .rv{font-family:var(--bub);font-weight:800;width:26px;text-align:right;color:var(--purple);flex:none;}
   .pfline{font-family:var(--bub);font-weight:700;font-size:12.5px;color:var(--ink);background:rgba(255,255,255,.55);border:2px solid var(--ink);border-radius:12px;padding:8px 10px;margin-bottom:10px;}
+  #avatarWrap{text-align:center;margin:2px 0 10px;}
+  #avatar{image-rendering:pixelated;filter:drop-shadow(2px 3px 0 rgba(58,37,64,.25));}
+  .subline{display:flex;flex-wrap:wrap;gap:6px;margin:0 2px 10px 36px;}
+  .subpill{font-size:11px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.7);border:2px solid var(--ink);border-radius:9px;padding:2px 7px;}
+  .qline{font-weight:700;font-size:14px;margin:12px 2px 7px;color:var(--ink);}
+  .facerow{display:flex;gap:8px;margin-bottom:4px;}
+  .face{flex:1;text-align:center;font-size:22px;padding:9px 0;border:2.5px solid #e3dcf2;border-radius:13px;background:#fff;cursor:pointer;box-shadow:0 3px 0 rgba(58,37,64,.18);}
+  .face.on{border:3px solid var(--ink);box-shadow:0 1px 0 var(--ink);transform:translateY(2px);}
+  .obarT{height:8px;background:rgba(58,37,64,.12);border-radius:5px;overflow:hidden;margin-bottom:12px;}
+  .obarT i{display:block;height:100%;background:var(--purple);transition:width .3s;}
 </style>
 </head>
 <body>
@@ -119,7 +129,8 @@
     <header><div id="date"></div><div id="hello"></div></header>
     <div id="hero"></div>
     <section class="panel c-stats">
-      <div class="cardhead"><h3>⚔️ Your stats</h3><span class="meta" id="statLvl"></span></div>
+      <div class="cardhead"><h3>⚔️ Character</h3><span class="meta" id="statLvl"></span></div>
+      <div id="avatarWrap"><canvas id="avatar"></canvas></div>
       <div id="statList"></div>
       <div class="divlab" id="pullLab" style="display:none"><span>Pulls (vices, last 7d)</span></div>
       <div id="pullList"></div>
