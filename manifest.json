@@ -1,0 +1,12 @@
+{
+  "name": "ALTER — your life, mirrored",
+  "short_name": "ALTER",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1726",
+  "theme_color": "#1a1726",
+  "description": "A pixel-art life sim. Do real things, your sprite levels up and builds its world.",
+  "icons": []
+}

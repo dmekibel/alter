@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>ALTER — your life, mirrored</title>
+<meta name="theme-color" content="#1a1726" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ALTER" />
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#1a1726; --panel:#241f33; --panel2:#2e2842; --line:#3a3350;
+    --text:#e8e4f0; --muted:#8a84a0; --gold:#f0c14b; --accent:#b48ee0;
+    --good:#6fd68a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:ui-monospace,Menlo,Consolas,monospace;}
+  body{max-width:480px;margin:0 auto;padding:12px 12px 40px;}
+  .pix{font-family:'Press Start 2P',ui-monospace,monospace;}
+  h1{font-size:15px;margin:0;letter-spacing:1px;color:var(--text);}
+  .tag{font-size:10px;color:var(--muted);margin-top:6px;}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .hud{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:10px;}
+  .coins{color:var(--gold);} .lvl{color:var(--accent);}
+  .xpwrap{width:120px;height:10px;background:#15121f;border:1px solid var(--line);border-radius:2px;overflow:hidden;}
+  .xpbar{height:100%;width:0;background:linear-gradient(90deg,#b48ee0,#6fc6d6);}
+  #roomwrap{margin:14px 0 6px;display:flex;justify-content:center;background:#15121f;
+    border:2px solid var(--line);border-radius:6px;padding:8px;}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
+  #mirror{font-size:11px;line-height:1.5;color:var(--accent);text-align:center;
+    min-height:34px;padding:6px 4px;}
+  .tabs{display:flex;gap:6px;margin:8px 0;}
+  .tab{flex:1;padding:9px 4px;font-size:10px;text-align:center;background:var(--panel);
+    border:1px solid var(--line);border-radius:5px;color:var(--muted);cursor:pointer;}
+  .tab.on{background:var(--panel2);color:var(--text);border-color:var(--accent);}
+  section{display:none;} section.on{display:block;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:10px;}
+  .ttl{font-size:10px;color:var(--muted);margin:0 0 10px;letter-spacing:1px;text-transform:uppercase;}
+  .logrow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .logbtn{padding:10px 4px;font-size:10px;border:1px solid var(--line);border-radius:6px;
+    background:var(--panel2);color:var(--text);cursor:pointer;text-align:center;line-height:1.5;}
+  .logbtn .em{font-size:18px;display:block;margin-bottom:3px;}
+  .logbtn:active{transform:translateY(1px);}
+  .logbtn.done{opacity:.45;border-color:var(--good);}
+  .planform{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+  .planform input,.planform select{background:#15121f;border:1px solid var(--line);
+    color:var(--text);border-radius:5px;padding:8px;font-size:12px;font-family:inherit;}
+  .planform input[type=text]{flex:1;min-width:120px;} .planform input[type=time]{width:84px;}
+  .planform button{background:var(--accent);border:none;color:#15121f;font-weight:bold;
+    border-radius:5px;padding:8px 12px;cursor:pointer;font-size:12px;}
+  .plist{list-style:none;margin:0;padding:0;}
+  .plist li{display:flex;align-items:center;gap:9px;padding:9px 6px;border-top:1px solid var(--line);font-size:12px;}
+  .plist li:first-child{border-top:none;}
+  .plist .tm{color:var(--muted);font-size:10px;width:42px;}
+  .plist .dot{width:9px;height:9px;border-radius:2px;flex:none;}
+  .plist .txt{flex:1;} .plist li.done .txt{text-decoration:line-through;color:var(--muted);}
+  .chk{width:20px;height:20px;border-radius:4px;border:1px solid var(--line);background:#15121f;cursor:pointer;flex:none;}
+  .chk.on{background:var(--good);border-color:var(--good);}
+  .statrow{margin-bottom:11px;} .statrow .lab{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;}
+  .statbar{height:9px;background:#15121f;border:1px solid var(--line);border-radius:2px;overflow:hidden;}
+  .statbar i{display:block;height:100%;}
+  .heat{display:flex;gap:3px;margin-top:4px;}
+  .heat .d{width:13px;height:13px;border-radius:2px;background:#15121f;border:1px solid var(--line);}
+  .shopgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .item{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:11px;}
+  .item .nm{margin-bottom:6px;} .item .pr{color:var(--gold);font-size:10px;}
+  .item button{margin-top:8px;width:100%;padding:7px;border:none;border-radius:5px;cursor:pointer;
+    background:var(--accent);color:#15121f;font-weight:bold;font-size:11px;}
+  .item button:disabled{background:#3a3350;color:var(--muted);cursor:default;}
+  .item.owned{opacity:.6;} .shopsub{font-size:10px;color:var(--muted);margin:4px 0 8px;letter-spacing:1px;}
+  .foot{font-size:9px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.6;}
+  .foot a{color:var(--accent);}
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 class="pix">ALTER</h1>
+      <div class="tag">your life, mirrored · v0</div>
+    </div>
+    <div class="hud pix">
+      <div class="coins">🪙 <span id="coins">0</span></div>
+      <div class="lvl">LVL <span id="lvl">1</span></div>
+      <div class="xpwrap"><div class="xpbar" id="xpbar"></div></div>
+    </div>
+  </header>
+
+  <div id="roomwrap"><canvas id="room" width="176" height="152"></canvas></div>
+  <div id="mirror" class="pix"></div>
+
+  <div class="tabs pix">
+    <div class="tab on" data-tab="today">TODAY</div>
+    <div class="tab" data-tab="stats">SELF</div>
+    <div class="tab" data-tab="shop">SHOP</div>
+  </div>
+
+  <section id="today" class="on">
+    <div class="card">
+      <p class="ttl">Plan the day</p>
+      <div class="planform">
+        <input type="text" id="planText" placeholder="e.g. Gym, deep work block..." />
+        <input type="time" id="planTime" />
+        <select id="planDomain"></select>
+        <button id="planAdd">+</button>
+      </div>
+      <ul class="plist" id="planList"></ul>
+    </div>
+    <div class="card">
+      <p class="ttl">Quick log — tap what you did</p>
+      <div class="logrow" id="logRow"></div>
+    </div>
+  </section>
+
+  <section id="stats">
+    <div class="card">
+      <p class="ttl">Character sheet</p>
+      <div id="statList"></div>
+    </div>
+    <div class="card">
+      <p class="ttl">Last 14 days</p>
+      <div class="heat" id="heat"></div>
+    </div>
+  </section>
+
+  <section id="shop">
+    <div class="card">
+      <p class="ttl">Shop — spend coins, build your world</p>
+      <div class="shopsub pix">FURNITURE</div>
+      <div class="shopgrid" id="shopFurniture"></div>
+      <div class="shopsub pix" style="margin-top:14px;">APPEARANCE</div>
+      <div class="shopgrid" id="shopLook"></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    Built for David · runs offline · data stays on this device.<br/>
+    <a href="#" id="reset">reset save</a>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
