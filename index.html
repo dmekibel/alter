@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>ALTER — your life, mirrored</title>
-<meta name="theme-color" content="#1a1726" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>ALTER</title>
+<meta name="theme-color" content="#15121f" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="ALTER" />
@@ -13,134 +13,98 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 <style>
-  :root{
-    --bg:#1a1726; --panel:#241f33; --panel2:#2e2842; --line:#3a3350;
-    --text:#e8e4f0; --muted:#8a84a0; --gold:#f0c14b; --accent:#b48ee0;
-    --good:#6fd68a;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  :root{ --ink:#efe9f5; --muted:#a59fba; --beacon:#e7b24a; --accent:#b48ee0; --good:#7fd6a0; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;background:#0c0a13;color:var(--ink);
     font-family:ui-monospace,Menlo,Consolas,monospace;}
-  body{max-width:480px;margin:0 auto;padding:12px 12px 40px;}
   .pix{font-family:'Press Start 2P',ui-monospace,monospace;}
-  h1{font-size:15px;margin:0;letter-spacing:1px;color:var(--text);}
-  .tag{font-size:10px;color:var(--muted);margin-top:6px;}
-  header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-  .hud{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:10px;}
-  .coins{color:var(--gold);} .lvl{color:var(--accent);}
-  .xpwrap{width:120px;height:10px;background:#15121f;border:1px solid var(--line);border-radius:2px;overflow:hidden;}
-  .xpbar{height:100%;width:0;background:linear-gradient(90deg,#b48ee0,#6fc6d6);}
-  #roomwrap{margin:14px 0 6px;display:flex;justify-content:center;background:#15121f;
-    border:2px solid var(--line);border-radius:6px;padding:8px;}
-  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
-  #mirror{font-size:11px;line-height:1.5;color:var(--accent);text-align:center;
-    min-height:34px;padding:6px 4px;}
-  .tabs{display:flex;gap:6px;margin:8px 0;}
-  .tab{flex:1;padding:9px 4px;font-size:10px;text-align:center;background:var(--panel);
-    border:1px solid var(--line);border-radius:5px;color:var(--muted);cursor:pointer;}
-  .tab.on{background:var(--panel2);color:var(--text);border-color:var(--accent);}
-  section{display:none;} section.on{display:block;}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:10px;}
-  .ttl{font-size:10px;color:var(--muted);margin:0 0 10px;letter-spacing:1px;text-transform:uppercase;}
-  .logrow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
-  .logbtn{padding:10px 4px;font-size:10px;border:1px solid var(--line);border-radius:6px;
-    background:var(--panel2);color:var(--text);cursor:pointer;text-align:center;line-height:1.5;}
-  .logbtn .em{font-size:18px;display:block;margin-bottom:3px;}
-  .logbtn:active{transform:translateY(1px);}
-  .logbtn.done{opacity:.45;border-color:var(--good);}
-  .planform{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
-  .planform input,.planform select{background:#15121f;border:1px solid var(--line);
-    color:var(--text);border-radius:5px;padding:8px;font-size:12px;font-family:inherit;}
-  .planform input[type=text]{flex:1;min-width:120px;} .planform input[type=time]{width:84px;}
-  .planform button{background:var(--accent);border:none;color:#15121f;font-weight:bold;
-    border-radius:5px;padding:8px 12px;cursor:pointer;font-size:12px;}
-  .plist{list-style:none;margin:0;padding:0;}
-  .plist li{display:flex;align-items:center;gap:9px;padding:9px 6px;border-top:1px solid var(--line);font-size:12px;}
-  .plist li:first-child{border-top:none;}
-  .plist .tm{color:var(--muted);font-size:10px;width:42px;}
-  .plist .dot{width:9px;height:9px;border-radius:2px;flex:none;}
-  .plist .txt{flex:1;} .plist li.done .txt{text-decoration:line-through;color:var(--muted);}
-  .chk{width:20px;height:20px;border-radius:4px;border:1px solid var(--line);background:#15121f;cursor:pointer;flex:none;}
-  .chk.on{background:var(--good);border-color:var(--good);}
-  .statrow{margin-bottom:11px;} .statrow .lab{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;}
-  .statbar{height:9px;background:#15121f;border:1px solid var(--line);border-radius:2px;overflow:hidden;}
-  .statbar i{display:block;height:100%;}
-  .heat{display:flex;gap:3px;margin-top:4px;}
-  .heat .d{width:13px;height:13px;border-radius:2px;background:#15121f;border:1px solid var(--line);}
-  .shopgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-  .item{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:11px;}
-  .item .nm{margin-bottom:6px;} .item .pr{color:var(--gold);font-size:10px;}
-  .item button{margin-top:8px;width:100%;padding:7px;border:none;border-radius:5px;cursor:pointer;
-    background:var(--accent);color:#15121f;font-weight:bold;font-size:11px;}
-  .item button:disabled{background:#3a3350;color:var(--muted);cursor:default;}
-  .item.owned{opacity:.6;} .shopsub{font-size:10px;color:var(--muted);margin:4px 0 8px;letter-spacing:1px;}
-  .foot{font-size:9px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.6;}
-  .foot a{color:var(--accent);}
+  #app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
+  /* floating chrome */
+  #hud{position:fixed;top:max(14px,env(safe-area-inset-top));left:0;right:0;
+    display:flex;justify-content:space-between;align-items:center;padding:0 16px;pointer-events:none;}
+  .pill{background:rgba(20,16,30,.5);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:8px 12px;font-size:10px;color:var(--ink);letter-spacing:.5px;}
+  #greet{text-transform:lowercase;}
+  #lume{display:flex;align-items:center;gap:7px;font-size:9px;color:var(--muted);}
+  #lume .dot{width:10px;height:10px;border-radius:50%;background:var(--beacon);
+    box-shadow:0 0 8px var(--beacon);transition:opacity .6s, box-shadow .6s;}
+  #mirror{position:fixed;left:0;right:0;bottom:120px;padding:0 26px;text-align:center;
+    font-size:12px;line-height:1.6;color:var(--accent);min-height:40px;
+    display:flex;align-items:flex-end;justify-content:center;transition:opacity .4s;}
+  #moveBtn{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:max(34px,calc(env(safe-area-inset-bottom) + 22px));
+    background:linear-gradient(180deg,#efbe57,#df9a3a);color:#2a1d07;border:none;
+    border-radius:16px;padding:15px 30px;font-size:11px;font-weight:bold;cursor:pointer;
+    box-shadow:0 6px 24px rgba(231,178,74,.35);letter-spacing:.5px;
+    animation:beacon 3.2s ease-in-out infinite;}
+  @keyframes beacon{0%,100%{box-shadow:0 6px 24px rgba(231,178,74,.30);}50%{box-shadow:0 6px 32px rgba(231,178,74,.55);}}
+  #moveBtn:active{transform:translateX(-50%) translateY(2px);}
+  #bloom{position:fixed;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;}
+  /* sheet */
+  #sheet{position:fixed;inset:0;background:rgba(8,6,12,.55);backdrop-filter:blur(2px);
+    display:flex;align-items:flex-end;z-index:10;opacity:0;pointer-events:none;transition:opacity .25s;}
+  #sheet.on{opacity:1;pointer-events:auto;}
+  .sheetcard{width:100%;max-width:520px;margin:0 auto;background:#1b1726;
+    border-top-left-radius:20px;border-top-right-radius:20px;border:1px solid rgba(255,255,255,.08);
+    padding:14px 16px max(26px,calc(env(safe-area-inset-bottom) + 16px));transform:translateY(20px);transition:transform .25s;}
+  #sheet.on .sheetcard{transform:translateY(0);}
+  .handle{width:38px;height:4px;border-radius:3px;background:#3a3350;margin:2px auto 14px;}
+  .sheetT{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .act{background:#272235;border:1px solid #3a3350;border-radius:14px;padding:14px 10px;
+    color:var(--ink);font-size:12px;cursor:pointer;text-align:left;line-height:1.4;transition:transform .08s;}
+  .act .em{font-size:20px;display:block;margin-bottom:6px;}
+  .act:active{transform:scale(.96);}
+  .act.send{grid-column:1/3;background:linear-gradient(120deg,#3a2a48,#2a3548);border-color:#5a4a72;}
+  .act.send .em{color:var(--beacon);}
+  .sub{margin-top:6px;}
+  .subitem{display:flex;align-items:center;gap:12px;padding:12px 6px;border-top:1px solid #2c2640;font-size:13px;cursor:pointer;}
+  .subitem:first-child{border-top:none;}
+  .box{width:22px;height:22px;border-radius:7px;border:1px solid #4a4368;background:#15121f;flex:none;}
+  .subitem.done .box{background:var(--good);border-color:var(--good);}
+  .subitem.done span{color:var(--muted);text-decoration:line-through;}
+  .back{margin-top:14px;width:100%;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:8px;}
+  /* onboarding */
+  #ob{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;justify-content:flex-end;
+    background:linear-gradient(180deg,rgba(12,10,19,0) 40%,rgba(12,10,19,.85));}
+  #ob.on{display:flex;}
+  #obLine{padding:0 26px;text-align:center;font-size:14px;line-height:1.7;color:var(--ink);margin-bottom:18px;min-height:80px;
+    display:flex;align-items:flex-end;justify-content:center;}
+  #obCtl{padding:0 20px max(34px,calc(env(safe-area-inset-bottom) + 22px));}
+  #obCtl input{width:100%;background:#1b1726;border:1px solid #3a3350;border-radius:14px;
+    padding:15px;color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:12px;}
+  .obBtn{width:100%;background:linear-gradient(180deg,#efbe57,#df9a3a);color:#2a1d07;border:none;
+    border-radius:16px;padding:16px;font-size:12px;font-weight:bold;cursor:pointer;letter-spacing:.5px;}
+  .obBtn.ghost{background:none;border:1px solid #3a3350;color:var(--muted);box-shadow:none;margin-top:8px;font-weight:normal;}
+  .chip{display:block;width:100%;background:#1b1726;border:1px solid #3a3350;border-radius:14px;
+    padding:14px;color:var(--ink);font-size:13px;text-align:left;margin-bottom:10px;cursor:pointer;line-height:1.4;transition:.15s;}
+  .chip.yes{border-color:var(--good);background:#1c2820;}
+  .fadeline{opacity:0;transition:opacity .5s;}
+  .fadeline.show{opacity:1;}
 </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1 class="pix">ALTER</h1>
-      <div class="tag">your life, mirrored · v0</div>
-    </div>
-    <div class="hud pix">
-      <div class="coins">🪙 <span id="coins">0</span></div>
-      <div class="lvl">LVL <span id="lvl">1</span></div>
-      <div class="xpwrap"><div class="xpbar" id="xpbar"></div></div>
-    </div>
-  </header>
+  <div id="app"><canvas id="stage"></canvas></div>
 
-  <div id="roomwrap"><canvas id="room" width="176" height="152"></canvas></div>
-  <div id="mirror" class="pix"></div>
-
-  <div class="tabs pix">
-    <div class="tab on" data-tab="today">TODAY</div>
-    <div class="tab" data-tab="stats">SELF</div>
-    <div class="tab" data-tab="shop">SHOP</div>
+  <div id="hud">
+    <div id="greet" class="pill pix"></div>
+    <div id="lume" class="pill pix">today <span class="dot"></span></div>
   </div>
+  <div id="mirror" class="pix"></div>
+  <button id="moveBtn" class="pix"></button>
+  <div id="bloom"></div>
 
-  <section id="today" class="on">
-    <div class="card">
-      <p class="ttl">Plan the day</p>
-      <div class="planform">
-        <input type="text" id="planText" placeholder="e.g. Gym, deep work block..." />
-        <input type="time" id="planTime" />
-        <select id="planDomain"></select>
-        <button id="planAdd">+</button>
-      </div>
-      <ul class="plist" id="planList"></ul>
-    </div>
-    <div class="card">
-      <p class="ttl">Quick log — tap what you did</p>
-      <div class="logrow" id="logRow"></div>
-    </div>
-  </section>
+  <div id="sheet"><div class="sheetcard">
+    <div class="handle"></div>
+    <p class="sheetT pix" id="sheetT">what did you do?</p>
+    <div id="sheetBody"></div>
+    <button class="back" id="sheetClose">close</button>
+  </div></div>
 
-  <section id="stats">
-    <div class="card">
-      <p class="ttl">Character sheet</p>
-      <div id="statList"></div>
-    </div>
-    <div class="card">
-      <p class="ttl">Last 14 days</p>
-      <div class="heat" id="heat"></div>
-    </div>
-  </section>
-
-  <section id="shop">
-    <div class="card">
-      <p class="ttl">Shop — spend coins, build your world</p>
-      <div class="shopsub pix">FURNITURE</div>
-      <div class="shopgrid" id="shopFurniture"></div>
-      <div class="shopsub pix" style="margin-top:14px;">APPEARANCE</div>
-      <div class="shopgrid" id="shopLook"></div>
-    </div>
-  </section>
-
-  <div class="foot">
-    Built for David · runs offline · data stays on this device.<br/>
-    <a href="#" id="reset">reset save</a>
+  <div id="ob">
+    <div id="obLine" class="pix"></div>
+    <div id="obCtl"></div>
   </div>
 
   <script src="app.js"></script>

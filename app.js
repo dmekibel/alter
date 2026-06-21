@@ -1,474 +1,340 @@
-/* ALTER v0 — a pixel-art life mirror.
-   Do real things -> earn coins + XP -> sprite levels up + you build its room.
-   Pure static. State in localStorage. No backend, no accounts, no API. */
+/* ALTER v0.2 — a full-screen pixel guardian who is you.
+   One screen, one move. The room is the only scoreboard. No coins/XP/levels.
+   Celebrates the DEED, not the session. Static, $0, localStorage. */
 (function () {
   "use strict";
+  var el = function (id) { return document.getElementById(id); };
+  var KEY = "alter_v2";
 
-  // ---- config -------------------------------------------------------------
+  // ---- data ---------------------------------------------------------------
   var DOMAINS = [
-    { key: "order",   label: "Order",   em: "🧹", stat: "Order",    color: "#e0795a" },
-    { key: "breath",  label: "Breath",  em: "🌬️", stat: "Breath",   color: "#6fc6d6" },
-    { key: "calm",    label: "Meditate",em: "🧘", stat: "Calm",     color: "#b48ee0" },
-    { key: "sport",   label: "Sport",   em: "🏋️", stat: "Vitality", color: "#6fd68a" },
-    { key: "fuel",    label: "Nutrition",em:"🍎", stat: "Fuel",     color: "#e6c25a" },
-    { key: "focus",   label: "Deep Work",em:"🧠", stat: "Focus",    color: "#f08fb0" }
+    { k: "move",    em: "🏃", label: "Moved",     color: "#7fd6a0" },
+    { k: "breathe", em: "🌬️", label: "Breathed",  color: "#79c6d6" },
+    { k: "focus",   em: "🧠", label: "Deep work", color: "#f08fb0" },
+    { k: "eat",     em: "🍎", label: "Ate well",  color: "#e6b25a" },
+    { k: "tidy",    em: "🧹", label: "Tidy space",color: "#e0795a", task: true }
   ];
+  var SUBTASKS = ["Make the bed", "Clear the table", "Laundry", "Sweep the floor", "Clear the desk"];
 
-  // furniture: each appears in the room when owned. levelReq gates the buy.
-  var FURNITURE = [
-    { id: "plant",     name: "Potted plant", price: 40,  levelReq: 1 },
-    { id: "lamp",      name: "Floor lamp",   price: 70,  levelReq: 1 },
-    { id: "bed",       name: "Cozy bed",     price: 110, levelReq: 1 },
-    { id: "desk",      name: "Work desk",    price: 150, levelReq: 2 },
-    { id: "poster",    name: "Wall poster",  price: 70,  levelReq: 2 },
-    { id: "bookshelf", name: "Bookshelf",    price: 160, levelReq: 3 },
-    { id: "tv",        name: "Retro TV",     price: 240, levelReq: 4 }
+  var TRAITS = [
+    "you make grade-A or nothing.",
+    "nostalgia lights you up.",
+    "the hard part was never making the work — it's sending it."
   ];
-
-  // appearance: sets a field on look{}. swatch shown in shop.
-  var LOOKS = [
-    { id: "hair_blue", name: "Blue hair",   price: 60,  field: "hair",  value: "#5b8dd9", levelReq: 1 },
-    { id: "hair_pink", name: "Pink hair",   price: 60,  field: "hair",  value: "#e07fb0", levelReq: 1 },
-    { id: "shirt_red", name: "Red shirt",   price: 50,  field: "shirt", value: "#cf4d4d", levelReq: 1 },
-    { id: "shirt_gold",name: "Gold shirt",  price: 90,  field: "shirt", value: "#e0b24a", levelReq: 2 },
-    { id: "glasses",   name: "Glasses",     price: 80,  field: "glasses", value: true, levelReq: 2 },
-    { id: "hat",       name: "Beanie",      price: 120, field: "hat",   value: "#7a5ec0", levelReq: 3 }
-  ];
-
-  var XP_PER_LVL = 120;
-  var REWARD = { coins: 15, stat: 12, xp: 20 };
-  var DECAY = 4;          // stat points lost per idle day
-  var START_COINS = 45;
-
-  // ---- state --------------------------------------------------------------
-  var KEY = "alter_v0";
-  var state;
 
   function freshState() {
-    var stats = {};
-    DOMAINS.forEach(function (d) { stats[d.key] = 18; });
     return {
-      coins: START_COINS,
-      totalXp: 0,
-      stats: stats,
-      owned: {},                 // furniture id -> true
-      look: { hair: "#7a4a2a", shirt: "#4f9a8a", glasses: false, hat: false },
-      today: [],                 // domain keys logged today
-      plans: [],                 // {text,time,domain,done}
-      history: {},               // 'YYYY-MM-DD' -> count
-      lastDay: today()
+      onboarded: false, place: "home",
+      avoided: "", name: "you",
+      total: 0, today: 0, sends: 0, sentToday: false,
+      lastDay: dayKey(), lastKind: null
     };
   }
+  function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate(); }
 
-  function today() {
-    var d = new Date();
-    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-  }
-  function pad(n) { return n < 10 ? "0" + n : "" + n; }
-
+  var S;
   function load() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      state = raw ? JSON.parse(raw) : freshState();
-    } catch (e) { state = freshState(); }
-    rollover();
+    try { S = JSON.parse(localStorage.getItem(KEY)) || freshState(); } catch (e) { S = freshState(); }
+    if (S.lastDay !== dayKey()) { S.today = 0; S.sentToday = false; S.lastDay = dayKey(); }
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
-  function rollover() {
-    var t = today();
-    if (state.lastDay === t) return;
-    // count days passed for gentle decay
-    var passed = daysBetween(state.lastDay, t);
-    if (passed > 0) {
-      DOMAINS.forEach(function (d) {
-        state.stats[d.key] = Math.max(0, (state.stats[d.key] || 0) - DECAY * passed);
-      });
-    }
-    state.today = [];
-    state.plans.forEach(function (p) { p.done = false; });
-    state.lastDay = t;
-    save();
+  // ---- time of day --------------------------------------------------------
+  function phase() {
+    var h = new Date().getHours();
+    if (h >= 5 && h < 11) return "morning";
+    if (h >= 11 && h < 17) return "afternoon";
+    if (h >= 17 && h < 21) return "evening";
+    return "night";
   }
-  function daysBetween(a, b) {
-    try {
-      var da = new Date(a + "T00:00:00"), db = new Date(b + "T00:00:00");
-      return Math.round((db - da) / 86400000);
-    } catch (e) { return 1; }
+  var PAL = {
+    morning:   { sky:"#ffd6a0", wall:"#6c7188", wall2:"#767b92", floor:"#b58a5a", floord:"#9c744a", tint:"rgba(255,205,150,0.05)", lamp:0.15, bright:1.0 },
+    afternoon: { sky:"#bfe2f0", wall:"#666b82", wall2:"#70758c", floor:"#ad8254", floord:"#956f46", tint:"rgba(255,240,210,0.03)", lamp:0.1,  bright:1.0 },
+    evening:   { sky:"#c2748f", wall:"#55516c", wall2:"#5f5b76", floor:"#8c6648", floord:"#76543c", tint:"rgba(190,120,160,0.07)", lamp:0.6,  bright:0.92 },
+    night:     { sky:"#1b2542", wall:"#3a3a56", wall2:"#434360", floor:"#6c533e", floord:"#5a4533", tint:"rgba(18,18,48,0.20)", lamp:1.0,  bright:0.82 }
+  };
+  function greeting() {
+    var p = phase();
+    return (p === "morning" ? "morning" : p === "afternoon" ? "afternoon" : p === "evening" ? "evening" : "late") + ", " + (S.name || "you");
   }
-
-  // ---- economy ------------------------------------------------------------
-  function level() { return Math.floor(state.totalXp / XP_PER_LVL) + 1; }
-  function xpInto() { return state.totalXp % XP_PER_LVL; }
-
-  function logDomain(key) {
-    var first = state.today.indexOf(key) === -1;
-    state.stats[key] = Math.min(100, (state.stats[key] || 0) + REWARD.stat);
-    state.coins += REWARD.coins;
-    state.totalXp += REWARD.xp;
-    if (first) state.today.push(key);
-    var t = today();
-    state.history[t] = (state.history[t] || 0) + 1;
-    save();
-    renderAll();
-    pulse();
+  function moveLabel() {
+    var p = phase();
+    if (p === "morning") return "what are you sending?";
+    if (p === "evening") return "how'd today go?";
+    if (p === "night") return "set it down";
+    return "what's the move?";
   }
 
-  function buy(item, kind) {
-    if (level() < item.levelReq) return;
-    if (state.coins < item.price) return;
-    if (kind === "furniture") {
-      if (state.owned[item.id]) return;
-      state.coins -= item.price;
-      state.owned[item.id] = true;
-    } else {
-      state.coins -= item.price;
-      state.look[item.field] = item.value;
-    }
-    save();
-    renderAll();
-    pulse();
-  }
-
-  // ---- pixel renderer -----------------------------------------------------
-  var canvas = document.getElementById("room");
-  var ctx = canvas.getContext("2d");
-  var W = 176, H = 152, SCALE = 2;
-
+  // ---- canvas -------------------------------------------------------------
+  var LW = 176, LH = 312, SCALE = 2, ctx, stage, T0 = performance.now();
+  var flashT = 0, flashBig = false;
   function fit() {
-    var wrap = document.getElementById("roomwrap");
-    var avail = wrap.clientWidth - 16;
-    SCALE = Math.max(1, Math.min(4, Math.floor(avail / W)));
-    canvas.width = W * SCALE;
-    canvas.height = H * SCALE;
-    canvas.style.width = (W * SCALE) + "px";
-    canvas.style.height = (H * SCALE) + "px";
-    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    drawRoom();
+    stage = el("stage"); ctx = stage.getContext("2d");
+    var vw = window.innerWidth, vh = window.innerHeight;
+    SCALE = Math.max(1, Math.min(5, Math.floor(Math.min(vw / LW, vh / LH))));
+    stage.width = LW * SCALE; stage.height = LH * SCALE;
+    stage.style.width = (LW * SCALE) + "px"; stage.style.height = (LH * SCALE) + "px";
+    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0); ctx.imageSmoothingEnabled = false;
   }
+  function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x | 0, y | 0, w | 0, h | 0); }
 
-  function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+  function render() {
+    var now = performance.now();
+    var t = (now - T0) / 1000;
+    var p = PAL[phase()];
+    var bob = Math.round(Math.sin(t * 1.7) * 1.2);
+    var active = S.today > 0;
 
-  function drawRoom() {
-    ctx.clearRect(0, 0, W, H);
+    ctx.clearRect(0, 0, LW, LH);
     // wall
-    px(0, 0, W, 56, "#5d6a7a");
-    px(0, 0, W, 22, "#66738a");
-    // window
-    px(110, 8, 42, 32, "#cfd6df");
-    px(113, 11, 36, 26, "#9bd6ec");
-    px(113, 28, 36, 9, "#7fc3a0");
-    px(130, 11, 2, 26, "#cfd6df");
-    px(113, 23, 36, 2, "#cfd6df");
+    px(0, 0, LW, 214, p.wall);
+    px(0, 0, LW, 90, p.wall2);
+    // window with time-of-day sky
+    px(18, 30, 56, 70, "#d7dbe2"); px(22, 34, 48, 62, p.sky);
+    if (phase() === "night") { px(28, 40, 3, 3, "#fff"); px(52, 52, 2, 2, "#fff"); px(40, 64, 2, 2, "#cfe"); }
+    px(45, 34, 2, 62, "#d7dbe2"); px(22, 63, 48, 2, "#d7dbe2");
+    // shelf (>=5 actions)
+    if (S.total >= 5) { px(120, 40, 40, 8, "#5a4326"); var bc = ["#c75c46","#e6b25a","#79c6d6","#b48ee0"]; for (var i=0;i<7;i++) px(122+i*5,30,3,10,bc[i%4]); }
     // baseboard + floor
-    px(0, 54, W, 2, "#46505e");
-    px(0, 56, W, H - 56, "#b07a4f");
-    for (var i = 0; i < W; i += 16) px(i, 56, 1, H - 56, "#9c6a42");
-    px(0, 56, W, 1, "#c79468");
-    // rug (always)
-    px(54, 104, 70, 36, "#a8442f");
-    px(60, 110, 58, 24, "#c75c46");
-    px(70, 116, 38, 12, "#a8442f");
-
-    // wall items
-    if (state.owned.poster) drawPoster(28, 12);
-    // back-wall floor furniture (drawn before avatar)
-    if (state.owned.bed) drawBed(8, 70);
-    if (state.owned.desk) drawDesk(64, 62);
-    if (state.owned.bookshelf) drawBookshelf(142, 56);
-    // avatar
-    drawAvatar();
-    // front furniture (drawn after avatar -> overlaps)
-    if (state.owned.plant) drawPlant(8, 118);
-    if (state.owned.tv) drawTV(44, 118);
-    if (state.owned.lamp) drawLamp(154, 96);
-  }
-
-  function drawBed(ox, oy) {
-    px(ox, oy, 42, 22, "#7a4a2a");
-    px(ox + 2, oy - 5, 38, 9, "#e8e0d0");
-    px(ox + 2, oy + 3, 38, 17, "#4f7a6a");
-    px(ox + 3, oy - 4, 12, 7, "#ffffff");
-    px(ox, oy + 20, 42, 3, "#5a3320");
-  }
-  function drawDesk(ox, oy) {
-    px(ox, oy, 36, 4, "#7a5230");
-    px(ox + 2, oy + 4, 3, 17, "#5a3a1f");
-    px(ox + 31, oy + 4, 3, 17, "#5a3a1f");
-    px(ox + 9, oy - 13, 16, 13, "#23222e");
-    px(ox + 11, oy - 11, 12, 9, "#5fd0e0");
-    px(ox + 14, oy + 6, 9, 4, "#444a5a"); // stool
-  }
-  function drawBookshelf(ox, oy) {
-    px(ox, oy, 26, 44, "#6a4326");
-    px(ox + 1, oy + 1, 24, 12, "#3a2614");
-    px(ox + 1, oy + 16, 24, 12, "#3a2614");
-    px(ox + 1, oy + 31, 24, 12, "#3a2614");
-    var cols = ["#c75c46", "#e0b24a", "#6fc6d6", "#b48ee0", "#6fd68a"];
-    var rows = [oy + 2, oy + 17, oy + 32];
-    for (var r = 0; r < 3; r++)
-      for (var b = 0; b < 6; b++)
-        px(ox + 2 + b * 4, rows[r], 3, 10, cols[(r + b) % cols.length]);
-  }
-  function drawPlant(ox, oy) {
-    px(ox + 2, oy + 12, 11, 9, "#9c5a3a");
-    px(ox + 3, oy + 12, 9, 2, "#b06a44");
-    px(ox + 2, oy + 1, 11, 12, "#3f8a3f");
-    px(ox, oy + 5, 4, 6, "#4f9a4f");
-    px(ox + 11, oy + 5, 4, 6, "#4f9a4f");
-    px(ox + 5, oy - 2, 5, 6, "#57a857");
-  }
-  function drawLamp(ox, oy) {
-    px(ox + 4, oy, 2, 26, "#8a8a8a");
-    px(ox, oy + 24, 10, 3, "#666");
-    px(ox - 3, oy - 8, 16, 9, "#f0d88a");
-    px(ox - 1, oy + 1, 12, 2, "#d8b85a");
-  }
-  function drawTV(ox, oy) {
-    px(ox, oy + 18, 42, 7, "#5a3a1f");
-    px(ox + 4, oy, 34, 21, "#1b1b24");
-    px(ox + 6, oy + 2, 30, 17, "#3a6ea5");
-    px(ox + 6, oy + 2, 30, 4, "#4f86c0");
-    px(ox + 16, oy + 21, 10, 2, "#3a3320");
-  }
-  function drawPoster(ox, oy) {
-    px(ox, oy, 20, 26, "#caa24a");
-    px(ox + 2, oy + 2, 16, 22, "#3a3350");
-    px(ox + 4, oy + 14, 12, 8, "#7a5ec0");
-    px(ox + 6, oy + 5, 8, 8, "#e0b24a");
-    px(ox + 4, oy + 12, 12, 1, "#b48ee0");
-  }
-
-  function drawAvatar() {
-    var L = state.look, ax = 78, ay = 80;
-    var skin = "#e8b890", pant = "#33365a", shoe = "#222";
-    // shadow
-    px(ax, ay + 30, 16, 2, "rgba(0,0,0,0.25)");
-    // legs + shoes
-    px(ax + 3, ay + 19, 4, 9, pant);
-    px(ax + 9, ay + 19, 4, 9, pant);
-    px(ax + 3, ay + 28, 4, 2, shoe);
-    px(ax + 9, ay + 28, 4, 2, shoe);
-    // torso (shirt) + arms
-    px(ax + 2, ay + 9, 12, 11, L.shirt);
-    px(ax, ay + 9, 2, 7, L.shirt);
-    px(ax + 14, ay + 9, 2, 7, L.shirt);
-    px(ax, ay + 16, 2, 2, skin);
-    px(ax + 14, ay + 16, 2, 2, skin);
-    // head
-    px(ax + 3, ay + 2, 10, 8, skin);
-    // hair
-    px(ax + 2, ay, 12, 4, L.hair);
-    px(ax + 2, ay + 3, 2, 5, L.hair);
-    px(ax + 12, ay + 3, 2, 5, L.hair);
-    // eyes / mouth
-    px(ax + 5, ay + 5, 1, 2, "#23202e");
-    px(ax + 10, ay + 5, 1, 2, "#23202e");
-    px(ax + 7, ay + 8, 2, 1, "#b5715a");
-    // accessories
-    if (L.glasses) {
-      px(ax + 4, ay + 5, 3, 2, "#15121f"); px(ax + 9, ay + 5, 3, 2, "#15121f");
-      px(ax + 7, ay + 5, 2, 1, "#15121f");
+    px(0, 212, LW, 4, "#3a3550");
+    px(0, 216, LW, LH - 216, p.floor);
+    for (var fx = 0; fx < LW; fx += 22) px(fx, 216, 1, LH - 216, p.floord);
+    px(0, 216, LW, 1, "#c79468");
+    // rug (>=3)
+    if (S.total >= 3) { px(40, 250, 96, 44, "#a8442f"); px(48, 258, 80, 28, "#c2563f"); }
+    // bed (back-left)
+    px(4, 176, 40, 22, "#7a4a2a"); px(6, 171, 36, 8, "#e8e0d0"); px(6, 179, 36, 16, "#4f7a6a"); px(7, 172, 12, 6, "#fff");
+    // easel + canvases earned by SENDS (the send-gate payoff)
+    px(150, 150, 4, 70, "#6a4a28"); px(132, 150, 4, 64, "#6a4a28"); px(146, 210, 12, 4, "#6a4a28");
+    if (S.sends > 0) {
+      px(130, 150, 28, 34, "#efe6d4");
+      var arts = ["#c2563f","#5b7fb0","#6a9a5a"];
+      for (var a = 0; a < Math.min(S.sends, 3); a++) { px(133 + a*0, 154 + a*8, 22, 6, arts[a % 3]); px(135, 164, 18, 14, arts[(a+1)%3]); }
+      // a couple framed on the wall for more sends
+      if (S.sends >= 2) { px(92, 110, 18, 22, "#caa24a"); px(94, 112, 14, 18, "#5b6f9a"); }
     }
-    if (L.hat) { px(ax + 1, ay - 1, 14, 4, L.hat); px(ax + 1, ay + 2, 14, 1, "#00000033"); }
+    // lamp (>=1) with time-of-day glow
+    if (S.total >= 1) {
+      px(160, 150, 2, 66, "#8a8a8a"); px(156, 214, 10, 3, "#666");
+      px(153, 142, 16, 9, "#f0d88a");
+      if (p.lamp > 0) { ctx.globalAlpha = p.lamp * 0.5; px(146, 138, 30, 40, "#ffe6a0"); ctx.globalAlpha = 1; }
+    }
+    // plant (>=2)
+    if (S.total >= 2) { px(8, 250, 12, 10, "#9c5a3a"); px(8, 238, 12, 13, "#3f8a3f"); px(5, 242, 4, 7, "#4f9a4f"); px(19, 242, 4, 7, "#4f9a4f"); }
+
+    drawChar(LW / 2, 248, bob, active, p);
+
+    // night/time tint over everything
+    ctx.fillStyle = p.tint; ctx.fillRect(0, 0, LW, LH);
+    // soft vignette
+    var g = ctx.createRadialGradient(LW/2, LH*0.55, LH*0.3, LW/2, LH*0.55, LH*0.75);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,0.34)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, LW, LH);
+
+    if (flashT > 0) flashT -= 1 / 60;
+    requestAnimationFrame(render);
   }
 
-  function pulse() {
-    canvas.style.transition = "none";
-    canvas.style.filter = "brightness(1.4)";
-    setTimeout(function () {
-      canvas.style.transition = "filter .35s";
-      canvas.style.filter = "brightness(1)";
-    }, 30);
+  function drawChar(cx, footY, bob, active, p) {
+    var x = Math.round(cx - 13), y = footY - 52 + bob;
+    var skin = active ? "#ecbf95" : "#caa882";
+    var hair = "#5a3a22", shirt = active ? "#5f8f86" : "#4d6e68", pant = "#34375c", shoe = "#222";
+    // shadow
+    ctx.globalAlpha = 0.28; px(x + 3, footY + 1, 20, 3, "#000"); ctx.globalAlpha = 1;
+    // legs
+    px(x + 7, y + 34, 6, 14, pant); px(x + 15, y + 34, 6, 14, pant);
+    px(x + 7, footY - 2, 6, 3, shoe); px(x + 15, footY - 2, 6, 3, shoe);
+    // torso + arms
+    px(x + 4, y + 16, 20, 19, shirt);
+    px(x + 1, y + 16, 3, 13, shirt); px(x + 24, y + 16, 3, 13, shirt);
+    px(x + 1, y + 27, 3, 3, skin); px(x + 24, y + 27, 3, 3, skin);
+    // head
+    px(x + 7, y + 3, 14, 14, skin);
+    // hair
+    px(x + 6, y, 16, 6, hair); px(x + 6, y + 4, 3, 7, hair); px(x + 19, y + 4, 3, 7, hair);
+    // face
+    var eye = active ? "#2a2333" : "#5a5266";
+    px(x + 10, y + 9, 2, 2, eye); px(x + 16, y + 9, 2, 2, eye);
+    px(x + 12, y + 13, 4, 1, active ? "#b5715a" : "#8a6a5a");
+    // active glow + send halo
+    if (S.sentToday) { ctx.globalAlpha = 0.25; px(x - 2, y - 2, 31, 52, "#ffe6a0"); ctx.globalAlpha = 1; }
+    // reward flash
+    if (flashT > 0) {
+      ctx.globalAlpha = Math.min(0.85, flashT * (flashBig ? 2.4 : 2.0));
+      px(x - 2, y - 2, 31, 54, flashBig ? "#fff3cf" : "#ffffff");
+      ctx.globalAlpha = 1;
+    }
   }
 
   // ---- mirror line --------------------------------------------------------
-  function mirrorLine() {
-    var t = state.today;
-    var has = function (k) { return t.indexOf(k) !== -1; };
-    if (t.length === 0) return "A blank page. The first log writes today's character.";
-    if (has("sport") && has("calm")) return "An athlete's body, a clear mind. That's who showed up today.";
-    if (has("focus") && has("order")) return "Ordered space, deep focus — the version of you that ships was here.";
-    if (has("focus")) return "You did the deep work. That's the rare one. Bank it.";
-    if (has("sport")) return "You moved. The body kept its promise to you today.";
-    if (has("calm") || has("breath")) return "You came back to center. Quietly, that changes the whole day.";
-    if (has("order")) return "You brought order to your space — and the space orders you back.";
-    if (has("fuel")) return "You fueled instead of drifted. Small, real, yours.";
-    if (t.length >= 3) return "Three moves in. This is what a good day actually looks like up close.";
-    return "Showed up once today. That's the rep that starts the streak you don't count.";
-  }
-
-  // ---- views --------------------------------------------------------------
-  function el(id) { return document.getElementById(id); }
-
-  function renderHUD() {
-    el("coins").textContent = state.coins;
-    el("lvl").textContent = level();
-    el("xpbar").style.width = Math.round((xpInto() / XP_PER_LVL) * 100) + "%";
-  }
-
-  function renderMirror() { el("mirror").textContent = mirrorLine(); }
-
-  function renderLog() {
-    var row = el("logRow"); row.innerHTML = "";
-    DOMAINS.forEach(function (d) {
-      var b = document.createElement("button");
-      b.className = "logbtn" + (state.today.indexOf(d.key) !== -1 ? " done" : "");
-      b.innerHTML = '<span class="em">' + d.em + "</span>" + d.label;
-      b.onclick = function () { logDomain(d.key); };
-      row.appendChild(b);
-    });
-  }
-
-  function renderPlans() {
-    var sel = el("planDomain");
-    if (!sel.options.length) {
-      DOMAINS.forEach(function (d) {
-        var o = document.createElement("option"); o.value = d.key; o.textContent = d.label;
-        sel.appendChild(o);
-      });
+  function mirror() {
+    var p = phase();
+    if (!S.lastKind && S.today === 0) {
+      if (p === "morning") return "a fresh page. name the one thing worth sending today.";
+      if (p === "evening") return "the day's winding down. what did you actually move?";
+      if (p === "night") return "it's late. you came anyway — that counts.";
+      return "you're here. what's the one move?";
     }
-    var list = el("planList"); list.innerHTML = "";
-    if (!state.plans.length) {
-      var em = document.createElement("li");
-      em.style.color = "var(--muted)"; em.style.fontSize = "11px";
-      em.textContent = "Nothing planned yet. Add a block above.";
-      list.appendChild(em);
-    }
-    state.plans.forEach(function (p, i) {
-      var d = domain(p.domain);
-      var li = document.createElement("li");
-      if (p.done) li.className = "done";
-      var chk = document.createElement("div");
-      chk.className = "chk" + (p.done ? " on" : "");
-      chk.onclick = function () { togglePlan(i); };
-      var tm = document.createElement("span"); tm.className = "tm"; tm.textContent = p.time || "";
-      var dot = document.createElement("span"); dot.className = "dot";
-      dot.style.background = d ? d.color : "#555";
-      var txt = document.createElement("span"); txt.className = "txt"; txt.textContent = p.text;
-      var del = document.createElement("span");
-      del.textContent = "✕"; del.style.color = "var(--muted)"; del.style.cursor = "pointer"; del.style.fontSize = "11px";
-      del.onclick = function () { state.plans.splice(i, 1); save(); renderPlans(); };
-      li.appendChild(chk); li.appendChild(tm); li.appendChild(dot); li.appendChild(txt); li.appendChild(del);
-      list.appendChild(li);
-    });
-  }
-
-  function togglePlan(i) {
-    var p = state.plans[i]; if (!p) return;
-    p.done = !p.done;
-    if (p.done) logDomain(p.domain); else { save(); renderPlans(); }
-  }
-
-  function renderStats() {
-    var box = el("statList"); box.innerHTML = "";
-    DOMAINS.forEach(function (d) {
-      var v = Math.round(state.stats[d.key] || 0);
-      var wrap = document.createElement("div"); wrap.className = "statrow";
-      var lab = document.createElement("div"); lab.className = "lab";
-      lab.innerHTML = "<span>" + d.em + " " + d.stat + "</span><span>" + v + "</span>";
-      var bar = document.createElement("div"); bar.className = "statbar";
-      var i = document.createElement("i"); i.style.width = v + "%"; i.style.background = d.color;
-      bar.appendChild(i); wrap.appendChild(lab); wrap.appendChild(bar); box.appendChild(wrap);
-    });
-    // heatmap last 14 days
-    var heat = el("heat"); heat.innerHTML = "";
-    var now = new Date();
-    for (var k = 13; k >= 0; k--) {
-      var dd = new Date(now.getTime() - k * 86400000);
-      var key = dd.getFullYear() + "-" + pad(dd.getMonth() + 1) + "-" + pad(dd.getDate());
-      var c = state.history[key] || 0;
-      var sq = document.createElement("div"); sq.className = "d";
-      if (c >= 3) sq.style.background = "#b48ee0";
-      else if (c === 2) sq.style.background = "#6f5a9a";
-      else if (c === 1) sq.style.background = "#43385f";
-      sq.title = key + " · " + c;
-      heat.appendChild(sq);
-    }
-  }
-
-  function renderShop() {
-    var lvl = level();
-    var fg = el("shopFurniture"); fg.innerHTML = "";
-    FURNITURE.forEach(function (it) {
-      fg.appendChild(itemCard(it, "furniture", lvl));
-    });
-    var lg = el("shopLook"); lg.innerHTML = "";
-    LOOKS.forEach(function (it) {
-      lg.appendChild(itemCard(it, "look", lvl));
-    });
-  }
-
-  function itemCard(it, kind, lvl) {
-    var owned = kind === "furniture" && state.owned[it.id];
-    var equipped = kind === "look" && state.look[it.field] === it.value;
-    var locked = lvl < it.levelReq;
-    var card = document.createElement("div");
-    card.className = "item" + (owned || equipped ? " owned" : "");
-    var swatch = "";
-    if (kind === "look" && it.field !== "glasses" && typeof it.value === "string")
-      swatch = '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:5px;background:' + it.value + '"></span>';
-    card.innerHTML = '<div class="nm">' + swatch + it.name + "</div>" +
-      '<div class="pr">🪙 ' + it.price + "</div>";
-    var btn = document.createElement("button");
-    if (owned) { btn.textContent = "Owned"; btn.disabled = true; }
-    else if (equipped) { btn.textContent = "Wearing"; btn.disabled = true; }
-    else if (locked) { btn.textContent = "Lvl " + it.levelReq; btn.disabled = true; }
-    else if (state.coins < it.price) { btn.textContent = "Need 🪙"; btn.disabled = true; }
-    else { btn.textContent = kind === "look" ? "Wear" : "Buy"; btn.onclick = function () { buy(it, kind); }; }
-    card.appendChild(btn);
-    return card;
-  }
-
-  function domain(key) {
-    for (var i = 0; i < DOMAINS.length; i++) if (DOMAINS[i].key === key) return DOMAINS[i];
-    return null;
-  }
-
-  function renderAll() {
-    renderHUD(); renderMirror(); renderLog(); renderPlans();
-    renderStats(); renderShop(); drawRoom();
-  }
-
-  // ---- wiring -------------------------------------------------------------
-  function tabs() {
-    var els = document.querySelectorAll(".tab");
-    els.forEach(function (t) {
-      t.onclick = function () {
-        els.forEach(function (x) { x.classList.remove("on"); });
-        t.classList.add("on");
-        ["today", "stats", "shop"].forEach(function (s) {
-          document.getElementById(s).classList.toggle("on", s === t.dataset.tab);
-        });
-      };
-    });
-  }
-
-  function addPlan() {
-    var text = el("planText").value.trim();
-    if (!text) return;
-    state.plans.push({ text: text, time: el("planTime").value, domain: el("planDomain").value, done: false });
-    el("planText").value = ""; el("planTime").value = "";
-    state.plans.sort(function (a, b) { return (a.time || "99").localeCompare(b.time || "99"); });
-    save(); renderPlans();
-  }
-
-  function init() {
-    load();
-    tabs();
-    el("planAdd").onclick = addPlan;
-    el("planText").addEventListener("keydown", function (e) { if (e.key === "Enter") addPlan(); });
-    el("reset").onclick = function (e) {
-      e.preventDefault();
-      if (confirm("Wipe save and start fresh?")) { state = freshState(); save(); renderAll(); }
+    if (S.lastKind === "send") return "that's the real you. now go put it down and live.";
+    var lines = {
+      move: "the body kept its promise. that's banked.",
+      breathe: "you came back to center. quietly, that changes everything.",
+      focus: "you did the deep work — the rare one. bank it.",
+      eat: "you fueled instead of drifted. small, real, yours.",
+      tidy: "order in the room is order in the head. nice."
     };
-    window.addEventListener("resize", fit);
-    fit();
-    renderAll();
+    if (lines[S.lastKind]) return lines[S.lastKind];
+    if (S.today >= 3) return "three real moves in. this is what a good day looks like up close.";
+    return "one rep down. that's the one that starts it.";
   }
 
-  if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded", init);
-  else init();
+  // ---- reward -------------------------------------------------------------
+  function reward(kind, color) {
+    var big = kind === "send";
+    var hue = big ? "#e7b24a" : (color || "#b48ee0");
+    flashT = big ? 0.5 : 0.3; flashBig = big;
+    try { if (navigator.vibrate) navigator.vibrate(big ? [10, 40, 12] : [13]); } catch (e) {}
+    var b = el("bloom");
+    b.style.background = "radial-gradient(circle at 50% 58%, " + hue + ", transparent 68%)";
+    b.style.transition = "none"; b.style.opacity = big ? "0.6" : "0.38";
+    requestAnimationFrame(function () {
+      b.style.transition = "opacity 1.15s ease-out"; b.style.opacity = "0";
+    });
+  }
+
+  // ---- logging ------------------------------------------------------------
+  function logAction(kind, color, isSend) {
+    S.total += 1; S.today += 1; S.lastKind = isSend ? "send" : kind;
+    if (isSend) { S.sends += 1; S.sentToday = true; }
+    reward(isSend ? "send" : kind, color);
+    save(); paintHome(); closeSheet();
+  }
+
+  // ---- home ---------------------------------------------------------------
+  function paintHome() {
+    el("greet").textContent = greeting();
+    el("mirror").textContent = mirror();
+    el("moveBtn").textContent = moveLabel();
+    var lume = Math.min(1, 0.22 + S.today * 0.22);
+    var dot = document.querySelector("#lume .dot");
+    if (dot) { dot.style.opacity = lume; dot.style.boxShadow = "0 0 " + (4 + S.today * 3) + "px var(--beacon)"; }
+  }
+
+  // ---- sheet --------------------------------------------------------------
+  function openSheet() { buildSheet(); el("sheet").classList.add("on"); }
+  function closeSheet() { el("sheet").classList.remove("on"); }
+
+  function buildSheet() {
+    var p = phase();
+    el("sheetT").textContent = p === "evening" ? "how'd today go?" : "what did you do?";
+    var body = el("sheetBody"); body.innerHTML = "";
+    var row = document.createElement("div"); row.className = "row";
+
+    // SEND — the north star, first
+    var send = document.createElement("button");
+    send.className = "act send";
+    send.innerHTML = '<span class="em">✦</span>' + (S.avoided ? "I sent it — " + esc(S.avoided) : "I sent something real");
+    send.onclick = function () { logAction("send", "#e7b24a", true); };
+    row.appendChild(send);
+
+    DOMAINS.forEach(function (d) {
+      var a = document.createElement("button"); a.className = "act";
+      a.innerHTML = '<span class="em">' + d.em + "</span>" + d.label;
+      a.onclick = function () { d.task ? buildSubtasks(d) : logAction(d.k, d.color, false); };
+      row.appendChild(a);
+    });
+    body.appendChild(row);
+  }
+
+  function buildSubtasks(d) {
+    el("sheetT").textContent = "tidy — one small step at a time";
+    var body = el("sheetBody"); body.innerHTML = "";
+    var picked = {};
+    var wrap = document.createElement("div"); wrap.className = "sub";
+    SUBTASKS.forEach(function (label, i) {
+      var item = document.createElement("div"); item.className = "subitem";
+      item.innerHTML = '<span class="box"></span><span>' + label + "</span>";
+      item.onclick = function () {
+        if (picked[i]) return;
+        picked[i] = true; item.classList.add("done");
+        logActionQuiet(d.k, d.color);
+      };
+      wrap.appendChild(item);
+    });
+    body.appendChild(wrap);
+    var back = document.createElement("button"); back.className = "back"; back.textContent = "done";
+    back.onclick = closeSheet; body.appendChild(back);
+  }
+  // subtask logs reward but keeps the sheet open so you can tick several
+  function logActionQuiet(kind, color) {
+    S.total += 1; S.today += 1; S.lastKind = kind;
+    reward(kind, color); save(); paintHome();
+  }
+
+  function esc(s) { return (s || "").replace(/[<>&]/g, ""); }
+
+  // ---- onboarding ---------------------------------------------------------
+  var ob = 0, obName = "home";
+  function startOb() { el("ob").classList.add("on"); el("moveBtn").style.display = "none"; el("hud").style.opacity = "0"; renderOb(); }
+  function endOb() { el("ob").classList.remove("on"); el("moveBtn").style.display = ""; el("hud").style.opacity = "1"; S.onboarded = true; save(); paintHome(); }
+
+  function obLine(text) { var l = el("obLine"); l.classList.remove("show"); l.textContent = text; setTimeout(function(){ l.classList.add("show"); }, 60); }
+  function btn(label, fn, ghost) { var b = document.createElement("button"); b.className = "obBtn pix" + (ghost ? " ghost" : ""); b.textContent = label; b.onclick = fn; return b; }
+
+  function renderOb() {
+    var ctl = el("obCtl"); ctl.innerHTML = "";
+    el("obLine").className = "pix fadeline";
+    if (ob === 0) {
+      obLine(phase() === "night" ? "oh — it's late. you came anyway." : "hey. you're here.");
+      ctl.appendChild(btn("…", function () { ob = 1; renderOb(); }));
+    } else if (ob === 1) {
+      obLine("before anything — what should I call this place?");
+      var inp = document.createElement("input"); inp.placeholder = "home"; inp.value = "";
+      ctl.appendChild(inp);
+      ctl.appendChild(btn("continue", function () { obName = inp.value.trim() || "home"; S.place = obName; ob = 2; renderOb(); }));
+    } else if (ob === 2) {
+      obLine("I think I already know you. tell me if this lands.");
+      var done = {};
+      TRAITS.forEach(function (tr, i) {
+        var c = document.createElement("button"); c.className = "chip"; c.textContent = '"' + tr + '"';
+        c.onclick = function () {
+          if (done[i]) return; done[i] = true; c.classList.add("yes"); S.total += 1;
+          try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {}
+        };
+        ctl.appendChild(c);
+      });
+      ctl.appendChild(btn("yeah, that's me", function () { ob = 3; renderOb(); }));
+    } else if (ob === 3) {
+      obLine("so — what's the one move you keep avoiding?");
+      var inp2 = document.createElement("input"); inp2.placeholder = "send the proposal · ship the painting";
+      ctl.appendChild(inp2);
+      ctl.appendChild(btn("continue", function () { S.avoided = inp2.value.trim().slice(0, 40); ob = 4; renderOb(); }));
+    } else if (ob === 4) {
+      obLine("we don't end on a setup screen. one tiny send — right now. who gets one line from you?");
+      var inp3 = document.createElement("input"); inp3.placeholder = "a name…";
+      ctl.appendChild(inp3);
+      ctl.appendChild(btn("I sent it ✦", function () {
+        S.sends += 1; S.sentToday = true; S.total += 1; S.today += 1; S.lastKind = "send";
+        reward("send", "#e7b24a"); endOb();
+        setTimeout(function () { el("mirror").textContent = "first send, on day one. that's the whole game. welcome."; }, 200);
+      }));
+      ctl.appendChild(btn("not yet — show me home", function () {
+        S.lastKind = null; endOb();
+        setTimeout(function () { el("mirror").textContent = "no rush. it'll be here when you're ready to send."; }, 200);
+      }, true));
+    }
+  }
+
+  // ---- wire ---------------------------------------------------------------
+  function init() {
+    load(); fit();
+    window.addEventListener("resize", fit);
+    el("moveBtn").onclick = openSheet;
+    el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
+    el("sheetClose").onclick = closeSheet;
+    paintHome();
+    requestAnimationFrame(render);
+    if (!S.onboarded) startOb();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
