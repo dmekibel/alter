@@ -196,9 +196,65 @@
     add(B, "button", "done2", "Do it now ▶").onclick = function () { closeSheet(); nowSheet(); };
   }
 
+  // ---- the pixel guardian (the mirror) -----------------------------------
+  var SW = 64, SH = 80;
+  var SKY = { night: ["#0c1330", "#241a46"], morning: ["#16345e", "#3a2a55"], afternoon: ["#163e63", "#2a2150"], evening: ["#241640", "#3c1733"] };
+  var gctx, GW = 0, GH = 0, gspr = null, gsx = null, GT0 = performance.now();
+  function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
+  function mix(a, b, t) { var A = hx2(a), B = hx2(b); return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")"; }
+  function gdisc(g, cx, cy, r, col) { g.fillStyle = col; for (var y = -r; y <= r; y++) { var w = Math.floor(Math.sqrt(Math.max(0, r * r - y * y))); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); } }
+  function gring(g, cx, cy, rx, ry, col, th) { th = th || 1; g.fillStyle = col; for (var a = 0; a < 6.3; a += 0.1) { g.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), th, th); } }
+  function guardianFit() {
+    var c = el("guardian"); if (!c) return; gctx = c.getContext("2d");
+    var wrap = c.parentNode; var cssW = (wrap ? wrap.clientWidth : 340) || 340;
+    var cssH = Math.max(300, Math.round(Math.min(window.innerHeight * 0.52, cssW * 1.18)));
+    var dpr = window.devicePixelRatio || 1; GW = cssW; GH = cssH;
+    c.style.width = GW + "px"; c.style.height = GH + "px"; c.width = Math.round(GW * dpr); c.height = Math.round(GH * dpr);
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!gspr) { gspr = document.createElement("canvas"); gspr.width = SW; gspr.height = SH; gsx = gspr.getContext("2d"); }
+  }
+  function paintGuardian(t, st) {
+    var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
+    var robe = mix("#4a36a0", st.color, 0.22), robeD = mix("#2c2068", st.color, 0.16), robeH = mix("#7d66da", st.color, 0.22);
+    var skin = "#ffd9b4", skinD = "#e7b186";
+    var bTop = 38, bBot = 78;
+    for (var y = bTop; y <= bBot; y++) { var f = (y - bTop) / (bBot - bTop); var hw = Math.round(9 + f * 13); g.fillStyle = robeD; g.fillRect(cxc - hw - 1, y, 2 * hw + 2, 1); g.fillStyle = robe; g.fillRect(cxc - hw, y, 2 * hw, 1); g.fillStyle = robeH; g.fillRect(cxc - hw + 1, y, 3, 1); }
+    gdisc(g, cxc - 17, 60, 4, skinD); gdisc(g, cxc - 17, 59, 3, skin);
+    gdisc(g, cxc + 17, 60, 4, skinD); gdisc(g, cxc + 17, 59, 3, skin);
+    gdisc(g, cxc, 27, 16, robeD); gdisc(g, cxc, 27, 15, robe); gdisc(g, cxc, 23, 12, robeH);
+    gdisc(g, cxc, 30, 12, skinD); gdisc(g, cxc, 30, 11, skin);
+    var ey = 30, exl = cxc - 5, exr = cxc + 5;
+    if (st.blink) { g.fillStyle = "#3a2a4a"; g.fillRect(exl - 2, ey, 4, 2); g.fillRect(exr - 1, ey, 4, 2); }
+    else { [exl, exr].forEach(function (ex) { gdisc(g, ex, ey, 3, "#ffffff"); gdisc(g, ex, ey, 2, st.color); gdisc(g, ex, ey, 1, "#1c1030"); g.fillStyle = "#fff"; g.fillRect(ex + 1, ey - 2, 1, 1); }); }
+    g.fillStyle = "#ff9ec4"; g.fillRect(cxc - 10, 34, 3, 2); g.fillRect(cxc + 7, 34, 3, 2);
+    g.fillStyle = "#c47a64"; g.fillRect(cxc - 2, 36, 4, 1); g.fillRect(cxc - 3, 35, 1, 1); g.fillRect(cxc + 2, 35, 1, 1);
+    var hy = 9 + Math.round(Math.sin(t * 2) * 1), hc = st.gold ? "#ffd54a" : "#bfe6ff";
+    gring(g, cxc, hy, 11, 4, hc, 1);
+  }
+  function drawGuardian() {
+    if (!gctx) { requestAnimationFrame(drawGuardian); return; }
+    var t = (performance.now() - GT0) / 1000, cx = GW / 2;
+    var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
+    var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
+    var ph = phase(), sky = SKY[ph] || SKY.night;
+    var gr = gctx.createLinearGradient(0, 0, 0, GH); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); gctx.fillStyle = gr; gctx.fillRect(0, 0, GW, GH);
+    if (ph === "night" || ph === "evening") { for (var i = 0; i < 38; i++) { var sxp = (i * 79) % GW, syp = (i * 131) % Math.round(GH * 0.6); var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.2 + i)); gctx.fillStyle = "rgba(255,255,255," + (0.5 * tw) + ")"; gctx.fillRect(sxp, syp, 2, 2); } }
+    var auraR = GW * (0.30 + Math.min(0.2, st.lv * 0.012)), ap = 0.16 + 0.06 * Math.sin(t * 1.4), acy = GH * 0.5;
+    var ag = gctx.createRadialGradient(cx, acy, 6, cx, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(cx, acy, auraR, 0, 7); gctx.fill();
+    var baseY = GH * 0.92;
+    gctx.fillStyle = "rgba(0,0,0,0.3)"; gctx.beginPath(); gctx.ellipse(cx, baseY, GW * 0.15, 7, 0, 0, 7); gctx.fill();
+    paintGuardian(t, st);
+    var scale = Math.max(2, Math.floor(Math.min(GW / SW, (GH * 0.78) / SH)));
+    var bob = Math.sin(t * 1.6) * scale * 1.1, dw = SW * scale, dh = SH * scale;
+    var dx = Math.round(cx - dw / 2), dy = Math.round(baseY - dh - 4 + bob);
+    gctx.imageSmoothingEnabled = false; gctx.drawImage(gspr, 0, 0, SW, SH, dx, dy, dw, dh); gctx.imageSmoothingEnabled = true;
+    for (var s = 0; s < 6; s++) { var px = cx + Math.cos(t * 0.6 + s * 1.2) * GW * (0.18 + 0.12 * (s % 3)); var py = baseY - 30 - ((t * 20 + s * 55) % (GH * 0.55)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(px), Math.round(py), 2, 2); }
+    requestAnimationFrame(drawGuardian);
+  }
+
   // ---- render ------------------------------------------------------------
   function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + " 👋"; }
-  function renderHero() { var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
+  function renderHero() { var cap = el("guardianCap"); if (cap) { if (S.profile && S.profile.set && vState) cap.innerHTML = "<b>" + (VCLASS[vState.top.k] || "Awakening") + "</b> · Lv " + vState.level + "  ·  ✨ " + S.game.spark.toLocaleString(); else cap.textContent = "your mirror — it grows when you do"; } var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
 
   var vState = null;
   function renderChar() {
@@ -297,7 +353,7 @@
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); if (dm[id]) earn(12, {}); save(); renderHabits(); renderHero(); renderChar(); renderGame(); }
 
-  function renderAll() { renderHeader(); renderNow(); renderHero(); renderChar(); renderGame(); renderToday(); renderTom(); renderHabits(); }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderToday(); renderTom(); renderHabits(); }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -408,9 +464,9 @@
   }
 
   function init() {
-    load(); treeFit(); requestAnimationFrame(treeLoop);
+    load(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
-    window.addEventListener("resize", treeFit);
+    window.addEventListener("resize", function () { treeFit(); guardianFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
     el("planToday").onclick = function () { planSheet(todayK(), phase() === "night" ? "tonight" : "today"); };
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
@@ -418,7 +474,7 @@
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "char") treeFit(); }; });
+    document.querySelectorAll("#nav .nb").forEach(function (b) { b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "char") treeFit(); if (t === "home") guardianFit(); }; });
     renderAll();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();

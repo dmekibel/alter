@@ -213,14 +213,25 @@
   #nav{background:#1c1338;border-top:3px solid #6a4aa0;}
   .nb.on{color:#ffd24a;}
   .divlab{color:#caa0ff;}
+  /* ===== THE MIRROR (pixel guardian home) ===== */
+  #stage{position:relative;width:100%;border-radius:26px;overflow:hidden;border:3px solid #5a4a8a;
+    box-shadow:0 12px 34px rgba(0,0,0,.5);margin:2px 0 10px;background:#10122a;}
+  #guardian{display:block;width:100%;image-rendering:pixelated;}
+  #guardianCap{text-align:center;font-family:var(--bub);font-weight:700;font-size:13.5px;color:#cdbff2;margin:0 0 12px;letter-spacing:.3px;}
+  #guardianCap b{color:#ffe07a;}
 </style>
 </head>
 <body>
   <div id="screen">
     <header><div id="date"></div><div id="hello"></div></header>
 
-    <div class="tab on" id="t-today">
+    <div class="tab on" id="t-home">
+      <div id="stage"><canvas id="guardian"></canvas></div>
+      <div id="guardianCap"></div>
       <div id="hero"></div>
+    </div>
+
+    <div class="tab" id="t-today">
       <section class="panel c-today">
         <div class="cardhead"><h3 id="todayTitle">Today's schedule</h3><button class="add" id="planToday">+ slot</button></div>
         <div id="todayList"></div>
@@ -257,11 +268,11 @@
   </div>
 
   <nav id="nav">
-    <button class="nb on" data-tab="today"><span class="ne">🏠</span><span class="nl2">Today</span></button>
-    <button class="nb" data-tab="char"><span class="ne">⚔️</span><span class="nl2">You</span></button>
+    <button class="nb on" data-tab="home"><span class="ne">🪞</span><span class="nl2">Mirror</span></button>
+    <button class="nb" data-tab="today"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
     <button class="nb center" data-tab="track"><span class="ne">⏱️</span></button>
     <button class="nb" data-tab="habits"><span class="ne">✅</span><span class="nl2">Habits</span></button>
-    <button class="nb" data-tab="plan"><span class="ne">🗓️</span><span class="nl2">Plan</span></button>
+    <button class="nb" data-tab="char"><span class="ne">⚔️</span><span class="nl2">You</span></button>
   </nav>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <script src="app.js"></script>
