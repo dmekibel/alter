@@ -192,7 +192,7 @@
     var L = el("statList"); L.innerHTML = "";
     if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Create your character →"); b.style.marginTop = "2px"; b.onclick = charSheet; avLevel = 1; return; }
     var st = stats(); avLevel = st.level; var top = st.list.slice().sort(function (a, b) { return b.lv - a.lv; })[0]; var cls = ""; STATS.forEach(function (s) { if (s.k === top.k) cls = s.cls; }); el("statLvl").textContent = (cls ? cls + " · " : "") + "Lv " + st.level;
-    if (S.profile) { var parts = []; if (S.profile.exWant != null) parts.push("🏃 " + weeklyWorkouts() + "/" + S.profile.exWant + " this wk"); if (S.profile.weight) parts.push("⚖️ " + S.profile.weight + (S.profile.weightGoal ? "→" + S.profile.weightGoal : "") + "kg"); if (S.profile.goals) parts.push("🎯 " + S.profile.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   ")); }
+    if (S.profile) { var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "") + (P.height ? " · " + P.height + "cm" : "")); if (P.exWant != null) parts.push("🏃 " + weeklyWorkouts() + "/" + P.exWant + " this wk"); if (P.weight) parts.push("⚖️ " + P.weight + (P.weightGoal ? "→" + P.weightGoal : "") + "kg"); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   ")); }
     st.list.forEach(function (s) {
       var r = add(L, "div", "statrow"); add(r, "div", "se", s.e); add(r, "div", "sn", s.l); var bw = add(r, "div", "sb"); var bar = add(bw, "div", "bar"); add(bar, "i").style.cssText = "width:" + Math.max(6, s.pct) + "%;height:100%;background:" + s.c; add(r, "div", "sl", "Lv " + s.lv + (s.note ? " · " + s.note : ""));
       var sub = add(L, "div", "subline"); s.subs.forEach(function (x) { var p = add(sub, "span", "subpill", x.l + " " + x.v); p.style.borderColor = s.c; });
@@ -285,28 +285,34 @@
   function openSheet() { el("sheet").classList.add("on"); }
   function closeSheet() { el("sheet").classList.remove("on"); }
   function charSheet() {
-    var B = el("sheetBody"); var step = 0, total = STATS.length + 1;
+    var B = el("sheetBody"); var step = 0, STEPS = STATS.length + 2; // 0 vitals · 1..N stats · last goals
     var base = {}; STATS.forEach(function (s) { s.subs.forEach(function (sb) { base[sb.k] = (S.baseline && S.baseline[sb.k]) || 3; }); });
-    var prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {}; prof.exNow = prof.exNow == null ? 1 : prof.exNow; prof.exWant = prof.exWant == null ? 4 : prof.exWant;
+    var prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {}; prof.exNow = prof.exNow == null ? 1 : prof.exNow; prof.exWant = prof.exWant == null ? 4 : prof.exWant; prof.gender = prof.gender || "";
+    var inputs = {};
     openSheet();
-    function draw() {
-      B.innerHTML = ""; var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(step / (total - 1) * 100) + "%";
-      if (step === 0) {
-        add(B, "div", "sttl", "🎮 Create your character"); add(B, "div", "lbl", "🏃 workouts per week — now vs goal");
-        var ef = add(B, "div", "frm"); ef.appendChild(stepper("now", prof.exNow, 0, 14, function (v) { prof.exNow = v; })); ef.appendChild(stepper("goal", prof.exWant, 0, 14, function (v) { prof.exWant = v; }));
-        add(B, "div", "lbl", "⚖️ weight & goal (kg, optional)"); var wf = add(B, "div", "frm"); var w1 = numIn("weight"); if (prof.weight) w1.value = prof.weight; var w2 = numIn("goal"); if (prof.weightGoal) w2.value = prof.weightGoal; wf.appendChild(w1); wf.appendChild(w2); prof._w1 = w1; prof._w2 = w2;
-        add(B, "div", "lbl", "🎯 your main goal(s)"); var g = document.createElement("input"); g.type = "text"; g.placeholder = "e.g. get lean, ship the app, quit weed"; g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) g.value = prof.goals; B.appendChild(g); prof._g = g;
-      } else {
-        var s = STATS[step - 1]; add(B, "div", "sttl", s.e + " " + s.l); add(B, "div", "lbl", "answer honestly — this sets your level, not your ego");
-        s.subs.forEach(function (sb) { add(B, "div", "qline", sb.q); (sb.o || []).forEach(function (opt, i) { var v = i + 1; var x = add(B, "div", "qopt" + (base[sb.k] === v ? " on" : ""), opt); if (base[sb.k] === v) { x.style.background = s.c; x.style.borderColor = s.c; x.style.color = "#fff"; } x.onclick = function () { base[sb.k] = v; draw(); }; }); });
-      }
-      var nav = add(B, "div", "frm"); nav.style.marginTop = "6px";
-      if (step > 0) { var bk = add(nav, "button", "add", "← back"); bk.onclick = function () { step--; draw(); }; }
-      var nx = add(nav, "button", "done2", step === total - 1 ? "Create ✨" : "Next →"); nx.style.flex = "1";
-      nx.onclick = function () { if (step === 0) { prof.weight = prof._w1.value ? +prof._w1.value : null; prof.weightGoal = prof._w2.value ? +prof._w2.value : null; prof.goals = prof._g.value.trim() || null; } if (step < total - 1) { step++; draw(); } else { delete prof._w1; delete prof._w2; delete prof._g; S.baseline = base; S.profile = prof; save(); closeSheet(); renderStats(); } };
-    }
-    function numIn(ph) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; i.style.cssText = "width:84px;"; return i; }
+    function numIn(ph, val) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; if (val != null) i.value = val; i.style.cssText = "width:78px;"; return i; }
     function stepper(label, val, min, max, on) { var w = document.createElement("div"); w.style.cssText = "display:flex;align-items:center;gap:7px;border:2.5px solid var(--ink);border-radius:13px;padding:6px 9px;background:#fff;"; var lab = document.createElement("span"); lab.textContent = label; lab.style.cssText = "font-size:12px;font-weight:700;color:var(--soft);"; var num = document.createElement("span"); num.textContent = val; num.style.cssText = "font-family:var(--bub);font-weight:800;width:18px;text-align:center;"; function mkb(t, f) { var b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "width:26px;height:26px;border:2px solid var(--ink);border-radius:8px;background:#f3eefe;font-weight:800;cursor:pointer;"; b.onclick = f; return b; } w.appendChild(lab); w.appendChild(mkb("−", function () { if (val > min) { val--; num.textContent = val; on(val); } })); w.appendChild(num); w.appendChild(mkb("+", function () { if (val < max) { val++; num.textContent = val; on(val); } })); return w; }
+    function collect() { if (inputs.age) prof.age = inputs.age.value ? +inputs.age.value : null; if (inputs.ht) prof.height = inputs.ht.value ? +inputs.ht.value : null; if (inputs.wt) prof.weight = inputs.wt.value ? +inputs.wt.value : null; if (inputs.wg) prof.weightGoal = inputs.wg.value ? +inputs.wg.value : null; if (inputs.g) prof.goals = inputs.g.value.trim() || null; }
+    function draw() {
+      collect(); inputs = {}; B.innerHTML = ""; var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(step / (STEPS - 1) * 100) + "%";
+      if (step === 0) {
+        add(B, "div", "sttl", "🎮 Create your character"); add(B, "div", "lbl", "who are you?");
+        var f1 = add(B, "div", "frm"); inputs.age = numIn("age", prof.age); f1.appendChild(inputs.age);
+        var gw = add(f1, "div", "pchips"); gw.style.margin = "0"; [["m", "♂"], ["f", "♀"], ["o", "⚧"]].forEach(function (g) { var x = add(gw, "div", "pchip" + (prof.gender === g[0] ? " on" : ""), g[1]); x.onclick = function () { prof.gender = g[0]; draw(); }; });
+        add(B, "div", "lbl", "your body — height, weight, goal weight (kg)"); var f2 = add(B, "div", "frm"); inputs.ht = numIn("cm", prof.height); inputs.wt = numIn("kg", prof.weight); inputs.wg = numIn("goal", prof.weightGoal); f2.appendChild(inputs.ht); f2.appendChild(inputs.wt); f2.appendChild(inputs.wg);
+      } else if (step <= STATS.length) {
+        var s = STATS[step - 1]; add(B, "div", "sttl", s.e + " " + s.l); add(B, "div", "lbl", "answer honestly — sets your level, not your ego");
+        if (s.k === "vit") { add(B, "div", "qline", "Workouts per week — now vs goal"); var ef = add(B, "div", "frm"); ef.appendChild(stepper("now", prof.exNow, 0, 14, function (v) { prof.exNow = v; })); ef.appendChild(stepper("goal", prof.exWant, 0, 14, function (v) { prof.exWant = v; })); }
+        s.subs.forEach(function (sb) { add(B, "div", "qline", sb.q); (sb.o || []).forEach(function (opt, i) { var v = i + 1; var x = add(B, "div", "qopt" + (base[sb.k] === v ? " on" : ""), opt); if (base[sb.k] === v) { x.style.background = s.c; x.style.borderColor = s.c; x.style.color = "#fff"; } x.onclick = function () { base[sb.k] = v; draw(); }; }); });
+      } else {
+        add(B, "div", "sttl", "🎯 Your goals"); add(B, "div", "lbl", "what are you actually chasing?");
+        inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "e.g. get lean, ship the app, quit weed"; inputs.g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
+      }
+      var nav = add(B, "div", "frm"); nav.style.marginTop = "8px";
+      if (step > 0) { add(nav, "button", "add", "← back").onclick = function () { step--; draw(); }; }
+      var nx = add(nav, "button", "done2", step === STEPS - 1 ? "Create ✨" : "Next →"); nx.style.flex = "1";
+      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; draw(); } else { S.baseline = base; S.profile = prof; save(); closeSheet(); renderStats(); } };
+    }
     draw();
   }
 
