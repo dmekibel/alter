@@ -246,23 +246,24 @@
   }
 
   function fmtHour(h) { h = h % 24; var ap = h < 12 ? "am" : "pm"; var hh = h % 12; if (hh === 0) hh = 12; return hh + ap; }
+  function calendarView(L, k, showNow) {
+    L.innerHTML = ""; var bls = blocks(k).slice();
+    if (!bls.length) { add(L, "div", "empty", k === todayK() ? "No blocks yet — tap “+ slot” or auto-fill a day." : "Nothing planned — tap “+ plan” to build it."); return; }
+    var minS = 6 * 60, maxE = 22 * 60; bls.forEach(function (b) { minS = Math.min(minS, hm(b.time)); maxE = Math.max(maxE, hm(b.time) + (b.mins || 30)); });
+    var startH = Math.floor(minS / 60), endH = Math.min(24, Math.ceil(maxE / 60)), HP = 58;
+    var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
+    for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
+    if (showNow) { var nm = nowMin(); if (nm >= startH * 60 && nm <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((nm - startH * 60) / 60 * HP) + "px"; } }
+    bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
+      var top = (hm(b.time) - startH * 60) / 60 * HP, hpx = Math.max(22, (b.mins || 30) / 60 * HP - 4);
+      var card = add(cal, "div", "calblk" + (b.done ? " done" : "")); card.style.top = top + "px"; card.style.height = hpx + "px";
+      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.background = hexA(col, 0.2);
+      add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); add(card, "div", "cn", b.title);
+      card.onclick = function () { blockEdit(b, k); };
+    });
+  }
   function renderToday() {
-    var L = el("todayList"); L.innerHTML = ""; var k = todayK(); var bls = blocks(k).slice();
-    if (!bls.length) { add(L, "div", "empty", "No blocks yet — tap “+ slot” to build your day."); }
-    else {
-      var minS = 6 * 60, maxE = 22 * 60; bls.forEach(function (b) { minS = Math.min(minS, hm(b.time)); maxE = Math.max(maxE, hm(b.time) + (b.mins || 30)); });
-      var startH = Math.floor(minS / 60), endH = Math.min(24, Math.ceil(maxE / 60)), HP = 48;
-      var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP) + "px";
-      for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
-      var nm = nowMin(); if (nm >= startH * 60 && nm <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((nm - startH * 60) / 60 * HP) + "px"; }
-      bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
-        var top = (hm(b.time) - startH * 60) / 60 * HP, hpx = Math.max(28, (b.mins || 30) / 60 * HP - 3);
-        var card = add(cal, "div", "calblk" + (b.done ? " done" : "")); card.style.top = top + "px"; card.style.height = hpx + "px";
-        var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.background = hexA(col, 0.18);
-        add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); add(card, "div", "cn", b.title);
-        card.onclick = function () { blockEdit(b, k); };
-      });
-    }
+    calendarView(el("todayList"), todayK(), true); var k = todayK();
     var LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0;
     logs(k).forEach(function (e) { tot += e.mins || 0; });
     if (!lg.length) add(LG, "div", "empty", "Nothing tracked yet — hit the timer.");
@@ -279,7 +280,7 @@
     add(row, "button", "add", "🗑 Delete").onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); closeSheet(); renderAll(); };
     add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; save(); closeSheet(); renderAll(); };
   }
-  function renderTom() { var L = el("tomList"); L.innerHTML = ""; var arr = blocks(tomK()).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }); if (!arr.length) { add(L, "div", "empty", "Plan tomorrow tonight — future-you says thanks."); return; } arr.forEach(function (b) { var r = add(L, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio || 2))); add(ti, "span", null, b.title); var d = add(r, "div", "del", "✕"); d.onclick = function () { var a = blocks(tomK()); a.splice(a.indexOf(b), 1); save(); renderTom(); }; }); }
+  function renderTom() { calendarView(el("tomList"), tomK(), false); }
   function renderHabits() {
     var L = el("habitList"); L.innerHTML = ""; var dm = doneMap(todayK()), done = 0;
     S.habits.forEach(function (hb) {
