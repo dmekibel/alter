@@ -139,12 +139,13 @@
   .qopt{display:block;width:100%;text-align:left;padding:12px 14px;border:2.5px solid #e3dcf2;border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;box-shadow:0 3px 0 rgba(58,37,64,.12);}
   .qopt.on{box-shadow:0 1px 0 var(--ink);transform:translateY(2px);}
   /* ===== NIGHT MODE ===== */
-  :root{ --ink:#ece4f7; --soft:#9b8fc0; --line:#3a3252; --accent:#b48ee0; --card:#241d38; }
-  html,body{background:linear-gradient(170deg,#161126 0%,#1b1530 52%,#241a38 100%);color:#ece4f7;}
+  :root{ --ink:#f3edfc; --soft:#b2a6d8; --line:#433a5e; --accent:#c39bf0; --card:#2a2244; }
+  html,body{background:linear-gradient(165deg,#1b1535 0%,#221a3e 50%,#2c1e46 100%);color:#f3edfc;}
+  #tree{display:block;margin:2px auto 6px;}
   #date{color:#a99ad6;} #hello{text-shadow:none;}
   .pill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#ece4f7;}
-  #nowCard{background:#2b2418;}
-  .c-today{background:#1b2540;} .c-habit{background:#2c1c34;} .c-tom{background:#221b3a;} .c-stats{background:#2a2240;}
+  #nowCard{background:#362b1c;}
+  .c-today{background:#202c4e;} .c-habit{background:#36203f;} .c-tom{background:#2a2150;} .c-stats{background:#2f2552;}
   .panel{box-shadow:0 8px 22px rgba(0,0,0,.5);}
   .meta{background:rgba(255,255,255,.08);color:#ece4f7;}
   .add{background:rgba(255,255,255,.08);color:#ece4f7;box-shadow:0 3px 0 #100c1c;}
@@ -156,7 +157,8 @@
   .nb{color:#7d72a0;} .nb.on{color:#ece4f7;}
   .sheetcard{background:#221b36;} .shandle{background:#4a4068;}
   input[type=text],input[type=time],input[type=number]{background:#161020;color:#ece4f7;}
-  .tile,.gtile,.subcat,.qopt,.face,.pchip,.subitem,.subi{background:#1c1630;color:#ece4f7;box-shadow:0 3px 0 #100c1c;}
+  .tile,.gtile,.subcat,.qopt,.face,.pchip,.subitem,.subi{background:#251d40;color:#f3edfc;box-shadow:0 3px 0 #120d22;}
+  input[type=text],input[type=time],input[type=number],.ck,.bar{background:#1d1636;}
   .subpill{background:rgba(255,255,255,.07);}
   .pfline{background:rgba(255,255,255,.06);color:#ece4f7;}
   .bar{background:#161020;}
@@ -190,8 +192,8 @@
     <div class="tab" id="t-char">
       <section class="panel c-stats">
         <div class="cardhead"><h3>⚔️ Character</h3><span class="meta" id="statLvl"></span></div>
-        <div id="avatarWrap"><canvas id="avatar"></canvas></div>
-        <div id="statList"></div>
+        <canvas id="tree"></canvas>
+        <div id="charFoot"></div>
         <div class="divlab" id="pullLab" style="display:none"><span>Pulls (vices, last 7d)</span></div>
         <div id="pullList"></div>
       </section>

@@ -60,34 +60,30 @@
   var TITLE2CAT = {}, TITLE2META = {};
   CATS.forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { TITLE2CAT[t.l.toLowerCase()] = c.k; TITLE2META[t.l.toLowerCase()] = { title: t.l, catK: c.k, emoji: t.e, color: c.color, habitId: t.id || null }; }); }); });
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
-  var STATS = [
-    { k: "vit", e: "💪", l: "Body", c: "#ff8a1e", cls: "The Athlete", subs: [
-      { k: "str", l: "Strength", q: "Pushups in a row?", o: ["0–1", "2–9", "10–24", "25–49", "50+"] },
-      { k: "sta", l: "Stamina", q: "Run without stopping?", o: ["Can't", "<1 km", "1–3 km", "3–5 km", "5 km+ easy"] },
-      { k: "slp", l: "Sleep", q: "A typical night's sleep?", o: ["<5h, wrecked", "5–6h, tired", "6–7h, ok", "7–8h, decent", "8h, rested"] },
-      { k: "nut", l: "Nutrition", q: "Your diet most days?", o: ["Mostly junk", "Inconsistent", "Half decent", "Mostly whole foods", "Dialed-in"] }] },
-    { k: "craft", e: "🛠️", l: "Craft", c: "#2a9fe0", cls: "The Builder", subs: [
-      { k: "foc", l: "Focus", q: "Deep focus without your phone?", o: ["<5 min", "~15 min", "~30 min", "~1 hour", "2h+ in flow"] },
-      { k: "out", l: "Output", q: "Shipping real work?", o: ["Nothing in months", "Rarely finish", "Sometimes", "Most weeks", "Constantly"] },
-      { k: "skl", l: "Skill", q: "Your craft level?", o: ["Beginner", "Learning", "Competent", "Advanced", "World-class"] },
-      { k: "dis", l: "Discipline", q: "Hard things you don't feel like?", o: ["Almost never", "Rarely", "Sometimes", "Usually", "Always"] }] },
-    { k: "heart", e: "❤️", l: "Heart", c: "#ff4fa0", cls: "The Lover", subs: [
-      { k: "conn", l: "Connection", q: "Someone to call at 3am?", o: ["No one", "Maybe one", "A couple", "Solid circle", "Deep network"] },
-      { k: "self", l: "Self-love", q: "How kind to yourself?", o: ["Brutal critic", "Pretty harsh", "Mixed", "Mostly kind", "Genuinely kind"] },
-      { k: "give", l: "Generosity", q: "Giving to others lately?", o: ["Not at all", "Rarely", "Sometimes", "Often", "It's who I am"] }] },
-    { k: "spark", e: "✨", l: "Spark", c: "#9a5cf0", cls: "The Artist", subs: [
-      { k: "crea", l: "Creativity", q: "Creative flow right now?", o: ["Blocked", "Rarely", "On & off", "Often", "Overflowing"] },
-      { k: "play", l: "Play", q: "Room for fun & play?", o: ["None, all grind", "Very little", "Some", "Decent", "Lots"] },
-      { k: "curi", l: "Curiosity", q: "Learning new things?", o: ["Stagnant", "Rarely", "Sometimes", "Often", "Always"] }] },
-    { k: "order", e: "🧹", l: "Order", c: "#23c98a", cls: "The Architect", subs: [
-      { k: "space", l: "Space", q: "State of your space?", o: ["Chaos", "Messy", "Livable", "Tidy", "Immaculate"] },
-      { k: "money", l: "Finances", q: "Money under control?", o: ["In the red", "Paycheck-to-paycheck", "Getting by", "Comfortable", "Building wealth"] },
-      { k: "rout", l: "Routine", q: "Steady routines?", o: ["No structure", "Chaotic", "Loose", "Mostly steady", "Locked-in"] }] },
-    { k: "mind", e: "🧠", l: "Mind", c: "#6a5cf0", cls: "The Monk", subs: [
-      { k: "calm", l: "Calm", q: "Day-to-day calm?", o: ["Constant stress", "Often anxious", "Up & down", "Mostly calm", "Grounded"] },
-      { k: "awar", l: "Awareness", q: "Present & aware?", o: ["Autopilot", "Rarely", "Sometimes", "Often", "Very present"] },
-      { k: "free", l: "Freedom", q: "Grip of your vices?", o: ["They run me", "Strong pull", "Moderate", "Mostly free", "Free & clear"] }] }
+  var VIRTUES = [
+    { k: "zest", l: "Zest", e: "⚡", c: "#ff8a1e", grow: "move your body" },
+    { k: "disc", l: "Discipline", e: "⚔️", c: "#3a9ae6", grow: "show up to a habit or deep work" },
+    { k: "love", l: "Love", e: "❤️", c: "#ff4fa0", grow: "reach out to someone you love" },
+    { k: "courage", l: "Courage", e: "🦁", c: "#ffcf3a", grow: "ship the thing you're avoiding" },
+    { k: "wisdom", l: "Wisdom", e: "🦉", c: "#7a6cf0", grow: "read or study something real" },
+    { k: "curiosity", l: "Curiosity", e: "🔭", c: "#23c98a", grow: "make or explore something new" },
+    { k: "gratitude", l: "Gratitude", e: "🙏", c: "#ff7ab0", grow: "note what you're grateful for" },
+    { k: "hope", l: "Hope", e: "🌅", c: "#48d0e0", grow: "plan tomorrow" }
   ];
+  var VCLASS = { zest: "The Vital", disc: "The Disciplined", love: "The Lover", courage: "The Brave", wisdom: "The Sage", curiosity: "The Explorer", gratitude: "The Grateful", hope: "The Hopeful" };
+  function virtueOf(e) {
+    var t = (e.title || "").toLowerCase(), c = e.catK || TITLE2CAT[t] || (e.habitId ? HABIT2CAT[e.habitId] : null);
+    if (/gratitude|journal|reflect|affirmation/.test(t)) return "gratitude";
+    if (/^plan|planning/.test(t)) return "hope";
+    if (e.habitId === "send" || /ship|send|outreach|publish|pitch|apply/.test(t)) return "courage";
+    if (e.habitId === "read" || /read|study|research|learn|language|podcast/.test(t)) return "wisdom";
+    if (/create|midjourney|design|video|music|content|write|draw|paint|photo|craft|guitar|piano|sing/.test(t)) return "curiosity";
+    if (c === "energy") return "zest";
+    if (c === "love") return "love";
+    if (c === "hobby") return "curiosity";
+    if (c === "work") return "disc";
+    return null;
+  }
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null }; }
@@ -107,24 +103,13 @@
   var FITSET = {}; CATS[0].groups[0].tasks.forEach(function (t) { FITSET[t.l.toLowerCase()] = 1; });
   function weeklyWorkouts() { var n = habitCount("move", lastDays(7)); lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { if (FITSET[(e.title || "").toLowerCase()]) n++; }); }); return n; }
 
-  function stats() {
-    var d14 = lastDays(14), m = { energy: 0, work: 0, love: 0, hobby: 0, vice: 0 }, tidyMin = 0, meditMin = 0;
-    d14.forEach(function (k) { logs(k).forEach(function (e) { var c = catOf(e); if (c && m[c] != null) m[c] += e.mins || 0; if (isTidy(e)) tidyMin += e.mins || 0; if (/meditate|breathe/i.test(e.title || "")) meditMin += e.mins || 0; }); });
-    var bxp = { vit: m.energy + habitCount("move", d14) * 15 + habitCount("breathe", d14) * 8, craft: m.work + habitCount("deep", d14) * 15 + habitCount("send", d14) * 25, heart: m.love, spark: m.hobby + habitCount("read", d14) * 10, order: tidyMin + habitCount("tidy", d14) * 25, mind: meditMin + habitCount("breathe", d14) * 10 - Math.floor(m.vice / 4) };
-    var base = S.baseline || {};
-    var out = STATS.map(function (s) {
-      var subs = s.subs.map(function (sb) { return { l: sb.l, v: base[sb.k] || 3 }; });
-      var avg = subs.reduce(function (a, x) { return a + x.v; }, 0) / subs.length;
-      var bl = Math.round(avg * 2); // 1-5 -> ~2-10
-      var x = Math.max(0, bxp[s.k] || 0), lv = bl + Math.floor(x / 120), pct = Math.round((x % 120) / 120 * 100);
-      var o = { k: s.k, e: s.e, l: s.l, c: s.c, lv: lv, pct: pct, subs: subs };
-      if (s.k === "order" && messy()) o.note = daysSince(S.lastTidy) > 6 ? "messy" : "untidy";
-      return o;
-    });
-    var d7 = lastDays(7), vm = {};
-    d7.forEach(function (k) { logs(k).forEach(function (e) { if (catOf(e) === "vice") vm[e.title] = (vm[e.title] || 0) + (e.mins || 0); }); });
-    var pulls = Object.keys(vm).map(function (t) { var min = vm[t], r = min < 30 ? { l: "light", e: "😌", c: "#23c98a" } : min < 150 ? { l: "moderate", e: "😬", c: "#ff9f1c" } : { l: "strong", e: "🔴", c: "#ff4d4d" }; return { title: t, min: min, rate: r }; }).sort(function (a, b) { return b.min - a.min; });
-    return { list: out, pulls: pulls, level: Math.floor(out.reduce(function (a, s) { return a + s.lv; }, 0) / out.length) };
+  function virtues() {
+    var d14 = lastDays(14), xp = {}; VIRTUES.forEach(function (v) { xp[v.k] = 0; });
+    d14.forEach(function (k) { logs(k).forEach(function (e) { var v = virtueOf(e); if (v) xp[v] += (e.mins || 0); }); var dm = S.habitDone[k] || {}; Object.keys(dm).forEach(function (id) { if (dm[id]) { var hv = { move: "zest", breathe: "zest", deep: "disc", tidy: "disc", read: "wisdom", send: "courage" }[id]; if (hv) xp[hv] += 18; xp.disc += 6; } }); });
+    blocks(todayK()).forEach(function (b) { if (b.done) xp.hope += 12; });
+    var focus = (S.profile && S.profile.focus) || [];
+    var out = VIRTUES.map(function (v) { var x = xp[v.k] || 0, foc = focus.indexOf(v.k) !== -1; var lv = 1 + Math.floor(x / 90) + (foc ? 1 : 0); var glow = Math.min(1, 0.4 + lv * 0.085); return { k: v.k, l: v.l, e: v.e, c: v.c, grow: v.grow, lv: lv, glow: glow, focus: foc, x: x }; });
+    return { list: out, level: Math.round(out.reduce(function (a, s) { return a + s.lv; }, 0) / out.length), top: out.slice().sort(function (a, b) { return b.lv - a.lv; })[0] };
   }
 
   function frequent(n) {
@@ -160,46 +145,57 @@
   function subCard(c, gr) { var d = document.createElement("div"); d.className = "subcat"; d.style.borderColor = c.color; d.innerHTML = '<div class="bce">' + (gr.tasks[0].e || "•") + '</div><div class="scl">' + gr.g + "</div>"; return d; }
   function taskTile(parent, meta, selected, onClick) { var x = add(parent, "div", "gtile" + (selected ? " on" : "")); x.style.borderColor = meta.color; if (selected) x.style.background = meta.color; add(x, "div", "ge", meta.emoji || "•"); add(x, "div", "gl", meta.title); x.onclick = onClick; return x; }
 
-  // ---- pixel avatar ------------------------------------------------------
-  var actx, AW = 56, AH = 70, AT0 = performance.now(), avLevel = 1;
-  function avatarFit() { var c = el("avatar"); if (!c) return; actx = c.getContext("2d"); var SC = 2; c.width = AW * SC; c.height = AH * SC; c.style.width = (AW * SC) + "px"; c.style.height = (AH * SC) + "px"; c.style.imageRendering = "pixelated"; actx.setTransform(SC, 0, 0, SC, 0, 0); actx.imageSmoothingEnabled = false; }
-  function apx(x, y, w, h, c) { actx.fillStyle = c; actx.fillRect(x | 0, y | 0, w | 0, h | 0); }
-  function avatarLoop() { if (!actx) { requestAnimationFrame(avatarLoop); return; } var t = (performance.now() - AT0) / 1000; var bob = Math.round(Math.sin(t * 1.9) * 1.2), blink = (t % 3.8) < 0.14;
-    actx.clearRect(0, 0, AW, AH);
-    var aura = avLevel >= 12 ? "#ffd23a" : avLevel >= 7 ? "#b48ee0" : avLevel >= 4 ? "#7fd0ff" : null;
-    if (aura) { actx.globalAlpha = .18; apx(6, 6, AW - 12, AH - 10, aura); actx.globalAlpha = 1; }
-    drawAv(AW / 2 - 14, AH - 8, bob, blink); requestAnimationFrame(avatarLoop); }
-  function drawAv(x, footY, dy, blink) {
-    var y = footY - 50 + dy, sk = "#ffe0c4", sk2 = "#f0c2a0", hr = "#8a5ec0", hi = "#b48ee0", dr = "#ff5fa8", dr2 = "#e0407e", drh = "#ff9ec8", ol = "#3a2f4a", sh = "#5a4a72";
-    actx.globalAlpha = .15; apx(x + 5, footY, 18, 3, "#3a2f4a"); actx.globalAlpha = 1;
-    apx(x + 9, y + 38, 5, 9, sk); apx(x + 16, y + 38, 5, 9, sk); apx(x + 8, footY - 2, 7, 3, sh); apx(x + 15, footY - 2, 7, 3, sh);
-    apx(x + 6, y + 24, 18, 16, dr); apx(x + 4, y + 34, 22, 6, dr); apx(x + 6, y + 24, 18, 3, drh); apx(x + 4, y + 37, 22, 3, dr2); apx(x + 18, y + 24, 6, 13, dr2);
-    apx(x + 2, y + 25, 4, 9, sk); apx(x + 24, y + 25, 4, 9, sk); apx(x + 12, y + 20, 6, 4, sk2);
-    apx(x + 6, y - 2, 16, 2, ol); apx(x + 4, y, 20, 2, ol); apx(x + 2, y + 2, 24, 16, ol); apx(x + 4, y + 18, 20, 2, ol); apx(x + 7, y + 20, 14, 2, ol);
-    apx(x + 7, y, 14, 2, sk); apx(x + 5, y + 2, 18, 2, sk); apx(x + 3, y + 4, 22, 11, sk); apx(x + 5, y + 15, 18, 3, sk); apx(x + 8, y + 18, 12, 2, sk); apx(x + 4, y + 13, 20, 3, sk2);
-    apx(x + 4, y - 2, 20, 5, hr); apx(x + 2, y + 2, 3, 9, hr); apx(x + 23, y + 2, 3, 9, hr); apx(x + 4, y - 2, 20, 2, hi);
-    if (blink) { apx(x + 6, y + 10, 6, 1, ol); apx(x + 16, y + 10, 6, 1, ol); }
-    else { apx(x + 6, y + 6, 6, 8, "#fff"); apx(x + 16, y + 6, 6, 8, "#fff"); apx(x + 8, y + 8, 4, 5, "#3a9ae6"); apx(x + 18, y + 8, 4, 5, "#3a9ae6"); apx(x + 9, y + 9, 2, 3, "#23203a"); apx(x + 19, y + 9, 2, 3, "#23203a"); apx(x + 9, y + 8, 1, 1, "#fff"); apx(x + 19, y + 8, 1, 1, "#fff"); }
-    actx.globalAlpha = .6; apx(x + 3, y + 13, 4, 3, "#ff8fb5"); apx(x + 21, y + 13, 4, 3, "#ff8fb5"); actx.globalAlpha = 1;
-    apx(x + 12, y + 16, 4, 1, "#c4567e");
+  // ---- virtue constellation (character tree) -----------------------------
+  var tctx, TW = 300, TH = 250, TT0 = performance.now(), treeNodes = [];
+  function treeFit() { var c = el("tree"); if (!c) return; tctx = c.getContext("2d"); var wrap = c.parentNode; var cssW = Math.min(380, (wrap ? wrap.clientWidth : 320) - 6) || 320; var dpr = window.devicePixelRatio || 1; TW = cssW; TH = Math.round(cssW * 0.84); c.style.width = TW + "px"; c.style.height = TH + "px"; c.width = Math.round(TW * dpr); c.height = Math.round(TH * dpr); tctx.setTransform(dpr, 0, 0, dpr, 0, 0); tctx.imageSmoothingEnabled = true; }
+  function hexA(hex, a) { var h = hex.replace("#", ""); return "rgba(" + parseInt(h.substr(0, 2), 16) + "," + parseInt(h.substr(2, 2), 16) + "," + parseInt(h.substr(4, 2), 16) + "," + a + ")"; }
+  function treeLoop() { if (!tctx) { requestAnimationFrame(treeLoop); return; } drawTree(); requestAnimationFrame(treeLoop); }
+  function drawTree() {
+    var t = (performance.now() - TT0) / 1000; tctx.clearRect(0, 0, TW, TH);
+    var cx = TW / 2, cy = TH / 2, R = Math.min(TW, TH) * 0.37; treeNodes = [];
+    var list = vState ? vState.list : VIRTUES.map(function (v) { return { k: v.k, l: v.l, e: v.e, c: v.c, lv: 1, glow: 0.4, focus: false }; });
+    list.forEach(function (v, i) { var a = -Math.PI / 2 + i * Math.PI / 4, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; tctx.beginPath(); tctx.moveTo(cx, cy); tctx.lineTo(x, y); tctx.strokeStyle = "rgba(190,160,235," + (0.08 + v.glow * 0.16) + ")"; tctx.lineWidth = 1.5; tctx.stroke(); });
+    var cp = 0.55 + Math.sin(t * 1.5) * 0.12; var cg = tctx.createRadialGradient(cx, cy, 2, cx, cy, 32); cg.addColorStop(0, "rgba(255,255,255,0.92)"); cg.addColorStop(0.45, "rgba(180,142,224," + cp + ")"); cg.addColorStop(1, "rgba(180,142,224,0)"); tctx.fillStyle = cg; tctx.beginPath(); tctx.arc(cx, cy, 32, 0, 7); tctx.fill();
+    tctx.fillStyle = "#fff"; tctx.font = "700 17px 'Baloo 2',sans-serif"; tctx.textAlign = "center"; tctx.textBaseline = "middle"; tctx.fillText(vState ? "Lv " + vState.level : "✦", cx, cy);
+    list.forEach(function (v, i) {
+      var a = -Math.PI / 2 + i * Math.PI / 4, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+      var pulse = 1 + Math.sin(t * 1.8 + i * 0.7) * 0.08, rad = (9 + v.lv * 1.5) * pulse; treeNodes.push({ k: v.k, x: x, y: y, r: rad + 16 });
+      var g = tctx.createRadialGradient(x, y, 1, x, y, rad + 12); g.addColorStop(0, hexA(v.c, 0.95)); g.addColorStop(0.5, hexA(v.c, v.glow * 0.5)); g.addColorStop(1, hexA(v.c, 0)); tctx.fillStyle = g; tctx.beginPath(); tctx.arc(x, y, rad + 12, 0, 7); tctx.fill();
+      tctx.fillStyle = v.c; tctx.beginPath(); tctx.arc(x, y, rad * 0.5, 0, 7); tctx.fill();
+      if (v.focus) { tctx.strokeStyle = "#fff"; tctx.lineWidth = 2; tctx.beginPath(); tctx.arc(x, y, rad + 4, 0, 7); tctx.stroke(); }
+      tctx.font = "15px sans-serif"; tctx.fillText(v.e, x, y);
+      tctx.fillStyle = "rgba(240,235,250,0.95)"; tctx.font = "700 10px 'Baloo 2',sans-serif"; tctx.fillText(v.l, x, y + rad + 11);
+    });
+  }
+  function treeTap(ev) { if (!vState || !tctx) return; var c = el("tree"), rect = c.getBoundingClientRect(); var x = ev.clientX - rect.left, y = ev.clientY - rect.top; for (var i = 0; i < treeNodes.length; i++) { var n = treeNodes[i]; if ((x - n.x) * (x - n.x) + (y - n.y) * (y - n.y) < n.r * n.r) { var v = vState.list.filter(function (z) { return z.k === n.k; })[0]; if (v) virtueDetail(v); return; } } }
+  function virtueDetail(v) {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", v.e + " " + v.l + " · Lv " + v.lv);
+    var p = add(B, "div", "lbl", "this light is glowing — and ready to grow."); p.style.fontSize = "14px";
+    var g = add(B, "div"); g.style.cssText = "background:rgba(255,255,255,.06);border:2.5px solid var(--ink);border-radius:16px;padding:14px;margin:8px 0 4px;font-weight:600;font-size:15px;"; g.innerHTML = "✨ Grow it — " + v.grow + ".";
+    add(B, "button", "done2", "Do it now ▶").onclick = function () { closeSheet(); nowSheet(); };
   }
 
   // ---- render ------------------------------------------------------------
   function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + " 👋"; }
   function renderHero() { var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
 
-  function renderStats() {
-    var L = el("statList"); L.innerHTML = "";
-    if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Create your character →"); b.style.marginTop = "2px"; b.onclick = charSheet; avLevel = 1; return; }
-    var st = stats(); avLevel = st.level; var top = st.list.slice().sort(function (a, b) { return b.lv - a.lv; })[0]; var cls = ""; STATS.forEach(function (s) { if (s.k === top.k) cls = s.cls; }); el("statLvl").textContent = (cls ? cls + " · " : "") + "Lv " + st.level;
-    if (S.profile) { var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "") + (P.height ? " · " + P.height + "cm" : "")); if (P.exWant != null) parts.push("🏃 " + weeklyWorkouts() + "/" + P.exWant + " this wk"); if (P.weight) parts.push("⚖️ " + P.weight + (P.weightGoal ? "→" + P.weightGoal : "") + "kg"); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   ")); }
-    st.list.forEach(function (s) {
-      var r = add(L, "div", "statrow"); add(r, "div", "se", s.e); add(r, "div", "sn", s.l); var bw = add(r, "div", "sb"); var bar = add(bw, "div", "bar"); add(bar, "i").style.cssText = "width:" + Math.max(6, s.pct) + "%;height:100%;background:" + s.c; add(r, "div", "sl", "Lv " + s.lv + (s.note ? " · " + s.note : ""));
-      var sub = add(L, "div", "subline"); s.subs.forEach(function (x) { var p = add(sub, "span", "subpill", x.l + " " + x.v); p.style.borderColor = s.c; });
-    });
-    var re = add(L, "button", "add", "edit character"); re.style.marginTop = "8px"; re.onclick = charSheet;
+  var vState = null;
+  function renderChar() {
+    var L = el("charFoot"); L.innerHTML = "";
+    if (!(S.profile && S.profile.set)) { el("statLvl").textContent = ""; vState = null; renderPulls(); var b = add(L, "button", "done2", "✨ Begin your character →"); b.onclick = charSheet; return; }
+    var v = virtues(); vState = v;
+    el("statLvl").textContent = (VCLASS[v.top.k] || "") + " · Lv " + v.level;
+    var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
+    var h = add(L, "div", "lbl", "tap a star to grow it ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
+    var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
+    renderPulls();
+  }
+  function renderPulls() {
+    var d7 = lastDays(7), vm = {}; d7.forEach(function (k) { logs(k).forEach(function (e) { if (catOf(e) === "vice") vm[e.title] = (vm[e.title] || 0) + (e.mins || 0); }); });
+    var pulls = Object.keys(vm).map(function (t) { var min = vm[t], r = min < 30 ? { l: "light", e: "🌱", c: "#23c98a" } : min < 150 ? { l: "moderate", e: "🌀", c: "#ff9f1c" } : { l: "heavy", e: "🔥", c: "#ff7a4d" }; return { title: t, min: min, rate: r }; }).sort(function (a, b) { return b.min - a.min; });
     var pl = el("pullList"), lab = el("pullLab"); pl.innerHTML = "";
-    if (st.pulls.length) { lab.style.display = "flex"; st.pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); add(r, "div", null, v.rate.e + " " + v.title).style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
+    if (pulls.length) { lab.style.display = "flex"; pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); add(r, "div", null, v.rate.e + " " + v.title).style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
   }
 
   function renderToday() {
@@ -234,7 +230,7 @@
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); save(); renderHabits(); renderHero(); renderStats(); }
 
-  function renderAll() { renderHeader(); renderNow(); renderHero(); renderStats(); renderToday(); renderTom(); renderHabits(); }
+  function renderAll() { renderHeader(); renderNow(); renderHero(); renderChar(); renderToday(); renderTom(); renderHabits(); }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -285,33 +281,25 @@
   function openSheet() { el("sheet").classList.add("on"); }
   function closeSheet() { el("sheet").classList.remove("on"); }
   function charSheet() {
-    var B = el("sheetBody"); var step = 0, STEPS = STATS.length + 2; // 0 vitals · 1..N stats · last goals
-    var base = {}; STATS.forEach(function (s) { s.subs.forEach(function (sb) { base[sb.k] = (S.baseline && S.baseline[sb.k]) || 3; }); });
-    var prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {}; prof.exNow = prof.exNow == null ? 1 : prof.exNow; prof.exWant = prof.exWant == null ? 4 : prof.exWant; prof.gender = prof.gender || "";
-    var inputs = {};
+    var B = el("sheetBody"); var step = 0, STEPS = 2, inputs = {};
+    var prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {}; prof.focus = prof.focus || []; prof.gender = prof.gender || "";
     openSheet();
-    function numIn(ph, val) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; if (val != null) i.value = val; i.style.cssText = "width:78px;"; return i; }
-    function stepper(label, val, min, max, on) { var w = document.createElement("div"); w.style.cssText = "display:flex;align-items:center;gap:7px;border:2.5px solid var(--ink);border-radius:13px;padding:6px 9px;background:#fff;"; var lab = document.createElement("span"); lab.textContent = label; lab.style.cssText = "font-size:12px;font-weight:700;color:var(--soft);"; var num = document.createElement("span"); num.textContent = val; num.style.cssText = "font-family:var(--bub);font-weight:800;width:18px;text-align:center;"; function mkb(t, f) { var b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "width:26px;height:26px;border:2px solid var(--ink);border-radius:8px;background:#f3eefe;font-weight:800;cursor:pointer;"; b.onclick = f; return b; } w.appendChild(lab); w.appendChild(mkb("−", function () { if (val > min) { val--; num.textContent = val; on(val); } })); w.appendChild(num); w.appendChild(mkb("+", function () { if (val < max) { val++; num.textContent = val; on(val); } })); return w; }
-    function collect() { if (inputs.age) prof.age = inputs.age.value ? +inputs.age.value : null; if (inputs.ht) prof.height = inputs.ht.value ? +inputs.ht.value : null; if (inputs.wt) prof.weight = inputs.wt.value ? +inputs.wt.value : null; if (inputs.wg) prof.weightGoal = inputs.wg.value ? +inputs.wg.value : null; if (inputs.g) prof.goals = inputs.g.value.trim() || null; }
+    function numIn(ph, val) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; if (val != null) i.value = val; i.style.cssText = "width:80px;"; return i; }
+    function collect() { if (inputs.age) prof.age = inputs.age.value ? +inputs.age.value : null; if (inputs.g) prof.goals = inputs.g.value.trim() || null; }
     function draw() {
       collect(); inputs = {}; B.innerHTML = ""; var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(step / (STEPS - 1) * 100) + "%";
       if (step === 0) {
-        add(B, "div", "sttl", "🎮 Create your character"); add(B, "div", "lbl", "who are you?");
-        var f1 = add(B, "div", "frm"); inputs.age = numIn("age", prof.age); f1.appendChild(inputs.age);
-        var gw = add(f1, "div", "pchips"); gw.style.margin = "0"; [["m", "♂"], ["f", "♀"], ["o", "⚧"]].forEach(function (g) { var x = add(gw, "div", "pchip" + (prof.gender === g[0] ? " on" : ""), g[1]); x.onclick = function () { prof.gender = g[0]; draw(); }; });
-        add(B, "div", "lbl", "your body — height, weight, goal weight (kg)"); var f2 = add(B, "div", "frm"); inputs.ht = numIn("cm", prof.height); inputs.wt = numIn("kg", prof.weight); inputs.wg = numIn("goal", prof.weightGoal); f2.appendChild(inputs.ht); f2.appendChild(inputs.wt); f2.appendChild(inputs.wg);
-      } else if (step <= STATS.length) {
-        var s = STATS[step - 1]; add(B, "div", "sttl", s.e + " " + s.l); add(B, "div", "lbl", "answer honestly — sets your level, not your ego");
-        if (s.k === "vit") { add(B, "div", "qline", "Workouts per week — now vs goal"); var ef = add(B, "div", "frm"); ef.appendChild(stepper("now", prof.exNow, 0, 14, function (v) { prof.exNow = v; })); ef.appendChild(stepper("goal", prof.exWant, 0, 14, function (v) { prof.exWant = v; })); }
-        s.subs.forEach(function (sb) { add(B, "div", "qline", sb.q); (sb.o || []).forEach(function (opt, i) { var v = i + 1; var x = add(B, "div", "qopt" + (base[sb.k] === v ? " on" : ""), opt); if (base[sb.k] === v) { x.style.background = s.c; x.style.borderColor = s.c; x.style.color = "#fff"; } x.onclick = function () { base[sb.k] = v; draw(); }; }); });
+        add(B, "div", "sttl", "✨ Begin your character"); add(B, "div", "lbl", "just the basics");
+        var f1 = add(B, "div", "frm"); inputs.age = numIn("age", prof.age); f1.appendChild(inputs.age); var gw = add(f1, "div", "pchips"); gw.style.margin = "0"; [["m", "♂"], ["f", "♀"], ["o", "⚧"]].forEach(function (g) { var x = add(gw, "div", "pchip" + (prof.gender === g[0] ? " on" : ""), g[1]); x.onclick = function () { prof.gender = g[0]; draw(); }; });
+        add(B, "div", "lbl", "🎯 what are you chasing? (optional)"); inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "get lean, ship the app, find peace…"; inputs.g.style.cssText = "width:100%;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
       } else {
-        add(B, "div", "sttl", "🎯 Your goals"); add(B, "div", "lbl", "what are you actually chasing?");
-        inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "e.g. get lean, ship the app, quit weed"; inputs.g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
+        add(B, "div", "sttl", "🌟 Your path"); add(B, "div", "lbl", "which virtues call you most right now? pick up to 3 — you'll still grow them all");
+        var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); draw(); }; });
       }
-      var nav = add(B, "div", "frm"); nav.style.marginTop = "8px";
+      var nav = add(B, "div", "frm"); nav.style.marginTop = "10px";
       if (step > 0) { add(nav, "button", "add", "← back").onclick = function () { step--; draw(); }; }
-      var nx = add(nav, "button", "done2", step === STEPS - 1 ? "Create ✨" : "Next →"); nx.style.flex = "1";
-      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; draw(); } else { S.baseline = base; S.profile = prof; save(); closeSheet(); renderStats(); } };
+      var nx = add(nav, "button", "done2", step === STEPS - 1 ? "Awaken ✨" : "Next →"); nx.style.flex = "1";
+      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; draw(); } else { prof.set = true; S.profile = prof; save(); closeSheet(); renderChar(); } };
     }
     draw();
   }
@@ -328,13 +316,15 @@
   }
 
   function init() {
-    load(); avatarFit(); requestAnimationFrame(avatarLoop);
+    load(); treeFit(); requestAnimationFrame(treeLoop);
+    var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
+    window.addEventListener("resize", treeFit);
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
     el("planToday").onclick = function () { planSheet(todayK(), phase() === "night" ? "tonight" : "today"); };
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
     el("addHabit").onclick = habitSheet;
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
-    document.querySelectorAll("#nav .nb").forEach(function (b) { b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); }; });
+    document.querySelectorAll("#nav .nb").forEach(function (b) { b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "char") treeFit(); }; });
     renderAll();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
