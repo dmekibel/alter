@@ -62,7 +62,7 @@
   var STATDEF = [{ k: "vit", e: "💪", l: "Vitality", c: "#ff8a1e", q: "how in-shape do you feel?" }, { k: "craft", e: "🛠️", l: "Craft", c: "#2a9fe0", q: "how productive / on-craft?" }, { k: "heart", e: "❤️", l: "Heart", c: "#ff4fa0", q: "how connected to people?" }, { k: "spark", e: "✨", l: "Spark", c: "#9a5cf0", q: "how alive / playful?" }, { k: "order", e: "🧹", l: "Order", c: "#23c98a", q: "how in-order is your space/life?" }];
 
   var S;
-  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null }; }
+  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null }; }
   function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
@@ -96,6 +96,8 @@
     ["Deep work", "Run", "Eat healthy", "Read", "Tidy", "Guitar", "Meditate", "Programming"].forEach(function (t) { if (out.length < n && !cnt[t]) { var mtt = TITLE2META[t.toLowerCase()]; if (mtt) out.push(mtt); } });
     return out.slice(0, n);
   }
+  var FITSET = {}; CATS[0].groups[0].tasks.forEach(function (t) { FITSET[t.l.toLowerCase()] = 1; });
+  function weeklyWorkouts() { var n = habitCount("move", lastDays(7)); lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { if (FITSET[(e.title || "").toLowerCase()]) n++; }); }); return n; }
 
   // ---- schedule ----------------------------------------------------------
   function schedule(k) {
@@ -112,6 +114,7 @@
     if (p === "night") { out.kicker = "tonight"; out.line = "It's " + fmt(nowMin()) + " — set tomorrow up."; out.sub = "five minutes now and the morning runs itself."; out.primary = { label: "Plan tomorrow ✨", fn: function () { planSheet(tomK(), "tomorrow"); } }; out.chips.push({ label: "Plan rest of tonight", fn: function () { planSheet(todayK(), "tonight"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — block out today?"; out.sub = und.length + " habits waiting · " + (blocks(todayK()).length ? blocks(todayK()).length + " slots set" : "nothing scheduled"); out.primary = { label: "Plan your day ☀️", fn: function () { planSheet(todayK(), "today"); } }; if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "Plan the day 🎯", fn: function () { planSheet(todayK(), "today"); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
     return out;
   }
 
@@ -127,10 +130,11 @@
 
   function renderStats() {
     var L = el("statList"); L.innerHTML = "";
-    if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Rate yourself to set your levels →"); b.style.marginTop = "2px"; b.onclick = rateSheet; return; }
+    if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Set your levels & goals →"); b.style.marginTop = "2px"; b.onclick = goalsSheet; return; }
     var st = stats(); el("statLvl").textContent = "Lv " + st.level;
+    if (S.profile) { var parts = []; if (S.profile.exWant != null) parts.push("🏃 " + weeklyWorkouts() + "/" + S.profile.exWant + " this wk"); if (S.profile.weight) parts.push("⚖️ " + S.profile.weight + (S.profile.weightGoal ? "→" + S.profile.weightGoal : "") + "kg"); if (S.profile.goals) parts.push("🎯 " + S.profile.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   ")); }
     st.list.forEach(function (s) { var r = add(L, "div", "statrow"); add(r, "div", "se", s.e); add(r, "div", "sn", s.l); var bw = add(r, "div", "sb"); var bar = add(bw, "div", "bar"); add(bar, "i").style.cssText = "width:" + Math.max(6, s.pct) + "%;height:100%;background:" + s.c; add(r, "div", "sl", "Lv " + s.lv + (s.note ? " · " + s.note : "")); });
-    var re = add(L, "button", "add", "re-rate"); re.style.marginTop = "6px"; re.onclick = rateSheet;
+    var re = add(L, "button", "add", "edit goals"); re.style.marginTop = "6px"; re.onclick = goalsSheet;
     var pl = el("pullList"), lab = el("pullLab"); pl.innerHTML = "";
     if (st.pulls.length) { lab.style.display = "flex"; st.pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); add(r, "div", null, v.rate.e + " " + v.title).style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
   }
@@ -223,10 +227,21 @@
   // ---- other sheets ------------------------------------------------------
   function openSheet() { el("sheet").classList.add("on"); }
   function closeSheet() { el("sheet").classList.remove("on"); }
-  function rateSheet() {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Rate yourself (1–10)"); add(B, "div", "lbl", "honest gut-check — this sets your starting levels");
-    var vals = {}; STATDEF.forEach(function (s) { vals[s.k] = (S.baseline && S.baseline[s.k]) || 5; var r = add(B, "div", "rate"); add(r, "div", "re", s.e); add(r, "div", "rn", s.l); var sl = document.createElement("input"); sl.type = "range"; sl.min = 1; sl.max = 10; sl.step = 1; sl.value = vals[s.k]; var rv = add(r, "div", "rv", vals[s.k]); sl.oninput = function () { vals[s.k] = +sl.value; rv.textContent = sl.value; }; r.insertBefore(sl, rv); });
-    add(B, "button", "done2", "Set my levels ✨").onclick = function () { S.baseline = vals; save(); closeSheet(); renderStats(); };
+  function goalsSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "You & your goals");
+    var base = {}, prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {};
+    prof.exNow = prof.exNow == null ? 1 : prof.exNow; prof.exWant = prof.exWant == null ? 4 : prof.exWant;
+    add(B, "div", "lbl", "🏃 workouts per week — now vs goal");
+    var ef = add(B, "div", "frm"); ef.appendChild(stepper("now", prof.exNow, 0, 14, function (v) { prof.exNow = v; })); ef.appendChild(stepper("goal", prof.exWant, 0, 14, function (v) { prof.exWant = v; }));
+    add(B, "div", "lbl", "⚖️ weight & goal (kg, optional)");
+    var wf = add(B, "div", "frm"); var w1 = numIn("weight"); if (prof.weight) w1.value = prof.weight; var w2 = numIn("goal"); if (prof.weightGoal) w2.value = prof.weightGoal; wf.appendChild(w1); wf.appendChild(w2);
+    add(B, "div", "lbl", "🎯 your main goal(s)");
+    var g = document.createElement("input"); g.type = "text"; g.placeholder = "e.g. get lean, ship the app, quit weed"; g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) g.value = prof.goals; B.appendChild(g);
+    add(B, "div", "lbl", "where you are now (1–10) — sets your levels");
+    STATDEF.forEach(function (s) { base[s.k] = (S.baseline && S.baseline[s.k]) || 5; var r = add(B, "div", "rate"); add(r, "div", "re", s.e); add(r, "div", "rn", s.l); var sl = document.createElement("input"); sl.type = "range"; sl.min = 1; sl.max = 10; sl.step = 1; sl.value = base[s.k]; var rv = document.createElement("span"); rv.className = "rv"; rv.textContent = base[s.k]; sl.oninput = function () { base[s.k] = +sl.value; rv.textContent = sl.value; }; r.appendChild(sl); r.appendChild(rv); });
+    add(B, "button", "done2", "Save ✨").onclick = function () { S.baseline = base; prof.weight = w1.value ? +w1.value : null; prof.weightGoal = w2.value ? +w2.value : null; prof.goals = g.value.trim() || null; S.profile = prof; save(); closeSheet(); renderStats(); };
+    function numIn(ph) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; i.style.cssText = "width:84px;"; return i; }
+    function stepper(label, val, min, max, on) { var w = document.createElement("div"); w.style.cssText = "display:flex;align-items:center;gap:7px;border:2.5px solid var(--ink);border-radius:13px;padding:6px 9px;background:#fff;"; var lab = document.createElement("span"); lab.textContent = label; lab.style.cssText = "font-size:12px;font-weight:700;color:var(--soft);"; var num = document.createElement("span"); num.textContent = val; num.style.cssText = "font-family:var(--bub);font-weight:800;width:18px;text-align:center;"; function mkb(t, f) { var b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "width:26px;height:26px;border:2px solid var(--ink);border-radius:8px;background:#f3eefe;font-weight:800;cursor:pointer;"; b.onclick = f; return b; } w.appendChild(lab); w.appendChild(mkb("−", function () { if (val > min) { val--; num.textContent = val; on(val); } })); w.appendChild(num); w.appendChild(mkb("+", function () { if (val < max) { val++; num.textContent = val; on(val); } })); return w; }
   }
   function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {}; TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy", catK: "energy", color: "#ff8a1e" }); save(); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
   function habitSheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Add a habit"); var frm = add(B, "div", "frm"); var emo = document.createElement("input"); emo.type = "text"; emo.value = "⭐"; emo.style.cssText = "width:64px;text-align:center;"; var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Meditate, Guitar, No scrolling…"; frm.appendChild(emo); frm.appendChild(txt); add(B, "button", "done2", "Add habit").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v }); save(); closeSheet(); renderHabits(); }; }
