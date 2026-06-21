@@ -158,6 +158,7 @@
   }
   function renderStep() {
     var st = STEPS[si], line = el("obLine"), ctl = el("obCtl"); ctl.innerHTML = ""; el("ob").scrollTop = 0;
+    var bar = document.querySelector("#obBar i"); if (bar) bar.style.width = Math.round((si / (STEPS.length - 1)) * 100) + "%";
     if (st.intro) {
       el("ob").style.background = "linear-gradient(180deg,#7fd4ff,#ffb3da)";
       line.innerHTML = "let's build who you're becoming 🌟<small>three parts — Energy, Work, Love. for each: your identity, the virtues you recommit each morning, then the behaviors. then hobbies + what you're quitting.</small>";
