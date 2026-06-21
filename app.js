@@ -25,7 +25,7 @@
   function prioC(v) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].v === v) return PRIOS[i].c; return "#8a5cf0"; }
 
   var S;
-  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null }; }
+  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timer: null }; }
   function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
@@ -101,7 +101,7 @@
     el("habitProg").textContent = done + "/" + S.habits.length + " today"; }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); save(); renderHabits(); renderHero(); }
 
-  function renderAll() { renderHeader(); renderHero(); renderToday(); renderTom(); renderHabits(); }
+  function renderAll() { renderHeader(); renderNow(); renderHero(); renderToday(); renderTom(); renderHabits(); }
 
   // ---- sheets -------------------------------------------------------------
   function openSheet() { el("sheet").classList.add("on"); }
@@ -109,17 +109,33 @@
 
   function nowSheet() {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "What are you doing?");
-    var chosen = { title: "", habitId: null, mins: 25 };
+    add(B, "div", "sttl", "Start a timer ⏱️");
+    add(B, "div", "lbl", "what are you doing?");
     var c1 = add(B, "div", "pchips");
-    S.habits.forEach(function (h) { var x = add(c1, "div", "pchip", h.e + " " + h.l); x.onclick = function () { sel(x, c1); chosen.title = h.l; chosen.habitId = h.id; }; });
-    QUICK.forEach(function (q) { var x = add(c1, "div", "pchip", q); x.onclick = function () { sel(x, c1); chosen.title = q; chosen.habitId = null; }; });
-    var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "…or type it"; txt.style.cssText = "width:100%;margin-bottom:14px;"; txt.oninput = function () { chosen.title = txt.value; chosen.habitId = null; clearSel(c1); }; B.appendChild(txt);
-    add(B, "div", "lbl", "How long did it take?");
-    var c2 = add(B, "div", "pchips"); DURS.forEach(function (m, i) { var x = add(c2, "div", "pchip" + (m === 25 ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { sel(x, c2); chosen.mins = m; }; });
-    add(B, "button", "done2", "Log it ⏱️").onclick = function () { if (!chosen.title.trim()) return; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: chosen.title.trim(), mins: chosen.mins, habitId: chosen.habitId }); if (chosen.habitId) doneMap(todayK())[chosen.habitId] = true; save(); closeSheet(); renderAll(); };
-    function sel(x, parent) { clearSel(parent); x.classList.add("on"); }
-    function clearSel(parent) { Array.prototype.forEach.call(parent.children, function (n) { n.classList.remove("on"); }); }
+    S.habits.forEach(function (h) { add(c1, "div", "pchip", h.e + " " + h.l).onclick = function () { startTimer(h.l, h.id); }; });
+    QUICK.forEach(function (q) { add(c1, "div", "pchip", q).onclick = function () { startTimer(q, null); }; });
+    var frm = add(B, "div", "frm"); var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "…or type it"; frm.appendChild(txt);
+    var go = add(frm, "button", "go", "▶"); go.onclick = function () { if (txt.value.trim()) startTimer(txt.value.trim(), null); };
+    txt.addEventListener("keydown", function (e) { if (e.key === "Enter" && txt.value.trim()) startTimer(txt.value.trim(), null); });
+  }
+  function startTimer(title, habitId) { S.timer = { title: title, habitId: habitId, start: Date.now() }; save(); closeSheet(); renderNow(); }
+  function stopTimer() {
+    if (!S.timer) return; var ms = Date.now() - S.timer.start, mins = Math.max(1, Math.round(ms / 60000)); var d = new Date(S.timer.start);
+    logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: S.timer.title, mins: mins, habitId: S.timer.habitId });
+    if (S.timer.habitId) doneMap(todayK())[S.timer.habitId] = true; S.timer = null; save(); renderAll();
+  }
+  function elapsedStr() { if (!S.timer) return "0:00"; var s = Math.floor((Date.now() - S.timer.start) / 1000); var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
+  function renderNow() {
+    var C = el("nowCard"); C.innerHTML = "";
+    if (S.timer) {
+      add(C, "div", "nl", "▶ " + S.timer.title);
+      var t = add(C, "div"); t.id = "timerReadout"; t.style.cssText = "font-family:var(--bub);font-size:38px;font-weight:800;margin:6px 0 12px;color:#c47a00;letter-spacing:1px;"; t.textContent = elapsedStr();
+      var stop = add(C, "button", null, "⏹ Stop & log"); stop.id = "nowBtn"; stop.onclick = stopTimer;
+    } else {
+      add(C, "div", "nl", "⏱️ Right now");
+      add(C, "div", "ns", "tap to start a timer for what you're doing.");
+      var b = add(C, "button", null, "What are you doing?"); b.id = "nowBtn"; b.onclick = nowSheet;
+    }
   }
 
   function planSheet(k, label) {
@@ -149,7 +165,7 @@
     add(B, "button", "done2", "Add habit").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v }); save(); closeSheet(); renderHabits(); }; }
 
   function init() { load();
-    el("nowBtn").onclick = nowSheet;
+    setInterval(function () { if (S.timer) { var r = el("timerReadout"); if (r) r.textContent = elapsedStr(); } }, 1000);
     el("planToday").onclick = function () { planSheet(todayK(), phase() === "night" ? "tonight" : "today"); };
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
     el("addHabit").onclick = habitSheet;
