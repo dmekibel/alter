@@ -140,7 +140,7 @@
   .qopt.on{box-shadow:0 1px 0 var(--ink);transform:translateY(2px);}
   /* ===== NIGHT MODE ===== */
   :root{ --ink:#f3edfc; --soft:#b2a6d8; --line:#433a5e; --accent:#c39bf0; --card:#2a2244; }
-  html,body{background:linear-gradient(165deg,#1b1535 0%,#221a3e 50%,#2c1e46 100%);color:#f3edfc;}
+  html,body{background:linear-gradient(165deg,#1b1535 0%,#221a3e 50%,#2c1e46 100%);color:#f3edfc;touch-action:manipulation;-webkit-text-size-adjust:100%;}
   #tree{display:block;margin:2px auto 6px;}
   #date{color:#a99ad6;} #hello{text-shadow:none;}
   .pill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#ece4f7;}
@@ -186,6 +186,18 @@
   .calblk.done{opacity:.5;} .calblk.done .cn{text-decoration:line-through;}
   .nowline{position:absolute;left:42px;right:0;height:2px;background:#ff5fa8;z-index:4;box-shadow:0 0 7px #ff5fa8;}
   .nowline::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ff5fa8;}
+  /* de-white + game + sheet close */
+  .panel,#hero,#hero .hp,#hero .chip,#moveBtn,.add,.add2,.pchip,.tile,.gtile,.subcat,.qopt,.subi,.subitem,.bigcat,.nb.center,.done2,.go,.sheetcard,.ck,.bar,.meta,.handle,input[type=text],input[type=time],input[type=number]{border-color:#4a4068 !important;}
+  #hero .hp{background:rgba(255,255,255,.16);color:#fff;}
+  #moveBtn{border-color:rgba(255,255,255,.32) !important;}
+  #spark{text-align:center;font-family:var(--bub);font-weight:800;font-size:21px;margin:2px 0 8px;color:#ffe07a;}
+  #upgrades{margin-top:4px;}
+  .upg{display:flex;align-items:center;gap:11px;padding:9px 8px;background:rgba(255,255,255,.05);border:2px solid #4a4068;border-radius:14px;margin-bottom:8px;}
+  .upg.owned{opacity:.55;} .upg .ue{font-size:22px;} .upg .un{font-family:var(--bub);font-weight:800;font-size:14px;} .upg .ud{font-size:11.5px;color:var(--soft);}
+  .ubuy{background:var(--purple);color:#fff;border:2px solid #4a4068;border-radius:11px;padding:8px 11px;font-family:var(--bub);font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 3px 0 #120d22;flex:none;}
+  .ubuy:disabled{opacity:.4;box-shadow:none;}
+  .scard{position:relative;}
+  #sheetX{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.08);border:2px solid #4a4068;color:#f3edfc;width:34px;height:34px;border-radius:11px;font-size:16px;font-weight:800;cursor:pointer;z-index:5;}
 </style>
 </head>
 <body>
@@ -203,10 +215,12 @@
     <div class="tab" id="t-char">
       <section class="panel c-stats">
         <div class="cardhead"><h3>⚔️ Character</h3><span class="meta" id="statLvl"></span></div>
+        <div id="spark"></div>
         <canvas id="tree"></canvas>
         <div id="charFoot"></div>
         <div class="divlab" id="pullLab" style="display:none"><span>Pulls (vices, last 7d)</span></div>
         <div id="pullList"></div>
+        <div id="upgrades"></div>
       </section>
     </div>
 
@@ -234,7 +248,7 @@
     <button class="nb" data-tab="habits"><span class="ne">✅</span><span class="nl2">Habits</span></button>
     <button class="nb" data-tab="plan"><span class="ne">🗓️</span><span class="nl2">Plan</span></button>
   </nav>
-  <div id="sheet"><div class="scard"><div class="shandle"></div><div id="sheetBody"></div></div></div>
+  <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <script src="app.js"></script>
 </body>
 </html>
