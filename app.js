@@ -18,7 +18,7 @@
   function daysSince(k) { if (!k) return 999; return Math.round((new Date(todayK() + "T00:00:00") - new Date(k + "T00:00:00")) / 86400000); }
   function lastDays(n) { var o = [], d = new Date(); for (var i = 0; i < n; i++) { o.push(key(d)); d.setDate(d.getDate() - 1); } return o; }
 
-  var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move" }, { id: "deep", e: "🧠", l: "Deep work" }, { id: "tidy", e: "🧹", l: "Tidy space" }, { id: "read", e: "📖", l: "Read" }, { id: "breathe", e: "🌬️", l: "Breathe" }, { id: "send", e: "✦", l: "Ship one thing" }];
+  var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }, { id: "send", e: "✦", l: "Ship one thing", type: "build", per: 0, color: "#2a9fe0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
   var DURS = [15, 30, 45, 60, 90, 120];
   var PRIOS = [{ v: 3, l: "Must", c: "#ff4fa0" }, { v: 2, l: "Should", c: "#8a5cf0" }, { v: 1, l: "Nice", c: "#b9b0cf" }];
@@ -61,18 +61,37 @@
   CATS.forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { TITLE2CAT[t.l.toLowerCase()] = c.k; TITLE2META[t.l.toLowerCase()] = { title: t.l, catK: c.k, emoji: t.e, color: c.color, habitId: t.id || null }; }); }); });
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
   var STATS = [
-    { k: "vit", e: "💪", l: "Body", c: "#ff8a1e", subs: [{ k: "str", l: "Strength", q: "How strong is your body?" }, { k: "sta", l: "Stamina", q: "Your cardio & energy?" }, { k: "slp", l: "Sleep", q: "Sleep quality?" }, { k: "nut", l: "Nutrition", q: "How clean is your diet?" }] },
-    { k: "craft", e: "🛠️", l: "Craft", c: "#2a9fe0", subs: [{ k: "foc", l: "Focus", q: "Can you focus deeply?" }, { k: "out", l: "Output", q: "Are you shipping?" }, { k: "skl", l: "Skill", q: "Growing your craft?" }, { k: "dis", l: "Discipline", q: "How disciplined?" }] },
-    { k: "heart", e: "❤️", l: "Heart", c: "#ff4fa0", subs: [{ k: "conn", l: "Connection", q: "Close to people?" }, { k: "self", l: "Self-love", q: "Kind to yourself?" }, { k: "give", l: "Generosity", q: "Giving to others?" }] },
-    { k: "spark", e: "✨", l: "Spark", c: "#9a5cf0", subs: [{ k: "crea", l: "Creativity", q: "Feeling creative?" }, { k: "play", l: "Play", q: "Room for fun?" }, { k: "curi", l: "Curiosity", q: "Learning new things?" }] },
-    { k: "order", e: "🧹", l: "Order", c: "#23c98a", subs: [{ k: "space", l: "Space", q: "Is your space in order?" }, { k: "money", l: "Finances", q: "Money under control?" }, { k: "rout", l: "Routine", q: "Steady routines?" }] },
-    { k: "mind", e: "🧠", l: "Mind", c: "#6a5cf0", subs: [{ k: "calm", l: "Calm", q: "How calm / regulated?" }, { k: "awar", l: "Awareness", q: "Present & aware?" }, { k: "free", l: "Freedom", q: "Free from your vices?" }] }
+    { k: "vit", e: "💪", l: "Body", c: "#ff8a1e", cls: "The Athlete", subs: [
+      { k: "str", l: "Strength", q: "Pushups in a row?", o: ["0–1", "2–9", "10–24", "25–49", "50+"] },
+      { k: "sta", l: "Stamina", q: "Run without stopping?", o: ["Can't", "<1 km", "1–3 km", "3–5 km", "5 km+ easy"] },
+      { k: "slp", l: "Sleep", q: "A typical night's sleep?", o: ["<5h, wrecked", "5–6h, tired", "6–7h, ok", "7–8h, decent", "8h, rested"] },
+      { k: "nut", l: "Nutrition", q: "Your diet most days?", o: ["Mostly junk", "Inconsistent", "Half decent", "Mostly whole foods", "Dialed-in"] }] },
+    { k: "craft", e: "🛠️", l: "Craft", c: "#2a9fe0", cls: "The Builder", subs: [
+      { k: "foc", l: "Focus", q: "Deep focus without your phone?", o: ["<5 min", "~15 min", "~30 min", "~1 hour", "2h+ in flow"] },
+      { k: "out", l: "Output", q: "Shipping real work?", o: ["Nothing in months", "Rarely finish", "Sometimes", "Most weeks", "Constantly"] },
+      { k: "skl", l: "Skill", q: "Your craft level?", o: ["Beginner", "Learning", "Competent", "Advanced", "World-class"] },
+      { k: "dis", l: "Discipline", q: "Hard things you don't feel like?", o: ["Almost never", "Rarely", "Sometimes", "Usually", "Always"] }] },
+    { k: "heart", e: "❤️", l: "Heart", c: "#ff4fa0", cls: "The Lover", subs: [
+      { k: "conn", l: "Connection", q: "Someone to call at 3am?", o: ["No one", "Maybe one", "A couple", "Solid circle", "Deep network"] },
+      { k: "self", l: "Self-love", q: "How kind to yourself?", o: ["Brutal critic", "Pretty harsh", "Mixed", "Mostly kind", "Genuinely kind"] },
+      { k: "give", l: "Generosity", q: "Giving to others lately?", o: ["Not at all", "Rarely", "Sometimes", "Often", "It's who I am"] }] },
+    { k: "spark", e: "✨", l: "Spark", c: "#9a5cf0", cls: "The Artist", subs: [
+      { k: "crea", l: "Creativity", q: "Creative flow right now?", o: ["Blocked", "Rarely", "On & off", "Often", "Overflowing"] },
+      { k: "play", l: "Play", q: "Room for fun & play?", o: ["None, all grind", "Very little", "Some", "Decent", "Lots"] },
+      { k: "curi", l: "Curiosity", q: "Learning new things?", o: ["Stagnant", "Rarely", "Sometimes", "Often", "Always"] }] },
+    { k: "order", e: "🧹", l: "Order", c: "#23c98a", cls: "The Architect", subs: [
+      { k: "space", l: "Space", q: "State of your space?", o: ["Chaos", "Messy", "Livable", "Tidy", "Immaculate"] },
+      { k: "money", l: "Finances", q: "Money under control?", o: ["In the red", "Paycheck-to-paycheck", "Getting by", "Comfortable", "Building wealth"] },
+      { k: "rout", l: "Routine", q: "Steady routines?", o: ["No structure", "Chaotic", "Loose", "Mostly steady", "Locked-in"] }] },
+    { k: "mind", e: "🧠", l: "Mind", c: "#6a5cf0", cls: "The Monk", subs: [
+      { k: "calm", l: "Calm", q: "Day-to-day calm?", o: ["Constant stress", "Often anxious", "Up & down", "Mostly calm", "Grounded"] },
+      { k: "awar", l: "Awareness", q: "Present & aware?", o: ["Autopilot", "Rarely", "Sometimes", "Often", "Very present"] },
+      { k: "free", l: "Freedom", q: "Grip of your vices?", o: ["They run me", "Strong pull", "Moderate", "Mostly free", "Free & clear"] }] }
   ];
-  var STAT_XPSRC = { vit: "energy", craft: "work", heart: "love", spark: "hobby" };
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
@@ -81,6 +100,7 @@
   function undone() { var dm = doneMap(todayK()); return S.habits.filter(function (h) { return !dm[h.id]; }); }
   function messy() { return daysSince(S.lastTidy) >= 2; }
   function streak(id) { var d = new Date(); if (!(S.habitDone[key(d)] || {})[id]) d.setDate(d.getDate() - 1); var n = 0; for (;;) { if ((S.habitDone[key(d)] || {})[id]) { n++; d.setDate(d.getDate() - 1); } else break; } return n; }
+  function weekDone(id) { var n = 0; lastDays(7).forEach(function (k) { if ((S.habitDone[k] || {})[id]) n++; }); return n; }
   function catOf(e) { return e.catK || TITLE2CAT[(e.title || "").toLowerCase()] || (e.habitId ? HABIT2CAT[e.habitId] : null); }
   function isTidy(e) { return e.habitId === "tidy" || /tidy|laundry|bed|table|desk|trash|vacuum|sweep|clean|dishes/i.test(e.title || ""); }
   function habitCount(id, days) { var n = 0; days.forEach(function (k) { if ((S.habitDone[k] || {})[id]) n++; }); return n; }
@@ -171,7 +191,7 @@
   function renderStats() {
     var L = el("statList"); L.innerHTML = "";
     if (!S.baseline) { el("statLvl").textContent = ""; el("pullLab").style.display = "none"; el("pullList").innerHTML = ""; var b = add(L, "button", "done2", "Create your character →"); b.style.marginTop = "2px"; b.onclick = charSheet; avLevel = 1; return; }
-    var st = stats(); el("statLvl").textContent = "Lv " + st.level; avLevel = st.level;
+    var st = stats(); avLevel = st.level; var top = st.list.slice().sort(function (a, b) { return b.lv - a.lv; })[0]; var cls = ""; STATS.forEach(function (s) { if (s.k === top.k) cls = s.cls; }); el("statLvl").textContent = (cls ? cls + " · " : "") + "Lv " + st.level;
     if (S.profile) { var parts = []; if (S.profile.exWant != null) parts.push("🏃 " + weeklyWorkouts() + "/" + S.profile.exWant + " this wk"); if (S.profile.weight) parts.push("⚖️ " + S.profile.weight + (S.profile.weightGoal ? "→" + S.profile.weightGoal : "") + "kg"); if (S.profile.goals) parts.push("🎯 " + S.profile.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   ")); }
     st.list.forEach(function (s) {
       var r = add(L, "div", "statrow"); add(r, "div", "se", s.e); add(r, "div", "sn", s.l); var bw = add(r, "div", "sb"); var bar = add(bw, "div", "bar"); add(bar, "i").style.cssText = "width:" + Math.max(6, s.pct) + "%;height:100%;background:" + s.c; add(r, "div", "sl", "Lv " + s.lv + (s.note ? " · " + s.note : ""));
@@ -198,7 +218,20 @@
     el("trackTotal").textContent = tot ? dur(tot) : "";
   }
   function renderTom() { var L = el("tomList"); L.innerHTML = ""; var arr = blocks(tomK()).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }); if (!arr.length) { add(L, "div", "empty", "Plan tomorrow tonight — future-you says thanks."); return; } arr.forEach(function (b) { var r = add(L, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio || 2))); add(ti, "span", null, b.title); var d = add(r, "div", "del", "✕"); d.onclick = function () { var a = blocks(tomK()); a.splice(a.indexOf(b), 1); save(); renderTom(); }; }); }
-  function renderHabits() { var L = el("habitList"); L.innerHTML = ""; var dm = doneMap(todayK()), done = 0; S.habits.forEach(function (hb) { var on = !!dm[hb.id]; if (on) done++; var r = add(L, "div", "hab" + (on ? " done" : "")); add(r, "div", "he", hb.e); add(r, "div", "hn", hb.l); var sk = streak(hb.id); if (sk > 1) { var s = add(r, "div", null, "🔥 " + sk); s.style.cssText = "font-family:var(--bub);font-size:13px;color:#e0791c;font-weight:800;margin-right:2px;"; } add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); r.onclick = function () { toggleHabit(hb.id); }; }); el("habitProg").textContent = done + "/" + S.habits.length; }
+  function renderHabits() {
+    var L = el("habitList"); L.innerHTML = ""; var dm = doneMap(todayK()), done = 0;
+    S.habits.forEach(function (hb) {
+      var on = !!dm[hb.id]; if (on) done++;
+      var r = add(L, "div", "hab" + (on ? " done" : "")); add(r, "div", "he", hb.e); add(r, "div", "hn", hb.l);
+      if (hb.type === "quit") { var tag = add(r, "span", "htag", "quit"); tag.style.background = "#ff4d4d"; tag.style.marginRight = "6px"; }
+      if (hb.per > 0) { var wk = weekDone(hb.id); var wd = add(r, "div", "wkdots"); for (var i = 0; i < hb.per; i++) { var di = add(wd, "i"); if (i < wk) di.style.background = hb.color; } }
+      else { var sk = streak(hb.id); if (sk > 1) { var s = add(r, "div", null, "🔥 " + sk); s.style.cssText = "font-family:var(--bub);font-size:13px;color:#e0791c;font-weight:800;margin-right:4px;"; } }
+      var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = hb.color;
+      var del = add(r, "div", "del", "✕"); del.onclick = function (e) { e.stopPropagation(); var i = S.habits.indexOf(hb); if (i >= 0) S.habits.splice(i, 1); save(); renderHabits(); };
+      r.onclick = function () { toggleHabit(hb.id); };
+    });
+    el("habitProg").textContent = done + "/" + S.habits.length;
+  }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); save(); renderHabits(); renderHero(); renderStats(); }
 
   function renderAll() { renderHeader(); renderNow(); renderHero(); renderStats(); renderToday(); renderTom(); renderHabits(); }
@@ -264,8 +297,8 @@
         add(B, "div", "lbl", "⚖️ weight & goal (kg, optional)"); var wf = add(B, "div", "frm"); var w1 = numIn("weight"); if (prof.weight) w1.value = prof.weight; var w2 = numIn("goal"); if (prof.weightGoal) w2.value = prof.weightGoal; wf.appendChild(w1); wf.appendChild(w2); prof._w1 = w1; prof._w2 = w2;
         add(B, "div", "lbl", "🎯 your main goal(s)"); var g = document.createElement("input"); g.type = "text"; g.placeholder = "e.g. get lean, ship the app, quit weed"; g.style.cssText = "width:100%;margin-bottom:8px;"; if (prof.goals) g.value = prof.goals; B.appendChild(g); prof._g = g;
       } else {
-        var s = STATS[step - 1]; add(B, "div", "sttl", s.e + " " + s.l); add(B, "div", "lbl", "rate each — your honest read right now");
-        s.subs.forEach(function (sb) { add(B, "div", "qline", sb.q); var fr = add(B, "div", "facerow"); FACES.forEach(function (f, i) { var v = i + 1; var x = add(fr, "div", "face" + (base[sb.k] === v ? " on" : ""), f); if (base[sb.k] === v) x.style.borderColor = s.c; x.onclick = function () { base[sb.k] = v; draw(); }; }); });
+        var s = STATS[step - 1]; add(B, "div", "sttl", s.e + " " + s.l); add(B, "div", "lbl", "answer honestly — this sets your level, not your ego");
+        s.subs.forEach(function (sb) { add(B, "div", "qline", sb.q); (sb.o || []).forEach(function (opt, i) { var v = i + 1; var x = add(B, "div", "qopt" + (base[sb.k] === v ? " on" : ""), opt); if (base[sb.k] === v) { x.style.background = s.c; x.style.borderColor = s.c; x.style.color = "#fff"; } x.onclick = function () { base[sb.k] = v; draw(); }; }); });
       }
       var nav = add(B, "div", "frm"); nav.style.marginTop = "6px";
       if (step > 0) { var bk = add(nav, "button", "add", "← back"); bk.onclick = function () { step--; draw(); }; }
@@ -278,7 +311,15 @@
   }
 
   function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {}; TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy", catK: "energy", color: "#ff8a1e" }); save(); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
-  function habitSheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Add a habit"); var frm = add(B, "div", "frm"); var emo = document.createElement("input"); emo.type = "text"; emo.value = "⭐"; emo.style.cssText = "width:64px;text-align:center;"; var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Meditate, Guitar, No scrolling…"; frm.appendChild(emo); frm.appendChild(txt); add(B, "button", "done2", "Add habit").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v }); save(); closeSheet(); renderHabits(); }; }
+  function habitSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "New habit");
+    var cfg = { type: "build", per: 0, color: "#ff8a1e" };
+    var frm = add(B, "div", "frm"); var emo = document.createElement("input"); emo.type = "text"; emo.value = "⭐"; emo.style.cssText = "width:60px;text-align:center;"; var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Meditate, 10k steps…"; frm.appendChild(emo); frm.appendChild(txt);
+    add(B, "div", "lbl", "type"); var c1 = add(B, "div", "pchips"); [["build", "✅ Build"], ["quit", "🚫 Quit"]].forEach(function (t) { var x = add(c1, "div", "pchip" + (cfg.type === t[0] ? " on" : ""), t[1]); x.onclick = function () { cfg.type = t[0]; Array.prototype.forEach.call(c1.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
+    add(B, "div", "lbl", "how often"); var c2 = add(B, "div", "pchips"); [["Daily", 0], ["2× wk", 2], ["3× wk", 3], ["4× wk", 4], ["5× wk", 5], ["6× wk", 6]].forEach(function (t) { var x = add(c2, "div", "pchip" + (cfg.per === t[1] ? " on" : ""), t[0]); x.onclick = function () { cfg.per = t[1]; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
+    add(B, "div", "lbl", "area"); var c3 = add(B, "div", "pchips"); [["Body", "#ff8a1e"], ["Work", "#2a9fe0"], ["Love", "#ff4fa0"], ["Play", "#9a5cf0"], ["Mind", "#6a5cf0"]].forEach(function (t, i) { var x = add(c3, "div", "pchip" + (i === 0 ? " on" : ""), t[0]); x.style.borderColor = t[1]; x.onclick = function () { cfg.color = t[1]; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); n.style.background = "#fff"; n.style.color = "var(--ink)"; }); x.classList.add("on"); x.style.background = t[1]; x.style.color = "#fff"; }; });
+    add(B, "button", "done2", "Add habit ✨").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v, type: cfg.type, per: cfg.per, color: cfg.color }); save(); closeSheet(); renderHabits(); };
+  }
 
   function init() {
     load(); avatarFit(); requestAnimationFrame(avatarLoop);
@@ -287,6 +328,7 @@
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
     el("addHabit").onclick = habitSheet;
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
+    document.querySelectorAll("#nav .nb").forEach(function (b) { b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); }; });
     renderAll();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();

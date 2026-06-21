@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root{ --ink:#3a2540; --pink:#ff4fa0; --blue:#2a9fe0; --purple:#8a5cf0; --yellow:#ffc41f; --ok:#28cf86;
+    --soft:#8a7ba0; --line:#ece2f5; --accent:#8a5cf0; --card:#fff;
     --bub:"Baloo 2",sans-serif; --sh:3px 4px 0 rgba(58,37,64,.18); }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
   html,body{height:100%;color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-weight:500;
@@ -122,33 +123,69 @@
   .face.on{border:3px solid var(--ink);box-shadow:0 1px 0 var(--ink);transform:translateY(2px);}
   .obarT{height:8px;background:rgba(58,37,64,.12);border-radius:5px;overflow:hidden;margin-bottom:12px;}
   .obarT i{display:block;height:100%;background:var(--purple);transition:width .3s;}
+  .tab{display:none;} .tab.on{display:block;}
+  #screen{padding-bottom:98px;}
+  #nav{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;justify-content:space-around;align-items:flex-end;
+    background:#fff3fb;border-top:3px solid var(--ink);padding:8px 10px max(10px,env(safe-area-inset-bottom));box-shadow:0 -5px 18px rgba(120,80,180,.16);}
+  .nb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--soft);font-family:var(--bub);font-weight:800;padding:0;}
+  .nb .ne{font-size:22px;line-height:1;} .nb .nl2{font-size:10px;}
+  .nb.on{color:var(--ink);}
+  .nb.center{background:linear-gradient(180deg,#ffb0db,#ff4f9f);border:3px solid var(--ink);border-radius:50%;width:58px;height:58px;justify-content:center;box-shadow:0 5px 0 var(--ink);transform:translateY(-12px);}
+  .nb.center .ne{font-size:26px;}
+  .nb.center:active{transform:translateY(-8px);box-shadow:0 1px 0 var(--ink);}
+  .htag{font-size:10px;font-weight:800;font-family:var(--bub);color:#fff;border-radius:8px;padding:2px 7px;}
+  .wkdots{display:flex;gap:3px;margin-right:6px;}
+  .wkdots i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--ink);}
+  .qopt{display:block;width:100%;text-align:left;padding:12px 14px;border:2.5px solid #e3dcf2;border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;box-shadow:0 3px 0 rgba(58,37,64,.12);}
+  .qopt.on{box-shadow:0 1px 0 var(--ink);transform:translateY(2px);}
 </style>
 </head>
 <body>
   <div id="screen">
     <header><div id="date"></div><div id="hello"></div></header>
-    <div id="hero"></div>
-    <section class="panel c-stats">
-      <div class="cardhead"><h3>⚔️ Character</h3><span class="meta" id="statLvl"></span></div>
-      <div id="avatarWrap"><canvas id="avatar"></canvas></div>
-      <div id="statList"></div>
-      <div class="divlab" id="pullLab" style="display:none"><span>Pulls (vices, last 7d)</span></div>
-      <div id="pullList"></div>
-    </section>
-    <div id="nowCard" class="panel">
-      <div class="nl">⏱️ Right now</div>
-      <div class="ns" id="nowSub">tap to log what you're doing &amp; how long it took.</div>
-      <button id="nowBtn">What are you doing?</button>
+
+    <div class="tab on" id="t-today">
+      <div id="hero"></div>
+      <section class="panel c-today">
+        <div class="cardhead"><h3 id="todayTitle">Today's schedule</h3><button class="add" id="planToday">+ slot</button></div>
+        <div id="todayList"></div>
+      </section>
     </div>
-    <section class="panel c-today">
-      <div class="cardhead"><h3 id="todayTitle">Today's schedule</h3><button class="add" id="planToday">+ slot</button></div>
-      <div id="todayList"></div>
-      <div class="divlab"><span>Tracked today</span><span id="trackTotal"></span></div>
-      <div id="logList"></div>
-    </section>
-    <section class="panel c-habit"><div class="cardhead"><h3>Habits</h3><span class="meta" id="habitProg"></span></div><div id="habitList"></div><button class="add2" id="addHabit">+ add habit</button></section>
-    <section class="panel c-tom"><div class="cardhead"><h3>Tomorrow</h3><button class="add" id="planTom">+ plan</button></div><div id="tomList"></div></section>
+
+    <div class="tab" id="t-char">
+      <section class="panel c-stats">
+        <div class="cardhead"><h3>⚔️ Character</h3><span class="meta" id="statLvl"></span></div>
+        <div id="avatarWrap"><canvas id="avatar"></canvas></div>
+        <div id="statList"></div>
+        <div class="divlab" id="pullLab" style="display:none"><span>Pulls (vices, last 7d)</span></div>
+        <div id="pullList"></div>
+      </section>
+    </div>
+
+    <div class="tab" id="t-track">
+      <div id="nowCard" class="panel"><div class="nl">⏱️ Right now</div><button id="nowBtn">What are you doing?</button></div>
+      <section class="panel c-today">
+        <div class="cardhead"><h3>Tracked today</h3><span class="meta" id="trackTotal"></span></div>
+        <div id="logList"></div>
+      </section>
+    </div>
+
+    <div class="tab" id="t-habits">
+      <section class="panel c-habit"><div class="cardhead"><h3>Habits</h3><span class="meta" id="habitProg"></span></div><div id="habitList"></div><button class="add2" id="addHabit">+ add habit</button></section>
+    </div>
+
+    <div class="tab" id="t-plan">
+      <section class="panel c-tom"><div class="cardhead"><h3>Tomorrow</h3><button class="add" id="planTom">+ plan</button></div><div id="tomList"></div></section>
+    </div>
   </div>
+
+  <nav id="nav">
+    <button class="nb on" data-tab="today"><span class="ne">🏠</span><span class="nl2">Today</span></button>
+    <button class="nb" data-tab="char"><span class="ne">⚔️</span><span class="nl2">You</span></button>
+    <button class="nb center" data-tab="track"><span class="ne">⏱️</span></button>
+    <button class="nb" data-tab="habits"><span class="ne">✅</span><span class="nl2">Habits</span></button>
+    <button class="nb" data-tab="plan"><span class="ne">🗓️</span><span class="nl2">Plan</span></button>
+  </nav>
   <div id="sheet"><div class="scard"><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <script src="app.js"></script>
 </body>
