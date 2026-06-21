@@ -175,6 +175,17 @@
   .nb.center{flex:none;width:62px;height:62px;}
   .nb.center .ne{font-size:30px;}
   .nb.center.on{background:linear-gradient(180deg,#ffb0db,#ff4f9f);}
+  /* calendar day view */
+  .cal{position:relative;margin:8px 0 4px;}
+  .calhour{position:absolute;left:0;right:0;height:0;border-top:1px solid rgba(255,255,255,.09);}
+  .calhour span{position:absolute;left:0;top:-8px;font-size:11px;font-weight:700;color:var(--soft);width:38px;}
+  .calblk{position:absolute;left:46px;right:2px;border-radius:14px;padding:6px 11px;overflow:hidden;cursor:pointer;border-left:5px solid;box-shadow:0 3px 10px rgba(0,0,0,.32);transition:transform .08s;}
+  .calblk:active{transform:scale(.985);}
+  .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;}
+  .calblk .cn{font-size:13.5px;font-weight:600;line-height:1.2;}
+  .calblk.done{opacity:.5;} .calblk.done .cn{text-decoration:line-through;}
+  .nowline{position:absolute;left:42px;right:0;height:2px;background:#ff5fa8;z-index:4;box-shadow:0 0 7px #ff5fa8;}
+  .nowline::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ff5fa8;}
 </style>
 </head>
 <body>

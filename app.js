@@ -198,20 +198,39 @@
     if (pulls.length) { lab.style.display = "flex"; pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); add(r, "div", null, v.rate.e + " " + v.title).style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
   }
 
+  function fmtHour(h) { h = h % 24; var ap = h < 12 ? "am" : "pm"; var hh = h % 12; if (hh === 0) hh = 12; return hh + ap; }
   function renderToday() {
-    var L = el("todayList"); L.innerHTML = ""; var k = todayK();
-    var doneB = blocks(k).filter(function (b) { return b.done; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
-    var sc = schedule(k);
-    if (!blocks(k).length) add(L, "div", "empty", "No slots yet. Tap “+ slot” to block your time.");
-    doneB.forEach(function (b) { row(b, hm(b.time), true, false); });
-    sc.sched.forEach(function (o) { row(o.b, o.st, false, Math.abs(o.st - hm(o.b.time)) > 1); });
-    sc.bumped.forEach(function (b) { var r = add(L, "div", "blk"); r.style.opacity = ".55"; add(r, "div", "tm", "bumped"); add(r, "div", "ti", b.title).style.textDecoration = "line-through"; var mv = add(r, "div", "del", "→ tmrw"); mv.style.cssText = "color:var(--purple);font-size:12px;font-weight:800;"; mv.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); blocks(tomK()).push(b); save(); renderAll(); }; });
-    function row(b, st, done, moved) { var r = add(L, "div", "blk" + (done ? " done" : "")); add(r, "div", "tm", fmt(st) + "–" + fmt(st + (b.mins || 30))); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio || 2))); add(ti, "span", null, b.title + (moved ? " ⤵" : "")); var ck = add(r, "div", "ck" + (done ? " on" : ""), done ? "✓" : ""); ck.onclick = function () { b.done = !b.done; save(); renderAll(); }; var d = add(r, "div", "del", "✕"); d.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); renderAll(); }; }
+    var L = el("todayList"); L.innerHTML = ""; var k = todayK(); var bls = blocks(k).slice();
+    if (!bls.length) { add(L, "div", "empty", "No blocks yet — tap “+ slot” to build your day."); }
+    else {
+      var minS = 6 * 60, maxE = 22 * 60; bls.forEach(function (b) { minS = Math.min(minS, hm(b.time)); maxE = Math.max(maxE, hm(b.time) + (b.mins || 30)); });
+      var startH = Math.floor(minS / 60), endH = Math.min(24, Math.ceil(maxE / 60)), HP = 48;
+      var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP) + "px";
+      for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
+      var nm = nowMin(); if (nm >= startH * 60 && nm <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((nm - startH * 60) / 60 * HP) + "px"; }
+      bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
+        var top = (hm(b.time) - startH * 60) / 60 * HP, hpx = Math.max(28, (b.mins || 30) / 60 * HP - 3);
+        var card = add(cal, "div", "calblk" + (b.done ? " done" : "")); card.style.top = top + "px"; card.style.height = hpx + "px";
+        var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.background = hexA(col, 0.18);
+        add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); add(card, "div", "cn", b.title);
+        card.onclick = function () { blockEdit(b, k); };
+      });
+    }
     var LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0;
     logs(k).forEach(function (e) { tot += e.mins || 0; });
     if (!lg.length) add(LG, "div", "empty", "Nothing tracked yet — hit the timer.");
     lg.forEach(function (e) { var r = add(LG, "div", "logi"); if (e.color) r.appendChild(dot(e.color)); add(r, "div", "lt", fmt(hm(e.time))); add(r, "div", "ln", e.title); add(r, "div", "lm", dur(e.mins || 0)); });
     el("trackTotal").textContent = tot ? dur(tot) : "";
+  }
+  function blockEdit(b, k) {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Edit block");
+    var frm = add(B, "div", "frm"); var tm = document.createElement("input"); tm.type = "time"; tm.value = b.time; var tx = document.createElement("input"); tx.type = "text"; tx.value = b.title; frm.appendChild(tm); frm.appendChild(tx);
+    add(B, "div", "lbl", "duration"); var c2 = add(B, "div", "pchips"); DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === b.mins ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { b.mins = m; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
+    add(B, "div", "lbl", "priority"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === (b.prio || 2) ? " on" : ""), p.l); x.onclick = function () { b.prio = p.v; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
+    var row = add(B, "div", "frm");
+    add(row, "button", "add", b.done ? "✓ undo done" : "✓ Mark done").onclick = function () { b.done = !b.done; b.title = tx.value.trim() || b.title; b.time = tm.value; save(); closeSheet(); renderAll(); };
+    add(row, "button", "add", "🗑 Delete").onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); closeSheet(); renderAll(); };
+    add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; save(); closeSheet(); renderAll(); };
   }
   function renderTom() { var L = el("tomList"); L.innerHTML = ""; var arr = blocks(tomK()).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }); if (!arr.length) { add(L, "div", "empty", "Plan tomorrow tonight — future-you says thanks."); return; } arr.forEach(function (b) { var r = add(L, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio || 2))); add(ti, "span", null, b.title); var d = add(r, "div", "del", "✕"); d.onclick = function () { var a = blocks(tomK()); a.splice(a.indexOf(b), 1); save(); renderTom(); }; }); }
   function renderHabits() {
@@ -263,7 +282,7 @@
         add(B, "div", "lbl", "priority — lowest gets dropped if you run out of time"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === cfg.prio ? " on" : ""), p.l); x.onclick = function () { cfg.prio = p.v; draw(); }; });
         add(B, "div", "lbl", "tap to drop it at " + fmt(hm(cfg.time)) + " — they stack back-to-back");
       },
-      onTask: function (t, picked, draw) { blocks(k).push({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, done: false }); advance(); save(); draw(); },
+      onTask: function (t, picked, draw) { blocks(k).push({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, color: t.color || prioC(cfg.prio), done: false }); advance(); save(); draw(); },
       foot: function (B) { var list = add(B, "div"); list.style.marginTop = "10px"; blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); add(ti, "span", null, b.title); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); planSheet(k, label); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; } });
   }
 
