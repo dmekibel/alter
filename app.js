@@ -330,9 +330,9 @@
       e.preventDefault();
       for (var i = 0; i < e.changedTouches.length; i++) {
         var tch = e.changedTouches[i]; if (tch.identifier !== jid) continue;
-        var dx = tch.clientX - cxj, dy = tch.clientY - cyj, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 32), a = Math.atan2(dy, dx);
+        var dx = tch.clientX - cxj, dy = tch.clientY - cyj, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 42), a = Math.atan2(dy, dx);
         stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
-        if (d > 8) { moveX = Math.cos(a); moveY = Math.sin(a); } else { moveX = 0; moveY = 0; }
+        var mag = Math.max(0, Math.min(1, (d - 5) / 37)); moveX = Math.cos(a) * mag; moveY = Math.sin(a) * mag;   // analog: push further = move faster
       }
     }, { passive: false });
     function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid) { jid = null; moveX = 0; moveY = 0; stick.style.transform = "translate(0,0)"; } }
@@ -352,8 +352,8 @@
     var stage = el("gameMode"); if (!stage) return;
     function dist(a, b) { var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY; return Math.sqrt(dx * dx + dy * dy); }
     function clampZ(z) { return Math.max(0.6, Math.min(2.6, z)); }
-    stage.addEventListener("touchstart", function (e) { if (e.touches.length === 2) { pinch0 = dist(e.touches[0], e.touches[1]); zoom0 = zoom; } }, { passive: false });
-    stage.addEventListener("touchmove", function (e) { if (e.touches.length === 2 && pinch0 > 0) { e.preventDefault(); zoom = clampZ(zoom0 * (dist(e.touches[0], e.touches[1]) / pinch0)); } }, { passive: false });
+    stage.addEventListener("touchstart", function (e) { if (e.touches.length === 2 && jid == null && jid2 == null) { pinch0 = dist(e.touches[0], e.touches[1]); zoom0 = zoom; } }, { passive: false });
+    stage.addEventListener("touchmove", function (e) { if (e.touches.length === 2 && pinch0 > 0 && jid == null && jid2 == null) { e.preventDefault(); zoom = clampZ(zoom0 * (dist(e.touches[0], e.touches[1]) / pinch0)); } }, { passive: false });
     stage.addEventListener("touchend", function (e) { if (e.touches.length < 2) pinch0 = 0; });
     stage.addEventListener("wheel", function (e) { e.preventDefault(); zoom = clampZ(zoom * (e.deltaY < 0 ? 1.1 : 0.9)); }, { passive: false });
     var zi = el("zoomIn"), zo = el("zoomOut");
@@ -369,9 +369,9 @@
       e.preventDefault();
       for (var i = 0; i < e.changedTouches.length; i++) {
         var tc = e.changedTouches[i]; if (tc.identifier !== jid2) continue;
-        var dx = tc.clientX - cx2, dy = tc.clientY - cy2, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 32), a = Math.atan2(dy, dx);
+        var dx = tc.clientX - cx2, dy = tc.clientY - cy2, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 42), a = Math.atan2(dy, dx);
         stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
-        if (d > 8) { moveX2 = Math.cos(a); moveY2 = Math.sin(a); } else { moveX2 = 0; moveY2 = 0; }
+        var mag = Math.max(0, Math.min(1, (d - 5) / 37)); moveX2 = Math.cos(a) * mag; moveY2 = Math.sin(a) * mag;
       }
     }, { passive: false });
     function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid2) { jid2 = null; moveX2 = 0; moveY2 = 0; stick.style.transform = "translate(0,0)"; } }
@@ -514,9 +514,6 @@
       if (g) { GRASS.push([wx, wy]); if (((ix * 7 + iy * 13) & 3) === 0) GRASSD.push([wx, wy]); }
       if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
     }
-    // smooth organic island blobs (no more pixelated tile edges)
-    grassBlob = new Path2D(); sandBlob = new Path2D(); darkBlob = new Path2D();
-    ISLAND.forEach(function (b) { var cx = b[0] * RG, cy = b[1] * RG, r = RG * b[2]; grassBlob.moveTo(cx + r * 0.97, cy); grassBlob.arc(cx, cy, r * 0.97, 0, 7); sandBlob.moveTo(cx + r * 1.08, cy); sandBlob.arc(cx, cy, r * 1.08, 0, 7); darkBlob.moveTo(cx + r * 1.13, cy); darkBlob.arc(cx, cy, r * 1.13, 0, 7); });
   }
   function chevrons(ctx, W, H, t) {
     ctx.fillStyle = "rgba(228,242,253,0.6)";
@@ -532,45 +529,37 @@
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
     var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
     var mood = currentMood();
-    // ocean: scrolling Cuphead water texture
-    var wImg = WORLD_IMG.water, WS = 230;
-    if (!waterPat && wImg && wImg.complete && wImg.naturalWidth) {
-      var wc = document.createElement("canvas"); wc.width = WS; wc.height = WS; wc.getContext("2d").drawImage(wImg, 0, 0, WS, WS);
-      waterPat = ctx.createPattern(wc, "repeat");
-    }
-    if (waterPat) {
-      var ox = ((-px * vz) % WS + WS) % WS, oy = ((-py * vz) % WS + WS) % WS;
-      ctx.save(); ctx.translate(ox - WS, oy - WS); ctx.fillStyle = waterPat; ctx.fillRect(0, 0, W + WS * 2, H + WS * 2); ctx.restore();
-    } else { ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); }
+    ctx.fillStyle = "#2270cf"; ctx.fillRect(0, 0, W, H);   // flat royal-blue ocean
+    chevrons(ctx, W, H, t);
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
-    if (!grassBlob) buildIsland();
-    var GS = 200;
-    // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
-    ctx.fillStyle = "#33271a"; ctx.fill(darkBlob);
-    ctx.fillStyle = "#d9c89a"; ctx.fill(sandBlob);
-    if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
-      var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
-    }
-    ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
-    ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
-    // Cuphead painted object cutouts (drawn back-to-front by y)
-    drawObj(ctx, WORLD_IMG.tree, -152, -84, 158); drawObj(ctx, WORLD_IMG.tree, 190, -30, 148);
-    drawObj(ctx, WORLD_IMG.cabin, -58, 2, 132); drawObj(ctx, WORLD_IMG.bush, 78, -136, 60);
-    drawObj(ctx, WORLD_IMG.bush, -120, 72, 56); drawObj(ctx, WORLD_IMG.tree, 150, 74, 156);
-    drawObj(ctx, WORLD_IMG.rock, -36, 124, 50); drawObj(ctx, WORLD_IMG.chest, -130, 28, 48); drawObj(ctx, WORLD_IMG.sign, 14, 44, 60);
+    if (!SAND) buildIsland();
+    var hT = TILE / 2, T1 = TILE + 1.5, q;
+    ctx.fillStyle = "#5a9bd8"; for (q = 0; q < SHALLOW.length; q++) ctx.fillRect(SHALLOW[q][0] - hT, SHALLOW[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#dcc88f"; for (q = 0; q < SAND.length; q++) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#9aae5e"; for (q = 0; q < GRASS.length; q++) ctx.fillRect(GRASS[q][0] - hT, GRASS[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#8aa050"; for (q = 0; q < GRASSD.length; q++) ctx.fillRect(GRASSD[q][0] - hT, GRASSD[q][1] - hT, T1, T1);
+    ctx.strokeStyle = "#c6a566"; ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
+    drawFence(ctx, -62, -54, 3);
+    drawCabin(ctx, -58, -8);
+    drawChest(ctx, -132, 22);
+    drawTree(ctx, 150, 60); drawTree(ctx, 184, -40); drawTree(ctx, -150, -92); drawTree(ctx, 82, -150);
+    drawRock(ctx, -34, 122); drawRock(ctx, 150, 128);
+    drawCampfire(ctx, t, 78, 104);
     var gden = (S.game && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
-    // facing: fly when moving/aiming + flip for left/right (reliable); lush idle when resting
+    // real fairy: right thumb aims facing (else movement direction) → directional 360 frame; lush idle when resting
     var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
-    var aiming = (aimX !== 0 || aimY !== 0);
-    if (aimX > 0.15) pface = 1; else if (aimX < -0.15) pface = -1;
-    var setK = aiming ? "fly" : "idle", sIm = FAIRY[setK], sMt = FAIRY_META[setK];
-    if (sIm && sIm.complete && sIm.naturalWidth) {
-      var sfr = Math.floor(t * (aiming ? 14 : 10)) % sMt.n, hHs = 126, hWs = hHs * sMt.fw / sMt.fh, sdx = Math.round(px - hWs / 2), sdy = Math.round(py - hHs + 14);
-      if (pface < 0) { ctx.save(); ctx.translate(sdx + hWs, sdy); ctx.scale(-1, 1); ctx.drawImage(sIm, sfr * sMt.fw, 0, sMt.fw, sMt.fh, 0, 0, hWs, hHs); ctx.restore(); }
-      else ctx.drawImage(sIm, sfr * sMt.fw, 0, sMt.fw, sMt.fh, sdx, sdy, hWs, hHs);
+    var aiming = (aimX !== 0 || aimY !== 0), fc = FAIRY.face, idl = FAIRY.idle;
+    if (aiming && fc && fc.complete && fc.naturalWidth) {
+      var fmf = FAIRY_META.face, ang = Math.atan2(aimY, aimX);
+      var fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8;
+      var fb = Math.abs(Math.sin(t * 8)) * 5, hHf = 126, hWf = hHf * fmf.fw / fmf.fh;
+      ctx.drawImage(fc, fk * fmf.fw, 0, fmf.fw, fmf.fh, Math.round(px - hWf / 2), Math.round(py - hHf + 14 - fb), hWf, hHf);
+    } else if (idl && idl.complete && idl.naturalWidth) {
+      var fmi = FAIRY_META.idle, ffr = Math.floor(t * 10) % fmi.n, hHi = 126, hWi = hHi * fmi.fw / fmi.fh;
+      ctx.drawImage(idl, ffr * fmi.fw, 0, fmi.fw, fmi.fh, Math.round(px - hWi / 2), Math.round(py - hHi + 14), hWi, hHi);
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
