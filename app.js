@@ -809,7 +809,7 @@
   var MICRO = [
     { e: "💧", l: "Drink water", catK: "energy", mins: 1, sp: 3 },
     { e: "🧍", l: "Stand & move", catK: "energy", mins: 2, sp: 3 },
-    { e: "🌬️", l: "2-min breath", catK: "energy", mins: 2, sp: 5, habitId: "breathe" },
+    { e: "🌬️", l: "2-min breath", catK: "energy", mins: 2, sp: 5, habitId: "breathe", breath: true },
     { e: "🤸", l: "Quick stretch", catK: "energy", mins: 2, sp: 4 },
     { e: "🧘", l: "Mindfulness check", catK: "love", mins: 2, sp: 5 },
     { e: "🙏", l: "One gratitude", catK: "love", mins: 1, sp: 4 },
@@ -822,6 +822,7 @@
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
     var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
+    if (m.breath && !cur) { breathwork(4); return; }   // guided breathwork moment (logs itself on finish)
     if (!cur) {
       var t = nextFreeMin(todayK()), id = uid();
       blocks(todayK()).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: Math.max(5, m.mins), title: m.l, prio: 1, color: col, done: false });
@@ -832,6 +833,42 @@
       if (m.habitId) doneMap(todayK())[m.habitId] = true;
       earn(m.sp, { catK: m.catK }); st[mi] = { s: "done" }; save();
       if (chip) chip.classList.add("won"); setTimeout(function () { renderQuick(); renderGame(); renderToday(); }, 360);
+    }
+  }
+  // guided breathwork: paced orb (inhale/hold/exhale) + synced tone + cues, then logs + rewards
+  function breathwork(cycles, onDone) {
+    cycles = cycles || 4;
+    var PH = [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 6000, "out"], ["Rest", 2000, "rest"]];
+    var ov = document.createElement("div"); ov.id = "breatheOv";
+    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div>';
+    document.body.appendChild(ov);
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
+    try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 200; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
+    var done = false, tmr = null;
+    function finish(skip) {
+      if (done) return; done = true; if (tmr) clearTimeout(tmr);
+      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.35); osc.stop(actx.currentTime + 0.45); } catch (e) {} }
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); save(); renderAll(); }
+      if (onDone) onDone();
+    }
+    ov.querySelector(".bw-x").onclick = function () { finish(true); };
+    var cyc = 0, phi = 0;
+    setTimeout(step, 900);
+    function step() {
+      if (done) return;
+      if (cyc >= cycles) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; tmr = setTimeout(function () { finish(false); }, 1500); return; }
+      var p = PH[phi], dur = p[1], kind = p[2];
+      lab.textContent = p[0]; sub.textContent = "cycle " + (cyc + 1) + " / " + cycles;
+      orb.style.transition = "transform " + (dur / 1000) + "s cubic-bezier(.45,0,.4,1)";
+      if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "out") orb.style.transform = "scale(.5)";
+      if (actx) { var now = actx.currentTime, t = dur / 1000; osc.frequency.cancelScheduledValues(now); osc.frequency.setValueAtTime(osc.frequency.value, now); gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(gain.gain.value, now);
+        if (kind === "in") { osc.frequency.linearRampToValueAtTime(340, now + t); gain.gain.linearRampToValueAtTime(0.06, now + 0.4); }
+        else if (kind === "out") { osc.frequency.linearRampToValueAtTime(165, now + t); gain.gain.linearRampToValueAtTime(0.02, now + t); }
+        else { gain.gain.linearRampToValueAtTime(kind === "hold" ? 0.05 : 0.01, now + 0.3); } }
+      phi++; if (phi >= PH.length) { phi = 0; cyc++; }
+      tmr = setTimeout(step, dur);
     }
   }
   function renderQuick() {
