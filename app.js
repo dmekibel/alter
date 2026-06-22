@@ -307,7 +307,14 @@
   // walkable character + camera (ported from Heaven Inc walk model)
   var px = 24, py = 96, pface = 1, walkF = 0, walkT = 0, moveX = 0, moveY = 0, jid = null, kdn = {}, pInit = false;
   var jz = 0, jvz = 0;  // jump height + vertical velocity (top-down hop)
-  function doJump() { if (jz <= 0 && jvz <= 0) jvz = (S.game && S.game.ups && S.game.ups.board) ? 10.5 : 7.5; }  // skate = bigger air (ported from studio-sim: -3.5 vs -2.5)
+  function jumping() { return jz > 0 || jvz !== 0; }
+  function skateOk() { return !!(S.game && S.game.ups && S.game.ups.board); }
+  function tricksOk() { return !!(S.game && S.game.ups && S.game.ups.tricks); }
+  function doJump() { if (jz <= 0 && jvz <= 0) { jvz = (skateOn && skateOk()) ? 10.5 : 7.5; bodySpin = 0; flipState = null; } }  // skate = bigger air (studio-sim -3.5 vs -2.5)
+  // skate + trick state (ported from studio-sim)
+  var skateOn = false, skateAng = null, pvx = 0, pvy = 0, bodySpin = 0, flipState = null, trickCombo = 0, trickMsg = null, trickMsgT = 0, shake = 0, dust = [];
+  var BOARD_FLIPS = { "up": { n: "KICKFLIP", dur: 12 }, "down": { n: "HEELFLIP", dur: 12 }, "left": { n: "BS 180", dur: 10 }, "right": { n: "FS 180", dur: 10 }, "up+left": { n: "VARIAL FLIP", dur: 14 }, "up+right": { n: "HARDFLIP", dur: 14 }, "down+left": { n: "INWARD HEEL", dur: 14 }, "down+right": { n: "TRE FLIP", dur: 16 } };
+  var zoom = 1, pinch0 = 0, zoom0 = 1;
   var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function mix(a, b, t) { var A = hx2(a), B = hx2(b); return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")"; }
@@ -339,7 +346,7 @@
         var mag = Math.max(0, Math.min(1, (d - 5) / 37)); moveX = Math.cos(a) * mag; moveY = Math.sin(a) * mag;   // analog: push further = move faster
       }
     }, { passive: false });
-    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid) { if (!jmoved && Date.now() - jdownT < 250) doJump(); jid = null; moveX = 0; moveY = 0; stick.style.transform = "translate(0,0)"; } }
+    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid) { if (!jmoved && Date.now() - jdownT < 250 && skateOk()) skateOn = !skateOn; jid = null; moveX = 0; moveY = 0; stick.style.transform = "translate(0,0)"; } }
     zone.addEventListener("touchend", end); zone.addEventListener("touchcancel", end);
     var KEYS = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"];
     window.addEventListener("keydown", function (e) { var k = (e.key || "").toLowerCase(); if (KEYS.indexOf(k) < 0) return; kdn[k] = true; updKeys(); });
@@ -367,18 +374,19 @@
   // right thumb (twin-stick, Heaven Inc style): aims the fairy's facing
   function setupJoy2() {
     var zone = el("joy2"), stick = el("joyStick2"); if (!zone || !stick) return;
-    var cx2 = 0, cy2 = 0;
-    zone.addEventListener("touchstart", function (e) { e.preventDefault(); var tc = e.changedTouches[0]; jid2 = tc.identifier; var r = zone.getBoundingClientRect(); cx2 = r.left + r.width / 2; cy2 = r.top + r.height / 2; }, { passive: false });
+    var cx2 = 0, cy2 = 0, j2t = 0, j2moved = false;
+    zone.addEventListener("touchstart", function (e) { e.preventDefault(); var tc = e.changedTouches[0]; jid2 = tc.identifier; var r = zone.getBoundingClientRect(); cx2 = r.left + r.width / 2; cy2 = r.top + r.height / 2; j2t = Date.now(); j2moved = false; }, { passive: false });
     zone.addEventListener("touchmove", function (e) {
       e.preventDefault();
       for (var i = 0; i < e.changedTouches.length; i++) {
         var tc = e.changedTouches[i]; if (tc.identifier !== jid2) continue;
         var dx = tc.clientX - cx2, dy = tc.clientY - cy2, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 42), a = Math.atan2(dy, dx);
+        if (d > 12) j2moved = true;
         stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
         var mag = Math.max(0, Math.min(1, (d - 5) / 37)); moveX2 = Math.cos(a) * mag; moveY2 = Math.sin(a) * mag;
       }
     }, { passive: false });
-    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid2) { jid2 = null; moveX2 = 0; moveY2 = 0; stick.style.transform = "translate(0,0)"; } }
+    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid2) { if (!j2moved && Date.now() - j2t < 250) doJump(); jid2 = null; moveX2 = 0; moveY2 = 0; stick.style.transform = "translate(0,0)"; } }
     zone.addEventListener("touchend", end); zone.addEventListener("touchcancel", end);
   }
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
@@ -550,7 +558,7 @@
       var ox = ((-px * vz) % WS + WS) % WS, oy = ((-py * vz) % WS + WS) % WS;
       ctx.save(); ctx.translate(ox - WS, oy - WS); ctx.fillStyle = waterPat; ctx.fillRect(0, 0, W + WS * 2, H + WS * 2); ctx.restore();
     } else { ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); }
-    ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
+    ctx.save(); ctx.translate(W / 2 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0), H / 2 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0)); ctx.scale(vz, vz); ctx.translate(-px, -py);
     if (!grassBlob) buildIsland();
     var GS = 200;
     // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
@@ -579,7 +587,9 @@
       var ms = FAIRY_META.dir, row = 0;
       if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
       var hWs = hHs * ms.fw / ms.fh;
+      if (bodySpin) { ctx.save(); ctx.translate(px, py - jz); ctx.rotate(bodySpin * Math.PI / 180); ctx.translate(-px, -(py - jz)); }
       ctx.drawImage(dr, 0, row * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16 - jz), hWs, hHs);
+      if (bodySpin) ctx.restore();
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
@@ -587,7 +597,9 @@
     }
     OBJS.forEach(function (o) { if (o[2] > py) drawObj(ctx, o[0], o[1], o[2], o[3]); });  // objects in front of the fairy occlude her
     if (hasShippedToday()) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
+    for (var di = dust.length - 1; di >= 0; di--) { var dp = dust[di]; dp.x += dp.vx; dp.y += dp.vy; dp.vy += 0.13; dp.life--; if (dp.life <= 0) { dust.splice(di, 1); continue; } ctx.globalAlpha = Math.max(0, dp.life / 16); ctx.fillStyle = "#cdbfa6"; ctx.beginPath(); ctx.arc(dp.x, dp.y, 2.6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
     ctx.restore();
+    if (trickMsgT > 0) { trickMsgT--; ctx.save(); ctx.globalAlpha = Math.min(1, trickMsgT / 18); ctx.font = "800 30px 'Baloo 2',sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 5; ctx.strokeStyle = "#3a2540"; ctx.fillStyle = trickMsg === "BAIL!" ? "#ff6b6b" : "#ffd24a"; ctx.strokeText(trickMsg, W / 2, H * 0.3); ctx.fillText(trickMsg, W / 2, H * 0.3); ctx.restore(); }
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
     if (gameOn) {
       var mmR = 42, mcx = 16 + mmR, mcy = 18 + mmR, msc = mmR / RS;
@@ -603,9 +615,46 @@
   function drawWorld() {
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
-    var moving = (moveX !== 0 || moveY !== 0), SPD = 4.3 * ((S.game && S.game.ups && S.game.ups.board) ? 1.6 : 1);
-    if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
-    if (jvz !== 0 || jz > 0) { jz += jvz; jvz -= 0.95; if (jz <= 0) { jz = 0; jvz = 0; } }
+    var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving;
+    if (skateOn && skateOk()) {
+      // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
+      var mln = Math.hypot(moveX, moveY);
+      if (mln > 0.05) {
+        var ta = Math.atan2(moveY, moveX);
+        if (skateAng === null) skateAng = ta;
+        else { var df = ta - skateAng; while (df > Math.PI) df -= Math.PI * 2; while (df < -Math.PI) df += Math.PI * 2; var ad = Math.abs(df); if (ad > Math.PI * 0.75) skateAng = ta; else skateAng += df * (ad > Math.PI * 0.3 ? 0.15 : 0.06); }
+        pvx = pvx * 0.9 + Math.cos(skateAng) * SPD * 0.13; pvy = pvy * 0.9 + Math.sin(skateAng) * SPD * 0.13;
+      } else { pvx *= 0.985; pvy *= 0.985; }
+      var vs = Math.hypot(pvx, pvy);
+      if (vs > 0.3 && skateAng !== null) { var bc = Math.cos(skateAng), bs = Math.sin(skateAng), al = pvx * bc + pvy * bs, pe = -pvx * bs + pvy * bc, dr = Math.abs(pe) / (Math.abs(al) + Math.abs(pe) + 0.01), gr = 0.92 - dr * 0.3; pvx = al * bc - pe * gr * bs; pvy = al * bs + pe * gr * bc; }
+      pvx = Math.max(-7, Math.min(7, pvx)); pvy = Math.max(-7, Math.min(7, pvy)); px += pvx; py += pvy;
+      moving = vs > 0.15; if (Math.abs(pvx) > 0.1) pface = pvx > 0 ? 1 : -1;
+    } else {
+      skateAng = null; pvx = 0; pvy = 0; moving = (moveX !== 0 || moveY !== 0);
+      if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
+    }
+    if (jvz !== 0 || jz > 0) {
+      jz += jvz; jvz -= 0.95;
+      if (jz > 24 && tricksOk()) {  // mid-air tricks on the right stick (gated on the trick-deck unlock)
+        if (moveX2 < -0.4) bodySpin += 9; else if (moveX2 > 0.4) bodySpin -= 9;
+        if (!flipState && skateOn && skateOk()) {
+          var fu = moveY2 < -0.45, fd = moveY2 > 0.45, fl = moveX2 < -0.45, fr = moveX2 > 0.45, fkk = "";
+          if (fu && fl) fkk = "up+left"; else if (fu && fr) fkk = "up+right"; else if (fd && fl) fkk = "down+left"; else if (fd && fr) fkk = "down+right"; else if (fu) fkk = "up"; else if (fd) fkk = "down"; else if (fl) fkk = "left"; else if (fr) fkk = "right";
+          if (fkk && BOARD_FLIPS[fkk]) flipState = { n: BOARD_FLIPS[fkk].n, dur: BOARD_FLIPS[fkk].dur, t: 0, landed: false };
+        }
+      }
+      if (flipState) { flipState.t++; if (flipState.t >= flipState.dur) flipState.landed = true; }
+      if (jz <= 0) {
+        jz = 0; jvz = 0;
+        if (flipState || Math.abs(bodySpin) >= 150) {
+          var landed = flipState ? flipState.landed : true;
+          if (landed) { trickCombo++; var pts = trickCombo * 10; if (S.game) { S.game.spark = (S.game.spark || 0) + pts; S.game.total = (S.game.total || 0) + pts; } trickMsg = (flipState ? flipState.n : (Math.abs(bodySpin) >= 330 ? "360 SPIN" : "180 SPIN")) + (trickCombo > 1 ? " x" + trickCombo : "") + " +" + pts; trickMsgT = 70; shake = 4 + trickCombo * 2; for (var dd = 0; dd < 6; dd++) dust.push({ x: px + (Math.random() - 0.5) * 18, y: py + 4, vx: (Math.random() - 0.5) * 2.4, vy: -Math.random() * 1.2, life: 16 }); save(); renderGame(); }
+          else { trickMsg = "BAIL!"; trickMsgT = 40; shake = 6; trickCombo = 0; }
+        }
+        bodySpin = 0; flipState = null;
+      }
+    }
+    if (shake > 0.3) shake *= 0.82; else shake = 0;
     var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
     if (ghudT++ % 30 === 0) updGameHud();
@@ -746,7 +795,14 @@
       if (!(S.game.ups && S.game.ups.board)) {
         var sb = add(L, "button", "done2", "🛹 Build a skateboard · ✨" + bcost); sb.style.marginTop = "8px"; sb.disabled = S.game.spark < bcost;
         sb.onclick = function () { if (S.game.spark < bcost) return; S.game.spark -= bcost; S.game.ups = S.game.ups || {}; S.game.ups.board = true; save(); renderGame(); };
-      } else { add(L, "div", "lbl", "🛹 Skateboard built — you zip around your world").style.cssText = "font-size:12px;text-align:center;margin-top:6px;"; }
+      } else {
+        add(L, "div", "lbl", "🛹 Skateboard built — tap the left pad to skate").style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
+        var tcost = 400;
+        if (!(S.game.ups && S.game.ups.tricks)) {
+          var tb = add(L, "button", "done2", "🛼 Trick deck · ✨" + tcost); tb.style.marginTop = "8px"; tb.disabled = S.game.spark < tcost;
+          tb.onclick = function () { if (S.game.spark < tcost) return; S.game.spark -= tcost; S.game.ups = S.game.ups || {}; S.game.ups.tricks = true; save(); renderGame(); };
+        } else { add(L, "div", "lbl", "🛼 Trick deck — jump while skating, flick the right stick for flips & spins").style.cssText = "font-size:12px;text-align:center;margin-top:6px;"; }
+      }
     }
   }
 
