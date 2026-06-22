@@ -2,20 +2,18 @@ import imageio_ffmpeg, numpy as np
 from PIL import Image, ImageDraw
 
 VID = "/Users/Dmekibel/Downloads/IMG_2918.MP4"
-COLS, ROWS = 4, 2            # wide sheet layout: 4 across, 2 down = 8 cells
-NFRAMES = 20                 # packed animation frames per direction
-OUTW, OUTH = 216, 243        # downscaled cell size in the game sheet
+COLS, ROWS = 4, 2
+NFRAMES = 20
+OUTH = 270  # final cell height; width follows the tight-crop aspect
 
 reader = imageio_ffmpeg.read_frames(VID)
 meta = next(reader)
 W, H = meta["size"]
 cw, ch = W // COLS, H // ROWS
-frames = []
-for fb in reader:
-    frames.append(np.frombuffer(fb, dtype=np.uint8).reshape(H, W, 3).copy())
+frames = [np.frombuffer(fb, dtype=np.uint8).reshape(H, W, 3).copy() for fb in reader]
 N = len(frames)
-print("video", W, "x", H, "frames", N, "cell", cw, "x", ch)
 idxs = [round(i * (N - 1) / (NFRAMES - 1)) for i in range(NFRAMES)]
+print("video", W, "x", H, "frames", N, "cell", cw, "x", ch)
 
 def cut(arr):
     im = Image.fromarray(arr).convert("RGB")
@@ -24,23 +22,31 @@ def cut(arr):
     a = np.array(im.convert("RGBA"))
     m = (a[:, :, 0] == 255) & (a[:, :, 1] == 0) & (a[:, :, 2] == 255)
     a[m] = [0, 0, 0, 0]
-    return Image.fromarray(a).resize((OUTW, OUTH), Image.LANCZOS)
+    return Image.fromarray(a)
 
-# packed sheet: 8 rows (reading order c0..c7), NFRAMES cols
-sheet = Image.new("RGBA", (OUTW * NFRAMES, OUTH * 8), (0, 0, 0, 0))
-montage = Image.new("RGBA", (OUTW * 4, OUTH * 2 + 30), (32, 16, 40, 255))
-md = ImageDraw.Draw(montage)
+# pass 1: cut every cell/frame, find the GLOBAL alpha bbox (so all directions share one tight, consistent crop)
+cells = {}  # (cellIndex, frameIndex) -> RGBA Image
+gx0, gy0, gx1, gy1 = cw, ch, 0, 0
 for cell in range(8):
     r, c = cell // COLS, cell % COLS
     for fi, src in enumerate(idxs):
-        sub = frames[src][r * ch:(r + 1) * ch, c * cw:(c + 1) * cw]
-        sheet.paste(cut(sub), (fi * OUTW, cell * OUTH))
-    # montage of first frame, labeled by reading-order index
-    fc = cut(frames[idxs[0]][r * ch:(r + 1) * ch, c * cw:(c + 1) * cw])
-    montage.paste(fc, ((cell % 4) * OUTW, (cell // 4) * OUTH + 30), fc)
-    md.text(((cell % 4) * OUTW + 6, (cell // 4) * OUTH + 8 if cell < 4 else (cell // 4) * OUTH + 6), "c" + str(cell), fill=(95, 255, 160, 255))
+        img = cut(frames[src][r * ch:(r + 1) * ch, c * cw:(c + 1) * cw])
+        cells[(cell, fi)] = img
+        bb = img.getbbox()
+        if bb:
+            gx0, gy0 = min(gx0, bb[0]), min(gy0, bb[1])
+            gx1, gy1 = max(gx1, bb[2]), max(gy1, bb[3])
+pad = 8
+gx0, gy0 = max(0, gx0 - pad), max(0, gy0 - pad)
+gx1, gy1 = min(cw, gx1 + pad), min(ch, gy1 + pad)
+bw, bh = gx1 - gx0, gy1 - gy0
+OUTW = round(OUTH * bw / bh)
+print("global bbox", gx0, gy0, gx1, gy1, "->", bw, "x", bh, "out", OUTW, "x", OUTH)
 
+sheet = Image.new("RGBA", (OUTW * NFRAMES, OUTH * 8), (0, 0, 0, 0))
+for cell in range(8):
+    for fi in range(NFRAMES):
+        crop = cells[(cell, fi)].crop((gx0, gy0, gx1, gy1)).resize((OUTW, OUTH), Image.LANCZOS)
+        sheet.paste(crop, (fi * OUTW, cell * OUTH))
 sheet.save("assets/spr-dir8.png")
-montage.save("/tmp/dir8-montage.png")
-print("cellW", OUTW, "cellH", OUTH, "cols", NFRAMES, "rows 8")
-print("saved assets/spr-dir8.png", sheet.size)
+print("cellW", OUTW, "cellH", OUTH, "cols", NFRAMES, "rows 8 -> saved", sheet.size)

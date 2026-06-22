@@ -381,11 +381,12 @@
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
-  var FAIRY = { idle: null, fly: null, face: null, dir8: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir8: { fw: 216, fh: 243, cols: 20, rows: 8 } };
+  var FAIRY = { idle: null, fly: null, face: null, dir8: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir8: { fw: 183, fh: 270, cols: 20, rows: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
-  // compass dir (0=S,1=SW,2=W,3=NW,4=N,5=NE,6=E,7=SE) → row (cell c0..c7) in spr-dir8.png. All 8 distinct; set per David's labelling of the sheet.
-  var DIR2CELL = [0, 1, 2, 4, 5, 3, 6, 7];
-  function loadFairy() { ["idle", "fly", "face", "dir8"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=2"; FAIRY[k] = im; }); }
+  // compass dir (0=S,1=SW,2=W,3=NW,4=N,5=NE,6=E,7=SE) → row (cell c0..c7) in spr-dir8.png. All 8 distinct.
+  // David's clues: c0=front, c5=back, c6=right, c3=left (aiming top-right showed c3 = left); diagonals still being confirmed.
+  var DIR2CELL = [0, 1, 3, 4, 5, 2, 6, 7];
+  function loadFairy() { ["idle", "fly", "face", "dir8"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=3"; FAIRY[k] = im; }); }
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
@@ -564,18 +565,17 @@
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
-    // animated 8-direction facing (wings flap at every angle, from David's video) while aiming/moving + animated idle at rest
+    // one sheet for everything (David's video): wings flap, no mouth movement, consistent size.
+    // moving → directional cell; idle → front cell (c0). Fixes "moving smaller than idle" + "idle mouth moves".
     var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
-    var aiming = (aimX !== 0 || aimY !== 0), d8 = FAIRY.dir8, idl = FAIRY.idle, hHs = 126;
+    var aiming = (aimX !== 0 || aimY !== 0), d8 = FAIRY.dir8, hHs = 132;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
-    if (aiming && d8 && d8.complete && d8.naturalWidth) {
-      var md = FAIRY_META.dir8, ang = Math.atan2(aimY, aimX);
-      var fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8, row = DIR2CELL[fk];
+    if (d8 && d8.complete && d8.naturalWidth) {
+      var md = FAIRY_META.dir8, row;
+      if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
+      else row = DIR2CELL[0];
       var col = Math.floor(t * 10) % md.cols, hW8 = hHs * md.fw / md.fh;
-      ctx.drawImage(d8, col * md.fw, row * md.fh, md.fw, md.fh, Math.round(px - hW8 / 2), Math.round(py - hHs + 14), hW8, hHs);
-    } else if (idl && idl.complete && idl.naturalWidth) {
-      var fmi = FAIRY_META.idle, ffr = Math.floor(t * 10) % fmi.n, hWi = hHs * fmi.fw / fmi.fh;
-      ctx.drawImage(idl, ffr * fmi.fw, 0, fmi.fw, fmi.fh, Math.round(px - hWi / 2), Math.round(py - hHs + 14), hWi, hHs);
+      ctx.drawImage(d8, col * md.fw, row * md.fh, md.fw, md.fh, Math.round(px - hW8 / 2), Math.round(py - hHs + 16), hW8, hHs);
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
