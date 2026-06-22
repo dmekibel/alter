@@ -1063,24 +1063,41 @@
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
     var picked = {}, view = { cat: null, group: null }, CT = activeCats();
     function count() { return Object.keys(picked).length; }
+    var titleEl = null, footEl = null;
+    function syncFoot() { if (titleEl) titleEl.textContent = opts.title(count()); if (footEl) { footEl.innerHTML = ""; if (opts.foot) opts.foot(footEl, picked, count()); } }
+    // tile click toggles selection IN PLACE for multi-select (no full re-render — kills the flicker/scroll-loss);
+    // single-pick callers act + may redraw once.
+    function mkTile(parent, meta) {
+      var ky = meta.catK + "|" + meta.title;
+      var x = taskTile(parent, meta, !!picked[ky], function () {
+        if (opts.multi) {
+          if (picked[ky]) delete picked[ky]; else picked[ky] = meta;
+          var sel = !!picked[ky]; x.classList.toggle("on", sel); x.style.background = sel ? meta.color : "";
+          if (opts.onTask) opts.onTask(meta, picked);
+          syncFoot();
+        } else if (opts.onTask) opts.onTask(meta, picked, draw);
+      });
+      return x;
+    }
     function draw() {
-      B.innerHTML = ""; add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, draw);
+      B.innerHTML = "";
+      titleEl = add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, draw);
       if (view.cat == null) {
         var ph2 = phase(), ctx = (CONTEXT[ph2] || []).map(function (t) { return TITLE2META[t.toLowerCase()]; }).filter(Boolean);
-        if (ctx.length) { add(B, "div", "lbl", (ph2 === "morning" ? "🌅" : ph2 === "evening" ? "🌆" : ph2 === "night" ? "🌙" : "☀️") + " good right now"); var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { var ky = t.catK + "|" + t.title; taskTile(xg, t, !!picked[ky], function () { opts.onTask(t, picked, draw); }); }); }
-        if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { var ky = t.catK + "|" + t.title; taskTile(fg, t, !!picked[ky], function () { opts.onTask(t, picked, draw); }); }); } }
+        if (ctx.length) { add(B, "div", "lbl", (ph2 === "morning" ? "🌅" : ph2 === "evening" ? "🌆" : ph2 === "night" ? "🌙" : "☀️") + " good right now"); var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { mkTile(xg, t); }); }
+        if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { mkTile(fg, t); }); } }
         add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; draw(); }; cg.appendChild(card); });
-        if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (v) opts.onTask({ title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }, picked, draw); }; }
+        if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (!v) return; var m = { title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }; if (opts.multi) { picked[m.catK + "|" + m.title] = m; ct.value = ""; syncFoot(); } else if (opts.onTask) opts.onTask(m, picked, draw); }; }
       } else if (view.group == null) {
         var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; draw(); }; add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; draw(); }; sg.appendChild(card); });
       } else {
-        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; draw(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { var meta = { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }; var ky = meta.catK + "|" + meta.title; taskTile(tg, meta, !!picked[ky], function () { opts.onTask(meta, picked, draw); }); });
+        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; draw(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { mkTile(tg, { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }); });
       }
-      if (opts.foot) opts.foot(B, picked, count());
+      footEl = add(B, "div", "pickfoot"); syncFoot();
     }
     draw();
   }
-  function nowSheet() { pickerSheet({ title: function (n) { return n ? "Start " + n + (n === 1 ? " timer" : " timers") + " ⏱️" : "What are you doing? ⏱️"; }, frequent: true, custom: true, onTask: function (t, picked, draw) { var ky = t.catK + "|" + t.title; if (picked[ky]) delete picked[ky]; else picked[ky] = t; draw(); }, foot: function (B, picked, n) { if (n) add(B, "button", "done2", "Start " + n + " ▶").onclick = function () { Object.keys(picked).forEach(function (k) { startTimer(picked[k]); }); closeSheet(); renderNow(); }; } }); }
+  function nowSheet() { pickerSheet({ title: function (n) { return n ? "Start " + n + (n === 1 ? " timer" : " timers") + " ⏱️" : "What are you doing? ⏱️"; }, frequent: true, custom: true, multi: true, foot: function (B, picked, n) { if (n) add(B, "button", "done2", "Start " + n + " ▶").onclick = function () { Object.keys(picked).forEach(function (k) { startTimer(picked[k]); }); closeSheet(); renderNow(); }; } }); }
   function suggestDay(k) {
     var T = [
       { h: "07:30", m: 15, t: "Make the bed", c: "#ff8a1e", p: 2 }, { h: "08:00", m: 30, t: "Breakfast", c: "#ff8a1e", p: 2 },
@@ -1392,7 +1409,7 @@
     var cfg = { per: 0 };
     pickerSheet({
       title: function (n) { return n ? "Add " + n + (n === 1 ? " habit" : " habits") + " ✨" : "Pick your habits ✨"; },
-      frequent: true, custom: false,
+      frequent: true, custom: false, multi: true,
       head: function (B) {
         add(B, "div", "lbl", "how often");
         var c2 = add(B, "div", "pchips");
@@ -1401,7 +1418,6 @@
           x.onclick = function () { cfg.per = t[1]; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); };
         });
       },
-      onTask: function (t, picked, draw) { var ky = t.catK + "|" + t.title; if (picked[ky]) delete picked[ky]; else picked[ky] = t; draw(); },
       foot: function (B, picked, n) {
         if (!n) return;
         add(B, "button", "done2", "Add " + n + (n === 1 ? " habit" : " habits") + " ✨").onclick = function () {
