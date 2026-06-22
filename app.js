@@ -627,6 +627,7 @@
       { title: "Habits", emoji: "✅", color: "#28cf86", fn: function () { goTab("grow"); } },
       { title: "Skills", emoji: "⭐", color: "#ffc41f", fn: function () { goTab("self"); } },
       { title: "Mood", emoji: "🌤️", color: "#9a5cf0", fn: function () { goTab("self"); } },
+      { title: "Yesterday", emoji: "📓", color: "#caa15a", fn: function () { closeGame(); yesterdaySheet(); } },
       { title: "Brain", emoji: "🧠", color: "#8a5cf0", fn: function () { closeGame(); brainSheet(); } }
     ], function (m) { if (m && m.fn) m.fn(); });
   }
@@ -1308,6 +1309,14 @@
       };
     });
     add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); };
+  }
+  function yesterdaySheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "📓 Yesterday");
+    var yk = keyAdd(todayK(), -1), lg = logs(yk), dm = S.habitDone[yk] || {};
+    var doneH = S.habits.filter(function (h) { return dm[h.id]; });
+    if (!lg.length && !doneH.length) { add(B, "div", "empty", "Nothing logged yesterday — a fresh page today."); return; }
+    if (doneH.length) { add(B, "div", "lbl", "✅ habits kept"); doneH.forEach(function (h) { var r = add(B, "div", "hab"); add(r, "div", "he", h.e || "⭐"); add(r, "div", "hn", h.l); }); }
+    if (lg.length) { var tot = 0; add(B, "div", "lbl", "⏱️ what you did"); lg.forEach(function (e) { tot += e.mins || 0; var r = add(B, "div", "logi"); add(r, "div", "lt", e.time || ""); add(r, "div", "ln", e.title || ""); add(r, "div", "lm", dur(e.mins || 0)); }); add(B, "div", "lbl", "total tracked: " + dur(tot)); }
   }
   function habitSheet() {
     // No typing: pick habits straight from the activity library (category → group → emoji tiles),
