@@ -311,7 +311,7 @@
   function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
   function calendarView(L, k, showNow) {
     L.innerHTML = ""; var bls = blocks(k).slice();
-    add(L, "div", "calhint", bls.length ? "tap empty space to add · drag a bubble's handle to stretch it" : "tap any time to drop an activity — or “＋” to auto-fill a day");
+    add(L, "div", "calhint", bls.length ? "drag a bubble to move · its handle to stretch · double-tap to edit · tap empty to add" : "tap any time to drop an activity — or “＋” to auto-fill a day");
     var minS = 6 * 60, maxE = 22 * 60; bls.forEach(function (b) { minS = Math.min(minS, hm(b.time)); maxE = Math.max(maxE, hm(b.time) + (b.mins || 30)); });
     var startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(24, Math.ceil(maxE / 60)), HP = 54;
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
@@ -323,8 +323,14 @@
       var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.24);
       add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30)));
       add(card, "div", "cn", blockEmoji(b.title) + " " + b.title);
-      var grip = add(card, "div", "grip");
-      card.addEventListener("click", function () { if (card._rz) { card._rz = false; return; } blockEdit(b, k); });
+      var grip = add(card, "div", "grip"); var lastTap = 0;
+      card.addEventListener("pointerdown", function (ev) {
+        if (ev.target === grip) return; ev.preventDefault();
+        var sy0 = ev.clientY, sm0 = hm(b.time), moved = false, ct0 = card.querySelector(".ct"), dragMin = sm0;
+        function mv2(e) { var dy = e.clientY - sy0; if (!moved && Math.abs(dy) > 6) { moved = true; card.classList.add("lift"); } if (moved) { dragMin = Math.max(0, Math.min(1425, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = ((dragMin - startH * 60) / 60 * HP) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); } }
+        function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); save(); } else { var n = Date.now(); if (n - lastTap < 330) { lastTap = 0; blockEdit(b, k); } else lastTap = n; } }
+        document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2);
+      });
       grip.addEventListener("pointerdown", function (ev) {
         ev.stopPropagation(); ev.preventDefault();
         var sy = ev.clientY, sm = b.mins || 30, ct = card.querySelector(".ct");
