@@ -397,11 +397,8 @@
   #nav{ display:none !important; }
   #gameExit{ display:none !important; }
   #screen{ padding-bottom:88px !important; }
-  /* jump button (top-down hop) */
-  #jumpBtn{ position:absolute; right:30px; bottom:124px; z-index:6; width:62px; height:62px; border-radius:50%;
-    background:#ffd24a; color:#3a2540; border:3px solid #3a2540; box-shadow:0 5px 0 #3a2540; font-size:25px; font-weight:800;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; }
-  #jumpBtn:active{ transform:translateY(4px); box-shadow:0 1px 0 #3a2540; }
+  /* jump is now a quick TAP on the left move-pad (not a separate button) */
+  #jumpBtn{ display:none !important; }
   /* FEATURE PANELS = a notebook in the character's hand, floating over the world (not full-screen). Close = X on the right. */
   #featBackdrop{ position:fixed; inset:0; z-index:65; background:rgba(15,6,20,.5); display:none; -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); }
   body.overworld #featBackdrop{ display:block; }
@@ -486,6 +483,6 @@
     <button id="jumpBtn" type="button" aria-label="Jump">⤴</button>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=360"></script>
+  <script src="app.js?v=361"></script>
 </body>
 </html>

@@ -323,21 +323,23 @@
   // ---- virtual joystick (ported from Heaven Inc input.js) + keyboard fallback ----
   function setupJoy() {
     var zone = el("joy"), stick = el("joyStick"); if (!zone || !stick) return;
-    var cxj = 0, cyj = 0;
+    var cxj = 0, cyj = 0, jdownT = 0, jmoved = false;
     zone.addEventListener("touchstart", function (e) {
       e.preventDefault(); var tch = e.changedTouches[0]; jid = tch.identifier;
       var r = zone.getBoundingClientRect(); cxj = r.left + r.width / 2; cyj = r.top + r.height / 2;
+      jdownT = Date.now(); jmoved = false;
     }, { passive: false });
     zone.addEventListener("touchmove", function (e) {
       e.preventDefault();
       for (var i = 0; i < e.changedTouches.length; i++) {
         var tch = e.changedTouches[i]; if (tch.identifier !== jid) continue;
         var dx = tch.clientX - cxj, dy = tch.clientY - cyj, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 42), a = Math.atan2(dy, dx);
+        if (d > 12) jmoved = true;
         stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
         var mag = Math.max(0, Math.min(1, (d - 5) / 37)); moveX = Math.cos(a) * mag; moveY = Math.sin(a) * mag;   // analog: push further = move faster
       }
     }, { passive: false });
-    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid) { jid = null; moveX = 0; moveY = 0; stick.style.transform = "translate(0,0)"; } }
+    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid) { if (!jmoved && Date.now() - jdownT < 250) doJump(); jid = null; moveX = 0; moveY = 0; stick.style.transform = "translate(0,0)"; } }
     zone.addEventListener("touchend", end); zone.addEventListener("touchcancel", end);
     var KEYS = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"];
     window.addEventListener("keydown", function (e) { var k = (e.key || "").toLowerCase(); if (KEYS.indexOf(k) < 0) return; kdn[k] = true; updKeys(); });
@@ -560,10 +562,9 @@
     ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
     ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
     // Cuphead painted object cutouts (drawn back-to-front by y)
-    drawObj(ctx, WORLD_IMG.tree, -152, -84, 158); drawObj(ctx, WORLD_IMG.tree, 190, -30, 148);
-    drawObj(ctx, WORLD_IMG.cabin, -58, 2, 132); drawObj(ctx, WORLD_IMG.bush, 78, -136, 60);
-    drawObj(ctx, WORLD_IMG.bush, -120, 72, 56); drawObj(ctx, WORLD_IMG.tree, 150, 74, 156);
-    drawObj(ctx, WORLD_IMG.rock, -36, 124, 50); drawObj(ctx, WORLD_IMG.chest, -130, 28, 48); drawObj(ctx, WORLD_IMG.sign, 14, 44, 60);
+    // depth-sorted objects: those whose base is above the fairy draw behind her; those below draw in front (tall trees hide her)
+    var OBJS = [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]];
+    OBJS.forEach(function (o) { if (o[2] <= py) drawObj(ctx, o[0], o[1], o[2], o[3]); });
     var gden = (S.game && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     var jsc = 1 - Math.min(0.45, jz * 0.011);
@@ -584,6 +585,7 @@
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
       ctx.drawImage(hspr, 0, 0, HSW, HSH, Math.round(px - hdw / 2), Math.round(py - hdh + 9), hdw, hdh);
     }
+    OBJS.forEach(function (o) { if (o[2] > py) drawObj(ctx, o[0], o[1], o[2], o[3]); });  // objects in front of the fairy occlude her
     if (hasShippedToday()) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     ctx.restore();
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
