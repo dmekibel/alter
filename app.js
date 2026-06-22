@@ -151,7 +151,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {} } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
@@ -300,15 +300,18 @@
     var hy = 9 + Math.round(Math.sin(t * 2) * 1), hc = st.gold ? "#ffd54a" : "#bfe6ff";
     gring(g, cxc, hy, 11, 4, hc, 1);
   }
+  var MOODS = [{ e: "🌫️", l: "Foggy" }, { e: "🌥️", l: "Heavy" }, { e: "⛅", l: "Okay" }, { e: "☀️", l: "Clear" }, { e: "✨", l: "Radiant" }];
+  function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
     if (!gctx) { requestAnimationFrame(drawGuardian); return; }
-    var t = (performance.now() - GT0) / 1000, cx = GW / 2;
+    var t = (performance.now() - GT0) / 1000, cx = GW / 2, mood = currentMood(), mf = mood / 4;
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
     var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
     var ph = phase(), sky = SKY[ph] || SKY.night;
     var gr = gctx.createLinearGradient(0, 0, 0, GH); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); gctx.fillStyle = gr; gctx.fillRect(0, 0, GW, GH);
-    if (ph === "night" || ph === "evening") { for (var i = 0; i < 38; i++) { var sxp = (i * 79) % GW, syp = (i * 131) % Math.round(GH * 0.6); var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.2 + i)); gctx.fillStyle = "rgba(255,255,255," + (0.5 * tw) + ")"; gctx.fillRect(sxp, syp, 2, 2); } }
-    var auraR = GW * (0.30 + Math.min(0.2, st.lv * 0.012)), ap = 0.16 + 0.06 * Math.sin(t * 1.4), acy = GH * 0.5;
+    var starN = (ph === "night" || ph === "evening") ? Math.round(20 + mf * 34) : Math.round(mf * 16);
+    for (var i = 0; i < starN; i++) { var sxp = (i * 79) % GW, syp = (i * 131) % Math.round(GH * 0.6); var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.2 + i)); gctx.fillStyle = "rgba(255,255,255," + (0.45 * tw * (0.5 + mf * 0.7)) + ")"; gctx.fillRect(sxp, syp, 2, 2); }
+    var auraR = GW * (0.30 + Math.min(0.2, st.lv * 0.012)) * (0.78 + mf * 0.35), ap = (0.16 + 0.06 * Math.sin(t * 1.4)) * (0.55 + mf * 0.7), acy = GH * 0.5;
     var ag = gctx.createRadialGradient(cx, acy, 6, cx, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(cx, acy, auraR, 0, 7); gctx.fill();
     var baseY = GH * 0.92;
     gctx.fillStyle = "rgba(0,0,0,0.3)"; gctx.beginPath(); gctx.ellipse(cx, baseY, GW * 0.15, 7, 0, 0, 7); gctx.fill();
@@ -317,9 +320,13 @@
     var bob = Math.sin(t * 1.6) * scale * 1.1, dw = SW * scale, dh = SH * scale;
     var dx = Math.round(cx - dw / 2), dy = Math.round(baseY - dh - 4 + bob);
     gctx.imageSmoothingEnabled = false; gctx.drawImage(gspr, 0, 0, SW, SH, dx, dy, dw, dh); gctx.imageSmoothingEnabled = true;
-    for (var s = 0; s < 6; s++) { var px = cx + Math.cos(t * 0.6 + s * 1.2) * GW * (0.18 + 0.12 * (s % 3)); var py = baseY - 30 - ((t * 20 + s * 55) % (GH * 0.55)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(px), Math.round(py), 2, 2); }
+    var spN = 2 + mood * 2; for (var s = 0; s < spN; s++) { var px = cx + Math.cos(t * 0.6 + s * 1.2) * GW * (0.18 + 0.12 * (s % 3)); var py = baseY - 30 - ((t * 20 + s * 55) % (GH * 0.55)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(mood >= 4 ? "#ffd54a" : st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(px), Math.round(py), 2, 2); }
+    if (mood < 2) { var fa = (2 - mood) * 0.17; for (var f = 0; f < 4; f++) { var fy = ((t * 7 + f * 80) % (GH + 120)) - 60; var fgg = gctx.createLinearGradient(0, fy - 34, 0, fy + 34); fgg.addColorStop(0, "rgba(205,210,224,0)"); fgg.addColorStop(0.5, "rgba(205,210,224," + fa + ")"); fgg.addColorStop(1, "rgba(205,210,224,0)"); gctx.fillStyle = fgg; gctx.fillRect(0, fy - 34, GW, 68); } }
+    if (mood >= 4) { var rg = gctx.createRadialGradient(cx, GH * 0.45, 10, cx, GH * 0.45, GW * 0.62); rg.addColorStop(0, "rgba(255,220,120,0.13)"); rg.addColorStop(1, "rgba(255,220,120,0)"); gctx.fillStyle = rg; gctx.fillRect(0, 0, GW, GH); }
     requestAnimationFrame(drawGuardian);
   }
+  function setMood(i) { S.mood = S.mood || {}; S.mood[todayK()] = { lvl: i, t: Date.now() }; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mood: " + MOODS[i].l, mins: 1, catK: "love", color: "#9a5cf0" }); earn(2, { catK: "love" }); save(); renderMood(); renderGame(); }
+  function renderMood() { var M = el("moodRow"); if (!M) return; M.innerHTML = ""; var cur = currentMood(); add(M, "div", "qlab", "🌦️ your inner weather — how do you feel?"); var row = add(M, "div", "moods"); MOODS.forEach(function (m, i) { var c = add(row, "div", "mood" + (cur === i ? " on" : "")); add(c, "div", "moode", m.e); add(c, "div", "moodl", m.l); c.onclick = function () { setMood(i); }; }); }
 
   // ---- render ------------------------------------------------------------
   function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + " 👋"; }
@@ -593,7 +600,7 @@
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); if (dm[id]) earn(12, {}); save(); renderHabits(); renderHero(); renderChar(); renderGame(); }
 
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderQuick(); renderToday(); renderHabits(); }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
