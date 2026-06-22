@@ -306,6 +306,8 @@
   var gctx, GW = 0, GH = 0, gspr = null, gsx = null, GT0 = performance.now();
   // walkable character + camera (ported from Heaven Inc walk model)
   var px = 24, py = 96, pface = 1, walkF = 0, walkT = 0, moveX = 0, moveY = 0, jid = null, kdn = {}, pInit = false;
+  var jz = 0, jvz = 0;  // jump height + vertical velocity (top-down hop)
+  function doJump() { if (jz <= 0 && jvz <= 0) jvz = 7.4; }
   var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function mix(a, b, t) { var A = hx2(a), B = hx2(b); return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")"; }
@@ -564,7 +566,8 @@
     drawObj(ctx, WORLD_IMG.rock, -36, 124, 50); drawObj(ctx, WORLD_IMG.chest, -130, 28, 48); drawObj(ctx, WORLD_IMG.sign, 14, 44, 60);
     var gden = (S.game && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
-    ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
+    var jsc = 1 - Math.min(0.45, jz * 0.011);
+    ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14 * jsc, 5 * jsc, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
     // 8-way facing from David's hand-picked spin frames (spr-dir.png, compass order, no mirroring → crown + wand correct).
     // Aim → direction cell; idle → front (row 0). Front = the 0s frame (per David).
@@ -575,7 +578,7 @@
       var ms = FAIRY_META.dir, row = 0;
       if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
       var hWs = hHs * ms.fw / ms.fh;
-      ctx.drawImage(dr, 0, row * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16), hWs, hHs);
+      ctx.drawImage(dr, 0, row * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16 - jz), hWs, hHs);
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
@@ -598,8 +601,9 @@
   function drawWorld() {
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
-    var moving = (moveX !== 0 || moveY !== 0), SPD = 2.7 * ((S.game && S.game.ups && S.game.ups.board) ? 1.75 : 1);
+    var moving = (moveX !== 0 || moveY !== 0), SPD = 4.3 * ((S.game && S.game.ups && S.game.ups.board) ? 1.6 : 1);
     if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
+    if (jvz !== 0 || jz > 0) { jz += jvz; jvz -= 0.62; if (jz <= 0) { jz = 0; jvz = 0; } }
     var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
     if (ghudT++ % 30 === 0) updGameHud();
@@ -624,7 +628,8 @@
     gameOn = false; moveX = 0; moveY = 0; document.body.style.overflow = "";
   }
   // ---- game-as-home: tap the character → diegetic action hub ----
-  function goTab(t) { closeGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } else { window.scrollTo(0, 0); } }
+  function goTab(t) { document.body.classList.add("overworld"); if (!gameOn) openGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } }
+  function closeFeature() { document.body.classList.remove("overworld"); if (!gameOn) openGame(); }
   function heroMenu() {
     radialMenu([
       { title: "Plan day", emoji: "📅", color: "#2a9fe0", fn: function () { goTab("day"); } },
@@ -1364,7 +1369,9 @@
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
     var ew = el("enterWorld"); if (ew) ew.onclick = openGame;
     var gx = el("gameExit"); if (gx) gx.onclick = closeGame;
-    var tw = el("toWorld"); if (tw) tw.onclick = openGame;
+    var fc = el("featClose"); if (fc) fc.onclick = closeFeature;
+    var fb = el("featBackdrop"); if (fb) fb.onclick = closeFeature;
+    var jb = el("jumpBtn"); if (jb) { jb.onclick = doJump; jb.addEventListener("touchstart", function (e) { e.preventDefault(); doJump(); }, { passive: false }); }
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; if (zoomMode === "day") pendingScrollNow = true; renderToday(); }; });

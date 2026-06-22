@@ -393,15 +393,35 @@
   #nav{ display:none !important; }
   #gameExit{ display:none !important; }
   #screen{ padding-bottom:88px !important; }
-  #toWorld{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 14px); z-index:20;
-    background:#ff5fa8; color:#fff2f9; border:3px solid #3a2540; border-radius:20px; padding:11px 22px;
-    font-family:var(--bub); font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 5px 0 #3a2540; letter-spacing:.3px; }
-  #toWorld:active{ transform:translateX(-50%) translateY(4px); box-shadow:0 1px 0 #3a2540; }
+  /* jump button (top-down hop) */
+  #jumpBtn{ position:absolute; right:30px; bottom:124px; z-index:6; width:62px; height:62px; border-radius:50%;
+    background:#ffd24a; color:#3a2540; border:3px solid #3a2540; box-shadow:0 5px 0 #3a2540; font-size:25px; font-weight:800;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; }
+  #jumpBtn:active{ transform:translateY(4px); box-shadow:0 1px 0 #3a2540; }
+  /* FEATURE PANELS = a notebook in the character's hand, floating over the world (not full-screen). Close = X on the right. */
+  #featBackdrop{ position:fixed; inset:0; z-index:65; background:rgba(15,6,20,.5); display:none; -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); }
+  body.overworld #featBackdrop{ display:block; }
+  #featClose{ display:none; }
+  body.overworld #featClose{ display:flex; position:fixed; z-index:80; align-items:center; justify-content:center;
+    top:calc(env(safe-area-inset-top,0px) + 60px); right:18px; width:40px; height:40px; border-radius:50%;
+    background:#ff5fa8; color:#fff2f9; border:3px solid #3a2540; box-shadow:0 4px 0 #3a2540; font-size:17px; font-weight:800; cursor:pointer; }
+  body.overworld #featClose:active{ transform:translateY(3px); box-shadow:0 1px 0 #3a2540; }
+  body.overworld #screen{ position:fixed; z-index:70;
+    top:calc(env(safe-area-inset-top,0px) + 54px); bottom:74px; left:12px; right:12px; max-width:540px; margin:0 auto;
+    min-height:0; height:auto; padding:18px 16px 24px 34px !important; overflow:auto;
+    background:linear-gradient(168deg,#7a1d50,#54123a); border:3px solid #3a2540; border-radius:16px 22px 22px 16px;
+    box-shadow:0 22px 60px rgba(0,0,0,.6);
+    background-image:repeating-linear-gradient(transparent 0 33px, rgba(255,255,255,.05) 33px 34px); }
+  body.overworld #screen::before{ content:''; position:absolute; left:9px; top:16px; bottom:16px; width:11px; z-index:2;
+    background:repeating-linear-gradient(#3a2540 0 7px, transparent 7px 22px); border-radius:6px; opacity:.85; }
+  body.overworld #screen header{ display:none; }
+  body.overworld #screen .dayhead{ top:-2px; }
 </style>
 </head>
 <body>
+  <div id="featBackdrop"></div>
   <div id="screen">
-    <button id="toWorld" type="button" aria-label="Back to your garden">🌿 garden</button>
+    <button id="featClose" type="button" aria-label="Close">✕</button>
     <header><div id="date"></div><div id="hello"></div><button id="gear" aria-label="Brain">🧠</button></header>
 
     <div class="tab on" id="t-self">
@@ -459,8 +479,9 @@
     <div id="zoomCtl"><button id="zoomIn" type="button">＋</button><button id="zoomOut" type="button">－</button></div>
     <div id="joy"><div id="joyStick"></div></div>
     <div id="joy2"><div id="joyStick2"></div></div>
+    <button id="jumpBtn" type="button" aria-label="Jump">⤴</button>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=358"></script>
+  <script src="app.js?v=359"></script>
 </body>
 </html>
