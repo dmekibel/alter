@@ -417,19 +417,26 @@
     return "🗓️";
   }
   function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
-  function radialMenu(opts, onPick) {
+  function radialMenu(opts, onPick, onCancel) {
     var ov = document.createElement("div"); ov.className = "radial";
     var items = opts.slice(0, 8), n = items.length || 1;
     var cx = window.innerWidth / 2, cy = Math.min(window.innerHeight * 0.44, 360), R = Math.min(window.innerWidth, 380) * 0.31;
     items.forEach(function (m, i) { var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; var b = document.createElement("div"); b.className = "ritem"; b.style.left = (x - 36) + "px"; b.style.top = (y - 36) + "px"; b.style.borderColor = m.color || "#8a5cf0"; b.innerHTML = '<div class="rie">' + (m.emoji || "•") + '</div><div class="ril">' + m.title + '</div>'; b.onclick = function (e) { e.stopPropagation(); ov.remove(); onPick(m); }; ov.appendChild(b); });
     var more = document.createElement("div"); more.className = "ritem rmore"; more.style.left = (cx - 36) + "px"; more.style.top = (cy - 36) + "px"; more.innerHTML = '<div class="rie">⋯</div><div class="ril">more</div>'; more.onclick = function (e) { e.stopPropagation(); ov.remove(); onPick(null); }; ov.appendChild(more);
-    ov.onclick = function () { ov.remove(); };
+    ov.onclick = function () { ov.remove(); if (onCancel) onCancel(); };
     document.body.appendChild(ov);
   }
   function pickOne(cb) { pickerSheet({ title: function () { return "What is it?"; }, frequent: true, custom: true, onTask: function (t) { closeSheet(); cb(t); } }); }
   function assignBlock(b, m, k) { b.title = m.title; b.color = m.color || b.color; b.catK = m.catK || b.catK; save(); reflow(k); renderToday(); }
   function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = m.emoji || ""; t.habitId = m.habitId || null; save(); renderToday(); renderNow(); }
   function startTrackerNow() { S.timers.push({ id: uid(), title: "Tracking…", catK: null, emoji: "⏱️", color: "#ff5fa8", start: Date.now() }); save(); return S.timers[S.timers.length - 1]; }
+  function layoutLane(items) {
+    items.sort(function (a, b) { return a.s - b.s; });
+    var cl = [], cur = [], curEnd = -1;
+    items.forEach(function (it) { if (cur.length && it.s >= curEnd) { cl.push(cur); cur = []; curEnd = -1; } cur.push(it); curEnd = Math.max(curEnd, it.e); });
+    if (cur.length) cl.push(cur);
+    cl.forEach(function (g) { var ends = []; g.forEach(function (it) { var placed = false; for (var c = 0; c < ends.length; c++) { if (it.s >= ends[c]) { it.col = c; ends[c] = it.e; placed = true; break; } } if (!placed) { it.col = ends.length; ends.push(it.e); } }); g.forEach(function (it) { it.cols = ends.length; }); });
+  }
   function calendarView(L, k, showNow) {
     L.innerHTML = "";
     var bls = blocks(k).slice(), lgs = logs(k).slice();
@@ -484,21 +491,28 @@
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
     });
-    lgs.forEach(function (e) { var es = hm(e.time), card = add(cal, "div", "calblk lane act"); place(card, es, e.mins || 15, "A"); var col = e.color || "#48d0e0"; card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.26); add(card, "div", "ct", fmt(es) + "–" + fmt(es + (e.mins || 0))); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title); });
-    if (showNow) { S.timers.forEach(function (t) {
-      var d = new Date(t.start), ts = d.getHours() * 60 + d.getMinutes(), du = Math.max(5, Math.round((Date.now() - t.start) / 60000));
-      var card = add(cal, "div", "calblk lane live"); place(card, ts, du, "A"); card.style.borderLeftColor = t.color || "#ff5fa8"; card.style.backgroundColor = hexA(t.color || "#ff5fa8", 0.3);
-      add(card, "div", "ct", "▶ " + fmt(ts)); add(card, "div", "cn", (t.emoji ? t.emoji + " " : "") + t.title);
-      var stop = add(card, "div", "calx", "⏹"); stop.addEventListener("pointerdown", function (e) { e.stopPropagation(); }); stop.addEventListener("click", function (e) { e.stopPropagation(); stopTimer(t.id); });
-      var gT = add(card, "div", "gript");
-      gT.addEventListener("pointerdown", function (ev) {
-        ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct");
-        function mv(e) { var dmin = Math.round(((e.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(), ndu = Math.max(5, Math.round((Date.now() - ns) / 60000)); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(24, ndu / 60 * HP - 4) + "px"; if (ct) ct.textContent = "▶ " + fmt(tsm); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); }
-        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
-      });
-      card.addEventListener("click", function (e) { if (e.target === stop || e.target === gT) return; radialMenu(frequent(8), function (m) { if (m) assignTimer(t, m); else pickOne(function (x) { assignTimer(t, x); }); }); });
-    }); }
+    var acts = [];
+    lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
+    if (showNow) S.timers.forEach(function (t) { var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
+    layoutLane(acts);
+    acts.forEach(function (it) {
+      var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
+      card.style.top = topFor(it.s) + "px"; card.style.height = Math.max(22, (it.e - it.s) / 60 * HP - 3) + "px";
+      card.style.left = "calc(" + (50 + it.col * colW) + "% + 2px)"; card.style.width = "calc(" + colW + "% - 5px)"; card.style.right = "auto";
+      if (it.kind === "log") {
+        var e = it.ref, lc = e.color || "#48d0e0"; card.style.borderLeftColor = lc; card.style.backgroundColor = hexA(lc, 0.26);
+        add(card, "div", "ct", fmt(it.s) + "–" + fmt(it.e)); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title);
+        var xb = add(card, "div", "calx", "✕"); xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
+        card.addEventListener("click", function (ev) { if (ev.target === xb) return; radialMenu(frequent(8), function (m) { var p = function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); }; if (m) p(m); else pickOne(p); }); });
+      } else {
+        var t = it.ref; card.style.borderLeftColor = t.color || "#ff5fa8"; card.style.backgroundColor = hexA(t.color || "#ff5fa8", 0.3);
+        add(card, "div", "ct", "▶ " + fmt(it.s)); add(card, "div", "cn", (t.emoji ? t.emoji + " " : "") + t.title);
+        var stop = add(card, "div", "calx", "⏹"); stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
+        var gT = add(card, "div", "gript");
+        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(22, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = "▶ " + fmt(tsm); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+        card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; radialMenu(frequent(8), function (m) { if (m) assignTimer(t, m); else pickOne(function (x) { assignTimer(t, x); }); }); });
+      }
+    });
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
       function up(e) {
@@ -507,12 +521,12 @@
         var rect = cal.getBoundingClientRect(), lx = e.clientX - rect.left;
         if (lx > rect.width * 0.5 && showNow) {
           var tt = startTrackerNow(); renderToday(); renderNow();
-          radialMenu(frequent(8), function (m) { if (m) assignTimer(tt, m); else pickOne(function (x) { assignTimer(tt, x); }); });
+          radialMenu(frequent(8), function (m) { if (m) assignTimer(tt, m); else pickOne(function (x) { assignTimer(tt, x); }); }, function () { var ti = S.timers.indexOf(tt); if (ti >= 0) { S.timers.splice(ti, 1); save(); renderToday(); renderNow(); } });
         } else {
           var tm = timeFromY(e.clientY - rect.top, startH, HP), id = uid();
           blocks(k).push({ id: id, time: tm, mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
           var nb = blocks(k).filter(function (b) { return b.id === id; })[0];
-          radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, k); else pickOne(function (x) { assignBlock(nb, x, k); }); });
+          radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, k); else pickOne(function (x) { assignBlock(nb, x, k); }); }, function () { var a = blocks(k), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } });
         }
       }
       document.addEventListener("pointerup", up);
@@ -895,7 +909,7 @@
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
-    el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, viewK); else pickOne(function (x) { assignBlock(nb, x, viewK); }); }); };
+    el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, viewK); else pickOne(function (x) { assignBlock(nb, x, viewK); }); }, function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } }); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
