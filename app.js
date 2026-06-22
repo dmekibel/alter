@@ -329,7 +329,7 @@
   }
   // ---- camera zoom: pinch (mobile) + wheel (desktop) + ＋/－ buttons ----
   function setupZoom() {
-    var stage = el("stage"); if (!stage) return;
+    var stage = el("gameMode"); if (!stage) return;
     function dist(a, b) { var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY; return Math.sqrt(dx * dx + dy * dy); }
     function clampZ(z) { return Math.max(0.6, Math.min(2.6, z)); }
     stage.addEventListener("touchstart", function (e) { if (e.touches.length === 2) { pinch0 = dist(e.touches[0], e.touches[1]); zoom0 = zoom; } }, { passive: false });
@@ -339,6 +339,129 @@
     var zi = el("zoomIn"), zo = el("zoomOut");
     if (zi) zi.onclick = function () { zoom = clampZ(zoom * 1.2); };
     if (zo) zo.onclick = function () { zoom = clampZ(zoom / 1.2); };
+  }
+  // ============ full-screen GAME MODE — top-down island the guardian walks ============
+  var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
+  var HSW = 48, HSH = 60, RG = 240, RS = 286;
+  function worldFit() {
+    var c = el("world"); if (!c) return; wctx = c.getContext("2d");
+    var cssW = window.innerWidth, cssH = window.innerHeight, dpr = window.devicePixelRatio || 1;
+    WGW = cssW; WGH = cssH;
+    c.style.width = cssW + "px"; c.style.height = cssH + "px"; c.width = Math.round(cssW * dpr); c.height = Math.round(cssH * dpr);
+    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!hspr) { hspr = document.createElement("canvas"); hspr.width = HSW; hspr.height = HSH; hsx = hspr.getContext("2d"); }
+  }
+  function paintHero(t, st, wf, moving) {
+    var g = hsx, cx = 24, col = st.color; g.clearRect(0, 0, HSW, HSH);
+    var bob = moving ? Math.round(Math.abs(Math.sin(t * 9)) * 2) : 0;
+    var lf = moving ? (wf ? -3 : 0) : 0, rf = moving ? (wf ? 0 : -3) : 0;
+    // feet
+    g.fillStyle = "#2e2647"; g.fillRect(cx - 9, 50 + lf - bob, 7, 6); g.fillRect(cx + 2, 50 + rf - bob, 7, 6);
+    // body (cloak)
+    var by = 24 - bob;
+    g.fillStyle = col; g.beginPath(); g.moveTo(cx - 13, 50 - bob); g.quadraticCurveTo(cx - 15, by, cx, by - 4); g.quadraticCurveTo(cx + 15, by, cx + 13, 50 - bob); g.closePath(); g.fill();
+    g.fillStyle = hexA("#ffffff", 0.14); g.beginPath(); g.ellipse(cx, by + 14, 7, 11, 0, 0, 7); g.fill();
+    // arms
+    g.fillStyle = mix(col, "#000000", 0.18);
+    g.beginPath(); g.ellipse(cx - 13, by + 12 + (moving ? (wf ? 2 : -2) : 0), 4, 6, 0, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(cx + 13, by + 12 + (moving ? (wf ? -2 : 2) : 0), 4, 6, 0, 0, 7); g.fill();
+    // head: hood then face
+    var hy = 16 - bob;
+    gdisc(g, cx, hy - 2, 13, col);
+    gdisc(g, cx, hy + 2, 11, "#f4c79c");
+    // eyes
+    if (st.blink) { g.fillStyle = "#3a2a4a"; g.fillRect(cx - 7, hy + 1, 5, 2); g.fillRect(cx + 2, hy + 1, 5, 2); }
+    else { [cx - 5, cx + 5].forEach(function (ex) { gdisc(g, ex, hy + 1, 3, "#ffffff"); gdisc(g, ex, hy + 1, 2, "#3b2b52"); g.fillStyle = "#fff"; g.fillRect(ex + 1, hy - 1, 1, 1); }); }
+    // cheeks + mouth
+    g.fillStyle = "#ff9ec4"; g.fillRect(cx - 9, hy + 5, 3, 2); g.fillRect(cx + 6, hy + 5, 3, 2);
+    g.fillStyle = "#c47a64"; g.fillRect(cx - 2, hy + 6, 4, 1);
+    // halo
+    var hh = Math.round(Math.sin(t * 2));
+    gring(g, cx, 2 + hh - bob, 10, 4, st.gold ? "#ffd54a" : "#bfe6ff", 1);
+  }
+  function plantSpriteAt(ctx, x, y, ty) {
+    var P = ["#46e2a4", "#ff6fc0", "#9a5cf0", "#ffc24a", "#4fb0ff"][ty % 5], xx = Math.round(x), yy = Math.round(y);
+    ctx.fillStyle = "#2f6b4a"; ctx.fillRect(xx - 1, yy - 12, 3, 12);
+    ctx.fillStyle = "#3f8a5e"; ctx.fillRect(xx - 4, yy - 8, 3, 2); ctx.fillRect(xx + 2, yy - 10, 3, 2);
+    ctx.fillStyle = P; ctx.beginPath(); ctx.arc(xx + 0.5, yy - 15, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(xx - 1, yy - 17, 2, 2);
+  }
+  function drawRock(x, y) {
+    wctx.fillStyle = "rgba(0,0,0,0.18)"; wctx.beginPath(); wctx.ellipse(x, y + 8, 12, 4, 0, 0, 7); wctx.fill();
+    wctx.fillStyle = "#6b6f7e"; wctx.beginPath(); wctx.ellipse(x, y, 13, 9, 0, 0, 7); wctx.fill();
+    wctx.fillStyle = "#878b99"; wctx.beginPath(); wctx.ellipse(x - 3, y - 3, 6, 4, 0, 0, 7); wctx.fill();
+  }
+  function drawPalm(x, y) {
+    wctx.fillStyle = "rgba(0,0,0,0.22)"; wctx.beginPath(); wctx.ellipse(x, y + 4, 14, 5, 0, 0, 7); wctx.fill();
+    wctx.strokeStyle = "#8a5a36"; wctx.lineWidth = 7; wctx.lineCap = "round";
+    wctx.beginPath(); wctx.moveTo(x, y); wctx.quadraticCurveTo(x + 7, y - 26, x + 2, y - 46); wctx.stroke();
+    wctx.strokeStyle = "#3fa35a"; wctx.lineWidth = 8;
+    for (var fr = 0; fr < 6; fr++) { var a = -Math.PI / 2 + (fr - 2.5) * 0.6; wctx.beginPath(); wctx.moveTo(x + 2, y - 46); wctx.quadraticCurveTo(x + 2 + Math.cos(a) * 20, y - 46 + Math.sin(a) * 20 - 6, x + 2 + Math.cos(a) * 40, y - 46 + Math.sin(a) * 40 + 6); wctx.stroke(); }
+    wctx.fillStyle = "#caa24a"; wctx.beginPath(); wctx.arc(x + 5, y - 43, 3, 0, 7); wctx.fill(); wctx.beginPath(); wctx.arc(x - 2, y - 43, 3, 0, 7); wctx.fill();
+  }
+  function drawCampfire(t, x, y) {
+    var fl = 0.6 + 0.4 * Math.sin(t * 8);
+    var glow = wctx.createRadialGradient(x, y, 4, x, y, 54); glow.addColorStop(0, "rgba(255,170,60," + (0.32 * fl) + ")"); glow.addColorStop(1, "rgba(255,170,60,0)"); wctx.fillStyle = glow; wctx.beginPath(); wctx.arc(x, y, 54, 0, 7); wctx.fill();
+    wctx.strokeStyle = "#6b4a2e"; wctx.lineWidth = 5; wctx.lineCap = "round"; wctx.beginPath(); wctx.moveTo(x - 10, y + 6); wctx.lineTo(x + 10, y + 2); wctx.moveTo(x + 10, y + 6); wctx.lineTo(x - 10, y + 2); wctx.stroke();
+    wctx.fillStyle = "#ff7a2a"; wctx.beginPath(); wctx.moveTo(x, y - 18 - fl * 4); wctx.quadraticCurveTo(x - 8, y - 2, x - 5, y - 1); wctx.quadraticCurveTo(x + 8, y - 4, x, y - 18 - fl * 4); wctx.fill();
+    wctx.fillStyle = "#ffd24a"; wctx.beginPath(); wctx.moveTo(x, y - 11 - fl * 3); wctx.quadraticCurveTo(x - 4, y - 2, x - 2, y - 1); wctx.quadraticCurveTo(x + 5, y - 3, x, y - 11 - fl * 3); wctx.fill();
+  }
+  var ISLAND = [[0, 0, 1], [-0.5, -0.32, 0.52], [0.54, -0.22, 0.56], [0.32, 0.5, 0.52], [-0.46, 0.46, 0.5], [0.02, -0.62, 0.46], [0, 0.64, 0.42]];
+  function islandPass(scale, col) { wctx.fillStyle = col; ISLAND.forEach(function (b) { wctx.beginPath(); wctx.arc(b[0] * RG, b[1] * RG, RG * b[2] * scale, 0, 7); wctx.fill(); }); }
+  function drawWorld() {
+    if (!gameOn || !wctx) return;
+    var t = (performance.now() - GT0) / 1000;
+    var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
+    var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
+    var mood = currentMood();
+    // move (joystick / keys → unit vector, Heaven Inc model)
+    var moving = (moveX !== 0 || moveY !== 0), SPD = 2.7;
+    if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
+    var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
+    var W = WGW, H = WGH;
+    // ---- ocean (screen-fixed) ----
+    var og = wctx.createLinearGradient(0, 0, 0, H); og.addColorStop(0, "#0a3350"); og.addColorStop(1, "#061322"); wctx.fillStyle = og; wctx.fillRect(0, 0, W, H);
+    wctx.strokeStyle = "rgba(120,200,230,0.10)"; wctx.lineWidth = 2;
+    for (var wv = 0; wv < 7; wv++) { var yy = ((wv * 92 + t * 14) % (H + 92)) - 46; wctx.beginPath(); for (var xx = 0; xx <= W; xx += 26) wctx.lineTo(xx, yy + Math.sin(xx * 0.03 + t + wv) * 5); wctx.stroke(); }
+    // ---- world space (camera follows hero, zoom) ----
+    wctx.save(); wctx.translate(W / 2, H / 2); wctx.scale(zoom, zoom); wctx.translate(-px, -py);
+    islandPass(1.13, "#d8c089"); // sand
+    wctx.strokeStyle = "rgba(255,255,255," + (0.16 + 0.08 * Math.sin(t * 2)) + ")"; wctx.lineWidth = 5; ISLAND.forEach(function (b) { wctx.beginPath(); wctx.arc(b[0] * RG, b[1] * RG, RG * b[2] * 1.13, 0, 7); wctx.stroke(); }); // foam
+    islandPass(1.0, "#4ea862"); islandPass(0.9, "#3f9152"); // grass
+    wctx.fillStyle = "#5cc070"; for (var gt = 0; gt < 44; gt++) { var ga = gt * 2.39996, gr2 = (gt % 7) / 7 * RG * 0.84, gx = Math.cos(ga) * gr2, gy = Math.sin(ga) * gr2; wctx.fillRect(Math.round(gx), Math.round(gy), 3, 3); }
+    drawCampfire(t, 118, 96); drawPalm(-150, 70); drawPalm(150, -64); drawRock(-110, -96); drawRock(60, -140); drawRock(-150, -20);
+    var gden = (S.game && S.game.garden) || [];
+    for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 64 + (fi % 5) * 26, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(wctx, fx, fy, gden[fi].t); }
+    // hero shadow + aura + sprite
+    wctx.fillStyle = "rgba(0,0,0,0.28)"; wctx.beginPath(); wctx.ellipse(px, py + 2, 16, 6, 0, 0, 7); wctx.fill();
+    var aur = wctx.createRadialGradient(px, py - 22, 6, px, py - 22, 72); aur.addColorStop(0, hexA(col, 0.22)); aur.addColorStop(1, hexA(col, 0)); wctx.fillStyle = aur; wctx.beginPath(); wctx.arc(px, py - 22, 72, 0, 7); wctx.fill();
+    paintHero(t, st, walkF, moving);
+    var hs = 2.2, hbob = moving ? Math.abs(Math.sin(walkT * 0.8)) * 4 : Math.sin(t * 1.6) * 2;
+    var hdw = HSW * hs, hdh = HSH * hs, hdx = Math.round(px - hdw / 2), hdy = Math.round(py - hdh + 10 - hbob);
+    wctx.imageSmoothingEnabled = false;
+    if (pface < 0) { wctx.save(); wctx.translate(hdx + hdw, hdy); wctx.scale(-1, 1); wctx.drawImage(hspr, 0, 0, HSW, HSH, 0, 0, hdw, hdh); wctx.restore(); }
+    else wctx.drawImage(hspr, 0, 0, HSW, HSH, hdx, hdy, hdw, hdh);
+    wctx.imageSmoothingEnabled = true;
+    if (hasShippedToday()) { var sb = wctx.createRadialGradient(px, py - 18, 10, px, py - 18, 92); sb.addColorStop(0, "rgba(70,226,164,0.18)"); sb.addColorStop(1, "rgba(70,226,164,0)"); wctx.fillStyle = sb; wctx.beginPath(); wctx.arc(px, py - 18, 92, 0, 7); wctx.fill(); }
+    wctx.restore();
+    if (mood < 2) { wctx.fillStyle = "rgba(205,210,224," + ((2 - mood) * 0.11) + ")"; wctx.fillRect(0, 0, W, H); }
+    if (ghudT++ % 30 === 0) updGameHud();
+    requestAnimationFrame(drawWorld);
+  }
+  function updGameHud() {
+    var h = el("gameHud"); if (!h) return;
+    var sp = (S.game && S.game.spark) || 0;
+    h.textContent = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island");
+  }
+  function openGame() {
+    var gm = el("gameMode"); if (!gm) return;
+    gm.classList.add("on"); worldFit(); updGameHud();
+    document.body.style.overflow = "hidden";
+    if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
+  }
+  function closeGame() {
+    var gm = el("gameMode"); if (gm) gm.classList.remove("on");
+    gameOn = false; moveX = 0; moveY = 0; document.body.style.overflow = "";
   }
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -379,59 +502,27 @@
   function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
     if (!gctx) { requestAnimationFrame(drawGuardian); return; }
-    var t = (performance.now() - GT0) / 1000, mood = currentMood(), mf = mood / 4;
+    var t = (performance.now() - GT0) / 1000, cx = GW / 2, mood = currentMood(), mf = mood / 4;
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
     var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
-    // the world — bigger than the viewport, so there's somewhere to walk
-    var WW = GW * 1.9, WH = GH * 1.45, groundY = WH * 0.8;
-    if (!pInit) { px = WW / 2; py = groundY; pInit = true; }
-    // move the character (joystick / keys → unit vector, Heaven Inc walk model)
-    var moving = (moveX !== 0 || moveY !== 0), WALK = Math.max(2.2, WW * 0.006);
-    if (moving) {
-      px += moveX * WALK; py += moveY * WALK;
-      if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1;
-      walkT++; if (walkT > 9) { walkT = 0; walkF = 1 - walkF; }
-    }
-    px = Math.max(22, Math.min(WW - 22, px)); py = Math.max(WH * 0.5, Math.min(WH * 0.95, py));
-    // camera follows the character, clamped to the world, scaled by zoom
-    var viewW = GW / zoom, viewH = GH / zoom;
-    var camX = WW <= viewW ? WW / 2 : Math.max(viewW / 2, Math.min(WW - viewW / 2, px));
-    var camY = WH <= viewH ? WH / 2 : Math.max(viewH / 2, Math.min(WH - viewH / 2, py));
-    // sky — screen-fixed (never pans with the camera)
     var ph = phase(), sky = SKY[ph] || SKY.night;
     var gr = gctx.createLinearGradient(0, 0, 0, GH); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); gctx.fillStyle = gr; gctx.fillRect(0, 0, GW, GH);
     var starN = (ph === "night" || ph === "evening") ? Math.round(20 + mf * 34) : Math.round(mf * 16);
     for (var i = 0; i < starN; i++) { var sxp = (i * 79) % GW, syp = (i * 131) % Math.round(GH * 0.6); var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.2 + i)); gctx.fillStyle = "rgba(255,255,255," + (0.45 * tw * (0.5 + mf * 0.7)) + ")"; gctx.fillRect(sxp, syp, 2, 2); }
-    // enter world space (camera pan + zoom)
-    gctx.save();
-    gctx.translate(GW / 2, GH / 2); gctx.scale(zoom, zoom); gctx.translate(-camX, -camY);
-    // ground plane
-    var gpg = gctx.createLinearGradient(0, groundY - 20, 0, WH); gpg.addColorStop(0, hexA(col, 0.05)); gpg.addColorStop(0.18, "rgba(40,54,42,0.5)"); gpg.addColorStop(1, "rgba(16,26,20,0.88)"); gctx.fillStyle = gpg; gctx.fillRect(0, groundY - 20, WW, WH - groundY + 20);
-    gctx.fillStyle = "rgba(120,200,150,0.18)"; gctx.fillRect(0, groundY - 2, WW, 2);
-    // aura behind the character
-    var auraR = GW * (0.26 + Math.min(0.18, st.lv * 0.012)) * (0.78 + mf * 0.35), ap = (0.16 + 0.06 * Math.sin(t * 1.4)) * (0.55 + mf * 0.7), acy = py - 30;
-    var ag = gctx.createRadialGradient(px, acy, 6, px, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(px, acy, auraR, 0, 7); gctx.fill();
-    // ground shadow under the character
-    gctx.fillStyle = "rgba(0,0,0,0.32)"; gctx.beginPath(); gctx.ellipse(px, py, 17, 6, 0, 0, 7); gctx.fill();
-    // garden across the whole world
-    drawGarden(groundY + 6, WW);
-    // the character
+    var auraR = GW * (0.30 + Math.min(0.2, st.lv * 0.012)) * (0.78 + mf * 0.35), ap = (0.16 + 0.06 * Math.sin(t * 1.4)) * (0.55 + mf * 0.7), acy = GH * 0.5;
+    var ag = gctx.createRadialGradient(cx, acy, 6, cx, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(cx, acy, auraR, 0, 7); gctx.fill();
+    var baseY = GH * 0.92;
+    gctx.fillStyle = "rgba(0,0,0,0.3)"; gctx.beginPath(); gctx.ellipse(cx, baseY, GW * 0.15, 7, 0, 0, 7); gctx.fill();
+    drawGarden(baseY);
     paintGuardian(t, st);
-    var scale = Math.max(2, Math.floor((WH * 0.34) / SH));
-    var bob = moving ? Math.abs(Math.sin(walkT * 0.7)) * scale * 1.6 : Math.sin(t * 1.6) * scale * 1.0;
-    var dw = SW * scale, dh = SH * scale, dx = Math.round(px - dw / 2), dy = Math.round(py - dh + bob);
-    gctx.imageSmoothingEnabled = false;
-    if (pface < 0) { gctx.save(); gctx.translate(dx + dw, dy); gctx.scale(-1, 1); gctx.drawImage(gspr, 0, 0, SW, SH, 0, 0, dw, dh); gctx.restore(); }
-    else gctx.drawImage(gspr, 0, 0, SW, SH, dx, dy, dw, dh);
-    gctx.imageSmoothingEnabled = true;
-    // sparkles around the character
-    var spN = 2 + mood * 2; for (var s = 0; s < spN; s++) { var spx = px + Math.cos(t * 0.6 + s * 1.2) * GW * (0.10 + 0.07 * (s % 3)); var spy = py - 36 - ((t * 20 + s * 55) % (GH * 0.5)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(mood >= 4 ? "#ffd54a" : st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(spx), Math.round(spy), 2, 2); }
-    // ship-bloom: a real deed adds a green growth-glow around you (it never darkens when you don't)
-    if (hasShippedToday()) { var bg = gctx.createRadialGradient(px, py - 24, 16, px, py - 24, GW * 0.55); bg.addColorStop(0, "rgba(70,226,164,0.16)"); bg.addColorStop(1, "rgba(70,226,164,0)"); gctx.fillStyle = bg; gctx.fillRect(0, 0, WW, WH); }
-    gctx.restore();
-    // weather overlays — screen-fixed, full viewport
+    var scale = Math.max(2, Math.floor(Math.min(GW / SW, (GH * 0.78) / SH)));
+    var bob = Math.sin(t * 1.6) * scale * 1.1, dw = SW * scale, dh = SH * scale;
+    var dx = Math.round(cx - dw / 2), dy = Math.round(baseY - dh - 4 + bob);
+    gctx.imageSmoothingEnabled = false; gctx.drawImage(gspr, 0, 0, SW, SH, dx, dy, dw, dh); gctx.imageSmoothingEnabled = true;
+    var spN = 2 + mood * 2; for (var s = 0; s < spN; s++) { var spx = cx + Math.cos(t * 0.6 + s * 1.2) * GW * (0.18 + 0.12 * (s % 3)); var spy = baseY - 30 - ((t * 20 + s * 55) % (GH * 0.55)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(mood >= 4 ? "#ffd54a" : st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(spx), Math.round(spy), 2, 2); }
     if (mood < 2) { var fa = (2 - mood) * 0.17; for (var f = 0; f < 4; f++) { var fy = ((t * 7 + f * 80) % (GH + 120)) - 60; var fgg = gctx.createLinearGradient(0, fy - 34, 0, fy + 34); fgg.addColorStop(0, "rgba(205,210,224,0)"); fgg.addColorStop(0.5, "rgba(205,210,224," + fa + ")"); fgg.addColorStop(1, "rgba(205,210,224,0)"); gctx.fillStyle = fgg; gctx.fillRect(0, fy - 34, GW, 68); } }
-    if (mood >= 4) { var rg = gctx.createRadialGradient(GW / 2, GH * 0.45, 10, GW / 2, GH * 0.45, GW * 0.62); rg.addColorStop(0, "rgba(255,220,120,0.13)"); rg.addColorStop(1, "rgba(255,220,120,0)"); gctx.fillStyle = rg; gctx.fillRect(0, 0, GW, GH); }
+    if (mood >= 4) { var rg = gctx.createRadialGradient(cx, GH * 0.45, 10, cx, GH * 0.45, GW * 0.62); rg.addColorStop(0, "rgba(255,220,120,0.13)"); rg.addColorStop(1, "rgba(255,220,120,0)"); gctx.fillStyle = rg; gctx.fillRect(0, 0, GW, GH); }
+    if (hasShippedToday()) { var bg = gctx.createRadialGradient(cx, GH * 0.62, 20, cx, GH * 0.62, GW * 0.7); bg.addColorStop(0, "rgba(70,226,164,0.11)"); bg.addColorStop(1, "rgba(70,226,164,0)"); gctx.fillStyle = bg; gctx.fillRect(0, 0, GW, GH); }
     requestAnimationFrame(drawGuardian);
   }
   function setMood(i) { S.mood = S.mood || {}; S.mood[todayK()] = { lvl: i, t: Date.now() }; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mood: " + MOODS[i].l, mins: 1, catK: "love", color: "#9a5cf0" }); earn(2, { catK: "love" }); save(); renderMood(); renderGame(); }
@@ -1045,11 +1136,14 @@
   function init() {
     load(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
-    window.addEventListener("resize", function () { treeFit(); guardianFit(); });
+    window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
     el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, viewK); else pickOne(function (x) { assignBlock(nb, x, viewK); }); }, function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } }); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
+    var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
+    var ew = el("enterWorld"); if (ew) ew.onclick = openGame;
+    var gx = el("gameExit"); if (gx) gx.onclick = closeGame;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; renderToday(); }; });
