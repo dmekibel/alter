@@ -381,17 +381,13 @@
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
-  var FAIRY = { idle: null, fly: null, face: null, dir8: null, spin: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir8: { fw: 183, fh: 270, cols: 20, rows: 8 }, spin: { fw: 192, fh: 270, n: 16 } };
+  var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
-  // 16-way facing from David's 360 spin (spr-spin.png, real frames — no mirroring, crown/wand stay correct).
-  // Verified: i0=front(down), i4=left, i8=back(up), i12=right. SPIN_OFF/SPIN_DIR calibrate where "front" is.
-  var SPIN_OFF = 0, SPIN_DIR = 1;
-  // compass dir (0=S,1=SW,2=W,3=NW,4=N,5=NE,6=E,7=SE) → cell row in spr-dir8.png (+ horizontal flip).
-  // Per David: real cells c0=front, c3=left, c6=right, c5=back, c4=up-left; c1/c2/c7 are dup fronts.
-  // up-right = c4 mirrored; down-left = c0 front, down-right = c0 mirrored (per David).
-  var DIR2CELL = [0, 0, 3, 4, 5, 4, 6, 0];
-  var DIR2FLIP = [0, 0, 0, 0, 0, 1, 0, 1];
-  function loadFairy() { ["idle", "fly", "face", "spin"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=3"; FAIRY[k] = im; }); }
+  // spr-dir.png rows are David's hand-picked spin frames, already in compass order
+  // (S,SW,W,NW,N,NE,E,SE) = his timestamped screenshots: front 1.43s, left 1.86, back-left 2.29,
+  // back 2.91, back-right 3.43, right 3.68, front-right 3.96 (SW reuses front). No mirroring.
+  var DIR2CELL = [0, 1, 2, 3, 4, 5, 6, 7];
+  function loadFairy() { ["idle", "fly", "face", "dir"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=4"; FAIRY[k] = im; }); }
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
@@ -570,16 +566,16 @@
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
-    // 16-way facing from David's 360 spin (real frames, no mirroring → crown + wand always on the correct side).
-    // Aim angle maps straight onto the rotation; idle shows the front frame. Verified i0=front, i4=left, i8=back, i12=right.
+    // 8-way facing from David's hand-picked spin frames (spr-dir.png, compass order, no mirroring → crown + wand correct).
+    // Aim → direction cell; idle → front (row 0). Front = the 0s frame (per David).
     var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
-    var aiming = (aimX !== 0 || aimY !== 0), sp = FAIRY.spin, hHs = 132;
+    var aiming = (aimX !== 0 || aimY !== 0), dr = FAIRY.dir, hHs = 132;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
-    if (sp && sp.complete && sp.naturalWidth) {
-      var ms = FAIRY_META.spin, fr = SPIN_OFF;
-      if (aiming) { var ang = Math.atan2(aimY, aimX); fr = ((Math.round((ang - Math.PI / 2) / (2 * Math.PI) * ms.n) * SPIN_DIR + SPIN_OFF) % ms.n + ms.n) % ms.n; }
+    if (dr && dr.complete && dr.naturalWidth) {
+      var ms = FAIRY_META.dir, row = 0;
+      if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
       var hWs = hHs * ms.fw / ms.fh;
-      ctx.drawImage(sp, 0, fr * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16), hWs, hHs);
+      ctx.drawImage(dr, 0, row * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16), hWs, hHs);
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
