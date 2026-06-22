@@ -484,13 +484,13 @@
     function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
-      var card = add(cal, "div", "calblk lane" + (status === "ok" ? " ok" : status === "miss" ? " miss" : ""));
+      var card = add(cal, "div", "calblk lane" + (status === "ok" ? " ok" : status === "miss" ? " miss" : "") + (b.pin ? " pin" : ""));
       place(card, bs, b.mins || 30, "P");
       var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col;
       if (status === "ok") { card.style.backgroundColor = hexA(col, 0.42); card.style.boxShadow = "0 0 20px " + hexA(col, 0.75) + ",inset 0 0 14px " + hexA(col, 0.45) + ",0 5px 16px rgba(0,0,0,.4)"; }
       else if (status !== "miss") card.style.backgroundColor = hexA(col, 0.22);
       add(card, "div", "ct", (status === "ok" ? "✓ " : status === "miss" ? "✕ " : "") + fmt(bs) + "–" + fmt(be));
-      add(card, "div", "cn", blockEmoji(b.title) + " " + b.title);
+      add(card, "div", "cn", (b.pin ? "📌 " : "") + blockEmoji(b.title) + " " + b.title);
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx", "✕");
       xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
@@ -599,10 +599,11 @@
     var frm = add(B, "div", "frm"); var tm = document.createElement("input"); tm.type = "time"; tm.value = b.time; var tx = document.createElement("input"); tx.type = "text"; tx.value = b.title; frm.appendChild(tm); frm.appendChild(tx);
     add(B, "div", "lbl", "duration"); var c2 = add(B, "div", "pchips"); DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === b.mins ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { b.mins = m; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
     add(B, "div", "lbl", "priority"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === (b.prio || 2) ? " on" : ""), p.l); x.onclick = function () { b.prio = p.v; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
+    add(B, "div", "lbl", "📌 pin = fixed time; flexible activities flow around it"); var pc = add(B, "div", "pchips"); var px = add(pc, "div", "pchip" + (b.pin ? " on" : ""), b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"); px.onclick = function () { b.pin = !b.pin; px.classList.toggle("on"); px.textContent = b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"; };
     var row = add(B, "div", "frm");
-    add(row, "button", "add", b.done ? "✓ undo done" : "✓ Mark done").onclick = function () { b.done = !b.done; if (b.done) earn(8, {}); b.title = tx.value.trim() || b.title; b.time = tm.value; save(); closeSheet(); renderAll(); };
+    add(row, "button", "add", b.done ? "✓ undo done" : "✓ Mark done").onclick = function () { b.done = !b.done; if (b.done) earn(8, {}); b.title = tx.value.trim() || b.title; b.time = tm.value; reflow(k); save(); closeSheet(); renderAll(); };
     add(row, "button", "add", "🗑 Delete").onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); closeSheet(); renderAll(); };
-    add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; save(); closeSheet(); renderAll(); };
+    add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; reflow(k); save(); closeSheet(); renderAll(); };
   }
   function renderHabits() {
     var L = el("habitList"); L.innerHTML = ""; var dm = doneMap(todayK()), done = 0;
@@ -668,7 +669,22 @@
     ];
     S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); save();
   }
-  function reflow(k) { var a = blocks(k).slice().sort(function (x, y) { return hm(x.time) - hm(y.time); }), cur = -1, changed = false; a.forEach(function (b) { var s = hm(b.time); if (cur >= 0 && s < cur) { s = Math.min(1410, cur); var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); if (nt !== b.time) { b.time = nt; changed = true; } } cur = s + (b.mins || 30); }); if (changed) save(); return changed; }
+  function reflow(k) {
+    var all = blocks(k).slice();
+    var pins = all.filter(function (b) { return b.pin; }).map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
+    var flex = all.filter(function (b) { return !b.pin; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    var changed = false, cur = -1;
+    flex.forEach(function (b) {
+      var dur = b.mins || 30, s = cur < 0 ? hm(b.time) : Math.max(hm(b.time), cur), moved = true, guard = 0;
+      while (moved && guard++ < 60) { moved = false; for (var i = 0; i < pins.length; i++) { if (s < pins[i].e && s + dur > pins[i].s) { s = pins[i].e; moved = true; } } }
+      s = Math.min(1410, s);
+      var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+      if (nt !== b.time) { b.time = nt; changed = true; }
+      cur = s + dur;
+    });
+    if (changed) save();
+    return changed;
+  }
   function nextFreeMin(k) {
     var base = (k === todayK()) ? Math.ceil(nowMin() / 15) * 15 : 8 * 60, last = base;
     blocks(k).forEach(function (b) { var e = hm(b.time) + (b.mins || 30); if (e > last) last = e; });
