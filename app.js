@@ -336,6 +336,7 @@
     var spN = 2 + mood * 2; for (var s = 0; s < spN; s++) { var px = cx + Math.cos(t * 0.6 + s * 1.2) * GW * (0.18 + 0.12 * (s % 3)); var py = baseY - 30 - ((t * 20 + s * 55) % (GH * 0.55)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(mood >= 4 ? "#ffd54a" : st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(px), Math.round(py), 2, 2); }
     if (mood < 2) { var fa = (2 - mood) * 0.17; for (var f = 0; f < 4; f++) { var fy = ((t * 7 + f * 80) % (GH + 120)) - 60; var fgg = gctx.createLinearGradient(0, fy - 34, 0, fy + 34); fgg.addColorStop(0, "rgba(205,210,224,0)"); fgg.addColorStop(0.5, "rgba(205,210,224," + fa + ")"); fgg.addColorStop(1, "rgba(205,210,224,0)"); gctx.fillStyle = fgg; gctx.fillRect(0, fy - 34, GW, 68); } }
     if (mood >= 4) { var rg = gctx.createRadialGradient(cx, GH * 0.45, 10, cx, GH * 0.45, GW * 0.62); rg.addColorStop(0, "rgba(255,220,120,0.13)"); rg.addColorStop(1, "rgba(255,220,120,0)"); gctx.fillStyle = rg; gctx.fillRect(0, 0, GW, GH); }
+    if (hasShippedToday()) { var bg = gctx.createRadialGradient(cx, GH * 0.62, 20, cx, GH * 0.62, GW * 0.7); bg.addColorStop(0, "rgba(70,226,164,0.11)"); bg.addColorStop(1, "rgba(70,226,164,0)"); gctx.fillStyle = bg; gctx.fillRect(0, 0, GW, GH); }
     requestAnimationFrame(drawGuardian);
   }
   function setMood(i) { S.mood = S.mood || {}; S.mood[todayK()] = { lvl: i, t: Date.now() }; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mood: " + MOODS[i].l, mins: 1, catK: "love", color: "#9a5cf0" }); earn(2, { catK: "love" }); save(); renderMood(); renderGame(); }
@@ -366,30 +367,13 @@
   }
 
   // ---- the game: spark currency + compounding upgrades -------------------
-  var UPG = [
-    { id: "first", e: "🌱", l: "First Steps", d: "+25% Spark from everything", cost: 60 },
-    { id: "morning", e: "🌅", l: "Morning Person", d: "×2 Spark before noon", cost: 200 },
-    { id: "deep", e: "🧠", l: "Deep Diver", d: "×2 Spark from Work", cost: 350 },
-    { id: "athlete", e: "🏃", l: "Athlete", d: "×2 Spark from Energy", cost: 350 },
-    { id: "streak", e: "🔥", l: "Streak Engine", d: "+10% Spark per habit streak", cost: 600 },
-    { id: "compound", e: "📈", l: "Compounder", d: "+50% Spark from everything", cost: 1200 },
-    { id: "gold", e: "👑", l: "Golden Core", d: "your tree's core turns gold", cost: 800 }
-  ];
-  function activeStreaks() { var n = 0; S.habits.forEach(function (h) { if (streak(h.id) >= 2) n++; }); return n; }
-  function gMult(ctx) { var u = S.game.ups, m = 1; if (u.first) m += 0.25; if (u.compound) m += 0.5; if (u.streak) m += 0.1 * activeStreaks(); if (u.morning && ctx.morning) m *= 2; if (u.deep && ctx.catK === "work") m *= 2; if (u.athlete && ctx.catK === "energy") m *= 2; return m; }
-  function earn(base, ctx) { ctx = ctx || {}; if (ctx.morning == null) ctx.morning = new Date().getHours() < 12; var got = Math.max(1, Math.round(base * gMult(ctx))); S.game.spark += got; S.game.total += got; save(); var sp = el("spark"); if (sp) { sp.style.transition = "none"; sp.style.transform = "scale(1.14)"; setTimeout(function () { sp.style.transition = "transform .3s"; sp.style.transform = "scale(1)"; renderGame(); }, 30); } }
-  function buyUpg(u) { if (S.game.ups[u.id] || S.game.spark < u.cost) return; S.game.spark -= u.cost; S.game.ups[u.id] = true; save(); renderGame(); }
+  function hasShippedToday() { var lg = logs(todayK()), i; for (i = 0; i < lg.length; i++) if (virtueOf(lg[i]) === "courage") return true; var bl = blocks(todayK()); for (i = 0; i < bl.length; i++) if (bl[i].done && virtueOf(bl[i]) === "courage") return true; return false; }
+  function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; save(); var sp = el("spark"); if (sp) { sp.style.transition = "none"; sp.style.transform = "scale(1.14)"; setTimeout(function () { sp.style.transition = "transform .3s"; sp.style.transform = "scale(1)"; renderGame(); }, 30); } }
   function renderGame() {
-    var sp = el("spark"); if (!sp) return;
-    if (!(S.profile && S.profile.set)) { sp.textContent = ""; var up0 = el("upgrades"); if (up0) up0.innerHTML = ""; return; }
-    sp.innerHTML = "✨ " + S.game.spark.toLocaleString() + " <span style='font-size:11px;opacity:.7;font-weight:600;'>Spark</span>";
-    var L = el("upgrades"); L.innerHTML = ""; add(L, "div", "divlab").innerHTML = "<span>Upgrades</span>";
-    UPG.forEach(function (u) {
-      var owned = !!S.game.ups[u.id], aff = S.game.spark >= u.cost;
-      var r = add(L, "div", "upg" + (owned ? " owned" : "")); add(r, "div", "ue", u.e);
-      var mid = add(r, "div"); mid.style.flex = "1"; add(mid, "div", "un", u.l); add(mid, "div", "ud", u.d);
-      var b = add(r, "button", "ubuy", owned ? "Owned" : "✨ " + u.cost); if (owned) b.disabled = true; else { b.disabled = !aff; b.onclick = function () { buyUpg(u); }; }
-    });
+    var sp = el("spark"); if (!sp) return; var up0 = el("upgrades"); if (up0) up0.innerHTML = "";
+    if (!(S.profile && S.profile.set)) { sp.textContent = ""; return; }
+    var shipped = hasShippedToday();
+    sp.innerHTML = "✨ " + S.game.spark.toLocaleString() + " <span style='font-size:11px;opacity:.7;font-weight:600;'>Spark</span>" + (shipped ? " <span style='font-size:12px;color:#46e2a4;'>· 🌱 today grew</span>" : " <span style='font-size:11px;color:#ffc24a;'>· ship 1 thing to grow</span>");
   }
 
   var MICRO = [
