@@ -307,7 +307,7 @@
   // walkable character + camera (ported from Heaven Inc walk model)
   var px = 24, py = 96, pface = 1, walkF = 0, walkT = 0, moveX = 0, moveY = 0, jid = null, kdn = {}, pInit = false;
   var jz = 0, jvz = 0;  // jump height + vertical velocity (top-down hop)
-  function doJump() { if (jz <= 0 && jvz <= 0) jvz = 12; }
+  function doJump() { if (jz <= 0 && jvz <= 0) jvz = (S.game && S.game.ups && S.game.ups.board) ? 10.5 : 7.5; }  // skate = bigger air (ported from studio-sim: -3.5 vs -2.5)
   var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function mix(a, b, t) { var A = hx2(a), B = hx2(b); return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")"; }
@@ -605,7 +605,7 @@
     var t = (performance.now() - GT0) / 1000;
     var moving = (moveX !== 0 || moveY !== 0), SPD = 4.3 * ((S.game && S.game.ups && S.game.ups.board) ? 1.6 : 1);
     if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
-    if (jvz !== 0 || jz > 0) { jz += jvz; jvz -= 1.2; if (jz <= 0) { jz = 0; jvz = 0; } }
+    if (jvz !== 0 || jz > 0) { jz += jvz; jvz -= 0.95; if (jz <= 0) { jz = 0; jvz = 0; } }
     var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
     if (ghudT++ % 30 === 0) updGameHud();
