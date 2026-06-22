@@ -182,7 +182,7 @@
 
   function virtues() {
     var d14 = lastDays(14), xp = {}; VIRTUES.forEach(function (v) { xp[v.k] = 0; });
-    d14.forEach(function (k) { logs(k).forEach(function (e) { var v = virtueOf(e); if (v) xp[v] += (e.mins || 0); }); var dm = S.habitDone[k] || {}; Object.keys(dm).forEach(function (id) { if (dm[id]) { var hv = { move: "zest", breathe: "zest", deep: "disc", tidy: "disc", read: "wisdom", send: "courage" }[id]; if (hv) xp[hv] += 18; xp.disc += 6; } }); });
+    d14.forEach(function (k) { logs(k).forEach(function (e) { var v = virtueOf(e); if (v) xp[v] += (e.mins || 0); }); var dm = S.habitDone[k] || {}; Object.keys(dm).forEach(function (id) { if (dm[id]) { var hb = S.habits.filter(function (z) { return z.id === id; })[0]; var hv = (hb ? virtueOf({ title: hb.l, catK: hb.cat, habitId: hb.id }) : null) || { move: "zest", breathe: "zest", deep: "disc", tidy: "disc", read: "wisdom", send: "courage" }[id]; if (hv) xp[hv] += 18; xp.disc += 6; } }); });
     blocks(todayK()).forEach(function (b) { if (b.done) xp.hope += 12; });
     var focus = (S.profile && S.profile.focus) || [], bvx = (S.profile && S.profile.base && S.profile.base.virtue) || {};
     var out = VIRTUES.map(function (v) { var x = (xp[v.k] || 0) + (bvx[v.k] || 0), foc = focus.indexOf(v.k) !== -1; var lv = 1 + Math.floor(x / 90) + (foc ? 1 : 0); var glow = Math.min(1, 0.4 + lv * 0.085); return { k: v.k, l: v.l, e: v.e, c: v.c, grow: v.grow, lv: lv, glow: glow, focus: foc, x: x }; });
@@ -579,11 +579,21 @@
     if (hasShippedToday()) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     ctx.restore();
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
+    if (gameOn) {
+      var mmR = 42, mcx = 16 + mmR, mcy = 18 + mmR, msc = mmR / RS;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(mcx, mcy, mmR, 0, 7); ctx.fillStyle = "rgba(30,12,30,0.55)"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#3a2540"; ctx.stroke();
+      ctx.save(); ctx.beginPath(); ctx.arc(mcx, mcy, mmR - 1, 0, 7); ctx.clip();
+      ctx.beginPath(); ctx.arc(mcx, mcy, RG * msc, 0, 7); ctx.fillStyle = "#9aae5e"; ctx.fill();
+      [[-58, 2, "#caa15a"], [14, 44, "#ffd24a"], [150, 74, "#46c46a"], [-130, 28, "#ffb23a"]].forEach(function (o) { ctx.beginPath(); ctx.arc(mcx + o[0] * msc, mcy + o[1] * msc, 2.6, 0, 7); ctx.fillStyle = o[2]; ctx.fill(); });
+      ctx.beginPath(); ctx.arc(mcx + px * msc, mcy + py * msc, 3.4, 0, 7); ctx.fillStyle = "#ff5fa8"; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = "#fff"; ctx.stroke();
+      ctx.restore(); ctx.restore();
+    }
   }
   function drawWorld() {
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
-    var moving = (moveX !== 0 || moveY !== 0), SPD = 2.7;
+    var moving = (moveX !== 0 || moveY !== 0), SPD = 2.7 * ((S.game && S.game.ups && S.game.ups.board) ? 1.75 : 1);
     if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
     var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
@@ -593,7 +603,10 @@
   function updGameHud() {
     var h = el("gameHud"); if (!h) return;
     var sp = (S.game && S.game.spark) || 0;
-    h.innerHTML = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island") + "<br><span style='opacity:.82;font-size:12px'>tap yourself ✦ to open the menu</span>";
+    var PROMPTS = [[-58, 2, "tap the 🏠 cabin — settings"], [14, 44, "tap the 📋 board — plan your day"], [150, 74, "tap the 🌳 tree — your skills"], [-130, 28, "tap the 🧰 chest — habits"]];
+    var hint = "tap yourself ✦ to open the menu", best = 999;
+    for (var i = 0; i < PROMPTS.length; i++) { var d = Math.hypot(px - PROMPTS[i][0], py - PROMPTS[i][1]); if (d < 74 && d < best) { best = d; hint = PROMPTS[i][2]; } }
+    h.innerHTML = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island") + "<br><span style='opacity:.82;font-size:12px'>" + hint + "</span>";
   }
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
@@ -618,9 +631,21 @@
     ], function (m) { if (m && m.fn) m.fn(); });
   }
   var worldTapWired = false;
+  // diegetic access points — walk up to a building and tap it to open its menu (Sims-style)
+  var WORLD_SPOTS = [
+    { x: -58, y: 2, r: 62, fn: function () { closeGame(); brainSheet(); } },  // cabin → brain / settings / profile
+    { x: 14, y: 44, r: 48, fn: function () { goTab("day"); } },               // notice board → plan your day
+    { x: 150, y: 74, r: 66, fn: function () { goTab("self"); } },             // tree → skills / character
+    { x: -130, y: 28, r: 46, fn: function () { goTab("grow"); } }             // chest → habits
+  ];
   function wireWorldTap() {
     if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
-    w.addEventListener("click", function (e) { var cx = WGW / 2, cy = WGH / 2; if (Math.abs(e.clientX - cx) < 86 && e.clientY > cy - 150 && e.clientY < cy + 46) heroMenu(); });
+    w.addEventListener("click", function (e) {
+      var cx = WGW / 2, cy = WGH / 2;
+      if (Math.abs(e.clientX - cx) < 86 && e.clientY > cy - 150 && e.clientY < cy + 46) { heroMenu(); return; }
+      var wx = px + (e.clientX - cx) / zoom, wy = py + (e.clientY - cy) / zoom;
+      for (var i = 0; i < WORLD_SPOTS.length; i++) { var s = WORLD_SPOTS[i]; if (Math.hypot(wx - s.x, wy - s.y) < s.r) { s.fn(); return; } }
+    });
   }
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -704,6 +729,11 @@
       var n = (S.game.garden || []).length, cost = 20 * (n + 1);
       var pb = add(L, "button", "done2", "🌱 Plant in your world · ✨" + cost); pb.style.marginTop = "8px"; pb.disabled = !shipped || S.game.spark < cost; pb.onclick = plantGarden;
       var h = add(L, "div", "lbl", shipped ? (n + " planted — your world fills as you do") : "ship one real thing today, then plant"); h.style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
+      var bcost = 120;
+      if (!(S.game.ups && S.game.ups.board)) {
+        var sb = add(L, "button", "done2", "🛹 Build a skateboard · ✨" + bcost); sb.style.marginTop = "8px"; sb.disabled = S.game.spark < bcost;
+        sb.onclick = function () { if (S.game.spark < bcost) return; S.game.spark -= bcost; S.game.ups = S.game.ups || {}; S.game.ups.board = true; save(); renderGame(); };
+      } else { add(L, "div", "lbl", "🛹 Skateboard built — you zip around your world").style.cssText = "font-size:12px;text-align:center;margin-top:6px;"; }
     }
   }
 
@@ -1301,7 +1331,7 @@
           Object.keys(picked).forEach(function (k) {
             var t = picked[k];
             if (S.habits.some(function (h) { return h.l === t.title; })) return;
-            S.habits.push({ id: uid(), e: t.emoji || "⭐", l: t.title, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" });
+            S.habits.push({ id: uid(), e: t.emoji || "⭐", l: t.title, cat: t.catK, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" });
           });
           save(); closeSheet(); renderHabits();
         };
