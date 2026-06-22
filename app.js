@@ -788,7 +788,7 @@
     draw();
   }
 
-  function brainCfg() { S.brain = S.brain || { engine: "off", key: "", model: "" }; if (S.brain.model == null) S.brain.model = ""; return S.brain; }
+  function brainCfg() { S.brain = S.brain || { engine: "off", key: "", model: "" }; if (S.brain.model == null) S.brain.model = ""; if (S.brain.model === "mistralai/mistral-7b-instruct:free") S.brain.model = ""; return S.brain; }
   function askBrain(prompt, cb) {
     var c = brainCfg();
     if (c.engine === "off" || !c.key) { cb(null, "no brain configured"); return; }
@@ -828,7 +828,7 @@
       if (c.engine === "openrouter" || c.engine === "groq") {
         if (c.engine === "openrouter") { var pn = add(B, "div", "lbl", "⚠️ free models error until you enable them — go to openrouter.ai/settings/privacy and turn ON the free-model / prompt-logging toggle, then Test."); pn.style.cssText = "font-size:12px;color:#ffc24a;line-height:1.4;"; }
         add(B, "div", "lbl", "model");
-        var models = c.engine === "openrouter" ? ["meta-llama/llama-3.2-3b-instruct:free", "google/gemma-2-9b-it:free", "mistralai/mistral-7b-instruct:free", "deepseek/deepseek-chat-v3-0324:free", "openai/gpt-4o-mini", "openai/gpt-4o"] : ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
+        var models = c.engine === "openrouter" ? ["google/gemini-2.0-flash-exp:free", "meta-llama/llama-3.3-70b-instruct:free", "deepseek/deepseek-chat-v3-0324:free", "google/gemma-2-9b-it:free", "meta-llama/llama-3.2-3b-instruct:free", "openai/gpt-4o-mini", "openai/gpt-4o"] : ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
         var cur = c.model || models[0], sel = document.createElement("select"); sel.className = "msel";
         models.forEach(function (mn) { var o = document.createElement("option"); o.value = mn; o.textContent = mn; if (cur === mn) o.selected = true; sel.appendChild(o); });
         var oc = document.createElement("option"); oc.value = "__c"; oc.textContent = "custom…"; if (models.indexOf(cur) < 0) oc.selected = true; sel.appendChild(oc); B.appendChild(sel);
