@@ -780,6 +780,7 @@
     el("planToday").onclick = function () { planSheet(viewK, relLabel(viewK)); };
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
     el("addHabit").onclick = habitSheet;
+    var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; renderToday(); }; });

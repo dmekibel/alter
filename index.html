@@ -20,7 +20,8 @@
   html,body{height:100%;color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-weight:500;
     background:linear-gradient(170deg,#92e2ff 0%,#c7b2ff 50%,#ffc0e2 100%);}
   #screen{max-width:520px;margin:0 auto;min-height:100%;padding:16px 14px max(40px,env(safe-area-inset-bottom));}
-  header{padding:6px 4px 12px;}
+  header{padding:6px 4px 12px;position:relative;}
+  #gear{position:absolute;top:4px;right:2px;background:rgba(255,255,255,.08);border:2px solid #4a4068;color:#f3edfc;width:40px;height:40px;border-radius:13px;font-size:19px;cursor:pointer;z-index:5;}
   #date{font-family:var(--bub);font-size:13px;color:#5a3f6e;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
   #hello{font-family:var(--bub);font-size:26px;font-weight:800;margin-top:2px;text-shadow:0 2px 0 rgba(255,255,255,.5);}
   /* hero */
@@ -283,7 +284,7 @@
 </head>
 <body>
   <div id="screen">
-    <header><div id="date"></div><div id="hello"></div></header>
+    <header><div id="date"></div><div id="hello"></div><button id="gear" aria-label="Brain">🧠</button></header>
 
     <div class="tab on" id="t-home">
       <div id="stage"><canvas id="guardian"></canvas></div>
