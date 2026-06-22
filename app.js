@@ -198,7 +198,7 @@
     if (p === "night") { out.kicker = "tonight"; out.line = "It's late — let's wind down."; out.sub = "tidy the surfaces, phone away, head toward bed."; out.primary = { label: "Wind down 😴", fn: function () { ritualSheet(WINDDOWN); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — start simple."; out.sub = "make your bed, a few lines of journal, name today's one thing."; out.primary = { label: "Start morning ☀️", fn: function () { ritualSheet(MORNING_RITUAL); } }; out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Evening bookend 🌙", fn: function () { ritualSheet(EVENING_RITUAL); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
-    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "Plan the day 🎯", fn: function () { planSheet(todayK(), "today"); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "What should I do next? ✨", fn: function () { suggestSheet(todayK()); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
     return out;
   }
@@ -366,6 +366,7 @@
     for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; }
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
+    function rr() { if (L === el("todayList")) renderToday(); else renderTom(); }
     function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
@@ -381,21 +382,21 @@
         if (ev.target === grip || ev.target === gripT) return; ev.preventDefault();
         var sy0 = ev.clientY, sm0 = hm(b.time), moved = false, ct0 = card.querySelector(".ct"), dragMin = sm0;
         function mv2(e) { var dy = e.clientY - sy0; if (!moved && Math.abs(dy) > 6) { moved = true; card.classList.add("lift"); } if (moved) { dragMin = Math.max(0, Math.min(1425, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = ((dragMin - startH * 60) / 60 * HP) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); } }
-        function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); save(); } else { var n = Date.now(); if (n - lastTap < 330) { lastTap = 0; blockEdit(b, k); } else lastTap = n; } }
+        function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); save(); reflow(k); rr(); } else { var n = Date.now(); if (n - lastTap < 330) { lastTap = 0; blockEdit(b, k); } else lastTap = n; } }
         document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2);
       });
       grip.addEventListener("pointerdown", function (ev) {
         ev.stopPropagation(); ev.preventDefault();
         var sy = ev.clientY, sm = b.mins || 30, ct = card.querySelector(".ct");
         function mv(e) { var v = Math.max(15, Math.round((sm + (e.clientY - sy) / HP * 60) / 15) * 15); b.mins = v; card.style.height = Math.max(24, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "–" + fmt(hm(b.time) + v); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); card._rz = true; setTimeout(function () { card._rz = false; }, 60); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); reflow(k); rr(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
       gripT.addEventListener("pointerdown", function (ev) {
         ev.stopPropagation(); ev.preventDefault();
         var sy = ev.clientY, sm = b.mins || 30, sStart = hm(b.time), endM = sStart + sm, ct = card.querySelector(".ct");
         function mv(e) { var ns = Math.max(0, Math.min(endM - 15, sStart + Math.round(((e.clientY - sy) / HP * 60) / 15) * 15)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = ((ns - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "–" + fmt(endM); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); reflow(k); rr(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
     });
@@ -505,18 +506,56 @@
     ];
     S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); save();
   }
+  function reflow(k) { var a = blocks(k).slice().sort(function (x, y) { return hm(x.time) - hm(y.time); }), cur = -1, changed = false; a.forEach(function (b) { var s = hm(b.time); if (cur >= 0 && s < cur) { s = Math.min(1410, cur); var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); if (nt !== b.time) { b.time = nt; changed = true; } } cur = s + (b.mins || 30); }); if (changed) save(); return changed; }
+  function nextFreeMin(k) {
+    var base = (k === todayK()) ? Math.ceil(nowMin() / 15) * 15 : 8 * 60, last = base;
+    blocks(k).forEach(function (b) { var e = hm(b.time) + (b.mins || 30); if (e > last) last = e; });
+    return Math.min(1410, Math.max(base, last));
+  }
+  function suggestNext(k) {
+    var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; });
+    var dm = doneMap(todayK()), out = [], seen = {};
+    function push(m) { if (!m) return; var t = (m.title || "").toLowerCase(); if (!t || seen[t] || have[t]) return; seen[t] = 1; out.push(m); }
+    if (k === todayK()) S.habits.forEach(function (h) { if (!dm[h.id] && h.type !== "quit") push(TITLE2META[h.l.toLowerCase()] || { title: h.l, catK: HABIT2CAT[h.id] || "work", emoji: h.e, color: h.color, habitId: h.id }); });
+    (CONTEXT[phase()] || []).forEach(function (t) { push(TITLE2META[t.toLowerCase()]); });
+    var hr = new Date().getHours(); if (hr >= 9 && hr < 18) { var o = OCC_BY_K[(S.profile && S.profile.occ)], wg = (o && o.work) ? o.work : CATS[1].groups; if (wg[0]) wg[0].tasks.slice(0, 2).forEach(function (t) { push(TITLE2META[t.l.toLowerCase()] || { title: t.l, catK: "work", emoji: t.e, color: "#2a9fe0", habitId: null }); }); }
+    frequent(6).forEach(push);
+    return out.slice(0, 6);
+  }
+  function saveMasterpiece(k) { S.profile = S.profile || {}; S.profile.masterpiece = blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).map(function (b) { return { time: b.time, mins: b.mins, title: b.title, color: b.color, prio: b.prio }; }); save(); }
+  function fillMasterpiece(k) { if (!(S.profile && S.profile.masterpiece)) return; S.blocks[k] = S.profile.masterpiece.map(function (x) { return { id: uid(), time: x.time, mins: x.mins, title: x.title, prio: x.prio || 2, color: x.color, done: false }; }); save(); }
+  function suggestSheet(k) {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "✨ What's next?");
+    add(B, "div", "lbl", "best things to do from here — tap to drop one in");
+    var list = add(B, "div");
+    function draw() {
+      list.innerHTML = ""; var sg = suggestNext(k), start = nextFreeMin(k);
+      if (!sg.length) { add(list, "div", "empty", "You're set for now — add anything you like below."); }
+      sg.forEach(function (m) {
+        var d0 = m.habitId === "move" ? 45 : 30, r = add(list, "div", "sgrow"); add(r, "div", "sge", m.emoji || "•");
+        var mid = add(r, "div"); mid.style.flex = "1"; add(mid, "div", "sgn", m.title); add(mid, "div", "sgt", fmt(start) + " · " + d0 + "m");
+        r.onclick = function () { blocks(k).push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: d0, title: m.title, prio: 2, color: m.color || "#8a5cf0", done: false }); save(); draw(); renderToday(); };
+      });
+    }
+    draw();
+    add(B, "div", "lbl", "or");
+    var mp = !!(S.profile && S.profile.masterpiece && S.profile.masterpiece.length);
+    add(B, "button", "done2", mp ? "🌟 Fill my masterpiece day" : "🌟 Suggest a full day").onclick = function () { if (mp) fillMasterpiece(k); else suggestDay(k); closeSheet(); renderToday(); };
+    if (blocks(k).length) { var sv = add(B, "button", "add", "💾 Save this as my masterpiece day"); sv.style.cssText = "display:block;margin:10px auto 0;"; sv.onclick = function () { saveMasterpiece(k); sv.textContent = "✓ saved — your masterpiece"; }; }
+  }
   function planSheet(k, label, atTime) {
     var cfg = { mins: 60, prio: 2 }; if (atTime) { cfg.time = atTime; } else { var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
     function advance() { var m = hm(cfg.time) + cfg.mins; if (m >= 1439) m = 1439; cfg.time = pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
     pickerSheet({ title: function () { return "Plan " + label; }, frequent: true, custom: true,
       head: function (B, draw) {
-        var sg = add(B, "button", "done2", "✨ Auto-fill a perfect day"); sg.style.marginBottom = "10px"; sg.onclick = function () { suggestDay(k); closeSheet(); renderAll(); };
+        var sg = add(B, "button", "done2", "✨ What should I do next?"); sg.style.marginBottom = "10px"; sg.onclick = function () { closeSheet(); suggestSheet(k); };
         var frm = add(B, "div", "frm"); var time = document.createElement("input"); time.type = "time"; time.value = cfg.time; time.onchange = function () { cfg.time = time.value; }; frm.appendChild(time); var dl = document.createElement("span"); dl.style.cssText = "align-self:center;font-weight:800;font-family:var(--bub);"; dl.textContent = "• " + dur(cfg.mins); frm.appendChild(dl);
         add(B, "div", "lbl", "duration"); var c2 = add(B, "div", "pchips"); DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === cfg.mins ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { cfg.mins = m; draw(); }; });
         add(B, "div", "lbl", "priority — lowest gets dropped if you run out of time"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === cfg.prio ? " on" : ""), p.l); x.onclick = function () { cfg.prio = p.v; draw(); }; });
         add(B, "div", "lbl", "tap to drop it at " + fmt(hm(cfg.time)) + " — they stack back-to-back");
       },
-      onTask: function (t, picked, draw) { blocks(k).push({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, color: t.color || prioC(cfg.prio), done: false }); advance(); save(); draw(); },
+      onTask: function (t, picked, draw) { blocks(k).push({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, color: t.color || prioC(cfg.prio), done: false }); advance(); reflow(k); save(); draw(); },
       foot: function (B) { var list = add(B, "div"); list.style.marginTop = "10px"; blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); add(ti, "span", null, b.title); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); planSheet(k, label); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; } });
   }
 
