@@ -348,19 +348,47 @@
     text-shadow:0 1px 6px rgba(0,0,0,.7);pointer-events:none;letter-spacing:.3px;}
   #guardianCap{text-align:center;font-family:var(--bub);font-weight:700;font-size:13.5px;color:#cdbff2;margin:0 0 12px;letter-spacing:.3px;}
   #guardianCap b{color:#ffe07a;}
-  /* ===== NEVER WHITE — kill every surviving white/near-white surface (David: no white backgrounds, ever) ===== */
-  .scard{background:linear-gradient(165deg,#221a3e,#2c1e46) !important;color:#f3edfc !important;}
-  .tabbar{background:#1c1338 !important;}
-  input[type=text],input[type=time]{background:rgba(255,255,255,.06) !important;color:#f3edfc !important;border-color:#4a4068 !important;}
-  input[type=text]::placeholder,input[type=time]::placeholder{color:#9c8fc4;}
-  #nowBtn{background:#35290f !important;color:#ffc24a !important;}
-  .pchip{background:rgba(255,255,255,.06) !important;color:#ece4f7 !important;}
-  .subi{background:rgba(255,255,255,.05) !important;color:#ece4f7 !important;}
-  .subcat,.gtile{background:rgba(255,255,255,.05) !important;color:#ece4f7 !important;}
-  .face{background:rgba(255,255,255,.05) !important;border-color:#4a4068 !important;}
-  .qopt{background:rgba(255,255,255,.05) !important;color:#ece4f7 !important;border-color:#4a4068 !important;}
-  .ck{background:rgba(255,255,255,.06) !important;}
-  .bar{background:rgba(255,255,255,.08) !important;}
+  /* ===== POWERPUFF CANDY on dark hot-pink (David: bright candy panels/buttons, deep hot-pink bg, ZERO white) ===== */
+  :root{ --ink:#3a2540 !important; --soft:#ffb3d9; --card:#ffdcef; --sh:3px 4px 0 rgba(58,37,64,.22); }
+  html,body{ background:linear-gradient(170deg,#86205a 0%,#5c123c 55%,#480f2f 100%) !important; color:#3a2540; }
+  /* page chrome (sits on the dark pink) → light text */
+  #date{ color:#ffc4e2 !important; }
+  #hello{ color:#fff2f9 !important; text-shadow:0 2px 0 rgba(0,0,0,.18) !important; }
+  .divlab,.divlab span{ color:#ffc4e2 !important; }
+  #gear,#gameBtn{ background:rgba(255,255,255,.12) !important; border-color:rgba(255,255,255,.34) !important; color:#fff2f9 !important; }
+  /* bright candy section panels + bold ink outline + sticker shadow */
+  .panel{ box-shadow:var(--sh) !important; }
+  #nowCard{ background:#ffe79a !important; border:3px solid #3a2540 !important; }
+  .c-today{ background:#bfe6ff !important; border:3px solid #3a2540 !important; }
+  .c-habit{ background:#ffd0e6 !important; border:3px solid #3a2540 !important; }
+  .c-tom{ background:#ddd0ff !important; border:3px solid #3a2540 !important; }
+  .c-stats{ background:#ffd9a8 !important; border:3px solid #3a2540 !important; }
+  .cardhead h3,#nowCard .nl{ color:#3a2540 !important; }
+  #nowCard .ns{ color:#7a5a2a !important; }
+  .meta{ color:#3a2540 !important; background:rgba(58,37,64,.10) !important; border:2px solid #3a2540 !important; }
+  /* inner rows on bright panels: subtle ink recess + dark text */
+  .blk,.hab,.logi{ background:rgba(58,37,64,.07) !important; border:2.5px solid #3a2540 !important; }
+  .blk .tm,.blk .ti,.hab .hn,.logi .lt,.logi .ln,.empty,.del{ color:#3a2540 !important; }
+  .subpill,.pfline{ background:rgba(58,37,64,.08) !important; color:#3a2540 !important; border:2px solid #3a2540 !important; }
+  /* light candy surfaces (clearly pink, never white) for tiles/chips/inputs */
+  .add,.add2,.chip,#hero .chip,.pchip,.subi,.subcat,.gtile,.face,.qopt,.ck,input[type=text],input[type=time]{
+    background:#ffdcef !important; color:#3a2540 !important; border:2.5px solid #3a2540 !important; }
+  input[type=text]::placeholder,input[type=time]::placeholder{ color:#a86a8c !important; }
+  .face{ box-shadow:0 3px 0 rgba(58,37,64,.2) !important; }
+  .bar{ background:rgba(58,37,64,.12) !important; }
+  /* saturated candy primary buttons (the two former white ones) */
+  #nowBtn,#hero .hp{ background:#ff5fa8 !important; color:#fff2f9 !important; border:3px solid #3a2540 !important; }
+  /* dark hot-pink BACKGROUND surfaces: sheet, nav, day header → light text */
+  .scard{ background:linear-gradient(170deg,#8a2660,#5e1540) !important; color:#ffe6f2 !important; border:3px solid #3a2540 !important; }
+  .sttl,.lbl,.qline{ color:#fff2f9 !important; }
+  .shandle{ background:#ffc4e2 !important; }
+  #nav{ background:#5a1138 !important; border-top:3px solid #3a2540 !important; }
+  .nb{ color:#e79ac4 !important; }
+  .nb.on{ color:#fff2f9 !important; }
+  .dayhead{ background:#5a1138 !important; border-bottom:1px solid rgba(255,255,255,.12) !important; }
+  #dnLabel{ color:#fff2f9 !important; }
+  #dayNav button,#zoomTabs,#growTabs{ background:rgba(255,255,255,.08) !important; border-color:rgba(255,255,255,.27) !important; color:#fff2f9 !important; }
+  .zt{ color:#ffd0e6 !important; }
 </style>
 </head>
 <body>
@@ -424,6 +452,6 @@
     <div id="joy2"><div id="joyStick2"></div></div>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=343"></script>
+  <script src="app.js?v=344"></script>
 </body>
 </html>
