@@ -247,6 +247,8 @@
   .rie{font-size:23px;line-height:1;} .ril{font-size:9.5px;font-weight:700;text-align:center;line-height:1.05;color:#cdbff2;padding:0 3px;}
   .rmore{background:#3a2f5c;border-color:#b48cff;}
   .msel{width:100%;background:#161020;color:#ece4f7;border:2.5px solid #4a4068;border-radius:14px;padding:11px;font-size:14px;font-family:inherit;font-weight:600;}
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(18px);background:#2a2147;border:2px solid #6a4aa0;color:#f3edfc;padding:11px 16px;border-radius:14px;font-size:13px;font-weight:700;z-index:80;opacity:0;transition:.3s;max-width:88%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .qwe{font-size:24px;line-height:1;}
   .qwl{font-size:10.5px;font-weight:700;text-align:center;line-height:1.1;color:var(--soft);}
   .qws{font-family:var(--bub);font-weight:800;font-size:11px;color:#ffe07a;}
@@ -341,6 +343,6 @@
     <button class="nb" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
   </nav>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=321"></script>
+  <script src="app.js?v=322"></script>
 </body>
 </html>

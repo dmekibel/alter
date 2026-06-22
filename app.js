@@ -3,7 +3,7 @@
 (function () {
   "use strict";
   var el = function (id) { return document.getElementById(id); };
-  var KEY = "alter_plan2";
+  var KEY = "alter_plan2", SCHEMA = 1, lastSaveErr = 0;
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -151,8 +151,21 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {} } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.timers.forEach(function (t) { if (!t.dayK) t.dayK = key(new Date(t.start)); }); S.v = SCHEMA; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
+  function toast(msg) { var t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.classList.add("show"); }, 10); setTimeout(function () { t.classList.remove("show"); setTimeout(function () { t.remove(); }, 320); }, 2600); }
+  function copyFallback(json) { var ta = document.createElement("textarea"); ta.value = json; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("📋 backup copied"); } catch (e) { toast("⚠️ couldn't copy — use Download"); } ta.remove(); }
+  function exportData(mode) {
+    var json = localStorage.getItem(KEY) || JSON.stringify(S);
+    if (mode === "download") { var blob = new Blob([json], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = "alter-backup-" + key(new Date()) + ".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); toast("⬇ backup downloaded"); }
+    else if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(json).then(function () { toast("📋 backup copied — keep it safe"); }, function () { copyFallback(json); }); }
+    else copyFallback(json);
+  }
+  function restoreUI(B) {
+    var w = add(B, "div"); w.style.marginTop = "10px"; add(w, "div", "lbl", "paste a backup, then Restore (replaces current data):");
+    var ta = document.createElement("textarea"); ta.placeholder = "paste backup JSON here…"; ta.style.cssText = "width:100%;height:88px;background:#161020;color:#ece4f7;border:2.5px solid #4a4068;border-radius:14px;padding:11px;font-size:12px;font-family:inherit;"; w.appendChild(ta);
+    add(w, "button", "done2", "♻ Restore from this").onclick = function () { var txt = ta.value.trim(); if (!txt) return; var obj; try { obj = JSON.parse(txt); } catch (e) { toast("⚠️ not valid backup JSON"); return; } if (!obj || (!obj.habits && !obj.blocks && !obj.log)) { toast("⚠️ doesn't look like an ALTER backup"); return; } if (!window.confirm("Replace ALL current data with this backup?")) return; localStorage.setItem(KEY, txt); location.reload(); };
+  }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
   function doneMap(k) { return (S.habitDone[k] = S.habitDone[k] || {}); }
@@ -436,7 +449,7 @@
   function pickOne(cb) { pickerSheet({ title: function () { return "What is it?"; }, frequent: true, custom: true, onTask: function (t) { closeSheet(); cb(t); } }); }
   function assignBlock(b, m, k) { b.title = m.title; b.color = m.color || b.color; b.catK = m.catK || b.catK; save(); reflow(k); renderToday(); }
   function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = m.emoji || ""; t.habitId = m.habitId || null; save(); renderToday(); renderNow(); }
-  function startTrackerNow() { S.timers.push({ id: uid(), title: "Tracking…", catK: null, emoji: "⏱️", color: "#ff5fa8", start: Date.now() }); save(); return S.timers[S.timers.length - 1]; }
+  function startTrackerNow() { S.timers.push({ id: uid(), title: "Tracking…", catK: null, emoji: "⏱️", color: "#ff5fa8", start: Date.now(), dayK: todayK() }); save(); return S.timers[S.timers.length - 1]; }
   function layoutLane(items) {
     items.sort(function (a, b) { return a.s - b.s; });
     var cl = [], cur = [], curEnd = -1;
@@ -770,8 +783,8 @@
   }
 
   // ---- timers ------------------------------------------------------------
-  function startTimer(p) { S.timers.push({ id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now() }); save(); }
-  function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i], mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(todayK())[t.habitId] = true; if (isTidy(t)) S.lastTidy = todayK(); earn(mins, { catK: t.catK }); S.timers.splice(i, 1); save(); renderAll(); }
+  function startTimer(p) { S.timers.push({ id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }); save(); }
+  function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i], dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); S.timers.splice(i, 1); save(); renderAll(); }
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {
     var C = el("nowCard"); C.innerHTML = "";
@@ -860,6 +873,12 @@
       var test = add(B, "button", "done2", "🧪 Test the brain"); var out = add(B, "div", "lbl", ""); out.style.minHeight = "20px";
       test.onclick = function () { out.textContent = "thinking…"; askBrain("Reply with exactly: ALTER brain online.", function (t, err) { out.textContent = t ? ("✓ " + t) : ("✕ " + (err || "failed")); }); };
     }
+    add(B, "div", "divlab").innerHTML = "<span>💾 Back up your life</span>";
+    var bl = add(B, "div", "lbl", "your data lives only on this device — back it up so nothing can erase it."); bl.style.fontSize = "12px";
+    var br = add(B, "div", "frm");
+    add(br, "button", "add", "📋 Copy").onclick = function () { exportData("copy"); };
+    add(br, "button", "add", "⬇ Download").onclick = function () { exportData("download"); };
+    add(br, "button", "add", "♻ Restore").onclick = function () { restoreUI(B); };
   }
   var SURVEYQ = [
     { q: "How often do you work out?", v: "zest", p: "Athlete", e: "🏃" },
