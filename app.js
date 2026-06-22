@@ -233,11 +233,34 @@
     });
   }
   function treeTap(ev) { if (!vState || !tctx) return; var c = el("tree"), rect = c.getBoundingClientRect(); var x = ev.clientX - rect.left, y = ev.clientY - rect.top; for (var i = 0; i < treeNodes.length; i++) { var n = treeNodes[i]; if ((x - n.x) * (x - n.x) + (y - n.y) * (y - n.y) < n.r * n.r) { var v = vState.list.filter(function (z) { return z.k === n.k; })[0]; if (v) virtueDetail(v); return; } } }
+  function actCount(re) { var n = 0; lastDays(30).forEach(function (k) { logs(k).forEach(function (e) { if (re.test((e.title || "").toLowerCase())) n++; }); var dm = S.habitDone[k] || {}; S.habits.forEach(function (h) { if (dm[h.id] && re.test(h.l.toLowerCase())) n++; }); }); return n; }
+  function bestStreak() { var m = 0; S.habits.forEach(function (h) { var s = streak(h.id); if (s > m) m = s; }); return m; }
+  function planCount() { var n = 0; lastDays(30).forEach(function (k) { (S.blocks[k] || []).forEach(function (b) { if (b.done) n++; }); }); return n; }
+  var PERKS = {
+    zest: [{ n: "Athlete", e: "🏃", desc: "move your body", r: [3, 8, 18, 35], m: function () { return actCount(/run|gym|walk|yoga|cycl|swim|sport|hike|move|workout|stretch/); } }, { n: "Cold Iron", e: "🧊", desc: "cold showers & breathwork", r: [2, 6, 14], m: function () { return actCount(/cold|sauna|ice|breathe/); } }, { n: "Well-Fed", e: "🥗", desc: "eat & sleep well", r: [4, 12, 28], m: function () { return actCount(/healthy|cook|protein|hydrate|sleep|nap|meal|vitamin/); } }],
+    disc: [{ n: "Deep Focus", e: "🧠", desc: "deep work sessions", r: [3, 10, 25, 50], m: function () { return actCount(/deep|program|cod|study|research|focus|writ/); } }, { n: "Unbroken", e: "🔥", desc: "keep your streaks alive", r: [3, 7, 14, 30], m: bestStreak }, { n: "Clean Space", e: "🧹", desc: "tidy your space", r: [3, 10, 22], m: function () { return actCount(/tidy|laundry|clean|dish|bed|sweep|vacuum/); } }],
+    love: [{ n: "Connector", e: "💞", desc: "reach out to people", r: [3, 9, 20], m: function () { return actCount(/partner|family|friend|call|date|text|hug|quality|people/); } }, { n: "Open Heart", e: "🪞", desc: "journal & reflect", r: [3, 9, 20], m: function () { return actCount(/journal|gratitude|therapy|affirm|reflect/); } }],
+    courage: [{ n: "Shipper", e: "✦", desc: "ship & send things", r: [2, 6, 15, 30], m: function () { return actCount(/ship|send|publish|outreach|pitch|apply|post|sell|launch|deploy|demo/); } }, { n: "Bold", e: "🦁", desc: "do the scary thing", r: [2, 6, 14], m: function () { return actCount(/cold|ice|interview|ask|pitch|confront|sales|call/); } }],
+    wisdom: [{ n: "Scholar", e: "📖", desc: "read & study", r: [3, 10, 24, 48], m: function () { return actCount(/read|study|research|learn|language|podcast|lecture/); } }, { n: "Sharp Mind", e: "♟️", desc: "chess, puzzles, practice", r: [2, 7, 16], m: function () { return actCount(/chess|puzzle|practice|sudoku/); } }],
+    curiosity: [{ n: "Creator", e: "🎨", desc: "make something new", r: [3, 10, 24, 48], m: function () { return actCount(/art|draw|paint|music|guitar|piano|sing|design|video|content|make|writ|craft|midjourney|photo/); } }, { n: "Explorer", e: "🧭", desc: "explore & discover", r: [2, 7, 16], m: function () { return actCount(/nature|travel|explore|garden|hike|new/); } }],
+    gratitude: [{ n: "Grateful", e: "🙏", desc: "note what you're grateful for", r: [3, 10, 24], m: function () { return actCount(/gratitude|grateful|thank/); } }, { n: "Present", e: "🌙", desc: "meditate & breathe", r: [2, 8, 18], m: function () { return actCount(/meditat|breathe|present|reflect/); } }],
+    hope: [{ n: "Architect", e: "🗒️", desc: "plan your days", r: [3, 10, 25], m: planCount }, { n: "Visionary", e: "🌅", desc: "set goals & intentions", r: [2, 7, 16], m: function () { return actCount(/plan|goal|vision|dream|intention/); } }]
+  };
+  var OCC_PERK = { artist: { v: "curiosity", n: "Master Artist", e: "🎨", desc: "make & ship art", re: /art|draw|paint|design|midjourney|sketch/, r: [5, 15, 35, 70] }, dev: { v: "curiosity", n: "Master Builder", e: "💻", desc: "build & ship code", re: /cod|program|build|deploy|debug|ship/, r: [5, 15, 35, 70] }, founder: { v: "courage", n: "The Closer", e: "🤝", desc: "sell, pitch, close", re: /sell|close|outreach|sales|deal|pitch|invoice/, r: [3, 10, 25, 50] }, writer: { v: "curiosity", n: "Wordsmith", e: "✍️", desc: "write & publish", re: /writ|edit|publish|post|newsletter/, r: [5, 15, 35, 70] }, student: { v: "wisdom", n: "Top Student", e: "📚", desc: "study & produce", re: /study|assignment|revise|practice|lecture/, r: [5, 15, 35, 70] }, office: { v: "disc", n: "The Operator", e: "💼", desc: "focus & deliver", re: /deep|analysis|meeting|ship|review|report/, r: [5, 15, 35, 70] } };
+  function occPerk(vk) { var o = OCC_PERK[(S.profile && S.profile.occ)]; if (o && o.v === vk) return { n: o.n, e: o.e, desc: o.desc, r: o.r, m: function () { return actCount(o.re); } }; return null; }
   function virtueDetail(v) {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
     add(B, "div", "sttl", v.e + " " + v.l + " · Lv " + v.lv);
-    var p = add(B, "div", "lbl", "this light is glowing — and ready to grow."); p.style.fontSize = "14px";
-    var g = add(B, "div"); g.style.cssText = "background:rgba(255,255,255,.06);border:2.5px solid var(--ink);border-radius:16px;padding:14px;margin:8px 0 4px;font-weight:600;font-size:15px;"; g.innerHTML = "✨ Grow it — " + v.grow + ".";
+    var sub = add(B, "div", "lbl", "skills you level by living — do the thing, it ranks up"); sub.style.fontSize = "13px";
+    var op = occPerk(v.k), perks = (PERKS[v.k] || []).slice(); if (op) perks.unshift(op);
+    perks.forEach(function (p) {
+      var val = p.m(), rank = 0, i; for (i = 0; i < p.r.length; i++) if (val >= p.r[i]) rank = i + 1; var mastered = rank >= p.r.length;
+      var card = add(B, "div", "perk" + (rank > 0 ? " on" : "")); add(card, "div", "pke", p.e);
+      var mid = add(card, "div"); mid.style.flex = "1"; var hd = add(mid, "div", "pkh"); add(hd, "span", "pkn", p.n);
+      var pips = add(hd, "span", "pkpips"); for (i = 0; i < p.r.length; i++) { var pip = add(pips, "i"); if (i < rank) pip.className = "on"; }
+      add(mid, "div", "pkd", mastered ? "Mastered ✓ · Rank " + rank : "▸ " + p.desc + " — " + (p.r[rank] - val) + " more to rank " + (rank + 1));
+      var bar = add(mid, "div", "pkbar"), prev = rank > 0 ? p.r[rank - 1] : 0, nxt = mastered ? p.r[p.r.length - 1] : p.r[rank], frac = mastered ? 1 : Math.max(0.05, Math.min(1, (val - prev) / ((nxt - prev) || 1))); var bi = add(bar, "i"); bi.style.width = Math.round(frac * 100) + "%"; bi.style.background = v.c;
+    });
     add(B, "button", "done2", "Do it now ▶").onclick = function () { closeSheet(); nowSheet(); };
   }
 
@@ -308,7 +331,7 @@
     var v = virtues(); vState = v;
     el("statLvl").textContent = (VCLASS[v.top.k] || "") + " · Lv " + v.level;
     var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
-    var h = add(L, "div", "lbl", "tap a star to grow it ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
+    var h = add(L, "div", "lbl", "tap a star to open its skill tree ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
     var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
     renderPulls();
   }
