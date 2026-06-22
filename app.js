@@ -302,20 +302,41 @@
   }
 
   function fmtHour(h) { h = h % 24; var ap = h < 12 ? "am" : "pm"; var hh = h % 12; if (hh === 0) hh = 12; return hh + ap; }
+  function blockEmoji(title) {
+    var m = TITLE2META[(title || "").toLowerCase()]; if (m && m.emoji) return m.emoji;
+    var t = (title || "").toLowerCase(), map = [["bed", "🛏️"], ["breakfast", "🍳"], ["lunch", "🥪"], ["dinner", "🍽️"], ["wind down", "🌙"], ["break", "☕"], ["hobby", "🎈"], ["ship", "✦"], ["send", "✦"], ["move", "🏃"], ["walk", "🚶"], ["gym", "🏋️"], ["run", "🏃"], ["deep", "🧠"], ["code", "💻"], ["vibe", "🎧"], ["work", "🧠"], ["read", "📖"], ["clean", "🧹"], ["tidy", "🧹"], ["laundry", "🧺"], ["shower", "🚿"], ["meditat", "🧘"], ["journal", "📓"], ["sleep", "😴"], ["eat", "🍽️"], ["weed", "🌿"], ["smoke", "🚬"], ["game", "🕹️"], ["music", "🎵"], ["call", "📞"], ["plan", "🗒️"]];
+    for (var i = 0; i < map.length; i++) if (t.indexOf(map[i][0]) !== -1) return map[i][1];
+    return "🗓️";
+  }
+  function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
   function calendarView(L, k, showNow) {
     L.innerHTML = ""; var bls = blocks(k).slice();
-    if (!bls.length) { add(L, "div", "empty", k === todayK() ? "No blocks yet — tap “+ slot” or auto-fill a day." : "Nothing planned — tap “+ plan” to build it."); return; }
+    add(L, "div", "calhint", bls.length ? "tap empty space to add · drag a bubble's handle to stretch it" : "tap any time to drop an activity — or “＋” to auto-fill a day");
     var minS = 6 * 60, maxE = 22 * 60; bls.forEach(function (b) { minS = Math.min(minS, hm(b.time)); maxE = Math.max(maxE, hm(b.time) + (b.mins || 30)); });
-    var startH = Math.floor(minS / 60), endH = Math.min(24, Math.ceil(maxE / 60)), HP = 58;
+    var startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(24, Math.ceil(maxE / 60)), HP = 54;
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
     for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
     if (showNow) { var nm = nowMin(); if (nm >= startH * 60 && nm <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((nm - startH * 60) / 60 * HP) + "px"; } }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
-      var top = (hm(b.time) - startH * 60) / 60 * HP, hpx = Math.max(22, (b.mins || 30) / 60 * HP - 4);
+      var top = (hm(b.time) - startH * 60) / 60 * HP, hpx = Math.max(24, (b.mins || 30) / 60 * HP - 4);
       var card = add(cal, "div", "calblk" + (b.done ? " done" : "")); card.style.top = top + "px"; card.style.height = hpx + "px";
-      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.background = hexA(col, 0.2);
-      add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30))); add(card, "div", "cn", b.title);
-      card.onclick = function () { blockEdit(b, k); };
+      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.24);
+      add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30)));
+      add(card, "div", "cn", blockEmoji(b.title) + " " + b.title);
+      var grip = add(card, "div", "grip");
+      card.addEventListener("click", function () { if (card._rz) { card._rz = false; return; } blockEdit(b, k); });
+      grip.addEventListener("pointerdown", function (ev) {
+        ev.stopPropagation(); ev.preventDefault();
+        var sy = ev.clientY, sm = b.mins || 30, ct = card.querySelector(".ct");
+        function mv(e) { var v = Math.max(15, Math.round((sm + (e.clientY - sy) / HP * 60) / 15) * 15); b.mins = v; card.style.height = Math.max(24, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "–" + fmt(hm(b.time) + v); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); card._rz = true; setTimeout(function () { card._rz = false; }, 60); }
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
+    });
+    cal.addEventListener("pointerdown", function (ev) {
+      if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
+      function up(e) { document.removeEventListener("pointerup", up); if (Math.abs(e.clientY - dy) < 9 && Math.abs(e.clientX - dx) < 9 && Date.now() - t0 < 450) { var rect = cal.getBoundingClientRect(); planSheet(k, k === todayK() ? "today" : "tomorrow", timeFromY(e.clientY - rect.top, startH, HP)); } }
+      document.addEventListener("pointerup", up);
     });
   }
   function renderToday() {
@@ -387,8 +408,8 @@
     ];
     S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); save();
   }
-  function planSheet(k, label) {
-    var cfg = { mins: 60, prio: 2 }; var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes());
+  function planSheet(k, label, atTime) {
+    var cfg = { mins: 60, prio: 2 }; if (atTime) { cfg.time = atTime; } else { var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
     function advance() { var m = hm(cfg.time) + cfg.mins; if (m >= 1439) m = 1439; cfg.time = pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
     pickerSheet({ title: function () { return "Plan " + label; }, frequent: true, custom: true,
       head: function (B, draw) {
