@@ -237,6 +237,7 @@
   .qw{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:74px;padding:11px 8px;background:rgba(255,255,255,.06);border:2px solid #4a4068;border-radius:16px;cursor:pointer;transition:transform .12s,background .3s,border-color .3s;}
   .qw:active{transform:scale(.92);}
   .qw.won{background:#1d5a44;border-color:#46e2a4;transform:scale(1.05);}
+  .qw.planned{border-color:#ffb23a;background:rgba(255,178,58,.14);}
   .qwe{font-size:24px;line-height:1;}
   .qwl{font-size:10.5px;font-weight:700;text-align:center;line-height:1.1;color:var(--soft);}
   .qws{font-family:var(--bub);font-weight:800;font-size:11px;color:#ffe07a;}
@@ -286,29 +287,12 @@
   <div id="screen">
     <header><div id="date"></div><div id="hello"></div><button id="gear" aria-label="Brain">🧠</button></header>
 
-    <div class="tab on" id="t-home">
+    <div class="tab on" id="t-self">
       <div id="stage"><canvas id="guardian"></canvas></div>
       <div id="guardianCap"></div>
       <div id="hero"></div>
       <div class="qlab">⚡ quick wins — tap for instant Spark</div>
       <div id="quick"></div>
-    </div>
-
-    <div class="tab" id="t-today">
-      <div id="dayNav"><button id="dnPrev">◀</button><div id="dnLabel"></div><button id="dnNext">▶</button></div>
-      <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
-      <section class="panel c-today">
-        <div class="cardhead"><h3 id="todayTitle">Today</h3><button class="add" id="planToday">＋ add</button></div>
-        <div id="todayList"></div>
-      </section>
-      <div id="nowCard" class="panel"></div>
-      <section class="panel c-today" id="logPanel">
-        <div class="cardhead"><h3>Tracked today</h3><span class="meta" id="trackTotal"></span></div>
-        <div id="logList"></div>
-      </section>
-    </div>
-
-    <div class="tab" id="t-char">
       <section class="panel c-stats">
         <div class="cardhead"><h3>⚔️ Character</h3><span class="meta" id="statLvl"></span></div>
         <div id="spark"></div>
@@ -320,23 +304,28 @@
       </section>
     </div>
 
-    <div class="tab" id="t-habits">
+    <div class="tab" id="t-day">
+      <div id="dayNav"><button id="dnPrev">◀</button><div id="dnLabel"></div><button id="dnNext">▶</button></div>
+      <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
+      <section class="panel c-today">
+        <div class="cardhead"><h3 id="todayTitle">Today</h3><button class="add" id="planToday">＋ add</button></div>
+        <div id="todayList"></div>
+      </section>
+      <div id="nowCard" class="panel"></div>
+      <section class="panel c-today" id="logPanel">
+        <div class="cardhead"><h3>Tracked today</h3><span class="meta" id="trackTotal"></span></div>
+        <div id="logList"></div>
+      </section>
       <section class="panel c-habit"><div class="cardhead"><h3>Habits</h3><span class="meta" id="habitProg"></span></div><div id="habitList"></div><button class="add2" id="addHabit">+ add habit</button></section>
-    </div>
-
-    <div class="tab" id="t-plan">
-      <section class="panel c-tom"><div class="cardhead"><h3>Tomorrow</h3><button class="add" id="planTom">+ plan</button></div><div id="tomList"></div></section>
     </div>
   </div>
 
   <nav id="nav">
-    <button class="nb on" data-tab="home"><span class="ne">🪞</span><span class="nl2">Mirror</span></button>
-    <button class="nb" data-tab="today"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
+    <button class="nb on" data-tab="self"><span class="ne">🪞</span><span class="nl2">You</span></button>
     <button class="nb center" id="navTrack"><span class="ne">⏱️</span></button>
-    <button class="nb" data-tab="habits"><span class="ne">✅</span><span class="nl2">Habits</span></button>
-    <button class="nb" data-tab="char"><span class="ne">⚔️</span><span class="nl2">You</span></button>
+    <button class="nb" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
   </nav>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js"></script>
+  <script src="app.js?v=314"></script>
 </body>
 </html>

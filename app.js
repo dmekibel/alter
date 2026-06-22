@@ -151,7 +151,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {} } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
@@ -385,16 +385,29 @@
     { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 }
   ];
   var MICROPHASE = { morning: [0, 5, 3, 7], afternoon: [1, 0, 6, 7], evening: [5, 6, 4, 8], night: [2, 5, 4, 9] };
-  function microDo(mi, chip) {
-    var m = MICRO[mi], d = new Date();
-    logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: m.l, mins: m.mins, catK: m.catK, color: m.catK === "love" ? "#ff4fa0" : "#ff8a1e", habitId: m.habitId || null });
-    if (m.habitId) doneMap(todayK())[m.habitId] = true;
-    earn(m.sp, { catK: m.catK }); save();
-    if (chip) { chip.classList.add("won"); setTimeout(function () { renderQuick(); renderGame(); renderToday(); }, 360); } else { renderQuick(); renderGame(); }
+  function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
+  function microTap(mi, chip) {
+    var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
+    if (!cur) {
+      var t = nextFreeMin(todayK()), id = uid();
+      blocks(todayK()).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: Math.max(5, m.mins), title: m.l, prio: 1, color: col, done: false });
+      reflow(todayK()); st[mi] = { s: "planned", bid: id }; save(); renderQuick(); renderToday();
+    } else if (cur.s === "planned") {
+      var bl = blocks(todayK()); for (var i = 0; i < bl.length; i++) if (bl[i].id === cur.bid) { bl[i].done = true; break; }
+      var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: m.l, mins: m.mins, catK: m.catK, color: col, habitId: m.habitId || null });
+      if (m.habitId) doneMap(todayK())[m.habitId] = true;
+      earn(m.sp, { catK: m.catK }); st[mi] = { s: "done" }; save();
+      if (chip) chip.classList.add("won"); setTimeout(function () { renderQuick(); renderGame(); renderToday(); }, 360);
+    }
   }
   function renderQuick() {
-    var Q = el("quick"); if (!Q) return; Q.innerHTML = "";
-    (MICROPHASE[phase()] || [0, 1, 5, 3]).forEach(function (mi) { var m = MICRO[mi], c = add(Q, "div", "qw"); add(c, "div", "qwe", m.e); add(c, "div", "qwl", m.l); add(c, "div", "qws", "+" + m.sp + "✨"); c.onclick = function () { microDo(mi, c); }; });
+    var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
+    (MICROPHASE[phase()] || [0, 1, 5, 3]).forEach(function (mi) {
+      var m = MICRO[mi], ms = st[mi], c = add(Q, "div", "qw" + (ms && ms.s === "done" ? " won" : ms && ms.s === "planned" ? " planned" : ""));
+      add(c, "div", "qwe", m.e); add(c, "div", "qwl", m.l);
+      add(c, "div", "qws", ms && ms.s === "done" ? "✓ done" : ms && ms.s === "planned" ? "tap = ✓" : "+" + m.sp + "✨");
+      c.onclick = function () { microTap(mi, c); };
+    });
   }
   function fmtHour(h) { h = h % 24; var ap = h < 12 ? "am" : "pm"; var hh = h % 12; if (hh === 0) hh = 12; return hh + ap; }
   function blockEmoji(title) {
@@ -416,7 +429,7 @@
     for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; }
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
-    function rr() { if (L === el("todayList")) renderToday(); else renderTom(); }
+    function rr() { renderToday(); }
     var planCards = [];
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
     function settle() { planCards.forEach(function (pc) { pc.card.style.top = topFor(hm(pc.b.time)) + "px"; pc.card.style.height = Math.max(24, (pc.b.mins || 30) / 60 * HP - 4) + "px"; }); }
@@ -511,7 +524,6 @@
     add(row, "button", "add", "🗑 Delete").onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); closeSheet(); renderAll(); };
     add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; save(); closeSheet(); renderAll(); };
   }
-  function renderTom() { calendarView(el("tomList"), tomK(), false); }
   function renderHabits() {
     var L = el("habitList"); L.innerHTML = ""; var dm = doneMap(todayK()), done = 0;
     S.habits.forEach(function (hb) {
@@ -528,7 +540,7 @@
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); if (dm[id]) earn(12, {}); save(); renderHabits(); renderHero(); renderChar(); renderGame(); }
 
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderQuick(); renderToday(); renderTom(); renderHabits(); }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderQuick(); renderToday(); renderHabits(); }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -628,8 +640,8 @@
       if (S.profile) S.profile.todayIdentity = Object.keys(picks);
       skeletonDay(k, ot); save(); closeSheet();
       viewK = todayK(); zoomMode = "day";
-      document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "today"); });
-      document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-today"); });
+      document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
+      document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-day"); });
       renderAll();
     };
   }
@@ -785,7 +797,6 @@
     window.addEventListener("resize", function () { treeFit(); guardianFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
     el("planToday").onclick = function () { planSheet(viewK, relLabel(viewK)); };
-    el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
@@ -794,7 +805,7 @@
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "char") treeFit(); if (t === "home") guardianFit(); }; });
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } }; });
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     renderAll();
   }
