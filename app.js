@@ -24,7 +24,7 @@
   function relLabel(k) { if (k === todayK()) return "Today"; if (k === tomK()) return "Tomorrow"; if (k === keyAdd(todayK(), -1)) return "Yesterday"; return kd(k).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }); }
   function relShort(k) { return kd(k).toLocaleDateString([], { month: "short", day: "numeric" }); }
   function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false; for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= nowMin()) return "miss"; return "plan"; }
-  var viewK = todayK(), zoomMode = "day";
+  var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, nowLineEl = null;
 
   var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
@@ -606,7 +606,7 @@
     gameOn = false; moveX = 0; moveY = 0; document.body.style.overflow = "";
   }
   // ---- game-as-home: tap the character → diegetic action hub ----
-  function goTab(t) { closeGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); window.scrollTo(0, 0); }
+  function goTab(t) { closeGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } else { window.scrollTo(0, 0); } }
   function heroMenu() {
     radialMenu([
       { title: "Plan day", emoji: "📅", color: "#2a9fe0", fn: function () { goTab("day"); } },
@@ -788,7 +788,7 @@
     cl.forEach(function (g) { var ends = []; g.forEach(function (it) { var placed = false; for (var c = 0; c < ends.length; c++) { if (it.s >= ends[c]) { it.col = c; ends[c] = it.e; placed = true; break; } } if (!placed) { it.col = ends.length; ends.push(it.e); } }); g.forEach(function (it) { it.cols = ends.length; }); });
   }
   function calendarView(L, k, showNow) {
-    L.innerHTML = "";
+    L.innerHTML = ""; nowLineEl = null;
     var bls = blocks(k).slice(), lgs = logs(k).slice();
     add(L, "div", "calhint", "left = your plan · right = what you actually did · drag to move, edges to stretch · double-tap to edit · tap empty to add");
     var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx", "PLAN"); add(lh, "span", "lhx", "ACTUAL");
@@ -797,7 +797,7 @@
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
     add(cal, "div", "lanediv");
     for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
-    if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; }
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; }
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
     function rr() { renderToday(); }
     var planCards = [];
@@ -889,7 +889,7 @@
       add(col, "div", "wkh", ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()] + " " + d.getDate());
       var strip = add(col, "div", "wkstrip");
       blocks(dk).forEach(function (b) { var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%"; bb.style.background = st === "ok" ? "#46e2a4" : st === "miss" ? "#544f6e" : (b.color || "#8a5cf0"); });
-      col.onclick = function () { viewK = dk; zoomMode = "day"; renderToday(); };
+      col.onclick = function () { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
     })(keyAdd(d0, i)); }
   }
   function monthGrid(L) {
@@ -900,7 +900,7 @@
       var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "")); add(cell, "div", "mod", "" + day);
       var bl = blocks(dk), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; });
       if (bl.length) { var d2 = add(cell, "div", "modot"), sc = done / bl.length; d2.style.background = sc >= 1 ? "#46e2a4" : sc > 0 ? "#ffc24a" : "#544f6e"; }
-      cell.onclick = function () { viewK = dk; zoomMode = "day"; renderToday(); };
+      cell.onclick = function () { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
   }
   function renderToday() {
@@ -911,6 +911,7 @@
     if (zoomMode === "month") { L.innerHTML = ""; monthGrid(L); tt.textContent = "Tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
     if (dp) dp.style.display = ""; tt.textContent = relLabel(viewK);
     calendarView(L, viewK, viewK === todayK());
+    if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
     var k = viewK, LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0; logs(k).forEach(function (e) { tot += e.mins || 0; });
     if (nc) nc.style.display = (k === todayK() ? "" : "none"); if (lp) lp.style.display = "";
     if (!lg.length) add(LG, "div", "empty", "Nothing tracked.");
@@ -1095,7 +1096,7 @@
       logs(k).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Morning recommit", mins: 3, catK: "love", color: "#ff4fa0" }); earn(8, { catK: "love" });
       Object.keys(st.hab).forEach(function (id) { if (st.hab[id]) { any = true; var h = null; S.habits.forEach(function (x) { if (x.id === id) h = x; }); if (h) { var t = nextFreeMin(k); blocks(k).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: h.l, prio: 2, color: h.color, done: false }); reflow(k); } } });
       if (!any && !blocks(k).length) skeletonDay(k, "");
-      save(); closeSheet(); viewK = todayK(); zoomMode = "day";
+      save(); closeSheet(); viewK = todayK(); zoomMode = "day"; pendingScrollNow = true;
       document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
       document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-day"); });
       renderAll();
@@ -1301,7 +1302,7 @@
     var gx = el("gameExit"); if (gx) gx.onclick = closeGame;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
-    document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; renderToday(); }; });
+    document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; if (zoomMode === "day") pendingScrollNow = true; renderToday(); }; });
     document.querySelectorAll("#growTabs .zt").forEach(function (z) { z.onclick = function () { var g = z.dataset.g; document.querySelectorAll("#growTabs .zt").forEach(function (x) { x.classList.toggle("on", x === z); }); el("habitsPane").style.display = g === "habits" ? "" : "none"; el("statsPane").style.display = g === "stats" ? "" : "none"; }; });
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
