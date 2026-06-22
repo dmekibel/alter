@@ -83,6 +83,7 @@
   .go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
   .done2{width:100%;background:var(--pink);color:#fff;border:3px solid var(--ink);border-radius:18px;padding:15px;font-family:var(--bub);font-size:17px;font-weight:800;cursor:pointer;margin-top:10px;box-shadow:0 5px 0 var(--ink);transition:.08s;}
   .done2:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
+  .done2:disabled{opacity:.45;box-shadow:none;}
   .pchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
   .pchip{background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:9px 13px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);box-shadow:0 3px 0 var(--ink);transition:.08s;}
   .pchip:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink);}
@@ -343,6 +344,6 @@
     <button class="nb" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
   </nav>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=323"></script>
+  <script src="app.js?v=324"></script>
 </body>
 </html>

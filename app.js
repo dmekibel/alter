@@ -150,8 +150,8 @@
   }
 
   var S;
-  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {} } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.timers.forEach(function (t) { if (!t.dayK) t.dayK = key(new Date(t.start)); }); S.v = SCHEMA; }
+  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.timers.forEach(function (t) { if (!t.dayK) t.dayK = key(new Date(t.start)); }); S.v = SCHEMA; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
   function toast(msg) { var t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.classList.add("show"); }, 10); setTimeout(function () { t.classList.remove("show"); setTimeout(function () { t.remove(); }, 320); }, 2600); }
   function copyFallback(json) { var ta = document.createElement("textarea"); ta.value = json; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("📋 backup copied"); } catch (e) { toast("⚠️ couldn't copy — use Download"); } ta.remove(); }
@@ -313,6 +313,23 @@
     var hy = 9 + Math.round(Math.sin(t * 2) * 1), hc = st.gold ? "#ffd54a" : "#bfe6ff";
     gring(g, cxc, hy, 11, 4, hc, 1);
   }
+  function plantSprite(x, y, t) {
+    var P = ["#46e2a4", "#ff6fc0", "#9a5cf0", "#ffc24a", "#4fb0ff"][t % 5], xx = Math.round(x), yy = Math.round(y);
+    gctx.fillStyle = "#2f6b4a"; gctx.fillRect(xx - 1, yy - 12, 3, 12);
+    gctx.fillStyle = "#3f8a5e"; gctx.fillRect(xx - 4, yy - 8, 3, 2); gctx.fillRect(xx + 2, yy - 10, 3, 2);
+    gctx.fillStyle = P; gctx.beginPath(); gctx.arc(xx + 0.5, yy - 15, 5, 0, 7); gctx.fill();
+    gctx.fillStyle = "rgba(255,255,255,.55)"; gctx.fillRect(xx - 1, yy - 17, 2, 2);
+  }
+  function drawGarden(baseY) {
+    var g = (S.game && S.game.garden) || [], n = g.length; if (!n) return;
+    for (var i = 0; i < n; i++) { var frac = n === 1 ? 0.5 : i / (n - 1), gx = GW * (0.07 + frac * 0.86), gy = baseY + 5 + (i % 2) * 4; plantSprite(gx, gy, g[i].t); }
+  }
+  function plantGarden() {
+    if (!hasShippedToday()) { toast("ship one real thing today — then your world grows 🌱"); return; }
+    var n = (S.game.garden || []).length, cost = 20 * (n + 1);
+    if (S.game.spark < cost) { toast("not enough Spark yet — earn a little more"); return; }
+    S.game.spark -= cost; S.game.garden.push({ t: n % 5 }); save(); renderGame(); toast("🌱 planted — your world grew");
+  }
   var MOODS = [{ e: "🌫️", l: "Foggy" }, { e: "🌥️", l: "Heavy" }, { e: "⛅", l: "Okay" }, { e: "☀️", l: "Clear" }, { e: "✨", l: "Radiant" }];
   function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
@@ -328,6 +345,7 @@
     var ag = gctx.createRadialGradient(cx, acy, 6, cx, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(cx, acy, auraR, 0, 7); gctx.fill();
     var baseY = GH * 0.92;
     gctx.fillStyle = "rgba(0,0,0,0.3)"; gctx.beginPath(); gctx.ellipse(cx, baseY, GW * 0.15, 7, 0, 0, 7); gctx.fill();
+    drawGarden(baseY);
     paintGuardian(t, st);
     var scale = Math.max(2, Math.floor(Math.min(GW / SW, (GH * 0.78) / SH)));
     var bob = Math.sin(t * 1.6) * scale * 1.1, dw = SW * scale, dh = SH * scale;
@@ -370,10 +388,15 @@
   function hasShippedToday() { var lg = logs(todayK()), i; for (i = 0; i < lg.length; i++) if (virtueOf(lg[i]) === "courage") return true; var bl = blocks(todayK()); for (i = 0; i < bl.length; i++) if (bl[i].done && virtueOf(bl[i]) === "courage") return true; return false; }
   function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; save(); var sp = el("spark"); if (sp) { sp.style.transition = "none"; sp.style.transform = "scale(1.14)"; setTimeout(function () { sp.style.transition = "transform .3s"; sp.style.transform = "scale(1)"; renderGame(); }, 30); } }
   function renderGame() {
-    var sp = el("spark"); if (!sp) return; var up0 = el("upgrades"); if (up0) up0.innerHTML = "";
+    var sp = el("spark"); if (!sp) return; var L = el("upgrades"); if (L) L.innerHTML = "";
     if (!(S.profile && S.profile.set)) { sp.textContent = ""; return; }
     var shipped = hasShippedToday();
     sp.innerHTML = "✨ " + S.game.spark.toLocaleString() + " <span style='font-size:11px;opacity:.7;font-weight:600;'>Spark</span>" + (shipped ? " <span style='font-size:12px;color:#46e2a4;'>· 🌱 today grew</span>" : " <span style='font-size:11px;color:#ffc24a;'>· ship 1 thing to grow</span>");
+    if (L) {
+      var n = (S.game.garden || []).length, cost = 20 * (n + 1);
+      var pb = add(L, "button", "done2", "🌱 Plant in your world · ✨" + cost); pb.style.marginTop = "8px"; pb.disabled = !shipped || S.game.spark < cost; pb.onclick = plantGarden;
+      var h = add(L, "div", "lbl", shipped ? (n + " planted — your world fills as you do") : "ship one real thing today, then plant"); h.style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
+    }
   }
 
   var MICRO = [
