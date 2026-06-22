@@ -562,15 +562,18 @@
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
-    // animated idle (resting) + animated fly (moving) + flip for left/right — keeps the cool Kling animations
+    // 8-way 360 directional facing while aiming/moving + animated idle when resting (the version David liked — restored)
     var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
-    var aiming = (aimX !== 0 || aimY !== 0);
+    var aiming = (aimX !== 0 || aimY !== 0), fc = FAIRY.face, idl = FAIRY.idle, hHs = 126;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
-    var setK = aiming ? "fly" : "idle", sIm = FAIRY[setK], sMt = FAIRY_META[setK];
-    if (sIm && sIm.complete && sIm.naturalWidth) {
-      var sfr = Math.floor(t * (aiming ? 14 : 10)) % sMt.n, hHs = 126, hWs = hHs * sMt.fw / sMt.fh, sdx = Math.round(px - hWs / 2), sdy = Math.round(py - hHs + 14);
-      if (pface < 0) { ctx.save(); ctx.translate(sdx + hWs, sdy); ctx.scale(-1, 1); ctx.drawImage(sIm, sfr * sMt.fw, 0, sMt.fw, sMt.fh, 0, 0, hWs, hHs); ctx.restore(); }
-      else ctx.drawImage(sIm, sfr * sMt.fw, 0, sMt.fw, sMt.fh, sdx, sdy, hWs, hHs);
+    if (aiming && fc && fc.complete && fc.naturalWidth) {
+      var fmf = FAIRY_META.face, ang = Math.atan2(aimY, aimX);
+      var fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8;
+      var fb = Math.abs(Math.sin(t * 9)) * 5, hWf = hHs * fmf.fw / fmf.fh;
+      ctx.drawImage(fc, fk * fmf.fw, 0, fmf.fw, fmf.fh, Math.round(px - hWf / 2), Math.round(py - hHs + 14 - fb), hWf, hHs);
+    } else if (idl && idl.complete && idl.naturalWidth) {
+      var fmi = FAIRY_META.idle, ffr = Math.floor(t * 10) % fmi.n, hWi = hHs * fmi.fw / fmi.fh;
+      ctx.drawImage(idl, ffr * fmi.fw, 0, fmi.fw, fmi.fh, Math.round(px - hWi / 2), Math.round(py - hHs + 14), hWi, hHs);
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
