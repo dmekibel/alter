@@ -238,6 +238,9 @@
   .qw:active{transform:scale(.92);}
   .qw.won{background:#1d5a44;border-color:#46e2a4;transform:scale(1.05);}
   .qw.planned{border-color:#ffb23a;background:rgba(255,178,58,.14);}
+  .breathorb{width:124px;height:124px;border-radius:50%;margin:26px auto;background:radial-gradient(circle,rgba(255,150,200,.55),rgba(255,79,160,0) 70%);box-shadow:0 0 42px rgba(255,120,190,.4);animation:breathe 6s ease-in-out infinite;}
+  .breathorb--slow{animation-duration:11s;background:radial-gradient(circle,rgba(255,220,120,.55),rgba(255,200,80,0) 70%);box-shadow:0 0 52px rgba(255,210,110,.4);}
+  @keyframes breathe{0%,100%{transform:scale(.68);opacity:.55;}50%{transform:scale(1.12);opacity:1;}}
   .qwe{font-size:24px;line-height:1;}
   .qwl{font-size:10.5px;font-weight:700;text-align:center;line-height:1.1;color:var(--soft);}
   .qws{font-family:var(--bub);font-weight:800;font-size:11px;color:#ffe07a;}
@@ -326,6 +329,6 @@
     <button class="nb" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
   </nav>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=314"></script>
+  <script src="app.js?v=315"></script>
 </body>
 </html>

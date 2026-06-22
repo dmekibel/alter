@@ -622,28 +622,77 @@
     if (oneThing) { var have = false; blocks(k).forEach(function (b) { if (b.title.toLowerCase() === oneThing.toLowerCase()) have = true; }); if (!have) blocks(k).push({ id: uid(), time: "09:00", mins: 90, title: oneThing, prio: 3, color: "#2a9fe0", done: false, star: true }); }
     reflow(k); save();
   }
+  function gratefulFlow(onDone) {
+    var grats = [];
+    function gather() {
+      var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+      add(B, "div", "sttl", "🙏 Grateful Flow");
+      add(B, "div", "lbl", "Stutz & Michels' practice — name a few specific things. small is good.");
+      var frm = add(B, "div", "frm"); var gi = document.createElement("input"); gi.type = "text"; gi.placeholder = "something you're grateful for…"; frm.appendChild(gi); var go = add(frm, "button", "go", "+");
+      var ul = add(B, "div");
+      function redraw() { ul.innerHTML = ""; grats.forEach(function (g, i) { var r = add(ul, "div", "subi"); add(r, "div", null, "🙏 " + g).style.flex = "1"; var x = add(r, "div", "del", "✕"); x.onclick = function () { grats.splice(i, 1); redraw(); }; }); }
+      go.onclick = function () { var v = gi.value.trim(); if (v) { grats.push(v); gi.value = ""; redraw(); } };
+      var saved = (S.profile && S.profile.gratList) || ["my health", "a warm bed", "someone who loves me"];
+      add(B, "div", "lbl", "or tap a familiar one"); var pc = add(B, "div", "pchips"); saved.forEach(function (g) { var x = add(pc, "div", "pchip", g); x.onclick = function () { if (grats.indexOf(g) < 0) { grats.push(g); redraw(); } }; });
+      add(B, "button", "done2", "Begin feeling →").onclick = function () { if (!grats.length) grats.push("this very moment"); S.profile = S.profile || {}; var l = S.profile.gratList || []; grats.forEach(function (g) { if (l.indexOf(g) < 0) l.unshift(g); }); S.profile.gratList = l.slice(0, 12); save(); feelCycle(0); };
+    }
+    function feelCycle(i) {
+      var n = Math.min(grats.length, 5);
+      if (i >= n) { source(); return; }
+      var B = el("sheetBody"); B.innerHTML = "";
+      add(B, "div", "sttl", "🙏 " + grats[i]);
+      add(B, "div", "lbl", "close your eyes. don't just think it — feel it land in your body. (" + (i + 1) + " of " + n + ")");
+      add(B, "div", "breathorb");
+      add(B, "button", "done2", "I feel it ▶").onclick = function () { feelCycle(i + 1); };
+    }
+    function source() {
+      var B = el("sheetBody"); B.innerHTML = "";
+      add(B, "div", "sttl", "✨ Let it rise");
+      add(B, "div", "lbl", "now stop naming reasons. just feel grateful — for nothing, for everything. sense it radiating from the center of your chest.");
+      add(B, "div", "breathorb breathorb--slow");
+      add(B, "button", "done2", "Done 🙏").onclick = function () { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Grateful Flow", mins: 5, catK: "love", color: "#ff4fa0" }); earn(12, { catK: "love" }); save(); if (onDone) onDone(); else { closeSheet(); renderAll(); } };
+    }
+    gather();
+  }
   function recommitSheet() {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "☀️ Morning recommit");
-    add(B, "div", "lbl", "fresh canvas. 60 seconds to set today — then I'll frame your day.");
-    add(B, "div", "lbl", "who are you being today?");
-    var picks = {}, ic = add(B, "div", "pchips");
-    ["Focused", "Disciplined", "Calm", "Bold", "Loving", "Creative", "Grateful", "Unstoppable"].forEach(function (t) { var x = add(ic, "div", "pchip", t); x.onclick = function () { if (picks[t]) { delete picks[t]; x.classList.remove("on"); } else { picks[t] = 1; x.classList.add("on"); } }; });
-    add(B, "div", "lbl", "🎯 the ONE thing that makes today a win");
-    var one = document.createElement("input"); one.type = "text"; one.placeholder = "ship the landing page…"; one.style.cssText = "width:100%;"; B.appendChild(one);
-    add(B, "div", "lbl", "🙏 one thing you're grateful for");
-    var grat = document.createElement("input"); grat.type = "text"; grat.placeholder = "my health, this quiet morning…"; grat.style.cssText = "width:100%;"; B.appendChild(grat);
-    add(B, "button", "done2", "I recommit ✦ — build my day").onclick = function () {
-      var ot = one.value.trim(), k = todayK(), d = new Date(), tnow = pad(d.getHours()) + ":" + pad(d.getMinutes());
-      if (grat.value.trim()) { logs(k).push({ id: uid(), time: tnow, title: "Gratitude — " + grat.value.trim(), mins: 4, catK: "love", color: "#ff4fa0" }); earn(4, { catK: "love" }); }
-      logs(k).push({ id: uid(), time: tnow, title: "Morning recommit", mins: 5, catK: "love", color: "#ff4fa0" }); earn(8, { catK: "love" });
-      if (S.profile) S.profile.todayIdentity = Object.keys(picks);
-      skeletonDay(k, ot); save(); closeSheet();
-      viewK = todayK(); zoomMode = "day";
+    var st = { step: 0, ident: {}, virt: [], hab: {} };
+    S.habits.forEach(function (h) { if (h.per === 0 && h.type !== "quit") st.hab[h.id] = true; });
+    function quickGrat(done) { var B = el("sheetBody"); B.innerHTML = ""; add(B, "div", "sttl", "🙏 One gratitude"); add(B, "div", "lbl", "name one thing — then take a slow breath and actually feel it."); var gi = document.createElement("input"); gi.type = "text"; gi.placeholder = "my health, this quiet morning…"; gi.style.cssText = "width:100%;"; B.appendChild(gi); add(B, "div", "breathorb"); add(B, "button", "done2", "Felt it ✓").onclick = function () { var v = gi.value.trim(), d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Gratitude" + (v ? " — " + v : ""), mins: 2, catK: "love", color: "#ff4fa0" }); earn(5, { catK: "love" }); save(); done(); }; }
+    function finalize() {
+      var k = todayK(), d = new Date(), any = false;
+      if (S.profile) { S.profile.todayIdentity = Object.keys(st.ident); S.profile.todayVirtues = st.virt; }
+      logs(k).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Morning recommit", mins: 3, catK: "love", color: "#ff4fa0" }); earn(8, { catK: "love" });
+      Object.keys(st.hab).forEach(function (id) { if (st.hab[id]) { any = true; var h = null; S.habits.forEach(function (x) { if (x.id === id) h = x; }); if (h) { var t = nextFreeMin(k); blocks(k).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: h.l, prio: 2, color: h.color, done: false }); reflow(k); } } });
+      if (!any && !blocks(k).length) skeletonDay(k, "");
+      save(); closeSheet(); viewK = todayK(); zoomMode = "day";
       document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
       document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-day"); });
       renderAll();
-    };
+    }
+    function draw() {
+      var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+      var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(st.step / 3 * 100) + "%";
+      if (st.step === 0) {
+        add(B, "div", "sttl", "☀️ Who are you today?"); add(B, "div", "lbl", "the identity you're stepping into — tap a few.");
+        var ic = add(B, "div", "pchips"); ["Focused", "Disciplined", "Calm", "Bold", "Loving", "Creative", "Grateful", "Unstoppable"].forEach(function (t) { var x = add(ic, "div", "pchip" + (st.ident[t] ? " on" : ""), t); x.onclick = function () { if (st.ident[t]) delete st.ident[t]; else st.ident[t] = 1; x.classList.toggle("on"); }; });
+      } else if (st.step === 1) {
+        add(B, "div", "sttl", "🌟 Which virtues?"); add(B, "div", "lbl", "the virtues you'll embody today.");
+        var g = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = st.virt.indexOf(v.k) !== -1; var x = add(g, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var i = st.virt.indexOf(v.k); if (i !== -1) st.virt.splice(i, 1); else st.virt.push(v.k); draw(); }; });
+      } else if (st.step === 2) {
+        add(B, "div", "sttl", "✅ Commit to today"); add(B, "div", "lbl", "which habits are you committing to? they'll land on your day.");
+        S.habits.forEach(function (h) { var on = !!st.hab[h.id]; var r = add(B, "div", "subi"); var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = h.color; add(r, "div", null, h.e + "  " + h.l).style.flex = "1"; r.onclick = function () { st.hab[h.id] = !st.hab[h.id]; draw(); }; });
+      } else {
+        add(B, "div", "sttl", "🙏 Close with gratitude"); add(B, "div", "lbl", "the Stutz & Michels way — or a quick one.");
+        add(B, "button", "done2", "🙏 Grateful Flow (full)").onclick = function () { gratefulFlow(finalize); };
+        var qb = add(B, "button", "add", "⚡ quick gratitude instead"); qb.style.cssText = "display:block;margin:12px auto 0;"; qb.onclick = function () { quickGrat(finalize); };
+      }
+      if (st.step < 3) {
+        var nav = add(B, "div", "frm"); nav.style.marginTop = "14px";
+        if (st.step > 0) add(nav, "button", "add", "← back").onclick = function () { st.step--; draw(); };
+        var nx = add(nav, "button", "done2", "Next →"); nx.style.flex = "1"; nx.onclick = function () { st.step++; draw(); };
+      }
+    }
+    draw();
   }
   function planSheet(k, label, atTime) {
     var cfg = { mins: 60, prio: 2 }; if (atTime) { cfg.time = atTime; } else { var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
