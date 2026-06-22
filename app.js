@@ -515,7 +515,7 @@
       if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
     }
     islandPath = new Path2D(); var hT = TILE / 2, T1 = TILE + 1.5;
-    SAND.forEach(function (c) { islandPath.rect(c[0] - hT, c[1] - hT, T1, T1); });
+    GRASS.forEach(function (c) { islandPath.rect(c[0] - hT, c[1] - hT, T1, T1); });
   }
   function chevrons(ctx, W, H, t) {
     ctx.fillStyle = "rgba(228,242,253,0.6)";
@@ -544,9 +544,10 @@
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
     if (!SAND) buildIsland();
     var hT = TILE / 2, T1 = TILE + 1.5, q, GS = 200;
-    // dark ink coastline ring (Cuphead landmass outline)
-    ctx.fillStyle = "#2c2117"; for (q = 0; q < SHALLOW.length; q++) ctx.fillRect(SHALLOW[q][0] - hT, SHALLOW[q][1] - hT, T1, T1);
-    // painted grass texture, clipped to the land
+    // sandy beach base (fills the whole landmass; grass clips on top of the interior)
+    ctx.fillStyle = "#d9c89a"; for (q = 0; q < SAND.length; q++) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#cdba86"; for (q = 0; q < SAND.length; q++) if (((Math.round(SAND[q][0] / TILE) + Math.round(SAND[q][1] / TILE)) & 1) === 0) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
+    // painted grass texture, clipped to the interior land
     if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
       var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
     }
