@@ -514,6 +514,9 @@
       if (g) { GRASS.push([wx, wy]); if (((ix * 7 + iy * 13) & 3) === 0) GRASSD.push([wx, wy]); }
       if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
     }
+    // smooth organic island blobs (no more pixelated tile edges)
+    grassBlob = new Path2D(); sandBlob = new Path2D(); darkBlob = new Path2D();
+    ISLAND.forEach(function (b) { var cx = b[0] * RG, cy = b[1] * RG, r = RG * b[2]; grassBlob.moveTo(cx + r * 0.97, cy); grassBlob.arc(cx, cy, r * 0.97, 0, 7); sandBlob.moveTo(cx + r * 1.08, cy); sandBlob.arc(cx, cy, r * 1.08, 0, 7); darkBlob.moveTo(cx + r * 1.13, cy); darkBlob.arc(cx, cy, r * 1.13, 0, 7); });
   }
   function chevrons(ctx, W, H, t) {
     ctx.fillStyle = "rgba(228,242,253,0.6)";
@@ -529,22 +532,32 @@
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
     var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
     var mood = currentMood();
-    ctx.fillStyle = "#2270cf"; ctx.fillRect(0, 0, W, H);   // flat royal-blue ocean
-    chevrons(ctx, W, H, t);
+    // ocean: scrolling Cuphead water texture
+    var wImg = WORLD_IMG.water, WS = 230;
+    if (!waterPat && wImg && wImg.complete && wImg.naturalWidth) {
+      var wc = document.createElement("canvas"); wc.width = WS; wc.height = WS; wc.getContext("2d").drawImage(wImg, 0, 0, WS, WS);
+      waterPat = ctx.createPattern(wc, "repeat");
+    }
+    if (waterPat) {
+      var ox = ((-px * vz) % WS + WS) % WS, oy = ((-py * vz) % WS + WS) % WS;
+      ctx.save(); ctx.translate(ox - WS, oy - WS); ctx.fillStyle = waterPat; ctx.fillRect(0, 0, W + WS * 2, H + WS * 2); ctx.restore();
+    } else { ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); }
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
-    if (!SAND) buildIsland();
-    var hT = TILE / 2, T1 = TILE + 1.5, q;
-    ctx.fillStyle = "#5a9bd8"; for (q = 0; q < SHALLOW.length; q++) ctx.fillRect(SHALLOW[q][0] - hT, SHALLOW[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#dcc88f"; for (q = 0; q < SAND.length; q++) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#9aae5e"; for (q = 0; q < GRASS.length; q++) ctx.fillRect(GRASS[q][0] - hT, GRASS[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#8aa050"; for (q = 0; q < GRASSD.length; q++) ctx.fillRect(GRASSD[q][0] - hT, GRASSD[q][1] - hT, T1, T1);
-    ctx.strokeStyle = "#c6a566"; ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
-    drawFence(ctx, -62, -54, 3);
-    drawCabin(ctx, -58, -8);
-    drawChest(ctx, -132, 22);
-    drawTree(ctx, 150, 60); drawTree(ctx, 184, -40); drawTree(ctx, -150, -92); drawTree(ctx, 82, -150);
-    drawRock(ctx, -34, 122); drawRock(ctx, 150, 128);
-    drawCampfire(ctx, t, 78, 104);
+    if (!grassBlob) buildIsland();
+    var GS = 200;
+    // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
+    ctx.fillStyle = "#33271a"; ctx.fill(darkBlob);
+    ctx.fillStyle = "#d9c89a"; ctx.fill(sandBlob);
+    if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
+      var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
+    }
+    ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
+    ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
+    // Cuphead painted object cutouts (drawn back-to-front by y)
+    drawObj(ctx, WORLD_IMG.tree, -152, -84, 158); drawObj(ctx, WORLD_IMG.tree, 190, -30, 148);
+    drawObj(ctx, WORLD_IMG.cabin, -58, 2, 132); drawObj(ctx, WORLD_IMG.bush, 78, -136, 60);
+    drawObj(ctx, WORLD_IMG.bush, -120, 72, 56); drawObj(ctx, WORLD_IMG.tree, 150, 74, 156);
+    drawObj(ctx, WORLD_IMG.rock, -36, 124, 50); drawObj(ctx, WORLD_IMG.chest, -130, 28, 48); drawObj(ctx, WORLD_IMG.sign, 14, 44, 60);
     var gden = (S.game && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
