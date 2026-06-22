@@ -231,6 +231,14 @@
   .facerow2{display:flex;gap:6px;margin-bottom:12px;}
   .sv{flex:1;text-align:center;font-size:12px;font-weight:700;padding:10px 2px;border:2px solid #4a4068;border-radius:11px;background:rgba(255,255,255,.05);color:var(--soft);cursor:pointer;}
   .sv.on{background:var(--purple);color:#fff;border-color:var(--purple);}
+  .qlab{font-family:var(--bub);font-weight:800;font-size:12px;color:#caa0ff;letter-spacing:.4px;margin:2px 2px 6px;}
+  #quick{display:flex;gap:8px;overflow-x:auto;padding:1px 0 6px;margin-bottom:6px;-webkit-overflow-scrolling:touch;}
+  .qw{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:74px;padding:11px 8px;background:rgba(255,255,255,.06);border:2px solid #4a4068;border-radius:16px;cursor:pointer;transition:transform .12s,background .3s,border-color .3s;}
+  .qw:active{transform:scale(.92);}
+  .qw.won{background:#1d5a44;border-color:#46e2a4;transform:scale(1.05);}
+  .qwe{font-size:24px;line-height:1;}
+  .qwl{font-size:10.5px;font-weight:700;text-align:center;line-height:1.1;color:var(--soft);}
+  .qws{font-family:var(--bub);font-weight:800;font-size:11px;color:#ffe07a;}
   .calblk.miss{filter:grayscale(.9);opacity:.42;background-image:none;border-color:#5a5570 !important;border-left-color:#6a6580 !important;}
   .calblk.live{box-shadow:0 0 16px rgba(255,95,168,.5),0 5px 16px rgba(0,0,0,.4);}
   .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;}
@@ -281,6 +289,8 @@
       <div id="stage"><canvas id="guardian"></canvas></div>
       <div id="guardianCap"></div>
       <div id="hero"></div>
+      <div class="qlab">⚡ quick wins — tap for instant Spark</div>
+      <div id="quick"></div>
     </div>
 
     <div class="tab" id="t-today">

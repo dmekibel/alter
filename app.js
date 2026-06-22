@@ -151,7 +151,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {} } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.brain = S.brain || { engine: "off", key: "" }; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
@@ -334,6 +334,7 @@
     var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
     var h = add(L, "div", "lbl", "tap a star to open its skill tree ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
     var sv = add(L, "button", "add", "📊 calibrate my levels"); sv.style.cssText = "margin:10px auto 0;display:block;"; sv.onclick = surveySheet;
+    var bn = add(L, "button", "add", "🧠 brain (free AI)"); bn.style.cssText = "margin:8px auto 0;display:block;"; bn.onclick = brainSheet;
     var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
     renderPulls();
   }
@@ -371,6 +372,30 @@
     });
   }
 
+  var MICRO = [
+    { e: "💧", l: "Drink water", catK: "energy", mins: 1, sp: 3 },
+    { e: "🧍", l: "Stand & move", catK: "energy", mins: 2, sp: 3 },
+    { e: "🌬️", l: "2-min breath", catK: "energy", mins: 2, sp: 5, habitId: "breathe" },
+    { e: "🤸", l: "Quick stretch", catK: "energy", mins: 2, sp: 4 },
+    { e: "🧘", l: "Mindfulness check", catK: "love", mins: 2, sp: 5 },
+    { e: "🙏", l: "One gratitude", catK: "love", mins: 1, sp: 4 },
+    { e: "📞", l: "Reach someone", catK: "love", mins: 3, sp: 6 },
+    { e: "☀️", l: "Step outside", catK: "energy", mins: 3, sp: 4 },
+    { e: "🪥", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
+    { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 }
+  ];
+  var MICROPHASE = { morning: [0, 5, 3, 7], afternoon: [1, 0, 6, 7], evening: [5, 6, 4, 8], night: [2, 5, 4, 9] };
+  function microDo(mi, chip) {
+    var m = MICRO[mi], d = new Date();
+    logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: m.l, mins: m.mins, catK: m.catK, color: m.catK === "love" ? "#ff4fa0" : "#ff8a1e", habitId: m.habitId || null });
+    if (m.habitId) doneMap(todayK())[m.habitId] = true;
+    earn(m.sp, { catK: m.catK }); save();
+    if (chip) { chip.classList.add("won"); setTimeout(function () { renderQuick(); renderGame(); renderToday(); }, 360); } else { renderQuick(); renderGame(); }
+  }
+  function renderQuick() {
+    var Q = el("quick"); if (!Q) return; Q.innerHTML = "";
+    (MICROPHASE[phase()] || [0, 1, 5, 3]).forEach(function (mi) { var m = MICRO[mi], c = add(Q, "div", "qw"); add(c, "div", "qwe", m.e); add(c, "div", "qwl", m.l); add(c, "div", "qws", "+" + m.sp + "✨"); c.onclick = function () { microDo(mi, c); }; });
+  }
   function fmtHour(h) { h = h % 24; var ap = h < 12 ? "am" : "pm"; var hh = h % 12; if (hh === 0) hh = 12; return hh + ap; }
   function blockEmoji(title) {
     var m = TITLE2META[(title || "").toLowerCase()]; if (m && m.emoji) return m.emoji;
@@ -503,7 +528,7 @@
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); if (dm[id]) earn(12, {}); save(); renderHabits(); renderHero(); renderChar(); renderGame(); }
 
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderToday(); renderTom(); renderHabits(); }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderQuick(); renderToday(); renderTom(); renderHabits(); }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -561,6 +586,7 @@
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
     add(B, "div", "sttl", "✨ What's next?");
     add(B, "div", "lbl", "best things to do from here — tap to drop one in");
+    if (brainCfg().engine !== "off" && brainCfg().key) { var bb = add(B, "button", "done2", "🧠 ask my brain what's best"); bb.style.marginBottom = "10px"; var bo = add(B, "div", "lbl", ""); bo.style.fontSize = "13px"; bb.onclick = function () { bo.textContent = "thinking…"; askBrain(brainContext(), function (t, err) { bo.textContent = t || ("⚠️ " + (err || "failed")); }); }; }
     var list = add(B, "div");
     function draw() {
       list.innerHTML = ""; var sg = suggestNext(k), start = nextFreeMin(k);
@@ -662,6 +688,40 @@
     draw();
   }
 
+  function brainCfg() { return (S.brain = S.brain || { engine: "off", key: "" }); }
+  function askBrain(prompt, cb) {
+    var c = brainCfg();
+    if (c.engine === "off" || !c.key) { cb(null, "no brain configured"); return; }
+    if (c.engine === "gemini") {
+      fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + encodeURIComponent(c.key), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { var t = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
+        .catch(function (e) { cb(null, String(e)); });
+    } else {
+      fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }] }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { var t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
+        .catch(function (e) { cb(null, String(e)); });
+    }
+  }
+  function brainContext() {
+    var k = todayK(), pl = blocks(k).map(function (b) { return b.time + " " + b.title + (b.done ? " ✓" : ""); }).join(", ") || "nothing planned", und = undone().map(function (h) { return h.l; }).join(", ") || "none";
+    return "You are ALTER, a warm no-shame life coach. Time now: " + fmt(nowMin()) + ". My occupation: " + ((S.profile && S.profile.occ) || "unknown") + ". My goal: " + ((S.profile && S.profile.goals) || "—") + ". Today's plan: " + pl + ". Undone habits: " + und + ". In 2 short sentences, tell me the single best thing to do next right now, and why. Be specific, kind, no lists.";
+  }
+  function brainSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); var c = brainCfg();
+    add(B, "div", "sttl", "🧠 Brain — free");
+    add(B, "div", "lbl", "plug in an AI so ALTER can actually think. swap engines anytime; start free.");
+    add(B, "div", "lbl", "engine");
+    var er = add(B, "div", "pchips"); [["off", "Off"], ["gemini", "Gemini · free"], ["groq", "Groq · free"]].forEach(function (o) { var x = add(er, "div", "pchip" + (c.engine === o[0] ? " on" : ""), o[1]); x.onclick = function () { c.engine = o[0]; save(); brainSheet(); }; });
+    if (c.engine !== "off") {
+      add(B, "div", "lbl", "paste your free " + (c.engine === "gemini" ? "Google AI Studio" : "Groq") + " key");
+      var ki = document.createElement("input"); ki.type = "text"; ki.placeholder = "paste key…"; ki.value = c.key || ""; ki.style.cssText = "width:100%;"; ki.oninput = function () { c.key = ki.value.trim(); save(); }; B.appendChild(ki);
+      var hint = add(B, "div", "lbl", "get one free: " + (c.engine === "gemini" ? "aistudio.google.com/apikey" : "console.groq.com/keys")); hint.style.fontSize = "12px";
+      var test = add(B, "button", "done2", "🧪 Test the brain"); var out = add(B, "div", "lbl", ""); out.style.minHeight = "20px";
+      test.onclick = function () { out.textContent = "thinking…"; askBrain("Reply with exactly: ALTER brain online.", function (t, err) { out.textContent = t ? ("✓ " + t) : ("✕ " + (err || "failed")); }); };
+    }
+  }
   var SURVEYQ = [
     { q: "How often do you work out?", v: "zest", p: "Athlete", e: "🏃" },
     { q: "How dialed-in are your sleep & food?", v: "zest", p: "Well-Fed", e: "🥗" },
@@ -675,22 +735,18 @@
     { q: "How present & grateful do you feel?", v: "gratitude", p: "Grateful", e: "🙏" }
   ];
   var SCALE = ["Rarely", "Sometimes", "Often", "Always"];
+  function applySurvey() { S.profile = S.profile || {}; var ans = S.profile.survey || {}, bv = {}, bp = {}; SURVEYQ.forEach(function (Q, qi) { var a = ans[qi]; if (a) { bv[Q.v] = (bv[Q.v] || 0) + a * 60; bp[Q.p] = (bp[Q.p] || 0) + a * 5; } }); S.profile.base = { virtue: bv, perk: bp }; S.profile.set = true; save(); }
   function surveySheet() {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "📊 Where are you at?");
-    add(B, "div", "lbl", "a quick read on your life right now — this sets your starting levels. redo it anytime.");
-    var ans = (S.profile && S.profile.survey) ? Object.assign({}, S.profile.survey) : {};
-    SURVEYQ.forEach(function (Q, qi) {
-      add(B, "div", "qline", Q.e + "  " + Q.q);
-      var row = add(B, "div", "facerow2");
-      SCALE.forEach(function (lbl, si) { var x = add(row, "div", "sv" + (ans[qi] === si ? " on" : ""), lbl); x.onclick = function () { ans[qi] = si; Array.prototype.forEach.call(row.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
-    });
-    add(B, "button", "done2", "✨ Set my starting levels").onclick = function () {
-      S.profile = S.profile || {}; S.profile.survey = ans; var bv = {}, bp = {};
-      SURVEYQ.forEach(function (Q, qi) { var a = ans[qi] || 0; if (a) { bv[Q.v] = (bv[Q.v] || 0) + a * 60; bp[Q.p] = (bp[Q.p] || 0) + a * 5; } });
-      S.profile.base = { virtue: bv, perk: bp }; S.profile.set = true;
-      save(); closeSheet(); renderChar(); renderGame();
-    };
+    S.profile = S.profile || {}; var ans = S.profile.survey = S.profile.survey || {}, answered = 0;
+    SURVEYQ.forEach(function (_, qi) { if (ans[qi] != null) answered++; });
+    add(B, "div", "sttl", "📊 Build your self-map");
+    add(B, "div", "lbl", "just the fundamentals first — add more whenever you like. mapped " + answered + "/" + SURVEYQ.length + ".");
+    var batch = [], qi, editing = false; for (qi = 0; qi < SURVEYQ.length && batch.length < 4; qi++) if (ans[qi] == null) batch.push(qi);
+    if (!batch.length) { editing = true; for (qi = 0; qi < SURVEYQ.length && batch.length < 4; qi++) batch.push(qi); add(B, "div", "lbl", "✓ your whole map is built — tap to fine-tune."); }
+    batch.forEach(function (qx) { var Q = SURVEYQ[qx]; add(B, "div", "qline", Q.e + "  " + Q.q); var row = add(B, "div", "facerow2"); SCALE.forEach(function (lbl, si) { var x = add(row, "div", "sv" + (ans[qx] === si ? " on" : ""), lbl); x.onclick = function () { ans[qx] = si; applySurvey(); Array.prototype.forEach.call(row.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; }); });
+    if (!editing && answered + batch.length < SURVEYQ.length) { var mb = add(B, "button", "add", "➕ map a few more"); mb.style.cssText = "display:block;margin:4px auto 8px;"; mb.onclick = function () { applySurvey(); surveySheet(); }; }
+    add(B, "button", "done2", "Done for now ✓").onclick = function () { applySurvey(); closeSheet(); renderChar(); renderGame(); };
   }
   function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {}; TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy", catK: "energy", color: "#ff8a1e" }); save(); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
   function ritualSheet(r) {
