@@ -817,14 +817,16 @@
     { e: "☀️", l: "Step outside", catK: "energy", mins: 3, sp: 4 },
     { e: "🪥", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
     { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 },
-    { e: "🧘", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true }
+    { e: "🧘", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true },
+    { e: "🧘", l: "Meditate", catK: "love", mins: 5, sp: 8, med: true }
   ];
-  var MICROPHASE = { morning: [2, 5, 3, 7], afternoon: [10, 1, 6, 2], evening: [10, 5, 6, 8], night: [2, 10, 4, 9] };
+  var MICROPHASE = { morning: [2, 11, 3, 7], afternoon: [10, 1, 11, 2], evening: [11, 10, 6, 8], night: [2, 11, 10, 9] };
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
     var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
     if (m.breath && !cur) { breathwork(4); return; }   // guided breathwork moment (logs itself on finish)
     if (m.relax && !cur) { relaxMoment(); return; }     // Psycho-Cybernetics relax-all-muscles + mindful moment
+    if (m.med && !cur) { meditation(); return; }         // adaptive guided meditation (you choose the re-anchor frequency)
     if (!cur) {
       var t = nextFreeMin(todayK()), id = uid();
       blocks(todayK()).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: Math.max(5, m.mins), title: m.l, prio: 1, color: col, done: false });
@@ -894,6 +896,47 @@
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
     function step() { if (done) return; if (i >= STEPS.length) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; tmr = setTimeout(function () { finish(false); }, 1500); return; } lab.textContent = STEPS[i][0]; sub.textContent = STEPS[i][1]; tmr = setTimeout(step, STEPS[i][2]); i++; }
     setTimeout(step, 700);
+  }
+  // adaptive guided meditation: YOU choose how often it re-anchors you (for a 0-attention-span mind) + modular focus + tiny durations
+  function meditation() {
+    var FREQ = { often: 11, some: 24, spacious: 42 };  // seconds between gentle re-anchoring cues
+    var CUES = {
+      breath: ["Notice your breath", "Feel the air come in… and out", "Just this one breath", "Come back to the breath", "Breathe naturally — nothing to fix"],
+      body: ["Feel your body sitting here", "Notice your hands", "Soften your shoulders", "Feel the weight of your body", "Scan slowly, head to toe"],
+      heart: ["Rest your attention in your chest", "A small warmth in the heart", "Breathe through your heart", "Quietly wish yourself well", "Let the heart soften"],
+      open: ["Just be aware", "Notice whatever's here", "Let thoughts drift by like clouds", "Rest as the awareness itself", "Nothing to do, nowhere to be"]
+    };
+    var cfg = { mins: 5, freq: "often", focus: "breath" };
+    var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
+    function build() {
+      ov.innerHTML = "";
+      var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { if (ov.parentNode) ov.remove(); };
+      var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
+      box.innerHTML = '<div style="font-size:26px;font-weight:800;">🧘 Meditate</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:12px;">even a tiny one counts</div>';
+      function row(title, opts, key) {
+        var lbl = add(box, "div", null, title); lbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:13px 0 7px;text-transform:uppercase;letter-spacing:.5px;";
+        var r = add(box, "div"); r.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
+        opts.forEach(function (o) { var b = add(r, "button", null, o[0]); b.style.cssText = "border:2.5px solid #6a5a9a;border-radius:14px;padding:9px 14px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#efeaff;background:" + (cfg[key] === o[1] ? "#9a7cff" : "rgba(255,255,255,.06)") + ";"; b.onclick = function () { cfg[key] = o[1]; build(); }; });
+      }
+      row("how long", [["2 min", 2], ["5 min", 5], ["10 min", 10]], "mins");
+      row("remind me", [["often", "often"], ["some", "some"], ["spacious", "spacious"]], "freq");
+      row("focus on", [["breath", "breath"], ["body", "body"], ["heart", "heart"], ["open", "open"]], "focus");
+      var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:22px;background:#9a7cff;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
+      var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
+    }
+    function run() {
+      ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
+      var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
+      orb.style.animation = "breathe " + (cfg.focus === "breath" ? 8 : 10) + "s ease-in-out infinite";
+      var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
+      try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
+      var pool = CUES[cfg.focus], ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
+      function cue() { if (done) return; lab.textContent = pool[ci % pool.length]; ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
+      function finish(skip) { if (done) return; done = true; if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation", mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); save(); renderAll(); }, 1700); }
+      ov.querySelector(".bw-x").onclick = function () { finish(true); };
+      cue(); cueT = setInterval(cue, FREQ[cfg.freq] * 1000); tickT = setInterval(function () { elapsed++; if (elapsed >= total) finish(false); }, 1000);
+    }
+    build();
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
