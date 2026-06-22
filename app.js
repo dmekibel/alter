@@ -18,7 +18,7 @@
   function daysSince(k) { if (!k) return 999; return Math.round((new Date(todayK() + "T00:00:00") - new Date(k + "T00:00:00")) / 86400000); }
   function lastDays(n) { var o = [], d = new Date(); for (var i = 0; i < n; i++) { o.push(key(d)); d.setDate(d.getDate() - 1); } return o; }
 
-  var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }, { id: "send", e: "✦", l: "Ship one thing", type: "build", per: 0, color: "#2a9fe0" }];
+  var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
   var DURS = [15, 30, 45, 60, 90, 120];
   var MORNING_RITUAL = { t: "☀️ Morning bookend", steps: [
@@ -46,7 +46,7 @@
   var CATS = [
     { k: "energy", label: "Energy", e: "⚡", color: "#ff8a1e", groups: [
       { g: "Fitness", tasks: [{ l: "Run", e: "🏃", id: "move" }, { l: "Gym", e: "🏋️", id: "move" }, { l: "Walk", e: "🚶" }, { l: "Yoga", e: "🧘" }, { l: "Stretch", e: "🤸" }, { l: "Cycle", e: "🚴" }, { l: "Swim", e: "🏊" }, { l: "Sports", e: "⚽" }, { l: "Hike", e: "🥾" }] },
-      { g: "Body", tasks: [{ l: "Cold shower", e: "🧊" }, { l: "Shower", e: "🚿" }, { l: "Skincare", e: "🧴" }, { l: "Meditate", e: "🧘" }, { l: "Breathe", e: "🌬️", id: "breathe" }, { l: "Sauna", e: "♨️" }, { l: "Sun", e: "☀️" }] },
+      { g: "Body", tasks: [{ l: "Brush teeth", e: "🪥" }, { l: "Wash up", e: "🧼" }, { l: "Cold shower", e: "🧊" }, { l: "Shower", e: "🚿" }, { l: "Skincare", e: "🧴" }, { l: "Meditate", e: "🧘" }, { l: "Breathe", e: "🌬️", id: "breathe" }, { l: "Sauna", e: "♨️" }, { l: "Sun", e: "☀️" }] },
       { g: "Sleep", tasks: [{ l: "Sleep", e: "😴" }, { l: "Nap", e: "💤" }, { l: "Wind down", e: "🌙" }, { l: "Wake early", e: "⏰" }] },
       { g: "Food", tasks: [{ l: "Eat healthy", e: "🥗" }, { l: "Cook", e: "🍳" }, { l: "Hydrate", e: "💧" }, { l: "Vitamins", e: "💊" }, { l: "Protein", e: "🥩" }, { l: "Meal prep", e: "🍱" }] },
       { g: "Space", tasks: [{ l: "Tidy", e: "🧹", id: "tidy" }, { l: "Laundry", e: "🧺", id: "tidy" }, { l: "Dishes", e: "🍽️" }, { l: "Clean", e: "🧼", id: "tidy" }] }
@@ -76,8 +76,45 @@
       { g: "Other", tasks: [{ l: "Sugar", e: "🍬" }, { l: "Junk food", e: "🍔" }, { l: "Shopping", e: "🛍️" }, { l: "Gambling", e: "🎰" }, { l: "Procrastinate", e: "🐌" }] }
     ] }
   ];
+  var OCCUPATIONS = [
+    { k: "artist", l: "Artist / Creative", e: "🎨", work: [
+      { g: "Create", tasks: [{ l: "Make art", e: "🎨" }, { l: "Sketch", e: "✏️" }, { l: "Edit / refine", e: "🖌️" }, { l: "Experiment", e: "🧪" }] },
+      { g: "Sell", tasks: [{ l: "List work", e: "🏷️" }, { l: "Message buyers", e: "💬" }, { l: "Invoice", e: "🧾" }, { l: "Pitch", e: "📨" }] },
+      { g: "Grow", tasks: [{ l: "Post content", e: "📲" }, { l: "Network", e: "🤝" }, { l: "Engage / reply", e: "💬" }, { l: "Study craft", e: "📚" }] }
+    ] },
+    { k: "dev", l: "Developer / Builder", e: "💻", work: [
+      { g: "Build", tasks: [{ l: "Code", e: "💻" }, { l: "Debug", e: "🐞" }, { l: "Design / plan", e: "📐" }] },
+      { g: "Ship", tasks: [{ l: "Deploy", e: "🚀" }, { l: "Test", e: "🧪" }, { l: "Review", e: "👀" }] },
+      { g: "Grow", tasks: [{ l: "Outreach", e: "🤝" }, { l: "Demo / sell", e: "📈" }, { l: "Post update", e: "📲" }] }
+    ] },
+    { k: "founder", l: "Founder / Hustler", e: "🚀", work: [
+      { g: "Build", tasks: [{ l: "Product work", e: "🛠️" }, { l: "Deep work", e: "🧠" }, { l: "Plan", e: "🗒️" }] },
+      { g: "Sell", tasks: [{ l: "Outreach", e: "🤝" }, { l: "Sales call", e: "📞" }, { l: "Close deal", e: "💰" }, { l: "Invoice", e: "🧾" }] },
+      { g: "Grow", tasks: [{ l: "Content", e: "📲" }, { l: "Network", e: "🌐" }, { l: "Fundraise", e: "💵" }] }
+    ] },
+    { k: "writer", l: "Writer / Creator", e: "✍️", work: [
+      { g: "Make", tasks: [{ l: "Write", e: "✍️" }, { l: "Edit", e: "📝" }, { l: "Research", e: "🔎" }] },
+      { g: "Publish", tasks: [{ l: "Post", e: "📲" }, { l: "Newsletter", e: "📧" }, { l: "Film / record", e: "🎬" }] },
+      { g: "Grow", tasks: [{ l: "Engage / reply", e: "💬" }, { l: "Network", e: "🤝" }, { l: "Monetize", e: "💰" }] }
+    ] },
+    { k: "student", l: "Student", e: "📚", work: [
+      { g: "Learn", tasks: [{ l: "Study", e: "📚" }, { l: "Lectures", e: "🎧" }, { l: "Practice", e: "✏️" }] },
+      { g: "Produce", tasks: [{ l: "Assignment", e: "📝" }, { l: "Project", e: "🛠️" }, { l: "Revise", e: "🔁" }] },
+      { g: "Plan", tasks: [{ l: "Organize", e: "🗒️" }, { l: "Office hours", e: "🧑‍🏫" }, { l: "Group work", e: "👥" }] }
+    ] },
+    { k: "office", l: "Office / Pro", e: "💼", work: [
+      { g: "Focus", tasks: [{ l: "Deep work", e: "🧠" }, { l: "Analysis", e: "📊" }, { l: "Writing", e: "✍️" }] },
+      { g: "Coordinate", tasks: [{ l: "Meetings", e: "👥" }, { l: "Email", e: "📧" }, { l: "Calls", e: "📞" }] },
+      { g: "Deliver", tasks: [{ l: "Ship work", e: "🚀" }, { l: "Review", e: "👀" }, { l: "Plan", e: "🗒️" }] }
+    ] },
+    { k: "other", l: "Something else", e: "✨", work: null }
+  ];
+  var OCC_BY_K = {}; OCCUPATIONS.forEach(function (o) { OCC_BY_K[o.k] = o; });
+  var CONTEXT = { morning: ["Brush teeth", "Make art", "Shower", "Journal", "Breathe", "Run"], afternoon: ["Nap", "Walk", "Eat healthy", "Stretch", "Deep work"], evening: ["Gratitude", "Cook", "Walk", "Tidy"], night: ["Wind down", "Brush teeth", "Read", "Stretch"] };
   var TITLE2CAT = {}, TITLE2META = {};
   CATS.forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { TITLE2CAT[t.l.toLowerCase()] = c.k; TITLE2META[t.l.toLowerCase()] = { title: t.l, catK: c.k, emoji: t.e, color: c.color, habitId: t.id || null }; }); }); });
+  OCCUPATIONS.forEach(function (o) { if (o.work) o.work.forEach(function (g) { g.tasks.forEach(function (t) { var lc = t.l.toLowerCase(); if (!TITLE2CAT[lc]) { TITLE2CAT[lc] = "work"; TITLE2META[lc] = { title: t.l, catK: "work", emoji: t.e, color: "#2a9fe0", habitId: null }; } }); }); });
+  function activeCats() { var o = OCC_BY_K[(typeof S !== "undefined" && S && S.profile) ? S.profile.occ : null]; return CATS.map(function (c) { if (c.k === "work" && o && o.work) return { k: c.k, label: c.label, e: c.e, color: c.color, groups: o.work }; return c; }); }
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
   var VIRTUES = [
     { k: "zest", l: "Zest", e: "⚡", c: "#ff8a1e", grow: "move your body" },
@@ -106,7 +143,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {} } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
@@ -323,9 +360,9 @@
       var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.24);
       add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30)));
       add(card, "div", "cn", blockEmoji(b.title) + " " + b.title);
-      var grip = add(card, "div", "grip"); var lastTap = 0;
+      var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript"); var lastTap = 0;
       card.addEventListener("pointerdown", function (ev) {
-        if (ev.target === grip) return; ev.preventDefault();
+        if (ev.target === grip || ev.target === gripT) return; ev.preventDefault();
         var sy0 = ev.clientY, sm0 = hm(b.time), moved = false, ct0 = card.querySelector(".ct"), dragMin = sm0;
         function mv2(e) { var dy = e.clientY - sy0; if (!moved && Math.abs(dy) > 6) { moved = true; card.classList.add("lift"); } if (moved) { dragMin = Math.max(0, Math.min(1425, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = ((dragMin - startH * 60) / 60 * HP) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); } }
         function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); save(); } else { var n = Date.now(); if (n - lastTap < 330) { lastTap = 0; blockEdit(b, k); } else lastTap = n; } }
@@ -336,6 +373,13 @@
         var sy = ev.clientY, sm = b.mins || 30, ct = card.querySelector(".ct");
         function mv(e) { var v = Math.max(15, Math.round((sm + (e.clientY - sy) / HP * 60) / 15) * 15); b.mins = v; card.style.height = Math.max(24, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "–" + fmt(hm(b.time) + v); }
         function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); card._rz = true; setTimeout(function () { card._rz = false; }, 60); }
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
+      gripT.addEventListener("pointerdown", function (ev) {
+        ev.stopPropagation(); ev.preventDefault();
+        var sy = ev.clientY, sm = b.mins || 30, sStart = hm(b.time), endM = sStart + sm, ct = card.querySelector(".ct");
+        function mv(e) { var ns = Math.max(0, Math.min(endM - 15, sStart + Math.round(((e.clientY - sy) / HP * 60) / 15) * 15)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = ((ns - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "–" + fmt(endM); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
     });
@@ -385,13 +429,15 @@
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    var picked = {}, view = { cat: null, group: null };
+    var picked = {}, view = { cat: null, group: null }, CT = activeCats();
     function count() { return Object.keys(picked).length; }
     function draw() {
       B.innerHTML = ""; add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, draw);
       if (view.cat == null) {
+        var ph2 = phase(), ctx = (CONTEXT[ph2] || []).map(function (t) { return TITLE2META[t.toLowerCase()]; }).filter(Boolean);
+        if (ctx.length) { add(B, "div", "lbl", (ph2 === "morning" ? "🌅" : ph2 === "evening" ? "🌆" : ph2 === "night" ? "🌙" : "☀️") + " good right now"); var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { var ky = t.catK + "|" + t.title; taskTile(xg, t, !!picked[ky], function () { opts.onTask(t, picked, draw); }); }); }
         if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { var ky = t.catK + "|" + t.title; taskTile(fg, t, !!picked[ky], function () { opts.onTask(t, picked, draw); }); }); } }
-        add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CATS.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; draw(); }; cg.appendChild(card); });
+        add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; draw(); }; cg.appendChild(card); });
         if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (v) opts.onTask({ title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }, picked, draw); }; }
       } else if (view.group == null) {
         var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; draw(); }; add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; draw(); }; sg.appendChild(card); });
@@ -408,7 +454,7 @@
       { h: "07:30", m: 15, t: "Make the bed", c: "#ff8a1e", p: 2 }, { h: "08:00", m: 30, t: "Breakfast", c: "#ff8a1e", p: 2 },
       { h: "09:00", m: 90, t: "Deep work", c: "#2a9fe0", p: 3 }, { h: "10:45", m: 45, t: "Move", c: "#ff8a1e", p: 3 },
       { h: "12:00", m: 45, t: "Lunch", c: "#ff8a1e", p: 2 }, { h: "13:00", m: 90, t: "Deep work", c: "#2a9fe0", p: 3 },
-      { h: "15:00", m: 30, t: "Break", c: "#9a5cf0", p: 1 }, { h: "16:00", m: 60, t: "Ship one thing", c: "#2a9fe0", p: 3 },
+      { h: "15:00", m: 30, t: "Break", c: "#9a5cf0", p: 1 }, { h: "16:00", m: 60, t: "Deep work", c: "#2a9fe0", p: 3 },
       { h: "18:30", m: 45, t: "Dinner", c: "#ff8a1e", p: 2 }, { h: "20:00", m: 60, t: "Hobby", c: "#9a5cf0", p: 1 },
       { h: "22:00", m: 30, t: "Wind down", c: "#48d0e0", p: 2 }
     ];
@@ -443,7 +489,7 @@
   function openSheet() { el("sheet").classList.add("on"); }
   function closeSheet() { el("sheet").classList.remove("on"); }
   function charSheet() {
-    var B = el("sheetBody"); var step = 0, STEPS = 2, inputs = {};
+    var B = el("sheetBody"); var step = 0, STEPS = 3, inputs = {};
     var prof = S.profile ? JSON.parse(JSON.stringify(S.profile)) : {}; prof.focus = prof.focus || []; prof.gender = prof.gender || "";
     openSheet();
     function numIn(ph, val) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; if (val != null) i.value = val; i.style.cssText = "width:80px;"; return i; }
@@ -454,6 +500,9 @@
         add(B, "div", "sttl", "✨ Begin your character"); add(B, "div", "lbl", "just the basics");
         var f1 = add(B, "div", "frm"); inputs.age = numIn("age", prof.age); f1.appendChild(inputs.age); var gw = add(f1, "div", "pchips"); gw.style.margin = "0"; [["m", "♂"], ["f", "♀"], ["o", "⚧"]].forEach(function (g) { var x = add(gw, "div", "pchip" + (prof.gender === g[0] ? " on" : ""), g[1]); x.onclick = function () { prof.gender = g[0]; draw(); }; });
         add(B, "div", "lbl", "🎯 what are you chasing? (optional)"); inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "get lean, ship the app, find peace…"; inputs.g.style.cssText = "width:100%;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
+      } else if (step === 1) {
+        add(B, "div", "sttl", "💼 What's your work?"); add(B, "div", "lbl", "so the app tailors your deep-work habits to you");
+        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = "#2a9fe0"; if (on) x.style.background = "#2a9fe0"; add(x, "div", "ge", o.e); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; draw(); }; });
       } else {
         add(B, "div", "sttl", "🌟 Your path"); add(B, "div", "lbl", "which virtues call you most right now? pick up to 3 — you'll still grow them all");
         var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); draw(); }; });
@@ -501,7 +550,8 @@
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "char") treeFit(); if (t === "home") guardianFit(); }; });
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "char") treeFit(); if (t === "home") guardianFit(); }; });
+    var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     renderAll();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
