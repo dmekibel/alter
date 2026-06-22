@@ -185,7 +185,14 @@
   .calblk .grip,.calblk .gript{position:absolute;left:0;right:0;height:12px;display:flex;justify-content:center;cursor:ns-resize;touch-action:none;}
   .calblk .grip{bottom:0;align-items:flex-end;padding-bottom:2px;} .calblk .gript{top:0;align-items:flex-start;padding-top:2px;}
   .calblk .grip::after,.calblk .gript::after{content:"";width:20px;height:3px;border-radius:2px;background:rgba(255,255,255,.4);}
-  .calhint{text-align:center;font-size:11.5px;color:var(--soft);font-weight:600;margin:0 0 4px;}
+  .calhint{text-align:center;font-size:11px;color:var(--soft);font-weight:600;margin:0 0 4px;line-height:1.35;}
+  .lanehead{display:flex;font-family:var(--bub);font-weight:800;font-size:10px;letter-spacing:1.5px;color:var(--soft);margin:0 0 4px;padding-left:42px;}
+  .lanehead .lhx{flex:1;text-align:center;}
+  .lanediv{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.14);}
+  @keyframes okpop{0%,100%{transform:scale(1);}45%{transform:scale(1.035);}}
+  .calblk.ok{border-color:#46e2a4 !important;border-left-color:#46e2a4 !important;box-shadow:0 0 18px rgba(70,226,164,.55),0 5px 16px rgba(0,0,0,.4);animation:okpop 1.9s ease-in-out infinite;}
+  .calblk.miss{filter:grayscale(.9);opacity:.42;background-image:none;border-color:#5a5570 !important;border-left-color:#6a6580 !important;}
+  .calblk.live{box-shadow:0 0 16px rgba(255,95,168,.5),0 5px 16px rgba(0,0,0,.4);}
   .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;}
   .calblk .cn{font-size:13.5px;font-weight:600;line-height:1.2;}
   .calblk.done{opacity:.5;} .calblk.done .cn{text-decoration:line-through;}

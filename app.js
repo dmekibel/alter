@@ -347,18 +347,25 @@
   }
   function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
   function calendarView(L, k, showNow) {
-    L.innerHTML = ""; var bls = blocks(k).slice();
-    add(L, "div", "calhint", bls.length ? "drag a bubble to move · its handle to stretch · double-tap to edit · tap empty to add" : "tap any time to drop an activity — or “＋” to auto-fill a day");
-    var minS = 6 * 60, maxE = 22 * 60; bls.forEach(function (b) { minS = Math.min(minS, hm(b.time)); maxE = Math.max(maxE, hm(b.time) + (b.mins || 30)); });
-    var startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(24, Math.ceil(maxE / 60)), HP = 54;
+    L.innerHTML = "";
+    var bls = blocks(k).slice(), lgs = showNow ? logs(k).slice() : [];
+    add(L, "div", "calhint", "left = your plan · right = what you actually did · drag to move, edges to stretch · double-tap to edit · tap empty to add");
+    var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx", "PLAN"); add(lh, "span", "lhx", "ACTUAL");
+    var minS = 6 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
+    var startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(24, Math.ceil(maxE / 60)), HP = 60, now = nowMin();
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
+    add(cal, "div", "lanediv");
     for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
-    if (showNow) { var nm = nowMin(); if (nm >= startH * 60 && nm <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((nm - startH * 60) / 60 * HP) + "px"; } }
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; }
+    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
+    function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
-      var top = (hm(b.time) - startH * 60) / 60 * HP, hpx = Math.max(24, (b.mins || 30) / 60 * HP - 4);
-      var card = add(cal, "div", "calblk" + (b.done ? " done" : "")); card.style.top = top + "px"; card.style.height = hpx + "px";
-      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.24);
-      add(card, "div", "ct", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + (b.mins || 30)));
+      var bs = hm(b.time), be = bs + (b.mins || 30), status = "plan";
+      if (showNow) { if (b.done || overlapLog(bs, be)) status = "ok"; else if (be <= now) status = "miss"; }
+      var card = add(cal, "div", "calblk lane" + (status === "ok" ? " ok" : status === "miss" ? " miss" : ""));
+      place(card, bs, b.mins || 30, "P");
+      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; if (status !== "miss") card.style.backgroundColor = hexA(status === "ok" ? "#46e2a4" : col, status === "ok" ? 0.28 : 0.22);
+      add(card, "div", "ct", (status === "ok" ? "✓ " : status === "miss" ? "✕ " : "") + fmt(bs) + "–" + fmt(be));
       add(card, "div", "cn", blockEmoji(b.title) + " " + b.title);
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript"); var lastTap = 0;
       card.addEventListener("pointerdown", function (ev) {
@@ -383,6 +390,8 @@
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
     });
+    lgs.forEach(function (e) { var es = hm(e.time), card = add(cal, "div", "calblk lane act"); place(card, es, e.mins || 15, "A"); var col = e.color || "#48d0e0"; card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.26); add(card, "div", "ct", fmt(es) + "–" + fmt(es + (e.mins || 0))); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title); });
+    if (showNow) { S.timers.forEach(function (t) { var d = new Date(t.start), ts = d.getHours() * 60 + d.getMinutes(), du = Math.max(5, Math.round((Date.now() - t.start) / 60000)); var card = add(cal, "div", "calblk lane live"); place(card, ts, du, "A"); card.style.borderLeftColor = t.color || "#ff5fa8"; card.style.backgroundColor = hexA(t.color || "#ff5fa8", 0.3); add(card, "div", "ct", "▶ now"); add(card, "div", "cn", blockEmoji(t.title) + " " + t.title); }); }
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
       function up(e) { document.removeEventListener("pointerup", up); if (Math.abs(e.clientY - dy) < 9 && Math.abs(e.clientX - dx) < 9 && Date.now() - t0 < 450) { var rect = cal.getBoundingClientRect(); planSheet(k, k === todayK() ? "today" : "tomorrow", timeFromY(e.clientY - rect.top, startH, HP)); } }
