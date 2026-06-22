@@ -348,6 +348,19 @@
     text-shadow:0 1px 6px rgba(0,0,0,.7);pointer-events:none;letter-spacing:.3px;}
   #guardianCap{text-align:center;font-family:var(--bub);font-weight:700;font-size:13.5px;color:#cdbff2;margin:0 0 12px;letter-spacing:.3px;}
   #guardianCap b{color:#ffe07a;}
+  /* ===== NEVER WHITE — kill every surviving white/near-white surface (David: no white backgrounds, ever) ===== */
+  .scard{background:linear-gradient(165deg,#221a3e,#2c1e46) !important;color:#f3edfc !important;}
+  .tabbar{background:#1c1338 !important;}
+  input[type=text],input[type=time]{background:rgba(255,255,255,.06) !important;color:#f3edfc !important;border-color:#4a4068 !important;}
+  input[type=text]::placeholder,input[type=time]::placeholder{color:#9c8fc4;}
+  #nowBtn{background:#35290f !important;color:#ffc24a !important;}
+  .pchip{background:rgba(255,255,255,.06) !important;color:#ece4f7 !important;}
+  .subi{background:rgba(255,255,255,.05) !important;color:#ece4f7 !important;}
+  .subcat,.gtile{background:rgba(255,255,255,.05) !important;color:#ece4f7 !important;}
+  .face{background:rgba(255,255,255,.05) !important;border-color:#4a4068 !important;}
+  .qopt{background:rgba(255,255,255,.05) !important;color:#ece4f7 !important;border-color:#4a4068 !important;}
+  .ck{background:rgba(255,255,255,.06) !important;}
+  .bar{background:rgba(255,255,255,.08) !important;}
 </style>
 </head>
 <body>
@@ -411,6 +424,6 @@
     <div id="joy2"><div id="joyStick2"></div></div>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=342"></script>
+  <script src="app.js?v=343"></script>
 </body>
 </html>
