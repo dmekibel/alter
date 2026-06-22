@@ -338,18 +338,36 @@
     if (zi) zi.onclick = function () { zoom = clampZ(zoom * 1.2); };
     if (zo) zo.onclick = function () { zoom = clampZ(zoom / 1.2); };
   }
+  // right thumb (twin-stick, Heaven Inc style): aims the fairy's facing
+  function setupJoy2() {
+    var zone = el("joy2"), stick = el("joyStick2"); if (!zone || !stick) return;
+    var cx2 = 0, cy2 = 0;
+    zone.addEventListener("touchstart", function (e) { e.preventDefault(); var tc = e.changedTouches[0]; jid2 = tc.identifier; var r = zone.getBoundingClientRect(); cx2 = r.left + r.width / 2; cy2 = r.top + r.height / 2; }, { passive: false });
+    zone.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var tc = e.changedTouches[i]; if (tc.identifier !== jid2) continue;
+        var dx = tc.clientX - cx2, dy = tc.clientY - cy2, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 32), a = Math.atan2(dy, dx);
+        stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
+        if (d > 8) { moveX2 = Math.cos(a); moveY2 = Math.sin(a); } else { moveX2 = 0; moveY2 = 0; }
+      }
+    }, { passive: false });
+    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid2) { jid2 = null; moveX2 = 0; moveY2 = 0; stick.style.transform = "translate(0,0)"; } }
+    zone.addEventListener("touchend", end); zone.addEventListener("touchcancel", end);
+  }
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
-  var FAIRY = { idle: null, fly: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 } };
-  function loadFairy() { ["idle", "fly"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=1"; FAIRY[k] = im; }); }
+  var FAIRY = { idle: null, fly: null, face: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 } };
+  var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
+  function loadFairy() { ["idle", "fly", "face"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=2"; FAIRY[k] = im; }); }
   // low-res backing store + CSS upscale (image-rendering:pixelated) = true pixel-art look (Heaven Inc model)
   function fitPixelCanvas(c, cssW, cssH, px) {
     c.style.width = cssW + "px"; c.style.height = cssH + "px";
-    var bw = Math.max(2, Math.round(cssW / px)), bh = Math.max(2, Math.round(cssH / px));
-    c.width = bw; c.height = bh;
-    var ctx = c.getContext("2d"); ctx.setTransform(bw / cssW, 0, 0, bh / cssH, 0, 0); ctx.imageSmoothingEnabled = false;
+    var dpr = window.devicePixelRatio || 1;          // full-res now: detailed AI sprites carry the pixel look (no more chunky buffer → no zoom blur)
+    c.width = Math.round(cssW * dpr); c.height = Math.round(cssH * dpr);
+    var ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = true;
     return ctx;
   }
   function ensureHero() { if (!hspr) { hspr = document.createElement("canvas"); hspr.width = HSW; hspr.height = HSH; hsx = hspr.getContext("2d"); } }
@@ -497,19 +515,21 @@
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
-    // real fairy sprite (idle when resting, fly when moving; flip for left/right)
-    var fset = moving ? "fly" : "idle", fim = FAIRY[fset], fm = FAIRY_META[fset];
-    if (fim && fim.complete && fim.naturalWidth) {
-      var ffr = Math.floor(t * (moving ? 14 : 10)) % fm.n;
-      var hH = 126, hW = hH * fm.fw / fm.fh, hdx = Math.round(px - hW / 2), hdy = Math.round(py - hH + 14);
-      var sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true;
-      if (pface < 0) { ctx.save(); ctx.translate(hdx + hW, hdy); ctx.scale(-1, 1); ctx.drawImage(fim, ffr * fm.fw, 0, fm.fw, fm.fh, 0, 0, hW, hH); ctx.restore(); }
-      else ctx.drawImage(fim, ffr * fm.fw, 0, fm.fw, fm.fh, hdx, hdy, hW, hH);
-      ctx.imageSmoothingEnabled = sm;
+    // real fairy: right thumb aims facing (else movement direction) → directional 360 frame; lush idle when resting
+    var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
+    var aiming = (aimX !== 0 || aimY !== 0), fc = FAIRY.face, idl = FAIRY.idle;
+    if (aiming && fc && fc.complete && fc.naturalWidth) {
+      var fmf = FAIRY_META.face, ang = Math.atan2(aimY, aimX);
+      var fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8;
+      var fb = Math.abs(Math.sin(t * 8)) * 5, hHf = 126, hWf = hHf * fmf.fw / fmf.fh;
+      ctx.drawImage(fc, fk * fmf.fw, 0, fmf.fw, fmf.fh, Math.round(px - hWf / 2), Math.round(py - hHf + 14 - fb), hWf, hHf);
+    } else if (idl && idl.complete && idl.naturalWidth) {
+      var fmi = FAIRY_META.idle, ffr = Math.floor(t * 10) % fmi.n, hHi = 126, hWi = hHi * fmi.fw / fmi.fh;
+      ctx.drawImage(idl, ffr * fmi.fw, 0, fmi.fw, fmi.fh, Math.round(px - hWi / 2), Math.round(py - hHi + 14), hWi, hHi);
     } else {
       paintHero(t, st, walkF, moving);
-      var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs, hdx0 = Math.round(px - hdw / 2), hdy0 = Math.round(py - hdh + 9);
-      ctx.drawImage(hspr, 0, 0, HSW, HSH, hdx0, hdy0, hdw, hdh);
+      var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
+      ctx.drawImage(hspr, 0, 0, HSW, HSH, Math.round(px - hdw / 2), Math.round(py - hdh + 9), hdw, hdh);
     }
     if (hasShippedToday()) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     ctx.restore();
@@ -1192,7 +1212,7 @@
   }
 
   function init() {
-    load(); loadFairy(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
+    load(); loadFairy(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);

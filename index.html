@@ -313,7 +313,14 @@
   #joyStick{width:40px;height:40px;border-radius:50%;background:rgba(180,150,255,.45);
     border:2px solid rgba(255,255,255,.55);box-shadow:0 0 12px rgba(150,110,255,.6);
     transition:transform .04s linear;}
-  #zoomCtl{position:absolute;right:14px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:5;}
+  #joy2{position:absolute;right:16px;bottom:16px;width:88px;height:88px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,.03));
+    border:2px solid rgba(255,255,255,.22);touch-action:none;z-index:5;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+  #joyStick2{width:40px;height:40px;border-radius:50%;background:rgba(255,210,120,.42);
+    border:2px solid rgba(255,255,255,.55);box-shadow:0 0 12px rgba(255,190,90,.6);
+    transition:transform .04s linear;}
+  #zoomCtl{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 118px);display:flex;flex-direction:column;gap:8px;z-index:5;}
   #zoomCtl button{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.22);
     background:rgba(34,26,56,.66);color:#f3edfc;font-size:20px;font-weight:700;line-height:1;
     backdrop-filter:blur(2px);cursor:pointer;padding:0;}
@@ -398,8 +405,9 @@
     <div id="gameHud"></div>
     <div id="zoomCtl"><button id="zoomIn" type="button">＋</button><button id="zoomOut" type="button">－</button></div>
     <div id="joy"><div id="joyStick"></div></div>
+    <div id="joy2"><div id="joyStick2"></div></div>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=333"></script>
+  <script src="app.js?v=334"></script>
 </body>
 </html>
