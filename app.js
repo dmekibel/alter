@@ -1280,13 +1280,33 @@
     add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); };
   }
   function habitSheet() {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "New habit");
-    var cfg = { type: "build", per: 0, color: "#ff8a1e" };
-    var frm = add(B, "div", "frm"); var emo = document.createElement("input"); emo.type = "text"; emo.value = "⭐"; emo.style.cssText = "width:60px;text-align:center;"; var txt = document.createElement("input"); txt.type = "text"; txt.placeholder = "e.g. Meditate, 10k steps…"; frm.appendChild(emo); frm.appendChild(txt);
-    add(B, "div", "lbl", "type"); var c1 = add(B, "div", "pchips"); [["build", "✅ Build"], ["quit", "🚫 Quit"]].forEach(function (t) { var x = add(c1, "div", "pchip" + (cfg.type === t[0] ? " on" : ""), t[1]); x.onclick = function () { cfg.type = t[0]; Array.prototype.forEach.call(c1.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
-    add(B, "div", "lbl", "how often"); var c2 = add(B, "div", "pchips"); [["Daily", 0], ["2× wk", 2], ["3× wk", 3], ["4× wk", 4], ["5× wk", 5], ["6× wk", 6]].forEach(function (t) { var x = add(c2, "div", "pchip" + (cfg.per === t[1] ? " on" : ""), t[0]); x.onclick = function () { cfg.per = t[1]; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
-    add(B, "div", "lbl", "area"); var c3 = add(B, "div", "pchips"); [["Body", "#ff8a1e"], ["Work", "#2a9fe0"], ["Love", "#ff4fa0"], ["Play", "#9a5cf0"], ["Mind", "#6a5cf0"]].forEach(function (t, i) { var x = add(c3, "div", "pchip" + (i === 0 ? " on" : ""), t[0]); x.style.borderColor = t[1]; x.onclick = function () { cfg.color = t[1]; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); n.style.background = "rgba(255,255,255,.06)"; n.style.color = "#ece4f7"; }); x.classList.add("on"); x.style.background = t[1]; x.style.color = "#fff"; }; });
-    add(B, "button", "done2", "Add habit ✨").onclick = function () { var v = txt.value.trim(); if (!v) return; S.habits.push({ id: uid(), e: (emo.value || "⭐").slice(0, 2), l: v, type: cfg.type, per: cfg.per, color: cfg.color }); save(); closeSheet(); renderHabits(); };
+    // No typing: pick habits straight from the activity library (category → group → emoji tiles),
+    // multi-select, one frequency for the batch, build/quit inferred (vices → quit).
+    var cfg = { per: 0 };
+    pickerSheet({
+      title: function (n) { return n ? "Add " + n + (n === 1 ? " habit" : " habits") + " ✨" : "Pick your habits ✨"; },
+      frequent: true, custom: false,
+      head: function (B) {
+        add(B, "div", "lbl", "how often");
+        var c2 = add(B, "div", "pchips");
+        [["Daily", 0], ["2× wk", 2], ["3× wk", 3], ["4× wk", 4], ["5× wk", 5], ["6× wk", 6]].forEach(function (t) {
+          var x = add(c2, "div", "pchip" + (cfg.per === t[1] ? " on" : ""), t[0]);
+          x.onclick = function () { cfg.per = t[1]; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); };
+        });
+      },
+      onTask: function (t, picked, draw) { var ky = t.catK + "|" + t.title; if (picked[ky]) delete picked[ky]; else picked[ky] = t; draw(); },
+      foot: function (B, picked, n) {
+        if (!n) return;
+        add(B, "button", "done2", "Add " + n + (n === 1 ? " habit" : " habits") + " ✨").onclick = function () {
+          Object.keys(picked).forEach(function (k) {
+            var t = picked[k];
+            if (S.habits.some(function (h) { return h.l === t.title; })) return;
+            S.habits.push({ id: uid(), e: t.emoji || "⭐", l: t.title, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" });
+          });
+          save(); closeSheet(); renderHabits();
+        };
+      }
+    });
   }
 
   function init() {
