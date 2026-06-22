@@ -171,8 +171,8 @@
     var d14 = lastDays(14), xp = {}; VIRTUES.forEach(function (v) { xp[v.k] = 0; });
     d14.forEach(function (k) { logs(k).forEach(function (e) { var v = virtueOf(e); if (v) xp[v] += (e.mins || 0); }); var dm = S.habitDone[k] || {}; Object.keys(dm).forEach(function (id) { if (dm[id]) { var hv = { move: "zest", breathe: "zest", deep: "disc", tidy: "disc", read: "wisdom", send: "courage" }[id]; if (hv) xp[hv] += 18; xp.disc += 6; } }); });
     blocks(todayK()).forEach(function (b) { if (b.done) xp.hope += 12; });
-    var focus = (S.profile && S.profile.focus) || [];
-    var out = VIRTUES.map(function (v) { var x = xp[v.k] || 0, foc = focus.indexOf(v.k) !== -1; var lv = 1 + Math.floor(x / 90) + (foc ? 1 : 0); var glow = Math.min(1, 0.4 + lv * 0.085); return { k: v.k, l: v.l, e: v.e, c: v.c, grow: v.grow, lv: lv, glow: glow, focus: foc, x: x }; });
+    var focus = (S.profile && S.profile.focus) || [], bvx = (S.profile && S.profile.base && S.profile.base.virtue) || {};
+    var out = VIRTUES.map(function (v) { var x = (xp[v.k] || 0) + (bvx[v.k] || 0), foc = focus.indexOf(v.k) !== -1; var lv = 1 + Math.floor(x / 90) + (foc ? 1 : 0); var glow = Math.min(1, 0.4 + lv * 0.085); return { k: v.k, l: v.l, e: v.e, c: v.c, grow: v.grow, lv: lv, glow: glow, focus: foc, x: x }; });
     return { list: out, level: Math.round(out.reduce(function (a, s) { return a + s.lv; }, 0) / out.length), top: out.slice().sort(function (a, b) { return b.lv - a.lv; })[0] };
   }
 
@@ -253,8 +253,9 @@
     add(B, "div", "sttl", v.e + " " + v.l + " · Lv " + v.lv);
     var sub = add(B, "div", "lbl", "skills you level by living — do the thing, it ranks up"); sub.style.fontSize = "13px";
     var op = occPerk(v.k), perks = (PERKS[v.k] || []).slice(); if (op) perks.unshift(op);
+    var basePerk = (S.profile && S.profile.base && S.profile.base.perk) || {};
     perks.forEach(function (p) {
-      var val = p.m(), rank = 0, i; for (i = 0; i < p.r.length; i++) if (val >= p.r[i]) rank = i + 1; var mastered = rank >= p.r.length;
+      var val = p.m() + (basePerk[p.n] || 0), rank = 0, i; for (i = 0; i < p.r.length; i++) if (val >= p.r[i]) rank = i + 1; var mastered = rank >= p.r.length;
       var card = add(B, "div", "perk" + (rank > 0 ? " on" : "")); add(card, "div", "pke", p.e);
       var mid = add(card, "div"); mid.style.flex = "1"; var hd = add(mid, "div", "pkh"); add(hd, "span", "pkn", p.n);
       var pips = add(hd, "span", "pkpips"); for (i = 0; i < p.r.length; i++) { var pip = add(pips, "i"); if (i < rank) pip.className = "on"; }
@@ -332,6 +333,7 @@
     el("statLvl").textContent = (VCLASS[v.top.k] || "") + " · Lv " + v.level;
     var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
     var h = add(L, "div", "lbl", "tap a star to open its skill tree ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
+    var sv = add(L, "button", "add", "📊 calibrate my levels"); sv.style.cssText = "margin:10px auto 0;display:block;"; sv.onclick = surveySheet;
     var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
     renderPulls();
   }
@@ -655,11 +657,41 @@
       var nav = add(B, "div", "frm"); nav.style.marginTop = "10px";
       if (step > 0) { add(nav, "button", "add", "← back").onclick = function () { step--; draw(); }; }
       var nx = add(nav, "button", "done2", step === STEPS - 1 ? "Awaken ✨" : "Next →"); nx.style.flex = "1";
-      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; draw(); } else { prof.set = true; S.profile = prof; save(); closeSheet(); renderChar(); } };
+      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; draw(); } else { prof.set = true; S.profile = prof; save(); closeSheet(); renderChar(); surveySheet(); } };
     }
     draw();
   }
 
+  var SURVEYQ = [
+    { q: "How often do you work out?", v: "zest", p: "Athlete", e: "🏃" },
+    { q: "How dialed-in are your sleep & food?", v: "zest", p: "Well-Fed", e: "🥗" },
+    { q: "How strong is your deep-work focus?", v: "disc", p: "Deep Focus", e: "🧠" },
+    { q: "How tidy do you keep your space?", v: "disc", p: "Clean Space", e: "🧹" },
+    { q: "How connected are you with loved ones?", v: "love", p: "Connector", e: "💞" },
+    { q: "How often do you make or create things?", v: "curiosity", p: "Creator", e: "🎨" },
+    { q: "How much do you read & learn?", v: "wisdom", p: "Scholar", e: "📖" },
+    { q: "How often do you ship / put work out there?", v: "courage", p: "Shipper", e: "✦" },
+    { q: "How consistent are your mornings & planning?", v: "hope", p: "Architect", e: "🗒️" },
+    { q: "How present & grateful do you feel?", v: "gratitude", p: "Grateful", e: "🙏" }
+  ];
+  var SCALE = ["Rarely", "Sometimes", "Often", "Always"];
+  function surveySheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "📊 Where are you at?");
+    add(B, "div", "lbl", "a quick read on your life right now — this sets your starting levels. redo it anytime.");
+    var ans = (S.profile && S.profile.survey) ? Object.assign({}, S.profile.survey) : {};
+    SURVEYQ.forEach(function (Q, qi) {
+      add(B, "div", "qline", Q.e + "  " + Q.q);
+      var row = add(B, "div", "facerow2");
+      SCALE.forEach(function (lbl, si) { var x = add(row, "div", "sv" + (ans[qi] === si ? " on" : ""), lbl); x.onclick = function () { ans[qi] = si; Array.prototype.forEach.call(row.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
+    });
+    add(B, "button", "done2", "✨ Set my starting levels").onclick = function () {
+      S.profile = S.profile || {}; S.profile.survey = ans; var bv = {}, bp = {};
+      SURVEYQ.forEach(function (Q, qi) { var a = ans[qi] || 0; if (a) { bv[Q.v] = (bv[Q.v] || 0) + a * 60; bp[Q.p] = (bp[Q.p] || 0) + a * 5; } });
+      S.profile.base = { virtue: bv, perk: bp }; S.profile.set = true;
+      save(); closeSheet(); renderChar(); renderGame();
+    };
+  }
   function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {}; TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy", catK: "energy", color: "#ff8a1e" }); save(); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
   function ritualSheet(r) {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", r.t); add(B, "div", "lbl", "tap each as you do it — small steps");
