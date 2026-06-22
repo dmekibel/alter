@@ -389,11 +389,20 @@
   #dnLabel{ color:#fff2f9 !important; }
   #dayNav button,#zoomTabs,#growTabs{ background:rgba(255,255,255,.08) !important; border-color:rgba(255,255,255,.27) !important; color:#fff2f9 !important; }
   .zt{ color:#ffd0e6 !important; }
+  /* RADICAL: world is home — no bottom tab bar; features are diegetic overlays reached by tapping yourself */
+  #nav{ display:none !important; }
+  #gameExit{ display:none !important; }
+  #screen{ padding-bottom:88px !important; }
+  #toWorld{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 14px); z-index:40;
+    background:#ff5fa8; color:#fff2f9; border:3px solid #3a2540; border-radius:20px; padding:11px 22px;
+    font-family:var(--bub); font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 5px 0 #3a2540; letter-spacing:.3px; }
+  #toWorld:active{ transform:translateX(-50%) translateY(4px); box-shadow:0 1px 0 #3a2540; }
 </style>
 </head>
 <body>
   <div id="screen">
-    <header><div id="date"></div><div id="hello"></div><button id="gameBtn" aria-label="Enter your world">🎮</button><button id="gear" aria-label="Brain">🧠</button></header>
+    <button id="toWorld" type="button" aria-label="Back to your garden">🌿 garden</button>
+    <header><div id="date"></div><div id="hello"></div><button id="gear" aria-label="Brain">🧠</button></header>
 
     <div class="tab on" id="t-self">
       <div id="stage"><canvas id="guardian"></canvas>
@@ -452,6 +461,6 @@
     <div id="joy2"><div id="joyStick2"></div></div>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=344"></script>
+  <script src="app.js?v=345"></script>
 </body>
 </html>

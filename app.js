@@ -593,7 +593,7 @@
   function updGameHud() {
     var h = el("gameHud"); if (!h) return;
     var sp = (S.game && S.game.spark) || 0;
-    h.textContent = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island");
+    h.innerHTML = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island") + "<br><span style='opacity:.82;font-size:12px'>tap yourself ✦ to open the menu</span>";
   }
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
@@ -1300,6 +1300,7 @@
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
     var ew = el("enterWorld"); if (ew) ew.onclick = openGame;
     var gx = el("gameExit"); if (gx) gx.onclick = closeGame;
+    var tw = el("toWorld"); if (tw) tw.onclick = openGame;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; if (zoomMode === "day") pendingScrollNow = true; renderToday(); }; });
