@@ -189,8 +189,27 @@
   .lanehead{display:flex;font-family:var(--bub);font-weight:800;font-size:10px;letter-spacing:1.5px;color:var(--soft);margin:0 0 4px;padding-left:42px;}
   .lanehead .lhx{flex:1;text-align:center;}
   .lanediv{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.14);}
-  @keyframes okpop{0%,100%{transform:scale(1);}45%{transform:scale(1.035);}}
-  .calblk.ok{border-color:#46e2a4 !important;border-left-color:#46e2a4 !important;box-shadow:0 0 18px rgba(70,226,164,.55),0 5px 16px rgba(0,0,0,.4);animation:okpop 1.9s ease-in-out infinite;}
+  @keyframes okpop{0%,100%{transform:scale(1);}45%{transform:scale(1.03);}}
+  .calblk.ok{border-color:rgba(255,255,255,.6) !important;animation:okpop 2.1s ease-in-out infinite;}
+  #dayNav{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 8px;}
+  #dayNav button{background:rgba(255,255,255,.08);border:2px solid #4a4068;color:#f3edfc;width:40px;height:36px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;}
+  #dnLabel{font-family:var(--bub);font-weight:800;font-size:17px;}
+  #zoomTabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border:2px solid #4a4068;border-radius:15px;padding:4px;margin:0 2px 12px;}
+  .zt{flex:1;background:none;border:none;color:var(--soft);font-family:var(--bub);font-weight:800;font-size:13px;padding:9px;border-radius:11px;cursor:pointer;}
+  .zt.on{background:var(--purple);color:#fff;box-shadow:0 3px 0 #120d22;}
+  .weekrow{display:flex;gap:4px;}
+  .wkcol{flex:1;cursor:pointer;}
+  .wkcol.today .wkh{color:#ffd24a;}
+  .wkh{font-family:var(--bub);font-weight:800;font-size:10px;text-align:center;color:var(--soft);margin-bottom:4px;}
+  .wkstrip{position:relative;height:248px;background:rgba(255,255,255,.04);border:1px solid #3a3358;border-radius:10px;overflow:hidden;}
+  .wkb{position:absolute;left:2px;right:2px;border-radius:4px;min-height:3px;}
+  .mogrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .mowh{text-align:center;font-family:var(--bub);font-weight:800;font-size:10px;color:var(--soft);}
+  .mocell{min-height:42px;border:1px solid #3a3358;border-radius:10px;background:rgba(255,255,255,.04);position:relative;display:flex;align-items:flex-start;justify-content:flex-end;padding:4px 5px;cursor:pointer;}
+  .mocell.empty{border:none;background:none;}
+  .mocell.today{border-color:#ffd24a;}
+  .mod{font-family:var(--bub);font-weight:700;font-size:11px;color:var(--soft);}
+  .modot{position:absolute;left:5px;bottom:5px;width:9px;height:9px;border-radius:50%;}
   .calblk.miss{filter:grayscale(.9);opacity:.42;background-image:none;border-color:#5a5570 !important;border-left-color:#6a6580 !important;}
   .calblk.live{box-shadow:0 0 16px rgba(255,95,168,.5),0 5px 16px rgba(0,0,0,.4);}
   .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;}
@@ -244,12 +263,14 @@
     </div>
 
     <div class="tab" id="t-today">
+      <div id="dayNav"><button id="dnPrev">◀</button><div id="dnLabel"></div><button id="dnNext">▶</button></div>
+      <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
       <section class="panel c-today">
         <div class="cardhead"><h3 id="todayTitle">Today</h3><button class="add" id="planToday">＋ add</button></div>
         <div id="todayList"></div>
       </section>
       <div id="nowCard" class="panel"></div>
-      <section class="panel c-today">
+      <section class="panel c-today" id="logPanel">
         <div class="cardhead"><h3>Tracked today</h3><span class="meta" id="trackTotal"></span></div>
         <div id="logList"></div>
       </section>

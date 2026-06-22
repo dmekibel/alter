@@ -17,6 +17,14 @@
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
   function daysSince(k) { if (!k) return 999; return Math.round((new Date(todayK() + "T00:00:00") - new Date(k + "T00:00:00")) / 86400000); }
   function lastDays(n) { var o = [], d = new Date(); for (var i = 0; i < n; i++) { o.push(key(d)); d.setDate(d.getDate() - 1); } return o; }
+  function kd(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function keyAdd(k, n) { var d = kd(k); d.setDate(d.getDate() + n); return key(d); }
+  function monthAdd(k, n) { var d = kd(k); d.setDate(1); d.setMonth(d.getMonth() + n); return key(d); }
+  function startOfWeek(k) { var d = kd(k); d.setDate(d.getDate() - d.getDay()); return key(d); }
+  function relLabel(k) { if (k === todayK()) return "Today"; if (k === tomK()) return "Tomorrow"; if (k === keyAdd(todayK(), -1)) return "Yesterday"; return kd(k).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }); }
+  function relShort(k) { return kd(k).toLocaleDateString([], { month: "short", day: "numeric" }); }
+  function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false; for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= nowMin()) return "miss"; return "plan"; }
+  var viewK = todayK(), zoomMode = "day";
 
   var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
@@ -348,7 +356,7 @@
   function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
   function calendarView(L, k, showNow) {
     L.innerHTML = "";
-    var bls = blocks(k).slice(), lgs = showNow ? logs(k).slice() : [];
+    var bls = blocks(k).slice(), lgs = logs(k).slice();
     add(L, "div", "calhint", "left = your plan · right = what you actually did · drag to move, edges to stretch · double-tap to edit · tap empty to add");
     var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx", "PLAN"); add(lh, "span", "lhx", "ACTUAL");
     var minS = 6 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
@@ -360,11 +368,12 @@
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
     function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
-      var bs = hm(b.time), be = bs + (b.mins || 30), status = "plan";
-      if (showNow) { if (b.done || overlapLog(bs, be)) status = "ok"; else if (be <= now) status = "miss"; }
+      var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
       var card = add(cal, "div", "calblk lane" + (status === "ok" ? " ok" : status === "miss" ? " miss" : ""));
       place(card, bs, b.mins || 30, "P");
-      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col; if (status !== "miss") card.style.backgroundColor = hexA(status === "ok" ? "#46e2a4" : col, status === "ok" ? 0.28 : 0.22);
+      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col;
+      if (status === "ok") { card.style.backgroundColor = hexA(col, 0.42); card.style.boxShadow = "0 0 20px " + hexA(col, 0.75) + ",inset 0 0 14px " + hexA(col, 0.45) + ",0 5px 16px rgba(0,0,0,.4)"; }
+      else if (status !== "miss") card.style.backgroundColor = hexA(col, 0.22);
       add(card, "div", "ct", (status === "ok" ? "✓ " : status === "miss" ? "✕ " : "") + fmt(bs) + "–" + fmt(be));
       add(card, "div", "cn", blockEmoji(b.title) + " " + b.title);
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript"); var lastTap = 0;
@@ -398,11 +407,38 @@
       document.addEventListener("pointerup", up);
     });
   }
+  function weekGrid(L) {
+    var d0 = startOfWeek(viewK), row = add(L, "div", "weekrow");
+    for (var i = 0; i < 7; i++) { (function (dk) {
+      var col = add(row, "div", "wkcol" + (dk === todayK() ? " today" : "")), d = kd(dk);
+      add(col, "div", "wkh", ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()] + " " + d.getDate());
+      var strip = add(col, "div", "wkstrip");
+      blocks(dk).forEach(function (b) { var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%"; bb.style.background = st === "ok" ? "#46e2a4" : st === "miss" ? "#544f6e" : (b.color || "#8a5cf0"); });
+      col.onclick = function () { viewK = dk; zoomMode = "day"; renderToday(); };
+    })(keyAdd(d0, i)); }
+  }
+  function monthGrid(L) {
+    var f = kd(viewK); f.setDate(1); var startDow = f.getDay(), y = f.getFullYear(), mo = f.getMonth(), dim = new Date(y, mo + 1, 0).getDate(), grid = add(L, "div", "mogrid");
+    ["S", "M", "T", "W", "T", "F", "S"].forEach(function (w) { add(grid, "div", "mowh", w); });
+    for (var p = 0; p < startDow; p++) add(grid, "div", "mocell empty");
+    for (var day = 1; day <= dim; day++) { (function (dk, day) {
+      var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "")); add(cell, "div", "mod", "" + day);
+      var bl = blocks(dk), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; });
+      if (bl.length) { var d2 = add(cell, "div", "modot"), sc = done / bl.length; d2.style.background = sc >= 1 ? "#46e2a4" : sc > 0 ? "#ffc24a" : "#544f6e"; }
+      cell.onclick = function () { viewK = dk; zoomMode = "day"; renderToday(); };
+    })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
+  }
   function renderToday() {
-    calendarView(el("todayList"), todayK(), true); var k = todayK();
-    var LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0;
-    logs(k).forEach(function (e) { tot += e.mins || 0; });
-    if (!lg.length) add(LG, "div", "empty", "Nothing tracked yet — hit the timer.");
+    var dl = el("dnLabel"); if (dl) dl.textContent = zoomMode === "day" ? relLabel(viewK) : zoomMode === "week" ? ("Week of " + relShort(startOfWeek(viewK))) : kd(viewK).toLocaleDateString([], { month: "long", year: "numeric" });
+    document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.classList.toggle("on", z.dataset.z === zoomMode); });
+    var dp = el("planToday"), nc = el("nowCard"), lp = el("logPanel"), tt = el("todayTitle"), L = el("todayList");
+    if (zoomMode === "week") { L.innerHTML = ""; weekGrid(L); tt.textContent = "This week — tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
+    if (zoomMode === "month") { L.innerHTML = ""; monthGrid(L); tt.textContent = "Tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
+    if (dp) dp.style.display = ""; tt.textContent = relLabel(viewK);
+    calendarView(L, viewK, viewK === todayK());
+    var k = viewK, LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0; logs(k).forEach(function (e) { tot += e.mins || 0; });
+    if (nc) nc.style.display = (k === todayK() ? "" : "none"); if (lp) lp.style.display = "";
+    if (!lg.length) add(LG, "div", "empty", "Nothing tracked.");
     lg.forEach(function (e) { var r = add(LG, "div", "logi"); if (e.color) r.appendChild(dot(e.color)); add(r, "div", "lt", fmt(hm(e.time))); add(r, "div", "ln", e.title); add(r, "div", "lm", dur(e.mins || 0)); });
     el("trackTotal").textContent = tot ? dur(tot) : "";
   }
@@ -553,9 +589,12 @@
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
-    el("planToday").onclick = function () { planSheet(todayK(), phase() === "night" ? "tonight" : "today"); };
+    el("planToday").onclick = function () { planSheet(viewK, relLabel(viewK)); };
     el("planTom").onclick = function () { planSheet(tomK(), "tomorrow"); };
     el("addHabit").onclick = habitSheet;
+    el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
+    el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
+    document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; renderToday(); }; });
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
