@@ -385,9 +385,9 @@
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   // compass dir (0=S,1=SW,2=W,3=NW,4=N,5=NE,6=E,7=SE) → cell row in spr-dir8.png (+ horizontal flip).
   // Per David: real cells c0=front, c3=left, c6=right, c5=back, c4=up-left; c1/c2/c7 are dup fronts.
-  // up-right = c4 mirrored; down-left/right lean to the left/right profiles.
-  var DIR2CELL = [0, 3, 3, 4, 5, 4, 6, 6];
-  var DIR2FLIP = [0, 0, 0, 0, 0, 1, 0, 0];
+  // up-right = c4 mirrored; down-left = c0 front, down-right = c0 mirrored (per David).
+  var DIR2CELL = [0, 0, 3, 4, 5, 4, 6, 0];
+  var DIR2FLIP = [0, 0, 0, 0, 0, 1, 0, 1];
   function loadFairy() { ["idle", "fly", "face", "dir8"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=3"; FAIRY[k] = im; }); }
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
