@@ -340,7 +340,7 @@
   }
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
-  var HSW = 48, HSH = 60, RG = 240, RS = 286, PXG = 3;
+  var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
   // low-res backing store + CSS upscale (image-rendering:pixelated) = true pixel-art look (Heaven Inc model)
   function fitPixelCanvas(c, cssW, cssH, px) {
     c.style.width = cssW + "px"; c.style.height = cssH + "px";
@@ -355,33 +355,43 @@
     WGW = window.innerWidth; WGH = window.innerHeight;
     wctx = fitPixelCanvas(c, WGW, WGH, PXG); ensureHero();
   }
+  // detailed pixel hero: dark outline, arms at sides, lean proportions, walk cycle
   function paintHero(t, st, wf, moving) {
-    var g = hsx, cx = 24, col = st.color; g.clearRect(0, 0, HSW, HSH);
-    var bob = moving ? Math.round(Math.abs(Math.sin(t * 9)) * 2) : 0;
-    var lf = moving ? (wf ? -3 : 0) : 0, rf = moving ? (wf ? 0 : -3) : 0;
-    // feet
-    g.fillStyle = "#2e2647"; g.fillRect(cx - 9, 50 + lf - bob, 7, 6); g.fillRect(cx + 2, 50 + rf - bob, 7, 6);
-    // body (cloak)
-    var by = 24 - bob;
-    g.fillStyle = col; g.beginPath(); g.moveTo(cx - 13, 50 - bob); g.quadraticCurveTo(cx - 15, by, cx, by - 4); g.quadraticCurveTo(cx + 15, by, cx + 13, 50 - bob); g.closePath(); g.fill();
-    g.fillStyle = hexA("#ffffff", 0.14); g.beginPath(); g.ellipse(cx, by + 14, 7, 11, 0, 0, 7); g.fill();
-    // arms
-    g.fillStyle = mix(col, "#000000", 0.18);
-    g.beginPath(); g.ellipse(cx - 13, by + 12 + (moving ? (wf ? 2 : -2) : 0), 4, 6, 0, 0, 7); g.fill();
-    g.beginPath(); g.ellipse(cx + 13, by + 12 + (moving ? (wf ? -2 : 2) : 0), 4, 6, 0, 0, 7); g.fill();
-    // head: hood then face
-    var hy = 16 - bob;
-    gdisc(g, cx, hy - 2, 13, col);
-    gdisc(g, cx, hy + 2, 11, "#f4c79c");
-    // eyes
-    if (st.blink) { g.fillStyle = "#3a2a4a"; g.fillRect(cx - 7, hy + 1, 5, 2); g.fillRect(cx + 2, hy + 1, 5, 2); }
-    else { [cx - 5, cx + 5].forEach(function (ex) { gdisc(g, ex, hy + 1, 3, "#ffffff"); gdisc(g, ex, hy + 1, 2, "#3b2b52"); g.fillStyle = "#fff"; g.fillRect(ex + 1, hy - 1, 1, 1); }); }
-    // cheeks + mouth
-    g.fillStyle = "#ff9ec4"; g.fillRect(cx - 9, hy + 5, 3, 2); g.fillRect(cx + 6, hy + 5, 3, 2);
-    g.fillStyle = "#c47a64"; g.fillRect(cx - 2, hy + 6, 4, 1);
-    // halo
-    var hh = Math.round(Math.sin(t * 2));
-    gring(g, cx, 2 + hh - bob, 10, 4, st.gold ? "#ffd54a" : "#bfe6ff", 1);
+    var g = hsx, cx = HSW >> 1, col = st.color, dk = mix(col, "#000000", 0.34), lt = mix(col, "#ffffff", 0.22), OUT = "#23192e";
+    g.clearRect(0, 0, HSW, HSH);
+    var y0 = moving ? -Math.abs(Math.round(Math.sin(t * 9))) : 0;   // step bob
+    var sw = moving ? (wf ? 1 : -1) : 0;                            // 1 = left leg leads
+    var lL = sw > 0 ? 2 : 0, rL = sw < 0 ? 2 : 0;                   // leg shorten when leading
+    // ---- dark outline silhouette ----
+    g.fillStyle = OUT;
+    g.fillRect(cx - 8, 7 + y0, 16, 17);          // head
+    g.fillRect(cx - 7, 23 + y0, 14, 16);         // torso
+    g.fillRect(cx - 10, 24 + y0, 4, 14);         // left arm
+    g.fillRect(cx + 6, 24 + y0, 4, 14);          // right arm
+    g.fillRect(cx - 6, 38 + y0, 5, 18 - lL);     // left leg
+    g.fillRect(cx + 1, 38 + y0, 5, 18 - rL);     // right leg
+    // ---- hair ----
+    g.fillStyle = "#43301e"; g.fillRect(cx - 7, 8 + y0, 14, 6); g.fillRect(cx - 7, 8 + y0, 3, 11); g.fillRect(cx + 4, 8 + y0, 3, 11);
+    g.fillStyle = "#5e4329"; g.fillRect(cx - 7, 8 + y0, 14, 2);
+    // ---- face ----
+    g.fillStyle = "#efc196"; g.fillRect(cx - 4, 12 + y0, 8, 11);
+    g.fillStyle = "#d8a87c"; g.fillRect(cx + 2, 12 + y0, 2, 11);
+    // eyes (small, close) + mouth
+    g.fillStyle = OUT; if (st.blink) { g.fillRect(cx - 3, 17 + y0, 2, 1); g.fillRect(cx + 1, 17 + y0, 2, 1); } else { g.fillRect(cx - 3, 16 + y0, 2, 2); g.fillRect(cx + 1, 16 + y0, 2, 2); g.fillStyle = "#fff"; g.fillRect(cx - 3, 16 + y0, 1, 1); g.fillRect(cx + 1, 16 + y0, 1, 1); }
+    g.fillStyle = "#9c5746"; g.fillRect(cx - 1, 20 + y0, 2, 1);
+    // ---- torso (tunic): lit side, shadow side, belt ----
+    g.fillStyle = col; g.fillRect(cx - 6, 24 + y0, 12, 14);
+    g.fillStyle = lt; g.fillRect(cx - 6, 24 + y0, 3, 13);
+    g.fillStyle = dk; g.fillRect(cx + 3, 24 + y0, 3, 13);
+    g.fillStyle = "#2a2030"; g.fillRect(cx - 6, 35 + y0, 12, 2);
+    // ---- arms (sleeves) + hands ----
+    g.fillStyle = dk; g.fillRect(cx - 9, 25 + y0, 3, 10); g.fillRect(cx + 6, 25 + y0, 3, 10);
+    g.fillStyle = "#efc196"; g.fillRect(cx - 9, 34 + y0, 3, 3); g.fillRect(cx + 6, 34 + y0, 3, 3);
+    // ---- legs (pants) + boots ----
+    g.fillStyle = "#34304e"; g.fillRect(cx - 5, 39 + y0, 4, 13 - lL); g.fillRect(cx + 2, 39 + y0, 4, 13 - rL);
+    g.fillStyle = "#1d1628"; g.fillRect(cx - 6, 51 + y0 - lL, 5, 5); g.fillRect(cx + 1, 51 + y0 - rL, 5, 5);
+    // ---- halo ----
+    g.strokeStyle = st.gold ? "#ffd54a" : "#bfe6ff"; g.lineWidth = 2; g.beginPath(); g.ellipse(cx, 4 + y0 + Math.round(Math.sin(t * 2)), 8, 3, 0, 0, 7); g.stroke();
   }
   function plantSpriteAt(ctx, x, y, ty) {
     var P = ["#46e2a4", "#ff6fc0", "#9a5cf0", "#ffc24a", "#4fb0ff"][ty % 5], xx = Math.round(x), yy = Math.round(y);
@@ -435,7 +445,21 @@
     ctx.fillStyle = "#ffd24a"; ctx.beginPath(); ctx.moveTo(x, y - 11 - fl * 3); ctx.quadraticCurveTo(x - 4, y - 2, x - 2, y - 1); ctx.quadraticCurveTo(x + 5, y - 3, x, y - 11 - fl * 3); ctx.fill();
   }
   var ISLAND = [[0, 0, 1], [-0.5, -0.32, 0.52], [0.54, -0.22, 0.56], [0.32, 0.5, 0.52], [-0.46, 0.46, 0.5], [0.02, -0.62, 0.46], [0, 0.64, 0.42]];
-  function islandPass(ctx, scale, col) { ctx.fillStyle = col; ISLAND.forEach(function (b) { ctx.beginPath(); ctx.arc(b[0] * RG, b[1] * RG, RG * b[2] * scale, 0, 7); ctx.fill(); }); }
+  // ---- tile-based island (squares, not circles): precompute the grid once ----
+  var TILE = 26, SAND = null, GRASS = null, GRASSD = null, SHALLOW = null;
+  function blobInside(wx, wy, scale) {
+    for (var i = 0; i < ISLAND.length; i++) { var b = ISLAND[i], dx = wx - b[0] * RG, dy = wy - b[1] * RG, r = RG * b[2] * scale; if (dx * dx + dy * dy < r * r) return true; }
+    return false;
+  }
+  function buildIsland() {
+    SAND = []; GRASS = []; GRASSD = []; SHALLOW = [];
+    var lim = Math.ceil(RG * 1.4 / TILE);
+    for (var iy = -lim; iy <= lim; iy++) for (var ix = -lim; ix <= lim; ix++) {
+      var wx = ix * TILE, wy = iy * TILE, g = blobInside(wx, wy, 0.92), s = blobInside(wx, wy, 1.06), sh = blobInside(wx, wy, 1.2);
+      if (g) { GRASS.push([wx, wy]); if (((ix * 7 + iy * 13) & 3) === 0) GRASSD.push([wx, wy]); }
+      if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
+    }
+  }
   function chevrons(ctx, W, H, t) {
     ctx.fillStyle = "rgba(228,242,253,0.6)";
     var o = [[0, 1], [1, 0], [2, 1], [3, 0], [4, 1]];
@@ -453,14 +477,13 @@
     ctx.fillStyle = "#2270cf"; ctx.fillRect(0, 0, W, H);   // flat royal-blue ocean
     chevrons(ctx, W, H, t);
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
-    islandPass(ctx, 1.30, "#5a9bd8");   // shallow water ring
-    islandPass(ctx, 1.22, "#c2ab78");   // wet sand
-    islandPass(ctx, 1.14, "#dcc88f");   // beach
-    islandPass(ctx, 1.0, "#9aae5e");    // grass
-    islandPass(ctx, 0.9, "#8aa050");    // grass shade
-    ctx.strokeStyle = "#c6a566"; ctx.lineWidth = 16; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-60, -2); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
-    ctx.fillStyle = "#a8ba6a"; for (var gt = 0; gt < 40; gt++) { var ga = gt * 2.39996, gr2 = (gt % 7) / 7 * RG * 0.82, gx = Math.cos(ga) * gr2, gy = Math.sin(ga) * gr2; ctx.fillRect(Math.round(gx), Math.round(gy), PXG, PXG); }
-    ctx.fillStyle = "#7c9248"; for (var dt = 0; dt < 18; dt++) { var da = dt * 1.71 + 0.6, dr = 40 + (dt % 6) / 6 * RG * 0.66, dx = Math.cos(da) * dr, dy = Math.sin(da) * dr; ctx.fillRect(Math.round(dx), Math.round(dy), PXG * 2, PXG); }
+    if (!SAND) buildIsland();
+    var hT = TILE / 2, T1 = TILE + 1.5, q;
+    ctx.fillStyle = "#5a9bd8"; for (q = 0; q < SHALLOW.length; q++) ctx.fillRect(SHALLOW[q][0] - hT, SHALLOW[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#dcc88f"; for (q = 0; q < SAND.length; q++) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#9aae5e"; for (q = 0; q < GRASS.length; q++) ctx.fillRect(GRASS[q][0] - hT, GRASS[q][1] - hT, T1, T1);
+    ctx.fillStyle = "#8aa050"; for (q = 0; q < GRASSD.length; q++) ctx.fillRect(GRASSD[q][0] - hT, GRASSD[q][1] - hT, T1, T1);
+    ctx.strokeStyle = "#c6a566"; ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
     drawFence(ctx, -62, -54, 3);
     drawCabin(ctx, -58, -8);
     drawChest(ctx, -132, 22);
@@ -472,7 +495,7 @@
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
     paintHero(t, st, walkF, moving);
-    var hs = 2.4, hbob = moving ? Math.abs(Math.sin(walkT * 0.8)) * 4 : Math.sin(t * 1.6) * 2;
+    var hs = 2.3, hbob = moving ? Math.abs(Math.sin(walkT * 0.8)) * 4 : Math.sin(t * 1.6) * 2;
     var hdw = HSW * hs, hdh = HSH * hs, hdx = Math.round(px - hdw / 2), hdy = Math.round(py - hdh + 9 - hbob);
     if (pface < 0) { ctx.save(); ctx.translate(hdx + hdw, hdy); ctx.scale(-1, 1); ctx.drawImage(hspr, 0, 0, HSW, HSH, 0, 0, hdw, hdh); ctx.restore(); }
     else ctx.drawImage(hspr, 0, 0, HSW, HSH, hdx, hdy, hdw, hdh);
