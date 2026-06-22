@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>ALTER — loading latest…</title>
+<style>
+  html,body{height:100%;margin:0;background:#191334;color:#f3edfc;
+    font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;}
+  .l{opacity:.85;font-weight:600;letter-spacing:.3px;}
+</style>
+</head>
+<body>
+  <div class="l">Loading the latest ALTER…</div>
+  <script>
+    // Always reload a fresh index.html (unique query each visit) so the newest build wins over any cache.
+    location.replace('index.html?cb=' + Date.now());
+  </script>
+</body>
+</html>
