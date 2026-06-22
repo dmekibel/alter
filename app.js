@@ -798,7 +798,7 @@
         .then(function (j) { var t = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
         .catch(function (e) { cb(null, String(e)); });
     } else if (c.engine === "openrouter") {
-      fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: c.model || "meta-llama/llama-3.2-3b-instruct:free", messages: [{ role: "user", content: prompt }] }) })
+      fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key, "HTTP-Referer": "https://dmekibel.github.io/alter/", "X-Title": "ALTER" }, body: JSON.stringify({ model: c.model || "meta-llama/llama-3.2-3b-instruct:free", messages: [{ role: "user", content: prompt }] }) })
         .then(function (r) { return r.json(); })
         .then(function (j) { var t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
         .catch(function (e) { cb(null, String(e)); });
@@ -828,7 +828,7 @@
       if (c.engine === "openrouter" || c.engine === "groq") {
         if (c.engine === "openrouter") { var pn = add(B, "div", "lbl", "⚠️ free models error until you enable them — go to openrouter.ai/settings/privacy and turn ON the free-model / prompt-logging toggle, then Test."); pn.style.cssText = "font-size:12px;color:#ffc24a;line-height:1.4;"; }
         add(B, "div", "lbl", "model");
-        var models = c.engine === "openrouter" ? ["meta-llama/llama-3.2-3b-instruct:free", "google/gemma-2-9b-it:free", "mistralai/mistral-7b-instruct:free", "meta-llama/llama-3.1-8b-instruct:free", "deepseek/deepseek-chat-v3-0324:free", "qwen/qwen-2.5-7b-instruct:free"] : ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
+        var models = c.engine === "openrouter" ? ["meta-llama/llama-3.2-3b-instruct:free", "google/gemma-2-9b-it:free", "mistralai/mistral-7b-instruct:free", "deepseek/deepseek-chat-v3-0324:free", "openai/gpt-4o-mini", "openai/gpt-4o"] : ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
         var cur = c.model || models[0], sel = document.createElement("select"); sel.className = "msel";
         models.forEach(function (mn) { var o = document.createElement("option"); o.value = mn; o.textContent = mn; if (cur === mn) o.selected = true; sel.appendChild(o); });
         var oc = document.createElement("option"); oc.value = "__c"; oc.textContent = "custom…"; if (models.indexOf(cur) < 0) oc.selected = true; sel.appendChild(oc); B.appendChild(sel);
