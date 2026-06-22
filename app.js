@@ -816,13 +816,15 @@
     { e: "📞", l: "Reach someone", catK: "love", mins: 3, sp: 6 },
     { e: "☀️", l: "Step outside", catK: "energy", mins: 3, sp: 4 },
     { e: "🪥", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
-    { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 }
+    { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 },
+    { e: "🧘", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true }
   ];
-  var MICROPHASE = { morning: [0, 5, 3, 7], afternoon: [1, 0, 6, 7], evening: [5, 6, 4, 8], night: [2, 5, 4, 9] };
+  var MICROPHASE = { morning: [2, 5, 3, 7], afternoon: [10, 1, 6, 2], evening: [10, 5, 6, 8], night: [2, 10, 4, 9] };
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
     var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
     if (m.breath && !cur) { breathwork(4); return; }   // guided breathwork moment (logs itself on finish)
+    if (m.relax && !cur) { relaxMoment(); return; }     // Psycho-Cybernetics relax-all-muscles + mindful moment
     if (!cur) {
       var t = nextFreeMin(todayK()), id = uid();
       blocks(todayK()).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: Math.max(5, m.mins), title: m.l, prio: 1, color: col, done: false });
@@ -870,6 +872,28 @@
       phi++; if (phi >= PH.length) { phi = 0; cyc++; }
       tmr = setTimeout(step, dur);
     }
+  }
+  // Psycho-Cybernetics ARRIVAL as a standalone: relax all muscles + a mindful moment (the universal opener of every stack module)
+  function relaxMoment(onDone) {
+    var STEPS = [["Settle in…", "let your eyes soften", 2600], ["Soften your forehead", "and unclench your jaw", 3400], ["Drop your shoulders", "let them fall", 3400], ["Soften your chest", "and your belly", 3400], ["Let your arms go heavy", "down to your fingertips", 3400], ["Release your legs", "all the way to your feet", 3400], ["Your whole body is heavy and calm", "nothing to do, nowhere to be", 3800], ["One mindful moment", "just be here, now", 5200]];
+    var ov = document.createElement("div"); ov.id = "breatheOv";
+    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Relax…</div><div class="bw-sub"></div>';
+    document.body.appendChild(ov);
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
+    orb.style.animation = "breathe 9s ease-in-out infinite";
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
+    try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; }
+    var done = false, i = 0, tmr = null;
+    function finish(skip) {
+      if (done) return; done = true; if (tmr) clearTimeout(tmr);
+      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); osc.stop(actx.currentTime + 0.5); } catch (e) {} }
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mindful moment", mins: 2, catK: "energy", color: "#9a5cf0" }); earn(5, { catK: "energy" }); save(); renderAll(); }
+      if (onDone) onDone();
+    }
+    ov.querySelector(".bw-x").onclick = function () { finish(true); };
+    function step() { if (done) return; if (i >= STEPS.length) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; tmr = setTimeout(function () { finish(false); }, 1500); return; } lab.textContent = STEPS[i][0]; sub.textContent = STEPS[i][1]; tmr = setTimeout(step, STEPS[i][2]); i++; }
+    setTimeout(step, 700);
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
