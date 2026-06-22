@@ -341,6 +341,9 @@
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
+  // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
+  var FAIRY = { idle: null, fly: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 } };
+  function loadFairy() { ["idle", "fly"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=1"; FAIRY[k] = im; }); }
   // low-res backing store + CSS upscale (image-rendering:pixelated) = true pixel-art look (Heaven Inc model)
   function fitPixelCanvas(c, cssW, cssH, px) {
     c.style.width = cssW + "px"; c.style.height = cssH + "px";
@@ -494,11 +497,20 @@
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
     var aur = ctx.createRadialGradient(px, py - 20, 4, px, py - 20, 54); aur.addColorStop(0, hexA(col, 0.12)); aur.addColorStop(1, hexA(col, 0)); ctx.fillStyle = aur; ctx.beginPath(); ctx.arc(px, py - 20, 54, 0, 7); ctx.fill();
-    paintHero(t, st, walkF, moving);
-    var hs = 2.3, hbob = moving ? Math.abs(Math.sin(walkT * 0.8)) * 4 : Math.sin(t * 1.6) * 2;
-    var hdw = HSW * hs, hdh = HSH * hs, hdx = Math.round(px - hdw / 2), hdy = Math.round(py - hdh + 9 - hbob);
-    if (pface < 0) { ctx.save(); ctx.translate(hdx + hdw, hdy); ctx.scale(-1, 1); ctx.drawImage(hspr, 0, 0, HSW, HSH, 0, 0, hdw, hdh); ctx.restore(); }
-    else ctx.drawImage(hspr, 0, 0, HSW, HSH, hdx, hdy, hdw, hdh);
+    // real fairy sprite (idle when resting, fly when moving; flip for left/right)
+    var fset = moving ? "fly" : "idle", fim = FAIRY[fset], fm = FAIRY_META[fset];
+    if (fim && fim.complete && fim.naturalWidth) {
+      var ffr = Math.floor(t * (moving ? 14 : 10)) % fm.n;
+      var hH = 126, hW = hH * fm.fw / fm.fh, hdx = Math.round(px - hW / 2), hdy = Math.round(py - hH + 14);
+      var sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true;
+      if (pface < 0) { ctx.save(); ctx.translate(hdx + hW, hdy); ctx.scale(-1, 1); ctx.drawImage(fim, ffr * fm.fw, 0, fm.fw, fm.fh, 0, 0, hW, hH); ctx.restore(); }
+      else ctx.drawImage(fim, ffr * fm.fw, 0, fm.fw, fm.fh, hdx, hdy, hW, hH);
+      ctx.imageSmoothingEnabled = sm;
+    } else {
+      paintHero(t, st, walkF, moving);
+      var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs, hdx0 = Math.round(px - hdw / 2), hdy0 = Math.round(py - hdh + 9);
+      ctx.drawImage(hspr, 0, 0, HSW, HSH, hdx0, hdy0, hdw, hdh);
+    }
     if (hasShippedToday()) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     ctx.restore();
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
@@ -1180,7 +1192,7 @@
   }
 
   function init() {
-    load(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
+    load(); loadFairy(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
