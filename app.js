@@ -189,11 +189,33 @@
     return { list: out, level: Math.round(out.reduce(function (a, s) { return a + s.lv; }, 0) / out.length), top: out.slice().sort(function (a, b) { return b.lv - a.lv; })[0] };
   }
 
+  // keyword → emoji so EVERY option gets a relevant icon
+  var EMOJI_KW = [["park", "🌳"], ["outdoor", "🌳"], ["garden", "🌿"], ["walk", "🚶"], ["nature", "🌳"], ["chill", "😌"], ["relax", "😌"], ["lounge", "😌"], ["rest", "😴"], ["nap", "😴"], ["sleep", "😴"], ["build", "🛠️"], ["code", "💻"], ["program", "💻"], ["app", "📱"], ["ship", "🚀"], ["design", "🎨"], ["write", "✍️"], ["work", "💼"], ["money", "💰"], ["sell", "💸"], ["sale", "💸"], ["client", "🤝"], ["pitch", "📊"], ["outreach", "📣"], ["meet", "🗣️"], ["call", "📞"], ["email", "✉️"], ["admin", "🗂️"], ["read", "📚"], ["learn", "📚"], ["study", "📖"], ["gym", "🏋️"], ["run", "🏃"], ["lift", "🏋️"], ["workout", "🏋️"], ["move", "🤸"], ["stretch", "🧘"], ["yoga", "🧘"], ["eat", "🍽️"], ["cook", "🍳"], ["coffee", "☕"], ["food", "🍔"], ["friend", "👥"], ["social", "👥"], ["date", "💞"], ["family", "👨‍👩‍👧"], ["game", "🎮"], ["play", "🎮"], ["music", "🎵"], ["guitar", "🎸"], ["meditate", "🧘"], ["breathe", "🌬️"], ["journal", "📓"], ["tidy", "🧹"], ["clean", "🧹"], ["shop", "🛒"], ["errand", "🧾"], ["drive", "🚗"], ["commute", "🚗"], ["scroll", "📱"], ["watch", "📺"], ["shower", "🚿"]];
+  function emojiFor(m) {
+    if (m && m.emoji) return m.emoji;
+    var t = ((m && m.title) || "").toLowerCase();
+    for (var i = 0; i < EMOJI_KW.length; i++) if (t.indexOf(EMOJI_KW[i][0]) >= 0) return EMOJI_KW[i][1];
+    return ({ work: "💼", energy: "⚡", love: "❤️", body: "💪", mind: "🧠", vice: "⚠️" })[m && m.catK] || "✨";
+  }
+  // clever default "vibes" — the life-domains you actually spend time in (seed the picker, multi-select friendly)
+  var VIBES = [
+    { title: "Building ALTER", catK: "work", emoji: "🛠️", color: "#2a9fe0" },
+    { title: "Deep work", catK: "work", emoji: "💻", color: "#2a9fe0" },
+    { title: "Making money", catK: "work", emoji: "💰", color: "#28cf86" },
+    { title: "Chilling", catK: "energy", emoji: "😌", color: "#ff8a1e" },
+    { title: "Park / outdoors", catK: "energy", emoji: "🌳", color: "#28cf86" },
+    { title: "Move / gym", catK: "body", emoji: "🏋️", color: "#ff8a1e" },
+    { title: "Eat", catK: "energy", emoji: "🍽️", color: "#ff8a1e" },
+    { title: "Time with people", catK: "love", emoji: "👥", color: "#ff4fa0" },
+    { title: "Learn / read", catK: "work", emoji: "📚", color: "#8a5cf0" },
+    { title: "Rest", catK: "energy", emoji: "😴", color: "#9a5cf0" }
+  ];
   function frequent(n) {
+    n = n || 8;
     var cnt = {}; lastDays(30).forEach(function (k) { logs(k).forEach(function (e) { if (catOf(e) !== "vice") cnt[e.title] = (cnt[e.title] || 0) + 1; }); });
     blocks(todayK()).concat(blocks(tomK())).forEach(function (b) { cnt[b.title] = (cnt[b.title] || 0) + 1; });
-    var out = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; }).map(function (t) { return TITLE2META[t.toLowerCase()] || { title: t, catK: TITLE2CAT[t.toLowerCase()] || "work", emoji: "", color: "#8a5cf0", habitId: null }; });
-    ["Deep work", "Run", "Eat healthy", "Read", "Tidy", "Guitar", "Meditate", "Programming"].forEach(function (t) { if (out.length < n && !cnt[t]) { var mtt = TITLE2META[t.toLowerCase()]; if (mtt) out.push(mtt); } });
+    var seen = {}, out = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; }).map(function (t) { seen[t.toLowerCase()] = 1; return TITLE2META[t.toLowerCase()] || { title: t, catK: TITLE2CAT[t.toLowerCase()] || "work", emoji: "", color: "#8a5cf0", habitId: null }; });
+    VIBES.forEach(function (v) { if (out.length < n && !seen[v.title.toLowerCase()]) out.push(v); });
     return out.slice(0, n);
   }
 
@@ -362,6 +384,18 @@
   var FAIRY = { idle: null, fly: null, face: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   function loadFairy() { ["idle", "fly", "face"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=2"; FAIRY[k] = im; }); }
+  // Cuphead world assets (AI-generated, 1930s rubber-hose)
+  var WORLD_IMG = {}, waterPat = null, grassPat = null, islandPath = null;
+  function loadWorld() {
+    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png" };
+    Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=3"; WORLD_IMG[k] = im; });
+  }
+  function drawObj(ctx, img, x, y, h) {
+    if (!img || !img.complete || !img.naturalWidth) return;
+    var w = h * img.naturalWidth / img.naturalHeight;
+    ctx.fillStyle = "rgba(30,22,14,0.16)"; ctx.beginPath(); ctx.ellipse(x, y, w * 0.34, h * 0.07, 0, 0, 7); ctx.fill();
+    ctx.drawImage(img, Math.round(x - w / 2), Math.round(y - h), w, h);
+  }
   // low-res backing store + CSS upscale (image-rendering:pixelated) = true pixel-art look (Heaven Inc model)
   function fitPixelCanvas(c, cssW, cssH, px) {
     c.style.width = cssW + "px"; c.style.height = cssH + "px";
@@ -480,6 +514,8 @@
       if (g) { GRASS.push([wx, wy]); if (((ix * 7 + iy * 13) & 3) === 0) GRASSD.push([wx, wy]); }
       if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
     }
+    islandPath = new Path2D(); var hT = TILE / 2, T1 = TILE + 1.5;
+    SAND.forEach(function (c) { islandPath.rect(c[0] - hT, c[1] - hT, T1, T1); });
   }
   function chevrons(ctx, W, H, t) {
     ctx.fillStyle = "rgba(228,242,253,0.6)";
@@ -495,22 +531,36 @@
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
     var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
     var mood = currentMood();
-    ctx.fillStyle = "#2270cf"; ctx.fillRect(0, 0, W, H);   // flat royal-blue ocean
-    chevrons(ctx, W, H, t);
+    // ocean: scrolling Cuphead water texture
+    var wImg = WORLD_IMG.water, WS = 230;
+    if (!waterPat && wImg && wImg.complete && wImg.naturalWidth) {
+      var wc = document.createElement("canvas"); wc.width = WS; wc.height = WS; wc.getContext("2d").drawImage(wImg, 0, 0, WS, WS);
+      waterPat = ctx.createPattern(wc, "repeat");
+    }
+    if (waterPat) {
+      var ox = ((-px * vz) % WS + WS) % WS, oy = ((-py * vz) % WS + WS) % WS;
+      ctx.save(); ctx.translate(ox - WS, oy - WS); ctx.fillStyle = waterPat; ctx.fillRect(0, 0, W + WS * 2, H + WS * 2); ctx.restore();
+    } else { ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); }
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
     if (!SAND) buildIsland();
-    var hT = TILE / 2, T1 = TILE + 1.5, q;
-    ctx.fillStyle = "#5a9bd8"; for (q = 0; q < SHALLOW.length; q++) ctx.fillRect(SHALLOW[q][0] - hT, SHALLOW[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#dcc88f"; for (q = 0; q < SAND.length; q++) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#9aae5e"; for (q = 0; q < GRASS.length; q++) ctx.fillRect(GRASS[q][0] - hT, GRASS[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#8aa050"; for (q = 0; q < GRASSD.length; q++) ctx.fillRect(GRASSD[q][0] - hT, GRASSD[q][1] - hT, T1, T1);
-    ctx.strokeStyle = "#c6a566"; ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
-    drawFence(ctx, -62, -54, 3);
-    drawCabin(ctx, -58, -8);
-    drawChest(ctx, -132, 22);
-    drawTree(ctx, 150, 60); drawTree(ctx, 184, -40); drawTree(ctx, -150, -92); drawTree(ctx, 82, -150);
-    drawRock(ctx, -34, 122); drawRock(ctx, 150, 128);
-    drawCampfire(ctx, t, 78, 104);
+    var hT = TILE / 2, T1 = TILE + 1.5, q, GS = 200;
+    // dark ink coastline ring (Cuphead landmass outline)
+    ctx.fillStyle = "#2c2117"; for (q = 0; q < SHALLOW.length; q++) ctx.fillRect(SHALLOW[q][0] - hT, SHALLOW[q][1] - hT, T1, T1);
+    // painted grass texture, clipped to the land
+    if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
+      var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
+    }
+    if (islandPath) {
+      ctx.save(); ctx.clip(islandPath);
+      ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.6, -RG * 1.6, RG * 3.2, RG * 3.2);
+      ctx.restore();
+    }
+    ctx.strokeStyle = "rgba(120,92,58,0.45)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
+    // Cuphead painted object cutouts (drawn back-to-front by y)
+    drawObj(ctx, WORLD_IMG.tree, -152, -84, 158); drawObj(ctx, WORLD_IMG.tree, 190, -30, 148);
+    drawObj(ctx, WORLD_IMG.cabin, -58, 2, 132); drawObj(ctx, WORLD_IMG.bush, 78, -136, 60);
+    drawObj(ctx, WORLD_IMG.bush, -120, 72, 56); drawObj(ctx, WORLD_IMG.tree, 150, 74, 156);
+    drawObj(ctx, WORLD_IMG.rock, -36, 124, 50); drawObj(ctx, WORLD_IMG.chest, -130, 28, 48); drawObj(ctx, WORLD_IMG.sign, 14, 44, 60);
     var gden = (S.game && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t); }
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14, 5, 0, 0, 7); ctx.fill();
@@ -688,18 +738,33 @@
     return "🗓️";
   }
   function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
-  function radialMenu(opts, onPick, onCancel) {
+  function radialMenu(opts, onPick, onCancel, multi) {
     var ov = document.createElement("div"); ov.className = "radial";
-    var items = opts.slice(0, 8), n = items.length || 1;
+    var items = opts.slice(0, 8), n = items.length || 1, sel = [];
     var cx = window.innerWidth / 2, cy = Math.min(window.innerHeight * 0.44, 360), R = Math.min(window.innerWidth, 380) * 0.31;
-    items.forEach(function (m, i) { var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; var b = document.createElement("div"); b.className = "ritem"; b.style.left = (x - 36) + "px"; b.style.top = (y - 36) + "px"; b.style.borderColor = m.color || "#8a5cf0"; b.innerHTML = '<div class="rie">' + (m.emoji || "•") + '</div><div class="ril">' + m.title + '</div>'; b.onclick = function (e) { e.stopPropagation(); ov.remove(); onPick(m); }; ov.appendChild(b); });
-    var more = document.createElement("div"); more.className = "ritem rmore"; more.style.left = (cx - 36) + "px"; more.style.top = (cy - 36) + "px"; more.innerHTML = '<div class="rie">⋯</div><div class="ril">more</div>'; more.onclick = function (e) { e.stopPropagation(); ov.remove(); onPick(null); }; ov.appendChild(more);
+    var ctr = document.createElement("div"); ctr.className = "ritem rmore"; ctr.style.left = (cx - 36) + "px"; ctr.style.top = (cy - 36) + "px"; ctr.innerHTML = '<div class="rie">⋯</div><div class="ril">more</div>';
+    function refresh() { ctr.querySelector(".rie").textContent = sel.length ? "✓" : "⋯"; ctr.querySelector(".ril").textContent = sel.length ? "go · " + sel.length : "more"; }
+    items.forEach(function (m, i) {
+      var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+      var b = document.createElement("div"); b.className = "ritem"; b.style.left = (x - 36) + "px"; b.style.top = (y - 36) + "px"; b.style.borderColor = m.color || "#8a5cf0";
+      b.innerHTML = '<div class="rie">' + emojiFor(m) + '</div><div class="ril">' + m.title + '</div>';
+      b.onclick = function (e) {
+        e.stopPropagation();
+        if (multi) { var idx = sel.indexOf(m); if (idx >= 0) { sel.splice(idx, 1); b.classList.remove("on"); b.style.background = ""; } else { sel.push(m); b.classList.add("on"); b.style.background = m.color || "#8a5cf0"; } refresh(); }
+        else { ov.remove(); onPick(m); }
+      };
+      ov.appendChild(b);
+    });
+    ctr.onclick = function (e) { e.stopPropagation(); ov.remove(); if (multi && sel.length) onPick(sel); else onPick(null); };
+    ov.appendChild(ctr);
+    if (multi) { var hint = document.createElement("div"); hint.className = "rhint"; hint.textContent = "tap a few — multitasking welcome ✓"; ov.appendChild(hint); }
     ov.onclick = function () { ov.remove(); if (onCancel) onCancel(); };
     document.body.appendChild(ov);
   }
   function pickOne(cb) { pickerSheet({ title: function () { return "What is it?"; }, frequent: true, custom: true, onTask: function (t) { closeSheet(); cb(t); } }); }
   function assignBlock(b, m, k) { b.title = m.title; b.color = m.color || b.color; b.catK = m.catK || b.catK; save(); reflow(k); renderToday(); }
-  function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = m.emoji || ""; t.habitId = m.habitId || null; save(); renderToday(); renderNow(); }
+  function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = emojiFor(m); t.habitId = m.habitId || null; save(); renderToday(); renderNow(); }
+  function assignTimerMulti(t, metas) { if (!metas || !metas.length) return; t.title = metas.map(function (m) { return m.title; }).join(" + "); t.emoji = metas.map(function (m) { return emojiFor(m); }).join(""); t.catK = metas[0].catK; t.color = metas[0].color || t.color; t.habitId = metas[0].habitId || null; t.tags = metas.map(function (m) { return m.title; }); save(); renderToday(); renderNow(); }
   function startTrackerNow() { S.timers.push({ id: uid(), title: "Tracking…", catK: null, emoji: "⏱️", color: "#ff5fa8", start: Date.now(), dayK: todayK() }); save(); return S.timers[S.timers.length - 1]; }
   function layoutLane(items) {
     items.sort(function (a, b) { return a.s - b.s; });
@@ -781,7 +846,7 @@
         var stop = add(card, "div", "calx", "⏹"); stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
         gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(22, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = "▶ " + fmt(tsm); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
-        card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; radialMenu(frequent(8), function (m) { if (m) assignTimer(t, m); else pickOne(function (x) { assignTimer(t, x); }); }); });
+        card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; radialMenu(frequent(8), function (sel) { if (sel && sel.length) assignTimerMulti(t, sel); else pickOne(function (x) { assignTimer(t, x); }); }, undefined, true); });
       }
     });
     cal.addEventListener("pointerdown", function (ev) {
@@ -792,7 +857,7 @@
         var rect = cal.getBoundingClientRect(), lx = e.clientX - rect.left;
         if (lx > rect.width * 0.5 && showNow) {
           var tt = startTrackerNow(); renderToday(); renderNow();
-          radialMenu(frequent(8), function (m) { if (m) assignTimer(tt, m); else pickOne(function (x) { assignTimer(tt, x); }); }, function () { var ti = S.timers.indexOf(tt); if (ti >= 0) { S.timers.splice(ti, 1); save(); renderToday(); renderNow(); } });
+          radialMenu(frequent(8), function (sel) { if (sel && sel.length) assignTimerMulti(tt, sel); else pickOne(function (x) { assignTimer(tt, x); }); }, function () { var ti = S.timers.indexOf(tt); if (ti >= 0) { S.timers.splice(ti, 1); save(); renderToday(); renderNow(); } }, true);
         } else {
           var tm = timeFromY(e.clientY - rect.top, startH, HP), id = uid();
           blocks(k).push({ id: id, time: tm, mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
@@ -1210,7 +1275,7 @@
   }
 
   function init() {
-    load(); loadFairy(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
+    load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
