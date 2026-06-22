@@ -201,6 +201,13 @@
   #zoomTabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border:2px solid #4a4068;border-radius:15px;padding:4px;margin:0 2px 12px;}
   .zt{flex:1;background:none;border:none;color:var(--soft);font-family:var(--bub);font-weight:800;font-size:13px;padding:9px;border-radius:11px;cursor:pointer;}
   .zt.on{background:var(--purple);color:#fff;box-shadow:0 3px 0 #120d22;}
+  .dayhead{position:sticky;top:0;z-index:12;background:#191334;margin:0 -14px 8px;padding:8px 14px 2px;border-bottom:1px solid rgba(255,255,255,.07);}
+  #growTabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border:2px solid #4a4068;border-radius:15px;padding:4px;margin:0 2px 12px;}
+  .hmrow{display:flex;align-items:center;gap:8px;padding:6px 2px;}
+  .hmn{font-size:13px;font-weight:700;width:92px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hmdots{display:flex;gap:3px;flex:1;flex-wrap:wrap;}
+  .hmdots i{width:11px;height:11px;border-radius:3px;background:rgba(255,255,255,.08);}
+  .hms{font-family:var(--bub);font-weight:800;font-size:12px;color:#e0791c;flex:none;}
   .weekrow{display:flex;gap:4px;}
   .wkcol{flex:1;cursor:pointer;}
   .wkcol.today .wkh{color:#ffd24a;}
@@ -324,8 +331,10 @@
     </div>
 
     <div class="tab" id="t-day">
-      <div id="dayNav"><button id="dnPrev">◀</button><div id="dnLabel"></div><button id="dnNext">▶</button></div>
-      <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
+      <div class="dayhead">
+        <div id="dayNav"><button id="dnPrev">◀</button><div id="dnLabel"></div><button id="dnNext">▶</button></div>
+        <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
+      </div>
       <section class="panel c-today">
         <div class="cardhead"><h3 id="todayTitle">Today</h3><button class="add" id="planToday">＋ add</button></div>
         <div id="todayList"></div>
@@ -335,15 +344,21 @@
         <div class="cardhead"><h3>Tracked today</h3><span class="meta" id="trackTotal"></span></div>
         <div id="logList"></div>
       </section>
-      <section class="panel c-habit"><div class="cardhead"><h3>Habits</h3><span class="meta" id="habitProg"></span></div><div id="habitList"></div><button class="add2" id="addHabit">+ add habit</button></section>
+    </div>
+
+    <div class="tab" id="t-grow">
+      <div id="growTabs"><button class="zt on" data-g="habits">Habits</button><button class="zt" data-g="stats">Stats</button></div>
+      <section class="panel c-habit" id="habitsPane"><div class="cardhead"><h3>Habits</h3><span class="meta" id="habitProg"></span></div><div id="habitList"></div><button class="add2" id="addHabit">+ add habit</button></section>
+      <section class="panel c-stats" id="statsPane" style="display:none"><div class="cardhead"><h3>📊 Your consistency</h3></div><div id="statsList"></div></section>
     </div>
   </div>
 
   <nav id="nav">
     <button class="nb on" data-tab="self"><span class="ne">🪞</span><span class="nl2">You</span></button>
     <button class="nb" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
+    <button class="nb" data-tab="grow"><span class="ne">🌱</span><span class="nl2">Grow</span></button>
   </nav>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=324"></script>
+  <script src="app.js?v=325"></script>
 </body>
 </html>

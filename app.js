@@ -620,7 +620,19 @@
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); if (dm[id]) earn(12, {}); save(); renderHabits(); renderHero(); renderChar(); renderGame(); }
 
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); }
+  function renderStats() {
+    var L = el("statsList"); if (!L) return; L.innerHTML = "";
+    var days = lastDays(14).reverse();
+    S.habits.forEach(function (h) {
+      var r = add(L, "div", "hmrow"); add(r, "div", "hmn", h.e + " " + h.l);
+      var grid = add(r, "div", "hmdots");
+      days.forEach(function (k) { var d = add(grid, "i"); if ((S.habitDone[k] || {})[h.id]) d.style.background = h.color; });
+      var s = streak(h.id); if (s > 1) add(r, "div", "hms", "🔥" + s);
+    });
+    var tot = 0; lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { tot += e.mins || 0; }); });
+    var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak 🔥" + bestStreak()); sm.style.marginTop = "12px";
+  }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -948,6 +960,7 @@
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; renderToday(); }; });
+    document.querySelectorAll("#growTabs .zt").forEach(function (z) { z.onclick = function () { var g = z.dataset.g; document.querySelectorAll("#growTabs .zt").forEach(function (x) { x.classList.toggle("on", x === z); }); el("habitsPane").style.display = g === "habits" ? "" : "none"; el("statsPane").style.display = g === "stats" ? "" : "none"; }; });
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
