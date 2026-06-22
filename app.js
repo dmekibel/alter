@@ -196,7 +196,7 @@
     var p = phase(), und = undone(), sc = schedule(todayK()), out = { chips: [] };
     if (sc.bumped.length) { out.kicker = "running tight"; out.line = "Over by " + dur(sc.over) + " today."; out.sub = "I bumped " + sc.bumped.length + " low-priority " + (sc.bumped.length === 1 ? "slot" : "slots") + " so what matters survives."; out.primary = { label: "Review today", fn: function () { window.scrollTo({ top: 320, behavior: "smooth" }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); return out; }
     if (p === "night") { out.kicker = "tonight"; out.line = "It's late — let's wind down."; out.sub = "tidy the surfaces, phone away, head toward bed."; out.primary = { label: "Wind down 😴", fn: function () { ritualSheet(WINDDOWN); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
-    else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — start simple."; out.sub = "make your bed, a few lines of journal, name today's one thing."; out.primary = { label: "Start morning ☀️", fn: function () { ritualSheet(MORNING_RITUAL); } }; out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — let's recommit."; out.sub = "60 seconds: who you're being, your one thing, gratitude — then I frame your day."; out.primary = { label: "Morning recommit ☀️", fn: recommitSheet }; out.chips.push({ label: "Quick bookend ✅", fn: function () { ritualSheet(MORNING_RITUAL); } }); out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Evening bookend 🌙", fn: function () { ritualSheet(EVENING_RITUAL); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "What should I do next? ✨", fn: function () { suggestSheet(todayK()); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
@@ -566,6 +566,36 @@
     var mp = !!(S.profile && S.profile.masterpiece && S.profile.masterpiece.length);
     add(B, "button", "done2", mp ? "🌟 Fill my masterpiece day" : "🌟 Suggest a full day").onclick = function () { if (mp) fillMasterpiece(k); else suggestDay(k); closeSheet(); renderToday(); };
     if (blocks(k).length) { var sv = add(B, "button", "add", "💾 Save this as my masterpiece day"); sv.style.cssText = "display:block;margin:10px auto 0;"; sv.onclick = function () { saveMasterpiece(k); sv.textContent = "✓ saved — your masterpiece"; }; }
+  }
+  function skeletonDay(k, oneThing) {
+    var hasMp = S.profile && S.profile.masterpiece && S.profile.masterpiece.length;
+    if (hasMp) { fillMasterpiece(k); }
+    else { var T = [{ h: "08:00", m: 30, t: "Breakfast", c: "#ff8a1e", p: 2 }, { h: "09:00", m: 90, t: oneThing || "Deep work", c: "#2a9fe0", p: 3 }, { h: "11:00", m: 45, t: "Move", c: "#ff8a1e", p: 3 }, { h: "13:00", m: 45, t: "Lunch", c: "#ff8a1e", p: 2 }, { h: "18:30", m: 45, t: "Dinner", c: "#ff8a1e", p: 2 }, { h: "21:30", m: 30, t: "Wind down", c: "#48d0e0", p: 2 }]; S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); }
+    if (oneThing) { var have = false; blocks(k).forEach(function (b) { if (b.title.toLowerCase() === oneThing.toLowerCase()) have = true; }); if (!have) blocks(k).push({ id: uid(), time: "09:00", mins: 90, title: oneThing, prio: 3, color: "#2a9fe0", done: false, star: true }); }
+    reflow(k); save();
+  }
+  function recommitSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "☀️ Morning recommit");
+    add(B, "div", "lbl", "fresh canvas. 60 seconds to set today — then I'll frame your day.");
+    add(B, "div", "lbl", "who are you being today?");
+    var picks = {}, ic = add(B, "div", "pchips");
+    ["Focused", "Disciplined", "Calm", "Bold", "Loving", "Creative", "Grateful", "Unstoppable"].forEach(function (t) { var x = add(ic, "div", "pchip", t); x.onclick = function () { if (picks[t]) { delete picks[t]; x.classList.remove("on"); } else { picks[t] = 1; x.classList.add("on"); } }; });
+    add(B, "div", "lbl", "🎯 the ONE thing that makes today a win");
+    var one = document.createElement("input"); one.type = "text"; one.placeholder = "ship the landing page…"; one.style.cssText = "width:100%;"; B.appendChild(one);
+    add(B, "div", "lbl", "🙏 one thing you're grateful for");
+    var grat = document.createElement("input"); grat.type = "text"; grat.placeholder = "my health, this quiet morning…"; grat.style.cssText = "width:100%;"; B.appendChild(grat);
+    add(B, "button", "done2", "I recommit ✦ — build my day").onclick = function () {
+      var ot = one.value.trim(), k = todayK(), d = new Date(), tnow = pad(d.getHours()) + ":" + pad(d.getMinutes());
+      if (grat.value.trim()) { logs(k).push({ id: uid(), time: tnow, title: "Gratitude — " + grat.value.trim(), mins: 4, catK: "love", color: "#ff4fa0" }); earn(4, { catK: "love" }); }
+      logs(k).push({ id: uid(), time: tnow, title: "Morning recommit", mins: 5, catK: "love", color: "#ff4fa0" }); earn(8, { catK: "love" });
+      if (S.profile) S.profile.todayIdentity = Object.keys(picks);
+      skeletonDay(k, ot); save(); closeSheet();
+      viewK = todayK(); zoomMode = "day";
+      document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "today"); });
+      document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-today"); });
+      renderAll();
+    };
   }
   function planSheet(k, label, atTime) {
     var cfg = { mins: 60, prio: 2 }; if (atTime) { cfg.time = atTime; } else { var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
