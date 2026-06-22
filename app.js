@@ -417,6 +417,19 @@
     return "🗓️";
   }
   function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
+  function radialMenu(opts, onPick) {
+    var ov = document.createElement("div"); ov.className = "radial";
+    var items = opts.slice(0, 8), n = items.length || 1;
+    var cx = window.innerWidth / 2, cy = Math.min(window.innerHeight * 0.44, 360), R = Math.min(window.innerWidth, 380) * 0.31;
+    items.forEach(function (m, i) { var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; var b = document.createElement("div"); b.className = "ritem"; b.style.left = (x - 36) + "px"; b.style.top = (y - 36) + "px"; b.style.borderColor = m.color || "#8a5cf0"; b.innerHTML = '<div class="rie">' + (m.emoji || "•") + '</div><div class="ril">' + m.title + '</div>'; b.onclick = function (e) { e.stopPropagation(); ov.remove(); onPick(m); }; ov.appendChild(b); });
+    var more = document.createElement("div"); more.className = "ritem rmore"; more.style.left = (cx - 36) + "px"; more.style.top = (cy - 36) + "px"; more.innerHTML = '<div class="rie">⋯</div><div class="ril">more</div>'; more.onclick = function (e) { e.stopPropagation(); ov.remove(); onPick(null); }; ov.appendChild(more);
+    ov.onclick = function () { ov.remove(); };
+    document.body.appendChild(ov);
+  }
+  function pickOne(cb) { pickerSheet({ title: function () { return "What is it?"; }, frequent: true, custom: true, onTask: function (t) { closeSheet(); cb(t); } }); }
+  function assignBlock(b, m, k) { b.title = m.title; b.color = m.color || b.color; b.catK = m.catK || b.catK; save(); reflow(k); renderToday(); }
+  function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = m.emoji || ""; t.habitId = m.habitId || null; save(); renderToday(); renderNow(); }
+  function startTrackerNow() { S.timers.push({ id: uid(), title: "Tracking…", catK: null, emoji: "⏱️", color: "#ff5fa8", start: Date.now() }); save(); return S.timers[S.timers.length - 1]; }
   function calendarView(L, k, showNow) {
     L.innerHTML = "";
     var bls = blocks(k).slice(), lgs = logs(k).slice();
@@ -472,10 +485,36 @@
       });
     });
     lgs.forEach(function (e) { var es = hm(e.time), card = add(cal, "div", "calblk lane act"); place(card, es, e.mins || 15, "A"); var col = e.color || "#48d0e0"; card.style.borderLeftColor = col; card.style.backgroundColor = hexA(col, 0.26); add(card, "div", "ct", fmt(es) + "–" + fmt(es + (e.mins || 0))); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title); });
-    if (showNow) { S.timers.forEach(function (t) { var d = new Date(t.start), ts = d.getHours() * 60 + d.getMinutes(), du = Math.max(5, Math.round((Date.now() - t.start) / 60000)); var card = add(cal, "div", "calblk lane live"); place(card, ts, du, "A"); card.style.borderLeftColor = t.color || "#ff5fa8"; card.style.backgroundColor = hexA(t.color || "#ff5fa8", 0.3); add(card, "div", "ct", "▶ now"); add(card, "div", "cn", blockEmoji(t.title) + " " + t.title); }); }
+    if (showNow) { S.timers.forEach(function (t) {
+      var d = new Date(t.start), ts = d.getHours() * 60 + d.getMinutes(), du = Math.max(5, Math.round((Date.now() - t.start) / 60000));
+      var card = add(cal, "div", "calblk lane live"); place(card, ts, du, "A"); card.style.borderLeftColor = t.color || "#ff5fa8"; card.style.backgroundColor = hexA(t.color || "#ff5fa8", 0.3);
+      add(card, "div", "ct", "▶ " + fmt(ts)); add(card, "div", "cn", (t.emoji ? t.emoji + " " : "") + t.title);
+      var stop = add(card, "div", "calx", "⏹"); stop.addEventListener("pointerdown", function (e) { e.stopPropagation(); }); stop.addEventListener("click", function (e) { e.stopPropagation(); stopTimer(t.id); });
+      var gT = add(card, "div", "gript");
+      gT.addEventListener("pointerdown", function (ev) {
+        ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct");
+        function mv(e) { var dmin = Math.round(((e.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(), ndu = Math.max(5, Math.round((Date.now() - ns) / 60000)); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(24, ndu / 60 * HP - 4) + "px"; if (ct) ct.textContent = "▶ " + fmt(tsm); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); }
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
+      card.addEventListener("click", function (e) { if (e.target === stop || e.target === gT) return; radialMenu(frequent(8), function (m) { if (m) assignTimer(t, m); else pickOne(function (x) { assignTimer(t, x); }); }); });
+    }); }
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
-      function up(e) { document.removeEventListener("pointerup", up); if (Math.abs(e.clientY - dy) < 9 && Math.abs(e.clientX - dx) < 9 && Date.now() - t0 < 450) { var rect = cal.getBoundingClientRect(); planSheet(k, k === todayK() ? "today" : "tomorrow", timeFromY(e.clientY - rect.top, startH, HP)); } }
+      function up(e) {
+        document.removeEventListener("pointerup", up);
+        if (Math.abs(e.clientY - dy) > 9 || Math.abs(e.clientX - dx) > 9 || Date.now() - t0 > 450) return;
+        var rect = cal.getBoundingClientRect(), lx = e.clientX - rect.left;
+        if (lx > rect.width * 0.5 && showNow) {
+          var tt = startTrackerNow(); renderToday(); renderNow();
+          radialMenu(frequent(8), function (m) { if (m) assignTimer(tt, m); else pickOne(function (x) { assignTimer(tt, x); }); });
+        } else {
+          var tm = timeFromY(e.clientY - rect.top, startH, HP), id = uid();
+          blocks(k).push({ id: id, time: tm, mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
+          var nb = blocks(k).filter(function (b) { return b.id === id; })[0];
+          radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, k); else pickOne(function (x) { assignBlock(nb, x, k); }); });
+        }
+      }
       document.addEventListener("pointerup", up);
     });
   }
@@ -749,7 +788,7 @@
     draw();
   }
 
-  function brainCfg() { return (S.brain = S.brain || { engine: "off", key: "" }); }
+  function brainCfg() { S.brain = S.brain || { engine: "off", key: "", model: "" }; if (S.brain.model == null) S.brain.model = ""; return S.brain; }
   function askBrain(prompt, cb) {
     var c = brainCfg();
     if (c.engine === "off" || !c.key) { cb(null, "no brain configured"); return; }
@@ -759,12 +798,12 @@
         .then(function (j) { var t = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
         .catch(function (e) { cb(null, String(e)); });
     } else if (c.engine === "openrouter") {
-      fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: "meta-llama/llama-3.3-70b-instruct:free", messages: [{ role: "user", content: prompt }] }) })
+      fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: c.model || "meta-llama/llama-3.2-3b-instruct:free", messages: [{ role: "user", content: prompt }] }) })
         .then(function (r) { return r.json(); })
         .then(function (j) { var t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
         .catch(function (e) { cb(null, String(e)); });
     } else {
-      fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }] }) })
+      fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: c.model || "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }] }) })
         .then(function (r) { return r.json(); })
         .then(function (j) { var t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
         .catch(function (e) { cb(null, String(e)); });
@@ -779,13 +818,14 @@
     add(B, "div", "sttl", "🧠 Brain — free");
     add(B, "div", "lbl", "plug in an AI so ALTER can actually think. swap engines anytime; start free.");
     add(B, "div", "lbl", "engine");
-    var er = add(B, "div", "pchips"); [["off", "Off"], ["openrouter", "OpenRouter · free"], ["groq", "Groq · free"], ["gemini", "Gemini"]].forEach(function (o) { var x = add(er, "div", "pchip" + (c.engine === o[0] ? " on" : ""), o[1]); x.onclick = function () { c.engine = o[0]; save(); brainSheet(); }; });
+    var er = add(B, "div", "pchips"); [["off", "Off"], ["openrouter", "OpenRouter · free"], ["groq", "Groq · free"], ["gemini", "Gemini"]].forEach(function (o) { var x = add(er, "div", "pchip" + (c.engine === o[0] ? " on" : ""), o[1]); x.onclick = function () { c.engine = o[0]; c.model = ""; save(); brainSheet(); }; });
     if (c.engine !== "off") {
       var site = c.engine === "gemini" ? "Google AI Studio" : c.engine === "groq" ? "Groq" : "OpenRouter";
       var keyurl = c.engine === "gemini" ? "aistudio.google.com/apikey" : c.engine === "groq" ? "console.groq.com/keys" : "openrouter.ai/keys";
       add(B, "div", "lbl", "paste your " + site + " key");
       var ki = document.createElement("input"); ki.type = "text"; ki.placeholder = "paste key…"; ki.value = c.key || ""; ki.style.cssText = "width:100%;"; ki.oninput = function () { c.key = ki.value.trim(); save(); }; B.appendChild(ki);
       var hint = add(B, "div", "lbl", "get one free: " + keyurl); hint.style.fontSize = "12px";
+      if (c.engine === "openrouter" || c.engine === "groq") { add(B, "div", "lbl", "model — if one errors, paste another free one"); var mi = document.createElement("input"); mi.type = "text"; mi.value = c.model || (c.engine === "openrouter" ? "meta-llama/llama-3.2-3b-instruct:free" : "llama-3.3-70b-versatile"); mi.style.cssText = "width:100%;font-size:13px;"; mi.oninput = function () { c.model = mi.value.trim(); save(); }; B.appendChild(mi); }
       var test = add(B, "button", "done2", "🧪 Test the brain"); var out = add(B, "div", "lbl", ""); out.style.minHeight = "20px";
       test.onclick = function () { out.textContent = "thinking…"; askBrain("Reply with exactly: ALTER brain online.", function (t, err) { out.textContent = t ? ("✓ " + t) : ("✕ " + (err || "failed")); }); };
     }
@@ -845,7 +885,7 @@
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
-    el("planToday").onclick = function () { planSheet(viewK, relLabel(viewK)); };
+    el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, viewK); else pickOne(function (x) { assignBlock(nb, x, viewK); }); }); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
