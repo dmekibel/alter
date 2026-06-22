@@ -697,6 +697,11 @@
         .then(function (r) { return r.json(); })
         .then(function (j) { var t = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
         .catch(function (e) { cb(null, String(e)); });
+    } else if (c.engine === "openrouter") {
+      fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: "meta-llama/llama-3.3-70b-instruct:free", messages: [{ role: "user", content: prompt }] }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { var t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; if (t) cb(t.trim()); else cb(null, (j && j.error && j.error.message) || "no response"); })
+        .catch(function (e) { cb(null, String(e)); });
     } else {
       fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }] }) })
         .then(function (r) { return r.json(); })
@@ -713,11 +718,13 @@
     add(B, "div", "sttl", "🧠 Brain — free");
     add(B, "div", "lbl", "plug in an AI so ALTER can actually think. swap engines anytime; start free.");
     add(B, "div", "lbl", "engine");
-    var er = add(B, "div", "pchips"); [["off", "Off"], ["gemini", "Gemini · free"], ["groq", "Groq · free"]].forEach(function (o) { var x = add(er, "div", "pchip" + (c.engine === o[0] ? " on" : ""), o[1]); x.onclick = function () { c.engine = o[0]; save(); brainSheet(); }; });
+    var er = add(B, "div", "pchips"); [["off", "Off"], ["openrouter", "OpenRouter · free"], ["groq", "Groq · free"], ["gemini", "Gemini"]].forEach(function (o) { var x = add(er, "div", "pchip" + (c.engine === o[0] ? " on" : ""), o[1]); x.onclick = function () { c.engine = o[0]; save(); brainSheet(); }; });
     if (c.engine !== "off") {
-      add(B, "div", "lbl", "paste your free " + (c.engine === "gemini" ? "Google AI Studio" : "Groq") + " key");
+      var site = c.engine === "gemini" ? "Google AI Studio" : c.engine === "groq" ? "Groq" : "OpenRouter";
+      var keyurl = c.engine === "gemini" ? "aistudio.google.com/apikey" : c.engine === "groq" ? "console.groq.com/keys" : "openrouter.ai/keys";
+      add(B, "div", "lbl", "paste your " + site + " key");
       var ki = document.createElement("input"); ki.type = "text"; ki.placeholder = "paste key…"; ki.value = c.key || ""; ki.style.cssText = "width:100%;"; ki.oninput = function () { c.key = ki.value.trim(); save(); }; B.appendChild(ki);
-      var hint = add(B, "div", "lbl", "get one free: " + (c.engine === "gemini" ? "aistudio.google.com/apikey" : "console.groq.com/keys")); hint.style.fontSize = "12px";
+      var hint = add(B, "div", "lbl", "get one free: " + keyurl); hint.style.fontSize = "12px";
       var test = add(B, "button", "done2", "🧪 Test the brain"); var out = add(B, "div", "lbl", ""); out.style.minHeight = "20px";
       test.onclick = function () { out.textContent = "thinking…"; askBrain("Reply with exactly: ALTER brain online.", function (t, err) { out.textContent = t ? ("✓ " + t) : ("✕ " + (err || "failed")); }); };
     }
