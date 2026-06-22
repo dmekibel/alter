@@ -386,3 +386,14 @@ The app meets you where you are. ONE real-deed→points engine; a DIAL changes o
 
 ### Revised MVP target
 The MVP = the **Game-tier minimum-viable addictive loop**: pick a real task → it decomposes → do each subtask → instant coin/XP + island visibly responds → a light survival stake gives the world a pulse → you want to do the next real thing. Built on the de-clunked notebook + the existing island/fairy/twin-stick. Vanilla and Light are reductions of the SAME engine via the dial. We lead with — and polish — the addictive game.
+
+---
+
+## ADDENDUM 5 — MODULAR SELF-HELP STACK (David)
+
+The app encourages AND guides you through a **self-help stack** — a library of guided practice MODULES, each with sound + visual, that compose like the bubble planner. "Remember the bubble planner for guided meditation — it's modular."
+
+- **Modules** (each a paced, guided experience): 🌬️ Breathwork (DONE — first module), 🧘 Meditation / body-scan, 🙏 Gratitude flow (exists), 🪞 Affirmations / identity, 🌙 Wind-down / pre-sleep, 🎯 Intention-setting, 🧠 Visualization (Alfred's induction-library is the content source).
+- **Modular = stackable into a SESSION**: drop modules as bubbles into a guided sequence (e.g. Breathe → Body-scan → Gratitude → Intention). The bubble-planner mechanic (drag/reflow/pin) composes a self-help session the app then runs you through, one module at a time, hands-free.
+- Each module: paced visual (orb/animation), synced sound (Web-Audio tones, portable from studio-sim SFX), gentle voice/text cues, logs the deed + Spark on finish, feeds the virtue tree (Gratitude/Hope/Vitality).
+- Ties to the app's Heal mode + Alfred's induction-library / fieldguide KB as the practice content.
