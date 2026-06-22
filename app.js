@@ -642,9 +642,9 @@
     if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
     w.addEventListener("click", function (e) {
       var cx = WGW / 2, cy = WGH / 2;
-      if (Math.abs(e.clientX - cx) < 86 && e.clientY > cy - 150 && e.clientY < cy + 46) { heroMenu(); return; }
       var wx = px + (e.clientX - cx) / zoom, wy = py + (e.clientY - cy) / zoom;
       for (var i = 0; i < WORLD_SPOTS.length; i++) { var s = WORLD_SPOTS[i]; if (Math.hypot(wx - s.x, wy - s.y) < s.r) { s.fn(); return; } }
+      if (Math.abs(e.clientX - cx) < 78 && e.clientY > cy - 138 && e.clientY < cy + 44) { heroMenu(); return; }
     });
   }
   function paintGuardian(t, st) {
