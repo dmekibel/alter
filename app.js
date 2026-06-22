@@ -383,9 +383,11 @@
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir8: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir8: { fw: 183, fh: 270, cols: 20, rows: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
-  // compass dir (0=S,1=SW,2=W,3=NW,4=N,5=NE,6=E,7=SE) → row (cell c0..c7) in spr-dir8.png. All 8 distinct.
-  // David's clues: c0=front, c5=back, c6=right, c3=left (aiming top-right showed c3 = left); diagonals still being confirmed.
-  var DIR2CELL = [0, 1, 3, 4, 5, 2, 6, 7];
+  // compass dir (0=S,1=SW,2=W,3=NW,4=N,5=NE,6=E,7=SE) → cell row in spr-dir8.png (+ horizontal flip).
+  // Per David: real cells c0=front, c3=left, c6=right, c5=back, c4=up-left; c1/c2/c7 are dup fronts.
+  // up-right = c4 mirrored; down-left/right lean to the left/right profiles.
+  var DIR2CELL = [0, 3, 3, 4, 5, 4, 6, 6];
+  var DIR2FLIP = [0, 0, 0, 0, 0, 1, 0, 0];
   function loadFairy() { ["idle", "fly", "face", "dir8"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=3"; FAIRY[k] = im; }); }
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
@@ -571,11 +573,11 @@
     var aiming = (aimX !== 0 || aimY !== 0), d8 = FAIRY.dir8, hHs = 132;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
     if (d8 && d8.complete && d8.naturalWidth) {
-      var md = FAIRY_META.dir8, row;
-      if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
-      else row = DIR2CELL[0];
-      var col = Math.floor(t * 10) % md.cols, hW8 = hHs * md.fw / md.fh;
-      ctx.drawImage(d8, col * md.fw, row * md.fh, md.fw, md.fh, Math.round(px - hW8 / 2), Math.round(py - hHs + 16), hW8, hHs);
+      var md = FAIRY_META.dir8, row = DIR2CELL[0], flip = 0;
+      if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; flip = DIR2FLIP[fk]; }
+      var col = Math.floor(t * 10) % md.cols, hW8 = hHs * md.fw / md.fh, sdx = Math.round(px - hW8 / 2), sdy = Math.round(py - hHs + 16);
+      if (flip) { ctx.save(); ctx.translate(sdx + hW8, sdy); ctx.scale(-1, 1); ctx.drawImage(d8, col * md.fw, row * md.fh, md.fw, md.fh, 0, 0, hW8, hHs); ctx.restore(); }
+      else ctx.drawImage(d8, col * md.fw, row * md.fh, md.fw, md.fh, sdx, sdy, hW8, hHs);
     } else {
       paintHero(t, st, walkF, moving);
       var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
