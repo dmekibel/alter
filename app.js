@@ -385,7 +385,7 @@
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   function loadFairy() { ["idle", "fly", "face"].forEach(function (k) { var im = new Image(); im.src = "assets/spr-" + k + ".png?v=2"; FAIRY[k] = im; }); }
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
-  var WORLD_IMG = {}, waterPat = null, grassPat = null, islandPath = null;
+  var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
     var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png" };
     Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=3"; WORLD_IMG[k] = im; });
@@ -514,8 +514,9 @@
       if (g) { GRASS.push([wx, wy]); if (((ix * 7 + iy * 13) & 3) === 0) GRASSD.push([wx, wy]); }
       if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
     }
-    islandPath = new Path2D(); var hT = TILE / 2, T1 = TILE + 1.5;
-    GRASS.forEach(function (c) { islandPath.rect(c[0] - hT, c[1] - hT, T1, T1); });
+    // smooth organic island blobs (no more pixelated tile edges)
+    grassBlob = new Path2D(); sandBlob = new Path2D(); darkBlob = new Path2D();
+    ISLAND.forEach(function (b) { var cx = b[0] * RG, cy = b[1] * RG, r = RG * b[2]; grassBlob.moveTo(cx + r * 0.97, cy); grassBlob.arc(cx, cy, r * 0.97, 0, 7); sandBlob.moveTo(cx + r * 1.08, cy); sandBlob.arc(cx, cy, r * 1.08, 0, 7); darkBlob.moveTo(cx + r * 1.13, cy); darkBlob.arc(cx, cy, r * 1.13, 0, 7); });
   }
   function chevrons(ctx, W, H, t) {
     ctx.fillStyle = "rgba(228,242,253,0.6)";
@@ -542,21 +543,16 @@
       ctx.save(); ctx.translate(ox - WS, oy - WS); ctx.fillStyle = waterPat; ctx.fillRect(0, 0, W + WS * 2, H + WS * 2); ctx.restore();
     } else { ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); }
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(vz, vz); ctx.translate(-px, -py);
-    if (!SAND) buildIsland();
-    var hT = TILE / 2, T1 = TILE + 1.5, q, GS = 200;
-    // sandy beach base (fills the whole landmass; grass clips on top of the interior)
-    ctx.fillStyle = "#d9c89a"; for (q = 0; q < SAND.length; q++) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
-    ctx.fillStyle = "#cdba86"; for (q = 0; q < SAND.length; q++) if (((Math.round(SAND[q][0] / TILE) + Math.round(SAND[q][1] / TILE)) & 1) === 0) ctx.fillRect(SAND[q][0] - hT, SAND[q][1] - hT, T1, T1);
-    // painted grass texture, clipped to the interior land
+    if (!grassBlob) buildIsland();
+    var GS = 200;
+    // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
+    ctx.fillStyle = "#33271a"; ctx.fill(darkBlob);
+    ctx.fillStyle = "#d9c89a"; ctx.fill(sandBlob);
     if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
       var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
     }
-    if (islandPath) {
-      ctx.save(); ctx.clip(islandPath);
-      ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.6, -RG * 1.6, RG * 3.2, RG * 3.2);
-      ctx.restore();
-    }
-    ctx.strokeStyle = "rgba(120,92,58,0.45)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
+    ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
+    ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
     // Cuphead painted object cutouts (drawn back-to-front by y)
     drawObj(ctx, WORLD_IMG.tree, -152, -84, 158); drawObj(ctx, WORLD_IMG.tree, 190, -30, 148);
     drawObj(ctx, WORLD_IMG.cabin, -58, 2, 132); drawObj(ctx, WORLD_IMG.bush, 78, -136, 60);
@@ -601,13 +597,30 @@
   }
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
-    gm.classList.add("on"); worldFit(); updGameHud();
+    gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
     document.body.style.overflow = "hidden";
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
   }
   function closeGame() {
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
     gameOn = false; moveX = 0; moveY = 0; document.body.style.overflow = "";
+  }
+  // ---- game-as-home: tap the character → diegetic action hub ----
+  function goTab(t) { closeGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); window.scrollTo(0, 0); }
+  function heroMenu() {
+    radialMenu([
+      { title: "Plan day", emoji: "📅", color: "#2a9fe0", fn: function () { goTab("day"); } },
+      { title: "Track time", emoji: "⏱️", color: "#ff5fa8", fn: function () { goTab("day"); } },
+      { title: "Habits", emoji: "✅", color: "#28cf86", fn: function () { goTab("grow"); } },
+      { title: "Skills", emoji: "⭐", color: "#ffc41f", fn: function () { goTab("self"); } },
+      { title: "Mood", emoji: "🌤️", color: "#9a5cf0", fn: function () { goTab("self"); } },
+      { title: "Brain", emoji: "🧠", color: "#8a5cf0", fn: function () { closeGame(); brainSheet(); } }
+    ], function (m) { if (m && m.fn) m.fn(); });
+  }
+  var worldTapWired = false;
+  function wireWorldTap() {
+    if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
+    w.addEventListener("click", function (e) { var cx = WGW / 2, cy = WGH / 2; if (Math.abs(e.clientX - cx) < 86 && e.clientY > cy - 150 && e.clientY < cy + 46) heroMenu(); });
   }
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -1296,6 +1309,7 @@
     document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } }; });
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     renderAll();
+    openGame();   // game-as-home: the app opens into the world
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
