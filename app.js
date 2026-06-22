@@ -282,6 +282,9 @@
   var SW = 64, SH = 80;
   var SKY = { night: ["#0c1330", "#241a46"], morning: ["#16345e", "#3a2a55"], afternoon: ["#163e63", "#2a2150"], evening: ["#241640", "#3c1733"] };
   var gctx, GW = 0, GH = 0, gspr = null, gsx = null, GT0 = performance.now();
+  // walkable character + camera (ported from Heaven Inc walk model)
+  var px = 0, py = 0, pface = 1, walkF = 0, walkT = 0, moveX = 0, moveY = 0, jid = null, kdn = {}, pInit = false;
+  var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function mix(a, b, t) { var A = hx2(a), B = hx2(b); return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")"; }
   function gdisc(g, cx, cy, r, col) { g.fillStyle = col; for (var y = -r; y <= r; y++) { var w = Math.floor(Math.sqrt(Math.max(0, r * r - y * y))); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); } }
@@ -294,6 +297,48 @@
     c.style.width = GW + "px"; c.style.height = GH + "px"; c.width = Math.round(GW * dpr); c.height = Math.round(GH * dpr);
     gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (!gspr) { gspr = document.createElement("canvas"); gspr.width = SW; gspr.height = SH; gsx = gspr.getContext("2d"); }
+  }
+  // ---- virtual joystick (ported from Heaven Inc input.js) + keyboard fallback ----
+  function setupJoy() {
+    var zone = el("joy"), stick = el("joyStick"); if (!zone || !stick) return;
+    var cxj = 0, cyj = 0;
+    zone.addEventListener("touchstart", function (e) {
+      e.preventDefault(); var tch = e.changedTouches[0]; jid = tch.identifier;
+      var r = zone.getBoundingClientRect(); cxj = r.left + r.width / 2; cyj = r.top + r.height / 2;
+    }, { passive: false });
+    zone.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var tch = e.changedTouches[i]; if (tch.identifier !== jid) continue;
+        var dx = tch.clientX - cxj, dy = tch.clientY - cyj, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 32), a = Math.atan2(dy, dx);
+        stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
+        if (d > 8) { moveX = Math.cos(a); moveY = Math.sin(a); } else { moveX = 0; moveY = 0; }
+      }
+    }, { passive: false });
+    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid) { jid = null; moveX = 0; moveY = 0; stick.style.transform = "translate(0,0)"; } }
+    zone.addEventListener("touchend", end); zone.addEventListener("touchcancel", end);
+    var KEYS = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"];
+    window.addEventListener("keydown", function (e) { var k = (e.key || "").toLowerCase(); if (KEYS.indexOf(k) < 0) return; kdn[k] = true; updKeys(); });
+    window.addEventListener("keyup", function (e) { var k = (e.key || "").toLowerCase(); if (KEYS.indexOf(k) < 0) return; kdn[k] = false; updKeys(); });
+  }
+  function updKeys() {
+    if (jid != null) return; var x = 0, y = 0;
+    if (kdn.w || kdn.arrowup) y--; if (kdn.s || kdn.arrowdown) y++; if (kdn.a || kdn.arrowleft) x--; if (kdn.d || kdn.arrowright) x++;
+    if (x && y) { var l = Math.sqrt(2); x /= l; y /= l; }
+    moveX = x; moveY = y;
+  }
+  // ---- camera zoom: pinch (mobile) + wheel (desktop) + ＋/－ buttons ----
+  function setupZoom() {
+    var stage = el("stage"); if (!stage) return;
+    function dist(a, b) { var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY; return Math.sqrt(dx * dx + dy * dy); }
+    function clampZ(z) { return Math.max(0.6, Math.min(2.6, z)); }
+    stage.addEventListener("touchstart", function (e) { if (e.touches.length === 2) { pinch0 = dist(e.touches[0], e.touches[1]); zoom0 = zoom; } }, { passive: false });
+    stage.addEventListener("touchmove", function (e) { if (e.touches.length === 2 && pinch0 > 0) { e.preventDefault(); zoom = clampZ(zoom0 * (dist(e.touches[0], e.touches[1]) / pinch0)); } }, { passive: false });
+    stage.addEventListener("touchend", function (e) { if (e.touches.length < 2) pinch0 = 0; });
+    stage.addEventListener("wheel", function (e) { e.preventDefault(); zoom = clampZ(zoom * (e.deltaY < 0 ? 1.1 : 0.9)); }, { passive: false });
+    var zi = el("zoomIn"), zo = el("zoomOut");
+    if (zi) zi.onclick = function () { zoom = clampZ(zoom * 1.2); };
+    if (zo) zo.onclick = function () { zoom = clampZ(zoom / 1.2); };
   }
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -320,9 +365,9 @@
     gctx.fillStyle = P; gctx.beginPath(); gctx.arc(xx + 0.5, yy - 15, 5, 0, 7); gctx.fill();
     gctx.fillStyle = "rgba(255,255,255,.55)"; gctx.fillRect(xx - 1, yy - 17, 2, 2);
   }
-  function drawGarden(baseY) {
-    var g = (S.game && S.game.garden) || [], n = g.length; if (!n) return;
-    for (var i = 0; i < n; i++) { var frac = n === 1 ? 0.5 : i / (n - 1), gx = GW * (0.07 + frac * 0.86), gy = baseY + 5 + (i % 2) * 4; plantSprite(gx, gy, g[i].t); }
+  function drawGarden(baseY, width) {
+    var g = (S.game && S.game.garden) || [], n = g.length; if (!n) return; var W = width || GW;
+    for (var i = 0; i < n; i++) { var frac = n === 1 ? 0.5 : i / (n - 1), gx = W * (0.06 + frac * 0.88), gy = baseY + 5 + (i % 2) * 4; plantSprite(gx, gy, g[i].t); }
   }
   function plantGarden() {
     if (!hasShippedToday()) { toast("ship one real thing today — then your world grows 🌱"); return; }
@@ -334,27 +379,59 @@
   function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
     if (!gctx) { requestAnimationFrame(drawGuardian); return; }
-    var t = (performance.now() - GT0) / 1000, cx = GW / 2, mood = currentMood(), mf = mood / 4;
+    var t = (performance.now() - GT0) / 1000, mood = currentMood(), mf = mood / 4;
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
     var st = { lv: vState ? vState.level : 1, color: col, gold: !!(S.game && S.game.ups && S.game.ups.gold), blink: (t % 4) > 3.85 };
+    // the world — bigger than the viewport, so there's somewhere to walk
+    var WW = GW * 1.9, WH = GH * 1.45, groundY = WH * 0.8;
+    if (!pInit) { px = WW / 2; py = groundY; pInit = true; }
+    // move the character (joystick / keys → unit vector, Heaven Inc walk model)
+    var moving = (moveX !== 0 || moveY !== 0), WALK = Math.max(2.2, WW * 0.006);
+    if (moving) {
+      px += moveX * WALK; py += moveY * WALK;
+      if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1;
+      walkT++; if (walkT > 9) { walkT = 0; walkF = 1 - walkF; }
+    }
+    px = Math.max(22, Math.min(WW - 22, px)); py = Math.max(WH * 0.5, Math.min(WH * 0.95, py));
+    // camera follows the character, clamped to the world, scaled by zoom
+    var viewW = GW / zoom, viewH = GH / zoom;
+    var camX = WW <= viewW ? WW / 2 : Math.max(viewW / 2, Math.min(WW - viewW / 2, px));
+    var camY = WH <= viewH ? WH / 2 : Math.max(viewH / 2, Math.min(WH - viewH / 2, py));
+    // sky — screen-fixed (never pans with the camera)
     var ph = phase(), sky = SKY[ph] || SKY.night;
     var gr = gctx.createLinearGradient(0, 0, 0, GH); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); gctx.fillStyle = gr; gctx.fillRect(0, 0, GW, GH);
     var starN = (ph === "night" || ph === "evening") ? Math.round(20 + mf * 34) : Math.round(mf * 16);
     for (var i = 0; i < starN; i++) { var sxp = (i * 79) % GW, syp = (i * 131) % Math.round(GH * 0.6); var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.2 + i)); gctx.fillStyle = "rgba(255,255,255," + (0.45 * tw * (0.5 + mf * 0.7)) + ")"; gctx.fillRect(sxp, syp, 2, 2); }
-    var auraR = GW * (0.30 + Math.min(0.2, st.lv * 0.012)) * (0.78 + mf * 0.35), ap = (0.16 + 0.06 * Math.sin(t * 1.4)) * (0.55 + mf * 0.7), acy = GH * 0.5;
-    var ag = gctx.createRadialGradient(cx, acy, 6, cx, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(cx, acy, auraR, 0, 7); gctx.fill();
-    var baseY = GH * 0.92;
-    gctx.fillStyle = "rgba(0,0,0,0.3)"; gctx.beginPath(); gctx.ellipse(cx, baseY, GW * 0.15, 7, 0, 0, 7); gctx.fill();
-    drawGarden(baseY);
+    // enter world space (camera pan + zoom)
+    gctx.save();
+    gctx.translate(GW / 2, GH / 2); gctx.scale(zoom, zoom); gctx.translate(-camX, -camY);
+    // ground plane
+    var gpg = gctx.createLinearGradient(0, groundY - 20, 0, WH); gpg.addColorStop(0, hexA(col, 0.05)); gpg.addColorStop(0.18, "rgba(40,54,42,0.5)"); gpg.addColorStop(1, "rgba(16,26,20,0.88)"); gctx.fillStyle = gpg; gctx.fillRect(0, groundY - 20, WW, WH - groundY + 20);
+    gctx.fillStyle = "rgba(120,200,150,0.18)"; gctx.fillRect(0, groundY - 2, WW, 2);
+    // aura behind the character
+    var auraR = GW * (0.26 + Math.min(0.18, st.lv * 0.012)) * (0.78 + mf * 0.35), ap = (0.16 + 0.06 * Math.sin(t * 1.4)) * (0.55 + mf * 0.7), acy = py - 30;
+    var ag = gctx.createRadialGradient(px, acy, 6, px, acy, auraR); ag.addColorStop(0, hexA(col, ap + 0.14)); ag.addColorStop(0.5, hexA(col, ap * 0.5)); ag.addColorStop(1, hexA(col, 0)); gctx.fillStyle = ag; gctx.beginPath(); gctx.arc(px, acy, auraR, 0, 7); gctx.fill();
+    // ground shadow under the character
+    gctx.fillStyle = "rgba(0,0,0,0.32)"; gctx.beginPath(); gctx.ellipse(px, py, 17, 6, 0, 0, 7); gctx.fill();
+    // garden across the whole world
+    drawGarden(groundY + 6, WW);
+    // the character
     paintGuardian(t, st);
-    var scale = Math.max(2, Math.floor(Math.min(GW / SW, (GH * 0.78) / SH)));
-    var bob = Math.sin(t * 1.6) * scale * 1.1, dw = SW * scale, dh = SH * scale;
-    var dx = Math.round(cx - dw / 2), dy = Math.round(baseY - dh - 4 + bob);
-    gctx.imageSmoothingEnabled = false; gctx.drawImage(gspr, 0, 0, SW, SH, dx, dy, dw, dh); gctx.imageSmoothingEnabled = true;
-    var spN = 2 + mood * 2; for (var s = 0; s < spN; s++) { var px = cx + Math.cos(t * 0.6 + s * 1.2) * GW * (0.18 + 0.12 * (s % 3)); var py = baseY - 30 - ((t * 20 + s * 55) % (GH * 0.55)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(mood >= 4 ? "#ffd54a" : st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(px), Math.round(py), 2, 2); }
+    var scale = Math.max(2, Math.floor((WH * 0.34) / SH));
+    var bob = moving ? Math.abs(Math.sin(walkT * 0.7)) * scale * 1.6 : Math.sin(t * 1.6) * scale * 1.0;
+    var dw = SW * scale, dh = SH * scale, dx = Math.round(px - dw / 2), dy = Math.round(py - dh + bob);
+    gctx.imageSmoothingEnabled = false;
+    if (pface < 0) { gctx.save(); gctx.translate(dx + dw, dy); gctx.scale(-1, 1); gctx.drawImage(gspr, 0, 0, SW, SH, 0, 0, dw, dh); gctx.restore(); }
+    else gctx.drawImage(gspr, 0, 0, SW, SH, dx, dy, dw, dh);
+    gctx.imageSmoothingEnabled = true;
+    // sparkles around the character
+    var spN = 2 + mood * 2; for (var s = 0; s < spN; s++) { var spx = px + Math.cos(t * 0.6 + s * 1.2) * GW * (0.10 + 0.07 * (s % 3)); var spy = py - 36 - ((t * 20 + s * 55) % (GH * 0.5)); var al = 0.4 + 0.4 * Math.sin(t * 2 + s); gctx.fillStyle = hexA(mood >= 4 ? "#ffd54a" : st.gold ? "#ffd54a" : "#cfe8ff", Math.max(0, 0.5 * al)); gctx.fillRect(Math.round(spx), Math.round(spy), 2, 2); }
+    // ship-bloom: a real deed adds a green growth-glow around you (it never darkens when you don't)
+    if (hasShippedToday()) { var bg = gctx.createRadialGradient(px, py - 24, 16, px, py - 24, GW * 0.55); bg.addColorStop(0, "rgba(70,226,164,0.16)"); bg.addColorStop(1, "rgba(70,226,164,0)"); gctx.fillStyle = bg; gctx.fillRect(0, 0, WW, WH); }
+    gctx.restore();
+    // weather overlays — screen-fixed, full viewport
     if (mood < 2) { var fa = (2 - mood) * 0.17; for (var f = 0; f < 4; f++) { var fy = ((t * 7 + f * 80) % (GH + 120)) - 60; var fgg = gctx.createLinearGradient(0, fy - 34, 0, fy + 34); fgg.addColorStop(0, "rgba(205,210,224,0)"); fgg.addColorStop(0.5, "rgba(205,210,224," + fa + ")"); fgg.addColorStop(1, "rgba(205,210,224,0)"); gctx.fillStyle = fgg; gctx.fillRect(0, fy - 34, GW, 68); } }
-    if (mood >= 4) { var rg = gctx.createRadialGradient(cx, GH * 0.45, 10, cx, GH * 0.45, GW * 0.62); rg.addColorStop(0, "rgba(255,220,120,0.13)"); rg.addColorStop(1, "rgba(255,220,120,0)"); gctx.fillStyle = rg; gctx.fillRect(0, 0, GW, GH); }
-    if (hasShippedToday()) { var bg = gctx.createRadialGradient(cx, GH * 0.62, 20, cx, GH * 0.62, GW * 0.7); bg.addColorStop(0, "rgba(70,226,164,0.11)"); bg.addColorStop(1, "rgba(70,226,164,0)"); gctx.fillStyle = bg; gctx.fillRect(0, 0, GW, GH); }
+    if (mood >= 4) { var rg = gctx.createRadialGradient(GW / 2, GH * 0.45, 10, GW / 2, GH * 0.45, GW * 0.62); rg.addColorStop(0, "rgba(255,220,120,0.13)"); rg.addColorStop(1, "rgba(255,220,120,0)"); gctx.fillStyle = rg; gctx.fillRect(0, 0, GW, GH); }
     requestAnimationFrame(drawGuardian);
   }
   function setMood(i) { S.mood = S.mood || {}; S.mood[todayK()] = { lvl: i, t: Date.now() }; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mood: " + MOODS[i].l, mins: 1, catK: "love", color: "#9a5cf0" }); earn(2, { catK: "love" }); save(); renderMood(); renderGame(); }
@@ -966,7 +1043,7 @@
   }
 
   function init() {
-    load(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); requestAnimationFrame(drawGuardian);
+    load(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
