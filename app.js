@@ -461,22 +461,33 @@
     ];
     items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
   }
+  var pullK = null; // the day the planner is showing — step to tomorrow/any day to plan ahead (David 2026-06-23)
   function buildPull() {
-    var head = el("pullHead"), pb = el("pullBody"); if (!pb) return; var run = activeTimers(), t = run[run.length - 1];
+    var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
+    var k = pullK || todayK(), isToday = (k === todayK());
+    var run = activeTimers(), t = run[run.length - 1];
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
-      var tt = add(top, "div", "pull-title"); tt.innerHTML = t ? '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t) : '<i class="ti ti-layout-2"></i> Now · plan vs. real';
-      var hb = add(top, "div", "pull-hbtns"); var sw = add(hb, "button", "pull-switch"); sw.innerHTML = '<i class="ti ti-switch-horizontal"></i> ' + (t ? "switch" : "track"); sw.onclick = startOrSwitch; var cx = add(hb, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
-      var nx = add(head, "div", "pull-next"); var nb = nextPlannedBlock(todayK());
-      if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
-      else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
-      else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
-      var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
+      var dn = add(top, "div", "pull-datenav");
+      var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { var d = kd(k); d.setDate(d.getDate() - 1); pullK = key(d); buildPull(); };
+      add(dn, "div", "pull-date", relLabel(k));
+      var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { var d = kd(k); d.setDate(d.getDate() + 1); pullK = key(d); buildPull(); };
+      var cx = add(top, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
+      var nx = add(head, "div", "pull-next");
+      if (isToday) {
+        var nb = nextPlannedBlock(k);
+        if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
+        else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
+        else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
+        var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
+      } else {
+        var pm = add(nx, "span", "pn-none"); pm.innerHTML = '<i class="ti ti-calendar-plus"></i> planning ahead — tap a slot to add';
+      }
     }
-    pb.innerHTML = ""; calendarView(pb, todayK(), true);
+    pb.innerHTML = ""; calendarView(pb, k, isToday);
   }
-  function openPull() { buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
+  function openPull() { pullK = todayK(); buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
   function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
@@ -1522,7 +1533,7 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
     var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var startH = Math.min(7, Math.floor(minS / 60)), endH = Math.max(23, Math.ceil(maxE / 60)), HP = 64, now = nowMin();
+    var startH = Math.min(7, Math.floor(minS / 60)), endH = Math.max(25, Math.ceil(maxE / 60)), HP = 64, now = nowMin(); // run past midnight so you can plan into the night (David 2026-06-23)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
     for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
@@ -1625,7 +1636,7 @@
         var elps = add(lf, "span", "live-elapsed", elapsedStr(t)); elps.style.color = D.ink; elps.setAttribute("data-tid", t.id);
         var stop = add(lf, "button", "live-stop"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
-        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); var d0s = new Date(t.start), startMin0 = d0s.getHours() * 60 + d0s.getMinutes(), floorMin = 0; lgs.forEach(function (L) { var le = hm(L.time) + (L.mins || 0); if (le <= startMin0) floorMin = Math.max(floorMin, le); }); var fb = new Date(t.start); fb.setHours(Math.floor(floorMin / 60), floorMin % 60, 0, 0); var floorMs = fb.getTime(); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.max(floorMs, Math.min(Date.now(), s0 + dmin * 60000)); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); var d0s = new Date(t.start), startMin0 = d0s.getHours() * 60 + d0s.getMinutes(); var prevLog = null, prevEnd = -1; lgs.forEach(function (L) { var le = hm(L.time) + (L.mins || 0); if (le <= startMin0 && le > prevEnd) { prevEnd = le; prevLog = L; } }); var floorMin = prevLog ? hm(prevLog.time) : startH * 60; var fb = new Date(t.start); fb.setHours(Math.floor(floorMin / 60), floorMin % 60, 0, 0); var floorMs = fb.getTime(); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.max(floorMs, Math.min(Date.now(), s0 + dmin * 60000)); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); var nm2 = new Date(t.start).getHours() * 60 + new Date(t.start).getMinutes(); if (prevLog && nm2 < prevEnd) { var ps = hm(prevLog.time), trimmed = nm2 - ps; if (trimmed < 5) { var ix = logs(k).indexOf(prevLog); if (ix >= 0) logs(k).splice(ix, 1); } else prevLog.mins = trimmed; } save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // extend into the past → the previous activity's end shifts to match (never side-by-side)
         card.addEventListener("click", function (ev) { if (ev.target === gT || lf.contains(ev.target)) return; startOrSwitch(); }); // tap the running activity → switch what you're doing now (David 2026-06-23)
       }
     });
