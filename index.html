@@ -567,7 +567,7 @@
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
-  #pullSheet{ position:fixed; top:0; left:0; right:0; z-index:68; background:#2c081a; border:3px solid #160510; border-top:none; border-radius:0 0 22px 22px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-106%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:72vh; height:72dvh; max-height:640px; display:flex; flex-direction:column; overflow:hidden; }
+  #pullSheet{ position:fixed; top:0; left:0; right:0; z-index:68; background:#2c081a; border:3px solid #160510; border-top:none; border-radius:0 0 22px 22px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-106%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:93vh; height:93dvh; display:flex; flex-direction:column; overflow:hidden; }
   #pullSheet.on{ transform:translateY(0); }
   #pullHead{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:9px; background:#1c0512; border-bottom:2px solid #160510; padding:12px 14px 10px; }
   .pull-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -780,6 +780,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=392"></script>
+  <script src="app.js?v=393"></script>
 </body>
 </html>
