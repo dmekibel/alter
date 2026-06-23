@@ -346,17 +346,18 @@
   }
   // ---- HOME: top live-tracker strip + pull-down plan|real (mockups 005/006/007, §13) ----
   function pullElapsed(t) { var m = Math.max(0, Math.floor((Date.now() - t.start) / 60000)); return Math.floor(m / 60) + ":" + pad(m % 60); }
+  function liveSpan(t) { return '<span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span>'; } // ticks every second via the 1s loop (elapsedStr = m:ss)
   function activeTimers() { return (S.timers || []).filter(function (t) { return (t.dayK || key(new Date(t.start))) === todayK(); }); }
   // SWITCH task = stop the current one (logs it) then start the new one — single current activity (David: switching is a real function)
   function startOrSwitch() { var run = activeTimers(); bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", multi: true, onPickMulti: function (sel) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimerMulti(t, sel); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } }); }
-  function buildPull() { var head = el("pullHead"), pb = el("pullBody"); if (!pb) return; var run = activeTimers(), t = run[run.length - 1]; if (head) { head.innerHTML = ""; var tt = add(head, "div", "pull-title"); tt.innerHTML = t ? '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + pullElapsed(t) : '<i class="ti ti-layout-2"></i> Now · plan vs. real'; var hb = add(head, "div", "pull-hbtns"); var sw = add(hb, "button", "pull-switch"); sw.innerHTML = '<i class="ti ti-switch-horizontal"></i> ' + (t ? "switch" : "track"); sw.onclick = startOrSwitch; var cx = add(hb, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull; } pb.innerHTML = ""; calendarView(pb, todayK(), true); }
+  function buildPull() { var head = el("pullHead"), pb = el("pullBody"); if (!pb) return; var run = activeTimers(), t = run[run.length - 1]; if (head) { head.innerHTML = ""; var tt = add(head, "div", "pull-title"); tt.innerHTML = t ? '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t) : '<i class="ti ti-layout-2"></i> Now · plan vs. real'; var hb = add(head, "div", "pull-hbtns"); var sw = add(hb, "button", "pull-switch"); sw.innerHTML = '<i class="ti ti-switch-horizontal"></i> ' + (t ? "switch" : "track"); sw.onclick = startOrSwitch; var cx = add(hb, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull; } pb.innerHTML = ""; calendarView(pb, todayK(), true); }
   function openPull() { buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
   function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
     document.body.classList.add("tracker");
     var run = activeTimers(), t = run[run.length - 1];
-    if (t) { lb.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + pullElapsed(t); lt.classList.add("live"); }
+    if (t) { lb.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t); lt.classList.add("live"); }
     else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); }
     if (lh) lh.innerHTML = '<i class="ti ti-chevron-down"></i> my day';
     if (!lt._wired) { lt._wired = 1;
@@ -1416,7 +1417,7 @@
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(26, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } }
     function rr() { renderToday(); }
-    var planCards = [];
+    var planCards = [], burnedSomething = false;
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
     function settle() { planCards.forEach(function (pc) { pc.card.style.top = topFor(hm(pc.b.time)) + "px"; pc.card.style.height = Math.max(24, (pc.b.mins || 30) / 60 * HP - 4) + "px"; }); }
     function preview(ex, ds, de) { planCards.filter(function (pc) { return pc.card !== ex; }).sort(function (a, c) { return hm(a.b.time) - hm(c.b.time); }).reduce(function (cur, pc) { var dur = pc.b.mins || 30, s = hm(pc.b.time); if (cur >= 0 && s < cur) s = cur; if (s < de && s + dur > ds) s = de; pc.card.style.top = topFor(s) + "px"; return s + dur; }, -1); }
@@ -1425,18 +1426,24 @@
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
       // PLAN lane, 3 states (§23, mockups 030/031/034): sched = two-tone diagonal hatch · cele = activity-colored celebration · ghost = domain-outlined hollow
       var dom = domainOf(b), D = DOM[dom];
-      var card = add(cal, "div", "calblk lane " + (status === "ok" ? "cele" : status === "miss" ? "ghost" : "sched") + (b.pin ? " pin" : ""));
+      // BURNING TIMELINE (David 2026-06-23): future plan = BRIGHT/lit (a note coming), the now-line sweeping past it burns bright→dark, past = DARK. Burnt sticks — a plan pushed from the past stays dark until actually done (then it celebrates).
+      var newlyPassed = false;
+      if (status === "miss" && !b.passed) { b.passed = true; newlyPassed = true; burnedSomething = true; }
+      var dark = status !== "ok" && (b.passed || status === "miss");
+      var stt = status === "ok" ? "cele" : dark ? "ghost" : "sched";
+      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : ""));
       place(card, bs, b.mins || 30, "P");
       if (status === "ok") {
         card.style.background = "linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")";
         card.style.boxShadow = "0 0 0 3px " + D.ring + ",0 0 12px " + D.c; card.style.borderColor = "#160510";
         add(card, "div", "foil");
-      } else if (status === "miss") {
-        card.style.background = mixDark(D.c); card.style.borderColor = D.c; card.style.boxShadow = "none";
-      } else {
-        card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; card.style.borderColor = "#160510";
+      } else if (dark) { // past / burnt — dim, desaturated, no glow
+        card.style.background = mixHex(D.c, "#160510", 0.74); card.style.borderColor = mixHex(D.c, "#160510", 0.45); card.style.boxShadow = "none";
+      } else { // future = lit/bright: brighter hatch + a domain glow + holographic sheen
+        card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + mixHex(D.light, D.c, 0.5) + " 7px," + mixHex(D.light, D.c, 0.5) + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510,0 0 16px -3px " + D.c;
+        add(card, "div", "foil");
       }
-      var ink = (status === "miss") ? D.light : D.ink;
+      var ink = dark ? D.light : D.ink;
       var cn = add(card, "div", "cn"); cn.style.color = ink;
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = (b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + " " + esc(b.title) + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
@@ -1468,6 +1475,7 @@
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
     });
+    if (burnedSomething) save(); // persist the burn so a passed plan stays dark across renders / when pushed forward
     // a REAL item is "on-plan" (→ gold) when it overlaps a PLAN block of the SAME domain (§24 Guitar-Hero win); drift is shown honestly, never hidden
     function onPlanMatch(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom) return true; } return false; }
     var acts = [];
@@ -1497,7 +1505,7 @@
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title);
         // live footer (mockup 007): elapsed bottom-left + a BIG pink stop button bottom-right — the live activity is never squished
         var lf = add(card, "div", "livefoot");
-        var elps = add(lf, "span", "live-elapsed", pullElapsed(t)); elps.style.color = D.ink; elps.setAttribute("data-tid", t.id);
+        var elps = add(lf, "span", "live-elapsed", elapsedStr(t)); elps.style.color = D.ink; elps.setAttribute("data-tid", t.id);
         var stop = add(lf, "button", "live-stop"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
         gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
@@ -2109,7 +2117,12 @@
     load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
-    setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = pullElapsed(ct); } }, 1000);
+    var _lastMin = nowMin();
+    setInterval(function () {
+      S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
+      var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = elapsedStr(ct); }
+      var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!document.querySelector(".calblk.dragging")) renderToday(); } // burning timeline: each minute re-sweep so the now-line descends & plans the line has passed darken
+    }, 1000);
     el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
