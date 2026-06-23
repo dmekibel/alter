@@ -461,43 +461,56 @@
     ];
     items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
   }
-  var pullK = null; // the day the planner is showing — step to tomorrow/any day to plan ahead (David 2026-06-23)
+  var pullK = null, pullZoom = "day"; // the day + zoom (day/week/month) the planner is showing — step to plan ahead, toggle for week/month (David 2026-06-23)
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
     var k = pullK || todayK(), isToday = (k === todayK());
     var run = activeTimers(), t = run[run.length - 1];
+    function stepK(dir) { var d = kd(k); if (pullZoom === "week") d.setDate(d.getDate() + dir * 7); else if (pullZoom === "month") d.setMonth(d.getMonth() + dir); else d.setDate(d.getDate() + dir); pullK = key(d); buildPull(); }
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
       var dn = add(top, "div", "pull-datenav");
-      var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { var d = kd(k); d.setDate(d.getDate() - 1); pullK = key(d); buildPull(); };
-      add(dn, "div", "pull-date", relLabel(k));
-      var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { var d = kd(k); d.setDate(d.getDate() + 1); pullK = key(d); buildPull(); };
+      var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { stepK(-1); };
+      add(dn, "div", "pull-date", pullZoom === "week" ? "Week of " + relShort(startOfWeek(k)) : pullZoom === "month" ? kd(k).toLocaleDateString([], { month: "long" }) : relLabel(k));
+      var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { stepK(1); };
       var cx = add(top, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
-      var nx = add(head, "div", "pull-next");
-      if (isToday) {
-        var nb = nextPlannedBlock(k);
-        if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
-        else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
-        else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
-        var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
-      } else {
-        var pm = add(nx, "span", "pn-none"); pm.innerHTML = '<i class="ti ti-calendar-plus"></i> planning ahead — tap a slot to add';
+      var zr = add(head, "div", "pull-zoom"); [["day", "Day"], ["week", "Week"], ["month", "Month"]].forEach(function (zz) { var zb = add(zr, "button", "pz" + (pullZoom === zz[0] ? " on" : ""), zz[1]); zb.onclick = function () { pullZoom = zz[0]; buildPull(); }; });
+      if (pullZoom === "day") {
+        var nx = add(head, "div", "pull-next");
+        if (isToday) {
+          var nb = nextPlannedBlock(k);
+          if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
+          else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
+          else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
+          var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
+        } else { var pm = add(nx, "span", "pn-none"); pm.innerHTML = '<i class="ti ti-calendar-plus"></i> planning ahead — tap a slot to add'; }
       }
     }
-    pb.innerHTML = ""; calendarView(pb, k, isToday);
+    pb.innerHTML = "";
+    if (pullZoom === "week") weekGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; buildPull(); });
+    else if (pullZoom === "month") monthGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; buildPull(); });
+    else calendarView(pb, k, isToday);
   }
-  function openPull() { pullK = todayK(); buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
+  function openPull() { pullK = todayK(); pullZoom = "day"; buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
   function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
     document.body.classList.add("tracker");
     var run = activeTimers(), t = run[run.length - 1];
-    if (t) { var D = DOM[domainOf(t)]; lb.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t); lt.classList.add("live"); lt.style.background = D.c; lb.style.color = D.ink; if (lh) lh.style.color = D.ink; } // strip is colored by the activity you're doing (David 2026-06-23)
-    else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); lt.style.background = ""; lb.style.color = ""; if (lh) lh.style.color = ""; }
-    if (lh) lh.innerHTML = '<i class="ti ti-switch-horizontal"></i> tap to switch';
+    if (t) { var D = DOM[domainOf(t)]; lb.innerHTML = '<i class="ti ti-player-play-filled" style="color:' + D.c + '"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t); lt.classList.add("live"); } // dark strip (matches the pull-down for one consistent color); the activity shows in the icon's color
+    else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); }
+    if (lh) lh.innerHTML = '<i class="ti ti-chevron-down"></i> pull down for today';
     if (!lt._wired) { lt._wired = 1;
-      lt.addEventListener("click", function () { startOrSwitch(); }); // tap the timer → switch / start (no more top-drag; the calendar opens from the notebook)
+      // SMOOTH pull-down (David 2026-06-23): drag the strip down to reveal today — finger-follow, consistent color, never forces a habit choice.
+      lt.addEventListener("pointerdown", function (ev) {
+        var sy = ev.clientY, sx = ev.clientX, moved = false, ps = el("pullSheet"), bd = el("pullBackdrop");
+        pullK = todayK(); pullZoom = "day"; buildPull(); if (ps) ps.style.transition = "none"; if (bd) bd.style.transition = "none";
+        var H = (ps && ps.offsetHeight) || Math.round(window.innerHeight * 0.9);
+        function mv(e) { if (!moved && (Math.abs(e.clientY - sy) > 4 || Math.abs(e.clientX - sx) > 4)) moved = true; if (moved && ps) { var bottom = Math.max(0, Math.min(H, e.clientY)); ps.style.transform = "translateY(" + ((bottom - H) / H * 100) + "%)"; if (bd) { bd.classList.add("on"); bd.style.opacity = Math.max(0, Math.min(0.82, bottom / H * 0.82)); } } } // sheet's bottom edge tracks the finger 1:1 (smooth)
+        function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; if (!moved) { openPull(); return; } if (e.clientY > H * 0.35 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } } // tap or pull past 35% → reveal today (NO forced picker); short pull → snap back
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
       var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
       var pg = el("pullGrab"); if (pg) pg.addEventListener("click", closePull);
     }
@@ -1687,25 +1700,27 @@
       document.addEventListener("pointerup", up);
     });
   }
-  function weekGrid(L) {
-    var d0 = startOfWeek(viewK), row = add(L, "div", "weekrow");
+  function weekGrid(L, baseK, onDay) {
+    baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
+    var d0 = startOfWeek(baseK), row = add(L, "div", "weekrow");
     for (var i = 0; i < 7; i++) { (function (dk) {
       var col = add(row, "div", "wkcol" + (dk === todayK() ? " today" : "")), d = kd(dk);
       add(col, "div", "wkh", ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()] + " " + d.getDate());
       var strip = add(col, "div", "wkstrip");
       blocks(dk).forEach(function (b) { var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%"; bb.style.background = st === "ok" ? "#46e2a4" : st === "miss" ? "#544f6e" : (b.color || "#8a5cf0"); });
-      col.onclick = function () { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
+      col.onclick = function () { onDay(dk); };
     })(keyAdd(d0, i)); }
   }
-  function monthGrid(L) {
-    var f = kd(viewK); f.setDate(1); var startDow = f.getDay(), y = f.getFullYear(), mo = f.getMonth(), dim = new Date(y, mo + 1, 0).getDate(), grid = add(L, "div", "mogrid");
+  function monthGrid(L, baseK, onDay) {
+    baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
+    var f = kd(baseK); f.setDate(1); var startDow = f.getDay(), y = f.getFullYear(), mo = f.getMonth(), dim = new Date(y, mo + 1, 0).getDate(), grid = add(L, "div", "mogrid");
     ["S", "M", "T", "W", "T", "F", "S"].forEach(function (w) { add(grid, "div", "mowh", w); });
     for (var p = 0; p < startDow; p++) add(grid, "div", "mocell empty");
     for (var day = 1; day <= dim; day++) { (function (dk, day) {
       var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "")); add(cell, "div", "mod", "" + day);
       var bl = blocks(dk), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; });
       if (bl.length) { var d2 = add(cell, "div", "modot"), sc = done / bl.length; d2.style.background = sc >= 1 ? "#46e2a4" : sc > 0 ? "#ffc24a" : "#544f6e"; }
-      cell.onclick = function () { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
+      cell.onclick = function () { onDay(dk); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
   }
   function renderToday() {
