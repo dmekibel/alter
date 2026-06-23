@@ -2,6 +2,75 @@
    gamified picker, Toggl multitask timers, Streaks habits, auto-adjust schedule, proactive. $0. */
 (function () {
   "use strict";
+  // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
+  //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
+  //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
+  var TTS = (function () {
+    var synth = window.speechSynthesis || null;
+    var supported = !!synth && typeof window.SpeechSynthesisUtterance === "function";
+    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0;
+    var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
+    function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
+    function resolve() {
+      if (chosen) return chosen;
+      if (!voices.length) load();
+      var i, j;
+      for (i = 0; i < PREF.length; i++) for (j = 0; j < voices.length; j++) if (voices[j].name === PREF[i]) { chosen = voices[j]; return chosen; }
+      for (j = 0; j < voices.length; j++) if (voices[j].lang && voices[j].lang.indexOf("en") === 0) { chosen = voices[j]; return chosen; }
+      return null; // null voice is valid — the OS default still speaks
+    }
+    function initVoices() {
+      if (!supported) return; load();
+      try { synth.addEventListener("voiceschanged", load); } catch (e) { synth.onvoiceschanged = load; }
+      var p = setInterval(function () { load(); if (voices.length || ++polls > 12) clearInterval(p); }, 250); // ~3s
+    }
+    function unlock() { if (!supported || unlocked) return; try { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); unlocked = true; } catch (e) {} }
+    function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
+    function chunk(text) {
+      if (text.length <= 200) return [text];
+      var parts = text.match(/[^.!?]+[.!?]*\s*/g) || [text], out = [], buf = "", k;
+      for (k = 0; k < parts.length; k++) { if ((buf + parts[k]).length > 200 && buf) { out.push(buf); buf = ""; } buf += parts[k]; }
+      if (buf) out.push(buf); return out;
+    }
+    function speakChunks(chunks, i, opts) {
+      if (i >= chunks.length) { if (opts.onend) try { opts.onend(); } catch (e) {} return; }
+      var u = new SpeechSynthesisUtterance(chunks[i]), v = resolve();
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+      u.rate = opts.rate != null ? opts.rate : 0.85; u.pitch = opts.pitch != null ? opts.pitch : 0.95; u.volume = opts.volume != null ? opts.volume : 0.95;
+      curU = u; // hold ref so GC can't kill onend/onerror mid-speech
+      function next() { clearWd(); curU = null; speakChunks(chunks, i + 1, opts); }
+      u.onend = next; u.onerror = next;
+      clearWd(); var est = Math.max(3500, chunks[i].length * 95); wd = setTimeout(function () { curU = null; speakChunks(chunks, i + 1, opts); }, est + 2000);
+      try { synth.speak(u); } catch (e) { next(); }
+    }
+    function speak(text, opts) {
+      if (!supported || !text) return; opts = opts || {};
+      try { synth.cancel(); } catch (e) {} // single utterance in flight
+      var chunks = chunk(String(text));
+      setTimeout(function () { speakChunks(chunks, 0, opts); }, 60); // let cancel() settle on iOS
+    }
+    function stop() { if (!supported) return; clearWd(); curU = null; try { synth.cancel(); } catch (e) {} }
+    if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
+    initVoices();
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop };
+  })();
+  // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
+  var VPROF = {
+    med: { rate: 0.80, pitch: 0.92, volume: 0.90 }, relax: { rate: 0.80, pitch: 0.92, volume: 0.90 },
+    eft: { rate: 0.88, pitch: 0.95, volume: 0.92 }, mantra: { rate: 0.78, pitch: 0.90, volume: 0.85 },
+    breath: { rate: 0.85, pitch: 0.92, volume: 0.90 }
+  };
+  function voiceOn() { return typeof S === "undefined" || !S || S.voice !== false; } // default ON
+  function say(text, prof) { if (voiceOn()) TTS.speak(text, prof); }
+  // 🔊/🔇 toggle for guided overlays — top-left, mirrors the skip button. Lets David mute mid-session.
+  function addVoiceToggle(ov) {
+    if (!TTS.supported) return null;
+    var b = document.createElement("button"); b.className = "bw-voice"; b.type = "button";
+    function paint() { b.textContent = voiceOn() ? "🔊" : "🔇"; }
+    paint();
+    b.onclick = function (e) { e.stopPropagation(); if (S) { S.voice = !voiceOn(); save(); } paint(); if (!voiceOn()) TTS.stop(); };
+    ov.appendChild(b); return b;
+  }
   var el = function (id) { return document.getElementById(id); };
   var KEY = "alter_plan2", SCHEMA = 1, lastSaveErr = 0;
   var DAY_END = 24 * 60;
@@ -846,16 +915,17 @@
   // guided breathwork: paced orb (inhale/hold/exhale) + synced tone + cues, then logs + rewards
   function breathwork(cycles, onDone) {
     cycles = cycles || 4;
+    TTS.unlock(); // gesture-bound (chip tap) — unlock the speech engine in the same synchronous tick
     var PH = [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 6000, "out"], ["Rest", 2000, "rest"]];
     var ov = document.createElement("div"); ov.id = "breatheOv";
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div>';
-    document.body.appendChild(ov);
+    document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
     try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 200; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
     var done = false, tmr = null;
     function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr);
+      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.35); osc.stop(actx.currentTime + 0.45); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); save(); renderAll(); }
@@ -869,6 +939,8 @@
       if (cyc >= cycles) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; tmr = setTimeout(function () { finish(false); }, 1500); return; }
       var p = PH[phi], dur = p[1], kind = p[2];
       lab.textContent = p[0]; sub.textContent = "cycle " + (cyc + 1) + " / " + cycles;
+      if (kind !== "rest") say(p[0], VPROF.breath); // speak the short phase cue; silence holds the count
+
       orb.style.transition = "transform " + (dur / 1000) + "s cubic-bezier(.45,0,.4,1)";
       if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "out") orb.style.transform = "scale(.5)";
       if (actx) { var now = actx.currentTime, t = dur / 1000; osc.frequency.cancelScheduledValues(now); osc.frequency.setValueAtTime(osc.frequency.value, now); gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(gain.gain.value, now);
@@ -881,24 +953,25 @@
   }
   // Psycho-Cybernetics ARRIVAL as a standalone: relax all muscles + a mindful moment (the universal opener of every stack module)
   function relaxMoment(onDone) {
+    TTS.unlock();
     var STEPS = [["Settle in…", "let your eyes soften", 2600], ["Soften your forehead", "and unclench your jaw", 3400], ["Drop your shoulders", "let them fall", 3400], ["Soften your chest", "and your belly", 3400], ["Let your arms go heavy", "down to your fingertips", 3400], ["Release your legs", "all the way to your feet", 3400], ["Your whole body is heavy and calm", "nothing to do, nowhere to be", 3800], ["One mindful moment", "just be here, now", 5200]];
     var ov = document.createElement("div"); ov.id = "breatheOv";
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Relax…</div><div class="bw-sub"></div>';
-    document.body.appendChild(ov);
+    document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     orb.style.animation = "breathe 9s ease-in-out infinite";
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
     try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; }
     var done = false, i = 0, tmr = null;
     function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr);
+      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); osc.stop(actx.currentTime + 0.5); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mindful moment", mins: 2, catK: "energy", color: "#9a5cf0" }); earn(5, { catK: "energy" }); save(); renderAll(); }
       if (onDone) onDone();
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
-    function step() { if (done) return; if (i >= STEPS.length) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; tmr = setTimeout(function () { finish(false); }, 1500); return; } lab.textContent = STEPS[i][0]; sub.textContent = STEPS[i][1]; tmr = setTimeout(step, STEPS[i][2]); i++; }
+    function step() { if (done) return; if (i >= STEPS.length) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; tmr = setTimeout(function () { finish(false); }, 1500); return; } lab.textContent = STEPS[i][0]; sub.textContent = STEPS[i][1]; say(STEPS[i][0] + ", " + STEPS[i][1], VPROF.relax); tmr = setTimeout(step, STEPS[i][2]); i++; }
     setTimeout(step, 700);
   }
   // adaptive guided meditation: YOU choose how often it re-anchors you (for a 0-attention-span mind) + modular focus + tiny durations
@@ -916,7 +989,7 @@
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     function build() {
       ov.innerHTML = "";
-      var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { if (ov.parentNode) ov.remove(); };
+      var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
       box.innerHTML = '<div style="font-size:26px;font-weight:800;">🧘 Meditate</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:12px;">even a tiny one counts</div>';
       function row(title, opts, key) {
@@ -932,15 +1005,17 @@
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
+      TTS.unlock(); // gesture-bound: this runs inside the "Begin ▶" tap
       ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
+      addVoiceToggle(ov);
       var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
       var G = GUIDES[cfg.guide];
       orb.style.animation = "breathe " + G.orb + "s ease-in-out infinite";
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
       try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
       var seq = G.seq, tail = seq.slice(-3), ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
-      function cue() { if (done) return; lab.textContent = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
-      function finish(skip) { if (done) return; done = true; if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); save(); renderAll(); }, 1700); }
+      function cue() { if (done) return; var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; lab.textContent = line; say(line, VPROF.med); ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
+      function finish(skip) { if (done) return; done = true; TTS.stop(); if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); save(); renderAll(); }, 1700); }
       ov.querySelector(".bw-x").onclick = function () { finish(true); };
       cue(); cueT = setInterval(cue, FREQ[cfg.freq] * 1000); tickT = setInterval(function () { elapsed++; if (elapsed >= total) finish(false); }, 1000);
     }
@@ -954,7 +1029,7 @@
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     function build() {
       ov.innerHTML = "";
-      var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { if (ov.parentNode) ov.remove(); };
+      var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
       box.innerHTML = '<div style="font-size:26px;font-weight:800;">👆 Tapping</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:6px;">EFT — tap the points, let it move through you</div>';
       var lbl = add(box, "div", null, "what's bumping you?"); lbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;";
@@ -964,7 +1039,9 @@
       var hint = add(box, "div", null, "Tap each point ~7× with two fingers. No need to believe it — just tap and say the words."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
+      TTS.unlock(); // gesture-bound: inside the "Begin ▶" tap
       ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
+      addVoiceToggle(ov);
       var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
       try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
@@ -975,7 +1052,7 @@
       steps.push({ pt: "Take a slow breath", say: "and notice how it feels now", end: true });
       var i = 0, done = false, tmr = null;
       function finish(skip) {
-        if (done) return; done = true; if (tmr) clearTimeout(tmr);
+        if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
         if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3); osc.stop(actx.currentTime + 0.4); } catch (e) {} }
         if (skip) { if (ov.parentNode) ov.remove(); return; }
         lab.textContent = "Done ✓"; sub.textContent = "let it settle"; orb.style.animation = ""; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)";
@@ -988,8 +1065,9 @@
         var st = steps[i];
         lab.textContent = st.pt; sub.textContent = st.say + (st.loc ? "  ·  " + st.loc : "");
         orb.style.animation = st.end ? "breathe 6s ease-in-out infinite" : "breathe 1s ease-in-out infinite";
+        say(st.setup ? st.say : st.pt + ". " + st.say, VPROF.eft);
         blip(st.setup ? 165 : (st.end ? 150 : 175 + i * 6));
-        i++; tmr = setTimeout(step, st.setup ? 5200 : (st.end ? 5600 : 4400));
+        i++; tmr = setTimeout(step, st.setup ? (voiceOn() ? 6400 : 5200) : (st.end ? 5600 : 4400));
       }
       orb.style.animation = "breathe 1s ease-in-out infinite";
       setTimeout(step, 700);
@@ -999,14 +1077,15 @@
   // Mantra — David's own first-person affirmation as a calm teleprompter (the keystone willpower-free step of his stack). Read along or speak it.
   function mantraPlayer() {
     var LINES = ["I have absolute trust in myself.", "My instincts are unerring, my thoughts are clear,", "and my feelings guide me wisely.", "I am the sole authority on what is best for me.", "I love myself unconditionally.", "I embrace my mistakes and imperfections fully,", "and continue to love who I am.", "I hold deep respect for myself", "and unwavering confidence in my abilities.", "I vow to keep evolving — never ceasing to improve.", "I push beyond my comfort zone every single day.", "I will do whatever it takes to become a greater man.", "I bring joy to others. My aura radiates positivity.", "I am athletic, intelligent, loving, and ambitious —", "yet I savor life and cherish this beautiful planet.", "I deserve the very best.", "My life is phenomenal — spontaneous and overflowing with love.", "I find joy within myself, and don't take things too seriously.", "Every mistake is a teacher. If something needs redoing — fantastic.", "I do not judge reality; I accept it.", "I am indifferent to others' opinions of me.", "I am the master of my life,", "fully aware of what's best for me.", "What would I do if I wasn't afraid?"];
-    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">skip</button>'; document.body.appendChild(ov);
+    TTS.unlock();
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">skip</button>'; document.body.appendChild(ov); addVoiceToggle(ov);
     var box = add(ov, "div"); box.style.cssText = "width:86%;max-width:440px;color:#f3e9ff;font-family:var(--bub);text-align:center;font-size:23px;font-weight:800;line-height:1.5;text-shadow:0 2px 12px rgba(0,0,0,.45);min-height:130px;display:flex;align-items:center;justify-content:center;transition:opacity .5s;";
     var sub = add(ov, "div", null, "say it out loud, or just read along"); sub.style.cssText = "color:#bcb0e8;font-family:var(--bub);font-size:12px;margin-top:20px;letter-spacing:.5px;";
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
     try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.028, actx.currentTime + 1.8); } } catch (e) { actx = null; }
     var i = 0, done = false, tmr = null;
     function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr);
+      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); osc.stop(actx.currentTime + 0.6); } catch (e) {} }
       if (ov.parentNode) ov.remove();
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mantra", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); save(); renderAll(); }
@@ -1017,8 +1096,8 @@
       if (i >= LINES.length) { box.style.opacity = "0"; tmr = setTimeout(function () { if (done) return; box.textContent = "✓"; box.style.fontSize = "44px"; box.style.opacity = "1"; sub.textContent = "that's who you are"; tmr = setTimeout(function () { finish(false); }, 1700); }, 500); return; }
       var line = LINES[i], last = i === LINES.length - 1;
       box.style.opacity = "0";
-      tmr = setTimeout(function () { if (done) return; box.textContent = line; box.style.opacity = "1"; }, 450);
-      var dur = Math.max(3000, line.length * 62) + (last ? 2800 : 0);
+      tmr = setTimeout(function () { if (done) return; box.textContent = line; box.style.opacity = "1"; say(line, VPROF.mantra); }, 450);
+      var dur = Math.max(voiceOn() ? 4200 : 3000, line.length * (voiceOn() ? 115 : 62)) + (last ? 2800 : 0); // let the spoken line finish
       i++; var nxt = setTimeout(step, dur); tmr = nxt;
     }
     setTimeout(step, 700);
