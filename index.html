@@ -470,6 +470,9 @@
   @keyframes foilSlide{ 0%{background-position:-40% 0;} 100%{background-position:140% 0;} }
   @keyframes livePulse{ 0%,100%{box-shadow:0 3px 0 #160510,0 0 0 0 rgba(255,95,168,.5);} 50%{box-shadow:0 3px 0 #160510,0 0 15px 2px rgba(255,95,168,.65);} }
   .calx{ position:absolute; top:3px; right:4px; width:20px; height:20px; border-radius:7px; background:rgba(10,4,12,.42); color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; }
+  .calblk.live{ z-index:3; } /* the live/current activity sits above neighbours, never squished */
+  .calblk.live .calx{ width:27px; height:27px; font-size:15px; opacity:1; background:#160510; color:#ff9ec6; top:4px; right:5px; }
+  .calblk.live .cn{ font-size:14px; }
   .calblk .grip,.calblk .gript{ position:absolute; left:0; right:0; height:13px; display:flex; justify-content:center; cursor:ns-resize; touch-action:none; z-index:4; }
   .calblk .grip{ bottom:0; align-items:flex-end; padding-bottom:2px; } .calblk .gript{ top:0; align-items:flex-start; padding-top:2px; }
   .calblk .grip::after,.calblk .gript::after{ content:""; width:22px; height:3px; border-radius:2px; background:rgba(0,0,0,.28); }
@@ -688,6 +691,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=382"></script>
+  <script src="app.js?v=383"></script>
 </body>
 </html>

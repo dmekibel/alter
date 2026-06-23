@@ -1441,7 +1441,7 @@
     layoutLane(acts);
     acts.forEach(function (it) {
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
-      card.style.top = topFor(it.s) + "px"; card.style.height = Math.max(22, (it.e - it.s) / 60 * HP - 3) + "px";
+      card.style.top = topFor(it.s) + "px"; card.style.height = Math.max(it.kind === "timer" ? 54 : 30, (it.e - it.s) / 60 * HP - 3) + "px"; // the live/current activity is never squished — always legible w/ a clear stop button
       card.style.left = "calc(" + (50 + it.col * colW) + "% + 2px)"; card.style.width = "calc(" + colW + "% - 5px)"; card.style.right = "auto";
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
