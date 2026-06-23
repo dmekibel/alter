@@ -487,12 +487,20 @@
     items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
   }
   var pullK = null, pullZoom = "day"; // the day + zoom (day/week/month) the planner is showing — step to plan ahead, toggle for week/month (David 2026-06-23)
+  // smooth zoom between day/week/month — a self-completing CSS keyframe entrance (never gets stuck invisible; ends at the natural visible state) — David 2026-06-24
+  function zoomAnim(dir) {
+    buildPull();
+    var p = el("pullBody"); if (!p) return;
+    p.style.animation = "none"; void p.offsetHeight; // restart the animation each zoom
+    p.style.animation = (dir > 0 ? "zoomBroad" : "zoomClose") + " .26s cubic-bezier(.2,.7,.3,1)";
+    p.addEventListener("animationend", function () { p.style.animation = ""; }, { once: true });
+  }
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
     var k = pullK || todayK();
     var run = activeTimers(), t = run[run.length - 1];
     function stepK(dir) { var d = kd(k); if (pullZoom === "week") d.setDate(d.getDate() + dir * 7); else d.setMonth(d.getMonth() + dir); pullK = key(d); buildPull(); }
-    function zoom(dir) { var o = ["day", "week", "month"], i = Math.max(0, Math.min(2, o.indexOf(pullZoom) + dir)); if (o[i] === pullZoom) return; pullZoom = o[i]; if (pullZoom === "day") { pullK = todayK(); pendingScrollNow = true; } buildPull(); } // dir +1 = zoom OUT (day→week→month), -1 = zoom IN
+    function zoom(dir) { var o = ["day", "week", "month"], i = Math.max(0, Math.min(2, o.indexOf(pullZoom) + dir)); if (o[i] === pullZoom) return; pullZoom = o[i]; if (pullZoom === "day") { pullK = todayK(); pendingScrollNow = true; } zoomAnim(dir); } // dir +1 = zoom OUT (day→week→month), -1 = zoom IN — animated
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
@@ -516,8 +524,8 @@
       }
     }
     pb.innerHTML = "";
-    if (pullZoom === "week") weekGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; buildPull(); });
-    else if (pullZoom === "month") monthGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; buildPull(); });
+    if (pullZoom === "week") weekGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; zoomAnim(-1); });
+    else if (pullZoom === "month") monthGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; zoomAnim(-1); });
     else { // CONTINUOUS day view: today + the next few days stacked — scroll flows from today into tomorrow (David 2026-06-24)
       var base = todayK();
       for (var di = 0; di < 4; di++) { (function (dk) {
