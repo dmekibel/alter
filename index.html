@@ -602,6 +602,7 @@
   .pull-today{ background:#ff5fa0; color:#4a1126; border:2px solid #160510; border-radius:9px; box-shadow:0 2px 0 #160510; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; padding:6px 11px; cursor:pointer; flex:none; }
   .day-sep{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:14px 2px 6px; padding-top:11px; border-top:2px dashed #4a2540; }
   .day-seplab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; }
+  .day-sep.today{ border-top-color:#ff5fa0; } .day-sep.today .day-seplab{ color:#ff5fa0; }
   .day-sepauto{ background:#3a1226; color:#e8b8d2; border:2px dashed #9a6a86; border-radius:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; padding:5px 9px; cursor:pointer; display:flex; align-items:center; gap:4px; }
   /* always-offer-next row (§23): the next planned activity as a 1-tap hero + a "plan a break" door */
   .pull-next{ display:flex; align-items:center; gap:7px; }
@@ -696,7 +697,7 @@
   .pull-hbtns{ display:flex; gap:7px; flex:none; }
   .pull-switch{ background:#ffc83d; color:#5a3a00; border:2px solid #160510; border-radius:9px; box-shadow:0 3px 0 #160510; padding:6px 10px; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
   .pull-x{ width:30px; height:30px; border-radius:9px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:13px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
-  #pullBody{ flex:1 1 auto; min-height:0; overflow:auto; padding:8px 12px 2px; -webkit-overflow-scrolling:touch; }
+  #pullBody{ flex:1 1 auto; min-height:0; overflow:auto; padding:8px 12px 2px; -webkit-overflow-scrolling:touch; touch-action:pan-y; } /* pan-y: browser keeps vertical scroll, yields horizontal-swipe + pinch to JS (David 2026-06-24) */
   #pullGrab{ flex:none; text-align:center; color:#ffb8d8; font-size:11px; font-weight:700; padding:9px 0 13px; cursor:grab; background:#1c0512; border-top:2px solid #160510; touch-action:none; }
   .pull-handle{ display:block; width:42px; height:5px; border-radius:3px; background:#ffb8d8; margin:0 auto 6px; }
   /* ============ ONBOARDING (mockups 041/043, §8) ============ */
@@ -819,6 +820,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=411"></script>
+  <script src="app.js?v=412"></script>
 </body>
 </html>
