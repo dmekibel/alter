@@ -1474,9 +1474,12 @@
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
     if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
     layoutLane(acts);
+    var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
-      card.style.top = topFor(it.s) + "px"; card.style.height = Math.max(it.kind === "timer" ? 54 : 30, (it.e - it.s) / 60 * HP - 3) + "px"; // the live/current activity is never squished — always legible w/ a clear stop button
+      var cardH = Math.max(it.kind === "timer" ? 62 : 30, (it.e - it.s) / 60 * HP - 3);
+      card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; // the live/current activity is never squished — title + elapsed/stop footer always legible
+      if (it.kind === "timer") liveBottom = Math.max(liveBottom, topFor(it.s) + cardH);
       card.style.left = "calc(" + (50 + it.col * colW) + "% + 2px)"; card.style.width = "calc(" + colW + "% - 5px)"; card.style.right = "auto";
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
@@ -1492,10 +1495,13 @@
         card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")";
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title);
-        var stop = add(card, "div", "calx"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
+        // live footer (mockup 007): elapsed bottom-left + a BIG pink stop button bottom-right — the live activity is never squished
+        var lf = add(card, "div", "livefoot");
+        var elps = add(lf, "span", "live-elapsed", pullElapsed(t)); elps.style.color = D.ink; elps.setAttribute("data-tid", t.id);
+        var stop = add(lf, "button", "live-stop"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
         gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
-        card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; bentoPicker({ title: "Doing what?", multi: true, onPickMulti: function (sel) { assignTimerMulti(t, sel); }, onPick: function (x) { assignTimer(t, x); } }); });
+        card.addEventListener("click", function (ev) { if (ev.target === gT || lf.contains(ev.target)) return; bentoPicker({ title: "Doing what?", multi: true, onPickMulti: function (sel) { assignTimerMulti(t, sel); }, onPick: function (x) { assignTimer(t, x); } }); });
       }
     });
     // BACKFILL — untracked gaps in the REAL lane (past, up to now) show a dashed "fill it in?" slot (§7/§14)
@@ -1509,6 +1515,13 @@
         slot.innerHTML = '<i class="ti ti-arrows-vertical"></i> fill it in?';
         slot.addEventListener("click", function () { var gs = g[0], gm = Math.min(30, g[1] - g[0]); bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: gm, title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } }); });
       });
+    }
+    // "start new" — a dashed REAL-lane slot at the now-line (mockups 006/007, §13): stop the live activity + start the next (startOrSwitch). Sits just below the live bubble.
+    if (showNow && k === todayK() && now >= startH * 60 && now <= endH * 60) {
+      var sn = add(cal, "div", "startnew"); sn.style.top = (liveBottom + 4) + "px"; sn.style.left = "calc(50% + 4px)"; sn.style.right = "4px";
+      sn.innerHTML = '<i class="ti ti-plus"></i> start new';
+      sn.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
+      sn.addEventListener("click", function (ev) { ev.stopPropagation(); startOrSwitch(); });
     }
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
@@ -2096,7 +2109,7 @@
     load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
-    setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
+    setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = pullElapsed(ct); } }, 1000);
     el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
