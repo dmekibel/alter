@@ -31,6 +31,8 @@ Continuing the build of David's personal-development life-sim app (working name 
 `S.profile` (onboarding blueprint) · `S.blocks[dateK]=[{id,time,mins,title,prio,color,done,subs[],domain,pin}]` (PLAN) · `S.log[dateK]=[{id,time,mins,title,color,catK}]` (REAL) · `S.timers=[{id,title,start,dayK,...}]` (running) · `S.habits` · `S.game{spark,total,streak,streakDay}` · `S.brain={engine,key}` · `S.acts` (custom activities) · `S.goals=[{title,domain,subtasks[]}]` · `S.space.done`. `load()`/`save()`. Helpers `blocks(k)/logs(k)/todayK()/nowMin()/fmt/hm/reflow(k)`.
 
 ## NEXT / PENDING (priority)
+> **⭐ `MASTER-GAMEPLAN.md` is the authoritative roadmap** (2026-06-23, post-v386) — full phase plan A→F to "works as intended", grounded in DESIGN-BRIEF + mockups + a code audit. It supersedes EPIC-GAMEPLAN/ROADMAP/REBUILD-PLAN (older "mirror/Spark/RPG" soul). The items below are the loose pending list; the gameplan organizes them.
+
 1. **Redo-setup button** — David asked for it. `onboard()` only auto-runs when `!S.profile.set`. Add a "redo setup" entry (in `brainSheet`/settings or the self-tab) that just calls `onboard()`.
 3. **Goals / character-skills screen** (David's next big ask): long-term goal-horizons (decompose goal→milestones→scheduled dated actions + life-audit, mockups 009/010) AND the identity/character screen. `S.goals` trees seeded by onboarding (titles+domain only).
 4. **Remove old/ugly legacy** (David asked): old RPG **character sheet** `charSheet`/`surveySheet` + the `#t-self` self-tab clutter (mood weather, hero proactive card, quick-wins, virtue tree). Old **`pickerSheet`** flows (`nowSheet`/`planSheet`/`pickOne`). `radialMenu` is already unused (dead). Replace with the new identity screen.
