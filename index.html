@@ -542,13 +542,13 @@
   body.tracker #screen{ padding-top:64px; }
   body.tracker header #date, body.tracker header #hello{ display:none; }
   #liveTracker{ display:none; }
-  body.tracker #liveTracker{ display:flex; position:fixed; top:calc(env(safe-area-inset-top,0px) + 6px); left:10px; right:10px; z-index:48; align-items:center; justify-content:space-between; background:#ff5fa0; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:10px 13px; font-family:"Jost",sans-serif; font-weight:700; color:#4a1126; cursor:pointer; touch-action:none; }
+  body.tracker #liveTracker{ display:flex; position:fixed; top:calc(env(safe-area-inset-top,0px) + 6px); left:10px; right:10px; z-index:66; align-items:center; justify-content:space-between; background:#ff5fa0; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:10px 13px; font-family:"Jost",sans-serif; font-weight:700; color:#4a1126; cursor:pointer; touch-action:none; }
   #liveTracker:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
-  #pullBackdrop{ position:fixed; inset:0; z-index:46; background:rgba(15,4,12,.55); opacity:0; pointer-events:none; transition:opacity .3s; }
+  #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(15,4,12,.55); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
-  #pullSheet{ position:fixed; top:0; left:0; right:0; z-index:47; background:#2c081a; border:3px solid #160510; border-top:none; border-radius:0 0 22px 22px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-106%); transition:transform .32s cubic-bezier(.2,.85,.3,1.1); max-height:88vh; overflow:auto; padding:16px 12px 4px; -webkit-overflow-scrolling:touch; }
+  #pullSheet{ position:fixed; top:0; left:0; right:0; z-index:68; background:#2c081a; border:3px solid #160510; border-top:none; border-radius:0 0 22px 22px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-106%); transition:transform .32s cubic-bezier(.2,.85,.3,1.1); max-height:88vh; overflow:auto; padding:16px 12px 4px; -webkit-overflow-scrolling:touch; }
   #pullSheet.on{ transform:translateY(0); }
   .pull-h{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; display:flex; align-items:center; gap:6px; margin-bottom:6px; }
   #pullGrab{ position:sticky; bottom:0; text-align:center; color:#ffb8d8; font-size:11px; font-weight:700; padding:8px 0 12px; cursor:pointer; background:linear-gradient(transparent,#2c081a 40%); }
@@ -676,6 +676,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=378"></script>
+  <script src="app.js?v=379"></script>
 </body>
 </html>
