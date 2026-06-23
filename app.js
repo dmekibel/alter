@@ -347,9 +347,11 @@
   // ---- HOME: top live-tracker strip + pull-down plan|real (mockups 005/006/007, §13) ----
   function pullElapsed(t) { var m = Math.max(0, Math.floor((Date.now() - t.start) / 60000)); return Math.floor(m / 60) + ":" + pad(m % 60); }
   function activeTimers() { return (S.timers || []).filter(function (t) { return (t.dayK || key(new Date(t.start))) === todayK(); }); }
-  function startOrSwitch() { var run = activeTimers(); bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", multi: true, onPickMulti: function (sel) { var t = startTrackerNow(); assignTimerMulti(t, sel); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }, onPick: function (x) { var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } }); }
-  function openPull() { var ps = el("pullSheet"), pb = el("pullBody"), bd = el("pullBackdrop"); if (!ps) return; pb.innerHTML = ""; var hd = add(pb, "div", "pull-h"); hd.innerHTML = '<i class="ti ti-layout-2"></i> What now? — plan vs. real'; var cal = add(pb, "div"); calendarView(cal, todayK(), true); ps.classList.add("on"); bd.classList.add("on"); }
-  function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) ps.classList.remove("on"); if (bd) bd.classList.remove("on"); }
+  // SWITCH task = stop the current one (logs it) then start the new one — single current activity (David: switching is a real function)
+  function startOrSwitch() { var run = activeTimers(); bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", multi: true, onPickMulti: function (sel) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimerMulti(t, sel); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } }); }
+  function buildPull() { var head = el("pullHead"), pb = el("pullBody"); if (!pb) return; var run = activeTimers(), t = run[run.length - 1]; if (head) { head.innerHTML = ""; var tt = add(head, "div", "pull-title"); tt.innerHTML = t ? '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + pullElapsed(t) : '<i class="ti ti-layout-2"></i> Now · plan vs. real'; var hb = add(head, "div", "pull-hbtns"); var sw = add(hb, "button", "pull-switch"); sw.innerHTML = '<i class="ti ti-switch-horizontal"></i> ' + (t ? "switch" : "track"); sw.onclick = startOrSwitch; var cx = add(hb, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull; } pb.innerHTML = ""; calendarView(pb, todayK(), true); }
+  function openPull() { buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
+  function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
     document.body.classList.add("tracker");
@@ -358,7 +360,14 @@
     else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); }
     if (lh) lh.innerHTML = '<i class="ti ti-chevron-down"></i> my day';
     if (!lt._wired) { lt._wired = 1;
-      lt.addEventListener("pointerdown", function (ev) { var sy = ev.clientY, moved = false; function mv(e) { if (!moved && e.clientY - sy > 16) { moved = true; cleanup(); openPull(); } } function up() { cleanup(); if (!moved) startOrSwitch(); } function cleanup() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+      lt.addEventListener("pointerdown", function (ev) {
+        var sy = ev.clientY, sx = ev.clientX, moved = false, ps = el("pullSheet"), bd = el("pullBackdrop");
+        buildPull(); if (ps) ps.style.transition = "none"; if (bd) bd.style.transition = "none";
+        var H = (ps && ps.offsetHeight) || Math.round(window.innerHeight * 0.7);
+        function mv(e) { var dy = e.clientY - sy; if (!moved && (Math.abs(dy) > 5 || Math.abs(e.clientX - sx) > 5)) moved = true; if (moved && dy > 0 && ps) { var ty = Math.max(-100, -100 + (dy / H) * 100); ps.style.transform = "translateY(" + ty + "%)"; if (bd) { bd.classList.add("on"); bd.style.opacity = Math.max(0, Math.min(0.82, (dy / H) * 0.82)); } } }
+        function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; var dy = e.clientY - sy; if (!moved) { startOrSwitch(); return; } if (dy > H * 0.28 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } }
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
       if (lh) { lh.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); lh.addEventListener("click", function (ev) { ev.stopPropagation(); openPull(); }); }
       var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
       var pg = el("pullGrab"); if (pg) pg.addEventListener("click", closePull);
@@ -1520,6 +1529,7 @@
     calendarView(L, viewK, viewK === todayK());
     if (adh) { var _bl = blocks(viewK), _n = 0; _bl.forEach(function (b) { if (blockStatus(viewK, b) === "ok") _n++; }); adh.textContent = "✨ " + _n + " on plan"; adh.style.display = _bl.length ? "" : "none"; }
     renderSuggest(viewK);
+    if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull(); // tool-above (pull-down) stays identical to the journal
     if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
     var k = viewK, LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0; logs(k).forEach(function (e) { tot += e.mins || 0; });
     if (nc) nc.style.display = (k === todayK() ? "" : "none"); if (lp) lp.style.display = "";
