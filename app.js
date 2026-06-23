@@ -1652,9 +1652,9 @@
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
     for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
-    // temporal anchors so you're never lost in time: wake · noon · bed (David 2026-06-24)
+    // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
-    [["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"]].forEach(function (tm) {
+    [["midnight", 0, "ti-clock-hour-12", "#5f8dd6"], ["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"], ["midnight", 1440, "ti-clock-hour-12", "#5f8dd6"]].forEach(function (tm) {
       if (tm[1] == null || tm[1] < startH * 60 || tm[1] > endH * 60) return;
       var ml = add(cal, "div", "timemark"); ml.style.top = ((tm[1] - startH * 60) / 60 * HP) + "px"; ml.style.borderTopColor = tm[3] + "55";
       var lb = add(ml, "span", "timemark-lab"); lb.style.color = tm[3]; lb.innerHTML = '<i class="ti ' + tm[2] + '"></i> ' + tm[0];
