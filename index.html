@@ -419,7 +419,7 @@
   /* jump is now a quick TAP on the left move-pad (not a separate button) */
   #jumpBtn{ display:none !important; }
   /* FEATURE PANELS = a notebook in the character's hand, floating over the world (not full-screen). Close = X on the right. */
-  #featBackdrop{ position:fixed; inset:0; z-index:65; background:rgba(15,6,20,.5); display:none; -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); }
+  #featBackdrop{ position:fixed; inset:0; z-index:65; background:rgba(12,4,16,.86); display:none; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
   body.overworld #featBackdrop{ display:block; }
   #featClose{ display:none; }
   body.overworld #featClose{ display:flex; position:fixed; z-index:80; align-items:center; justify-content:center;
@@ -485,7 +485,9 @@
   .bento-head{ display:flex; align-items:center; justify-content:space-between; padding:13px 14px 8px; flex:none; }
   .bento-q{ color:#ffe3f1; font-size:17px; font-weight:700; }
   .bento-x{ width:32px; height:32px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .bento-body{ overflow:auto; padding:4px 12px 14px; -webkit-overflow-scrolling:touch; }
+  .bento-body{ overflow:auto; padding:4px 12px 14px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; }
+  .bento-foot{ flex:none; }
+  .bento-card{ max-height:88vh; max-height:88dvh; }
   .bento-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .bento-cat{ border:2px solid #160510; border-radius:13px; padding:8px; }
   .bento-catl{ font-size:10px; font-weight:700; letter-spacing:.6px; margin-bottom:6px; cursor:pointer; }
@@ -546,7 +548,7 @@
   #liveTracker:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
-  #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(15,4,12,.55); opacity:0; pointer-events:none; transition:opacity .3s; }
+  #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
   #pullSheet{ position:fixed; top:0; left:0; right:0; z-index:68; background:#2c081a; border:3px solid #160510; border-top:none; border-radius:0 0 22px 22px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-106%); transition:transform .32s cubic-bezier(.2,.85,.3,1.1); max-height:88vh; overflow:auto; padding:16px 12px 4px; -webkit-overflow-scrolling:touch; }
   #pullSheet.on{ transform:translateY(0); }
@@ -606,6 +608,11 @@
   .chore-d{ font-size:11px; font-weight:700; color:#cd9bb6; flex:none; min-width:52px; text-align:right; }
   .chore-go{ flex:none; background:#34d39a; color:#0c3d29; border:2px solid #160510; border-radius:9px; box-shadow:0 3px 0 #160510; padding:8px 11px; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; }
   .chore-go:disabled{ background:#5a1838; color:#9a6a86; box-shadow:none; }
+  /* ============ bento sub-group headers + tracker pull grabber (iteration) ============ */
+  .bento-subh{ font-size:10px; font-weight:700; letter-spacing:.5px; margin:9px 2px 5px; opacity:.9; }
+  body.tracker #liveTracker{ padding-bottom:15px; }
+  body.tracker #liveTracker::after{ content:""; position:absolute; left:50%; bottom:5px; transform:translateX(-50%); width:40px; height:4px; border-radius:3px; background:rgba(74,17,38,.55); }
+  #ltHint{ display:flex; align-items:center; gap:4px; }
 </style>
 </head>
 <body>
@@ -676,6 +683,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=379"></script>
+  <script src="app.js?v=380"></script>
 </body>
 </html>

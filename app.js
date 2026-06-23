@@ -171,8 +171,8 @@
       { g: "Space", tasks: [{ l: "Tidy", e: "🧹", id: "tidy" }, { l: "Laundry", e: "🧺", id: "tidy" }, { l: "Dishes", e: "🍽️" }, { l: "Clean", e: "🧼", id: "tidy" }] }
     ] },
     { k: "work", label: "Work", e: "💼", color: "#2a9fe0", groups: [
-      { g: "Focus", tasks: [{ l: "Deep work", e: "🧠", id: "deep" }, { l: "Programming", e: "💻", id: "deep" }, { l: "Writing", e: "✍️" }, { l: "Study", e: "📚" }, { l: "Research", e: "🔬" }] },
-      { g: "Create", tasks: [{ l: "Midjourney", e: "🖼️" }, { l: "Design", e: "🎨" }, { l: "Video", e: "🎬" }, { l: "Music prod", e: "🎚️" }, { l: "Content", e: "📲" }] },
+      { g: "Focus", tasks: [{ l: "Deep work", e: "🧠", id: "deep" }, { l: "Claude code", e: "🤖", id: "deep" }, { l: "Programming", e: "💻", id: "deep" }, { l: "Writing", e: "✍️" }, { l: "Study", e: "📚" }, { l: "Research", e: "🔬" }] },
+      { g: "Create", tasks: [{ l: "AI art", e: "🪄" }, { l: "Midjourney", e: "🖼️" }, { l: "Design", e: "🎨" }, { l: "Video", e: "🎬" }, { l: "Reel", e: "🎞️" }, { l: "LinkedIn post", e: "💼" }, { l: "Music prod", e: "🎚️" }, { l: "Content", e: "📲" }] },
       { g: "Admin", tasks: [{ l: "Email", e: "📧" }, { l: "Meetings", e: "👥" }, { l: "Calls", e: "📞" }, { l: "Planning", e: "🗒️" }, { l: "Errands", e: "🧾" }] },
       { g: "Money", tasks: [{ l: "Budget", e: "💵" }, { l: "Invoice", e: "🧾" }, { l: "Sell", e: "📈" }, { l: "Apply", e: "📨" }, { l: "Side hustle", e: "💰" }] },
       { g: "Ship", tasks: [{ l: "Ship / send", e: "✦", id: "send" }, { l: "Publish", e: "🚀" }, { l: "Outreach", e: "🤝" }] }
@@ -354,10 +354,12 @@
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
     document.body.classList.add("tracker");
     var run = activeTimers(), t = run[run.length - 1];
-    if (t) { lb.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + pullElapsed(t); lt.classList.add("live"); if (lh) lh.textContent = "tap to switch"; }
-    else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); if (lh) lh.innerHTML = 'tap to track  <i class="ti ti-chevron-down"></i>'; }
+    if (t) { lb.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + pullElapsed(t); lt.classList.add("live"); }
+    else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); }
+    if (lh) lh.innerHTML = '<i class="ti ti-chevron-down"></i> my day';
     if (!lt._wired) { lt._wired = 1;
-      lt.addEventListener("pointerdown", function (ev) { var sy = ev.clientY, moved = false; function mv(e) { if (!moved && e.clientY - sy > 22) { moved = true; cleanup(); openPull(); } } function up() { cleanup(); if (!moved) startOrSwitch(); } function cleanup() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+      lt.addEventListener("pointerdown", function (ev) { var sy = ev.clientY, moved = false; function mv(e) { if (!moved && e.clientY - sy > 16) { moved = true; cleanup(); openPull(); } } function up() { cleanup(); if (!moved) startOrSwitch(); } function cleanup() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+      if (lh) { lh.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); lh.addEventListener("click", function (ev) { ev.stopPropagation(); openPull(); }); }
       var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
       var pg = el("pullGrab"); if (pg) pg.addEventListener("click", closePull);
     }
@@ -964,17 +966,7 @@
   // ---- game-as-home: tap the character → diegetic action hub ----
   function goTab(t) { document.body.classList.add("overworld"); if (!gameOn) openGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } }
   function closeFeature() { document.body.classList.remove("overworld"); if (!gameOn) openGame(); }
-  function heroMenu() {
-    radialMenu([
-      { title: "Plan day", emoji: "📅", color: "#2a9fe0", fn: function () { goTab("day"); } },
-      { title: "Track time", emoji: "⏱️", color: "#ff5fa8", fn: function () { goTab("day"); } },
-      { title: "Habits", emoji: "✅", color: "#28cf86", fn: function () { goTab("grow"); } },
-      { title: "Skills", emoji: "⭐", color: "#ffc41f", fn: function () { goTab("self"); } },
-      { title: "Mood", emoji: "🌤️", color: "#9a5cf0", fn: function () { goTab("self"); } },
-      { title: "Yesterday", emoji: "📓", color: "#caa15a", fn: function () { closeGame(); yesterdaySheet(); } },
-      { title: "Brain", emoji: "🧠", color: "#8a5cf0", fn: function () { closeGame(); brainSheet(); } }
-    ], function (m) { if (m && m.fn) m.fn(); });
-  }
+  function heroMenu() { openPull(); } // tap the fairy → your day hub (plan vs. real + tap-to-track). Old radial nav removed (David 2026-06-23).
   var worldTapWired = false;
   // diegetic access points — walk up to a building and tap it to open its menu (Sims-style)
   var WORLD_SPOTS = [
@@ -1450,7 +1442,8 @@
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + " " + esc(e.title) + (onp ? ' <i class="ti ti-sparkles" style="color:#a06b00"></i>' : "");
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; } else { var ct = add(card, "div", "csub", fmt(it.s) + "–" + fmt(it.e)); ct.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
-        card.addEventListener("click", function (ev) { if (ev.target === xb) return; bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); });
+        var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+        card.addEventListener("click", function (ev) { if (ev.target === xb || ev.target === lg) return; bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
         card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")";
@@ -1459,7 +1452,7 @@
         var ctv = add(card, "div", "csub ct", fmt(it.s)); ctv.style.color = D.ink;
         var stop = add(card, "div", "calx"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
-        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
         card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; bentoPicker({ title: "Doing what?", multi: true, onPickMulti: function (sel) { assignTimerMulti(t, sel); }, onPick: function (x) { assignTimer(t, x); } }); });
       }
     });
@@ -1472,7 +1465,7 @@
       gaps.forEach(function (g) {
         var slot = add(cal, "div", "backfill"); slot.style.top = topFor(g[0]) + "px"; slot.style.height = Math.max(20, (g[1] - g[0]) / 60 * HP - 4) + "px"; slot.style.left = "calc(50% + 4px)"; slot.style.right = "4px";
         slot.innerHTML = '<i class="ti ti-arrows-vertical"></i> fill it in?';
-        slot.addEventListener("click", function () { var gs = g[0], gm = g[1] - g[0]; bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: gm, title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } }); });
+        slot.addEventListener("click", function () { var gs = g[0], gm = Math.min(30, g[1] - g[0]); bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: gm, title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } }); });
       });
     }
     cal.addEventListener("pointerdown", function (ev) {
@@ -1607,9 +1600,10 @@
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
   function allActivities() {
     var out = [], seen = {};
-    function push(title, catK, habitId) { var lc = (title || "").toLowerCase(); if (!lc || seen[lc]) return; seen[lc] = 1; var dom = domainOf({ title: title, catK: catK, habitId: habitId }); out.push({ title: title, catK: catK || null, habitId: habitId || null, domain: dom, color: DOM[dom].c }); }
-    activeCats().forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { push(t.l, c.k, t.id); }); }); });
-    (S.acts || []).forEach(function (a) { push(a.title, a.catK, null); });
+    function push(title, catK, habitId, group) { var lc = (title || "").toLowerCase(); if (!lc || seen[lc]) return; seen[lc] = 1; var dom = domainOf({ title: title, catK: catK, habitId: habitId }); out.push({ title: title, catK: catK || null, habitId: habitId || null, domain: dom, color: DOM[dom].c, group: group || null }); }
+    CATS.forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { push(t.l, c.k, t.id, g.g); }); }); }); // the full base library — every domain, all sub-groups
+    var o = OCC_BY_K[(S.profile && S.profile.occ)]; if (o && o.work) o.work.forEach(function (g) { g.tasks.forEach(function (t) { push(t.l, "work", null, g.g); }); }); // + your life-stage's work
+    (S.acts || []).forEach(function (a) { push(a.title, a.catK, null, "Mine"); });
     return out;
   }
   function bentoByDomain() { var by = {}; DOM_ORDER.forEach(function (d) { by[d] = []; }); allActivities().forEach(function (a) { (by[a.domain] = by[a.domain] || []).push(a); }); return by; }
@@ -1654,9 +1648,9 @@
       DOM_ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; render(); }; });
       var pane = add(body, "div", "bento-pane"); pane.style.borderColor = D.c;
       var h = add(pane, "div", "bento-paneh"); h.style.color = D.light; h.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
-      var g = add(pane, "div", "bento-tiles");
-      by[d].forEach(function (a) { actChip(a, g, true); });
-      var addt = add(g, "span", "bchip big addt"); addt.innerHTML = '<i class="ti ti-plus"></i> add'; addt.onclick = addNew;
+      var groups = {}, order = []; by[d].forEach(function (a) { var gn = a.group || "More"; if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); });
+      order.forEach(function (gn) { if (order.length > 1) { var sh = add(pane, "div", "bento-subh", gn); sh.style.color = D.light; } var g = add(pane, "div", "bento-tiles"); groups[gn].forEach(function (a) { actChip(a, g, true); }); });
+      var ar = add(pane, "div", "bento-tiles"); var addt = add(ar, "span", "bchip big addt"); addt.innerHTML = '<i class="ti ti-plus"></i> add'; addt.onclick = addNew;
     }
     function addNew() {
       view.cat = null; body.innerHTML = ""; if (foot) { foot.remove(); foot = null; }
@@ -2060,7 +2054,7 @@
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     setInterval(function () { S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); }); }, 1000);
-    el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, viewK); else pickOne(function (x) { assignBlock(nb, x, viewK); }); }, function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } }); };
+    el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
