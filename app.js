@@ -486,7 +486,8 @@
     ];
     items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
   }
-  var pullK = null, pullZoom = "day"; // the day + zoom (day/week/month) the planner is showing — step to plan ahead, toggle for week/month (David 2026-06-23)
+  var pullK = null, pullZoom = "day", pullHourPx = 64; // pullHourPx = hour-row height in day view — the +/- zooms the timeline density like After Effects (David 2026-06-24)
+  function setHourPx(delta) { var pb = el("pullBody"), old = pullHourPx; pullHourPx = Math.max(36, Math.min(124, pullHourPx + delta)); if (pullHourPx === old) return; var sc = pb ? pb.scrollTop : 0; buildPull(); var p2 = el("pullBody"); if (p2) p2.scrollTop = sc * (pullHourPx / old); } // rescale scroll so the same time stays put
   // smooth zoom between day/week/month — a self-completing CSS keyframe entrance (never gets stuck invisible; ends at the natural visible state) — David 2026-06-24
   function zoomAnim(dir) {
     buildPull();
@@ -507,11 +508,10 @@
       if (pullZoom === "day") { add(top, "div", "pull-date", "Today"); }
       else { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { stepK(-1); }; add(dn, "div", "pull-date", pullZoom === "week" ? "Week of " + relShort(startOfWeek(k)) : kd(k).toLocaleDateString([], { month: "long" })); var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { stepK(1); }; }
       var rt = add(top, "div", "pull-rt");
+      if (pullZoom === "day") { var hz = add(rt, "div", "hour-zoom"); var hzo = add(hz, "button", "pull-step"); hzo.innerHTML = '<i class="ti ti-minus"></i>'; hzo.onclick = function () { setHourPx(-13); }; var hzi = add(hz, "button", "pull-step"); hzi.innerHTML = '<i class="ti ti-plus"></i>'; hzi.onclick = function () { setHourPx(13); }; } // +/- = AE-style hour-density zoom (day only)
       if (pullZoom !== "day") { var cur = pullZoom === "week" ? (startOfWeek(k) === startOfWeek(todayK())) : (kd(k).getMonth() === kd(todayK()).getMonth() && kd(k).getFullYear() === kd(todayK()).getFullYear()); if (!cur) { var tdb = add(rt, "button", "pull-today", "Today"); tdb.onclick = function () { pullK = todayK(); buildPull(); }; } }
-      var zc = add(rt, "div", "pull-zoomctl");
-      var zo = add(zc, "button", "pull-step" + (pullZoom === "month" ? " off" : "")); zo.innerHTML = '<i class="ti ti-zoom-out"></i>'; zo.onclick = function () { zoom(1); };
-      add(zc, "div", "pull-zlevel", pullZoom);
-      var zi = add(zc, "button", "pull-step" + (pullZoom === "day" ? " off" : "")); zi.innerHTML = '<i class="ti ti-zoom-in"></i>'; zi.onclick = function () { zoom(-1); };
+      var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
+      [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") { pullK = todayK(); pendingScrollNow = true; } zoomAnim(dir); }; });
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next");
@@ -544,7 +544,7 @@
     var run = activeTimers(), t = run[run.length - 1];
     if (t) { var D = DOM[domainOf(t)]; lb.innerHTML = '<i class="ti ti-player-play-filled" style="color:' + D.c + '"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t); lt.classList.add("live"); } // dark strip (matches the pull-down for one consistent color); the activity shows in the icon's color
     else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); }
-    if (lh) lh.innerHTML = '<i class="ti ti-chevron-down"></i> pull down for today';
+    if (lh) lh.innerHTML = '<i class="ti ti-chevron-down"></i>'; // just a chevron signifier — clear it's pullable, no text (David 2026-06-24)
     if (!lt._wired) { lt._wired = 1;
       // SMOOTH pull-down (David 2026-06-23): drag the strip down to reveal today — finger-follow, consistent color, never forces a habit choice.
       lt.addEventListener("pointerdown", function (ev) {
@@ -552,7 +552,7 @@
         pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); if (ps) ps.style.transition = "none"; if (bd) bd.style.transition = "none";
         var H = (ps && ps.offsetHeight) || Math.round(window.innerHeight * 0.9);
         function mv(e) { if (!moved && (Math.abs(e.clientY - sy) > 4 || Math.abs(e.clientX - sx) > 4)) moved = true; if (moved && ps) { var bottom = Math.max(0, Math.min(H, e.clientY)); ps.style.transform = "translateY(" + ((bottom - H) / H * 100) + "%)"; if (bd) { bd.classList.add("on"); bd.style.opacity = Math.max(0, Math.min(0.82, bottom / H * 0.82)); } } } // sheet's bottom edge tracks the finger 1:1 (smooth)
-        function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; if (!moved) { openPull(); return; } if (e.clientY > H * 0.35 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } } // tap or pull past 35% → reveal today (NO forced picker); short pull → snap back
+        function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; if (!moved) { if (ps && ps.classList.contains("on")) closePull(); else openPull(); return; } if (e.clientY > H * 0.35 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } } // tap = TOGGLE the journal (open if closed, close if open); pull past 35% → reveal — David 2026-06-24
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
       var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
@@ -1130,7 +1130,7 @@
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
     var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving;
-    if (moveX !== 0 || moveY !== 0) { camX = 0; camY = 0; } // moving the guy snaps the camera back to follow him
+    if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
     if (skateOn && skateOk()) {
       // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
       var mln = Math.hypot(moveX, moveY);
@@ -1210,8 +1210,9 @@
   function wireWorldTap() { // drag the world to PAN the camera around the island (free-look, doesn't move the guy) — David 2026-06-24
     if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
     w.addEventListener("pointerdown", function (ev) {
-      var lx = ev.clientX, ly = ev.clientY; var lim = (typeof RS !== "undefined" ? RS : 200) * 1.3;
-      function mv(e) { var dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom)); }
+      if (ev.target !== w) return; // only pan when grabbing the world itself — never from a zoom/joystick/notebook button on top (fixes "zooming randomly pans") — David 2026-06-24
+      var sx = ev.clientX, sy = ev.clientY, lx = sx, ly = sy, moved = false, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3;
+      function mv(e) { if (!moved) { if (Math.abs(e.clientX - sx) < 6 && Math.abs(e.clientY - sy) < 6) return; moved = true; } var dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom)); } // require a real drag (>6px) so a tap never pans
       function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); }
       document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
     });
@@ -1600,10 +1601,17 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
     var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = 64; // start early enough to show NOW (e.g. 1am) so the now-line is always visible; run to ~3am for late planning (David 2026-06-24)
+    var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = pullHourPx; // hour height = the timeline-density zoom (AE-style); start early enough to show NOW; run to ~3am (David 2026-06-24)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
     for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
+    // temporal anchors so you're never lost in time: wake · noon · bed (David 2026-06-24)
+    function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
+    [["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"]].forEach(function (tm) {
+      if (tm[1] == null || tm[1] < startH * 60 || tm[1] > endH * 60) return;
+      var ml = add(cal, "div", "timemark"); ml.style.top = ((tm[1] - startH * 60) / 60 * HP) + "px"; ml.style.borderTopColor = tm[3] + "55";
+      var lb = add(ml, "span", "timemark-lab"); lb.style.color = tm[3]; lb.innerHTML = '<i class="ti ' + tm[2] + '"></i> ' + tm[0];
+    });
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(26, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } }
     function rr() { renderToday(); }
     var planCards = [], burnedSomething = false;
@@ -1889,7 +1897,7 @@
       var D = DOM[a.domain];
       var s = add(container, "span", "bchip" + (big ? " big" : "") + (sel.indexOf(a) >= 0 ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (fq[(a.title || "").toLowerCase()] ? " pred" : ""));
       if (a.domain !== "drift") { s.style.background = D.c; s.style.color = D.ink; }
-      s.innerHTML = (big ? '<i class="ti ' + tiClass(a) + '"></i> ' : "") + esc(a.title);
+      s.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title); // icon on every chip incl. the preview (David 2026-06-24)
       s.onclick = function (e) { e.stopPropagation(); commit(a); };
       return s;
     }
