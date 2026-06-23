@@ -1,40 +1,46 @@
-# HANDOFF — continue the redesign (2026-06-23)
+# HANDOFF — ALTER app (updated 2026-06-23, session 2)
 
-You're continuing a long **design session** for David's personal-development life-sim app (working name TBD; code title is "ALTER"). The chat ran long; this file + the brief carry everything forward.
+Continuing the build of David's personal-development life-sim app (working name TBD; code title "ALTER"). Context ran out; this file + `DESIGN-BRIEF.md` + `_mockups/` carry everything forward.
 
 ## ⭐ Start here
-1. **Read `DESIGN-BRIEF.md` first — it is the COMPLETE design spec** (the source of truth; everything below is detailed there).
-2. The app is **LIVE and working**: vanilla JS — `app.js` + `index.html` (inline CSS), GitHub Pages → https://dmekibel.github.io/alter/ , localStorage key `alter_plan2`. **Current version: v378.**
-2b. **⭐ DESIGN SOURCE-OF-TRUTH = the 44 in-chat mockups, extracted to `_mockups/` (see `_MANIFEST.txt`).** Port them **1-to-1** (Jost font + Tabler icons + exact CSS) — do NOT reinterpret from the text brief (David rejected a reinterpretation 2026-06-23). They came from transcript `~/.claude/projects/-Users-Dmekibel-claudeCode/f1b6612d-*.jsonl`. Keep the rendered fairy/world (better than the mockups' placeholder shapes).
-3. Deploy loop: edit `app.js` → `node --check app.js` → bump `app.js?v=NNN` in `index.html` → `cd /Users/Dmekibel/claudeCode/alter && git add -A && git commit -m "…" && git push`. Cache-bust link: `/fresh.html`.
+1. **`DESIGN-BRIEF.md`** = the complete text spec. **`_mockups/`** (44 HTML files, see `_MANIFEST.txt`) = the **VISUAL source of truth** — port them **1-to-1** (Jost + Tabler icons + exact CSS). David rejected a from-the-text reinterpretation once; do NOT do that again. Mockups were extracted from transcript `~/.claude/projects/-Users-Dmekibel-claudeCode/f1b6612d-*.jsonl`. Keep the rendered fairy/island (better than the mockups' placeholder shapes).
+2. **LIVE**: vanilla JS — `app.js` (~2150 lines) + `index.html` (inline CSS), GitHub Pages → https://dmekibel.github.io/alter/ , localStorage key `alter_plan2`. **Current version: v385** (pushed; deploys ~2–4 min).
+3. **Deploy loop**: edit `app.js` → `node --check app.js` → bump `app.js?v=NNN` in `index.html` → `git add app.js index.html [HANDOFF.md] && git commit && git push`. Pages lag is real → confirm with `curl -s "https://dmekibel.github.io/alter/index.html?cb=$(date +%s)" | grep -o 'app.js?v=[0-9]*'` (poll till it matches). Cache-bust link for David: `/fresh.html`.
 
-## Already SHIPPED in the live app
-Self-help modules + browser TTS (v370). Phantom-bubble fix (v371).
-**The big 1-to-1 redesign batch (v372–v378), all verified in preview:**
-- **Foundation:** Jost font + Tabler line icons app-wide (`.ti`), replacing Baloo/Fredoka + emoji.
-- **8-domain palette** `DOM` (app.js ~L196): full color ramps (c/light/dark/ring/ink) + Tabler icon per domain. `domainOf()` maps any title→domain→color; `tiClass()/tiIcon()` map title→icon.
-- **CALENDAR `calendarView`** (1-to-1 mockups 030/031/034): dark-berry card, two-tone diagonal hatch (scheduled) · domain-outlined ghost (missed) · activity-colored celebration foil+glow+✓ (done); REAL lane solid + **gold-inset ring** on-plan / mauve "drifted"; backfill "fill it in?" slots; NOW pill; left axis + half-hour dashes. Drag/stretch/reflow intact.
-- **Streak + celebration** (032/024): `celebrate()` escalating star→flame burst on plan-adherence (mark-done / on-plan track), streak gradient bar yellow→red, `S.game.streak`.
-- **BENTO picker** `bentoPicker()` (019): domain-clustered overview → expand-in-place → multi-select "Start N" → type-once add-new; wired into all calendar pick points (radial gone from calendar). Custom acts persist in `S.acts`.
-- **Planning suggestion bar** `renderSuggest()`/`sugNext()` (037/039/040): reasoned hero+alts w/ WHY + "all my activities" door; never-blank day; overdue chore auto-surfaces as hero.
-- **Home live-tracker + pull-down** `renderLiveTracker()`/`openPull()` (005/006/007, §13): top strip "What are you doing now?" → tap=start/switch (bento), drag-down=plan-vs-real (reuses calendarView).
-- **Onboarding** `onboard()` (041/043): 8-step — Sage → vibe → gender+age → auto-suggested life-stage (reuses OCCUPATIONS) → prefill-prune bento + little-extras → goals → rhythm → world born. Persists `S.profile`, seeds `S.acts`+`S.goals`. Auto-runs first-run + "Set up your world" button.
-- **Subtasks redesign + CHORES** (David 2026-06-23): per-block **Steps editor** in `blockEdit` (add YOUR OWN ordered sub-parts via bento, reorder ▲▼, check off; bubble shows x/y). Separate **stateful chores system** `choresSheet()` — `S.space.done` tracks last-done per chore (dishes/bed/trash/surfaces/floor/laundry/bathroom), freshness→fresh/due/overdue, "Your space · N% fresh", overdue floats up + becomes priority suggestion. **NOTE: David wants to iterate on subtasks design/function next.**
+## ⭐⭐ How David works (READ THIS — it's why things got rejected)
+- **Mockups are LAW.** 1-to-1, Jost font, Tabler line icons (not emoji), exact colors/CSS.
+- **Minimal/clean.** He removed in-bubble times ("more minimal like here"). No clutter.
+- **"More nuanced/complex" = MORE OPTIONS inside the existing questions, NOT more questions/steps.** (He rejected the extra onboarding questions I added.) Always offer **type-your-own** as a fallback so anyone fits.
+- **Ship-and-test loop on his phone.** When he says "ship", commit+push+poll+give `fresh.html`. He hits deploy-lag/cache confusion often → always remind him about `fresh.html` (or incognito for a fresh first-run).
+- **"Faster" = less ceremony, fewer check-in questions, just build + verify + ship.**
+- Verify in the Claude preview (`preview_*`, launch.json name `alter`, port 8123). The preview's localStorage has SEEDED test data (blocks, a live "Claude code" timer, profile=founder, chores) — NOT David's real data (different origin), safe to mutate.
 
-## STILL TO BUILD (priority order)
-- **⭐ Iterate on subtasks** (David's stated NEXT focus): refine the per-block Steps editor + chores design/function. Shipped v378 as a first cut.
-- **Long-term goal-horizons** (mockups 009/010): GRAND goal → milestones → week/month steps → dated daily actions + life-audit. `S.goals` trees are already seeded by onboarding (just titles+domain so far).
-- **Two-tier BRAIN** (011) + **monetization/cosmetics** (012): free deterministic floor / paid AI brain (BYO-key, local only — NEVER echo keys) + cosmetic IAP. Free = manual-guided; paid = AI-does-it. (`S.brain={engine,key}` exists.)
-- **Home-shell polish** (005): world HUD (streak pips + spark bar + mood orb), notebook-button reposition, tap-fairy→stats. (Live-tracker + pull-down already shipped.)
-- **Mindmap "see your life"** identity view (016/017/018) · **Week/Month** calendar bubble colors (still old palette).
-- **World/garden** growth + **identity/character** screen — not in mockups yet; design first.
+## SHIPPED (v372 → v385), all verified in preview
+- **Foundation (v372–373):** Jost (Google Fonts) + Tabler icons webfont (CDN) in `<head>`; Jost is the global font.
+- **8-domain palette `DOM`** (app.js ~L196): each domain `{l,e,c,light,dark,ring,ink,ti}`. `domainOf(item)` title→domain (keyword table `DKW` + `CAT2DOM` fallback). `tiClass/tiIcon` title→Tabler icon (`TIMAP`). Helpers `mixHex/mixDark`, `esc`, `GOLD`/`CORAL`. `DOM_ORDER`.
+- **CALENDAR `calendarView(L,k,showNow)`** — the heart (mockups 030/031/034). Plan lane 3 states: **sched**=two-tone hatch, **cele**=activity-colored celebration (foil+glow+✓+sparkle), **ghost**=domain-outlined hollow + "missed". Real lane: solid, **gold-inset ring** on-plan, mauve "drifted". **Bubbles are MINIMAL** (icon+title only, no time text — time is on the left axis). Backfill dashed "fill it in?" slots fill a **30-min default** (capped to gap). Logs have a stretch grip; live timer min **54px** (never squished) with a big stop button. NOW pill. Drag/stretch/reflow intact. Half-hour dashes.
+- **Streak + celebration (v373):** `celebrate(color,streak)` escalating star→flame burst on plan-adherence; `bumpStreak/curStreak/coolStreak`; streak gradient bar (yellow→red) in the calendar header; `S.game.streak`.
+- **BENTO picker `bentoPicker(opts)` (v373, deepened v380):** domain-clustered overview → expand shows **sub-group headers** → multi-select "Start N" → type-once add-new. `allActivities()` = FULL library (CATS + occupation work + `S.acts` customs, each w/ domain+group). Card flexes/scrolls so Start always fits. Wired into ALL calendar pick points + planToday (radial menu is GONE).
+- **Planning suggestion bar `renderSuggest`/`sugNext(k)` (v373):** reasoned hero+alts with WHY + "all my activities" door; overdue chore auto-becomes the hero. `addSuggested`, `nextFreeTime`, `SUG_POOL`.
+- **Home: live-tracker + pull-down (v379–v382, §13):** `renderLiveTracker()` = top pink strip (z-66, over the world) showing current activity / "What are you doing now?" + a "▾ my day" button. **Pull-down rebuilt**: `buildPull/openPull/closePull` — a **finger-following drag** (tracks finger Y, settles capped ~72vh), **sticky opaque header `#pullHead`** (title + ⇄ switch + X), scrollable `#pullBody` = the calendar (same data, kept in sync via `buildPull()` in `renderToday`), clean `#pullGrab`. `startOrSwitch()` = **stop current timer (logs it) + start new** (real switch). `activeTimers()`.
+- **Onboarding `onboard()` (v384 too-deep → v385 REWORKED):** 8 steps — Sage → vibe → gender+age → **life-stage (22 options, MULTI-select, type-your-own)** → **"Stock your life" = full expanded bento (~120 acts, all 9 domains, grouped, pre-selected from stage(s), type-anything)** → goals (+type-your-own) → **rhythm (wake/sleep RANGES + sharpest)** → world born. `LIFESTAGES` (22, each `{k,l,ti,c,occ}`), `STAGE_BASE`/`STAGE_EXTRA`, `stageSuggest`, `GOAL_SEED`, `VIBES2`. Persists `S.profile` (gender,age,vibe,stages[],occ,goals,wake,sleep,peak,lark). Auto-runs first-run (`!S.profile.set`, in `init` ~end of file) + the "✨ Set up your world →" button in `renderChar`. Dim→bright tap selection (`chip(p,label,on,color,ink)`).
+- **Subtasks + CHORES (v378):** per-block **Steps editor** in `blockEdit` — `b.subs` = your own ordered sub-parts (add via bento, reorder ▲▼, check); calendar bubble shows `x/y`. Separate **stateful chores**: `CHORES_DEF`, `S.space.done` (last-done per chore), `choreFresh/choreMark/spaceScore/mostOverdueChore`, `choresSheet()` ("Your space · N% fresh", overdue floats up). Reached from any clean/tidy block → "🧹 open your Space". (`SUBTASKS`/`subtaskSheet` legacy still defined but unused.)
 
-## Baked-in philosophy (keep honoring)
-Newport *Slow Productivity* (reward depth/rest/fewer-things, NOT volume) + Atomic Habits (tiny/identity/make-it-satisfying). Type = Wes-Anderson/Futura (Jost bold).
+## State / data model (localStorage `alter_plan2`, `S`)
+`S.profile` (onboarding blueprint) · `S.blocks[dateK]=[{id,time,mins,title,prio,color,done,subs[],domain,pin}]` (PLAN) · `S.log[dateK]=[{id,time,mins,title,color,catK}]` (REAL) · `S.timers=[{id,title,start,dayK,...}]` (running) · `S.habits` · `S.game{spark,total,streak,streakDay}` · `S.brain={engine,key}` · `S.acts` (custom activities) · `S.goals=[{title,domain,subtasks[]}]` · `S.space.done`. `load()`/`save()`. Helpers `blocks(k)/logs(k)/todayK()/nowMin()/fmt/hm/reflow(k)`.
+
+## NEXT / PENDING (priority)
+1. **⭐ Big stop button + "start new" button** — David shared a mockup he liked (big pink stop bottom-right of the live timer; a dashed "▢ start new" slot in the REAL lane below the live activity → `startOrSwitch`). I located but did NOT implement: the timer branch in `calendarView` (the `ti-player-play-filled + esc(t.title)` line — re-add elapsed `pullElapsed(t)` + make the stop big/pink/bottom-right), and add a dashed "start new" slot after the acts loop (before `cal.addEventListener("pointerdown")`); CSS `.calblk.live .calx` (~index.html L474).
+2. **Redo-setup button** — David asked for it. `onboard()` only auto-runs when `!S.profile.set`. Add a "redo setup" entry (in `brainSheet`/settings or the self-tab) that just calls `onboard()`.
+3. **Goals / character-skills screen** (David's next big ask): long-term goal-horizons (decompose goal→milestones→scheduled dated actions + life-audit, mockups 009/010) AND the identity/character screen. `S.goals` trees seeded by onboarding (titles+domain only).
+4. **Remove old/ugly legacy** (David asked): old RPG **character sheet** `charSheet`/`surveySheet` + the `#t-self` self-tab clutter (mood weather, hero proactive card, quick-wins, virtue tree). Old **`pickerSheet`** flows (`nowSheet`/`planSheet`/`pickOne`). `radialMenu` is already unused (dead). Replace with the new identity screen.
+5. **Two-tier BRAIN (011) + monetization (012)** — free floor / paid AI (BYO-key, NEVER echo keys). `S.brain` exists.
+6. **Home-shell HUD polish (005):** world HUD (streak pips + spark + mood orb), notebook reposition, tap-fairy→stats (currently fairy→pull-down via `heroMenu`).
+7. **Week/Month calendar colors** (still old palette — `weekGrid`/`monthGrid`) · **Mindmap "see your life"** (016/017/018) · **world/garden growth**.
 
 ## HARD constraints (never violate)
-$0 static vanilla-JS · mobile one-thumb iPhone · **TAP not type** · **ZERO white ever** · candy/Powerpuff on **dark hot-pink night** bg · bold dark outlines + sticker shadows · Futura/Jost **bold** type · notebook-in-hand menus · "less machine, not more". **Never store or echo David's API keys** (they live only in his localStorage).
+$0 static vanilla-JS · mobile one-thumb iPhone · **TAP not type** (type only as the explicit fallback) · **ZERO white** (use `#fff2f9`/`#160510`) · candy on dark hot-pink/berry night bg · bold `#160510` outlines · Jost bold · Tabler icons · "less machine, not more" · **never store/echo API keys**.
 
 ## To continue
 Open a fresh session in `/Users/Dmekibel/claudeCode/alter` and say:
-> "Read DESIGN-BRIEF.md, HANDOFF.md, and browse `_mockups/`, then let's iterate on the subtasks (or build the next surface) — port 1-to-1 from the mockups."
+> "Read DESIGN-BRIEF.md + HANDOFF.md and browse `_mockups/`. Continue ALTER — port 1-to-1 from the mockups. Start with [big-stop+start-new / goals-screen / remove-old-menus]."
