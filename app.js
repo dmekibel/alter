@@ -364,8 +364,8 @@
         var sy = ev.clientY, sx = ev.clientX, moved = false, ps = el("pullSheet"), bd = el("pullBackdrop");
         buildPull(); if (ps) ps.style.transition = "none"; if (bd) bd.style.transition = "none";
         var H = (ps && ps.offsetHeight) || Math.round(window.innerHeight * 0.7);
-        function mv(e) { var dy = e.clientY - sy; if (!moved && (Math.abs(dy) > 5 || Math.abs(e.clientX - sx) > 5)) moved = true; if (moved && dy > 0 && ps) { var ty = Math.max(-100, -100 + (dy / H) * 100); ps.style.transform = "translateY(" + ty + "%)"; if (bd) { bd.classList.add("on"); bd.style.opacity = Math.max(0, Math.min(0.82, (dy / H) * 0.82)); } } }
-        function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; var dy = e.clientY - sy; if (!moved) { startOrSwitch(); return; } if (dy > H * 0.28 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } }
+        function mv(e) { if (!moved && (Math.abs(e.clientY - sy) > 4 || Math.abs(e.clientX - sx) > 4)) moved = true; if (moved && ps) { var bottom = Math.max(30, Math.min(H, e.clientY)); ps.style.transform = "translateY(" + ((bottom - H) / H * 100) + "%)"; if (bd) { bd.classList.add("on"); bd.style.opacity = Math.max(0, Math.min(0.82, bottom / H * 0.82)); } } } // sheet's bottom edge tracks the finger exactly
+        function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; if (!moved) { startOrSwitch(); return; } if (e.clientY > H * 0.4 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
       if (lh) { lh.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); lh.addEventListener("click", function (ev) { ev.stopPropagation(); openPull(); }); }
@@ -1405,8 +1405,7 @@
       var cn = add(card, "div", "cn"); cn.style.color = ink;
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = (b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + " " + esc(b.title) + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
-      if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = D.light; }
-      else { var ct = add(card, "div", "csub ct"); ct.style.color = ink; ct.textContent = fmt(bs) + "–" + fmt(be); }
+      if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = D.light; } // minimal: time read from the axis, not inside the bubble (mockup)
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>';
       xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
@@ -1449,7 +1448,7 @@
         card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")"; card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)";
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + " " + esc(e.title) + (onp ? ' <i class="ti ti-sparkles" style="color:#a06b00"></i>' : "");
-        if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; } else { var ct = add(card, "div", "csub", fmt(it.s) + "–" + fmt(it.e)); ct.style.color = D.ink; }
+        if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
         card.addEventListener("click", function (ev) { if (ev.target === xb || ev.target === lg) return; bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); });
@@ -1458,7 +1457,6 @@
         card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")";
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title);
-        var ctv = add(card, "div", "csub ct", fmt(it.s)); ctv.style.color = D.ink;
         var stop = add(card, "div", "calx"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
         gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
