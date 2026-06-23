@@ -444,6 +444,31 @@
     var you = add(stage, "div", "mind-you"); you.innerHTML = '<i class="ti ti-mood-smile"></i>';
     add(body, "div", "goal-foot", "bigger = more of your life · tap a planet to do something there");
   }
+  // ---- MASTERPIECE DAYS / presets (David 2026-06-24): cookie-cutter day plans — apply to today/tomorrow, save your own, name them ----
+  var DAY_PRESETS = [
+    { name: "Deep Work Day", blocks: [{ h: "07:00", m: 45, t: "Morning routine", d: "upkeep" }, { h: "08:00", m: 120, t: "Deep work", d: "focus" }, { h: "10:00", m: 20, t: "Break", d: "restore" }, { h: "10:30", m: 120, t: "Deep work", d: "focus" }, { h: "12:30", m: 45, t: "Lunch", d: "nourish" }, { h: "13:30", m: 90, t: "Deep work", d: "focus" }, { h: "15:00", m: 30, t: "Walk", d: "move" }, { h: "15:45", m: 90, t: "Admin / shallow", d: "focus" }, { h: "18:00", m: 45, t: "Dinner", d: "nourish" }, { h: "19:00", m: 60, t: "Read", d: "play" }, { h: "21:30", m: 30, t: "Wind down", d: "restore" }] },
+    { name: "Balanced Day", blocks: [{ h: "07:00", m: 40, t: "Workout", d: "move" }, { h: "08:00", m: 30, t: "Breakfast", d: "nourish" }, { h: "09:00", m: 120, t: "Focus work", d: "focus" }, { h: "11:30", m: 60, t: "Create", d: "create" }, { h: "12:30", m: 60, t: "Lunch + walk", d: "nourish" }, { h: "14:00", m: 120, t: "Focus work", d: "focus" }, { h: "16:30", m: 45, t: "Connect / calls", d: "connect" }, { h: "18:00", m: 60, t: "Dinner", d: "nourish" }, { h: "19:30", m: 90, t: "Hobby", d: "play" }, { h: "21:30", m: 30, t: "Reflect", d: "restore" }] },
+    { name: "Recovery Day", blocks: [{ h: "08:30", m: 45, t: "Slow morning", d: "restore" }, { h: "09:30", m: 45, t: "Gentle movement", d: "move" }, { h: "10:30", m: 60, t: "Nature / walk", d: "move" }, { h: "12:00", m: 60, t: "Nourishing meal", d: "nourish" }, { h: "13:30", m: 90, t: "Rest / nap", d: "restore" }, { h: "15:30", m: 60, t: "Read / hobby", d: "play" }, { h: "17:00", m: 60, t: "Connect", d: "connect" }, { h: "18:30", m: 60, t: "Dinner", d: "nourish" }, { h: "20:00", m: 75, t: "Wind down", d: "restore" }] }
+  ];
+  function applyDayPreset(k, arr) { S.blocks[k] = arr.map(function (x) { var d = x.d || x.domain || "focus"; return { id: uid(), time: x.h || x.time, mins: x.m || x.mins, title: x.t || x.title, prio: x.prio || 2, color: (DOM[d] && DOM[d].c) || x.color || "#8a5cf0", domain: d, done: false }; }); reflow(k); save(); }
+  function saveDayAsPreset(k, name) { S.presets = S.presets || []; S.presets.push({ name: name, blocks: blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).map(function (b) { return { h: b.time, m: b.mins, t: b.title, d: domainOf(b) }; }) }); save(); }
+  function presetsSheet(k) {
+    var ov = add(document.body, "div", "goal-ov"), card = add(ov, "div", "goal-card");
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    function refresh() { if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull(); renderToday(); }
+    function apply(p) { applyDayPreset(k, p.blocks); ov.remove(); refresh(); toast("✨ " + p.name + " — " + relLabel(k).toLowerCase() + " planned"); }
+    function draw() {
+      card.innerHTML = "";
+      var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-stars"></i> Masterpiece days'; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
+      var body = add(card, "div", "goal-body");
+      var sub = add(body, "div", "goal-hint"); sub.innerHTML = '<i class="ti ti-wand"></i> auto-plan ' + relLabel(k).toLowerCase() + ' — tap one to fill it in';
+      DAY_PRESETS.forEach(function (p) { var b = add(body, "button", "preset-row"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-stars"></i> ' + esc(p.name); add(b, "span", "preset-meta", p.blocks.length + " blocks"); b.onclick = function () { apply(p); }; });
+      (S.presets || []).forEach(function (p, i) { var b = add(body, "button", "preset-row mine"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-bookmark"></i> ' + esc(p.name); var del = add(b, "span", "preset-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function (e) { e.stopPropagation(); S.presets.splice(i, 1); save(); draw(); }; b.onclick = function (e) { if (e.target === del || del.contains(e.target)) return; apply(p); }; });
+      if (blocks(k).length) { add(body, "div", "goal-hint", "save this day so you can reuse it:"); typeAdd(body, "name this day plan…", function (v) { saveDayAsPreset(k, v); draw(); toast("💾 saved “" + v + "”"); }); }
+      else add(body, "div", "goal-foot", "plan a day, then come back to save it as your own preset");
+    }
+    draw();
+  }
   // ---- THE NOTEBOOK (David 2026-06-23): the single menu door (bottom-left, above the stick). Every menu roots from here, each X-able. No more top-drag / scattered taps. ----
   function notebookSheet() {
     var ov = add(document.body, "div", "nb-ov"); var card = add(ov, "div", "nb-card");
@@ -484,7 +509,8 @@
           else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
           else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
           var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
-        } else { var pm = add(nx, "span", "pn-none"); pm.innerHTML = '<i class="ti ti-calendar-plus"></i> planning ahead — tap a slot to add'; }
+          var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk.onclick = function () { presetsSheet(k); };
+        } else { var pm = add(nx, "span", "pn-none"); pm.innerHTML = '<i class="ti ti-calendar-plus"></i> tap a slot to add'; var apk2 = add(nx, "button", "pn-break"); apk2.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk2.onclick = function () { presetsSheet(k); }; }
       }
     }
     pb.innerHTML = "";
@@ -1546,7 +1572,7 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
     var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var startH = Math.min(7, Math.floor(minS / 60)), endH = Math.max(27, Math.ceil(maxE / 60)), HP = 64, now = nowMin(); // run to ~3am so you can plan past midnight into the AM (David 2026-06-23)
+    var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = 64; // start early enough to show NOW (e.g. 1am) so the now-line is always visible; run to ~3am for late planning (David 2026-06-24)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
     for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
