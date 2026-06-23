@@ -1172,6 +1172,8 @@
     if (shake > 0.3) shake *= 0.82; else shake = 0;
     var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
+    // moody night tint — grass & water shift purple (David 2026-06-24)
+    wctx.save(); wctx.globalCompositeOperation = "multiply"; wctx.globalAlpha = 0.6; wctx.fillStyle = "#4a3a85"; wctx.fillRect(0, 0, WGW, WGH); wctx.globalCompositeOperation = "soft-light"; wctx.globalAlpha = 0.5; wctx.fillStyle = "#7a4fd0"; wctx.fillRect(0, 0, WGW, WGH); wctx.restore();
     if (ghudT++ % 30 === 0) updGameHud();
     requestAnimationFrame(drawWorld);
   }
