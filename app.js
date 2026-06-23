@@ -512,7 +512,7 @@
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
       var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
-      var pg = el("pullGrab"); if (pg) pg.addEventListener("click", closePull);
+      var pg = el("pullGrab"); if (pg) pg.addEventListener("pointerdown", function (ev) { ev.preventDefault(); var sy = ev.clientY, ps = el("pullSheet"), bd2 = el("pullBackdrop"), H = (ps && ps.offsetHeight) || 600, moved = false; if (ps) ps.style.transition = "none"; if (bd2) bd2.style.transition = "none"; function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 3) moved = true; var fr = Math.max(0, Math.min(1, -dy / H)); if (ps) ps.style.transform = "translateY(" + (-fr * 100) + "%)"; if (bd2) bd2.style.opacity = String(0.82 * (1 - fr)); } function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd2) bd2.style.transition = ""; var dy = e.clientY - sy; if (!moved || -dy > H * 0.28) closePull(); else { if (ps) { ps.classList.add("on"); ps.style.transform = ""; } if (bd2) bd2.style.opacity = ""; } } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // drag the bottom handle UP to close — same smooth finger-follow (David 2026-06-24)
     }
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
@@ -1846,8 +1846,8 @@
         var D = DOM[d], mc = add(grid, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72);
         var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; render(); };
         var wrap = add(mc, "div", "bento-chips");
-        acts.slice(0, 6).forEach(function (a) { actChip(a, wrap, false); });
-        if (acts.length > 6) { var more = add(wrap, "span", "bchip more", "+" + (acts.length - 6)); more.onclick = function () { view.cat = d; render(); }; }
+        acts.forEach(function (a) { actChip(a, wrap, false); }); // ALL activities — scroll the row sideways to reveal them, no full-screen expand needed (David 2026-06-24)
+        var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew;
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
     }

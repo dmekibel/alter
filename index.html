@@ -505,11 +505,14 @@
   .bento-body{ overflow:auto; padding:4px 12px 14px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; }
   .bento-foot{ flex:none; }
   .bento-card{ max-height:88vh; max-height:88dvh; }
-  .bento-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .bento-cat{ border:2px solid #160510; border-radius:13px; padding:8px; }
-  .bento-catl{ font-size:10px; font-weight:700; letter-spacing:.6px; margin-bottom:6px; cursor:pointer; }
-  .bento-chips{ display:flex; flex-wrap:wrap; gap:4px; }
-  .bchip{ border:1.5px solid #160510; border-radius:8px; padding:5px 8px; font-size:11px; font-weight:700; cursor:pointer; line-height:1; user-select:none; }
+  .bento-grid{ display:flex; flex-direction:column; gap:9px; }
+  .bento-cat{ border:2px solid #160510; border-radius:13px; padding:8px 8px 9px; }
+  .bento-catl{ font-size:10px; font-weight:700; letter-spacing:.6px; margin-bottom:7px; cursor:pointer; }
+  /* each category scrolls horizontally — reveal all its activities by swiping the row, no full-screen expand (David 2026-06-24) */
+  .bento-chips{ display:flex; flex-wrap:nowrap; gap:5px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; }
+  .bento-chips::-webkit-scrollbar{ display:none; }
+  .bchip{ flex:none; border:1.5px solid #160510; border-radius:8px; padding:7px 10px; font-size:12px; font-weight:700; cursor:pointer; line-height:1; user-select:none; white-space:nowrap; }
+  .bchip.addc{ background:#3a1226; color:#e8b8d2; }
   .bchip.pred{ box-shadow:0 0 0 2px #ffd54a; }
   .bchip.sel{ box-shadow:0 0 0 3px #ffe3a0; transform:scale(1.05); }
   .bchip.vice{ background:#5a2a3c !important; color:#c98ca6 !important; border:1.5px dashed #99566b; }
@@ -561,15 +564,16 @@
   body.tracker #screen{ padding-top:64px; }
   body.tracker header #date, body.tracker header #hello{ display:none; }
   #liveTracker{ display:none; }
-  body.tracker #liveTracker{ display:flex; position:fixed; top:calc(env(safe-area-inset-top,0px) + 6px); left:10px; right:10px; z-index:66; align-items:center; justify-content:space-between; background:#2c081a; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:10px 13px; font-family:"Jost",sans-serif; font-weight:700; color:#ffe3f1; cursor:grab; touch-action:none; }
+  body.tracker #liveTracker{ display:flex; position:fixed; top:calc(env(safe-area-inset-top,0px) + 6px); left:10px; right:10px; z-index:70; align-items:center; justify-content:space-between; background:#2c081a; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:10px 13px; font-family:"Jost",sans-serif; font-weight:700; color:#ffe3f1; cursor:grab; touch-action:none; }
   #liveTracker:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
-  #pullSheet{ position:fixed; top:0; left:0; right:0; z-index:68; background:#2c081a; border:3px solid #160510; border-top:none; border-radius:0 0 22px 22px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-106%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:93vh; height:93dvh; display:flex; flex-direction:column; overflow:hidden; }
+  /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
+  #pullSheet{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 56px); left:10px; right:10px; z-index:68; background:#2c081a; border:3px solid #160510; border-radius:18px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-120%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:calc(100dvh - env(safe-area-inset-top,0px) - 66px); display:flex; flex-direction:column; overflow:hidden; }
   #pullSheet.on{ transform:translateY(0); }
-  #pullHead{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:9px; background:#1c0512; border-bottom:2px solid #160510; padding:12px 14px 10px; }
+  #pullHead{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:9px; background:#1c0512; border-radius:15px 15px 0 0; border-bottom:2px solid #160510; padding:12px 14px 10px; }
   .pull-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .pull-datenav{ display:flex; align-items:center; gap:10px; }
   .pull-step{ width:34px; height:34px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
@@ -665,7 +669,7 @@
   .pull-switch{ background:#ffc83d; color:#5a3a00; border:2px solid #160510; border-radius:9px; box-shadow:0 3px 0 #160510; padding:6px 10px; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
   .pull-x{ width:30px; height:30px; border-radius:9px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:13px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
   #pullBody{ flex:1 1 auto; min-height:0; overflow:auto; padding:8px 12px 2px; -webkit-overflow-scrolling:touch; }
-  #pullGrab{ flex:none; text-align:center; color:#ffb8d8; font-size:11px; font-weight:700; padding:7px 0 11px; cursor:pointer; background:#1c0512; border-top:2px solid #160510; }
+  #pullGrab{ flex:none; text-align:center; color:#ffb8d8; font-size:11px; font-weight:700; padding:9px 0 13px; cursor:grab; background:#1c0512; border-top:2px solid #160510; touch-action:none; }
   .pull-handle{ display:block; width:42px; height:5px; border-radius:3px; background:#ffb8d8; margin:0 auto 6px; }
   /* ============ ONBOARDING (mockups 041/043, §8) ============ */
   .ob-ov{ position:fixed; inset:0; z-index:90; background:linear-gradient(165deg,#34091f,#1a0712); display:flex; align-items:center; justify-content:center; padding:16px; font-family:"Jost",sans-serif; }
@@ -787,6 +791,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=397"></script>
+  <script src="app.js?v=402"></script>
 </body>
 </html>
