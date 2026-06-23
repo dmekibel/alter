@@ -1,0 +1,55 @@
+<style>
+@keyframes plspulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes plstw{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+.plsc{animation:plspulse 1.5s ease-in-out infinite}
+.plsc4{animation:plspulse .65s ease-in-out infinite}
+.plstar{position:absolute;animation:plstw 1.3s ease-in-out infinite}
+</style>
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Four escalating tiers of the on-plan celebration: starting a planned activity gives a star pop and small points, and as the streak builds it grows brighter with more stars, then flames, then a full fiery explosion with big points.</h2>
+<div style="padding:1rem 0;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+
+<div style="position:relative;background:#2c081a;border:3px solid #160510;border-radius:16px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;">
+<span style="position:absolute;top:14px;color:#ffd98e;font-size:10px;font-weight:500;">▶ started · on plan</span>
+<i class="ti ti-star plstar" style="top:42px;left:36px;color:#ffd54a;font-size:13px;animation-delay:.1s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:54px;right:34px;color:#ffd54a;font-size:11px;animation-delay:.5s;" aria-hidden="true"></i>
+<div class="plsc" style="width:92px;height:58px;border-radius:12px;border:2px solid #160510;background:#36b3f0;box-shadow:0 0 0 3px #ffe08a;display:flex;align-items:center;justify-content:center;color:#0c3a5a;font-size:11px;"><i class="ti ti-brain" aria-hidden="true"></i> Deep work</div>
+<div style="margin-top:12px;color:#ffe08a;font-size:13px;font-weight:500;">+10 <i class="ti ti-sparkles" aria-hidden="true"></i></div>
+</div>
+
+<div style="position:relative;background:#2c081a;border:3px solid #160510;border-radius:16px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;">
+<span style="position:absolute;top:14px;left:10px;background:#ffd54a;color:#5a3a00;font-size:10px;font-weight:500;border:2px solid #160510;border-radius:7px;padding:1px 7px;">combo x2</span>
+<i class="ti ti-star plstar" style="top:40px;left:24px;color:#ffd54a;font-size:14px;animation-delay:0s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:58px;right:26px;color:#ffd54a;font-size:12px;animation-delay:.3s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:96px;left:40px;color:#ffe08a;font-size:11px;animation-delay:.6s;" aria-hidden="true"></i>
+<i class="ti ti-sparkles plstar" style="top:46px;right:46px;color:#ffd54a;font-size:12px;animation-delay:.2s;" aria-hidden="true"></i>
+<div class="plsc" style="width:92px;height:58px;border-radius:12px;border:2px solid #160510;background:#36b3f0;box-shadow:0 0 0 3px #ffd54a,0 0 13px #ffd54a;display:flex;align-items:center;justify-content:center;color:#0c3a5a;font-size:11px;"><i class="ti ti-brain" aria-hidden="true"></i> Deep work</div>
+<div style="margin-top:12px;color:#ffd54a;font-size:14px;font-weight:500;">+25 <i class="ti ti-sparkles" aria-hidden="true"></i></div>
+</div>
+
+<div style="position:relative;background:#2c081a;border:3px solid #160510;border-radius:16px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;">
+<span style="position:absolute;top:14px;left:10px;background:#ff8a2a;color:#4a2200;font-size:10px;font-weight:500;border:2px solid #160510;border-radius:7px;padding:1px 7px;"><i class="ti ti-flame" aria-hidden="true"></i> streak x4</span>
+<i class="ti ti-flame plstar" style="bottom:48px;left:30px;color:#ff7a1a;font-size:16px;animation-delay:0s;" aria-hidden="true"></i>
+<i class="ti ti-flame plstar" style="bottom:52px;right:30px;color:#ff5a1a;font-size:14px;animation-delay:.35s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:40px;left:28px;color:#ffd54a;font-size:14px;animation-delay:.1s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:50px;right:30px;color:#ffe08a;font-size:12px;animation-delay:.5s;" aria-hidden="true"></i>
+<i class="ti ti-sparkles plstar" style="top:92px;right:40px;color:#ffae3a;font-size:13px;animation-delay:.25s;" aria-hidden="true"></i>
+<div class="plsc" style="width:94px;height:60px;border-radius:12px;border:2px solid #160510;background:#36b3f0;box-shadow:0 0 0 3px #ff9a2a,0 0 18px #ff7a1a;display:flex;align-items:center;justify-content:center;color:#0c3a5a;font-size:11px;"><i class="ti ti-brain" aria-hidden="true"></i> Deep work</div>
+<div style="margin-top:12px;color:#ff9a2a;font-size:15px;font-weight:500;">+60 <i class="ti ti-flame" aria-hidden="true"></i></div>
+</div>
+
+<div style="position:relative;background:#3a0e10;border:3px solid #160510;border-radius:16px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;">
+<span style="position:absolute;top:13px;left:8px;background:#ff5a1a;color:#fff0d0;font-size:10px;font-weight:500;border:2px solid #160510;border-radius:7px;padding:1px 7px;"><i class="ti ti-flame-filled" aria-hidden="true"></i> ON FIRE x6</span>
+<i class="ti ti-flame plstar" style="bottom:46px;left:22px;color:#ff7a1a;font-size:20px;animation-delay:0s;" aria-hidden="true"></i>
+<i class="ti ti-flame plstar" style="bottom:50px;right:22px;color:#ff4a1a;font-size:18px;animation-delay:.2s;" aria-hidden="true"></i>
+<i class="ti ti-flame plstar" style="bottom:70px;left:54px;color:#ffae2a;font-size:14px;animation-delay:.4s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:36px;left:22px;color:#ffd54a;font-size:16px;animation-delay:.1s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:44px;right:24px;color:#ffe08a;font-size:14px;animation-delay:.45s;" aria-hidden="true"></i>
+<i class="ti ti-star plstar" style="top:84px;left:34px;color:#ffae3a;font-size:12px;animation-delay:.3s;" aria-hidden="true"></i>
+<i class="ti ti-sparkles plstar" style="top:60px;right:40px;color:#ffd54a;font-size:15px;animation-delay:.15s;" aria-hidden="true"></i>
+<div class="plsc4" style="width:96px;height:62px;border-radius:12px;border:2px solid #160510;background:#36b3f0;box-shadow:0 0 0 4px #ff5a1a,0 0 28px #ff5a1a;display:flex;align-items:center;justify-content:center;color:#0c3a5a;font-size:11px;"><i class="ti ti-brain" aria-hidden="true"></i> Deep work</div>
+<div style="margin-top:11px;color:#ff7a1a;font-size:17px;font-weight:500;">+150 <i class="ti ti-flame" aria-hidden="true"></i></div>
+</div>
+
+</div>
+</div>

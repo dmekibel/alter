@@ -1,0 +1,61 @@
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Three spatial, card-based, tap-only activity-picker concepts inspired by ComfyUI and 3D apps: a bento board with everything on one screen, horizontal category lanes of cards, and a zoomable constellation canvas of category clusters.</h2>
+<div style="padding:1rem 0;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;">
+
+<div>
+<div style="font-size:14px;font-weight:500;color:var(--color-text-primary);">X · Bento board</div>
+<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">everything on ONE screen, cleverly tiled · multi-select</div>
+<div style="background:#3a0a22;border:4px solid #160510;border-radius:22px;height:360px;padding:9px;overflow:hidden;position:relative;">
+<div style="color:#7ee6b4;font-size:10px;margin-bottom:5px;">★ likely now</div>
+<div style="display:flex;gap:5px;margin-bottom:7px;">
+<div style="flex:1;background:#34d39a;border:2px solid #160510;border-radius:9px;box-shadow:0 3px 0 #160510;padding:7px 2px;text-align:center;color:#0c3d29;font-size:10px;"><i class="ti ti-brain" aria-hidden="true"></i><div>Claude</div></div>
+<div style="flex:1;background:#ff5fa0;border:2px solid #160510;border-radius:9px;box-shadow:0 3px 0 #160510;padding:7px 2px;text-align:center;color:#4a1126;font-size:10px;"><i class="ti ti-walk" aria-hidden="true"></i><div>Walk</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+<div style="background:#48122f;border-radius:8px;padding:5px;"><div style="color:#ff8ac0;font-size:9px;margin-bottom:3px;">ENERGY</div><div style="display:flex;gap:3px;flex-wrap:wrap;"><span style="background:#ff8ac0;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#4a1126;font-size:8px;">Eat</span><span style="background:#ff8ac0;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#4a1126;font-size:8px;">Bath</span><span style="background:#ff8ac0;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#4a1126;font-size:8px;">Rest</span></div></div>
+<div style="background:#48122f;border-radius:8px;padding:5px;"><div style="color:#8fd2f5;font-size:9px;margin-bottom:3px;">WORK</div><div style="display:flex;gap:3px;flex-wrap:wrap;"><span style="background:#36b3f0;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#0c3a5a;font-size:8px;">Deep</span><span style="background:#36b3f0;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#0c3a5a;font-size:8px;">Admin</span></div></div>
+<div style="background:#48122f;border-radius:8px;padding:5px;"><div style="color:#c3b2ff;font-size:9px;margin-bottom:3px;">LOVE</div><div style="display:flex;gap:3px;flex-wrap:wrap;"><span style="background:#9a7cff;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#2c1858;font-size:8px;">Meditate</span><span style="background:#9a7cff;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#2c1858;font-size:8px;">Call</span></div></div>
+<div style="background:#48122f;border-radius:8px;padding:5px;"><div style="color:#ffd98e;font-size:9px;margin-bottom:3px;">HOBBY</div><div style="display:flex;gap:3px;flex-wrap:wrap;"><span style="background:#ffc83d;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#5a3a00;font-size:8px;">Draw</span><span style="background:#ffc83d;border:1px solid #160510;border-radius:6px;padding:3px 5px;color:#5a3a00;font-size:8px;">Game</span></div></div>
+</div>
+<div style="position:absolute;left:9px;right:9px;bottom:9px;background:#34d39a;border:2px solid #160510;border-radius:9px;padding:6px;text-align:center;color:#0c3d29;font-size:11px;font-weight:500;">start 2 selected ▶</div>
+</div>
+</div>
+
+<div>
+<div style="font-size:14px;font-weight:500;color:var(--color-text-primary);">Y · Category lanes</div>
+<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">ComfyUI/Trello rows · swipe each lane sideways</div>
+<div style="background:#3a0a22;border:4px solid #160510;border-radius:22px;height:360px;padding:9px;overflow:hidden;position:relative;">
+<div style="margin-bottom:7px;"><div style="color:#ff8ac0;font-size:10px;font-weight:500;margin-bottom:4px;">ENERGY <span style="color:#7a3a5e;">›</span></div><div style="display:flex;gap:5px;overflow:hidden;">
+<div style="background:#ff8ac0;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#4a1126;font-size:9px;flex:none;"><i class="ti ti-coffee" aria-hidden="true"></i><div>Eat</div></div>
+<div style="background:#ff8ac0;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#4a1126;font-size:9px;flex:none;"><i class="ti ti-bath" aria-hidden="true"></i><div>Shower</div></div>
+<div style="background:#ff8ac0;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#4a1126;font-size:9px;flex:none;"><i class="ti ti-walk" aria-hidden="true"></i><div>Walk</div></div>
+<div style="background:#ff8ac0;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#4a1126;font-size:9px;flex:none;opacity:0.6;"><i class="ti ti-bed" aria-hidden="true"></i><div>Rest</div></div>
+</div></div>
+<div style="margin-bottom:7px;"><div style="color:#8fd2f5;font-size:10px;font-weight:500;margin-bottom:4px;">WORK <span style="color:#7a3a5e;">›</span></div><div style="display:flex;gap:5px;overflow:hidden;">
+<div style="background:#34d39a;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#0c3d29;font-size:9px;flex:none;"><i class="ti ti-brain" aria-hidden="true"></i><div>Claude</div></div>
+<div style="background:#36b3f0;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#0c3a5a;font-size:9px;flex:none;"><i class="ti ti-briefcase" aria-hidden="true"></i><div>Deep</div></div>
+<div style="background:#36b3f0;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#0c3a5a;font-size:9px;flex:none;"><i class="ti ti-mail" aria-hidden="true"></i><div>Admin</div></div>
+</div></div>
+<div style="margin-bottom:7px;"><div style="color:#c3b2ff;font-size:10px;font-weight:500;margin-bottom:4px;">LOVE <span style="color:#7a3a5e;">›</span></div><div style="display:flex;gap:5px;overflow:hidden;">
+<div style="background:#9a7cff;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#2c1858;font-size:9px;flex:none;"><i class="ti ti-heart" aria-hidden="true"></i><div>Meditate</div></div>
+<div style="background:#9a7cff;border:2px solid #160510;border-radius:9px;padding:8px 9px;color:#2c1858;font-size:9px;flex:none;"><i class="ti ti-phone" aria-hidden="true"></i><div>Call</div></div>
+</div></div>
+<div style="position:absolute;left:9px;right:9px;bottom:9px;background:#48122f;border:2px dashed #9a6a86;border-radius:9px;padding:6px;text-align:center;color:#e8b8d2;font-size:10px;">+ pick a few, then start</div>
+</div>
+</div>
+
+<div>
+<div style="font-size:14px;font-weight:500;color:var(--color-text-primary);">Z · Zoom canvas <span style="color:var(--color-text-info);font-size:12px;">most ComfyUI</span></div>
+<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">spatial map of clusters · pinch to zoom · fly around</div>
+<div style="background:#2a0818;border:4px solid #160510;border-radius:22px;height:360px;padding:0;overflow:hidden;position:relative;">
+<div style="position:absolute;left:12px;top:20px;background:#3a1530;border:2px solid #ff8ac0;border-radius:12px;padding:7px;"><div style="color:#ff8ac0;font-size:9px;margin-bottom:4px;">ENERGY</div><div style="display:flex;gap:3px;"><span style="width:20px;height:20px;border-radius:6px;background:#ff8ac0;border:1px solid #160510;display:flex;align-items:center;justify-content:center;color:#4a1126;"><i class="ti ti-coffee" style="font-size:11px;" aria-hidden="true"></i></span><span style="width:20px;height:20px;border-radius:6px;background:#ff8ac0;border:1px solid #160510;display:flex;align-items:center;justify-content:center;color:#4a1126;"><i class="ti ti-walk" style="font-size:11px;" aria-hidden="true"></i></span></div></div>
+<div style="position:absolute;right:14px;top:42px;background:#16303f;border:2px solid #36b3f0;border-radius:12px;padding:7px;"><div style="color:#8fd2f5;font-size:9px;margin-bottom:4px;">WORK</div><div style="display:flex;gap:3px;"><span style="width:20px;height:20px;border-radius:6px;background:#34d39a;border:1px solid #160510;box-shadow:0 0 0 2px #7ee6b4;display:flex;align-items:center;justify-content:center;color:#0c3d29;"><i class="ti ti-brain" style="font-size:11px;" aria-hidden="true"></i></span><span style="width:20px;height:20px;border-radius:6px;background:#36b3f0;border:1px solid #160510;display:flex;align-items:center;justify-content:center;color:#0c3a5a;"><i class="ti ti-briefcase" style="font-size:11px;" aria-hidden="true"></i></span></div></div>
+<div style="position:absolute;left:24px;bottom:54px;background:#2a1a44;border:2px solid #9a7cff;border-radius:12px;padding:7px;"><div style="color:#c3b2ff;font-size:9px;margin-bottom:4px;">LOVE</div><div style="display:flex;gap:3px;"><span style="width:20px;height:20px;border-radius:6px;background:#9a7cff;border:1px solid #160510;display:flex;align-items:center;justify-content:center;color:#2c1858;"><i class="ti ti-heart" style="font-size:11px;" aria-hidden="true"></i></span></div></div>
+<div style="position:absolute;right:20px;bottom:46px;background:#3a3010;border:2px solid #ffc83d;border-radius:12px;padding:7px;"><div style="color:#ffd98e;font-size:9px;margin-bottom:4px;">HOBBY</div><div style="display:flex;gap:3px;"><span style="width:20px;height:20px;border-radius:6px;background:#ffc83d;border:1px solid #160510;display:flex;align-items:center;justify-content:center;color:#5a3a00;"><i class="ti ti-palette" style="font-size:11px;" aria-hidden="true"></i></span><span style="width:20px;height:20px;border-radius:6px;background:#ffc83d;border:1px solid #160510;display:flex;align-items:center;justify-content:center;color:#5a3a00;"><i class="ti ti-device-gamepad" style="font-size:11px;" aria-hidden="true"></i></span></div></div>
+<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#7a5a70;font-size:10px;"><i class="ti ti-arrows-maximize" aria-hidden="true"></i> pinch</span>
+<div style="position:absolute;left:9px;right:9px;bottom:9px;background:#34d39a;border:2px solid #160510;border-radius:9px;padding:6px;text-align:center;color:#0c3d29;font-size:11px;font-weight:500;">1 selected · start ▶</div>
+</div>
+</div>
+
+</div>
+</div>

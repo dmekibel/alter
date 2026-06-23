@@ -97,6 +97,48 @@
 
   var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
+  // SHORT-TERM goal decomposition (David: "split complex cleaning into subtasks — dishes, vacuum…"): any complex activity → concrete steps
+  var SUBTASKS = {
+    "clean": ["Do dishes", "Vacuum", "Laundry", "Make the bed", "Wipe surfaces", "Take out trash"],
+    "tidy": ["Do dishes", "Vacuum", "Laundry", "Make the bed", "Clear the desk", "Take out trash"],
+    "chores": ["Do dishes", "Vacuum", "Laundry", "Take out trash", "Wipe surfaces"],
+    "cook": ["Plan the meal", "Prep ingredients", "Cook", "Plate up", "Clean the kitchen"],
+    "meal prep": ["Plan meals", "Shop", "Batch cook", "Portion + store"],
+    "groceries": ["Make a list", "Go to the store", "Put it away"],
+    "deep work": ["Pick the ONE thing", "Phone away", "25-min sprint", "Short break", "Wrap + note next step"],
+    "study": ["Gather materials", "Review notes", "Practice problems", "Quiz yourself"],
+    "errands": ["List the errands", "Group by area", "Head out", "Tick them off"],
+    "laundry": ["Sort", "Wash", "Dry", "Fold + put away"]
+  };
+  function subtasksFor(title) { var t = (title || "").toLowerCase(); for (var k in SUBTASKS) { if (t.indexOf(k) !== -1) return SUBTASKS[k]; } return null; }
+  // CLEANING & CHORES — a stateful subsystem (David): a digital trace of your space; tracks how long since each chore, prioritizes overdue, keeps a clean space a priority
+  var CHORES_DEF = [
+    { id: "dishes", l: "Dishes", ti: "ti-bowl", every: 1 }, { id: "bed", l: "Make the bed", ti: "ti-bed", every: 1 },
+    { id: "trash", l: "Take out trash", ti: "ti-trash", every: 3 }, { id: "surfaces", l: "Wipe surfaces", ti: "ti-spray", every: 4 },
+    { id: "floor", l: "Floors — vacuum / sweep", ti: "ti-wind", every: 7 }, { id: "laundry", l: "Laundry", ti: "ti-wash-machine", every: 7 }, { id: "bathroom", l: "Bathroom", ti: "ti-bath", every: 8 }
+  ];
+  function spaceDone() { S.space = S.space || { done: {} }; S.space.done = S.space.done || {}; return S.space.done; }
+  function choreFresh(c) { var last = spaceDone()[c.id], d = last ? daysSince(last) : 999, ratio = d / c.every; return { days: d, last: last, ratio: ratio, state: ratio < 0.75 ? "fresh" : ratio < 1.4 ? "due" : "overdue" }; }
+  function choreMark(c) { spaceDone()[c.id] = todayK(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: c.l, mins: 10, catK: "energy", color: DOM.upkeep.c, domain: "upkeep" }); S.lastTidy = todayK(); doneMap(todayK()).tidy = true; try { earn(10, {}); } catch (e) {} save(); }
+  function spaceScore() { var ok = 0; CHORES_DEF.forEach(function (c) { if (choreFresh(c).state !== "overdue") ok++; }); return Math.round(ok / CHORES_DEF.length * 100); }
+  function mostOverdueChore() { var od = CHORES_DEF.filter(function (c) { return choreFresh(c).state === "overdue"; }).sort(function (a, b) { return choreFresh(b).ratio - choreFresh(a).ratio; }); return od[0] || null; }
+  function choresSheet() {
+    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head"), hq = add(head, "div", "bento-q"), xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); renderToday(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) { ov.remove(); renderToday(); } });
+    var body = add(card, "div", "bento-body");
+    function render() {
+      hq.innerHTML = '<i class="ti ti-home"></i> Your space · ' + spaceScore() + '% fresh'; body.innerHTML = "";
+      add(body, "div", "sughead", "tap to mark done · overdue floats to the top");
+      CHORES_DEF.slice().sort(function (a, b) { return choreFresh(b).ratio - choreFresh(a).ratio; }).forEach(function (c) {
+        var f = choreFresh(c), row = add(body, "div", "chore " + f.state); row.innerHTML = '<i class="ti ' + c.ti + ' chore-i"></i>';
+        var mid = add(row, "div", "chore-mid"); add(mid, "div", "chore-l", c.l); var bar = add(mid, "div", "chore-bar"), fi = add(bar, "i"); fi.style.width = Math.min(100, Math.round(f.ratio * 100)) + "%"; fi.style.background = f.state === "overdue" ? "#ff7a6e" : f.state === "due" ? "#ffc83d" : "#34d39a";
+        add(row, "div", "chore-d", f.days >= 999 ? "never" : f.days === 0 ? "today" : f.days + "d ago");
+        var go = add(row, "button", "chore-go"); go.textContent = f.days === 0 ? "✓" : "do it"; go.disabled = f.days === 0; go.onclick = function () { choreMark(c); render(); };
+      });
+    }
+    render();
+  }
   var DURS = [15, 30, 45, 60, 90, 120];
   var MORNING_RITUAL = { t: "☀️ Morning bookend", steps: [
     { l: "Make your bed", e: "🛏️", log: { title: "Make the bed", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 3 } },
@@ -195,15 +237,15 @@
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
   // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
   var DOM = {
-    move:    { l: "Move",    e: "🏃", c: "#ff8a3a" },
-    nourish: { l: "Nourish", e: "🍎", c: "#34d39a" },
-    focus:   { l: "Focus",   e: "🎯", c: "#36b3f0" },
-    create:  { l: "Create",  e: "🎨", c: "#b07aff" },
-    connect: { l: "Connect", e: "💛", c: "#ff5fa0" },
-    play:    { l: "Play",    e: "🎮", c: "#ffc83d" },
-    restore: { l: "Restore", e: "🌙", c: "#2ab8c4" },
-    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4" },
-    drift:   { l: "Drift",   e: "🌫️", c: "#8a6076" }
+    move:    { l: "Move",    e: "🏃", c: "#ff8a3a", light: "#ffa24a", dark: "#ff741a", ring: "#ffcf9a", ink: "#4a2400", ti: "ti-run" },
+    nourish: { l: "Nourish", e: "🍎", c: "#34d39a", light: "#5fe0b2", dark: "#22c089", ring: "#9fe8cf", ink: "#0a3326", ti: "ti-bowl-spoon" },
+    focus:   { l: "Focus",   e: "🎯", c: "#36b3f0", light: "#5ec4f5", dark: "#22a6e8", ring: "#aadcf8", ink: "#08283c", ti: "ti-brain" },
+    create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },
+    connect: { l: "Connect", e: "💛", c: "#ff5fa0", light: "#ff7ab0", dark: "#ff4f96", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },
+    play:    { l: "Play",    e: "🎮", c: "#ffc83d", light: "#ffd56a", dark: "#f0b62a", ring: "#ffe9a8", ink: "#5a3a00", ti: "ti-device-gamepad-2" },
+    restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
+    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
+    drift:   { l: "Drift",   e: "🌫️", c: "#c4607f", light: "#d17f99", dark: "#a84e69", ring: "#e0a8bb", ink: "#3a0f1e", ti: "ti-windmill" }
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -229,7 +271,142 @@
     return "focus";
   }
   function domColor(it) { return DOM[domainOf(it)].c; }
-  var GOLD = "#ffd24a", CORAL = "#ff7a6e"; // GOLD = on-plan match win · CORAL = drift (honest, never hidden)
+  var GOLD = "#ffd54a", CORAL = "#c4607f"; // GOLD = on-plan match (inset ring) · drift = mauve (honest, never hidden)
+  function esc(s) { return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function mixHex(a, b, t) { a = a.replace("#", ""); b = b.replace("#", ""); function p(h, i) { return parseInt(h.substr(i, 2), 16); } function m(i) { return Math.round(p(a, i) * (1 - t) + p(b, i) * t); } return "rgb(" + m(0) + "," + m(2) + "," + m(4) + ")"; }
+  function mixDark(hex) { return mixHex(hex, "#160510", 0.82); } // very dark domain tint — ghost (missed) fill
+  // activity title → Tabler icon (1:1 with the mockups); falls back to the domain's icon
+  var TIMAP = [
+    ["shower","ti-bath"],["bath","ti-bath"],["wash","ti-droplet"],["skincare","ti-droplet"],["bed","ti-bed"],["sleep","ti-bed"],["nap","ti-bed"],["wind down","ti-moon"],
+    ["breakfast","ti-coffee"],["lunch","ti-coffee"],["dinner","ti-tools-kitchen-2"],["cook","ti-tools-kitchen-2"],["meal","ti-tools-kitchen-2"],["coffee","ti-coffee"],["snack","ti-cookie"],["hydrate","ti-droplet"],["water","ti-droplet"],["grocer","ti-shopping-cart"],["eat","ti-bowl-spoon"],
+    ["run","ti-run"],["gym","ti-barbell"],["walk","ti-walk"],["yoga","ti-yoga"],["stretch","ti-stretching"],["cycle","ti-bike"],["bike","ti-bike"],["swim","ti-swimming"],["hike","ti-mountain"],["sport","ti-ball-football"],["danc","ti-dance"],
+    ["deep work","ti-brain"],["program","ti-code"],["code","ti-code"],["study","ti-book"],["research","ti-microscope"],["email","ti-mail"],["meeting","ti-users"],["call","ti-phone"],["admin","ti-clipboard"],["plan","ti-clipboard"],["budget","ti-coin"],["invoice","ti-file-invoice"],["work","ti-briefcase"],
+    ["paint","ti-palette"],["draw","ti-pencil"],["sketch","ti-pencil"],["write","ti-pencil"],["design","ti-palette"],["music","ti-music"],["guitar","ti-guitar-pick"],["piano","ti-piano"],["sing","ti-microphone-2"],["youtube","ti-brand-youtube"],["video","ti-video"],["photo","ti-camera"],["content","ti-device-mobile"],["midjourney","ti-sparkles"],
+    ["family","ti-users"],["friend","ti-users"],["partner","ti-heart"],["date","ti-heart"],["hug","ti-heart"],["help","ti-heart-handshake"],["text","ti-message"],["network","ti-users-group"],["people","ti-users"],
+    ["game","ti-device-gamepad-2"],["movie","ti-movie"],["watch","ti-device-tv"],["puzzle","ti-puzzle"],["chess","ti-chess"],["podcast","ti-headphones"],["listen","ti-headphones"],["travel","ti-plane"],["explore","ti-map"],["read","ti-book"],
+    ["meditat","ti-moon"],["breath","ti-wind"],["journal","ti-notebook"],["pray","ti-pray"],["nature","ti-tree"],["gratitude","ti-heart"],["reflect","ti-moon"],["therapy","ti-armchair"],["sauna","ti-flame"],["rest","ti-moon"],
+    ["clean","ti-broom"],["tidy","ti-broom"],["laundry","ti-wash-machine"],["dish","ti-bowl"],["brush","ti-dental"],["teeth","ti-dental"],["groom","ti-razor"],["errand","ti-shopping-bag"],["doctor","ti-stethoscope"],["chore","ti-broom"],
+    ["scroll","ti-windmill"],["vibe","ti-windmill"],["instagram","ti-brand-instagram"],["tiktok","ti-brand-tiktok"],["weed","ti-plant"],["cigarette","ti-cigarette"],["smok","ti-cigarette"],["alcohol","ti-bottle"],["procrastinat","ti-windmill"],["break","ti-coffee"]
+  ];
+  function tiClass(item) { var t = (item && item.title || "").toLowerCase(); for (var i = 0; i < TIMAP.length; i++) if (t.indexOf(TIMAP[i][0]) !== -1) return TIMAP[i][1]; return DOM[domainOf(item)].ti; }
+  function tiIcon(item) { return '<i class="ti ' + tiClass(item) + '"></i>'; }
+  // ---- STREAK + escalating on-plan CELEBRATION (mockups 024/032) ----
+  function comboTier(s) { return s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1; }
+  function streakColor(s) { return mixHex("#ffe14a", "#ff2a12", Math.min(1, s / 8)); } // yellow→red as it heats
+  function curStreak() { if (!S || !S.game) return 0; if (S.game.streakDay && S.game.streakDay !== todayK()) return 0; return S.game.streak || 0; }
+  function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
+  function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
+  function celebrate(color, streak) {
+    var tier = comboTier(streak), pts = [10, 25, 60, 150][tier - 1];
+    try { earn(pts, {}); } catch (e) {}
+    var ov = add(document.body, "div", "cele-ov");
+    var box = add(ov, "div", "cele-box" + (tier >= 4 ? " fire" : "")); box.style.background = color || "#36b3f0";
+    box.style.boxShadow = "0 0 0 " + (2 + tier) + "px " + (tier >= 3 ? "#ff7a1a" : "#ffd54a") + ",0 0 " + (10 + tier * 6) + "px " + (tier >= 3 ? "#ff5a1a" : "#ffd54a");
+    box.innerHTML = '<i class="ti ti-circle-check"></i>';
+    var n = 3 + tier * 2;
+    for (var i = 0; i < n; i++) { var ang = (i / n) * 6.28 + (i % 2), dist = 70 + (i % 3) * 30; var st = add(ov, "i", "cele-star ti " + (tier >= 3 && i % 2 ? "ti-flame" : "ti-star")); st.style.setProperty("--dx", (Math.cos(ang) * dist) + "px"); st.style.setProperty("--dy", (Math.sin(ang) * dist) + "px"); st.style.color = tier >= 3 ? (i % 2 ? "#ff7a1a" : "#ffd54a") : "#ffd54a"; st.style.animationDelay = (i * 0.03) + "s"; }
+    add(ov, "div", "cele-pts", "+" + pts);
+    add(ov, "div", "cele-combo", tier >= 4 ? "ON FIRE · x" + streak : tier >= 3 ? "🔥 streak x" + streak : tier >= 2 ? "combo x" + streak : "on plan!");
+    setTimeout(function () { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 300); }, 1500);
+  }
+  function planActiveNow(dom) { var bl = blocks(todayK()), n = nowMin(); for (var i = 0; i < bl.length; i++) { var s = hm(bl[i].time), e = s + (bl[i].mins || 30); if (n >= s - 20 && n < e + 20 && domainOf(bl[i]) === dom && !bl[i].done) return bl[i]; } return null; }
+  function maybeCelebrateTrack(t) { var dom = domainOf(t); if (dom === "drift") { coolStreak(); return; } if (planActiveNow(dom)) celebrate(DOM[dom].c, bumpStreak()); }
+  // ---- PLANNING suggestion engine (mockups 037/039/040): reasoned hero + alts, each with a WHY; never a blank day ----
+  var SUG_POOL = {
+    morning: [["Breakfast", "nourish", "fuel up for the day"], ["Shower", "upkeep", "start fresh"], ["Deep work", "focus", "your peak focus window"], ["Walk", "move", "get the body moving"], ["Meditate", "restore", "center before you start"]],
+    afternoon: [["Lunch", "nourish", "it's around noon"], ["Deep work", "focus", "afternoon focus block"], ["Walk", "move", "you've sat a while"], ["Draw", "create", "✦ toward your Artist goal"], ["Errands", "upkeep", "knock out the small stuff"]],
+    evening: [["Dinner", "nourish", "wind toward evening"], ["Walk", "move", "an evening stroll"], ["Connect", "connect", "reach out to someone"], ["Read", "play", "unwind a little"], ["Tidy", "upkeep", "reset your space"]],
+    night: [["Wind down", "restore", "ease toward sleep"], ["Journal", "restore", "reflect on today"], ["Read", "play", "calm the mind"], ["Sleep", "restore", "rest is heroic too"]]
+  };
+  function sugNext(k) {
+    var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; });
+    var out = [];
+    if (k === todayK()) { var od = mostOverdueChore(); if (od && !have[od.l.toLowerCase()]) { var f = choreFresh(od); out.push({ title: od.l, domain: "upkeep", why: "your space needs it · " + (f.days >= 999 ? "never done" : f.days + "d"), mins: 15 }); } }
+    (SUG_POOL[phase()] || SUG_POOL.afternoon).forEach(function (c) { if (!have[c[0].toLowerCase()]) out.push({ title: c[0], domain: c[1], why: c[2], mins: c[1] === "focus" ? 90 : 30 }); });
+    return out.slice(0, 4);
+  }
+  function nextFreeTime(k) {
+    var bl = blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    var t = (k === todayK()) ? Math.max(nowMin(), 6 * 60) : 8 * 60;
+    bl.forEach(function (b) { var s = hm(b.time), e = s + (b.mins || 30); if (t < e && t + 30 > s) t = e; });
+    t = Math.min(1410, Math.round(t / 15) * 15); return pad(Math.floor(t / 60)) + ":" + pad(t % 60);
+  }
+  function addSuggested(k, s) { var dom = s.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: s.mins || 30, title: s.title, prio: 2, color: DOM[dom].c, catK: s.catK || null, domain: dom, done: false }); reflow(k); save(); renderToday(); }
+  function renderSuggest(k) {
+    var SB = el("suggestBar"); if (!SB) return; SB.innerHTML = "";
+    if (k !== todayK() && k !== tomK()) { SB.style.display = "none"; return; } SB.style.display = "";
+    var sug = sugNext(k); if (!sug.length) return;
+    try {
+      add(SB, "div", "sughead", "suggested next ▸");
+      var row = add(SB, "div", "sugrow");
+      sug.forEach(function (s, i) { var D = DOM[s.domain] || DOM.focus, c = add(row, "div", "sugchip" + (i === 0 ? " hero" : "")); c.style.background = D.c; c.style.color = D.ink; if (i === 0) c.style.boxShadow = "0 0 13px " + D.c; c.innerHTML = '<i class="ti ' + tiClass({ title: s.title, domain: s.domain }) + '"></i> ' + esc(s.title) + ' · ' + dur(s.mins) + '<div class="sugwhy">' + esc(s.why) + '</div>'; c.onclick = function () { addSuggested(k, s); }; });
+      var door = add(SB, "button", "sugdoor"); door.innerHTML = '<i class="ti ti-layout-grid"></i> all my activities';
+      door.onclick = function () { bentoPicker({ title: "Plan what?", onPick: function (x) { addSuggested(k, { title: x.title, domain: x.domain || domainOf(x), mins: 30, catK: x.catK }); } }); };
+    } catch (err) { console.error("SUGERR", err && err.message, JSON.stringify(sug)); }
+  }
+  // ---- HOME: top live-tracker strip + pull-down plan|real (mockups 005/006/007, §13) ----
+  function pullElapsed(t) { var m = Math.max(0, Math.floor((Date.now() - t.start) / 60000)); return Math.floor(m / 60) + ":" + pad(m % 60); }
+  function activeTimers() { return (S.timers || []).filter(function (t) { return (t.dayK || key(new Date(t.start))) === todayK(); }); }
+  function startOrSwitch() { var run = activeTimers(); bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", multi: true, onPickMulti: function (sel) { var t = startTrackerNow(); assignTimerMulti(t, sel); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }, onPick: function (x) { var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } }); }
+  function openPull() { var ps = el("pullSheet"), pb = el("pullBody"), bd = el("pullBackdrop"); if (!ps) return; pb.innerHTML = ""; var hd = add(pb, "div", "pull-h"); hd.innerHTML = '<i class="ti ti-layout-2"></i> What now? — plan vs. real'; var cal = add(pb, "div"); calendarView(cal, todayK(), true); ps.classList.add("on"); bd.classList.add("on"); }
+  function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) ps.classList.remove("on"); if (bd) bd.classList.remove("on"); }
+  function renderLiveTracker() {
+    var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
+    document.body.classList.add("tracker");
+    var run = activeTimers(), t = run[run.length - 1];
+    if (t) { lb.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title || "Tracking") + ' · ' + pullElapsed(t); lt.classList.add("live"); if (lh) lh.textContent = "tap to switch"; }
+    else { lb.innerHTML = '<i class="ti ti-clock"></i> What are you doing now?'; lt.classList.remove("live"); if (lh) lh.innerHTML = 'tap to track  <i class="ti ti-chevron-down"></i>'; }
+    if (!lt._wired) { lt._wired = 1;
+      lt.addEventListener("pointerdown", function (ev) { var sy = ev.clientY, moved = false; function mv(e) { if (!moved && e.clientY - sy > 22) { moved = true; cleanup(); openPull(); } } function up() { cleanup(); if (!moved) startOrSwitch(); } function cleanup() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+      var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
+      var pg = el("pullGrab"); if (pg) pg.addEventListener("click", closePull);
+    }
+  }
+  // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
+  var LIFESTAGES = [ { k: "founder", l: "Founder", ti: "ti-rocket" }, { k: "dev", l: "Builder", ti: "ti-code" }, { k: "artist", l: "Creative", ti: "ti-palette" }, { k: "writer", l: "Writer", ti: "ti-pencil" }, { k: "student", l: "Student", ti: "ti-school" }, { k: "office", l: "9-to-5", ti: "ti-briefcase" } ];
+  var VIBES2 = [ { k: "thriving", l: "Thriving", ti: "ti-flame", c: "#34d39a" }, { k: "coasting", l: "Coasting", ti: "ti-windmill", c: "#ffc83d" }, { k: "stuck", l: "Stuck", ti: "ti-anchor", c: "#7f9bc4" }, { k: "overwhelmed", l: "Overwhelmed", ti: "ti-urgent", c: "#c4607f" } ];
+  var GOAL_SEED = [ { l: "Make art", d: "create", ti: "ti-palette" }, { l: "Grow business", d: "focus", ti: "ti-briefcase" }, { l: "Get fit", d: "move", ti: "ti-heartbeat" }, { l: "Learn piano", d: "create", ti: "ti-music" }, { l: "Read more", d: "play", ti: "ti-book" }, { l: "Save money", d: "focus", ti: "ti-coin" }, { l: "Sleep better", d: "restore", ti: "ti-moon" }, { l: "Find love", d: "connect", ti: "ti-heart" } ];
+  var EXTRAS2 = ["Get coffee", "Snack", "Water", "Stretch", "Text back", "Tidy 5m"];
+  function stageSuggest(age) { return (age === "teens" || age === "20s") ? "student" : age === "30s" ? "founder" : "office"; }
+  function prefillByStage(occK) {
+    var by = { move: ["Walk", "Gym"], nourish: ["Breakfast", "Lunch", "Cook"], focus: [], create: [], connect: ["Call", "Friends"], play: ["Read"], restore: ["Sleep", "Meditate"], upkeep: ["Shower", "Clean"] };
+    var o = OCC_BY_K[occK]; if (o && o.work) o.work.forEach(function (g) { g.tasks.slice(0, 2).forEach(function (t) { var d = domainOf({ title: t.l }); (by[d] = by[d] || []).push(t.l); }); });
+    if (occK === "artist" || occK === "writer") by.create = by.create.concat(["Draw", "Write"]);
+    return by;
+  }
+  function onboard() {
+    var data = { gender: "", age: "", vibe: "", occ: "", kept: {}, goals: {}, lark: true, up: "7:00", bed: "11:30" };
+    var step = 0, STEPS = 8;
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
+    var bar = add(card, "div", "ob-bar"), barF = add(bar, "i");
+    var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
+    function chip(p, label, on, cs) { var s = add(p, "span", "ob-ch" + (on ? " on" : "")); if (cs) { s.style.background = cs.bg; s.style.color = cs.fg; } s.innerHTML = label; return s; }
+    function next() { if (step < STEPS - 1) { step++; draw(); } else finish(); }
+    function finish() {
+      S.profile = S.profile || {}; var P = S.profile;
+      P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.occ = data.occ || "other";
+      P.goals = Object.keys(data.goals).filter(function (g) { return data.goals[g]; }).join(", "); P.lark = data.lark; P.wake = data.up; P.sleep = data.bed; P.set = true;
+      S.acts = S.acts || []; Object.keys(data.kept).forEach(function (t) { if (data.kept[t] && !TITLE2CAT[t.toLowerCase()]) S.acts.push({ title: t, catK: null, domain: domainOf({ title: t }) }); });
+      S.goals = Object.keys(data.goals).filter(function (g) { return data.goals[g]; }).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; return { title: g, domain: seed ? seed.d : "focus", subtasks: [] }; });
+      save(); ov.remove(); renderAll(); viewK = todayK(); zoomMode = "day"; var d = document.querySelector('#nav .nb[data-tab="day"]'); if (d) d.click(); toast("✨ Your world is ready — plan your first day");
+    }
+    function draw() {
+      barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
+      body.className = (step === 0 || step === 7) ? "ob-body center" : "ob-body";
+      if (step === 0) { add(body, "i", "ti ti-sparkles ob-spk"); var f = add(body, "div", "ob-face"); add(f, "span", "ob-eye l"); add(f, "span", "ob-eye r"); add(body, "div", "ob-q", "Hi, I'm Sage."); add(body, "div", "ob-sb", "your guardian. I'll help you become who you want to be — one day at a time."); }
+      if (step === 1) { add(body, "div", "ob-q", "How's life feeling?"); add(body, "div", "ob-sb", "no wrong answer"); var col = add(body, "div", "ob-col"); VIBES2.forEach(function (v) { var c = chip(col, '<i class="ti ' + v.ti + '"></i> ' + v.l, data.vibe === v.k, { bg: v.c, fg: "#160510" }); c.onclick = function () { data.vibe = v.k; draw(); }; }); }
+      if (step === 2) { add(body, "div", "ob-q", "A little about you"); add(body, "div", "ob-sb", "helps me set you up right"); add(body, "div", "ob-lbl", "YOU ARE"); var gr = add(body, "div", "ob-row"); [["f", "she"], ["m", "he"], ["o", "they"], ["", "skip"]].forEach(function (g) { var c = chip(gr, g[1], data.gender === g[0]); c.onclick = function () { data.gender = g[0]; draw(); }; }); add(body, "div", "ob-lbl", "AGE"); var ar = add(body, "div", "ob-row"); ["teens", "20s", "30s", "40s", "50s", "60+"].forEach(function (a) { var c = chip(ar, a, data.age === a); c.onclick = function () { data.age = a; if (!data.occ) data.occ = stageSuggest(a); draw(); }; }); }
+      if (step === 3) { add(body, "div", "ob-q", "Sounds like you're a…"); add(body, "div", "ob-sb", "my best guess — change it if I'm off"); var sug = data.occ || stageSuggest(data.age) || "founder"; var sg = LIFESTAGES.filter(function (x) { return x.k === sug; })[0] || LIFESTAGES[0]; data.occ = sg.k; var hero = add(body, "div", "ob-hero"); hero.innerHTML = '<i class="ti ' + sg.ti + '"></i> ' + sg.l; add(body, "div", "ob-lbl", "OR…"); var row = add(body, "div", "ob-row"); LIFESTAGES.forEach(function (s) { if (s.k === sg.k) return; var c = chip(row, '<i class="ti ' + s.ti + '"></i> ' + s.l, false); c.onclick = function () { data.occ = s.k; draw(); }; }); }
+      if (step === 4) { add(body, "div", "ob-q", "Your usual life — keep what fits ✨"); add(body, "div", "ob-sb", "pre-loaded by area · untap what's not you"); var pf = prefillByStage(data.occ); if (!Object.keys(data.kept).length) DOM_ORDER.forEach(function (d) { (pf[d] || []).forEach(function (t) { data.kept[t] = true; }); }); var grid = add(body, "div", "ob-grid"); DOM_ORDER.forEach(function (d) { var acts = pf[d]; if (!acts || !acts.length) return; var D = DOM[d], cell = add(grid, "div", "ob-cell"); add(cell, "div", "ob-dh", D.l.toUpperCase()).style.color = D.light; var w = add(cell, "div", "ob-row"); acts.forEach(function (t) { var on = data.kept[t]; var c = chip(w, esc(t) + (on ? ' ✓' : ''), on, on ? { bg: D.c, fg: D.ink } : null); c.onclick = function () { data.kept[t] = !data.kept[t]; draw(); }; }); }); add(body, "div", "ob-extras-h", "✦ LITTLE EXTRAS — the small stuff"); var ex = add(body, "div", "ob-row"); EXTRAS2.forEach(function (t) { var on = data.kept[t]; var c = chip(ex, esc(t) + (on ? ' ✓' : ''), on); c.onclick = function () { data.kept[t] = !data.kept[t]; draw(); }; }); }
+      if (step === 5) { add(body, "div", "ob-q", "What are you working toward?"); add(body, "div", "ob-sb", "pick a few — fewer is better"); var gr = add(body, "div", "ob-row"); GOAL_SEED.forEach(function (g) { var on = data.goals[g.l], D = DOM[g.d]; var c = chip(gr, '<i class="ti ' + g.ti + '"></i> ' + g.l + (on ? ' ✓' : ''), on, on ? { bg: D.c, fg: D.ink } : null); c.onclick = function () { data.goals[g.l] = !data.goals[g.l]; draw(); }; }); }
+      if (step === 6) { add(body, "div", "ob-q", "When are you sharpest?"); add(body, "div", "ob-sb", "so I plan deep work right"); var lr = add(body, "div", "ob-row"); var m = chip(lr, '<i class="ti ti-sun"></i> Morning', data.lark, data.lark ? { bg: "#ffc83d", fg: "#5a3a00" } : null); m.onclick = function () { data.lark = true; draw(); }; var n = chip(lr, '<i class="ti ti-moon"></i> Night', !data.lark, !data.lark ? { bg: "#9a7cff", fg: "#241548" } : null); n.onclick = function () { data.lark = false; draw(); }; add(body, "div", "ob-lbl", "UP AT"); var ur = add(body, "div", "ob-row"); ["6:00", "7:00", "8:00", "9:00"].forEach(function (t) { var c = chip(ur, t, data.up === t); c.onclick = function () { data.up = t; draw(); }; }); add(body, "div", "ob-lbl", "BED AT"); var br = add(body, "div", "ob-row"); ["10:00", "11:00", "11:30", "12:30"].forEach(function (t) { var c = chip(br, t, data.bed === t); c.onclick = function () { data.bed = t; draw(); }; }); }
+      if (step === 7) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
+      var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : "")); b.textContent = step === 0 ? "Let's go ▸" : step === STEPS - 1 ? "Plan your first day ▸" : "Next ▸"; b.onclick = next;
+      if (step > 0 && step < STEPS - 1) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; draw(); }; }
+      var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = function () { ov.remove(); };
+    }
+    draw();
+  }
   var VIRTUES = [
     { k: "zest", l: "Zest", e: "⚡", c: "#ff8a1e", grow: "move your body" },
     { k: "disc", l: "Discipline", e: "⚔️", c: "#3a9ae6", grow: "show up to a habit or deep work" },
@@ -868,7 +1045,7 @@
   var vState = null;
   function renderChar() {
     var L = el("charFoot"); L.innerHTML = "";
-    if (!(S.profile && S.profile.set)) { el("statLvl").textContent = ""; vState = null; renderPulls(); var b = add(L, "button", "done2", "✨ Begin your character →"); b.onclick = charSheet; return; }
+    if (!(S.profile && S.profile.set)) { el("statLvl").textContent = ""; vState = null; renderPulls(); var b = add(L, "button", "done2", "✨ Set up your world →"); b.onclick = onboard; return; }
     var v = virtues(); vState = v;
     el("statLvl").textContent = (VCLASS[v.top.k] || "") + " · Lv " + v.level;
     var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
@@ -1194,15 +1371,14 @@
   function calendarView(L, k, showNow) {
     L.innerHTML = ""; nowLineEl = null;
     var bls = blocks(k).slice(), lgs = logs(k).slice();
-    add(L, "div", "calhint", "left = PLAN (hatched) · right = REAL · ✓ gold = on-plan · coral = drift · drag to move, edges to stretch, tap to edit");
-    var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx", "PLAN"); add(lh, "span", "lhx", "REAL");
-    var minS = 6 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(24, Math.ceil(maxE / 60)), HP = 60, now = nowMin();
-    var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
-    add(cal, "div", "lanediv");
-    for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); var half = add(cal, "div", "calhalf"); half.style.top = ((h - startH) * HP + HP / 2) + "px"; }
-    if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; }
-    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
+    var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
+    var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
+    var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
+    var startH = Math.min(7, Math.floor(minS / 60)), endH = Math.max(23, Math.ceil(maxE / 60)), HP = 64, now = nowMin();
+    var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
+    for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
+    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(26, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } }
     function rr() { renderToday(); }
     var planCards = [];
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
@@ -1211,27 +1387,27 @@
     function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
-      // PLAN lane has 3 states (§23): sched = hatched (scheduled) · cele = category-colored celebration (done) · ghost = hollow (missed)
-      var dom = domainOf(b), col = DOM[dom].c;
+      // PLAN lane, 3 states (§23, mockups 030/031/034): sched = two-tone diagonal hatch · cele = activity-colored celebration · ghost = domain-outlined hollow
+      var dom = domainOf(b), D = DOM[dom];
       var card = add(cal, "div", "calblk lane " + (status === "ok" ? "cele" : status === "miss" ? "ghost" : "sched") + (b.pin ? " pin" : ""));
       place(card, bs, b.mins || 30, "P");
-      card.style.borderColor = "#160510";
       if (status === "ok") {
-        card.style.background = "linear-gradient(158deg," + hexA(col, 0.96) + "," + hexA(col, 0.66) + ")";
-        card.style.boxShadow = "0 0 22px " + hexA(col, 0.85) + ",inset 0 1px 0 rgba(255,255,255,.45),0 5px 14px rgba(0,0,0,.4)";
+        card.style.background = "linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")";
+        card.style.boxShadow = "0 0 0 3px " + D.ring + ",0 0 12px " + D.c; card.style.borderColor = "#160510";
         add(card, "div", "foil");
       } else if (status === "miss") {
-        card.style.background = "transparent"; card.style.borderStyle = "dashed"; card.style.boxShadow = "none";
+        card.style.background = mixDark(D.c); card.style.borderColor = D.c; card.style.boxShadow = "none";
       } else {
-        card.style.backgroundColor = hexA(col, 0.16);
-        card.style.backgroundImage = "repeating-linear-gradient(45deg," + hexA(col, 0.5) + " 0 5px,transparent 5px 11px)";
-        card.style.boxShadow = "0 2px 8px rgba(0,0,0,.22)";
+        card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; card.style.borderColor = "#160510";
       }
-      add(card, "div", "ct", (status === "ok" ? "✓ " : "") + fmt(bs) + "–" + fmt(be));
-      add(card, "div", "cn", (b.pin ? "📌 " : "") + blockEmoji(b.title) + " " + b.title);
-      if (status === "ok") add(card, "div", "spk", "✨");
+      var ink = (status === "miss") ? D.light : D.ink;
+      var cn = add(card, "div", "cn"); cn.style.color = ink;
+      var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
+      cn.innerHTML = (b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + " " + esc(b.title) + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
+      if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = D.light; }
+      else { var ct = add(card, "div", "csub ct"); ct.style.color = ink; ct.textContent = fmt(bs) + "–" + fmt(be); }
       var pc = { b: b, card: card }; planCards.push(pc);
-      var xb = add(card, "div", "calx", "✕");
+      var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>';
       xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
       xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = blocks(k), i = a.indexOf(b); if (i >= 0) a.splice(i, 1); var p2 = planCards.indexOf(pc); if (p2 >= 0) planCards.splice(p2, 1); card.style.transform = "scale(.4)"; card.style.opacity = "0"; setTimeout(function () { card.remove(); reflow(k); settle(); save(); }, 150); });
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript");
@@ -1268,23 +1444,37 @@
       card.style.top = topFor(it.s) + "px"; card.style.height = Math.max(22, (it.e - it.s) / 60 * HP - 3) + "px";
       card.style.left = "calc(" + (50 + it.col * colW) + "% + 2px)"; card.style.width = "calc(" + colW + "% - 5px)"; card.style.right = "auto";
       if (it.kind === "log") {
-        var e = it.ref, dom = domainOf(e), lc = DOM[dom].c, drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.borderColor = "#160510"; card.style.background = "linear-gradient(158deg," + lc + "," + hexA(lc, 0.78) + ")"; card.style.boxShadow = "0 4px 0 #160510,0 6px 13px rgba(0,0,0,.38)";
-        if (drift) { card.classList.add("drift"); card.style.background = hexA(CORAL, 0.22); card.style.borderColor = CORAL; card.style.borderStyle = "dashed"; card.style.boxShadow = "0 3px 9px rgba(0,0,0,.3)"; } else if (onp) card.classList.add("onplan");
-        add(card, "div", "ct", (onp ? "✓ " : "") + fmt(it.s) + "–" + fmt(it.e)); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title);
-        var xb = add(card, "div", "calx", "✕"); xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
-        card.addEventListener("click", function (ev) { if (ev.target === xb) return; radialMenu(frequent(8), function (m) { var p = function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); }; if (m) p(m); else pickOne(p); }); });
+        var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
+        card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")"; card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)";
+        if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
+        var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + " " + esc(e.title) + (onp ? ' <i class="ti ti-sparkles" style="color:#a06b00"></i>' : "");
+        if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; } else { var ct = add(card, "div", "csub", fmt(it.s) + "–" + fmt(it.e)); ct.style.color = D.ink; }
+        var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
+        card.addEventListener("click", function (ev) { if (ev.target === xb) return; bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); });
       } else {
-        var t = it.ref, dom = domainOf(t), lc = DOM[dom].c, drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.borderColor = "#160510"; card.style.background = "linear-gradient(158deg," + lc + "," + hexA(lc, 0.8) + ")";
-        if (drift) { card.classList.add("drift"); card.style.background = hexA(CORAL, 0.24); card.style.borderColor = CORAL; card.style.borderStyle = "dashed"; } else if (onp) card.classList.add("onplan");
-        add(card, "div", "ct", "▶ " + fmt(it.s)); add(card, "div", "cn", (t.emoji ? t.emoji + " " : "") + t.title);
-        var stop = add(card, "div", "calx", "⏹"); stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
+        var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
+        card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")";
+        if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
+        var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(t.title);
+        var ctv = add(card, "div", "csub ct", fmt(it.s)); ctv.style.color = D.ink;
+        var stop = add(card, "div", "calx"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
-        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(22, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = "▶ " + fmt(tsm); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
-        card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; radialMenu(frequent(8), function (sel) { if (sel && sel.length) assignTimerMulti(t, sel); else pickOne(function (x) { assignTimer(t, x); }); }, undefined, true); });
+        gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.min(Date.now(), s0 + dmin * 60000); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); card.style.top = topFor(tsm) + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+        card.addEventListener("click", function (ev) { if (ev.target === stop || ev.target === gT) return; bentoPicker({ title: "Doing what?", multi: true, onPickMulti: function (sel) { assignTimerMulti(t, sel); }, onPick: function (x) { assignTimer(t, x); } }); });
       }
     });
+    // BACKFILL — untracked gaps in the REAL lane (past, up to now) show a dashed "fill it in?" slot (§7/§14)
+    if (showNow && k === todayK()) {
+      var ivs = acts.map(function (it) { return [it.s, it.e]; }).sort(function (a, b) { return a[0] - b[0]; });
+      var cur = startH * 60, gaps = [];
+      ivs.forEach(function (g) { if (g[0] - cur >= 30) gaps.push([cur, g[0]]); cur = Math.max(cur, g[1]); });
+      if (now - cur >= 30) gaps.push([cur, now]);
+      gaps.forEach(function (g) {
+        var slot = add(cal, "div", "backfill"); slot.style.top = topFor(g[0]) + "px"; slot.style.height = Math.max(20, (g[1] - g[0]) / 60 * HP - 4) + "px"; slot.style.left = "calc(50% + 4px)"; slot.style.right = "4px";
+        slot.innerHTML = '<i class="ti ti-arrows-vertical"></i> fill it in?';
+        slot.addEventListener("click", function () { var gs = g[0], gm = g[1] - g[0]; bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: gm, title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } }); });
+      });
+    }
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
       function up(e) {
@@ -1293,12 +1483,12 @@
         var rect = cal.getBoundingClientRect(), lx = e.clientX - rect.left;
         if (lx > rect.width * 0.5 && showNow) {
           // create the timer only when the user actually commits a pick — no eager "Tracking…" orphan that can linger
-          radialMenu(frequent(8), function (sel) { if (sel && sel.length) assignTimerMulti(startTrackerNow(), sel); else pickOne(function (x) { assignTimer(startTrackerNow(), x); }); }, undefined, true);
+          bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } });
         } else {
           var tm = timeFromY(e.clientY - rect.top, startH, HP), id = uid();
           blocks(k).push({ id: id, time: tm, mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
           var nb = blocks(k).filter(function (b) { return b.id === id; })[0];
-          radialMenu(frequent(8), function (m) { if (m) assignBlock(nb, m, k); else pickOne(function (x) { assignBlock(nb, x, k); }); }, function () { var a = blocks(k), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } });
+          bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, k); }, onCancel: function () { var a = blocks(k), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } } });
         }
       }
       document.addEventListener("pointerup", up);
@@ -1330,11 +1520,13 @@
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.classList.toggle("on", z.dataset.z === zoomMode); });
     var dp = el("planToday"), nc = el("nowCard"), lp = el("logPanel"), tt = el("todayTitle"), L = el("todayList");
     var adh = el("adhereChip"); if (adh) adh.style.display = "none";
+    var sgb0 = el("suggestBar"); if (sgb0) sgb0.style.display = "none";
     if (zoomMode === "week") { L.innerHTML = ""; weekGrid(L); tt.textContent = "This week — tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
     if (zoomMode === "month") { L.innerHTML = ""; monthGrid(L); tt.textContent = "Tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
     if (dp) dp.style.display = ""; tt.textContent = relLabel(viewK);
     calendarView(L, viewK, viewK === todayK());
     if (adh) { var _bl = blocks(viewK), _n = 0; _bl.forEach(function (b) { if (blockStatus(viewK, b) === "ok") _n++; }); adh.textContent = "✨ " + _n + " on plan"; adh.style.display = _bl.length ? "" : "none"; }
+    renderSuggest(viewK);
     if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
     var k = viewK, LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0; logs(k).forEach(function (e) { tot += e.mins || 0; });
     if (nc) nc.style.display = (k === todayK() ? "" : "none"); if (lp) lp.style.display = "";
@@ -1342,14 +1534,42 @@
     lg.forEach(function (e) { var r = add(LG, "div", "logi"); if (e.color) r.appendChild(dot(e.color)); add(r, "div", "lt", fmt(hm(e.time))); add(r, "div", "ln", e.title); add(r, "div", "lm", dur(e.mins || 0)); });
     el("trackTotal").textContent = tot ? dur(tot) : "";
   }
+  function subtaskSheet(title, k) {
+    var subs = subtasksFor(title); if (!subs) return false; k = k || todayK();
+    var dom = domainOf({ title: title }), D = DOM[dom];
+    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head"); add(head, "div", "bento-q", "Break down: " + title); var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var bd = add(card, "div", "bento-body"); add(bd, "div", "sughead", "tap a step to drop it into your plan");
+    var added = {}, wrap = add(bd, "div", "sugrow"); wrap.style.gridTemplateColumns = "1fr";
+    subs.forEach(function (s) { var c = add(wrap, "div", "sugchip"); c.style.background = D.c; c.style.color = D.ink; c.innerHTML = '<i class="ti ' + tiClass({ title: s, domain: dom }) + '"></i> ' + esc(s); c.onclick = function () { if (added[s]) return; added[s] = 1; c.style.opacity = ".55"; c.innerHTML = '<i class="ti ti-check"></i> ' + esc(s) + ' · added'; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 20, title: s, prio: 2, color: D.c, domain: dom, done: false }); reflow(k); save(); renderToday(); }; });
+    var foot = add(card, "div", "bento-foot"); var ab = add(foot, "button", "bento-go"); ab.innerHTML = '<i class="ti ti-list-check"></i> add all steps'; ab.onclick = function () { subs.forEach(function (s) { if (!added[s]) blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 20, title: s, prio: 2, color: D.c, domain: dom, done: false }); }); reflow(k); save(); renderToday(); ov.remove(); }; return true;
+  }
   function blockEdit(b, k) {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Edit block");
     var frm = add(B, "div", "frm"); var tm = document.createElement("input"); tm.type = "time"; tm.value = b.time; var tx = document.createElement("input"); tx.type = "text"; tx.value = b.title; frm.appendChild(tm); frm.appendChild(tx);
     add(B, "div", "lbl", "duration"); var c2 = add(B, "div", "pchips"); DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === b.mins ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { b.mins = m; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
     add(B, "div", "lbl", "priority"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === (b.prio || 2) ? " on" : ""), p.l); x.onclick = function () { b.prio = p.v; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
     add(B, "div", "lbl", "📌 pin = fixed time; flexible activities flow around it"); var pc = add(B, "div", "pchips"); var px = add(pc, "div", "pchip" + (b.pin ? " on" : ""), b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"); px.onclick = function () { b.pin = !b.pin; px.classList.toggle("on"); px.textContent = b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"; };
+    // STEPS — add YOUR OWN ordered sub-parts to any activity (e.g. a Deep Work session split into your real work items, in order)
+    b.subs = b.subs || [];
+    add(B, "div", "lbl", "🧩 steps — split this into your own ordered parts (optional)");
+    var stepsW = add(B, "div", "steps-w");
+    (function drawSteps() {
+      stepsW.innerHTML = "";
+      b.subs.forEach(function (s, i) {
+        var r = add(stepsW, "div", "step-row" + (s.done ? " sdone" : ""));
+        var ck = add(r, "button", "step-ck" + (s.done ? " on" : "")); ck.innerHTML = s.done ? '<i class="ti ti-check"></i>' : ""; ck.onclick = function () { s.done = !s.done; save(); drawSteps(); };
+        add(r, "span", "step-t", s.t);
+        var up = add(r, "button", "step-mv"); up.innerHTML = '<i class="ti ti-chevron-up"></i>'; up.disabled = i === 0; up.onclick = function () { var x = b.subs.splice(i, 1)[0]; b.subs.splice(i - 1, 0, x); save(); drawSteps(); };
+        var dn = add(r, "button", "step-mv"); dn.innerHTML = '<i class="ti ti-chevron-down"></i>'; dn.disabled = i === b.subs.length - 1; dn.onclick = function () { var x = b.subs.splice(i, 1)[0]; b.subs.splice(i + 1, 0, x); save(); drawSteps(); };
+        var rm = add(r, "button", "step-rm"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { b.subs.splice(i, 1); save(); drawSteps(); };
+      });
+      var ab = add(stepsW, "button", "step-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a step'; ab.onclick = function () { bentoPicker({ title: "Add a step to " + b.title, onPick: function (x) { b.subs.push({ t: x.title, done: false }); save(); drawSteps(); } }); };
+    })();
+    if (/clean|tidy|chore|dishes|laundry|vacuum/i.test(b.title)) { var cbtn = add(B, "button", "add2", "🧹 open your Space — chores + state"); cbtn.style.margin = "2px 0 10px"; cbtn.onclick = function () { closeSheet(); choresSheet(); }; }
     var row = add(B, "div", "frm");
-    add(row, "button", "add", b.done ? "✓ undo done" : "✓ Mark done").onclick = function () { b.done = !b.done; if (b.done) earn(8, {}); b.title = tx.value.trim() || b.title; b.time = tm.value; reflow(k); save(); closeSheet(); renderAll(); };
+    add(row, "button", "add", b.done ? "✓ undo done" : "✓ Mark done").onclick = function () { b.done = !b.done; b.title = tx.value.trim() || b.title; b.time = tm.value; if (b.done) { var _st = bumpStreak(); celebrate(DOM[domainOf(b)].c, _st); } else coolStreak(); reflow(k); save(); closeSheet(); renderAll(); };
     add(row, "button", "add", "🗑 Delete").onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); closeSheet(); renderAll(); };
     add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; reflow(k); save(); closeSheet(); renderAll(); };
   }
@@ -1381,7 +1601,85 @@
     var tot = 0; lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { tot += e.mins || 0; }); });
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak 🔥" + bestStreak()); sm.style.marginTop = "12px";
   }
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); }
+
+  // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
+  var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
+  function allActivities() {
+    var out = [], seen = {};
+    function push(title, catK, habitId) { var lc = (title || "").toLowerCase(); if (!lc || seen[lc]) return; seen[lc] = 1; var dom = domainOf({ title: title, catK: catK, habitId: habitId }); out.push({ title: title, catK: catK || null, habitId: habitId || null, domain: dom, color: DOM[dom].c }); }
+    activeCats().forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { push(t.l, c.k, t.id); }); }); });
+    (S.acts || []).forEach(function (a) { push(a.title, a.catK, null); });
+    return out;
+  }
+  function bentoByDomain() { var by = {}; DOM_ORDER.forEach(function (d) { by[d] = []; }); allActivities().forEach(function (a) { (by[a.domain] = by[a.domain] || []).push(a); }); return by; }
+  function bentoPicker(opts) {
+    opts = opts || {};
+    var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null }, foot = null;
+    var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
+    var ov = add(document.body, "div", "bento-ov");
+    var card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head");
+    add(head, "div", "bento-q", opts.title || "What are you doing?");
+    var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
+    var body = add(card, "div", "bento-body");
+    function close() { ov.remove(); }
+    xb.onclick = close;
+    ov.addEventListener("click", function (e) { if (e.target === ov) { close(); if (opts.onCancel) opts.onCancel(); } });
+    function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } }
+    function actChip(a, container, big) {
+      var D = DOM[a.domain];
+      var s = add(container, "span", "bchip" + (big ? " big" : "") + (sel.indexOf(a) >= 0 ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (fq[(a.title || "").toLowerCase()] ? " pred" : ""));
+      if (a.domain !== "drift") { s.style.background = D.c; s.style.color = D.ink; }
+      s.innerHTML = (big ? '<i class="ti ' + tiClass(a) + '"></i> ' : "") + esc(a.title);
+      s.onclick = function (e) { e.stopPropagation(); commit(a); };
+      return s;
+    }
+    function renderOverview() {
+      var grid = add(body, "div", "bento-grid");
+      DOM_ORDER.forEach(function (d) {
+        var acts = by[d]; if (!acts || !acts.length) return;
+        var D = DOM[d], mc = add(grid, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72);
+        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; render(); };
+        var wrap = add(mc, "div", "bento-chips");
+        acts.slice(0, 6).forEach(function (a) { actChip(a, wrap, false); });
+        if (acts.length > 6) { var more = add(wrap, "span", "bchip more", "+" + (acts.length - 6)); more.onclick = function () { view.cat = d; render(); }; }
+      });
+      var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
+    }
+    function renderExpanded(d) {
+      var D = DOM[d];
+      var strip = add(body, "div", "bento-strip");
+      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { view.cat = null; render(); };
+      DOM_ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; render(); }; });
+      var pane = add(body, "div", "bento-pane"); pane.style.borderColor = D.c;
+      var h = add(pane, "div", "bento-paneh"); h.style.color = D.light; h.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
+      var g = add(pane, "div", "bento-tiles");
+      by[d].forEach(function (a) { actChip(a, g, true); });
+      var addt = add(g, "span", "bchip big addt"); addt.innerHTML = '<i class="ti ti-plus"></i> add'; addt.onclick = addNew;
+    }
+    function addNew() {
+      view.cat = null; body.innerHTML = ""; if (foot) { foot.remove(); foot = null; }
+      add(body, "div", "bento-newh", "New activity");
+      var inp = document.createElement("input"); inp.type = "text"; inp.className = "bento-input"; inp.placeholder = "name it once…"; body.appendChild(inp);
+      add(body, "div", "bento-hint2", "type the name (once) → it becomes a bubble you tap forever");
+      add(body, "div", "bento-lbl", "category");
+      var crow = add(body, "div", "bento-cats"), chosen = { d: "focus" };
+      DOM_ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
+      var go = add(body, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>';
+      go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: chosen.d, color: DOM[chosen.d].c }; if (multi) { sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } };
+      setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
+    }
+    function renderFoot() {
+      if (!multi) return;
+      if (!foot) foot = add(card, "div", "bento-foot");
+      foot.innerHTML = "";
+      var b = add(foot, "button", "bento-go"); b.innerHTML = '<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : ""); b.disabled = !sel.length;
+      b.onclick = function () { if (!sel.length) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
+    }
+    function render() { body.innerHTML = ""; if (view.cat) renderExpanded(view.cat); else renderOverview(); }
+    render(); renderFoot();
+  }
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -1782,6 +2080,7 @@
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     renderAll();
     openGame();   // game-as-home: the app opens into the world
+    if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); // first-run onboarding (mockups 041/043)
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
