@@ -193,6 +193,43 @@
   OCCUPATIONS.forEach(function (o) { if (o.work) o.work.forEach(function (g) { g.tasks.forEach(function (t) { var lc = t.l.toLowerCase(); if (!TITLE2CAT[lc]) { TITLE2CAT[lc] = "work"; TITLE2META[lc] = { title: t.l, catK: "work", emoji: t.e, color: "#2a9fe0", habitId: null }; } }); }); });
   function activeCats() { var o = OCC_BY_K[(typeof S !== "undefined" && S && S.profile) ? S.profile.occ : null]; return CATS.map(function (c) { if (c.k === "work" && o && o.work) return { k: c.k, label: c.label, e: c.e, color: c.color, groups: o.work }; return c; }); }
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
+  // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
+  var DOM = {
+    move:    { l: "Move",    e: "🏃", c: "#ff8a3a" },
+    nourish: { l: "Nourish", e: "🍎", c: "#34d39a" },
+    focus:   { l: "Focus",   e: "🎯", c: "#36b3f0" },
+    create:  { l: "Create",  e: "🎨", c: "#b07aff" },
+    connect: { l: "Connect", e: "💛", c: "#ff5fa0" },
+    play:    { l: "Play",    e: "🎮", c: "#ffc83d" },
+    restore: { l: "Restore", e: "🌙", c: "#2ab8c4" },
+    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4" },
+    drift:   { l: "Drift",   e: "🌫️", c: "#8a6076" }
+  };
+  var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
+  // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
+  var DKW = [
+    ["deep work","focus"],["make art","create"],["make music","create"],["music prod","create"],["cold shower","upkeep"],["wind down","restore"],["brush teeth","upkeep"],["board game","play"],["text back","connect"],["quality time","connect"],["meal prep","nourish"],["side hustle","focus"],["eat healthy","nourish"],["make the bed","upkeep"],
+    ["run","move"],["gym","move"],["walk","move"],["yoga","move"],["stretch","move"],["cycl","move"],["bike","move"],["swim","move"],["sport","move"],["hike","move"],["danc","move"],["workout","move"],["exercise","move"],
+    ["breakfast","nourish"],["lunch","nourish"],["dinner","nourish"],["cook","nourish"],["snack","nourish"],["coffee","nourish"],["hydrat","nourish"],["grocer","nourish"],["protein","nourish"],["vitamin","nourish"],["eat","nourish"],["meal","nourish"],
+    ["code","focus"],["program","focus"],["study","focus"],["admin","focus"],["email","focus"],["meeting","focus"],["plan","focus"],["research","focus"],["analy","focus"],["debug","focus"],["review","focus"],["budget","focus"],["invoice","focus"],["apply","focus"],["ship","focus"],["publish","focus"],["outreach","focus"],["sell","focus"],["money","focus"],["assignment","focus"],["project","focus"],["office","focus"],["work","focus"],
+    ["paint","create"],["draw","create"],["sketch","create"],["guitar","create"],["piano","create"],["sing","create"],["craft","create"],["photo","create"],["video","create"],["design","create"],["content","create"],["youtube","create"],["midjourney","create"],["write","create"],["writing","create"],["music","create"],["art","create"],["build","create"],
+    ["family","connect"],["friend","connect"],["call","connect"],["date","connect"],["hang","connect"],["help","connect"],["communit","connect"],["partner","connect"],["hug","connect"],["compliment","connect"],["network","connect"],["social","connect"],["people","connect"],
+    ["game","play"],["movie","play"],["watch","play"],["puzzle","play"],["chess","play"],["podcast","play"],["listen","play"],["travel","play"],["explore","play"],["hobby","play"],["read","play"],
+    ["sleep","restore"],["nap","restore"],["meditat","restore"],["breath","restore"],["bath","restore"],["nature","restore"],["journal","restore"],["pray","restore"],["gratitude","restore"],["reflect","restore"],["therapy","restore"],["affirm","restore"],["sauna","restore"],["relax","restore"],["rest","restore"],
+    ["shower","upkeep"],["groom","upkeep"],["clean","upkeep"],["tidy","upkeep"],["laundry","upkeep"],["dish","upkeep"],["errand","upkeep"],["doctor","upkeep"],["wash","upkeep"],["skincare","upkeep"],["chore","upkeep"],
+    ["scroll","drift"],["doomscroll","drift"],["instagram","drift"],["tiktok","drift"],["porn","drift"],["weed","drift"],["cigarette","drift"],["smok","drift"],["vape","drift"],["alcohol","drift"],["sugar","drift"],["junk","drift"],["shopping","drift"],["gambl","drift"],["procrastinat","drift"],["vibe","drift"],["zone out","drift"],["mindless","drift"]
+  ];
+  function domainOf(it) {
+    if (!it) return "focus";
+    if (it.domain && DOM[it.domain]) return it.domain;
+    var t = (it.title || "").toLowerCase();
+    for (var i = 0; i < DKW.length; i++) if (t.indexOf(DKW[i][0]) !== -1) return DKW[i][1];
+    var ck = it.catK || TITLE2CAT[t] || (it.habitId ? HABIT2CAT[it.habitId] : null);
+    if (ck && CAT2DOM[ck]) return CAT2DOM[ck];
+    return "focus";
+  }
+  function domColor(it) { return DOM[domainOf(it)].c; }
+  var GOLD = "#ffd24a", CORAL = "#ff7a6e"; // GOLD = on-plan match win · CORAL = drift (honest, never hidden)
   var VIRTUES = [
     { k: "zest", l: "Zest", e: "⚡", c: "#ff8a1e", grow: "move your body" },
     { k: "disc", l: "Discipline", e: "⚔️", c: "#3a9ae6", grow: "show up to a habit or deep work" },
@@ -1157,13 +1194,13 @@
   function calendarView(L, k, showNow) {
     L.innerHTML = ""; nowLineEl = null;
     var bls = blocks(k).slice(), lgs = logs(k).slice();
-    add(L, "div", "calhint", "left = your plan · right = what you actually did · drag to move, edges to stretch · double-tap to edit · tap empty to add");
-    var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx", "PLAN"); add(lh, "span", "lhx", "ACTUAL");
+    add(L, "div", "calhint", "left = PLAN (hatched) · right = REAL · ✓ gold = on-plan · coral = drift · drag to move, edges to stretch, tap to edit");
+    var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx", "PLAN"); add(lh, "span", "lhx", "REAL");
     var minS = 6 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(24, Math.ceil(maxE / 60)), HP = 60, now = nowMin();
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 6) + "px";
     add(cal, "div", "lanediv");
-    for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); }
+    for (var h = startH; h < endH; h++) { var hr = add(cal, "div", "calhour"); hr.style.top = ((h - startH) * HP) + "px"; add(hr, "span", null, fmtHour(h)); var half = add(cal, "div", "calhalf"); half.style.top = ((h - startH) * HP + HP / 2) + "px"; }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; }
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(24, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "42px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "3px"; } }
     function rr() { renderToday(); }
@@ -1174,13 +1211,25 @@
     function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
     bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
-      var card = add(cal, "div", "calblk lane" + (status === "ok" ? " ok" : status === "miss" ? " miss" : "") + (b.pin ? " pin" : ""));
+      // PLAN lane has 3 states (§23): sched = hatched (scheduled) · cele = category-colored celebration (done) · ghost = hollow (missed)
+      var dom = domainOf(b), col = DOM[dom].c;
+      var card = add(cal, "div", "calblk lane " + (status === "ok" ? "cele" : status === "miss" ? "ghost" : "sched") + (b.pin ? " pin" : ""));
       place(card, bs, b.mins || 30, "P");
-      var col = b.color || prioC(b.prio || 2); card.style.borderLeftColor = col;
-      if (status === "ok") { card.style.backgroundColor = hexA(col, 0.42); card.style.boxShadow = "0 0 20px " + hexA(col, 0.75) + ",inset 0 0 14px " + hexA(col, 0.45) + ",0 5px 16px rgba(0,0,0,.4)"; }
-      else if (status !== "miss") card.style.backgroundColor = hexA(col, 0.22);
-      add(card, "div", "ct", (status === "ok" ? "✓ " : status === "miss" ? "✕ " : "") + fmt(bs) + "–" + fmt(be));
+      card.style.borderColor = "#160510";
+      if (status === "ok") {
+        card.style.background = "linear-gradient(158deg," + hexA(col, 0.96) + "," + hexA(col, 0.66) + ")";
+        card.style.boxShadow = "0 0 22px " + hexA(col, 0.85) + ",inset 0 1px 0 rgba(255,255,255,.45),0 5px 14px rgba(0,0,0,.4)";
+        add(card, "div", "foil");
+      } else if (status === "miss") {
+        card.style.background = "transparent"; card.style.borderStyle = "dashed"; card.style.boxShadow = "none";
+      } else {
+        card.style.backgroundColor = hexA(col, 0.16);
+        card.style.backgroundImage = "repeating-linear-gradient(45deg," + hexA(col, 0.5) + " 0 5px,transparent 5px 11px)";
+        card.style.boxShadow = "0 2px 8px rgba(0,0,0,.22)";
+      }
+      add(card, "div", "ct", (status === "ok" ? "✓ " : "") + fmt(bs) + "–" + fmt(be));
       add(card, "div", "cn", (b.pin ? "📌 " : "") + blockEmoji(b.title) + " " + b.title);
+      if (status === "ok") add(card, "div", "spk", "✨");
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx", "✕");
       xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
@@ -1208,6 +1257,8 @@
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
     });
+    // a REAL item is "on-plan" (→ gold) when it overlaps a PLAN block of the SAME domain (§24 Guitar-Hero win); drift is shown honestly, never hidden
+    function onPlanMatch(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom) return true; } return false; }
     var acts = [];
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
     if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
@@ -1217,12 +1268,16 @@
       card.style.top = topFor(it.s) + "px"; card.style.height = Math.max(22, (it.e - it.s) / 60 * HP - 3) + "px";
       card.style.left = "calc(" + (50 + it.col * colW) + "% + 2px)"; card.style.width = "calc(" + colW + "% - 5px)"; card.style.right = "auto";
       if (it.kind === "log") {
-        var e = it.ref, lc = e.color || "#48d0e0"; card.style.borderLeftColor = lc; card.style.backgroundColor = hexA(lc, 0.26);
-        add(card, "div", "ct", fmt(it.s) + "–" + fmt(it.e)); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title);
+        var e = it.ref, dom = domainOf(e), lc = DOM[dom].c, drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
+        card.style.borderColor = "#160510"; card.style.background = "linear-gradient(158deg," + lc + "," + hexA(lc, 0.78) + ")"; card.style.boxShadow = "0 4px 0 #160510,0 6px 13px rgba(0,0,0,.38)";
+        if (drift) { card.classList.add("drift"); card.style.background = hexA(CORAL, 0.22); card.style.borderColor = CORAL; card.style.borderStyle = "dashed"; card.style.boxShadow = "0 3px 9px rgba(0,0,0,.3)"; } else if (onp) card.classList.add("onplan");
+        add(card, "div", "ct", (onp ? "✓ " : "") + fmt(it.s) + "–" + fmt(it.e)); add(card, "div", "cn", blockEmoji(e.title) + " " + e.title);
         var xb = add(card, "div", "calx", "✕"); xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         card.addEventListener("click", function (ev) { if (ev.target === xb) return; radialMenu(frequent(8), function (m) { var p = function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); }; if (m) p(m); else pickOne(p); }); });
       } else {
-        var t = it.ref; card.style.borderLeftColor = t.color || "#ff5fa8"; card.style.backgroundColor = hexA(t.color || "#ff5fa8", 0.3);
+        var t = it.ref, dom = domainOf(t), lc = DOM[dom].c, drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
+        card.style.borderColor = "#160510"; card.style.background = "linear-gradient(158deg," + lc + "," + hexA(lc, 0.8) + ")";
+        if (drift) { card.classList.add("drift"); card.style.background = hexA(CORAL, 0.24); card.style.borderColor = CORAL; card.style.borderStyle = "dashed"; } else if (onp) card.classList.add("onplan");
         add(card, "div", "ct", "▶ " + fmt(it.s)); add(card, "div", "cn", (t.emoji ? t.emoji + " " : "") + t.title);
         var stop = add(card, "div", "calx", "⏹"); stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
         var gT = add(card, "div", "gript");
@@ -1274,10 +1329,12 @@
     var dl = el("dnLabel"); if (dl) dl.textContent = zoomMode === "day" ? relLabel(viewK) : zoomMode === "week" ? ("Week of " + relShort(startOfWeek(viewK))) : kd(viewK).toLocaleDateString([], { month: "long", year: "numeric" });
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.classList.toggle("on", z.dataset.z === zoomMode); });
     var dp = el("planToday"), nc = el("nowCard"), lp = el("logPanel"), tt = el("todayTitle"), L = el("todayList");
+    var adh = el("adhereChip"); if (adh) adh.style.display = "none";
     if (zoomMode === "week") { L.innerHTML = ""; weekGrid(L); tt.textContent = "This week — tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
     if (zoomMode === "month") { L.innerHTML = ""; monthGrid(L); tt.textContent = "Tap a day"; if (dp) dp.style.display = "none"; if (nc) nc.style.display = "none"; if (lp) lp.style.display = "none"; return; }
     if (dp) dp.style.display = ""; tt.textContent = relLabel(viewK);
     calendarView(L, viewK, viewK === todayK());
+    if (adh) { var _bl = blocks(viewK), _n = 0; _bl.forEach(function (b) { if (blockStatus(viewK, b) === "ok") _n++; }); adh.textContent = "✨ " + _n + " on plan"; adh.style.display = _bl.length ? "" : "none"; }
     if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
     var k = viewK, LG = el("logList"); LG.innerHTML = ""; var lg = logs(k).slice().sort(function (a, b) { return hm(b.time) - hm(a.time); }), tot = 0; logs(k).forEach(function (e) { tot += e.mins || 0; });
     if (nc) nc.style.display = (k === todayK() ? "" : "none"); if (lp) lp.style.display = "";

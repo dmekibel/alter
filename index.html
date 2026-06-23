@@ -182,7 +182,8 @@
   .cal{position:relative;margin:8px 0 4px;}
   .calhour{position:absolute;left:0;right:0;height:0;border-top:1px solid rgba(255,255,255,.09);}
   .calhour span{position:absolute;left:0;top:-8px;font-size:11px;font-weight:700;color:var(--soft);width:38px;}
-  .calblk{position:absolute;left:48px;right:3px;border-radius:17px;padding:6px 12px;overflow:hidden;cursor:grab;touch-action:none;border:1px solid rgba(255,255,255,.12);border-left:5px solid;box-shadow:0 5px 16px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.18);background-image:linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,0) 58%);transition:transform .16s cubic-bezier(.2,.85,.3,1.3),box-shadow .14s,top .22s cubic-bezier(.2,.8,.25,1),height .16s,opacity .15s;}
+  .calblk{position:absolute;left:48px;right:3px;border-radius:16px;padding:6px 12px;overflow:hidden;cursor:grab;touch-action:none;border:2.5px solid #160510;transition:transform .16s cubic-bezier(.2,.85,.3,1.3),box-shadow .14s,top .22s cubic-bezier(.2,.8,.25,1),height .16s,opacity .15s;}
+  .calblk .cn,.calblk .ct{color:#fff2f9;}
   .calblk:active{transform:scale(.98);}
   .calblk.lift{transform:scale(1.05);box-shadow:0 16px 34px rgba(0,0,0,.62);z-index:6;opacity:.97;cursor:grabbing;}
   .calblk.pin{border-style:solid;border-color:rgba(255,210,74,.65)!important;border-left-color:#ffd24a!important;}
@@ -195,8 +196,18 @@
   .lanehead{display:flex;font-family:var(--bub);font-weight:800;font-size:10px;letter-spacing:1.5px;color:var(--soft);margin:0 0 4px;padding-left:42px;}
   .lanehead .lhx{flex:1;text-align:center;}
   .lanediv{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.14);}
-  @keyframes okpop{0%,100%{transform:scale(1);}45%{transform:scale(1.03);}}
-  .calblk.ok{border-color:rgba(255,255,255,.6) !important;animation:okpop 2.1s ease-in-out infinite;}
+  /* PLAN celebration (done) · ghost (missed) · REAL gold (on-plan) / coral (drift) · half-hour ticks — DESIGN-BRIEF §14/§23/§24 */
+  @keyframes celePop{0%{transform:scale(.62);}60%{transform:scale(1.05);}100%{transform:scale(1);}}
+  @keyframes foilSlide{0%{background-position:-40% 0;}100%{background-position:140% 0;}}
+  @keyframes spkTwinkle{0%,100%{transform:scale(.8);opacity:.6;}50%{transform:scale(1.15);opacity:1;}}
+  .calblk.cele{animation:celePop .42s cubic-bezier(.2,.9,.3,1.45);}
+  .calblk.cele .cn,.calblk.cele .ct{text-shadow:0 1px 3px rgba(0,0,0,.55);}
+  .calblk.cele .foil{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%);background-size:200% 100%;animation:foilSlide 3.4s linear infinite;mix-blend-mode:overlay;}
+  .calblk.cele .spk{position:absolute;top:2px;right:27px;font-size:12px;pointer-events:none;animation:spkTwinkle 1.7s ease-in-out infinite;}
+  .calblk.ghost{opacity:.5;} .calblk.ghost .cn{opacity:.85;}
+  .calblk.act.onplan{box-shadow:0 0 0 3px #ffd24a,0 0 16px rgba(255,210,74,.6),0 4px 0 #160510,0 7px 14px rgba(0,0,0,.42) !important;}
+  .calblk.act.drift .cn,.calblk.act.drift .ct{color:#ffe2db;}
+  .calhalf{position:absolute;left:42px;right:0;height:0;border-top:1px dashed rgba(255,255,255,.055);}
   #dayNav{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 8px;}
   #dayNav button{background:rgba(255,255,255,.08);border:2px solid #4a4068;color:#f3edfc;width:40px;height:36px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;}
   #dnLabel{font-family:var(--bub);font-weight:800;font-size:17px;}
@@ -280,7 +291,7 @@
   .moode{font-size:21px;line-height:1;} .moodl{font-size:9.5px;font-weight:700;color:var(--soft);}
   .calblk.miss{filter:grayscale(.9);opacity:.42;background-image:none;border-color:#5a5570 !important;border-left-color:#6a6580 !important;}
   .calblk.live{box-shadow:0 0 16px rgba(255,95,168,.5),0 5px 16px rgba(0,0,0,.4);}
-  .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;}
+  .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;padding-right:22px;}
   .calblk .cn{font-size:13.5px;font-weight:600;line-height:1.2;}
   .calblk.done{opacity:.5;} .calblk.done .cn{text-decoration:line-through;}
   .nowline{position:absolute;left:42px;right:0;height:2px;background:#ff5fa8;z-index:4;box-shadow:0 0 7px #ff5fa8;}
@@ -458,7 +469,7 @@
         <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
       </div>
       <section class="panel c-today">
-        <div class="cardhead"><h3 id="todayTitle">Today</h3><button class="add" id="planToday">＋ add</button></div>
+        <div class="cardhead"><h3 id="todayTitle">Today</h3><span class="meta" id="adhereChip" style="display:none"></span><button class="add" id="planToday">＋ add</button></div>
         <div id="todayList"></div>
       </section>
       <div id="nowCard" class="panel"></div>
@@ -490,6 +501,6 @@
     <button id="jumpBtn" type="button" aria-label="Jump">⤴</button>
   </div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=371"></script>
+  <script src="app.js?v=372"></script>
 </body>
 </html>
