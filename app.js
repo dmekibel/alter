@@ -818,15 +818,19 @@
     { e: "🪥", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
     { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 },
     { e: "🧘", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true },
-    { e: "🧘", l: "Meditate", catK: "love", mins: 5, sp: 8, med: true }
+    { e: "🧘", l: "Meditate", catK: "love", mins: 5, sp: 8, med: true },
+    { e: "👆", l: "Tapping (EFT)", catK: "love", mins: 3, sp: 7, tap: true },
+    { e: "🗣️", l: "Mantra", catK: "love", mins: 3, sp: 7, mantra: true }
   ];
-  var MICROPHASE = { morning: [2, 11, 3, 7], afternoon: [10, 1, 11, 2], evening: [11, 10, 6, 8], night: [2, 11, 10, 9] };
+  var MICROPHASE = { morning: [2, 11, 13, 7], afternoon: [10, 1, 11, 12], evening: [11, 12, 6, 8], night: [2, 13, 11, 9] };
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
     var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
     if (m.breath && !cur) { breathwork(4); return; }   // guided breathwork moment (logs itself on finish)
     if (m.relax && !cur) { relaxMoment(); return; }     // Psycho-Cybernetics relax-all-muscles + mindful moment
-    if (m.med && !cur) { meditation(); return; }         // adaptive guided meditation (you choose the re-anchor frequency)
+    if (m.med && !cur) { meditation(); return; }         // adaptive guided meditation — now in David's 4 teachers' voices
+    if (m.tap && !cur) { tapping(); return; }            // EFT tapping body-map (exact 9-point order, tap-only)
+    if (m.mantra && !cur) { mantraPlayer(); return; }    // David's own affirmation — the keystone willpower-free step
     if (!cur) {
       var t = nextFreeMin(todayK()), id = uid();
       blocks(todayK()).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: Math.max(5, m.mins), title: m.l, prio: 1, color: col, done: false });
@@ -900,13 +904,15 @@
   // adaptive guided meditation: YOU choose how often it re-anchors you (for a 0-attention-span mind) + modular focus + tiny durations
   function meditation() {
     var FREQ = { often: 11, some: 24, spacious: 42 };  // seconds between gentle re-anchoring cues
-    var CUES = {
-      breath: ["Notice your breath", "Feel the air come in… and out", "Just this one breath", "Come back to the breath", "Breathe naturally — nothing to fix"],
-      body: ["Feel your body sitting here", "Notice your hands", "Soften your shoulders", "Feel the weight of your body", "Scan slowly, head to toe"],
-      heart: ["Rest your attention in your chest", "A small warmth in the heart", "Breathe through your heart", "Quietly wish yourself well", "Let the heart soften"],
-      open: ["Just be aware", "Notice whatever's here", "Let thoughts drift by like clouds", "Rest as the awareness itself", "Nothing to do, nowhere to be"]
+    // David's actual 4-in-1: each guide is an ORDERED sequence in that teacher's own voice (drawn from his transcripts in meditation-scripts/),
+    // and once it reaches the end it rests on the last 3 lines so a long sit still feels guided. orb = breathe-animation seconds.
+    var GUIDES = {
+      harris: { name: "witness", who: "Sam Harris", orb: 8, seq: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"] },
+      headspace: { name: "reset", who: "Headspace", orb: 8, seq: ["Soft focus — just aware of the space around you", "A few big breaths… in through the nose, out through the mouth", "Let the body soften with each out-breath", "Nothing to do, nothing to respond to — just time for you", "Feel the weight of the body pressing down", "Nothing to change — just noticing how the body feels", "Find the breath rising and falling", "One on the in-breath… two on the out-breath", "Feel that sense of space with each exhale", "Thoughts come — that's fine. Gently back to the breath", "Now let the mind be completely free"] },
+      blackstone: { name: "embody", who: "Blackstone", orb: 10, seq: ["Calm, even breath — nothing happening but this breath", "Come down into your feet — deep contact", "Attune to the quality of self inside your feet", "Inhabit your legs… your hips… settle down into them", "Inhabit your belly — attune to the quality of power there", "Inhabit your chest — attune to the quality of love", "Let the breath move gently through the heart", "Inhabit your whole body at once — this is yours", "Find the space outside your body, in the room", "Inside and outside are one continuous space", "Feel that you ARE that space"] },
+      adya: { name: "rest", who: "Adyashanti", orb: 12, seq: ["There's nothing to do here", "Awareness is already present — you don't make it happen", "Relinquish the doer — pat it on the head, it's irrelevant", "Not the watcher, not the witness — just resting", "Let everything be exactly as it is, right now", "The mind says 'understand one more thing' — don't take the bait", "Just rest as awareness", "Whenever you've drifted, simply rest again", "Nothing for the mind to do… and that's okay", "You and awareness are not two"] }
     };
-    var cfg = { mins: 5, freq: "often", focus: "breath" };
+    var cfg = { mins: 5, freq: "often", guide: "harris" };
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     function build() {
       ov.innerHTML = "";
@@ -920,23 +926,102 @@
       }
       row("how long", [["2 min", 2], ["5 min", 5], ["10 min", 10]], "mins");
       row("remind me", [["often", "often"], ["some", "some"], ["spacious", "spacious"]], "freq");
-      row("focus on", [["breath", "breath"], ["body", "body"], ["heart", "heart"], ["open", "open"]], "focus");
-      var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:22px;background:#9a7cff;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
+      row("guide", [["witness", "harris"], ["reset", "headspace"], ["embody", "blackstone"], ["rest", "adya"]], "guide");
+      var who = add(box, "div", null, "with " + GUIDES[cfg.guide].who); who.style.cssText = "font-size:11px;color:#9c8fc4;margin-top:6px;font-style:italic;";
+      var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:18px;background:#9a7cff;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
       ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
       var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-      orb.style.animation = "breathe " + (cfg.focus === "breath" ? 8 : 10) + "s ease-in-out infinite";
+      var G = GUIDES[cfg.guide];
+      orb.style.animation = "breathe " + G.orb + "s ease-in-out infinite";
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
       try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
-      var pool = CUES[cfg.focus], ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
-      function cue() { if (done) return; lab.textContent = pool[ci % pool.length]; ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
-      function finish(skip) { if (done) return; done = true; if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation", mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); save(); renderAll(); }, 1700); }
+      var seq = G.seq, tail = seq.slice(-3), ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
+      function cue() { if (done) return; lab.textContent = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
+      function finish(skip) { if (done) return; done = true; if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); save(); renderAll(); }, 1700); }
       ov.querySelector(".bw-x").onclick = function () { finish(true); };
       cue(); cueT = setInterval(cue, FREQ[cfg.freq] * 1000); tickT = setInterval(function () { elapsed++; if (elapsed >= total) finish(false); }, 1000);
     }
     build();
+  }
+  // EFT tapping — exact 9-point order (setup on side-of-hand, then eyebrow→side-of-eye→under-eye→under-nose→chin→collarbone→under-arm→top-of-head, looped). Tap-only: pick a feeling, no typing.
+  function tapping() {
+    var FEELINGS = [["stressed", "this stress"], ["anxious", "this anxiety"], ["stuck", "this stuckness"], ["frustrated", "this frustration"], ["sad", "this sadness"], ["tired", "this tiredness"], ["restless", "this restlessness"], ["down", "this heaviness"]];
+    var PTS = [["Eyebrow", "start of the eyebrow, by the nose"], ["Side of eye", "on the bone, outer corner"], ["Under eye", "on the bone under the pupil"], ["Under nose", "between nose and lip"], ["Chin", "in the crease under your lip"], ["Collarbone", "just below where it meets"], ["Under arm", "a hand-width below the armpit"], ["Top of head", "the crown of your head"]];
+    var cfg = { feel: FEELINGS[0], rounds: 2 };
+    var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
+    function build() {
+      ov.innerHTML = "";
+      var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { if (ov.parentNode) ov.remove(); };
+      var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
+      box.innerHTML = '<div style="font-size:26px;font-weight:800;">👆 Tapping</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:6px;">EFT — tap the points, let it move through you</div>';
+      var lbl = add(box, "div", null, "what's bumping you?"); lbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;";
+      var r = add(box, "div"); r.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
+      FEELINGS.forEach(function (f) { var b = add(r, "button", null, f[0]); b.style.cssText = "border:2.5px solid #6a5a9a;border-radius:14px;padding:9px 13px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#efeaff;background:" + (cfg.feel === f ? "#ff7ab8" : "rgba(255,255,255,.06)") + ";"; b.onclick = function () { cfg.feel = f; build(); }; });
+      var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:22px;background:#ff7ab8;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
+      var hint = add(box, "div", null, "Tap each point ~7× with two fingers. No need to believe it — just tap and say the words."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
+    }
+    function run() {
+      ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
+      var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
+      var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
+      try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
+      function blip(freq) { if (!actx) return; var now = actx.currentTime; osc.frequency.setValueAtTime(freq, now); gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.006, now + 0.4); }
+      var steps = [], setupLine = "Even though I feel " + cfg.feel[0] + ", I deeply and completely accept myself.";
+      for (var s = 0; s < 3; s++) steps.push({ pt: "Setup — side of hand", say: setupLine, setup: true });
+      for (var rd = 0; rd < cfg.rounds; rd++) PTS.forEach(function (p) { steps.push({ pt: p[0], loc: p[1], say: "“" + cfg.feel[1] + "”" }); });
+      steps.push({ pt: "Take a slow breath", say: "and notice how it feels now", end: true });
+      var i = 0, done = false, tmr = null;
+      function finish(skip) {
+        if (done) return; done = true; if (tmr) clearTimeout(tmr);
+        if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3); osc.stop(actx.currentTime + 0.4); } catch (e) {} }
+        if (skip) { if (ov.parentNode) ov.remove(); return; }
+        lab.textContent = "Done ✓"; sub.textContent = "let it settle"; orb.style.animation = ""; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)";
+        setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Tapping (EFT)", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); save(); renderAll(); }, 1500);
+      }
+      ov.querySelector(".bw-x").onclick = function () { finish(true); };
+      function step() {
+        if (done) return;
+        if (i >= steps.length) { finish(false); return; }
+        var st = steps[i];
+        lab.textContent = st.pt; sub.textContent = st.say + (st.loc ? "  ·  " + st.loc : "");
+        orb.style.animation = st.end ? "breathe 6s ease-in-out infinite" : "breathe 1s ease-in-out infinite";
+        blip(st.setup ? 165 : (st.end ? 150 : 175 + i * 6));
+        i++; tmr = setTimeout(step, st.setup ? 5200 : (st.end ? 5600 : 4400));
+      }
+      orb.style.animation = "breathe 1s ease-in-out infinite";
+      setTimeout(step, 700);
+    }
+    build();
+  }
+  // Mantra — David's own first-person affirmation as a calm teleprompter (the keystone willpower-free step of his stack). Read along or speak it.
+  function mantraPlayer() {
+    var LINES = ["I have absolute trust in myself.", "My instincts are unerring, my thoughts are clear,", "and my feelings guide me wisely.", "I am the sole authority on what is best for me.", "I love myself unconditionally.", "I embrace my mistakes and imperfections fully,", "and continue to love who I am.", "I hold deep respect for myself", "and unwavering confidence in my abilities.", "I vow to keep evolving — never ceasing to improve.", "I push beyond my comfort zone every single day.", "I will do whatever it takes to become a greater man.", "I bring joy to others. My aura radiates positivity.", "I am athletic, intelligent, loving, and ambitious —", "yet I savor life and cherish this beautiful planet.", "I deserve the very best.", "My life is phenomenal — spontaneous and overflowing with love.", "I find joy within myself, and don't take things too seriously.", "Every mistake is a teacher. If something needs redoing — fantastic.", "I do not judge reality; I accept it.", "I am indifferent to others' opinions of me.", "I am the master of my life,", "fully aware of what's best for me.", "What would I do if I wasn't afraid?"];
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">skip</button>'; document.body.appendChild(ov);
+    var box = add(ov, "div"); box.style.cssText = "width:86%;max-width:440px;color:#f3e9ff;font-family:var(--bub);text-align:center;font-size:23px;font-weight:800;line-height:1.5;text-shadow:0 2px 12px rgba(0,0,0,.45);min-height:130px;display:flex;align-items:center;justify-content:center;transition:opacity .5s;";
+    var sub = add(ov, "div", null, "say it out loud, or just read along"); sub.style.cssText = "color:#bcb0e8;font-family:var(--bub);font-size:12px;margin-top:20px;letter-spacing:.5px;";
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
+    try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.028, actx.currentTime + 1.8); } } catch (e) { actx = null; }
+    var i = 0, done = false, tmr = null;
+    function finish(skip) {
+      if (done) return; done = true; if (tmr) clearTimeout(tmr);
+      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); osc.stop(actx.currentTime + 0.6); } catch (e) {} }
+      if (ov.parentNode) ov.remove();
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mantra", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); save(); renderAll(); }
+    }
+    ov.querySelector(".bw-x").onclick = function () { finish(true); };
+    function step() {
+      if (done) return;
+      if (i >= LINES.length) { box.style.opacity = "0"; tmr = setTimeout(function () { if (done) return; box.textContent = "✓"; box.style.fontSize = "44px"; box.style.opacity = "1"; sub.textContent = "that's who you are"; tmr = setTimeout(function () { finish(false); }, 1700); }, 500); return; }
+      var line = LINES[i], last = i === LINES.length - 1;
+      box.style.opacity = "0";
+      tmr = setTimeout(function () { if (done) return; box.textContent = line; box.style.opacity = "1"; }, 450);
+      var dur = Math.max(3000, line.length * 62) + (last ? 2800 : 0);
+      i++; var nxt = setTimeout(step, dur); tmr = nxt;
+    }
+    setTimeout(step, 700);
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
