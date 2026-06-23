@@ -641,6 +641,18 @@
   .mind-node:active{ transform:translate(-50%,-50%) scale(.93); }
   .mind-node.drift{ border-style:dashed; opacity:.72; box-shadow:none; }
   .mind-lab{ position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:3px; font-size:10px; font-weight:700; color:#ffe3f1; white-space:nowrap; text-shadow:0 1px 3px #160510,0 0 4px #160510; pointer-events:none; }
+  /* ============ NOTEBOOK — the single menu door (David 2026-06-23) ============ */
+  #notebookBtn{ position:absolute; left:22px; bottom:116px; z-index:6; width:56px; height:56px; border-radius:16px; background:#ff5fa0; border:3px solid #160510; box-shadow:0 4px 0 #160510; color:#4a1126; font-size:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  #notebookBtn:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
+  .nb-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
+  .nb-card{ width:min(420px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
+  .nb-body{ overflow:auto; padding:12px; display:flex; flex-direction:column; gap:9px; -webkit-overflow-scrolling:touch; }
+  .nb-item{ display:flex; align-items:center; gap:12px; width:100%; background:#3a1226; border:2px solid #160510; border-radius:15px; padding:12px; cursor:pointer; box-shadow:0 3px 0 #160510; text-align:left; font-family:"Jost",sans-serif; transition:transform .1s; }
+  .nb-item:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .nb-ic{ flex:none; width:46px; height:46px; border-radius:13px; border:2px solid #160510; display:flex; align-items:center; justify-content:center; color:#160510; font-size:23px; }
+  .nb-tx{ min-width:0; }
+  .nb-l{ color:#ffe3f1; font-size:16px; font-weight:700; line-height:1.1; }
+  .nb-sub{ color:#c79ab4; font-size:12px; font-weight:600; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pull-title{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pull-hbtns{ display:flex; gap:7px; flex:none; }
   .pull-switch{ background:#ffc83d; color:#5a3a00; border:2px solid #160510; border-radius:9px; box-shadow:0 3px 0 #160510; padding:6px 10px; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
@@ -718,7 +730,7 @@
     <button id="featClose" type="button" aria-label="Close">✕</button>
     <header><div id="date"></div><div id="hello"></div><button id="gear" aria-label="Brain">🧠</button></header>
 
-    <div class="tab on" id="t-self">
+    <div class="tab" id="t-self">
       <div id="stage"><canvas id="guardian"></canvas>
         <button id="enterWorld" type="button">🎮 enter your world</button>
       </div>
@@ -738,7 +750,7 @@
       </section>
     </div>
 
-    <div class="tab" id="t-day">
+    <div class="tab on" id="t-day">
       <div class="dayhead">
         <div id="dayNav"><button id="dnPrev">◀</button><div id="dnLabel"></div><button id="dnNext">▶</button></div>
         <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
@@ -746,26 +758,13 @@
       <section class="panel c-today" id="calPanel">
         <div class="cardhead"><h3 id="todayTitle">Today</h3><span class="meta" id="adhereChip" style="display:none"></span><button class="add" id="openGoals"><i class="ti ti-target"></i> Goals</button><button class="add" id="planToday">＋ add</button></div>
         <div id="todayList"></div>
-        <div id="suggestBar"></div>
+        <div id="suggestBar" style="display:none"></div>
       </section>
-      <div id="nowCard" class="panel"></div>
-      <section class="panel c-today" id="logPanel">
-        <div class="cardhead"><h3>Tracked today</h3><span class="meta" id="trackTotal"></span></div>
-        <div id="logList"></div>
-      </section>
-    </div>
-
-    <div class="tab" id="t-grow">
-      <div id="growTabs"><button class="zt on" data-g="habits">Habits</button><button class="zt" data-g="stats">Stats</button></div>
-      <section class="panel c-habit" id="habitsPane"><div class="cardhead"><h3>Habits</h3><span class="meta" id="habitProg"></span></div><div id="habitList"></div><button class="add2" id="addHabit">+ add habit</button></section>
-      <section class="panel c-stats" id="statsPane" style="display:none"><div class="cardhead"><h3>📊 Your consistency</h3></div><div id="statsList"></div></section>
     </div>
   </div>
 
   <nav id="nav">
-    <button class="nb on" data-tab="self"><span class="ne">🪞</span><span class="nl2">You</span></button>
-    <button class="nb" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
-    <button class="nb" data-tab="grow"><span class="ne">🌱</span><span class="nl2">Grow</span></button>
+    <button class="nb on" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
   </nav>
   <div id="gameMode">
     <canvas id="world"></canvas>
@@ -775,11 +774,12 @@
     <div id="joy"><div id="joyStick"></div></div>
     <div id="joy2"><div id="joyStick2"></div></div>
     <button id="jumpBtn" type="button" aria-label="Jump">⤴</button>
+    <button id="notebookBtn" type="button" aria-label="Notebook"><i class="ti ti-notebook"></i></button>
   </div>
   <div id="pullBackdrop"></div>
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=391"></script>
+  <script src="app.js?v=392"></script>
 </body>
 </html>
