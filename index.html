@@ -582,6 +582,15 @@
   .pull-zoom{ display:flex; gap:6px; }
   .pz{ flex:1 1 0; background:#1c0512; border:2px solid #160510; border-radius:10px; color:#c79ab4; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; padding:7px 0; cursor:pointer; }
   .pz.on{ background:#ff5fa0; color:#4a1126; box-shadow:0 2px 0 #160510; }
+  /* zoom control (− out / level / + in) + today button + continuous-day dividers — David 2026-06-24 */
+  .pull-rt{ display:flex; align-items:center; gap:6px; flex:none; }
+  .pull-zoomctl{ display:flex; align-items:center; gap:3px; }
+  .pull-zlevel{ color:#ffd0e6; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; text-transform:capitalize; min-width:42px; text-align:center; }
+  .pull-step.off{ opacity:.28; pointer-events:none; }
+  .pull-today{ background:#ff5fa0; color:#4a1126; border:2px solid #160510; border-radius:9px; box-shadow:0 2px 0 #160510; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; padding:6px 11px; cursor:pointer; flex:none; }
+  .day-sep{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:14px 2px 6px; padding-top:11px; border-top:2px dashed #4a2540; }
+  .day-seplab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; }
+  .day-sepauto{ background:#3a1226; color:#e8b8d2; border:2px dashed #9a6a86; border-radius:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; padding:5px 9px; cursor:pointer; display:flex; align-items:center; gap:4px; }
   /* always-offer-next row (§23): the next planned activity as a 1-tap hero + a "plan a break" door */
   .pull-next{ display:flex; align-items:center; gap:7px; }
   .pn-go{ flex:1 1 auto; min-width:0; border:2px solid #160510; border-radius:11px; box-shadow:0 3px 0 #160510; padding:8px 11px; font-family:"Jost",sans-serif; font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -798,6 +807,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=403"></script>
+  <script src="app.js?v=405"></script>
 </body>
 </html>

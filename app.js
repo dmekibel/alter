@@ -489,36 +489,46 @@
   var pullK = null, pullZoom = "day"; // the day + zoom (day/week/month) the planner is showing — step to plan ahead, toggle for week/month (David 2026-06-23)
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
-    var k = pullK || todayK(), isToday = (k === todayK());
+    var k = pullK || todayK();
     var run = activeTimers(), t = run[run.length - 1];
-    function stepK(dir) { var d = kd(k); if (pullZoom === "week") d.setDate(d.getDate() + dir * 7); else if (pullZoom === "month") d.setMonth(d.getMonth() + dir); else d.setDate(d.getDate() + dir); pullK = key(d); buildPull(); }
+    function stepK(dir) { var d = kd(k); if (pullZoom === "week") d.setDate(d.getDate() + dir * 7); else d.setMonth(d.getMonth() + dir); pullK = key(d); buildPull(); }
+    function zoom(dir) { var o = ["day", "week", "month"], i = Math.max(0, Math.min(2, o.indexOf(pullZoom) + dir)); if (o[i] === pullZoom) return; pullZoom = o[i]; if (pullZoom === "day") { pullK = todayK(); pendingScrollNow = true; } buildPull(); } // dir +1 = zoom OUT (day→week→month), -1 = zoom IN
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
-      var dn = add(top, "div", "pull-datenav");
-      var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { stepK(-1); };
-      add(dn, "div", "pull-date", pullZoom === "week" ? "Week of " + relShort(startOfWeek(k)) : pullZoom === "month" ? kd(k).toLocaleDateString([], { month: "long" }) : relLabel(k));
-      var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { stepK(1); };
-      var cx = add(top, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
-      var zr = add(head, "div", "pull-zoom"); [["day", "Day"], ["week", "Week"], ["month", "Month"]].forEach(function (zz) { var zb = add(zr, "button", "pz" + (pullZoom === zz[0] ? " on" : ""), zz[1]); zb.onclick = function () { pullZoom = zz[0]; buildPull(); }; });
+      if (pullZoom === "day") { add(top, "div", "pull-date", "Today"); }
+      else { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { stepK(-1); }; add(dn, "div", "pull-date", pullZoom === "week" ? "Week of " + relShort(startOfWeek(k)) : kd(k).toLocaleDateString([], { month: "long" })); var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { stepK(1); }; }
+      var rt = add(top, "div", "pull-rt");
+      if (pullZoom !== "day") { var cur = pullZoom === "week" ? (startOfWeek(k) === startOfWeek(todayK())) : (kd(k).getMonth() === kd(todayK()).getMonth() && kd(k).getFullYear() === kd(todayK()).getFullYear()); if (!cur) { var tdb = add(rt, "button", "pull-today", "Today"); tdb.onclick = function () { pullK = todayK(); buildPull(); }; } }
+      var zc = add(rt, "div", "pull-zoomctl");
+      var zo = add(zc, "button", "pull-step" + (pullZoom === "month" ? " off" : "")); zo.innerHTML = '<i class="ti ti-zoom-out"></i>'; zo.onclick = function () { zoom(1); };
+      add(zc, "div", "pull-zlevel", pullZoom);
+      var zi = add(zc, "button", "pull-step" + (pullZoom === "day" ? " off" : "")); zi.innerHTML = '<i class="ti ti-zoom-in"></i>'; zi.onclick = function () { zoom(-1); };
+      var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next");
-        if (isToday) {
-          var nb = nextPlannedBlock(k);
-          if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
-          else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
-          else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
-          var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
-          var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk.onclick = function () { presetsSheet(k); };
-        } else { var pm = add(nx, "span", "pn-none"); pm.innerHTML = '<i class="ti ti-calendar-plus"></i> tap a slot to add'; var apk2 = add(nx, "button", "pn-break"); apk2.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk2.onclick = function () { presetsSheet(k); }; }
+        var nb = nextPlannedBlock(todayK());
+        if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
+        else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
+        else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
+        var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
+        var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk.onclick = function () { presetsSheet(todayK()); };
       }
     }
     pb.innerHTML = "";
-    if (pullZoom === "week") weekGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; buildPull(); });
-    else if (pullZoom === "month") monthGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; buildPull(); });
-    else calendarView(pb, k, isToday);
+    if (pullZoom === "week") weekGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; buildPull(); });
+    else if (pullZoom === "month") monthGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; buildPull(); });
+    else { // CONTINUOUS day view: today + the next few days stacked — scroll flows from today into tomorrow (David 2026-06-24)
+      var base = todayK();
+      for (var di = 0; di < 4; di++) { (function (dk) {
+        if (di > 0) { var sep = add(pb, "div", "day-sep"); add(sep, "span", "day-seplab", relLabel(dk)); var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apb.onclick = function () { presetsSheet(dk); }; }
+        calendarView(add(pb, "div", "day-sec"), dk, dk === todayK());
+      })(keyAdd(base, di)); }
+      nowLineEl = pb.querySelector(".nowline");
+      if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
+    }
   }
-  function openPull() { pullK = todayK(); pullZoom = "day"; buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
+  function openPull() { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
   function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
@@ -531,7 +541,7 @@
       // SMOOTH pull-down (David 2026-06-23): drag the strip down to reveal today — finger-follow, consistent color, never forces a habit choice.
       lt.addEventListener("pointerdown", function (ev) {
         var sy = ev.clientY, sx = ev.clientX, moved = false, ps = el("pullSheet"), bd = el("pullBackdrop");
-        pullK = todayK(); pullZoom = "day"; buildPull(); if (ps) ps.style.transition = "none"; if (bd) bd.style.transition = "none";
+        pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); if (ps) ps.style.transition = "none"; if (bd) bd.style.transition = "none";
         var H = (ps && ps.offsetHeight) || Math.round(window.innerHeight * 0.9);
         function mv(e) { if (!moved && (Math.abs(e.clientY - sy) > 4 || Math.abs(e.clientX - sx) > 4)) moved = true; if (moved && ps) { var bottom = Math.max(0, Math.min(H, e.clientY)); ps.style.transform = "translateY(" + ((bottom - H) / H * 100) + "%)"; if (bd) { bd.classList.add("on"); bd.style.opacity = Math.max(0, Math.min(0.82, bottom / H * 0.82)); } } } // sheet's bottom edge tracks the finger 1:1 (smooth)
         function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd) bd.style.transition = ""; if (!moved) { openPull(); return; } if (e.clientY > H * 0.35 && ps) { ps.classList.add("on"); ps.style.transform = ""; if (bd) { bd.classList.add("on"); bd.style.opacity = ""; } } else { closePull(); } } // tap or pull past 35% → reveal today (NO forced picker); short pull → snap back
@@ -803,6 +813,7 @@
   var gctx, GW = 0, GH = 0, gspr = null, gsx = null, GT0 = performance.now();
   // walkable character + camera (ported from Heaven Inc walk model)
   var px = 24, py = 96, pface = 1, walkF = 0, walkT = 0, moveX = 0, moveY = 0, jid = null, kdn = {}, pInit = false;
+  var camX = 0, camY = 0; // free-look camera pan offset (drag the world to look around; moving the guy re-centers) — David 2026-06-24
   var jz = 0, jvz = 0;  // jump height + vertical velocity (top-down hop)
   function jumping() { return jz > 0 || jvz !== 0; }
   function skateOk() { return !!(S.game && S.game.ups && S.game.ups.board); }
@@ -1051,11 +1062,9 @@
       var wc = document.createElement("canvas"); wc.width = WS; wc.height = WS; wc.getContext("2d").drawImage(wImg, 0, 0, WS, WS);
       waterPat = ctx.createPattern(wc, "repeat");
     }
-    if (waterPat) {
-      var ox = ((-px * vz) % WS + WS) % WS, oy = ((-py * vz) % WS + WS) % WS;
-      ctx.save(); ctx.translate(ox - WS, oy - WS); ctx.fillStyle = waterPat; ctx.fillRect(0, 0, W + WS * 2, H + WS * 2); ctx.restore();
-    } else { ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); }
-    ctx.save(); ctx.translate(W / 2 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0), H * 0.6 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0)); ctx.scale(vz, vz); ctx.translate(-px, -py); // character sits lower, closer to the thumbs (David 2026-06-23)
+    ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); // base ocean color behind everything (no gaps)
+    ctx.save(); ctx.translate(W / 2 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0), H * 0.6 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0)); ctx.scale(vz, vz); ctx.translate(-(px + camX), -(py + camY)); // camX/camY = free-look pan (look around without moving the guy); character sits lower (David)
+    if (waterPat) { var hw = W / vz, hh = H / vz, cxw = px + camX, cyw = py + camY; ctx.fillStyle = waterPat; ctx.fillRect(cxw - hw, cyw - hh, hw * 2, hh * 2); } // ocean tiles in WORLD space → zooms & pans at the SAME speed as the island (David 2026-06-24)
     if (!grassBlob) buildIsland();
     var GS = 200;
     // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
@@ -1113,6 +1122,7 @@
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
     var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving;
+    if (moveX !== 0 || moveY !== 0) { camX = 0; camY = 0; } // moving the guy snaps the camera back to follow him
     if (skateOn && skateOk()) {
       // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
       var mln = Math.hypot(moveX, moveY);
@@ -1187,7 +1197,15 @@
     { x: 150, y: 74, r: 66, fn: function () { goTab("self"); } },             // tree → skills / character
     { x: -130, y: 28, r: 46, fn: function () { goTab("grow"); } }             // chest → habits
   ];
-  function wireWorldTap() { worldTapWired = true; } // world-tap menus removed — the single menu door is the notebook button (David 2026-06-23)
+  function wireWorldTap() { // drag the world to PAN the camera around the island (free-look, doesn't move the guy) — David 2026-06-24
+    if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
+    w.addEventListener("pointerdown", function (ev) {
+      var lx = ev.clientX, ly = ev.clientY; var lim = (typeof RS !== "undefined" ? RS : 200) * 1.3;
+      function mv(e) { var dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom)); }
+      function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); }
+      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+    });
+  }
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
     var robe = mix("#4a36a0", st.color, 0.22), robeD = mix("#2c2068", st.color, 0.16), robeH = mix("#7d66da", st.color, 0.22);
@@ -2293,7 +2311,7 @@
     setInterval(function () {
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
       var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = elapsedStr(ct); }
-      var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!document.querySelector(".calblk.dragging")) renderToday(); } // burning timeline: each minute re-sweep so the now-line descends & plans the line has passed darken
+      var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!document.querySelector(".calblk.dragging")) { var _pb = el("pullBody"), _sc = _pb ? _pb.scrollTop : 0; renderToday(); if (_pb) _pb.scrollTop = _sc; } } // burning timeline: each minute re-sweep (preserve the planner's scroll so the continuous day-view doesn't jump)
     }, 1000);
     el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
     var og = el("openGoals"); if (og) og.onclick = goalsSheet;
