@@ -408,6 +408,29 @@
     }
     draw();
   }
+  // ---- IDENTITY MINDMAP (§21, mockups 017/018): "see your life" — domains as planets sized by where your days actually go; vices shown honestly ----
+  function lifeInvest() { var inv = {}; DOM_ORDER.forEach(function (d) { inv[d] = 0; }); lastDays(30).forEach(function (k) { logs(k).forEach(function (e) { var d = domainOf(e); if (inv[d] != null) inv[d] += (e.mins || 0); }); blocks(k).forEach(function (b) { if (b.done) { var d2 = domainOf(b); if (inv[d2] != null) inv[d2] += (b.mins || 0) * 0.5; } }); }); return inv; }
+  function mindmapSheet() {
+    var ov = add(document.body, "div", "mind-ov"); var card = add(ov, "div", "mind-card");
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-affiliate"></i> Your life'; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
+    var body = add(card, "div", "mind-body");
+    add(body, "div", "mind-sub", "who you're being — where your days actually go (30d)");
+    var stage = add(body, "div", "mind-stage");
+    var inv = lifeInvest(), maxInv = 0; DOM_ORDER.forEach(function (d) { maxInv = Math.max(maxInv, inv[d]); });
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("class", "mind-lines"); svg.setAttribute("preserveAspectRatio", "none"); stage.appendChild(svg);
+    var n = DOM_ORDER.length;
+    DOM_ORDER.forEach(function (d, i) {
+      var D = DOM[d], a = (-90 + i * (360 / n)) * Math.PI / 180, R = 34, x2 = 50 + R * Math.cos(a), y2 = 50 + R * Math.sin(a);
+      var ln = document.createElementNS("http://www.w3.org/2000/svg", "line"); ln.setAttribute("x1", "50"); ln.setAttribute("y1", "50"); ln.setAttribute("x2", x2); ln.setAttribute("y2", y2); ln.setAttribute("stroke", d === "drift" ? "#5a3850" : "#160510"); ln.setAttribute("stroke-width", "1.1"); if (d === "drift") ln.setAttribute("stroke-dasharray", "2 2"); svg.appendChild(ln);
+      var sz = 44 + (maxInv ? (inv[d] / maxInv) : 0) * 34;
+      var node = add(stage, "div", "mind-node" + (d === "drift" ? " drift" : "")); node.style.left = x2 + "%"; node.style.top = y2 + "%"; node.style.width = sz + "px"; node.style.height = sz + "px"; node.style.background = d === "drift" ? mixDark(D.c) : "radial-gradient(circle at 35% 30%," + D.light + "," + D.c + ")"; node.style.color = D.ink; node.style.fontSize = Math.round(sz * 0.42) + "px";
+      node.innerHTML = '<i class="ti ' + D.ti + '"></i>'; add(node, "span", "mind-lab", D.l);
+      node.onclick = function () { ov.remove(); bentoPicker({ title: D.l + " — what?", multi: true, onPickMulti: function (sel) { var tt = startTrackerNow(); assignTimerMulti(tt, sel); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); }, onPick: function (xx) { var tt = startTrackerNow(); assignTimer(tt, xx); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); } }); };
+    });
+    var you = add(stage, "div", "mind-you"); you.innerHTML = '<i class="ti ti-mood-smile"></i>';
+    add(body, "div", "goal-foot", "bigger = more of your life · tap a planet to do something there");
+  }
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return; var run = activeTimers(), t = run[run.length - 1];
     if (head) {
@@ -1083,7 +1106,7 @@
   // ---- game-as-home: tap the character → diegetic action hub ----
   function goTab(t) { document.body.classList.add("overworld"); if (!gameOn) openGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } }
   function closeFeature() { document.body.classList.remove("overworld"); if (!gameOn) openGame(); }
-  function heroMenu() { openPull(); } // tap the fairy → your day hub (plan vs. real + tap-to-track). Old radial nav removed (David 2026-06-23).
+  function heroMenu() { mindmapSheet(); } // tap the fairy → identity "see your life" mindmap (§13: center = who am I; the pull-down day-hub lives on the top tracker strip).
   var worldTapWired = false;
   // diegetic access points — walk up to a building and tap it to open its menu (Sims-style)
   var WORLD_SPOTS = [
@@ -1161,6 +1184,7 @@
     var h = add(L, "div", "lbl", "tap a star to open its skill tree ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
     var sv = add(L, "button", "add", "📊 calibrate my levels"); sv.style.cssText = "margin:10px auto 0;display:block;"; sv.onclick = surveySheet;
     var bn = add(L, "button", "add", "🧠 brain (free AI)"); bn.style.cssText = "margin:8px auto 0;display:block;"; bn.onclick = brainSheet;
+    var ml = add(L, "button", "add", "🌳 See your life"); ml.style.cssText = "margin:8px auto 0;display:block;"; ml.onclick = mindmapSheet; // the identity mindmap (§21)
     var rs = add(L, "button", "add", "✨ Redo setup"); rs.style.cssText = "margin:8px auto 0;display:block;"; rs.onclick = onboard; // re-run onboarding anytime (David asked)
     var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
     renderPulls();
