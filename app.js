@@ -505,13 +505,12 @@
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
-      if (pullZoom === "day") { add(top, "div", "pull-date", "Today"); }
-      else { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.onclick = function () { stepK(-1); }; add(dn, "div", "pull-date", pullZoom === "week" ? "Week of " + relShort(startOfWeek(k)) : kd(k).toLocaleDateString([], { month: "long" })); var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.onclick = function () { stepK(1); }; }
+      if (pullZoom === "day") { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.title = "Yesterday"; pv.onclick = function () { scrollToDay(keyAdd(todayK(), -1)); }; var dlab = add(dn, "button", "pull-date pull-datebtn", "Today"); dlab.onclick = function () { scrollToDay(todayK()); }; var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.title = "Tomorrow"; nf.onclick = function () { scrollToDay(keyAdd(todayK(), 1)); }; } // ‹ yesterday · Today (recenter) · tomorrow › scroll the continuous list (David 2026-06-24)
+      else { add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months"); }
       var rt = add(top, "div", "pull-rt");
-      // hour-density zoom is now a two-finger PINCH on the timeline (no buttons); swipe left/right jumps days — David 2026-06-24
-      if (pullZoom !== "day") { var cur = pullZoom === "week" ? (startOfWeek(k) === startOfWeek(todayK())) : (kd(k).getMonth() === kd(todayK()).getMonth() && kd(k).getFullYear() === kd(todayK()).getFullYear()); if (!cur) { var tdb = add(rt, "button", "pull-today", "Today"); tdb.onclick = function () { pullK = todayK(); buildPull(); }; } }
+      if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
-      [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") { pullK = todayK(); pendingScrollNow = true; } zoomAnim(dir); }; });
+      [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next");
@@ -523,19 +522,32 @@
         var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk.onclick = function () { presetsSheet(todayK()); };
       }
     }
+    var keepTop = pb.scrollTop, _wsc0 = pb.querySelector(".week-scroller"), keepLeft = _wsc0 ? _wsc0.scrollLeft : 0; // preserve scroll across the minute-tick rebuild
     pb.innerHTML = "";
-    if (pullZoom === "week") weekGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; zoomAnim(-1); });
-    else if (pullZoom === "month") monthGrid(pb, k, function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; zoomAnim(-1); });
+    var onDayPick = function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; zoomAnim(-1); };
+    if (pullZoom === "week") { // horizontal giant-list of weeks: swipe side-to-side; Today recenters (David 2026-06-24)
+      var wsc = add(pb, "div", "week-scroller"), sw0 = startOfWeek(todayK());
+      for (var wi = -4; wi <= 4; wi++) { (function (wk) { var page = add(wsc, "div", "week-page" + (wk === sw0 ? " now" : "")); add(page, "div", "wk-plab", wk === sw0 ? "This week" : "Week of " + relShort(wk)); weekGrid(page, wk, onDayPick); })(keyAdd(sw0, wi * 7)); }
+      if (pendingScrollNow) { var wpNow = wsc.querySelector(".week-page.now"); if (wpNow) wsc.scrollLeft = wpNow.offsetLeft; pendingScrollNow = false; } // center on this week (synchronous)
+      else wsc.scrollLeft = keepLeft;
+    }
+    else if (pullZoom === "month") { // vertical giant-list of months: scroll up/down; Today recenters (David 2026-06-24)
+      var mb = kd(todayK()); mb.setDate(1);
+      for (var mi = -4; mi <= 4; mi++) { (function (mk, isNow) { var page = add(pb, "div", "month-page" + (isNow ? " now" : "")); add(page, "div", "mo-plab", kd(mk).toLocaleDateString([], { month: "long", year: "numeric" })); monthGrid(page, mk, onDayPick); })(key(new Date(mb.getFullYear(), mb.getMonth() + mi, 1)), mi === 0); }
+      if (pendingScrollNow) { var mpNow = pb.querySelector(".month-page.now"); if (mpNow) pb.scrollTop = mpNow.offsetTop; pendingScrollNow = false; } // center on this month (synchronous — offsetTop forces layout)
+      else pb.scrollTop = keepTop;
+    }
     else { // CONTINUOUS day view: past days ↑ · today · future days ↓ — scroll up to yesterday, down to tomorrow (David 2026-06-24)
       var base = todayK();
       for (var di = -2; di <= 3; di++) { (function (dk) {
         var isT = (dk === todayK());
         var sep = add(pb, "div", "day-sep" + (isT ? " today" : "")); add(sep, "span", "day-seplab", relLabel(dk));
         if (!isT) { var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apb.onclick = function () { presetsSheet(dk); }; }
-        calendarView(add(pb, "div", "day-sec"), dk, isT);
+        var sec = add(pb, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT);
       })(keyAdd(base, di)); }
       nowLineEl = pb.querySelector(".nowline");
       if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
+      else pb.scrollTop = keepTop;
     }
     if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = zoom hour density · one-finger horizontal SWIPE = jump a day (David 2026-06-24)
       pb._gw = 1;
@@ -558,6 +570,18 @@
     var ti = Math.max(0, Math.min(secs.length - 1, cur + dir)), tgt = secs[ti];
     var sep = tgt.previousElementSibling, top = (sep && (sep.className || "").indexOf("day-sep") >= 0) ? sep.offsetTop : tgt.offsetTop;
     pb.scrollTo({ top: Math.max(0, top - 6), behavior: "smooth" });
+  }
+  function scrollToDay(dk) { // day-view nav buttons: smooth-scroll to that day's section (today → the now-line) — David 2026-06-24
+    var pb = el("pullBody"); if (!pb) return;
+    if (dk === todayK() && nowLineEl && nowLineEl.offsetParent !== null) { nowLineEl.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    var sec = pb.querySelector('.day-sec[data-dk="' + dk + '"]'); if (!sec) return;
+    var sep = sec.previousElementSibling, top = (sep && (sep.className || "").indexOf("day-sep") >= 0) ? sep.offsetTop : sec.offsetTop;
+    pb.scrollTo({ top: Math.max(0, top - 6), behavior: "smooth" });
+  }
+  function findToday() { // "find yourself" in week/month: smooth-scroll back to the current page — David 2026-06-24
+    var pb = el("pullBody"); if (!pb) return;
+    var wsc = pb.querySelector(".week-scroller"); if (wsc) { var wp = wsc.querySelector(".week-page.now"); if (wp) wsc.scrollTo({ left: wp.offsetLeft, behavior: "smooth" }); return; }
+    var mp = pb.querySelector(".month-page.now"); if (mp) pb.scrollTo({ top: mp.offsetTop, behavior: "smooth" });
   }
   function openPull() { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
   function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
@@ -1792,7 +1816,7 @@
       var col = add(row, "div", "wkcol" + (dk === todayK() ? " today" : "")), d = kd(dk);
       add(col, "div", "wkh", ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()] + " " + d.getDate());
       var strip = add(col, "div", "wkstrip");
-      blocks(dk).forEach(function (b) { var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%"; bb.style.background = st === "ok" ? "#46e2a4" : st === "miss" ? "#544f6e" : (b.color || "#8a5cf0"); });
+      blocks(dk).forEach(function (b) { var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%"; bb.style.background = st === "ok" ? "#46e2a4" : st === "miss" ? "#5e2f49" : (b.color || "#ff5fa0"); });
       col.onclick = function () { onDay(dk); };
     })(keyAdd(d0, i)); }
   }
@@ -1804,7 +1828,7 @@
     for (var day = 1; day <= dim; day++) { (function (dk, day) {
       var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "")); add(cell, "div", "mod", "" + day);
       var bl = blocks(dk), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; });
-      if (bl.length) { var d2 = add(cell, "div", "modot"), sc = done / bl.length; d2.style.background = sc >= 1 ? "#46e2a4" : sc > 0 ? "#ffc24a" : "#544f6e"; }
+      if (bl.length) { var d2 = add(cell, "div", "modot"), sc = done / bl.length; d2.style.background = sc >= 1 ? "#46e2a4" : sc > 0 ? "#ffc24a" : "#5e2f49"; }
       cell.onclick = function () { onDay(dk); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
   }
