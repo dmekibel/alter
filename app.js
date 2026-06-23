@@ -321,6 +321,8 @@
   function sugNext(k) {
     var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; });
     var out = [];
+    // §16/mockup 010: today pulls from your ACTIVE goals — surface each active goal's next undone step
+    if (k === todayK()) { activeGoals().forEach(function (g) { var st = (g.subtasks || []).filter(function (s) { return !s.done; })[0]; if (st && !have[st.title.toLowerCase()]) out.push({ title: st.title, domain: g.domain || "focus", why: "from your " + g.title + " goal", mins: 30 }); }); }
     if (k === todayK()) { var od = mostOverdueChore(); if (od && !have[od.l.toLowerCase()]) { var f = choreFresh(od); out.push({ title: od.l, domain: "upkeep", why: "your space needs it · " + (f.days >= 999 ? "never done" : f.days + "d"), mins: 15 }); } }
     (SUG_POOL[phase()] || SUG_POOL.afternoon).forEach(function (c) { if (!have[c[0].toLowerCase()]) out.push({ title: c[0], domain: c[1], why: c[2], mins: c[1] === "focus" ? 90 : 30 }); });
     return out.slice(0, 4);
@@ -356,6 +358,56 @@
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
   function planBreak() { bentoPicker({ title: "Plan what you're doing — for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true }; blocks(k).push(nb); reflow(k); save(); activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }); } }); }
   function durationSheet(label, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); [15, 30, 45, 60, 90, 120].forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
+  // ---- GOALS pillar (§16, mockups 009/010): capture → decompose (guided, manual = free) → schedule steps down into the day-calendar; active goals pull into planning ----
+  function activeGoals() { return (S.goals || []).filter(function (g) { return g.active; }); }
+  function ensureGoalDefaults() { if (!S.goals || !S.goals.length) return; if (!S.goals.some(function (g) { return ("active" in g); })) { S.goals.forEach(function (g, i) { g.active = i < 3; }); save(); } } // first run: top few active (Newport cap, §17)
+  function typeAdd(parent, ph, cb) { var w = add(parent, "div", "goal-add"); var inp = document.createElement("input"); inp.type = "text"; inp.placeholder = ph; inp.className = "goal-input"; w.appendChild(inp); var b = add(w, "button", "goal-addb"); b.innerHTML = '<i class="ti ti-plus"></i>'; function go() { var v = inp.value.trim(); if (v) { cb(v); inp.value = ""; } } b.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } }); }
+  function pickSheet(q, opts, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var row = add(card, "div", "dur-row"); opts.forEach(function (o) { var c = add(row, "button", "dur-chip", o.label); c.onclick = function () { ov.remove(); cb(o.val); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
+  function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule “' + esc(st.title) + '” — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); st.schedK = k; save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
+  function goalsSheet() {
+    ensureGoalDefaults();
+    var ov = add(document.body, "div", "goal-ov"); var card = add(ov, "div", "goal-card"); var view = null;
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    function header(title, withBack) { var head = add(card, "div", "goal-head"); if (withBack) { var bk = add(head, "button", "goal-back"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; draw(); }; } var h = add(head, "div", "goal-q"); h.innerHTML = title; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); }; return head; }
+    function draw() { card.innerHTML = ""; if (!view) drawMap(); else drawGoal(view); }
+    function drawMap() {
+      var head = header('<i class="ti ti-target"></i> Your goals', false);
+      var chip = document.createElement("span"); chip.className = "goal-audit"; chip.innerHTML = '<i class="ti ti-chart-line"></i> ' + activeGoals().length + ' active'; head.insertBefore(chip, head.lastChild);
+      var body = add(card, "div", "goal-body");
+      if (!(S.goals && S.goals.length)) add(body, "div", "goal-empty", "No goals yet — add what you're working toward.");
+      var grid = add(body, "div", "goal-grid");
+      (S.goals || []).forEach(function (g) {
+        var dom = DOM[g.domain || "focus"], gc = add(grid, "div", "goal-cardx" + (g.active ? " on" : ""));
+        var dl = add(gc, "div", "goal-dom"); dl.style.color = dom.c; dl.innerHTML = '<i class="ti ' + dom.ti + '"></i> ' + dom.l;
+        var tt = add(gc, "div", "goal-title"); if (g.active) { tt.style.background = dom.c; tt.style.color = dom.ink; tt.style.borderColor = "#160510"; } tt.innerHTML = (g.active ? '<i class="ti ti-player-play-filled"></i> ' : '') + tiIcon(g) + ' ' + esc(g.title);
+        var subs = g.subtasks || [];
+        if (subs.length) { var tg = add(gc, "div", "goal-tags"); subs.slice(0, 6).forEach(function (st) { var s = add(tg, "span", "goal-tag" + (st.done ? " done" : "")); s.textContent = (st.done ? "✓ " : "") + st.title; }); }
+        else add(gc, "div", "goal-tagnone", "tap to break it down →");
+        gc.onclick = function () { view = g; draw(); };
+      });
+      typeAdd(body, "a goal you're working toward…", function (v) { (S.goals = S.goals || []).push({ title: v, domain: domainOf({ title: v }), subtasks: [], active: activeGoals().length < 3 }); save(); draw(); });
+      add(body, "div", "goal-foot", "few active · do fewer, finish more — Slow Productivity");
+    }
+    function drawGoal(g) {
+      var dom = DOM[g.domain || "focus"];
+      header('<i class="ti ' + dom.ti + '"></i> ' + esc(g.title), true);
+      var body = add(card, "div", "goal-body");
+      var ab = add(body, "button", "goal-active-btn" + (g.active ? " on" : "")); ab.innerHTML = g.active ? '<i class="ti ti-star-filled"></i> Active — pulls into your days' : '<i class="ti ti-star"></i> On hold — tap to activate'; ab.onclick = function () { g.active = !g.active; save(); draw(); renderSuggest(todayK()); };
+      add(body, "div", "goal-hint", '<i class="ti ti-subtask"></i> break it into steps → schedule them into your days');
+      var sl = add(body, "div", "goal-steps");
+      (g.subtasks || []).forEach(function (st, i) {
+        var row = add(sl, "div", "goal-step" + (st.done ? " done" : ""));
+        var ck = add(row, "button", "gs-check"); ck.innerHTML = st.done ? '<i class="ti ti-circle-check-filled"></i>' : '<i class="ti ti-circle"></i>'; ck.onclick = function () { st.done = !st.done; save(); draw(); };
+        add(row, "div", "gs-title", st.title);
+        if (st.schedK) { var sd = add(row, "span", "gs-on"); sd.innerHTML = '<i class="ti ti-calendar-check"></i>'; }
+        var sc = add(row, "button", "gs-sched"); sc.innerHTML = '<i class="ti ti-calendar-plus"></i>'; sc.onclick = function () { scheduleSubtask(g, st); };
+        var dd = add(row, "button", "gs-del"); dd.innerHTML = '<i class="ti ti-x"></i>'; dd.onclick = function () { g.subtasks.splice(i, 1); save(); draw(); };
+      });
+      typeAdd(body, "add a step or milestone…", function (v) { (g.subtasks = g.subtasks || []).push({ title: v, done: false }); save(); draw(); });
+      var dg = add(body, "button", "goal-delete", "✕ delete this goal"); dg.onclick = function () { var i = S.goals.indexOf(g); if (i >= 0) S.goals.splice(i, 1); save(); view = null; draw(); };
+    }
+    draw();
+  }
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return; var run = activeTimers(), t = run[run.length - 1];
     if (head) {
@@ -2145,6 +2197,7 @@
       var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!document.querySelector(".calblk.dragging")) renderToday(); } // burning timeline: each minute re-sweep so the now-line descends & plans the line has passed darken
     }, 1000);
     el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
+    var og = el("openGoals"); if (og) og.onclick = goalsSheet;
     el("addHabit").onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;

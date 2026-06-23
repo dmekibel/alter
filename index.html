@@ -588,6 +588,44 @@
   .dur-chip{ background:#ff5fa0; color:#4a1126; border:2px solid #160510; border-radius:12px; box-shadow:0 3px 0 #160510; padding:13px 0; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; cursor:pointer; }
   .dur-chip:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
   .dur-x{ display:block; margin:13px auto 0; background:transparent; border:none; color:#c79ab4; font-family:"Jost",sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
+  /* ============ GOALS pillar (§16, mockups 009/010) ============ */
+  .goal-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
+  .goal-card{ width:min(460px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
+  .goal-head{ display:flex; align-items:center; gap:8px; padding:13px 14px 10px; flex:none; border-bottom:2px solid #160510; background:#1c0512; }
+  .goal-q{ color:#ffe3f1; font-size:17px; font-weight:700; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:7px; }
+  .goal-audit{ flex:none; background:#34d39a; color:#0a3326; border:2px solid #160510; border-radius:9px; padding:3px 9px; font-size:11.5px; font-weight:700; display:flex; align-items:center; gap:4px; }
+  .goal-back,.goal-x{ flex:none; width:32px; height:32px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .goal-body{ overflow:auto; padding:12px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; }
+  .goal-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  .goal-cardx{ background:#48123a; border:3px solid #160510; border-radius:14px; padding:10px; cursor:pointer; transition:transform .12s; }
+  .goal-cardx:active{ transform:scale(.98); }
+  .goal-cardx.on{ box-shadow:0 4px 0 #160510; }
+  .goal-dom{ font-size:12.5px; font-weight:700; margin-bottom:7px; display:flex; align-items:center; gap:5px; }
+  .goal-title{ border:2px solid #2a0a1e; border-radius:9px; padding:6px 9px; font-size:13px; font-weight:700; color:#ffd0e6; background:#3a1226; margin-bottom:7px; display:flex; align-items:center; gap:5px; line-height:1.2; }
+  .goal-tags{ display:flex; flex-wrap:wrap; gap:5px; }
+  .goal-tag{ background:#5a2840; color:#ffb0cc; border:2px solid #2a0a1e; border-radius:8px; padding:3px 7px; font-size:11px; font-weight:600; }
+  .goal-tag.done{ opacity:.6; text-decoration:line-through; }
+  .goal-tagnone{ color:#a06b86; font-size:11.5px; font-weight:600; }
+  .goal-empty{ color:#c79ab4; font-size:13px; text-align:center; padding:14px 0; }
+  .goal-foot{ color:#a8d8c0; font-size:11.5px; text-align:center; margin-top:12px; line-height:1.5; }
+  .goal-add{ display:flex; gap:7px; margin-top:10px; }
+  .goal-input{ flex:1 1 auto; min-width:0; background:#1c0512; border:2px solid #160510; border-radius:11px; padding:9px 11px; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:600; font-size:13px; }
+  .goal-input::placeholder{ color:#9a6a86; }
+  .goal-input:focus{ outline:none; border-color:#ff5fa0; }
+  .goal-addb{ flex:none; width:42px; border:2px solid #160510; border-radius:11px; background:#ff5fa0; color:#4a1126; font-size:16px; cursor:pointer; box-shadow:0 3px 0 #160510; }
+  .goal-active-btn{ width:100%; border:2px solid #160510; border-radius:12px; padding:10px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; cursor:pointer; background:#3a1226; color:#c79ab4; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .goal-active-btn.on{ background:#ffc83d; color:#5a3a00; box-shadow:0 3px 0 #160510; }
+  .goal-hint{ color:#c79ab4; font-size:12px; font-weight:600; margin:11px 2px 8px; display:flex; align-items:center; gap:6px; }
+  .goal-steps{ display:flex; flex-direction:column; gap:7px; }
+  .goal-step{ display:flex; align-items:center; gap:8px; background:#3a1226; border:2px solid #160510; border-radius:11px; padding:8px 10px; }
+  .goal-step.done .gs-title{ opacity:.55; text-decoration:line-through; }
+  .gs-check{ flex:none; background:none; border:none; color:#ffd0e6; font-size:19px; cursor:pointer; display:flex; padding:0; }
+  .goal-step.done .gs-check{ color:#46e2a4; }
+  .gs-title{ flex:1 1 auto; min-width:0; color:#ffe3f1; font-size:13px; font-weight:600; }
+  .gs-on{ color:#8fd2f5; font-size:15px; flex:none; display:flex; }
+  .gs-sched,.gs-del{ flex:none; width:30px; height:30px; border-radius:9px; border:2px solid #160510; background:#48122f; color:#ffd0e6; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .gs-sched{ background:#36b3f0; color:#08283c; }
+  .goal-delete{ display:block; margin:16px auto 4px; background:transparent; border:none; color:#a06b86; font-family:"Jost",sans-serif; font-weight:600; font-size:12.5px; cursor:pointer; }
   .pull-title{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pull-hbtns{ display:flex; gap:7px; flex:none; }
   .pull-switch{ background:#ffc83d; color:#5a3a00; border:2px solid #160510; border-radius:9px; box-shadow:0 3px 0 #160510; padding:6px 10px; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
@@ -691,7 +729,7 @@
         <div id="zoomTabs"><button class="zt on" data-z="day">Day</button><button class="zt" data-z="week">Week</button><button class="zt" data-z="month">Month</button></div>
       </div>
       <section class="panel c-today" id="calPanel">
-        <div class="cardhead"><h3 id="todayTitle">Today</h3><span class="meta" id="adhereChip" style="display:none"></span><button class="add" id="planToday">＋ add</button></div>
+        <div class="cardhead"><h3 id="todayTitle">Today</h3><span class="meta" id="adhereChip" style="display:none"></span><button class="add" id="openGoals"><i class="ti ti-target"></i> Goals</button><button class="add" id="planToday">＋ add</button></div>
         <div id="todayList"></div>
         <div id="suggestBar"></div>
       </section>
@@ -727,6 +765,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=388"></script>
+  <script src="app.js?v=389"></script>
 </body>
 </html>
