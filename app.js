@@ -1491,7 +1491,7 @@
     for (var i = 0; i < map.length; i++) if (t.indexOf(map[i][0]) !== -1) return map[i][1];
     return "🗓️";
   }
-  function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1425, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
+  function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1590,Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); }
   function radialMenu(opts, onPick, onCancel, multi) {
     var ov = document.createElement("div"); ov.className = "radial";
     var items = opts.slice(0, 8), n = items.length || 1, sel = [];
@@ -1533,7 +1533,7 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
     var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var startH = Math.min(7, Math.floor(minS / 60)), endH = Math.max(25, Math.ceil(maxE / 60)), HP = 64, now = nowMin(); // run past midnight so you can plan into the night (David 2026-06-23)
+    var startH = Math.min(7, Math.floor(minS / 60)), endH = Math.max(27, Math.ceil(maxE / 60)), HP = 64, now = nowMin(); // run to ~3am so you can plan past midnight into the AM (David 2026-06-23)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
     for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var nl = add(cal, "div", "nowline"); nl.style.top = ((now - startH * 60) / 60 * HP) + "px"; nowLineEl = nl; var np = add(cal, "div", "nowpill", "NOW"); np.style.top = ((now - startH * 60) / 60 * HP - 10) + "px"; }
@@ -1580,7 +1580,7 @@
         if (ev.pointerType === "touch") { var ty = ev.clientY, tmoved = false; function tm(e) { if (Math.abs(e.clientY - ty) > 8) tmoved = true; } function tu() { document.removeEventListener("pointermove", tm); document.removeEventListener("pointerup", tu); document.removeEventListener("pointercancel", tu); if (!tmoved) blockEdit(b, k); } document.addEventListener("pointermove", tm); document.addEventListener("pointerup", tu); document.addEventListener("pointercancel", tu); return; } // touch: let the day scroll (pan-y); tap = edit; move/resize via the grips
         ev.preventDefault();
         var sy0 = ev.clientY, sm0 = hm(b.time), moved = false, ct0 = card.querySelector(".ct"), dragMin = sm0;
-        function mv2(e) { var dy = e.clientY - sy0; if (!moved && Math.abs(dy) > 5) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { dragMin = Math.max(0, Math.min(1425, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); } }
+        function mv2(e) { var dy = e.clientY - sy0; if (!moved && Math.abs(dy) > 5) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { dragMin = Math.max(0, Math.min(1590,sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); } }
         function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else { blockEdit(b, k); } }
         document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2);
       });
