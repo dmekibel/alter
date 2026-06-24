@@ -583,14 +583,14 @@
   var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
-  function animateHourPx(nv, focusScreenY) {
+  function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
     nv = Math.max(36, Math.min(124, Math.round(nv))); if (nv === old) return;
-    var pr = pb.getBoundingClientRect();
-    var fy = (focusScreenY == null) ? pr.height * 0.42 : (focusScreenY - pr.top); // keep the content under this screen-point fixed
-    var anchorContentY = pb.scrollTop + fy;
+    var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
+    var fy = (focusScreenY == null) ? vh * 0.42 : (focusScreenY - (sc ? sc.getBoundingClientRect().top : 0));
+    var anchor = prevTop + fy;
     pullHourPx = nv; buildPull();
-    var p2 = el("pullBody"); if (p2) p2.scrollTop = Math.max(0, anchorContentY * (nv / old) - fy); // redistribute, keep the focus row in place
+    var sc2 = el("pullBody").querySelector(".day-card.cur .day-cardscroll"); if (sc2) sc2.scrollTop = Math.max(0, anchor * (nv / old) - fy);
   }
   // smooth zoom between day/week/month — a self-completing CSS keyframe entrance (never gets stuck invisible; ends at the natural visible state) — David 2026-06-24
   function zoomAnim(dir) {
@@ -665,7 +665,7 @@
       pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
       var curScroll = pager.querySelector(".day-card.cur .day-cardscroll");
       nowLineEl = curScroll ? curScroll.querySelector(".nowline") : null;
-      if (curScroll) { if (pendingScrollNow || focus === todayK()) { var _nl = curScroll.querySelector(".nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: "center" }); }); pendingScrollNow = false; } else curScroll.scrollTop = keepTop; }
+      if (curScroll) { if (pendingScrollNow) { var _nl = curScroll.querySelector(".nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: "center" }); }); pendingScrollNow = false; } else curScroll.scrollTop = keepTop; } // only re-center on EXPLICIT open/Today — never yank the scroll on a routine rebuild (zoom, minute-tick) — David 2026-06-24
       var _lab0 = el("pullDayLabel"); if (_lab0) _lab0.textContent = relLabel(focus);
       var _tb0 = el("pullTodayBtn"); if (_tb0) _tb0.style.display = (focus !== todayK()) ? "" : "none";
     }
@@ -1171,7 +1171,7 @@
     ctx.fillStyle = "#9aa0ad"; ctx.beginPath(); ctx.ellipse(x - 3, y - 3, 6, 4, 0, 0, 7); ctx.fill();
     ctx.fillStyle = "#5e636f"; ctx.fillRect(x - 9, y + 4, 18, 2);
   }
-  function drawTree(ctx, x, y) {
+  function drawTreeSprite(ctx, x, y) {
     ctx.fillStyle = "rgba(20,40,15,0.22)"; ctx.beginPath(); ctx.ellipse(x + 4, y + 4, 21, 7, 0, 0, 7); ctx.fill();
     ctx.fillStyle = "#6b4a2c"; ctx.fillRect(x - 4, y - 28, 9, 30); ctx.fillStyle = "#553a22"; ctx.fillRect(x - 4, y - 28, 3, 30);
     ctx.fillStyle = "#2f6330"; ctx.beginPath(); ctx.arc(x, y - 46, 26, 0, 7); ctx.fill();
