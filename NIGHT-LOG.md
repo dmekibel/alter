@@ -31,6 +31,7 @@ _(newest at top — each line is a real, preview-verified, pushed change)_
 
 | v | Area | Improvement |
 |---|---|---|
+| v428 | Presets | Refined Balanced & Recovery auto-plan presets to use concrete real-life activities (Gym, Deep work, Design, Call, Guitar, Yoga, Go outside, Nap, Read, Friends…) so auto-plans render with proper icons/colors and feel real |
 | v427 | Planner | **Empty-day invite**: an empty day now shows a tappable "plan [day]" prompt in the PLAN lane → one tap to auto-plan, so blank days are never a dead end |
 | v426 | Game feel | Floating **"+N Spark"** rises from the counter every time you earn (completing activities, plan bonuses, celebrations) — earning now feels rewarding |
 | v425 | Planner + feel | **Copy yesterday's plan** in the auto-plan sheet (one tap reuses the previous day) + tactile **haptic buzz** on celebrations/plan-completions |
