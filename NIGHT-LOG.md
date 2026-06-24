@@ -31,6 +31,7 @@ _(newest at top — each line is a real, preview-verified, pushed change)_
 
 | v | Area | Improvement |
 |---|---|---|
+| v431 | Planner | Per-day **progress badge** ("✓ 3/5 done", green when 100%) on today + past day dividers — see at a glance how each day went; future days keep auto-plan |
 | v430 | Planner | NOW badge gently **pulses** (a "you are here" heartbeat) — the present moment feels alive on the timeline |
 | v429 | Planner | NOW pill now shows the live time ("NOW 8:03am") on the timeline — quick temporal anchor alongside the wake/noon/bed/midnight markers |
 | v428 | Presets | Refined Balanced & Recovery auto-plan presets to use concrete real-life activities (Gym, Deep work, Design, Call, Guitar, Yoga, Go outside, Nap, Read, Friends…) so auto-plans render with proper icons/colors and feel real |

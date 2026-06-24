@@ -546,9 +546,10 @@
       var lh0 = add(pb, "div", "lanehead onehead"); add(lh0, "span", "lhx plan", "PLAN"); add(lh0, "span", "lhx real", "REAL"); // ONE shared PLAN/REAL pinned above all days — not repeated at each day split (David 2026-06-24)
       var base = todayK();
       for (var di = -2; di <= 3; di++) { (function (dk) {
-        var isT = (dk === todayK());
+        var isT = (dk === todayK()), isFut = dk > todayK();
         var sep = add(pb, "div", "day-sep" + (isT ? " today" : "")); add(sep, "span", "day-seplab", relLabel(dk));
-        if (!isT) { var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apb.onclick = function () { presetsSheet(dk); }; }
+        if (isFut) { var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apb.onclick = function () { presetsSheet(dk); }; }
+        else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(sep, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; } // progress badge on today + past days (David 2026-06-24 night)
         var sec = add(pb, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
       })(keyAdd(base, di)); }
       nowLineEl = pb.querySelector(".nowline");
