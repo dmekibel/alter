@@ -4,7 +4,7 @@ Continuing the build of David's personal-development life-sim app (working name 
 
 ## ⭐ Start here
 1. **`DESIGN-BRIEF.md`** = the complete text spec. **`_mockups/`** (44 HTML files, see `_MANIFEST.txt`) = the **VISUAL source of truth** — port them **1-to-1** (Jost + Tabler icons + exact CSS). David rejected a from-the-text reinterpretation once; do NOT do that again. Mockups were extracted from transcript `~/.claude/projects/-Users-Dmekibel-claudeCode/f1b6612d-*.jsonl`. Keep the rendered fairy/island (better than the mockups' placeholder shapes).
-2. **LIVE**: vanilla JS — `app.js` (~2150 lines) + `index.html` (inline CSS), GitHub Pages → https://dmekibel.github.io/alter/ , localStorage key `alter_plan2`. **Current version: v428** (pushed; deploys ~2–4 min). David: **always ship** after preview-verify (commit+push+poll+`fresh.html`), no need to ask.
+2. **LIVE**: vanilla JS — `app.js` (~2150 lines) + `index.html` (inline CSS), GitHub Pages → https://dmekibel.github.io/alter/ , localStorage key `alter_plan2`. **Current version: v429** (pushed; deploys ~2–4 min). David: **always ship** after preview-verify (commit+push+poll+`fresh.html`), no need to ask.
 3. **Deploy loop**: edit `app.js` → `node --check app.js` → bump `app.js?v=NNN` in `index.html` → `git add app.js index.html [HANDOFF.md] && git commit && git push`. Pages lag is real → confirm with `curl -s "https://dmekibel.github.io/alter/index.html?cb=$(date +%s)" | grep -o 'app.js?v=[0-9]*'` (poll till it matches). Cache-bust link for David: `/fresh.html`.
 
 ## ⭐⭐ How David works (READ THIS — it's why things got rejected)
