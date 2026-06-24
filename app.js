@@ -574,19 +574,15 @@
   }
   var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
-  // Perfectly-smooth hour-density zoom: animate the ALREADY-VISIBLE crisp content with a GPU scaleY, then swap in the crisp re-layout at the end (no flash, no jump) — David 2026-06-24
-  function animateHourPx(nv, anchorY) {
+  // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
+  function animateHourPx(nv, focusScreenY) {
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
     nv = Math.max(36, Math.min(124, Math.round(nv))); if (nv === old) return;
-    if (anchorY == null) anchorY = pb.scrollTop;
-    var layer = pb.querySelector(".pull-daylayer");
-    if (!layer) { pullHourPx = nv; buildPull(); var p0 = el("pullBody"); if (p0) p0.scrollTop = anchorY * (nv / old); return; }
-    var done = false;
-    function fin() { if (done) return; done = true; layer.removeEventListener("transitionend", fin); pullHourPx = nv; buildPull(); var p2 = el("pullBody"); if (p2) p2.scrollTop = anchorY * (nv / old); }
-    layer.style.transformOrigin = "center " + Math.max(0, anchorY - layer.offsetTop) + "px"; // pivot at the viewport top so the time under it stays put
-    layer.style.transition = "none"; layer.style.transform = "scaleY(1)"; void layer.offsetHeight; // start from the crisp on-screen size
-    requestAnimationFrame(function () { layer.style.transition = "transform .3s cubic-bezier(.22,.61,.36,1)"; layer.style.transform = "scaleY(" + (nv / old) + ")"; }); // …glide to the target density
-    layer.addEventListener("transitionend", fin); setTimeout(fin, 380); // …then settle to the crisp re-layout
+    var pr = pb.getBoundingClientRect();
+    var fy = (focusScreenY == null) ? pr.height * 0.42 : (focusScreenY - pr.top); // keep the content under this screen-point fixed
+    var anchorContentY = pb.scrollTop + fy;
+    pullHourPx = nv; buildPull();
+    var p2 = el("pullBody"); if (p2) p2.scrollTop = Math.max(0, anchorContentY * (nv / old) - fy); // redistribute, keep the focus row in place
   }
   // smooth zoom between day/week/month — a self-completing CSS keyframe entrance (never gets stuck invisible; ends at the natural visible state) — David 2026-06-24
   function zoomAnim(dir) {
@@ -657,10 +653,10 @@
       var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, sX = 0, sY = 0, single = false;
       function pdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); }
       pb.addEventListener("pointerdown", function (e) { ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length; if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; } else if (n === 2) { single = false; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; } });
-      pb.addEventListener("pointermove", function (e) { if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; } if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); e.preventDefault(); var lyr = pb.querySelector(".pull-daylayer"); if (lyr) { var r = Math.max(36 / pHP0, Math.min(124 / pHP0, pDLast / pD0)); lyr.style.transition = "none"; lyr.style.transformOrigin = "center " + Math.max(0, pb.scrollTop - lyr.offsetTop) + "px"; lyr.style.transform = "scaleY(" + r + ")"; } } }, { passive: false }); // LIVE pinch feedback: scale the day layer as you pinch (David 2026-06-24)
+      pb.addEventListener("pointermove", function (e) { if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; } if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); e.preventDefault(); } }, { passive: false }); // pinch tracks distance; the crisp re-layout happens on release (no pixel-stretch — David 2026-06-24)
       function gend(e) {
-        var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
-        if (wasPinch && n < 2 && pullZoom === "day") { var nHP = Math.max(36, Math.min(124, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; var lyr2 = pb.querySelector(".pull-daylayer"); if (lyr2) { lyr2.style.transition = ""; lyr2.style.transform = ""; lyr2.style.transformOrigin = ""; } if (nHP !== pullHourPx) { var sc = pb.scrollTop, old = pullHourPx; pullHourPx = nHP; buildPull(); var p2 = el("pullBody"); if (p2) p2.scrollTop = sc * (nHP / old); } if (n === 0) single = false; return; }
+        var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; var pmid = null; if (wasPinch) { var others = Object.keys(ptrs).filter(function (i) { return i != e.pointerId; }); pmid = others.length ? (ptrs[others[0]].y + ey) / 2 : ey; } delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
+        if (wasPinch && n < 2 && pullZoom === "day") { var nHP = Math.max(36, Math.min(124, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; if (nHP !== pullHourPx) animateHourPx(nHP, pmid); if (n === 0) single = false; return; }
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX, dy = ey - sY; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) gotoAdjacentDay(dx < 0 ? 1 : -1); single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
@@ -1814,14 +1810,17 @@
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript");
       card.addEventListener("pointerdown", function (ev) {
         if (ev.target === grip || ev.target === gripT || ev.target === xb) return;
-        var touch = ev.pointerType === "touch"; if (!touch) ev.preventDefault(); // mouse drags immediately; touch lets the timeline SCROLL until you press-and-hold to pick the bubble up (David 2026-06-24)
-        var sy0 = ev.clientY, sx0 = ev.clientX, sm0 = hm(b.time), moved = false, picked = !touch, scrolled = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0;
-        if (touch) holdT = setTimeout(function () { picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); card.style.touchAction = "none"; try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 250); // press & hold ≈250ms → pick it up; then dragging moves it
-        function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); card.style.touchAction = ""; }
-        function mv2(e) { if (touch && !picked) { if (Math.abs(e.clientY - sy0) > 8 || Math.abs(e.clientX - sx0) > 8) scrolled = true; return; } var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); } }
-        function up2() { var wasMoved = moved, wasScrolled = scrolled; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!wasScrolled) editBlk(b); } // moved → save; clean tap → edit; a scroll → nothing
-        function cancel() { clean(); } // the browser took the gesture to scroll → leave the bubble alone
-        document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
+        var touch = ev.pointerType === "touch", pbE = el("pullBody"); if (!touch) ev.preventDefault(); // mouse drags immediately
+        var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch, scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0;
+        if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 230); // hold ≈230ms (finger still) → pick it up to MOVE; a drag instead SCROLLS
+        function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
+        function mv2(e) {
+          if (touch && !picked) { var ady = Math.abs(e.clientY - sy0), adx = Math.abs(e.clientX - sx0); if (!scrolling && (ady > 6 || adx > 6)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && pbE) { e.preventDefault(); pbE.scrollTop -= (e.clientY - lastY); lastY = e.clientY; } return; } // pre-pickup drag = scroll the timeline 1:1 (no native-scroll fight)
+          var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); }
+        }
+        function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // moved → save · scrolled → nothing · clean tap → edit
+        function cancel() { clean(); }
+        document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
       });
       grip.addEventListener("pointerdown", function (ev) {
         ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging");
@@ -1862,17 +1861,20 @@
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
         var lgT = add(card, "div", "gript"); lgT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, endM = it.e, cs = card.querySelector(".csub"); function mv(e2) { var ns = Math.max(0, Math.min(endM - 5, it.s + Math.round(((e2.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; e.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); e.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(24, nm / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(ns) + "–" + fmt(endM); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // drag the top edge → move the START earlier/later (end fixed) — expand above too (David 2026-06-24)
-        card.addEventListener("pointerdown", function (ev) { // press & hold to rearrange a past activity · drag = scroll · tap = re-label (David 2026-06-24)
+        card.addEventListener("pointerdown", function (ev) { // hold to rearrange a past activity · drag = scroll · tap = re-label (David 2026-06-24)
           if (ev.target === xb || ev.target === lg || ev.target === lgT) return;
-          var touch = ev.pointerType === "touch"; if (!touch) ev.preventDefault();
-          var sy = ev.clientY, sx = ev.clientX, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch, scrolled = false, holdT = null, cur2 = sm0;
-          if (touch) holdT = setTimeout(function () { picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); card.style.touchAction = "none"; try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 250);
+          var touch = ev.pointerType === "touch", pbE = el("pullBody"); if (!touch) ev.preventDefault();
+          var sy = ev.clientY, sx = ev.clientX, lastY = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch, scrolling = false, holdT = null, cur2 = sm0;
+          if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 230);
           function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
-          function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); card.style.touchAction = ""; }
-          function mv2(ev2) { if (touch && !picked) { if (Math.abs(ev2.clientY - sy) > 8 || Math.abs(ev2.clientX - sx) > 8) scrolled = true; return; } var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; } }
-          function up2() { var wasMoved = moved, wasScrolled = scrolled; clean(); if (wasMoved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!wasScrolled) relabel(); }
+          function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
+          function mv2(ev2) {
+            if (touch && !picked) { var ady = Math.abs(ev2.clientY - sy), adx = Math.abs(ev2.clientX - sx); if (!scrolling && (ady > 6 || adx > 6)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && pbE) { ev2.preventDefault(); pbE.scrollTop -= (ev2.clientY - lastY); lastY = ev2.clientY; } return; }
+            var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
+          }
+          function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!wasScroll) relabel(); }
           function cancel() { clean(); }
-          document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
+          document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
         });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);

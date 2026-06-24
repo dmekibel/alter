@@ -870,8 +870,6 @@
   .pull-datenav .pull-step{ width:30px !important; height:30px !important; }
   .pull-datenav .pull-date{ min-width:auto !important; font-size:16px !important; }
   /* ============ v442 — scroll vs move-bubbles + clear-the-day + habit stacks (David 2026-06-24) ============ */
-  /* bubbles now allow native vertical SCROLL (a plain drag scrolls the timeline); press-and-hold picks one up to move it (JS sets touch-action:none on pickup) */
-  .calblk{ touch-action:pan-y; }
   .pn-break.arm{ background:#ff5fa0 !important; color:#4a1126 !important; border-style:solid !important; border-color:#160510 !important; }
   /* ============ v443 — minimal ✕ · no scaling lines · unselectable text · midnight behind bubbles · small-bubble degradation (David 2026-06-24) ============ */
   /* nothing in the app is text-selectable (avoids accidental highlight); inputs stay selectable */
@@ -904,6 +902,14 @@
   .bchip.fav{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; width:82px; min-height:72px; padding:9px 6px; border-radius:15px; border-width:2.5px; box-shadow:0 3px 0 #160510; font-size:11.5px; text-align:center; line-height:1.15; white-space:normal; }
   .bchip.fav .ti{ font-size:22px; }
   .bchip.fav .ti-check{ font-size:13px; }
+  /* ============ v444 — drag-to-scroll + hold-to-move on touch (JS-controlled) + easy bottom-edge resize (David 2026-06-24) ============ */
+  /* movable bubbles are fully JS-controlled (touch-action:none) so a drag can SCROLL the timeline (1:1) and a hold can MOVE — no native-scroll fight that broke move on iOS */
+  .calblk.lane{ touch-action:none !important; }
+  .calblk.act:not(.live){ touch-action:none !important; }
+  .calblk.live{ touch-action:pan-y !important; } /* the live timer doesn't move → keep native momentum scroll + tap-to-switch */
+  /* the bottom edge is a full-width resize handle (easy to grab); top stays a small corner */
+  .calblk .grip{ left:0 !important; right:0 !important; width:auto !important; height:14px !important; bottom:0 !important; top:auto !important; }
+  .calblk.csmall .grip{ height:8px !important; }
 </style>
 </head>
 <body>
@@ -979,6 +985,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=443"></script>
+  <script src="app.js?v=444"></script>
 </body>
 </html>
