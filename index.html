@@ -869,6 +869,10 @@
   .pull-rt .scope-b{ width:26px !important; height:26px !important; font-size:13px !important; }
   .pull-datenav .pull-step{ width:30px !important; height:30px !important; }
   .pull-datenav .pull-date{ min-width:auto !important; font-size:16px !important; }
+  /* ============ v442 — scroll vs move-bubbles + clear-the-day + habit stacks (David 2026-06-24) ============ */
+  /* bubbles now allow native vertical SCROLL (a plain drag scrolls the timeline); press-and-hold picks one up to move it (JS sets touch-action:none on pickup) */
+  .calblk{ touch-action:pan-y; }
+  .pn-break.arm{ background:#ff5fa0 !important; color:#4a1126 !important; border-style:solid !important; border-color:#160510 !important; }
   /* kill the yellow predicted/selected rings — picked = a bold dark ring + ✓ (on-theme, never yellow) */
   .bchip.pred{ box-shadow:none !important; }
   .bchip.sel{ box-shadow:0 0 0 3px #160510 !important; transform:scale(1.04); }
@@ -891,7 +895,7 @@
       <div class="screen-h"><i class="ti ti-target"></i> Goals</div>
       <div class="nb-body" style="padding:0">
         <button class="nb-item" id="goGoals"><span class="nb-ic" style="background:#34d39a"><i class="ti ti-target"></i></span><div class="nb-tx"><div class="nb-l">Your goals</div><div class="nb-sub">break down &amp; schedule</div></div></button>
-        <button class="nb-item" id="goPresets"><span class="nb-ic" style="background:#ff5fa0"><i class="ti ti-stars"></i></span><div class="nb-tx"><div class="nb-l">Masterpiece days</div><div class="nb-sub">design your day presets</div></div></button>
+        <button class="nb-item" id="goPresets"><span class="nb-ic" style="background:#ff5fa0"><i class="ti ti-stack-2"></i></span><div class="nb-tx"><div class="nb-l">Habit stacks</div><div class="nb-sub">build &amp; apply day presets</div></div></button>
         <button class="nb-item" id="goHabits"><span class="nb-ic" style="background:#ff8a3d"><i class="ti ti-checkup-list"></i></span><div class="nb-tx"><div class="nb-l">Habits</div><div class="nb-sub">add or remove your activities</div></div></button>
       </div>
     </div>
@@ -954,6 +958,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=441"></script>
+  <script src="app.js?v=442"></script>
 </body>
 </html>
