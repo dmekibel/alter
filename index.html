@@ -838,6 +838,12 @@
   /* Goals + You screen scaffolding */
   .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
   .screen-h .ti{ color:#ff5fa0; }
+  /* ============ v439 — resize grips = subtle CORNER LINES (no white square) — drag to expand BELOW (bottom-right) or ABOVE (top-left) — David 2026-06-24 ============ */
+  .calblk .grip, .calblk .gript{ position:absolute; left:auto; right:auto; top:auto; bottom:auto; width:30px; height:24px; background:none !important; box-shadow:none !important; cursor:ns-resize; touch-action:none; z-index:4; display:flex; }
+  .calblk .grip{ right:0; bottom:0; align-items:flex-end; justify-content:flex-end; padding:0 5px 5px 0; }            /* expand DOWN — bottom-right corner */
+  .calblk .gript{ display:flex !important; left:0; top:0; align-items:flex-start; justify-content:flex-start; padding:5px 0 0 5px; } /* expand UP — top-left corner (top-right is the ✕) */
+  .calblk .grip::after{ content:""; width:13px; height:13px; background:none !important; border:none; border-right:2px solid rgba(0,0,0,.34); border-bottom:2px solid rgba(0,0,0,.34); border-radius:0 0 9px 0; } /* the line echoes the bubble's bottom-right corner */
+  .calblk .gript::after{ content:""; width:13px; height:13px; background:none !important; border:none; border-left:2px solid rgba(0,0,0,.34); border-top:2px solid rgba(0,0,0,.34); border-radius:9px 0 0 0; }   /* …and its top-left corner */
 </style>
 </head>
 <body>
@@ -907,6 +913,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=438"></script>
+  <script src="app.js?v=439"></script>
 </body>
 </html>
