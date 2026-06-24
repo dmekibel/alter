@@ -566,6 +566,7 @@
       else { add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months"); }
       var rt = add(top, "div", "pull-rt");
       if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
+      else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb2.onclick = function () { scrollToDay(todayK()); }; tdb2.style.display = (pullFocusK && pullFocusK !== todayK()) ? "" : "none"; } // day view gets a Today button too — shows when you've scrolled/paged off today (David 2026-06-24)
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
@@ -617,7 +618,7 @@
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX, dy = ey - sY; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) gotoAdjacentDay(dx < 0 ? 1 : -1); single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
-      pb.addEventListener("scroll", function () { if (pullZoom !== "day") return; var secs = pb.querySelectorAll(".day-sec"); if (!secs.length) return; var ref = pb.scrollTop + 64, cur = secs[0]; for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= ref) cur = secs[i]; } var dk = cur.getAttribute("data-dk"); if (dk && dk !== pullFocusK) { pullFocusK = dk; var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(dk); } }, { passive: true }); // header label tracks the day you've scrolled to — direct (no rAF; backgrounded tabs throttle rAF) (David 2026-06-24)
+      pb.addEventListener("scroll", function () { if (pullZoom !== "day") return; var secs = pb.querySelectorAll(".day-sec"); if (!secs.length) return; var ref = pb.scrollTop + 64, cur = secs[0]; for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= ref) cur = secs[i]; } var dk = cur.getAttribute("data-dk"); if (dk && dk !== pullFocusK) { pullFocusK = dk; var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(dk); var tb = el("pullTodayBtn"); if (tb) tb.style.display = (dk !== todayK()) ? "" : "none"; } }, { passive: true }); // header label + Today button track the day you've scrolled to (David 2026-06-24)
     }
   }
   function gotoAdjacentDay(dir) { // horizontal swipe: snap to the prev/next day's section (David 2026-06-24)
@@ -1730,7 +1731,7 @@
     function settle() { planCards.forEach(function (pc) { pc.card.style.top = topFor(hm(pc.b.time)) + "px"; pc.card.style.height = Math.max(24, (pc.b.mins || 30) / 60 * HP - 4) + "px"; }); }
     function preview(ex, ds, de) { planCards.filter(function (pc) { return pc.card !== ex; }).sort(function (a, c) { return hm(a.b.time) - hm(c.b.time); }).reduce(function (cur, pc) { var dur = pc.b.mins || 30, s = hm(pc.b.time); if (cur >= 0 && s < cur) s = cur; if (s < de && s + dur > ds) s = de; pc.card.style.top = topFor(s) + "px"; return s + dur; }, -1); }
     function overlapLog(bs, be) { for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs) return true; } return false; }
-    bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
+    var _bsorted = bls.sort(function (a, b) { return hm(a.time) - hm(b.time); }); _bsorted.forEach(function (b, _bi) {
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
       // PLAN lane, 3 states (§23, mockups 030/031/034): sched = two-tone diagonal hatch · cele = activity-colored celebration · ghost = domain-outlined hollow
       var dom = domainOf(b), D = DOM[dom];
@@ -1741,6 +1742,7 @@
       var stt = status === "ok" ? "cele" : dark ? "ghost" : "sched";
       var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
+      var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
       if (status === "ok") {
         card.style.background = "linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")";
         card.style.boxShadow = "0 0 0 3px " + D.ring + ",0 0 12px " + D.c; card.style.borderColor = "#160510";
