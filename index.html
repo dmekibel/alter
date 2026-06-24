@@ -806,6 +806,29 @@
   body.tracker #liveTracker{ padding-bottom:15px; }
   body.tracker #liveTracker::after{ content:""; position:absolute; left:50%; bottom:5px; transform:translateX(-50%); width:40px; height:4px; border-radius:3px; background:rgba(74,17,38,.55); }
   #ltHint{ display:flex; align-items:center; gap:4px; }
+  /* ============ v437 — 3-TAB SHELL: Goals · Today · You (flat, equal, labelled) ============ */
+  #nav{ display:flex !important; left:0; right:0; bottom:0; z-index:55; justify-content:space-around; align-items:stretch;
+    background:#1c0512 !important; border-top:3px solid #160510 !important; box-shadow:0 -6px 20px rgba(0,0,0,.5) !important;
+    padding:6px 8px max(8px,env(safe-area-inset-bottom)) !important; gap:4px; }
+  #nav .nb{ flex:1 1 0 !important; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    background:none !important; border:none !important; border-radius:14px; padding:7px 2px 5px !important; cursor:pointer;
+    color:#9c6f8f !important; font-family:"Jost",sans-serif; font-weight:700; transition:color .15s; }
+  #nav .nb .ne{ font-size:24px !important; line-height:1; }
+  #nav .nb .nl2{ font-size:11px !important; font-weight:700; letter-spacing:.3px; }
+  #nav .nb.on{ color:#ff5fa0 !important; }
+  #nav .nb.on .ne{ filter:drop-shadow(0 0 7px rgba(255,95,160,.45)); }
+  #nav .nb:active{ transform:scale(.93); }
+  #screen{ padding-bottom:98px !important; }
+  /* header is replaced by the live-tracker strip + per-screen titles */
+  body.tracker header{ display:none; }
+  /* garden (full-screen world) is now a secondary view reached from You → exit via ←, hide HUD chrome while inside it */
+  #gameExit{ display:flex !important; }
+  body.gaming #liveTracker{ display:none !important; }
+  body.gaming #nav{ display:none !important; }
+  #notebookBtn{ display:none !important; }
+  /* Goals + You screen scaffolding */
+  .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
+  .screen-h .ti{ color:#ff5fa0; }
 </style>
 </head>
 <body>
@@ -813,6 +836,15 @@
   <div id="screen">
     <button id="featClose" type="button" aria-label="Close">✕</button>
     <header><div id="date"></div><div id="hello"></div><button id="gear" aria-label="Brain">🧠</button></header>
+
+    <div class="tab" id="t-goals">
+      <div class="screen-h"><i class="ti ti-target"></i> Goals</div>
+      <div class="nb-body" style="padding:0">
+        <button class="nb-item" id="goGoals"><span class="nb-ic" style="background:#34d39a"><i class="ti ti-target"></i></span><div class="nb-tx"><div class="nb-l">Your goals</div><div class="nb-sub">break down &amp; schedule</div></div></button>
+        <button class="nb-item" id="goPresets"><span class="nb-ic" style="background:#ff5fa0"><i class="ti ti-stars"></i></span><div class="nb-tx"><div class="nb-l">Masterpiece days</div><div class="nb-sub">design your day presets</div></div></button>
+        <button class="nb-item" id="goHabits"><span class="nb-ic" style="background:#ff8a3d"><i class="ti ti-checkup-list"></i></span><div class="nb-tx"><div class="nb-l">Habits</div><div class="nb-sub">add or remove your activities</div></div></button>
+      </div>
+    </div>
 
     <div class="tab" id="t-self">
       <div id="stage"><canvas id="guardian"></canvas>
@@ -848,7 +880,9 @@
   </div>
 
   <nav id="nav">
-    <button class="nb on" data-tab="day"><span class="ne">🗓️</span><span class="nl2">Day</span></button>
+    <button class="nb" data-tab="goals"><i class="ti ti-target ne"></i><span class="nl2">Goals</span></button>
+    <button class="nb on" data-tab="day"><i class="ti ti-layout-list ne"></i><span class="nl2">Today</span></button>
+    <button class="nb" data-tab="self"><i class="ti ti-plant-2 ne"></i><span class="nl2">You</span></button>
   </nav>
   <div id="gameMode">
     <canvas id="world"></canvas>
@@ -864,6 +898,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=436"></script>
+  <script src="app.js?v=437"></script>
 </body>
 </html>

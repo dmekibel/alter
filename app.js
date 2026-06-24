@@ -1286,18 +1286,19 @@
     var h = el("gameHud"); if (!h) return;
     var sp = (S.game && S.game.spark) || 0;
     var PROMPTS = [];
-    var hint = "📔 tap the notebook (left) for your menu", best = 999;
+    var hint = "← tap to head back", best = 999;
     for (var i = 0; i < PROMPTS.length; i++) { var d = Math.hypot(px - PROMPTS[i][0], py - PROMPTS[i][1]); if (d < 74 && d < best) { best = d; hint = PROMPTS[i][2]; } }
     h.innerHTML = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island") + "<br><span style='opacity:.82;font-size:12px'>" + hint + "</span>";
   }
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
     gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("gaming"); document.body.style.overflow = "hidden";
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
   }
   function closeGame() {
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
+    document.body.classList.remove("gaming");
     gameOn = false; moveX = 0; moveY = 0; document.body.style.overflow = "";
   }
   // ---- game-as-home: tap the character → diegetic action hub ----
@@ -2489,6 +2490,9 @@
     }, 1000);
     el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
     var og = el("openGoals"); if (og) og.onclick = goalsSheet;
+    var _gg = el("goGoals"); if (_gg) _gg.onclick = goalsSheet;                       // Goals tab → goals
+    var _gp = el("goPresets"); if (_gp) _gp.onclick = function () { presetsSheet(todayK()); }; // Goals tab → masterpiece days / presets
+    var _gh = el("goHabits"); if (_gh) _gh.onclick = habitsSheet;                     // Goals tab → habits manager
     var _ah = el("addHabit"); if (_ah) _ah.onclick = habitSheet;
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
@@ -2508,7 +2512,7 @@
     document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } }; });
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     renderAll();
-    openGame();   // game-as-home: the app opens into the world
+    // 3-tab shell (v437): Today (the timeline) is the home; the garden lives inside You, opened on demand.
     if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); // first-run onboarding (mockups 041/043)
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
