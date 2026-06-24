@@ -1257,10 +1257,16 @@
   ];
   function wireWorldTap() { // drag the world to PAN the camera around the island (free-look, doesn't move the guy) — David 2026-06-24
     if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
+    var pts = {}; // track active pointers so a two-finger PINCH never also pans (David 2026-06-24)
+    function npts() { return Object.keys(pts).length; }
+    function rel(ev) { delete pts[ev.pointerId]; }
+    w.addEventListener("pointerup", rel); w.addEventListener("pointercancel", rel); document.addEventListener("pointerup", rel); document.addEventListener("pointercancel", rel);
     w.addEventListener("pointerdown", function (ev) {
-      if (ev.target !== w) return; // only pan when grabbing the world itself — never from a zoom/joystick/notebook button on top (fixes "zooming randomly pans") — David 2026-06-24
+      pts[ev.pointerId] = 1;
+      if (ev.target !== w) return; // only pan when grabbing the world itself — never from a zoom/joystick/notebook button on top
+      if (pinch0 > 0 || npts() >= 2) return; // a pinch-zoom is in progress → don't pan (fixes zoom-and-pan-at-once) — David 2026-06-24
       var sx = ev.clientX, sy = ev.clientY, lx = sx, ly = sy, moved = false, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3;
-      function mv(e) { if (!moved) { if (Math.abs(e.clientX - sx) < 6 && Math.abs(e.clientY - sy) < 6) return; moved = true; } var dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom)); } // require a real drag (>6px) so a tap never pans
+      function mv(e) { if (pinch0 > 0 || npts() >= 2) { up(); return; } if (!moved) { if (Math.abs(e.clientX - sx) < 6 && Math.abs(e.clientY - sy) < 6) return; moved = true; } var dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom)); } // a 2nd finger lands → abandon the pan, it's a pinch; require a real drag (>6px) so a tap never pans
       function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); }
       document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
     });
