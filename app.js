@@ -353,7 +353,7 @@
   // SWITCH task = stop the current one (logs it) then start the new one — single current activity (David: switching is a real function)
   function startOrSwitch() { var run = activeTimers(); bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", multi: true, onPickMulti: function (sel) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimerMulti(t, sel); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } }); }
   // ALWAYS OFFER NEXT (§23/§15): the earliest still-open planned block (upcoming or in-progress, not done/missed) — getting "back on plan" is one tap
-  function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; }
+  function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
   function planBreak() { bentoPicker({ title: "Plan what you're doing — for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true }; blocks(k).push(nb); reflow(k); save(); activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }); } }); }
@@ -1661,6 +1661,7 @@
     });
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(26, durv / 60 * HP - 4) + "px"; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } }
     function rr() { renderToday(); }
+    function editBlk(b) { if (!b.title) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(b, x, k); } }); else blockEdit(b, k); } // empty bubble → pick what it is; filled → edit (David 2026-06-24)
     var planCards = [], burnedSomething = false;
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
     function settle() { planCards.forEach(function (pc) { pc.card.style.top = topFor(hm(pc.b.time)) + "px"; pc.card.style.height = Math.max(24, (pc.b.mins || 30) / 60 * HP - 4) + "px"; }); }
@@ -1675,7 +1676,7 @@
       if (status === "miss" && !b.passed) { b.passed = true; newlyPassed = true; burnedSomething = true; }
       var dark = status !== "ok" && (b.passed || status === "miss");
       var stt = status === "ok" ? "cele" : dark ? "ghost" : "sched";
-      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : ""));
+      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
       if (status === "ok") {
         card.style.background = "linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")";
@@ -1690,7 +1691,7 @@
       var ink = dark ? D.light : D.ink;
       var cn = add(card, "div", "cn"); cn.style.color = ink;
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
-      cn.innerHTML = (b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + " " + esc(b.title) + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
+      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + " " + esc(b.title) + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""));
       if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = D.light; } // minimal: time read from the axis, not inside the bubble (mockup)
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>';
@@ -1699,12 +1700,18 @@
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript");
       card.addEventListener("pointerdown", function (ev) {
         if (ev.target === grip || ev.target === gripT || ev.target === xb) return;
-        if (ev.pointerType === "touch") { var tx = ev.clientX, ty = ev.clientY, tmoved = false; function tm(e) { if (Math.abs(e.clientX - tx) > 8 || Math.abs(e.clientY - ty) > 8) tmoved = true; } function tu() { document.removeEventListener("pointermove", tm); document.removeEventListener("pointerup", tu); document.removeEventListener("pointercancel", tu); if (!tmoved) blockEdit(b, k); } document.addEventListener("pointermove", tm); document.addEventListener("pointerup", tu); document.addEventListener("pointercancel", tu); return; } // touch: any move (scroll/swipe/pinch) cancels the tap; clean tap = edit; move/resize via the grips
-        ev.preventDefault();
-        var sy0 = ev.clientY, sm0 = hm(b.time), moved = false, ct0 = card.querySelector(".ct"), dragMin = sm0;
-        function mv2(e) { var dy = e.clientY - sy0; if (!moved && Math.abs(dy) > 5) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { dragMin = Math.max(0, Math.min(1590,sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); } }
-        function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else { blockEdit(b, k); } }
-        document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2);
+        var touch = ev.pointerType === "touch";
+        var sy0 = ev.clientY, sx0 = ev.clientX, sm0 = hm(b.time), moved = false, scrolled = false, picked = !touch, ct0 = card.querySelector(".ct"), dragMin = sm0, hold = null;
+        if (touch) hold = setTimeout(function () { picked = true; card.style.touchAction = "none"; card.classList.add("lift"); card.classList.add("dragging"); if (navigator.vibrate) { try { navigator.vibrate(9); } catch (e) {} } }, 300); // long-press a bubble to pick it up & drag-move it (a plain drag still scrolls the timeline) — David 2026-06-24
+        else ev.preventDefault();
+        function mv2(e) {
+          var dy = e.clientY - sy0, dx = e.clientX - sx0;
+          if (touch && !picked) { if (Math.abs(dy) > 8 || Math.abs(dx) > 8) { scrolled = true; if (hold) { clearTimeout(hold); hold = null; } } return; } // pre-pickup move = scrolling the timeline → let it scroll, no tap/move
+          if (!moved && (Math.abs(dy) > 5 || Math.abs(dx) > 5)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); }
+          if (moved) { if (touch) e.preventDefault(); dragMin = Math.max(0, Math.min(1590, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); }
+        }
+        function up2() { if (hold) { clearTimeout(hold); hold = null; } card.style.touchAction = ""; document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (picked && moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!moved && !scrolled) editBlk(b); } // dropped after a real move → save; clean tap → edit/switch
+        document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", up2);
       });
       grip.addEventListener("pointerdown", function (ev) {
         ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging");
@@ -1743,14 +1750,21 @@
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
-        card.addEventListener("pointerdown", function (ev) { // drag a past activity to rearrange it · tap to re-label (David 2026-06-23)
+        card.addEventListener("pointerdown", function (ev) { // long-press to pick up & rearrange a past activity · tap to re-label (David 2026-06-24)
           if (ev.target === xb || ev.target === lg) return;
-          if (ev.pointerType === "touch") { var tx = ev.clientX, ty = ev.clientY, tmoved = false; function tm(e2) { if (Math.abs(e2.clientX - tx) > 8 || Math.abs(e2.clientY - ty) > 8) tmoved = true; } function tu() { document.removeEventListener("pointermove", tm); document.removeEventListener("pointerup", tu); document.removeEventListener("pointercancel", tu); if (!tmoved) bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); } document.addEventListener("pointermove", tm); document.addEventListener("pointerup", tu); document.addEventListener("pointercancel", tu); return; } // touch: any move (scroll/swipe/pinch) cancels the tap; clean tap = re-label; resize via grip
-          ev.preventDefault();
-          var sy = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, cur2 = sm0;
-          function mv2(ev2) { var dy = ev2.clientY - sy; if (!moved && Math.abs(dy) > 5) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; } }
-          function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (moved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); } }
-          document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2);
+          var touch = ev.pointerType === "touch";
+          var sy = ev.clientY, sx = ev.clientX, sm0 = it.s, dur = e.mins || 15, moved = false, scrolled = false, picked = !touch, cur2 = sm0, hold = null;
+          function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
+          if (touch) hold = setTimeout(function () { picked = true; card.style.touchAction = "none"; card.classList.add("lift"); card.classList.add("dragging"); if (navigator.vibrate) { try { navigator.vibrate(9); } catch (er) {} } }, 300);
+          else ev.preventDefault();
+          function mv2(ev2) {
+            var dy = ev2.clientY - sy, dx = ev2.clientX - sx;
+            if (touch && !picked) { if (Math.abs(dy) > 8 || Math.abs(dx) > 8) { scrolled = true; if (hold) { clearTimeout(hold); hold = null; } } return; }
+            if (!moved && (Math.abs(dy) > 5 || Math.abs(dx) > 5)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); }
+            if (moved) { if (touch) ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
+          }
+          function up2() { if (hold) { clearTimeout(hold); hold = null; } card.style.touchAction = ""; document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (picked && moved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!moved && !scrolled) relabel(); }
+          document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", up2);
         });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
@@ -1777,8 +1791,8 @@
         slot.innerHTML = '<i class="ti ti-arrows-vertical"></i> fill it in?';
         slot.addEventListener("click", function (e) {
           var gs, gm;
-          if ((g[1] - g[0]) <= 45) { gs = g[0]; gm = g[1] - g[0]; } // small gap → fill it COMPLETELY, no leftover slivers above/below (David 2026-06-23)
-          else { var rect = cal.getBoundingClientRect(); gs = hm(timeFromY(e.clientY - rect.top, startH, HP)); gs = Math.max(g[0], Math.min(g[1] - 15, gs)); gm = Math.min(30, g[1] - gs); } // big gap → place where you tapped, then stretch
+          if ((g[1] - g[0]) <= 75) { gs = g[0]; gm = g[1] - g[0]; } // small/medium gap → fill it COMPLETELY, no leftover slivers (David 2026-06-23)
+          else { var rect = cal.getBoundingClientRect(); gs = hm(timeFromY(e.clientY - rect.top, startH, HP)); gs = Math.max(g[0], Math.min(g[1] - 30, gs)); gm = g[1] - gs; } // big gap → fill from where you tapped DOWN to the present-side end: large enough, and only the gap ABOVE stays a "fill it in" (never a sliver below — that's closest to now) — David 2026-06-24
           bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: gm, title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } });
         });
       });
@@ -1791,22 +1805,40 @@
       sn.addEventListener("click", function (ev) { ev.stopPropagation(); startOrSwitch(); });
     }
     cal.addEventListener("pointerdown", function (ev) {
-      if (ev.target !== cal) return; var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
+      if (ev.target !== cal) return;
+      var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
+      var rect0 = cal.getBoundingClientRect(), lx0 = ev.clientX - rect0.left;
+      var planSide = !(lx0 > rect0.width * 0.5 && showNow); // left lane = PLAN (whole width on past days)
+      var hold = null, creating = false, anchor = 0, gs = 0, ge = 0, ghost = null;
+      if (planSide) hold = setTimeout(function () { // press-and-hold → pull out a custom-length EMPTY bubble you then tap to fill (David 2026-06-24)
+        creating = true; cal.style.touchAction = "none"; anchor = hm(timeFromY(dy - cal.getBoundingClientRect().top, startH, HP)); gs = anchor; ge = anchor + 15;
+        ghost = add(cal, "div", "calblk lane sched emptyblk newghost"); ghost.style.left = "34px"; ghost.style.right = "calc(50% + 4px)"; ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(20, 15 / 60 * HP - 4) + "px";
+        add(ghost, "div", "cn").innerHTML = '<i class="ti ti-arrows-vertical"></i> drag to size';
+        if (navigator.vibrate) { try { navigator.vibrate(9); } catch (e) {} }
+      }, 300);
+      function mv(e) {
+        if (!creating) { if (hold && (Math.abs(e.clientY - dy) > 8 || Math.abs(e.clientX - dx) > 8)) { clearTimeout(hold); hold = null; } return; }
+        e.preventDefault();
+        var rect = cal.getBoundingClientRect(), cm = hm(timeFromY(e.clientY - rect.top, startH, HP));
+        if (cm >= anchor) { gs = anchor; ge = Math.max(anchor + 15, cm); } else { ge = anchor; gs = Math.min(anchor - 15, cm); }
+        ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(20, (ge - gs) / 60 * HP - 4) + "px";
+        var gc = ghost.querySelector(".cn"); if (gc) gc.textContent = fmt(gs) + "–" + fmt(ge);
+      }
       function up(e) {
-        document.removeEventListener("pointerup", up);
+        if (hold) { clearTimeout(hold); hold = null; }
+        cal.style.touchAction = ""; document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (creating) { if (ghost) ghost.remove(); var id0 = uid(); blocks(k).push({ id: id0, time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: Math.max(15, ge - gs), title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); return; } // empty bubble persists — tap it to choose
         if (Math.abs(e.clientY - dy) > 9 || Math.abs(e.clientX - dx) > 9 || Date.now() - t0 > 450) return;
-        var rect = cal.getBoundingClientRect(), lx = e.clientX - rect.left;
-        if (lx > rect.width * 0.5 && showNow) {
-          // create the timer only when the user actually commits a pick — no eager "Tracking…" orphan that can linger
+        if (lx0 > rect0.width * 0.5 && showNow) {
           bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } });
         } else {
-          var tm = timeFromY(e.clientY - rect.top, startH, HP), id = uid();
+          var tm = timeFromY(e.clientY - rect0.top, startH, HP), id = uid();
           blocks(k).push({ id: id, time: tm, mins: 30, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
           var nb = blocks(k).filter(function (b) { return b.id === id; })[0];
           bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, k); }, onCancel: function () { var a = blocks(k), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } } });
         }
       }
-      document.addEventListener("pointerup", up);
+      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
     });
   }
   function weekGrid(L, baseK, onDay) {

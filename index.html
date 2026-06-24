@@ -467,6 +467,10 @@
   .calblk.cele .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 34%,rgba(255,252,240,.45) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 3.2s linear infinite; }
   /* future plan = LIT (holographic sheen, §14) — a note coming toward the now-line */
   .calblk.sched .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 38%,rgba(255,252,240,.26) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 4.6s linear infinite; }
+  /* empty bubble pulled out by press-hold-drag — dashed candy placeholder you tap to choose (David 2026-06-24) */
+  .calblk.emptyblk{ background:repeating-linear-gradient(45deg,rgba(255,95,160,.17),rgba(255,95,160,.17) 7px,rgba(255,95,160,.05) 7px,rgba(255,95,160,.05) 14px) !important; border:2px dashed #ff5fa0 !important; box-shadow:none !important; filter:none !important; opacity:1 !important; }
+  .calblk.emptyblk .cn{ color:#ff9dc6 !important; display:flex; align-items:center; gap:5px; }
+  .calblk.newghost{ z-index:10; box-shadow:0 0 0 3px rgba(255,95,160,.28) !important; transition:none; }
   /* past / burnt plan = DARK */
   .calblk.ghost{ opacity:.62; filter:saturate(.5) brightness(.78); }
   /* the now-line burning PAST a plan: one-shot ember flash → settle to dark (Guitar-Hero / piano-roll feel) */
@@ -832,6 +836,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=414"></script>
+  <script src="app.js?v=415"></script>
 </body>
 </html>
