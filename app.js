@@ -1922,7 +1922,9 @@
       cell.onclick = function () { onDay(dk); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
   }
+  function timelineIsHome() { return document.body.classList.contains("tab-day") && !document.body.classList.contains("gaming"); } // Today tab in the normal app = the always-open rich pull-timeline (David 2026-06-24)
   function renderToday() {
+    if (timelineIsHome()) { buildPull(); return; } // the original pull-down timeline IS the Today view now — don't render the retired inline calendar (David 2026-06-24)
     var dl = el("dnLabel"); if (dl) dl.textContent = zoomMode === "day" ? relLabel(viewK) : zoomMode === "week" ? ("Week of " + relShort(startOfWeek(viewK))) : kd(viewK).toLocaleDateString([], { month: "long", year: "numeric" });
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.classList.toggle("on", z.dataset.z === zoomMode); });
     var dp = el("planToday"), tt = el("todayTitle"), L = el("todayList");
@@ -2509,10 +2511,11 @@
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } }; });
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24)
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
+    document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home
     renderAll();
-    // 3-tab shell (v437): Today (the timeline) is the home; the garden lives inside You, opened on demand.
+    // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
     if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); // first-run onboarding (mockups 041/043)
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
