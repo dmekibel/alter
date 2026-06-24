@@ -910,6 +910,14 @@
   /* the bottom edge is a full-width resize handle (easy to grab); top stays a small corner */
   .calblk .grip{ left:0 !important; right:0 !important; width:auto !important; height:14px !important; bottom:0 !important; top:auto !important; }
   .calblk.csmall .grip{ height:8px !important; }
+  /* ============ v445 — render as a centered MOBILE column on desktop (mobile-first now; desktop app later) — David 2026-06-24 ============ */
+  @media (min-width:560px){
+    body{ background:#0c0510 !important; }
+    #nav{ left:50% !important; right:auto !important; width:min(520px,100vw) !important; transform:translateX(-50%); box-shadow:0 -6px 26px rgba(0,0,0,.6) !important; }
+    body.tab-day:not(.gaming) #pullSheet{ left:50% !important; right:auto !important; width:min(508px,calc(100vw - 16px)) !important; transform:translateX(-50%) !important; }
+    #gameMode.on{ left:50% !important; right:auto !important; width:min(520px,100vw) !important; transform:translateX(-50%); box-shadow:0 0 0 100vmax rgba(8,4,14,.55); }
+    #screen{ box-shadow:0 0 60px rgba(0,0,0,.4); }
+  }
 </style>
 </head>
 <body>
@@ -985,6 +993,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=444"></script>
+  <script src="app.js?v=445"></script>
 </body>
 </html>
