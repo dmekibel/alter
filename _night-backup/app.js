@@ -1953,7 +1953,7 @@
   function bentoByDomain() { var by = {}; DOM_ORDER.forEach(function (d) { by[d] = []; }); allActivities().forEach(function (a) { (by[a.domain] = by[a.domain] || []).push(a); }); return by; }
   function bentoPicker(opts) {
     opts = opts || {};
-    var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null }, foot = null, searchQ = "";
+    var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null }, foot = null;
     var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
     var ov = add(document.body, "div", "bento-ov");
     var card = add(ov, "div", "bento-card");
@@ -1973,37 +1973,17 @@
       s.onclick = function (e) { e.stopPropagation(); commit(a); };
       return s;
     }
-    function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
     function renderOverview() {
-      // SEARCH + QUICK (frequent) row — fast picking now that the library is large (David 2026-06-24 night)
-      var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
-      var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
-      var quick = add(body, "div", "bento-quick"), qActs = [];
-      try { frequent(12).forEach(function (m) { qActs.push(actOf(m)); }); } catch (e) {}
-      if (qActs.length) { add(quick, "span", "bento-qlbl", "Quick"); qActs.forEach(function (a) { actChip(a, quick, false); }); } else quick.style.display = "none";
-      var results = add(body, "div", "bento-results"); results.style.display = "none";
-      var gridWrap = add(body, "div", "bento-gridwrap");
+      var grid = add(body, "div", "bento-grid");
       DOM_ORDER.forEach(function (d) {
         var acts = by[d]; if (!acts || !acts.length) return;
-        var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72);
+        var D = DOM[d], mc = add(grid, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72);
         var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; render(); };
         var wrap = add(mc, "div", "bento-chips");
-        acts.forEach(function (a) { actChip(a, wrap, false); });
+        acts.forEach(function (a) { actChip(a, wrap, false); }); // ALL activities — scroll the row sideways to reveal them, no full-screen expand needed (David 2026-06-24)
         var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew;
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
-      function drawResults(q) {
-        if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; quick.style.display = qActs.length ? "" : "none"; addb.style.display = ""; return; }
-        gridWrap.style.display = "none"; quick.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
-        var ql = q.toLowerCase(), hits = [], seen2 = {};
-        DOM_ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
-        hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });
-        hits.slice(0, 60).forEach(function (a) { actChip(a, results, false); });
-        var ab = add(results, "span", "bchip addc"); ab.innerHTML = '<i class="ti ti-plus"></i> "' + esc(q) + '"'; ab.onclick = function () { S.acts = S.acts || []; S.acts.push({ title: q, catK: null, domain: "focus" }); save(); by = bentoByDomain(); commit({ title: q, catK: null, habitId: null, domain: "focus", color: DOM.focus.c }); };
-      }
-      si.oninput = function () { searchQ = si.value; drawResults(searchQ.trim()); };
-      si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
-      drawResults(searchQ.trim());
     }
     function renderExpanded(d) {
       var D = DOM[d];

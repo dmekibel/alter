@@ -1,0 +1,2 @@
+commit d5d54fa
+To restore: git checkout night-backup-v420 -- app.js index.html  (or: cp _night-backup/{app.js,index.html} .)
