@@ -490,6 +490,40 @@
     }
     draw();
   }
+  // HABITS notebook page — manage your activity library anytime (recreates onboarding's stock-your-life) — David 2026-06-24
+  function habitsSheet() {
+    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head"); var hq = add(head, "div", "bento-q"); hq.innerHTML = '<i class="ti ti-checkup-list"></i> Your habits'; var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var body = add(card, "div", "bento-body"), adding = false;
+    function draw() {
+      body.innerHTML = "";
+      add(body, "div", "sughead", "everything you can plan or track — remove your own with ✕, or add new");
+      var by = bentoByDomain();
+      DOM_ORDER.forEach(function (d) {
+        var acts = by[d]; if (!acts || !acts.length) return; var D = DOM[d];
+        var sh = add(body, "div", "habit-dh"); sh.style.color = D.light; sh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
+        var row = add(body, "div", "habit-row");
+        acts.forEach(function (a) {
+          var custom = (S.acts || []).filter(function (c) { return (c.title || "").toLowerCase() === (a.title || "").toLowerCase(); })[0];
+          var chip = add(row, "span", "bchip"); if (a.domain !== "drift") { chip.style.background = D.c; chip.style.color = D.ink; }
+          chip.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title);
+          if (custom) { var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); save(); draw(); }; }
+        });
+      });
+      if (!adding) { var ab = add(body, "div", "bento-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a habit / activity'; ab.onclick = function () { adding = true; draw(); }; }
+      else {
+        var frm = add(body, "div", "habit-addform");
+        var inp = document.createElement("input"); inp.type = "text"; inp.className = "bento-input"; inp.placeholder = "name it (e.g. Climbing, Therapy)…"; frm.appendChild(inp);
+        add(frm, "div", "bento-lbl", "category");
+        var crow = add(frm, "div", "bento-cats"), chosen = { d: "focus" };
+        DOM_ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
+        var go = add(frm, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>'; go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; if (!(S.acts.some(function (c) { return c.title.toLowerCase() === nm.toLowerCase(); }) || TITLE2CAT[nm.toLowerCase()])) S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); adding = false; draw(); toast("added " + nm); };
+        setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
+      }
+    }
+    draw();
+  }
   // ---- THE NOTEBOOK (David 2026-06-23): the single menu door (bottom-left, above the stick). Every menu roots from here, each X-able. No more top-drag / scattered taps. ----
   function notebookSheet() {
     var ov = add(document.body, "div", "nb-ov"); var card = add(ov, "div", "nb-card");
@@ -500,6 +534,8 @@
     var items = [
       { ic: "ti-calendar", l: "Today", sub: "plan & track your day", c: "#36b3f0", fn: function () { ov.remove(); openPull(); } },
       { ic: "ti-player-play-filled", l: cur ? "Switch activity" : "Start tracking", sub: cur ? ("now: " + esc(cur.title || "tracking")) : "what are you doing?", c: "#ff5fa0", fn: function () { ov.remove(); startOrSwitch(); } },
+      { ic: "ti-checkup-list", l: "Habits", sub: "add or remove your activities", c: "#ff8a3d", fn: function () { ov.remove(); habitsSheet(); } },
+      { ic: "ti-stars", l: "Masterpiece days", sub: "design your day presets", c: "#ff5fa0", fn: function () { ov.remove(); presetsSheet(todayK()); } },
       { ic: "ti-target", l: "Goals", sub: "break down & schedule", c: "#34d39a", fn: function () { ov.remove(); goalsSheet(); } },
       { ic: "ti-affiliate", l: "Your life", sub: "see who you're being", c: "#b07aff", fn: function () { ov.remove(); mindmapSheet(); } },
       { ic: "ti-brain", l: "Brain", sub: "free AI (optional)", c: "#7f9bc4", fn: function () { ov.remove(); brainSheet(); } },

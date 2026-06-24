@@ -533,6 +533,13 @@
   .bento-quick{ display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding-bottom:10px; }
   .bento-qlbl{ font-family:"Jost",sans-serif; font-weight:800; font-size:10.5px; letter-spacing:1px; color:#ff8fc0; text-transform:uppercase; margin-right:2px; }
   .bento-results{ display:flex; flex-wrap:wrap; gap:6px; padding-bottom:8px; }
+  /* Habits notebook page (David 2026-06-24) */
+  .habit-dh{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:.6px; text-transform:uppercase; display:flex; align-items:center; gap:5px; margin:12px 0 6px; }
+  .habit-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .habit-row .bchip{ position:relative; }
+  .habit-del{ font-size:13px; margin-left:5px; opacity:.7; cursor:pointer; }
+  .habit-del:hover{ opacity:1; }
+  .habit-addform{ margin-top:12px; padding:12px; border:2px dashed #9a6a86; border-radius:14px; }
   .bento-cat{ border:2px solid #160510; border-radius:13px; padding:8px 8px 9px; }
   .bento-catl{ font-size:10px; font-weight:700; letter-spacing:.6px; margin-bottom:7px; cursor:pointer; }
   /* each category scrolls horizontally — reveal all its activities by swiping the row, no full-screen expand (David 2026-06-24) */
@@ -856,6 +863,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=433"></script>
+  <script src="app.js?v=434"></script>
 </body>
 </html>
