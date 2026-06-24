@@ -570,6 +570,9 @@
   .cele-star{ position:absolute; left:50%; top:46%; font-size:18px; animation:celeFly 1.4s ease-out forwards; }
   @keyframes celeFly{ 0%{ transform:translate(0,0) scale(.3); opacity:0; } 30%{opacity:1;} 100%{ transform:translate(var(--dx),var(--dy)) scale(1.15); opacity:0; } }
   .cele-pts{ position:absolute; top:36%; color:#ffd54a; font-family:"Jost",sans-serif; font-weight:700; font-size:27px; text-shadow:0 2px 8px rgba(0,0,0,.6); animation:celeRise 1.5s ease-out forwards; }
+  /* floating +N Spark feedback on earn (David 2026-06-24 night) */
+  .spark-float{ position:fixed; z-index:90; transform:translate(-50%,0); color:#ffd54a; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; text-shadow:0 1px 4px rgba(0,0,0,.55); pointer-events:none; will-change:transform,opacity; animation:sparkFloat .95s cubic-bezier(.2,.8,.3,1) forwards; }
+  @keyframes sparkFloat{ 0%{ opacity:0; transform:translate(-50%,5px) scale(.8); } 18%{ opacity:1; transform:translate(-50%,-2px) scale(1.12); } 100%{ opacity:0; transform:translate(-50%,-36px) scale(1); } }
   @keyframes celeRise{ 0%{ transform:translateY(20px) scale(.6); opacity:0; } 25%{ transform:translateY(0) scale(1.1); opacity:1; } 80%{opacity:1;} 100%{ transform:translateY(-32px); opacity:0; } }
   .cele-combo{ position:absolute; top:58%; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; text-shadow:0 1px 5px rgba(0,0,0,.7); }
   /* ============ PLANNING suggestion bar (mockups 037/039/040) ============ */
@@ -844,6 +847,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=425"></script>
+  <script src="app.js?v=426"></script>
 </body>
 </html>

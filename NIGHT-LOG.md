@@ -31,6 +31,7 @@ _(newest at top — each line is a real, preview-verified, pushed change)_
 
 | v | Area | Improvement |
 |---|---|---|
+| v426 | Game feel | Floating **"+N Spark"** rises from the counter every time you earn (completing activities, plan bonuses, celebrations) — earning now feels rewarding |
 | v425 | Planner + feel | **Copy yesterday's plan** in the auto-plan sheet (one tap reuses the previous day) + tactile **haptic buzz** on celebrations/plan-completions |
 | v424 | Gamification | **Plan-completion reward**: finishing a *planned* activity now marks that plan block done (gold), grants bonus Spark (~40% of its minutes), bumps your streak, and toasts "stuck to your plan" — reward tied to actually doing what you planned |
 | v423 | Planner | **"Full Day" auto-plan preset** matching a real full day (breakfast→laundry→outdoor gym→swim→meditate→lunch→Claude code→cafe→call→dinner→TV) — one tap builds a realistic masterpiece day from the new bento |
