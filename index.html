@@ -873,6 +873,27 @@
   /* bubbles now allow native vertical SCROLL (a plain drag scrolls the timeline); press-and-hold picks one up to move it (JS sets touch-action:none on pickup) */
   .calblk{ touch-action:pan-y; }
   .pn-break.arm{ background:#ff5fa0 !important; color:#4a1126 !important; border-style:solid !important; border-color:#160510 !important; }
+  /* ============ v443 — minimal ✕ · no scaling lines · unselectable text · midnight behind bubbles · small-bubble degradation (David 2026-06-24) ============ */
+  /* nothing in the app is text-selectable (avoids accidental highlight); inputs stay selectable */
+  *{ -webkit-user-select:none; user-select:none; }
+  input, textarea, [contenteditable]{ -webkit-user-select:text; user-select:text; }
+  /* resize still works but shows NO line (David: get rid of the scaling lines) */
+  .calblk .grip::after, .calblk .gript::after{ display:none !important; }
+  /* the ✕ = a bare minimal little x in the corner, not a button */
+  .calblk .calx{ top:1px !important; right:2px !important; width:auto !important; height:auto !important; min-width:0 !important; padding:1px 3px !important; border:none !important; border-radius:0 !important; background:none !important; box-shadow:none !important; color:rgba(0,0,0,.5) !important; font-size:12px !important; opacity:.8; }
+  .calblk.ghost .calx{ color:rgba(255,240,249,.6) !important; }
+  /* midnight / wake / noon / bed markers sit BEHIND the bubbles so the label never covers one */
+  .timemark{ z-index:1 !important; }
+  .calblk{ z-index:2; }
+  .calblk.live{ z-index:3; }
+  /* tall bubble = icon+title · short = icon only (title drops) · tiny = colour only (icon drops too) */
+  .cn-t{ display:inline; }
+  .calblk.csmall{ padding:2px 4px !important; }
+  .calblk.csmall .cn-t, .calblk.csmall .step-n, .calblk.csmall .csub{ display:none !important; }
+  .calblk.csmall .cn{ display:flex; align-items:center; justify-content:center; padding-right:0; }
+  .calblk.csmall .calx{ display:none !important; }
+  .calblk.ctiny{ padding:0 !important; }
+  .calblk.ctiny .cn, .calblk.ctiny .csub, .calblk.ctiny .calx, .calblk.ctiny .foil, .calblk.ctiny .grip, .calblk.ctiny .gript{ display:none !important; }
   /* kill the yellow predicted/selected rings — picked = a bold dark ring + ✓ (on-theme, never yellow) */
   .bchip.pred{ box-shadow:none !important; }
   .bchip.sel{ box-shadow:0 0 0 3px #160510 !important; transform:scale(1.04); }
@@ -958,6 +979,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=442"></script>
+  <script src="app.js?v=443"></script>
 </body>
 </html>
