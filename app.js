@@ -2019,6 +2019,8 @@
     return out;
   }
   function bentoByDomain() { var by = {}; DOM_ORDER.forEach(function (d) { by[d] = []; }); allActivities().forEach(function (a) { (by[a.domain] = by[a.domain] || []).push(a); }); return by; }
+  function isPinned(a) { return (S.pinned || []).indexOf((a.title || "").toLowerCase()) >= 0; } // pin any activity → it floats to the top + front (David 2026-06-24)
+  function togglePin(a) { S.pinned = S.pinned || []; var t = (a.title || "").toLowerCase(), i = S.pinned.indexOf(t); if (i >= 0) S.pinned.splice(i, 1); else S.pinned.push(t); save(); }
   function bentoPicker(opts) {
     opts = opts || {};
     var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null }, foot = null, searchQ = "";
@@ -2034,25 +2036,31 @@
     ov.addEventListener("click", function (e) { if (e.target === ov) { close(); if (opts.onCancel) opts.onCancel(); } });
     function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } }
     function actChip(a, container, big) {
-      var D = DOM[a.domain];
-      var s = add(container, "span", "bchip" + (big ? " big" : "") + (sel.indexOf(a) >= 0 ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (fq[(a.title || "").toLowerCase()] ? " pred" : ""));
+      var D = DOM[a.domain], on = sel.indexOf(a) >= 0, pin = isPinned(a);
+      var s = add(container, "span", "bchip" + (big ? " big" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : ""));
       if (a.domain !== "drift") { s.style.background = D.c; s.style.color = D.ink; }
-      s.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title); // icon on every chip incl. the preview (David 2026-06-24)
-      s.onclick = function (e) { e.stopPropagation(); commit(a); };
+      s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
+      var holdT = null, held = false; // press & hold any chip → pin / unpin it (tap-only, no keyboard) — David 2026-06-24
+      s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "📌 pinned to the top" : "unpinned"); render(); }, 450); });
+      function cancelHold() { if (holdT) { clearTimeout(holdT); holdT = null; } }
+      s.addEventListener("pointermove", cancelHold); s.addEventListener("pointerup", cancelHold); s.addEventListener("pointercancel", cancelHold);
+      s.onclick = function (e) { e.stopPropagation(); if (held) { held = false; return; } commit(a); };
       return s;
     }
     function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
     function renderOverview() {
-      // SEARCH + QUICK (frequent) row — fast picking now that the library is large (David 2026-06-24 night)
+      // SEARCH (scrolls away with the content now) + PINNED row (your most-important — pin anything to bring it here & to the front) — David 2026-06-24
       var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
       var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
-      var quick = add(body, "div", "bento-quick"), qActs = [];
-      try { frequent(12).forEach(function (m) { qActs.push(actOf(m)); }); } catch (e) {}
-      if (qActs.length) { add(quick, "span", "bento-qlbl", "Quick"); qActs.forEach(function (a) { actChip(a, quick, false); }); } else quick.style.display = "none";
+      var pinList = []; DOM_ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); }); // grouped by domain so the colours cluster
+      var pinned = add(body, "div", "bento-pinned");
+      if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
+      else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
       var results = add(body, "div", "bento-results"); results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
       DOM_ORDER.forEach(function (d) {
-        var acts = by[d]; if (!acts || !acts.length) return;
+        var acts = (by[d] || []).slice(); if (!acts.length) return;
+        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the very LEFT of the row (David 2026-06-24)
         var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72);
         var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; render(); };
         var wrap = add(mc, "div", "bento-chips");
@@ -2061,8 +2069,8 @@
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
       function drawResults(q) {
-        if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; quick.style.display = qActs.length ? "" : "none"; addb.style.display = ""; return; }
-        gridWrap.style.display = "none"; quick.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
+        if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; pinned.style.display = ""; addb.style.display = ""; return; }
+        gridWrap.style.display = "none"; pinned.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
         var ql = q.toLowerCase(), hits = [], seen2 = {};
         DOM_ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
         hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });

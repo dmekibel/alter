@@ -844,6 +844,24 @@
   .calblk .gript{ display:flex !important; left:0; top:0; align-items:flex-start; justify-content:flex-start; padding:5px 0 0 5px; } /* expand UP — top-left corner (top-right is the ✕) */
   .calblk .grip::after{ content:""; width:13px; height:13px; background:none !important; border:none; border-right:2px solid rgba(0,0,0,.34); border-bottom:2px solid rgba(0,0,0,.34); border-radius:0 0 9px 0; } /* the line echoes the bubble's bottom-right corner */
   .calblk .gript::after{ content:""; width:13px; height:13px; background:none !important; border:none; border-left:2px solid rgba(0,0,0,.34); border-top:2px solid rgba(0,0,0,.34); border-radius:9px 0 0 0; }   /* …and its top-left corner */
+  /* ============ v440 — bento polish: pinned favourites, dark search, no yellow, cleaner ✕ (David 2026-06-24) ============ */
+  /* the delete ✕ on calendar bubbles → a crisp round sticker button (not a pale square) */
+  .calblk .calx{ top:4px; right:4px; width:20px; height:20px; border-radius:50%; background:#160510; color:#ffd0e6; border:1.5px solid rgba(255,255,255,.22); font-size:10.5px; box-shadow:0 1px 3px rgba(0,0,0,.45); opacity:.95; }
+  .calblk .calx:active{ transform:scale(.9); }
+  /* bento search: dark candy (never white) + it scrolls away with the content instead of sticking */
+  .bento-search{ position:static !important; top:auto !important; z-index:auto !important; background:transparent !important; padding:2px 0 10px !important; }
+  input.bento-sinput[type=text]{ background:#1c0512 !important; color:#fff2f9 !important; border:2px solid #160510 !important; }
+  input.bento-sinput[type=text]::placeholder{ color:#9a6a86 !important; }
+  /* kill the yellow predicted/selected rings — picked = a bold dark ring + ✓ (on-theme, never yellow) */
+  .bchip.pred{ box-shadow:none !important; }
+  .bchip.sel{ box-shadow:0 0 0 3px #160510 !important; transform:scale(1.04); }
+  /* PINNED row = your most-important activities, as bigger square tiles, grouped by colour */
+  .bento-pinned{ display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px; padding:2px 0 13px; }
+  .bento-pinned .bento-qlbl{ flex-basis:100%; margin:0 0 2px; }
+  .bento-pinhint{ display:flex; align-items:center; gap:6px; color:#9a6a86; font-size:11.5px; font-weight:600; padding:1px 2px 13px; }
+  .bchip.fav{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; width:82px; min-height:72px; padding:9px 6px; border-radius:15px; border-width:2.5px; box-shadow:0 3px 0 #160510; font-size:11.5px; text-align:center; line-height:1.15; white-space:normal; }
+  .bchip.fav .ti{ font-size:22px; }
+  .bchip.fav .ti-check{ font-size:13px; }
 </style>
 </head>
 <body>
@@ -913,6 +931,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=439"></script>
+  <script src="app.js?v=440"></script>
 </body>
 </html>
