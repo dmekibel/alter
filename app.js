@@ -592,6 +592,13 @@
     p.style.animation = (dir > 0 ? "zoomBroad" : "zoomClose") + " .26s cubic-bezier(.2,.7,.3,1)";
     p.addEventListener("animationend", function () { p.style.animation = ""; }, { once: true });
   }
+  function pageSlide(dir) { // Apple-Photos day swipe: slide the pager to the prev/next card, then rebuild centered there (David 2026-06-24)
+    var pb = el("pullBody"), pgr = pb && pb.querySelector(".day-pager");
+    if (!pgr) { pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); return; }
+    pgr.style.transition = "transform .25s cubic-bezier(.3,.7,.25,1)"; pgr.style.transform = "translateX(" + (dir > 0 ? -66.6667 : 0) + "%)";
+    var done = false; function fin() { if (done) return; done = true; pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); }
+    pgr.addEventListener("transitionend", fin); setTimeout(fin, 320);
+  }
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
     var k = pullK || todayK();
@@ -601,11 +608,11 @@
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
-      if (pullZoom === "day") { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.title = "Previous day"; pv.onclick = function () { scrollToDay(keyAdd(pullFocusK || todayK(), -1)); }; var dlab = add(dn, "button", "pull-date pull-datebtn", relLabel(pullFocusK || todayK())); dlab.id = "pullDayLabel"; dlab.onclick = function () { scrollToDay(todayK()); }; var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.title = "Next day"; nf.onclick = function () { scrollToDay(keyAdd(pullFocusK || todayK(), 1)); }; } // ‹ prev · [day you're viewing] (tap = back to today) · next › — label + paging track the centered day (David 2026-06-24)
+      if (pullZoom === "day") { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.title = "Previous day"; pv.onclick = function () { pageSlide(-1); }; var dlab = add(dn, "button", "pull-date pull-datebtn", relLabel(pullFocusK || todayK())); dlab.id = "pullDayLabel"; dlab.onclick = function () { if ((pullFocusK || todayK()) !== todayK()) { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } }; var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.title = "Next day"; nf.onclick = function () { pageSlide(1); }; } // ‹ prev · [day] (tap = today) · next › — Apple-Photos day paging (David 2026-06-24)
       else { add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months"); }
       var rt = add(top, "div", "pull-rt");
       if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
-      else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb2.onclick = function () { scrollToDay(todayK()); }; tdb2.style.display = (pullFocusK && pullFocusK !== todayK()) ? "" : "none"; } // day view gets a Today button too — shows when you've scrolled/paged off today (David 2026-06-24)
+      else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb2.onclick = function () { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); }; tdb2.style.display = (pullFocusK && pullFocusK !== todayK()) ? "" : "none"; } // jump back to today when you've paged away (David 2026-06-24)
       if (pullZoom === "day") { var hz = add(rt, "div", "scope-seg hour-zoom"); var zo = add(hz, "button", "scope-b"); zo.innerHTML = '<i class="ti ti-minus"></i>'; zo.title = "zoom out"; zo.onclick = function () { setHourPx(-16); }; var zi = add(hz, "button", "scope-b"); zi.innerHTML = '<i class="ti ti-plus"></i>'; zi.title = "zoom in"; zi.onclick = function () { setHourPx(16); }; } // convenient hour-density zoom buttons (David 2026-06-24)
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
@@ -617,7 +624,8 @@
         var clr = add(nx, "button", "pn-break"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear'; clr.onclick = function () { var ck = pullFocusK || todayK(); if (clr._armed) { S.blocks[ck] = []; reflow(ck); save(); buildPull(); toast("🧹 cleared " + relLabel(ck).toLowerCase()); } else { clr._armed = true; clr.classList.add("arm"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear all?'; setTimeout(function () { if (clr && clr.parentNode) { clr._armed = false; clr.classList.remove("arm"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear'; } }, 2600); } }; // 2-tap confirm so it can't wipe the day by accident (David 2026-06-24)
       }
     }
-    var keepTop = pb.scrollTop, _wsc0 = pb.querySelector(".week-scroller"), keepLeft = _wsc0 ? _wsc0.scrollLeft : 0; // preserve scroll across the minute-tick rebuild
+    var _curSc0 = pb.querySelector(".day-card.cur .day-cardscroll"); var keepTop = _curSc0 ? _curSc0.scrollTop : pb.scrollTop, _wsc0 = pb.querySelector(".week-scroller"), keepLeft = _wsc0 ? _wsc0.scrollLeft : 0; // preserve scroll across the minute-tick rebuild (per-card in paged day view)
+    pb.classList.toggle("paged", pullZoom === "day");
     pb.innerHTML = "";
     var onDayPick = function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; zoomAnim(-1); };
     if (pullZoom === "week") { // horizontal giant-list of weeks: swipe side-to-side; Today recenters (David 2026-06-24)
@@ -632,35 +640,50 @@
       if (pendingScrollNow) { var mpNow = pb.querySelector(".month-page.now"); if (mpNow) pb.scrollTop = mpNow.offsetTop; pendingScrollNow = false; } // center on this month (synchronous — offsetTop forces layout)
       else pb.scrollTop = keepTop;
     }
-    else { // CONTINUOUS day view: past days ↑ · today · future days ↓ — scroll up to yesterday, down to tomorrow (David 2026-06-24)
-      var lh0 = add(pb, "div", "lanehead onehead"); add(lh0, "span", "lhx plan", "PLAN"); add(lh0, "span", "lhx real", "REAL"); // ONE shared PLAN/REAL pinned above all days — not repeated at each day split (David 2026-06-24)
-      var dlay = add(pb, "div", "pull-daylayer"); // wraps the day sections so hour-density zoom can scale them smoothly without scaling the scroll viewport (David 2026-06-24)
-      var base = todayK();
-      if (pendingScrollNow) pullFocusK = todayK(); // fresh open → header shows Today
-      for (var di = -3; di <= 6; di++) { (function (dk) {
-        var isT = (dk === todayK()), isFut = dk > todayK();
-        var sep = add(dlay, "div", "day-sep" + (isT ? " today" : "")); add(sep, "span", "day-seplab", dayLabelFull(dk));
-        if (isFut) { var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; }
-        else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(sep, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; } // progress badge on today + past days (David 2026-06-24 night)
-        var sec = add(dlay, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
-      })(keyAdd(base, di)); }
-      nowLineEl = pb.querySelector(".nowline");
-      if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
-      else pb.scrollTop = keepTop;
+    else { // PAGED day view: ONE day per card; swipe left/right slides to the next/previous day (Apple-Photos) — David 2026-06-24
+      if (pendingScrollNow || !pullFocusK) pullFocusK = pullK || todayK();
+      var focus = pullFocusK;
+      var pager = add(pb, "div", "day-pager");
+      [-1, 0, 1].forEach(function (off) {
+        var dk = keyAdd(focus, off), isT = (dk === todayK()), isFut = dk > todayK();
+        var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
+        var hd = add(card, "div", "day-cardhead"); add(hd, "div", "day-cardlab", dayLabelFull(dk));
+        if (isFut) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; }
+        else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(hd, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; }
+        var lh = add(card, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
+        var sc = add(card, "div", "day-cardscroll"); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
+      })
+      ; // forEach
+      pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
+      var curScroll = pager.querySelector(".day-card.cur .day-cardscroll");
+      nowLineEl = curScroll ? curScroll.querySelector(".nowline") : null;
+      if (curScroll) { if (pendingScrollNow || focus === todayK()) { var _nl = curScroll.querySelector(".nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: "center" }); }); pendingScrollNow = false; } else curScroll.scrollTop = keepTop; }
+      var _lab0 = el("pullDayLabel"); if (_lab0) _lab0.textContent = relLabel(focus);
+      var _tb0 = el("pullTodayBtn"); if (_tb0) _tb0.style.display = (focus !== todayK()) ? "" : "none";
     }
-    if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = zoom hour density · one-finger horizontal SWIPE = jump a day (David 2026-06-24)
+    if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = hour-density zoom · one-finger horizontal SWIPE = page to prev/next day (David 2026-06-24)
       pb._gw = 1;
-      var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, sX = 0, sY = 0, single = false;
+      var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
       function pdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); }
-      pb.addEventListener("pointerdown", function (e) { ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length; if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; } else if (n === 2) { single = false; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; } });
-      pb.addEventListener("pointermove", function (e) { if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; } if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); e.preventDefault(); } }, { passive: false }); // pinch tracks distance; the crisp re-layout happens on release (no pixel-stretch — David 2026-06-24)
+      pb.addEventListener("pointerdown", function (e) {
+        ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
+        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.startnew,.backfill,.day-sepauto,.bento-add,button"))) ? pb.querySelector(".day-pager") : null; }
+        else if (n === 2) { single = false; swOn = false; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; }
+      });
+      pb.addEventListener("pointermove", function (e) {
+        if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
+        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); e.preventDefault(); return; } // pinch
+        if (single && swPgr && pullZoom === "day") { var dx = e.clientX - sX, dy = e.clientY - sY;
+          if (!swOn) { if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; } else if (Math.abs(dy) > 10) { swPgr = null; return; } else return; }
+          e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; // the day card follows the finger like an iPhone photo
+        }
+      }, { passive: false });
       function gend(e) {
         var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; var pmid = null; if (wasPinch) { var others = Object.keys(ptrs).filter(function (i) { return i != e.pointerId; }); pmid = others.length ? (ptrs[others[0]].y + ey) / 2 : ey; } delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
         if (wasPinch && n < 2 && pullZoom === "day") { var nHP = Math.max(36, Math.min(124, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; if (nHP !== pullHourPx) animateHourPx(nHP, pmid); if (n === 0) single = false; return; }
-        if (single && n === 0 && pullZoom === "day") { var dx = ex - sX, dy = ey - sY; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) gotoAdjacentDay(dx < 0 ? 1 : -1); single = false; }
+        if (single && n === 0 && pullZoom === "day") { var dx = ex - sX; if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; } } swOn = false; swPgr = null; single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
-      pb.addEventListener("scroll", function () { if (pullZoom !== "day") return; var _n = Date.now(); if (pb._slT && _n - pb._slT < 140) return; pb._slT = _n; var secs = pb.querySelectorAll(".day-sec"); if (!secs.length) return; var ref = pb.scrollTop + 64, cur = secs[0]; for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= ref) cur = secs[i]; } var dk = cur.getAttribute("data-dk"); if (dk && dk !== pullFocusK) { pullFocusK = dk; var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(dk); var tb = el("pullTodayBtn"); if (tb) tb.style.display = (dk !== todayK()) ? "" : "none"; } }, { passive: true }); // throttled (≤1/140ms) so reading offsetTop never thrashes layout during scroll → smooth (David 2026-06-24)
     }
   }
   function gotoAdjacentDay(dir) { // horizontal swipe: snap to the prev/next day's section (David 2026-06-24)
@@ -1810,12 +1833,12 @@
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript");
       card.addEventListener("pointerdown", function (ev) {
         if (ev.target === grip || ev.target === gripT || ev.target === xb) return;
-        var touch = ev.pointerType === "touch", pbE = el("pullBody"); if (!touch) ev.preventDefault(); // mouse drags immediately
+        var touch = ev.pointerType === "touch", scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody"); if (!touch) ev.preventDefault(); // mouse drags immediately
         var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch, scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0;
-        if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 230); // hold ≈230ms (finger still) → pick it up to MOVE; a drag instead SCROLLS
+        if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 190); // hold ≈190ms (small jitter tolerated) → pick it up to MOVE; a clear drag scrolls/pages (David 2026-06-24)
         function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
         function mv2(e) {
-          if (touch && !picked) { var ady = Math.abs(e.clientY - sy0), adx = Math.abs(e.clientX - sx0); if (!scrolling && (ady > 6 || adx > 6)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && pbE) { e.preventDefault(); pbE.scrollTop -= (e.clientY - lastY); lastY = e.clientY; } return; } // pre-pickup drag = scroll the timeline 1:1 (no native-scroll fight)
+          if (touch && !picked) { var ady = Math.abs(e.clientY - sy0), adx = Math.abs(e.clientX - sx0); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 13 || adx > 13)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { e.preventDefault(); scE.scrollTop -= (e.clientY - lastY); lastY = e.clientY; } return; } // horizontal → let the day-swipe page · vertical drag = scroll the card · stay within 13px to pick up & move
           var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); }
         }
         function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // moved → save · scrolled → nothing · clean tap → edit
@@ -1863,13 +1886,13 @@
         var lgT = add(card, "div", "gript"); lgT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, endM = it.e, cs = card.querySelector(".csub"); function mv(e2) { var ns = Math.max(0, Math.min(endM - 5, it.s + Math.round(((e2.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; e.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); e.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(24, nm / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(ns) + "–" + fmt(endM); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // drag the top edge → move the START earlier/later (end fixed) — expand above too (David 2026-06-24)
         card.addEventListener("pointerdown", function (ev) { // hold to rearrange a past activity · drag = scroll · tap = re-label (David 2026-06-24)
           if (ev.target === xb || ev.target === lg || ev.target === lgT) return;
-          var touch = ev.pointerType === "touch", pbE = el("pullBody"); if (!touch) ev.preventDefault();
+          var touch = ev.pointerType === "touch", scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody"); if (!touch) ev.preventDefault();
           var sy = ev.clientY, sx = ev.clientX, lastY = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch, scrolling = false, holdT = null, cur2 = sm0;
-          if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 230);
+          if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 190);
           function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
           function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
           function mv2(ev2) {
-            if (touch && !picked) { var ady = Math.abs(ev2.clientY - sy), adx = Math.abs(ev2.clientX - sx); if (!scrolling && (ady > 6 || adx > 6)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && pbE) { ev2.preventDefault(); pbE.scrollTop -= (ev2.clientY - lastY); lastY = ev2.clientY; } return; }
+            if (touch && !picked) { var ady = Math.abs(ev2.clientY - sy), adx = Math.abs(ev2.clientX - sx); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 13 || adx > 13)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { ev2.preventDefault(); scE.scrollTop -= (ev2.clientY - lastY); lastY = ev2.clientY; } return; }
             var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
           }
           function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!wasScroll) relabel(); }

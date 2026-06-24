@@ -918,6 +918,16 @@
     #gameMode.on{ left:50% !important; right:auto !important; width:min(520px,100vw) !important; transform:translateX(-50%); box-shadow:0 0 0 100vmax rgba(8,4,14,.55); }
     #screen{ box-shadow:0 0 60px rgba(0,0,0,.4); }
   }
+  /* ============ v446 — PAGED day view: one day per card, horizontal swipe pages between days (Apple-Photos slide) — David 2026-06-24 ============ */
+  #pullBody.paged{ overflow:hidden !important; touch-action:none; padding:0 !important; }
+  .day-pager{ display:flex; width:300%; height:100%; will-change:transform; }
+  .day-card{ flex:0 0 33.3333%; min-width:0; height:100%; display:flex; flex-direction:column; padding:0 12px; }
+  .day-cardhead{ flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 2px 4px; }
+  .day-cardlab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
+  .day-card.today .day-cardlab{ color:#ff5fa0; }
+  .day-card .lanehead{ position:static !important; box-shadow:none !important; padding:6px 0 6px 34px !important; }
+  .day-cardscroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; -webkit-overflow-scrolling:touch; position:relative; }
+  .day-cardscroll::-webkit-scrollbar{ width:0; }
 </style>
 </head>
 <body>
@@ -993,6 +1003,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=445"></script>
+  <script src="app.js?v=446"></script>
 </body>
 </html>
