@@ -490,7 +490,9 @@
   .calblk.live .live-stop{ width:32px; height:32px; border-radius:9px; background:#ff5fa0; border:2px solid #160510; color:#4a1126; font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 0 #160510; padding:0; flex:none; -webkit-tap-highlight-color:transparent; }
   .calblk.live .live-stop:active{ transform:translateY(1px); box-shadow:0 1px 0 #160510; }
   /* dashed "start new" slot in the REAL lane (mockups 006/007) */
-  .startnew{ position:absolute; height:46px; border:2px dashed #9a6a86; border-radius:11px; background:#48123a; color:#e8b8d2; font-size:13px; font-weight:700; padding:0 11px; cursor:pointer; display:flex; align-items:center; gap:6px; z-index:2; transition:transform .12s,background .12s; }
+  .startnew{ position:absolute; height:46px; border:2px dashed #9a6a86; border-radius:11px; background:#48123a; color:#e8b8d2; font-size:13px; font-weight:700; padding:0 11px; cursor:pointer; display:flex; align-items:center; gap:6px; z-index:2; transition:transform .12s,background .12s; overflow:hidden; }
+  .startnew.planned{ border-style:solid; border-color:#ff5fa0; background:#3a1530; color:#ffe3f1; } /* shows your next planned thing — tap to do it (David 2026-06-24) */
+  .startnew .sn-hint{ font-weight:600; font-size:10px; opacity:.65; margin-left:auto; white-space:nowrap; }
   .startnew .ti{ font-size:16px; }
   .startnew:active{ transform:scale(.97); background:#5a1838; }
   .calblk .grip,.calblk .gript{ position:absolute; left:0; right:0; height:13px; display:flex; justify-content:center; cursor:ns-resize; touch-action:none; z-index:4; }
@@ -854,6 +856,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=432"></script>
+  <script src="app.js?v=433"></script>
 </body>
 </html>

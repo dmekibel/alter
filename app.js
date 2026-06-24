@@ -360,6 +360,21 @@
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
   function planBreak() { bentoPicker({ title: "Plan what you're doing — for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true }; blocks(k).push(nb); reflow(k); save(); activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }); } }); }
+  // ENHANCE PLAN — fill in the day-to-day fundamentals you haven't planned/done yet (David 2026-06-24)
+  var FUNDAMENTALS = [{ t: "Shower", d: "upkeep", m: 15, slot: 420 }, { t: "Breakfast", d: "nourish", m: 25, slot: 480 }, { t: "Meditate", d: "restore", m: 15, slot: 510 }, { t: "Lunch", d: "nourish", m: 40, slot: 750 }, { t: "Walk", d: "move", m: 20, slot: 900 }, { t: "Tidy", d: "upkeep", m: 15, slot: 1020 }, { t: "Dinner", d: "nourish", m: 45, slot: 1110 }];
+  function enhancePlan(k) {
+    k = k || todayK();
+    var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; }); logs(k).forEach(function (e) { have[(e.title || "").toLowerCase()] = 1; });
+    var added = [], now = (k === todayK()) ? nowMin() : 0;
+    FUNDAMENTALS.forEach(function (f) {
+      if (have[f.t.toLowerCase()]) return;
+      var t0 = Math.max(f.slot, now + 5); if (t0 + f.m > 1430) t0 = f.slot;
+      blocks(k).push({ id: uid(), time: pad(Math.floor(t0 / 60)) + ":" + pad(t0 % 60), mins: f.m, title: f.t, prio: 1, color: DOM[f.d].c, domain: f.d, done: false });
+      added.push(f.t);
+    });
+    reflow(k); save(); renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull();
+    toast(added.length ? '✨ added ' + added.length + ' fundamental' + (added.length > 1 ? 's' : '') + ': ' + added.join(", ") : "✓ fundamentals already covered");
+  }
   function durationSheet(label, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); [15, 30, 45, 60, 90, 120].forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
   // ---- GOALS pillar (§16, mockups 009/010): capture → decompose (guided, manual = free) → schedule steps down into the day-calendar; active goals pull into planning ----
   // §19 Tier-1 (always-on, $0): first-principles decomposition TEMPLATES — the free floor that turns any goal into steps WITHOUT a key. The brain (Tier-2/paid) tailors these later.
@@ -519,13 +534,9 @@
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
       if (pullZoom === "day") {
-        var nx = add(head, "div", "pull-next");
-        var nb = nextPlannedBlock(todayK());
-        if (nb && t && (t.title || "").toLowerCase() === nb.title.toLowerCase()) { var on = add(nx, "span", "pn-on"); on.innerHTML = '<i class="ti ti-circle-check-filled"></i> on plan · ' + esc(nb.title); }
-        else if (nb) { var nd = DOM[domainOf(nb)]; var go = add(nx, "button", "pn-go"); go.style.background = nd.c; go.style.color = nd.ink; go.innerHTML = tiIcon(nb) + ' next · ' + esc(nb.title); go.onclick = function () { startPlanned(nb); }; }
-        else { var none = add(nx, "span", "pn-none"); none.innerHTML = '<i class="ti ti-calendar-plus"></i> nothing planned'; }
-        var pbk = add(nx, "button", "pn-break"); pbk.innerHTML = '<i class="ti ti-plus"></i> plan a break'; pbk.onclick = planBreak;
+        var nx = add(head, "div", "pull-next"); // "next" + "plan a break" removed → next lives on the START NEW button now (David 2026-06-24)
         var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apk.onclick = function () { presetsSheet(todayK()); };
+        var enh = add(nx, "button", "pn-break"); enh.innerHTML = '<i class="ti ti-wand"></i> enhance'; enh.onclick = function () { enhancePlan(todayK()); };
       }
     }
     var keepTop = pb.scrollTop, _wsc0 = pb.querySelector(".week-scroller"), keepLeft = _wsc0 ? _wsc0.scrollLeft : 0; // preserve scroll across the minute-tick rebuild
@@ -1802,10 +1813,15 @@
     }
     // "start new" — a dashed REAL-lane slot at the now-line (mockups 006/007, §13): stop the live activity + start the next (startOrSwitch). Sits just below the live bubble.
     if (showNow && k === todayK() && now >= startH * 60 && now <= endH * 60) {
+      var nbk = nextPlannedBlock(todayK()), _run = activeTimers(), _live = _run[_run.length - 1];
+      var onNow = nbk && _live && (_live.title || "").toLowerCase() === nbk.title.toLowerCase();
       var sn = add(cal, "div", "startnew"); sn.style.top = (liveBottom + 4) + "px"; sn.style.left = "calc(50% + 4px)"; sn.style.right = "4px";
-      sn.innerHTML = '<i class="ti ti-plus"></i> start new';
-      sn.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
-      sn.addEventListener("click", function (ev) { ev.stopPropagation(); startOrSwitch(); });
+      if (nbk && !onNow) { sn.classList.add("planned"); sn.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(nbk.title) + ' <span class="sn-hint">hold to change</span>'; }
+      else { sn.innerHTML = '<i class="ti ti-plus"></i> start new <span class="sn-hint">hold to plan</span>'; }
+      var snH = null, snFired = false; // tap = do what's planned (1 click); press-hold = change + replan (pick + duration, pushes later plans) — David 2026-06-24
+      sn.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); snFired = false; snH = setTimeout(function () { snFired = true; snH = null; if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} } planBreak(); }, 350); });
+      function snEnd(ev) { ev.stopPropagation(); if (snH) { clearTimeout(snH); snH = null; } if (snFired) return; if (nbk && !onNow) startPlanned(nbk); else startOrSwitch(); }
+      sn.addEventListener("pointerup", snEnd); sn.addEventListener("pointercancel", function () { if (snH) { clearTimeout(snH); snH = null; } });
     }
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return;
