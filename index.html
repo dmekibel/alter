@@ -448,7 +448,7 @@
   #calPanel .cardhead h3{ color:#ffe3f1 !important; font-size:20px; font-weight:700; }
   #adhereChip{ background:#ffc83d !important; color:#5a3a00 !important; border:2px solid #160510 !important; border-radius:9px; font-weight:700; font-size:12px; padding:3px 9px; }
   #calPanel .add{ background:#3a1226 !important; color:#ffd0e6 !important; border:2px solid #160510 !important; box-shadow:0 3px 0 #160510 !important; }
-  .lanehead{ display:flex; padding-left:34px; margin:2px 0 5px; }
+  .lanehead{ position:sticky; top:0; z-index:15; display:flex; padding:7px 0 6px 34px; margin:0 0 2px; background:#2c081a; box-shadow:0 5px 11px -4px rgba(0,0,0,.5); } /* PLAN/REAL stay pinned at top while scrolling (David 2026-06-24) */
   .lanehead .lhx{ flex:1; text-align:center; font-weight:700; font-size:13px; letter-spacing:.5px; }
   .lanehead .lhx.plan{ color:#d2aae8; } .lanehead .lhx.real{ color:#ffb8d6; }
   .cal{ position:relative; margin:0; background:none; border:none; }
@@ -836,6 +836,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=415"></script>
+  <script src="app.js?v=416"></script>
 </body>
 </html>
