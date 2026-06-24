@@ -928,6 +928,26 @@
   .day-card .lanehead{ position:static !important; box-shadow:none !important; padding:6px 0 6px 34px !important; }
   .day-cardscroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; -webkit-overflow-scrolling:touch; position:relative; }
   .day-cardscroll::-webkit-scrollbar{ width:0; }
+  /* ============ v447 — bento 2-column + stripes + shimmer · ghost=image4 · streak tiers (David 2026-06-24) ============ */
+  /* BENTO: two-column grid of category panels with wrapped chips (David's image 1) */
+  .bento-gridwrap{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .bento-cat{ border:2px solid #160510 !important; border-radius:14px; padding:9px 9px 10px; position:relative; overflow:hidden; }
+  .bento-cat::before{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 8px, transparent 8px 17px); } /* subtle diagonal stripes — more appealing */
+  .bento-catl{ position:relative; z-index:1; font-size:11px; font-weight:800; letter-spacing:.6px; margin-bottom:8px; cursor:pointer; }
+  .bento-chips{ display:flex !important; flex-wrap:wrap !important; gap:5px !important; position:relative; z-index:1; overflow:visible !important; grid-auto-flow:unset !important; grid-template-rows:unset !important; grid-auto-columns:unset !important; }
+  /* shimmer/foil sheen on activity chips (David: add the shimmering effect to the habits) */
+  .bchip{ position:relative; overflow:hidden; }
+  .bchip::after{ content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.4) 50%,transparent 60%); background-size:240% 100%; animation:foilSlide 4.2s linear infinite; mix-blend-mode:overlay; }
+  .bchip.addc::after, .bchip.more::after, .bchip.addt::after, .bchip.addc, .bchip.more{ }
+  .bchip.addc::after, .bchip.more::after, .bchip.addt::after{ display:none; }
+  .bchip.more{ font-weight:800; }
+  /* GHOST / MISSED plan bubble = domain-tinted-dark hollow + clear domain outline + domain title (David's image 4) — no heavy fade */
+  .calblk.ghost{ opacity:1 !important; filter:none !important; }
+  .calblk.ghost .cn{ opacity:1 !important; }
+  /* STREAK tiers: epic+ shimmer their gradient (David's image 2) */
+  .streakfill.epic, .streakfill.superepic, .streakfill.legendary{ background-size:200% 100% !important; animation:streakFlow 2.6s linear infinite; }
+  .streakfill.legendary{ animation-duration:1.8s; }
+  @keyframes streakFlow{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
 </style>
 </head>
 <body>
@@ -1003,6 +1023,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=446"></script>
+  <script src="app.js?v=447"></script>
 </body>
 </html>

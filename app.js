@@ -294,6 +294,14 @@
   // ---- STREAK + escalating on-plan CELEBRATION (mockups 024/032) ----
   function comboTier(s) { return s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1; }
   function streakColor(s) { return mixHex("#ffe14a", "#ff2a12", Math.min(1, s / 8)); } // yellow→red as it heats
+  function streakTier(n) { // yellow → red → EPIC → SUPER EPIC → LEGENDARY (David's image 2)
+    if (n >= 20) return { grad: "linear-gradient(90deg,#ff5f9e,#ffd24a,#46e2a4,#4ab6f0,#b07aff)", glow: "0 0 16px rgba(180,122,255,.75)", name: "LEGENDARY", txt: "#ffe07a", cls: "legendary" };
+    if (n >= 12) return { grad: "linear-gradient(90deg,#a23aff,#6a1ad0)", glow: "0 0 15px rgba(150,60,255,.7)", name: "SUPER EPIC", txt: "#c79bff", cls: "superepic" };
+    if (n >= 8) return { grad: "linear-gradient(90deg,#ff2a5a,#c01030)", glow: "0 0 14px rgba(255,42,74,.7)", name: "EPIC", txt: "#ff6f8f", cls: "epic" };
+    if (n >= 6) return { grad: "linear-gradient(90deg,#ff7a2a,#ff3a18)", glow: "0 0 10px rgba(255,80,30,.5)", name: "", txt: "#ff8a4a", cls: "" };
+    if (n >= 4) return { grad: "linear-gradient(90deg,#ffd23a,#ff9a2a)", glow: "0 0 8px rgba(255,150,40,.45)", name: "", txt: "#ffb84a", cls: "" };
+    return { grad: "linear-gradient(90deg,#ffe14a,#ffd23a)", glow: "0 0 7px rgba(255,210,60,.4)", name: "", txt: "#ffe14a", cls: "" };
+  }
   function curStreak() { if (!S || !S.game) return 0; if (S.game.streakDay && S.game.streakDay !== todayK()) return 0; return S.game.streak || 0; }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
@@ -1775,7 +1783,7 @@
   function calendarView(L, k, showNow, noHead) {
     L.innerHTML = ""; nowLineEl = null;
     var bls = blocks(k).slice(), lgs = logs(k).slice();
-    var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
+    var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var _T = streakTier(_sk); var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill" + (_T.cls ? " " + _T.cls : "")); fl.style.width = Math.min(80, 18 + _sk * 8) + "%"; fl.style.background = _T.grad; fl.style.boxShadow = _T.glow; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk + (_T.name ? ' <b style="letter-spacing:.6px">' + _T.name + '</b>' : ''); sl.style.color = _T.txt; }
     if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = pullHourPx; // hour height = the timeline-density zoom (AE-style); start early enough to show NOW; run to ~3am (David 2026-06-24)
@@ -1815,8 +1823,8 @@
         card.style.background = "linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")";
         card.style.boxShadow = "0 0 0 3px " + D.ring + ",0 0 12px " + D.c; card.style.borderColor = "#160510";
         add(card, "div", "foil");
-      } else if (dark) { // past / burnt — dim, desaturated, no glow
-        card.style.background = mixHex(D.c, "#160510", 0.74); card.style.borderColor = mixHex(D.c, "#160510", 0.45); card.style.boxShadow = "none";
+      } else if (dark) { // missed/ghost — a domain-tinted-dark hollow with a clear domain OUTLINE + domain title (David's image 4)
+        card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";
       } else { // future = lit/bright: brighter hatch + a domain glow + holographic sheen
         card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + mixHex(D.light, D.c, 0.5) + " 7px," + mixHex(D.light, D.c, 0.5) + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510,0 0 16px -3px " + D.c;
         add(card, "div", "foil");
@@ -1825,7 +1833,7 @@
       var cn = add(card, "div", "cn"); cn.style.color = ink;
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""));
-      if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = D.light; } // minimal: time read from the axis, not inside the bubble (mockup)
+      if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = "rgba(255,240,249,.45)"; } // muted "missed" (David's image 4)
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>';
       xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
@@ -2139,12 +2147,14 @@
       var gridWrap = add(body, "div", "bento-gridwrap");
       DOM_ORDER.forEach(function (d) {
         var acts = (by[d] || []).slice(); if (!acts.length) return;
-        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the very LEFT of the row (David 2026-06-24)
-        var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72);
+        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the front (David 2026-06-24)
+        var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
         var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; render(); };
         var wrap = add(mc, "div", "bento-chips");
-        acts.forEach(function (a) { actChip(a, wrap, false); });
-        var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew;
+        var SHOWN = 6; acts.slice(0, SHOWN).forEach(function (a) { actChip(a, wrap, false); }); // 2-column grid: show the top few + a "+N" to open the rest (David's image 1)
+        var rest = acts.length - SHOWN;
+        if (rest > 0) { var more = add(wrap, "span", "bchip more"); more.style.background = mixHex(D.c, "#160510", 0.5); more.style.color = D.light; more.textContent = "+" + rest; more.onclick = function () { view.cat = d; render(); }; }
+        else { var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew; }
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
       function drawResults(q) {
