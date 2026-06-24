@@ -538,12 +538,13 @@
       else pb.scrollTop = keepTop;
     }
     else { // CONTINUOUS day view: past days ↑ · today · future days ↓ — scroll up to yesterday, down to tomorrow (David 2026-06-24)
+      var lh0 = add(pb, "div", "lanehead onehead"); add(lh0, "span", "lhx plan", "PLAN"); add(lh0, "span", "lhx real", "REAL"); // ONE shared PLAN/REAL pinned above all days — not repeated at each day split (David 2026-06-24)
       var base = todayK();
       for (var di = -2; di <= 3; di++) { (function (dk) {
         var isT = (dk === todayK());
         var sep = add(pb, "div", "day-sep" + (isT ? " today" : "")); add(sep, "span", "day-seplab", relLabel(dk));
         if (!isT) { var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apb.onclick = function () { presetsSheet(dk); }; }
-        var sec = add(pb, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT);
+        var sec = add(pb, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
       })(keyAdd(base, di)); }
       nowLineEl = pb.querySelector(".nowline");
       if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
@@ -1642,11 +1643,11 @@
     if (cur.length) cl.push(cur);
     cl.forEach(function (g) { var ends = []; g.forEach(function (it) { var placed = false; for (var c = 0; c < ends.length; c++) { if (it.s >= ends[c]) { it.col = c; ends[c] = it.e; placed = true; break; } } if (!placed) { it.col = ends.length; ends.push(it.e); } }); g.forEach(function (it) { it.cols = ends.length; }); });
   }
-  function calendarView(L, k, showNow) {
+  function calendarView(L, k, showNow, noHead) {
     L.innerHTML = ""; nowLineEl = null;
     var bls = blocks(k).slice(), lgs = logs(k).slice();
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); var fl = add(sb, "div", "streakfill"); fl.style.width = Math.min(72, 18 + _sk * 9) + "%"; fl.style.background = "linear-gradient(90deg,#ffe14a," + streakColor(_sk) + ")"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> x' + _sk; sl.style.color = streakColor(_sk); }
-    var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
+    if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = pullHourPx; // hour height = the timeline-density zoom (AE-style); start early enough to show NOW; run to ~3am (David 2026-06-24)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
