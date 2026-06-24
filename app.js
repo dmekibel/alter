@@ -879,7 +879,6 @@
   var skateOn = false, skateAng = null, pvx = 0, pvy = 0, bodySpin = 0, flipState = null, trickCombo = 0, trickMsg = null, trickMsgT = 0, shake = 0, dust = [];
   var BOARD_FLIPS = { "up": { n: "KICKFLIP", dur: 12 }, "down": { n: "HEELFLIP", dur: 12 }, "left": { n: "BS 180", dur: 10 }, "right": { n: "FS 180", dur: 10 }, "up+left": { n: "VARIAL FLIP", dur: 14 }, "up+right": { n: "HARDFLIP", dur: 14 }, "down+left": { n: "INWARD HEEL", dur: 14 }, "down+right": { n: "TRE FLIP", dur: 16 } };
   var zoom = 1, pinch0 = 0, zoom0 = 1;
-  var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function mix(a, b, t) { var A = hx2(a), B = hx2(b); return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")"; }
   function gdisc(g, cx, cy, r, col) { g.fillStyle = col; for (var y = -r; y <= r; y++) { var w = Math.floor(Math.sqrt(Math.max(0, r * r - y * y))); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); } }

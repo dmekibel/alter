@@ -31,5 +31,6 @@ _(newest at top — each line is a real, preview-verified, pushed change)_
 
 | v | Area | Improvement |
 |---|---|---|
+| v422 | Planner | Day label (Yesterday/Today/Tomorrow) now sticks just under the PLAN/REAL header while scrolling a day — never lose which day you're in. + removed dead duplicate code |
 | v421 | Bento | **Quick-pick**: search box + Quick (frequent) row at the top of the picker — fast picking across the 139-item library |
 | v420 | Bento | Real-life activities added (meals, outdoor, social, rest, chores) — baseline before the night |
