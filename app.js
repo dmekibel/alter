@@ -1707,17 +1707,10 @@
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript");
       card.addEventListener("pointerdown", function (ev) {
         if (ev.target === grip || ev.target === gripT || ev.target === xb) return;
-        var touch = ev.pointerType === "touch";
-        var sy0 = ev.clientY, sx0 = ev.clientX, sm0 = hm(b.time), moved = false, scrolled = false, picked = !touch, ct0 = card.querySelector(".ct"), dragMin = sm0, hold = null;
-        if (touch) hold = setTimeout(function () { picked = true; card.style.touchAction = "none"; card.classList.add("lift"); card.classList.add("dragging"); if (navigator.vibrate) { try { navigator.vibrate(9); } catch (e) {} } }, 300); // long-press a bubble to pick it up & drag-move it (a plain drag still scrolls the timeline) — David 2026-06-24
-        else ev.preventDefault();
-        function mv2(e) {
-          var dy = e.clientY - sy0, dx = e.clientX - sx0;
-          if (touch && !picked) { if (Math.abs(dy) > 8 || Math.abs(dx) > 8) { scrolled = true; if (hold) { clearTimeout(hold); hold = null; } } return; } // pre-pickup move = scrolling the timeline → let it scroll, no tap/move
-          if (!moved && (Math.abs(dy) > 5 || Math.abs(dx) > 5)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); }
-          if (moved) { if (touch) e.preventDefault(); dragMin = Math.max(0, Math.min(1590, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); }
-        }
-        function up2() { if (hold) { clearTimeout(hold); hold = null; } card.style.touchAction = ""; document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (picked && moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!moved && !scrolled) editBlk(b); } // dropped after a real move → save; clean tap → edit/switch
+        ev.preventDefault(); var touch = ev.pointerType === "touch";
+        var sy0 = ev.clientY, sx0 = ev.clientX, sm0 = hm(b.time), moved = false, ct0 = card.querySelector(".ct"), dragMin = sm0;
+        function mv2(e) { var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 4 || Math.abs(dx) > 4)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { if (touch) e.preventDefault(); dragMin = Math.max(0, Math.min(1590, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); } } // drag a bubble = move it immediately (bubbles are touch-action:none; scroll by dragging empty area instead) — David 2026-06-24
+        function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (moved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else editBlk(b); } // moved → save; clean tap → edit/switch
         document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", up2);
       });
       grip.addEventListener("pointerdown", function (ev) {
@@ -1757,20 +1750,13 @@
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); var sy = ev.clientY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
-        card.addEventListener("pointerdown", function (ev) { // long-press to pick up & rearrange a past activity · tap to re-label (David 2026-06-24)
+        card.addEventListener("pointerdown", function (ev) { // drag a past activity = rearrange it immediately · tap to re-label (David 2026-06-24)
           if (ev.target === xb || ev.target === lg) return;
-          var touch = ev.pointerType === "touch";
-          var sy = ev.clientY, sx = ev.clientX, sm0 = it.s, dur = e.mins || 15, moved = false, scrolled = false, picked = !touch, cur2 = sm0, hold = null;
+          ev.preventDefault(); var touch = ev.pointerType === "touch";
+          var sy = ev.clientY, sx = ev.clientX, sm0 = it.s, dur = e.mins || 15, moved = false, cur2 = sm0;
           function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
-          if (touch) hold = setTimeout(function () { picked = true; card.style.touchAction = "none"; card.classList.add("lift"); card.classList.add("dragging"); if (navigator.vibrate) { try { navigator.vibrate(9); } catch (er) {} } }, 300);
-          else ev.preventDefault();
-          function mv2(ev2) {
-            var dy = ev2.clientY - sy, dx = ev2.clientX - sx;
-            if (touch && !picked) { if (Math.abs(dy) > 8 || Math.abs(dx) > 8) { scrolled = true; if (hold) { clearTimeout(hold); hold = null; } } return; }
-            if (!moved && (Math.abs(dy) > 5 || Math.abs(dx) > 5)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); }
-            if (moved) { if (touch) ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
-          }
-          function up2() { if (hold) { clearTimeout(hold); hold = null; } card.style.touchAction = ""; document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (picked && moved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!moved && !scrolled) relabel(); }
+          function mv2(ev2) { var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 4 || Math.abs(dx) > 4)) { moved = true; card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { if (touch) ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; } }
+          function up2() { document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", up2); card.classList.remove("lift"); card.classList.remove("dragging"); if (moved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else relabel(); }
           document.addEventListener("pointermove", mv2); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", up2);
         });
       } else {
