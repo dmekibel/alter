@@ -1825,9 +1825,9 @@
         add(card, "div", "foil");
       } else if (dark) { // missed/ghost — a domain-tinted-dark hollow with a clear domain OUTLINE + domain title (David's image 4)
         card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";
-      } else { // future = lit/bright: brighter hatch + a domain glow + holographic sheen
-        card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + mixHex(D.light, D.c, 0.5) + " 7px," + mixHex(D.light, D.c, 0.5) + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510,0 0 16px -3px " + D.c;
-        add(card, "div", "foil");
+      } else { // future = THEORETICAL: faint domain hatch, fainter the further ahead it is, no glow (David 2026-06-25 · F1)
+        card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 6px," + D.dark + " 6px," + D.dark + " 12px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510";
+        var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.4, 0.82 - Math.max(0, _ahead) * 0.05) : 0.66);
       }
       var ink = dark ? D.light : D.ink;
       var cn = add(card, "div", "cn"); cn.style.color = ink;
@@ -1885,7 +1885,7 @@
       card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; card.style.width = "auto"; // one activity at a time — real lane is always full width, never split into multitasking columns (David 2026-06-23)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")"; card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)";
+        card.style.borderColor = "#160510"; card.style.background = drift ? ("linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")") : onp ? ("repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)") : ("linear-gradient(150deg," + D.light + "," + D.c + ")"); card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; // matched real = striped reward · drift = mauve gradient (David 2026-06-25)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:#a06b00"></i>' : ""); if (cardH < 15) card.classList.add("ctiny"); else if (cardH < 28) card.classList.add("csmall"); // short log → icon only · tiny → colour only
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
@@ -1909,7 +1909,7 @@
         });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.borderColor = "#160510"; card.style.background = drift ? D.c : "linear-gradient(150deg," + D.light + "," + D.c + ")";
+        card.style.borderColor = "#160510"; card.style.background = drift ? ("linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")") : onp ? ("repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)") : ("linear-gradient(150deg," + D.light + "," + D.c + ")"); // on-plan LIVE = striped (matches the goal) · drift = mauve gradient w/ attitude (David 2026-06-25)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span>';
         // live footer (mockup 007): elapsed bottom-left + a BIG pink stop button bottom-right — the live activity is never squished
