@@ -497,6 +497,9 @@
   .calblk .grip{ bottom:0; align-items:flex-end; padding-bottom:2px; } .calblk .gript{ top:0; align-items:flex-start; padding-top:2px; }
   .calblk .grip::after,.calblk .gript::after{ content:""; width:22px; height:3px; border-radius:2px; background:rgba(0,0,0,.28); }
   .backfill{ position:absolute; border:2px dashed #9a6a86; border-radius:9px; color:#cd9bb6; font-size:11px; font-weight:600; padding:3px 8px; cursor:pointer; display:flex; align-items:center; gap:5px; z-index:1; }
+  /* empty-day PLAN-lane invite (David 2026-06-24 night) */
+  .plan-empty{ position:absolute; left:34px; right:calc(50% + 4px); display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; border:2px dashed #ff5fa0; border-radius:12px; background:repeating-linear-gradient(45deg,rgba(255,95,160,.13),rgba(255,95,160,.13) 7px,rgba(255,95,160,.04) 7px,rgba(255,95,160,.04) 14px); color:#ff9dc6; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; z-index:3; text-transform:capitalize; }
+  .plan-empty:active{ transform:scale(.97); }
   .backfill .ti{ font-size:13px; }
   .nowline{ position:absolute; left:34px; right:6px; height:0; border-top:3px dashed #ff5fa0; z-index:6; box-shadow:none; }
   .nowline::before{ display:none; }
@@ -847,6 +850,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=426"></script>
+  <script src="app.js?v=427"></script>
 </body>
 </html>

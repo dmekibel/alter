@@ -1733,6 +1733,7 @@
       });
     });
     if (burnedSomething) save(); // persist the burn so a passed plan stays dark across renders / when pushed forward
+    if (!bls.length) { var pe = add(cal, "div", "plan-empty"); pe.style.top = (showNow ? topFor(Math.max(startH * 60 + 30, now)) : topFor((startH + 2) * 60)) + "px"; pe.innerHTML = '<i class="ti ti-stars"></i> plan ' + esc(relLabel(k).toLowerCase()); pe.onclick = function (ev) { ev.stopPropagation(); presetsSheet(k); }; } // empty PLAN lane → inviting one-tap auto-plan (David 2026-06-24 night)
     // a REAL item is "on-plan" (→ gold) when it overlaps a PLAN block of the SAME domain (§24 Guitar-Hero win); drift is shown honestly, never hidden
     function onPlanMatch(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom) return true; } return false; }
     var acts = [];
