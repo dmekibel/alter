@@ -299,6 +299,7 @@
   function celebrate(color, streak) {
     var tier = comboTier(streak), pts = [10, 25, 60, 150][tier - 1];
     try { earn(pts, {}); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(tier >= 3 ? [12, 30, 18, 30, 24] : [10, 24, 14]); } catch (e) {} // tactile celebration beat (David 2026-06-24 night)
     var ov = add(document.body, "div", "cele-ov");
     var box = add(ov, "div", "cele-box" + (tier >= 4 ? " fire" : "")); box.style.background = color || "#36b3f0";
     box.style.boxShadow = "0 0 0 " + (2 + tier) + "px " + (tier >= 3 ? "#ff7a1a" : "#ffd54a") + ",0 0 " + (10 + tier * 6) + "px " + (tier >= 3 ? "#ff5a1a" : "#ffd54a");
@@ -464,6 +465,8 @@
       var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-stars"></i> Masterpiece days'; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
       var body = add(card, "div", "goal-body");
       var sub = add(body, "div", "goal-hint"); sub.innerHTML = '<i class="ti ti-wand"></i> auto-plan ' + relLabel(k).toLowerCase() + ' — tap one to fill it in';
+      var prevK = keyAdd(k, -1); // one-tap reuse: copy the previous day's plan (David 2026-06-24 night)
+      if (blocks(prevK).length) { var cb = add(body, "button", "preset-row"); var cnm = add(cb, "span", "preset-name"); cnm.innerHTML = '<i class="ti ti-copy"></i> Copy ' + esc(relLabel(prevK)) + "'s plan"; add(cb, "span", "preset-meta", blocks(prevK).length + " blocks"); cb.onclick = function () { applyDayPreset(k, blocks(prevK).map(function (b) { return { h: b.time, m: b.mins, t: b.title, d: domainOf(b) }; })); ov.remove(); refresh(); toast("📋 copied " + relLabel(prevK).toLowerCase() + "'s plan"); }; }
       DAY_PRESETS.forEach(function (p) { var b = add(body, "button", "preset-row"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-stars"></i> ' + esc(p.name); add(b, "span", "preset-meta", p.blocks.length + " blocks"); b.onclick = function () { apply(p); }; });
       (S.presets || []).forEach(function (p, i) { var b = add(body, "button", "preset-row mine"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-bookmark"></i> ' + esc(p.name); var del = add(b, "span", "preset-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function (e) { e.stopPropagation(); S.presets.splice(i, 1); save(); draw(); }; b.onclick = function (e) { if (e.target === del || del.contains(e.target)) return; apply(p); }; });
       if (blocks(k).length) { add(body, "div", "goal-hint", "save this day so you can reuse it:"); typeAdd(body, "name this day plan…", function (v) { saveDayAsPreset(k, v); draw(); toast("💾 saved “" + v + "”"); }); }
