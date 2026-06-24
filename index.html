@@ -825,8 +825,8 @@
   #gameExit{ display:flex !important; }
   body.gaming #nav{ display:none !important; }
   #notebookBtn{ display:none !important; }
-  /* The live-tracker strip + its pull-down belong ONLY to the garden now; in the normal app the timeline is simply the Today tab (David 2026-06-24) */
-  body:not(.gaming) #liveTracker{ display:none !important; }
+  /* the live-tracker strip is retired — the timeline is the Today tab now; hiding it everywhere also stops it covering the garden's Exit button (David 2026-06-24) */
+  #liveTracker{ display:none !important; }
   body:not(.gaming) #screen{ padding-top:14px !important; }
   /* TODAY tab (normal app) = the ORIGINAL rich pull-timeline, ALWAYS OPEN — sticky PLAN/REAL header, working zoom, swipe-between-days, every feature we built. NOT a rebuild. */
   body.tab-day:not(.gaming) #pullSheet{ display:flex !important; transform:none !important; transition:none !important; top:calc(env(safe-area-inset-top,0px) + 8px); left:8px; right:8px; bottom:calc(74px + env(safe-area-inset-bottom,0px)); height:auto; z-index:40; }
@@ -852,6 +852,23 @@
   .bento-search{ position:static !important; top:auto !important; z-index:auto !important; background:transparent !important; padding:2px 0 10px !important; }
   input.bento-sinput[type=text]{ background:#1c0512 !important; color:#fff2f9 !important; border:2px solid #160510 !important; }
   input.bento-sinput[type=text]::placeholder{ color:#9a6a86 !important; }
+  /* ============ v441 — You tab stripped to the garden + minimal footer; clear garden Exit; smoother zoom (David 2026-06-24) ============ */
+  #t-self #guardianCap, #t-self #moodRow, #t-self #hero, #t-self .qlab, #t-self #quick, #t-self .c-stats{ display:none !important; } /* old RPG/mood/hero/quick clutter — the Duolingo journey is designed next */
+  #youJourney{ margin-top:2px; }
+  #youJourney .nb-item{ margin-bottom:9px; }
+  .you-soon{ display:flex; align-items:center; gap:7px; color:#c79ab4; font-family:"Jost",sans-serif; font-weight:600; font-size:13px; background:#2c081a; border:2px dashed #6a3050; border-radius:14px; padding:13px 14px; margin:14px 2px 12px; }
+  .you-soon .ti{ color:#ff5fa0; font-size:18px; }
+  .you-sec{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:.6px; text-transform:uppercase; color:#c98aa8; margin:6px 2px 9px; }
+  /* garden EXIT → an unmistakable pink pill (was a faint ← that the strip used to cover) */
+  #gameExit{ width:auto !important; height:auto !important; padding:10px 15px !important; border-radius:14px !important; background:#ff5fa0 !important; color:#4a1126 !important; border:2.5px solid #160510 !important; box-shadow:0 4px 0 #160510 !important; font-family:"Jost",sans-serif; font-weight:800; font-size:14px; display:flex !important; align-items:center; gap:6px; backdrop-filter:none !important; }
+  #gameExit:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510 !important; }
+  #gameExit .ti{ font-size:17px; }
+  /* day-view header now carries zoom (− +) AND scope (day/week/month) → tighten so every control fits one row */
+  .pull-rt{ gap:4px !important; }
+  .pull-rt .scope-seg{ padding:2px !important; gap:1px !important; }
+  .pull-rt .scope-b{ width:26px !important; height:26px !important; font-size:13px !important; }
+  .pull-datenav .pull-step{ width:30px !important; height:30px !important; }
+  .pull-datenav .pull-date{ min-width:auto !important; font-size:16px !important; }
   /* kill the yellow predicted/selected rings — picked = a bold dark ring + ✓ (on-theme, never yellow) */
   .bchip.pred{ box-shadow:none !important; }
   .bchip.sel{ box-shadow:0 0 0 3px #160510 !important; transform:scale(1.04); }
@@ -882,6 +899,12 @@
     <div class="tab" id="t-self">
       <div id="stage"><canvas id="guardian"></canvas>
         <button id="enterWorld" type="button">🎮 enter your world</button>
+      </div>
+      <div id="youJourney">
+        <div class="you-soon"><i class="ti ti-map-2"></i> Your journey is being designed — coming soon</div>
+        <div class="you-sec">Settings</div>
+        <button class="nb-item" id="goBrain2"><span class="nb-ic" style="background:#7f9bc4"><i class="ti ti-brain"></i></span><div class="nb-tx"><div class="nb-l">Brain</div><div class="nb-sub">free AI tailoring (optional)</div></div></button>
+        <button class="nb-item" id="goRedo2"><span class="nb-ic" style="background:#ffc83d"><i class="ti ti-sparkles"></i></span><div class="nb-tx"><div class="nb-l">Redo setup</div><div class="nb-sub">re-run onboarding</div></div></button>
       </div>
       <div id="guardianCap"></div>
       <div id="moodRow"></div>
@@ -919,7 +942,7 @@
   </nav>
   <div id="gameMode">
     <canvas id="world"></canvas>
-    <button id="gameExit" type="button">←</button>
+    <button id="gameExit" type="button"><i class="ti ti-arrow-left"></i> Exit world</button>
     <div id="gameHud"></div>
     <div id="zoomCtl"><button id="zoomIn" type="button">＋</button><button id="zoomOut" type="button">－</button></div>
     <div id="joy"><div id="joyStick"></div></div>
@@ -931,6 +954,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=440"></script>
+  <script src="app.js?v=441"></script>
 </body>
 </html>
