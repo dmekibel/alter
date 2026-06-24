@@ -496,9 +496,9 @@
   .startnew .ti{ font-size:16px; }
   .startnew:active{ transform:scale(.97); background:#5a1838; }
   /* single bottom-right corner resize handle (David 2026-06-24) */
-  .calblk .grip{ position:absolute; right:0; bottom:0; width:26px; height:24px; display:flex; align-items:flex-end; justify-content:flex-end; padding:0 5px 4px 0; cursor:nwse-resize; touch-action:none; z-index:4; }
+  .calblk .grip{ position:absolute; right:0; bottom:0; width:30px; height:28px; display:flex; align-items:flex-end; justify-content:flex-end; padding:0 3px 3px 0; cursor:nwse-resize; touch-action:none; z-index:4; }
   .calblk .gript{ display:none; }
-  .calblk .grip::after{ content:""; width:9px; height:9px; border-right:2.5px solid rgba(0,0,0,.34); border-bottom:2.5px solid rgba(0,0,0,.34); border-bottom-right-radius:3px; }
+  .calblk .grip::after{ content:""; width:15px; height:15px; border-right:2px solid rgba(0,0,0,.26); border-bottom:2px solid rgba(0,0,0,.26); border-bottom-right-radius:11px; } /* subtle curved line echoing the bubble's rounded corner (David 2026-06-24) */
   .backfill{ position:absolute; border:2px dashed #9a6a86; border-radius:9px; color:#cd9bb6; font-size:11px; font-weight:600; padding:3px 8px; cursor:pointer; display:flex; align-items:center; gap:5px; z-index:1; }
   /* empty-day PLAN-lane invite (David 2026-06-24 night) */
   .plan-empty{ position:absolute; left:34px; right:calc(50% + 4px); display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; border:2px dashed #ff5fa0; border-radius:12px; background:repeating-linear-gradient(45deg,rgba(255,95,160,.13),rgba(255,95,160,.13) 7px,rgba(255,95,160,.04) 7px,rgba(255,95,160,.04) 14px); color:#ff9dc6; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; z-index:3; text-transform:capitalize; }
@@ -864,6 +864,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=435"></script>
+  <script src="app.js?v=436"></script>
 </body>
 </html>
