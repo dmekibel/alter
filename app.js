@@ -91,6 +91,7 @@
   function monthAdd(k, n) { var d = kd(k); d.setDate(1); d.setMonth(d.getMonth() + n); return key(d); }
   function startOfWeek(k) { var d = kd(k); d.setDate(d.getDate() - d.getDay()); return key(d); }
   function relLabel(k) { if (k === todayK()) return "Today"; if (k === tomK()) return "Tomorrow"; if (k === keyAdd(todayK(), -1)) return "Yesterday"; return kd(k).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }); }
+  function dayLabelFull(k) { var rl = relLabel(k); if (rl === "Today" || rl === "Tomorrow" || rl === "Yesterday") return rl + " · " + kd(k).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); return rl; } // Tomorrow/Today/Yesterday also show weekday + date (David 2026-06-24)
   function relShort(k) { return kd(k).toLocaleDateString([], { month: "short", day: "numeric" }); }
   function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false, bd = domainOf(b); for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs && domainOf(dl[i]) === bd) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= nowMin()) return "miss"; return "plan"; } // "done" only if you actually did the SAME domain; otherwise a passed plan goes ghost/dark (David 2026-06-23)
   var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, nowLineEl = null;
@@ -491,7 +492,7 @@
     ];
     items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
   }
-  var pullK = null, pullZoom = "day", pullHourPx = 64; // pullHourPx = hour-row height in day view — the +/- zooms the timeline density like After Effects (David 2026-06-24)
+  var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
   function setHourPx(delta) { var pb = el("pullBody"), old = pullHourPx; pullHourPx = Math.max(36, Math.min(124, pullHourPx + delta)); if (pullHourPx === old) return; var sc = pb ? pb.scrollTop : 0; buildPull(); var p2 = el("pullBody"); if (p2) p2.scrollTop = sc * (pullHourPx / old); } // rescale scroll so the same time stays put
   // smooth zoom between day/week/month — a self-completing CSS keyframe entrance (never gets stuck invisible; ends at the natural visible state) — David 2026-06-24
   function zoomAnim(dir) {
@@ -510,7 +511,7 @@
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
-      if (pullZoom === "day") { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.title = "Yesterday"; pv.onclick = function () { scrollToDay(keyAdd(todayK(), -1)); }; var dlab = add(dn, "button", "pull-date pull-datebtn", "Today"); dlab.onclick = function () { scrollToDay(todayK()); }; var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.title = "Tomorrow"; nf.onclick = function () { scrollToDay(keyAdd(todayK(), 1)); }; } // ‹ yesterday · Today (recenter) · tomorrow › scroll the continuous list (David 2026-06-24)
+      if (pullZoom === "day") { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.title = "Previous day"; pv.onclick = function () { scrollToDay(keyAdd(pullFocusK || todayK(), -1)); }; var dlab = add(dn, "button", "pull-date pull-datebtn", relLabel(pullFocusK || todayK())); dlab.id = "pullDayLabel"; dlab.onclick = function () { scrollToDay(todayK()); }; var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.title = "Next day"; nf.onclick = function () { scrollToDay(keyAdd(pullFocusK || todayK(), 1)); }; } // ‹ prev · [day you're viewing] (tap = back to today) · next › — label + paging track the centered day (David 2026-06-24)
       else { add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months"); }
       var rt = add(top, "div", "pull-rt");
       if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
@@ -545,9 +546,10 @@
     else { // CONTINUOUS day view: past days ↑ · today · future days ↓ — scroll up to yesterday, down to tomorrow (David 2026-06-24)
       var lh0 = add(pb, "div", "lanehead onehead"); add(lh0, "span", "lhx plan", "PLAN"); add(lh0, "span", "lhx real", "REAL"); // ONE shared PLAN/REAL pinned above all days — not repeated at each day split (David 2026-06-24)
       var base = todayK();
-      for (var di = -2; di <= 3; di++) { (function (dk) {
+      if (pendingScrollNow) pullFocusK = todayK(); // fresh open → header shows Today
+      for (var di = -3; di <= 6; di++) { (function (dk) {
         var isT = (dk === todayK()), isFut = dk > todayK();
-        var sep = add(pb, "div", "day-sep" + (isT ? " today" : "")); add(sep, "span", "day-seplab", relLabel(dk));
+        var sep = add(pb, "div", "day-sep" + (isT ? " today" : "")); add(sep, "span", "day-seplab", dayLabelFull(dk));
         if (isFut) { var apb = add(sep, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stars"></i> auto-plan'; apb.onclick = function () { presetsSheet(dk); }; }
         else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(sep, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; } // progress badge on today + past days (David 2026-06-24 night)
         var sec = add(pb, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
@@ -568,6 +570,7 @@
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX, dy = ey - sY; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) gotoAdjacentDay(dx < 0 ? 1 : -1); single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
+      pb.addEventListener("scroll", function () { if (pullZoom !== "day") return; var secs = pb.querySelectorAll(".day-sec"); if (!secs.length) return; var ref = pb.scrollTop + 64, cur = secs[0]; for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= ref) cur = secs[i]; } var dk = cur.getAttribute("data-dk"); if (dk && dk !== pullFocusK) { pullFocusK = dk; var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(dk); } }, { passive: true }); // header label tracks the day you've scrolled to — direct (no rAF; backgrounded tabs throttle rAF) (David 2026-06-24)
     }
   }
   function gotoAdjacentDay(dir) { // horizontal swipe: snap to the prev/next day's section (David 2026-06-24)
@@ -580,6 +583,7 @@
   }
   function scrollToDay(dk) { // day-view nav buttons: smooth-scroll to that day's section (today → the now-line) — David 2026-06-24
     var pb = el("pullBody"); if (!pb) return;
+    pullFocusK = dk; var _lab = el("pullDayLabel"); if (_lab) _lab.textContent = relLabel(dk); // header reflects the target immediately
     if (dk === todayK() && nowLineEl && nowLineEl.offsetParent !== null) { nowLineEl.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     var sec = pb.querySelector('.day-sec[data-dk="' + dk + '"]'); if (!sec) return;
     var sep = sec.previousElementSibling, top = (sep && (sep.className || "").indexOf("day-sep") >= 0) ? sep.offsetTop : sec.offsetTop;
