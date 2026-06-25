@@ -622,7 +622,7 @@
   /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
   #pullSheet{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 56px); left:10px; right:10px; z-index:68; background:#2c081a; border:3px solid #160510; border-radius:18px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-120%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:calc(100dvh - env(safe-area-inset-top,0px) - 66px); display:flex; flex-direction:column; overflow:hidden; }
   #pullSheet.on{ transform:translateY(0); }
-  #pullHead{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:9px; background:#1c0512; border-radius:15px 15px 0 0; border-bottom:2px solid #160510; padding:12px 14px 10px; }
+  #pullHead{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:5px; background:#1c0512; border-radius:15px 15px 0 0; border-bottom:2px solid #160510; padding:7px 12px 6px; } /* slimmer chrome → more timeline (David 2026-06-25) */
   .pull-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .pull-datenav{ display:flex; align-items:center; gap:10px; }
   .pull-step{ width:34px; height:34px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
@@ -660,18 +660,19 @@
   .day-done{ display:flex; align-items:center; gap:4px; font-family:"Jost",sans-serif; font-weight:800; font-size:11.5px; color:#c98aa8; padding:4px 9px; border-radius:9px; background:#241019; }
   .day-done.all{ color:#4a1126; background:#46e2a4; }
   /* always-offer-next row (§23): the next planned activity as a 1-tap hero + a "plan a break" door */
-  .pull-zoomrow{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:7px 2px 1px; }
+  .pull-zoomrow{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:2px 2px 0; }
   .pull-zoomrow .zr-ic{ color:#cd9bb6; font-size:14px; display:flex; align-items:center; }
-  .zoom-slider{ -webkit-appearance:none; appearance:none; width:160px; max-width:55%; height:7px; border-radius:6px; background:#48122f; border:2px solid #160510; outline:none; cursor:pointer; }
-  .zoom-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; box-shadow:0 2px 0 #160510; cursor:grab; }
+  .zoom-slider{ -webkit-appearance:none; appearance:none; width:170px; max-width:62%; height:5px; border-radius:6px; background:#48122f; border:2px solid #160510; outline:none; cursor:pointer; }
+  .zoom-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; box-shadow:0 2px 0 #160510; cursor:grab; }
   .zoom-slider::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; box-shadow:0 2px 0 #160510; cursor:grab; }
-  .pull-next{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; } /* wrap so every tool (incl. undo + dev test-day) stays on-screen (David 2026-06-25) */
+  .pull-next{ display:flex; flex-wrap:nowrap; align-items:center; gap:6px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; } /* ONE short scrollable strip (David 2026-06-25) */
+  .pull-next::-webkit-scrollbar{ display:none; }
   .pn-go{ flex:1 1 auto; min-width:0; border:2px solid #160510; border-radius:11px; box-shadow:0 3px 0 #160510; padding:8px 11px; font-family:"Jost",sans-serif; font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pn-go:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
   .pn-go .ti{ font-size:16px; }
   .pn-on{ flex:1 1 auto; color:#46e2a4; font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pn-none{ flex:1 1 auto; color:#c79ab4; font-weight:600; font-size:12.5px; display:flex; align-items:center; gap:6px; }
-  .pn-break{ flex:none; background:#3a1226; color:#e8b8d2; border:2px dashed #9a6a86; border-radius:11px; padding:8px 11px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:5px; }
+  .pn-break{ flex:none; background:#3a1226; color:#e8b8d2; border:2px dashed #9a6a86; border-radius:10px; padding:5px 9px; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; cursor:pointer; display:flex; align-items:center; gap:5px; }
   .pn-break:active{ transform:scale(.97); }
   /* duration picker (plan-a-break) */
   .dur-ov{ position:fixed; inset:0; z-index:72; background:rgba(15,4,12,.66); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; padding:18px; }
@@ -853,20 +854,21 @@
   body:not(.tab-day):not(.gaming) #pullSheet{ display:none !important; }       /* hidden while on Goals / You */
   /* pull-up live-tracker dock — only on Today, only while tracking (David 2026-06-25) */
   #liveDock{ display:none; }
-  body.tab-day:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:calc(70px + env(safe-area-inset-bottom,0px)); z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:6px 12px 11px; font-family:"Jost",sans-serif; }
-  #liveDock .ld-grab{ width:40px; height:5px; border-radius:3px; background:#5a2c44; margin:0 auto 7px; }
-  #liveDock .ld-main{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
-  #liveDock .ld-stop{ width:42px; height:42px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:0 3px 0 #160510; cursor:pointer; }
+  body.tab-day:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:calc(70px + env(safe-area-inset-bottom,0px)); z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; } /* slimmer dock → more timeline (David 2026-06-25) */
+  #liveDock .ld-grab{ width:36px; height:4px; border-radius:3px; background:#5a2c44; margin:0 auto 4px; }
+  #liveDock .ld-main{ display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  #liveDock .ld-stop{ width:37px; height:37px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; color:#fff; font-size:17px; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:0 3px 0 #160510; cursor:pointer; }
   #liveDock .ld-info{ flex:1; min-width:0; }
   #liveDock .ld-act{ color:#ffe3f1; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #liveDock .ld-sub{ color:#cd9bb6; font-size:10px; font-weight:600; margin-top:1px; }
   #liveDock .ld-el{ color:#ff8ac0; font-weight:700; font-size:14px; min-width:44px; text-align:center; }
-  #liveDock .ld-sw{ width:38px; height:38px; border-radius:11px; background:#3a1430; border:2.5px solid #160510; color:#ffb8d6; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
+  #liveDock .ld-sw{ width:34px; height:34px; border-radius:11px; background:#3a1430; border:2.5px solid #160510; color:#ffb8d6; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
   #liveDock .ld-seg{ display:flex; gap:6px; }
-  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:8px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:6px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
   #liveDock .ld-plan{ background:#36b3f0; color:#08283c; }
   #liveDock .ld-replan{ background:#3a1430; color:#d2aae8; }
-  #liveDock .ld-drift{ background:#3a1430; color:#d4768f; }
+  #liveDock .ld-drift{ background:#3a1430; color:#b3a6c8; }
+  #liveDock.noplan .ld-replan{ display:none; } /* no plan today → Plan + Drift only (David 2026-06-25) */
   @media (min-width:560px){ body.tab-day:not(.gaming) #liveDock.on{ left:50%; right:auto; width:min(508px,calc(100vw - 16px)); transform:translateX(-50%); } }
   /* Goals + You screen scaffolding */
   .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
@@ -930,11 +932,18 @@
   .calblk.ctiny .cn-t{ display:inline; }
   .calblk.ctiny .csub, .calblk.ctiny .calx, .calblk.ctiny .foil, .calblk.ctiny .grip, .calblk.ctiny .gript, .calblk.ctiny .step-n, .calblk.ctiny .ti-sparkles{ display:none !important; }
   /* tiny past LOG = a thin full-width line with its NAME floated beside it (David 2026-06-25) */
-  .calblk.tinylog{ padding:0 !important; height:3px !important; border-width:0 !important; border-radius:2px !important; overflow:visible !important; box-shadow:none !important; filter:none !important; opacity:1 !important; }
+  .calblk.tinylog{ padding:0 !important; border-width:0 !important; border-radius:3px !important; overflow:visible !important; box-shadow:0 1px 3px rgba(0,0,0,.4) !important; filter:none !important; opacity:1 !important; z-index:7; } /* height set by JS (~12px) so it's a tappable bar, z-index above the now-line so a near-now sliver is never hidden (David 2026-06-25) */
   .calblk.tinylog .cn{ position:absolute; right:6px; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; pointer-events:none; padding:0; text-shadow:0 1px 3px rgba(0,0,0,.78); }
   .calblk.tinylog .cn .ti{ font-size:12px; }
   .calblk.tinylog .cn-t{ display:inline; }
   .calblk.tinylog .csub, .calblk.tinylog .calx, .calblk.tinylog .grip, .calblk.tinylog .gript, .calblk.tinylog .foil, .calblk.tinylog .shine, .calblk.tinylog .ti-sparkles{ display:none !important; }
+  .calblk.tinylog.nearnow .cn{ left:40px; right:auto; } /* near-now sliver: float the name LEFT so it never overlaps the now readout (David 2026-06-25) */
+  /* nothing cut off — hide the 2nd line + sparkle by HEIGHT instead of letting overflow:hidden crop them (David 2026-06-25) */
+  .calblk.nosub .csub{ display:none !important; }
+  .calblk.csmall .ti-sparkles{ display:none !important; }
+  /* resize-gating — a thin bubble shows NO edge grips (tap = move/menu, never accidental resize) — David 2026-06-25 */
+  .calblk[data-gate="move"] .grip, .calblk[data-gate="move"] .gript, .calblk[data-gate="menu"] .grip, .calblk[data-gate="menu"] .gript{ display:none !important; }
+  .calblk[data-gate="menu"]{ cursor:pointer; }
   /* +/− steppers in the block-edit menu — set/extend a sliver you can't grab by its edges (David 2026-06-25) */
   .stepper{ display:flex; align-items:center; gap:12px; margin:3px 0 11px; }
   .stepper .stp{ width:42px; height:42px; border-radius:13px; background:#fff; border:2.5px solid #160510; font-size:23px; font-weight:800; color:#160510; box-shadow:0 3px 0 #160510; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--bub); -webkit-tap-highlight-color:transparent; }
@@ -970,10 +979,10 @@
   #pullBody.paged{ overflow:hidden !important; touch-action:none; padding:0 !important; }
   .day-pager{ display:flex; width:300%; height:100%; will-change:transform; }
   .day-card{ flex:0 0 33.3333%; min-width:0; height:100%; display:flex; flex-direction:column; padding:0 12px; }
-  .day-cardhead{ flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 2px 4px; }
+  .day-cardhead{ flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 2px 3px; }
   .day-cardlab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
   .day-card.today .day-cardlab{ color:#ff5fa0; }
-  .day-card .lanehead{ position:static !important; box-shadow:none !important; padding:6px 0 6px 34px !important; }
+  .day-card .lanehead{ position:static !important; box-shadow:none !important; padding:3px 0 3px 34px !important; }
   .day-cardscroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; -webkit-overflow-scrolling:touch; position:relative; }
   .day-cardscroll::-webkit-scrollbar{ width:0; }
   /* ============ v447 — bento 2-column + stripes + shimmer · ghost=image4 · streak tiers (David 2026-06-24) ============ */
@@ -1087,6 +1096,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=459"></script>
+  <script src="app.js?v=460"></script>
 </body>
 </html>

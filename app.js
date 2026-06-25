@@ -237,16 +237,17 @@
   function activeCats() { var o = OCC_BY_K[(typeof S !== "undefined" && S && S.profile) ? S.profile.occ : null]; return CATS.map(function (c) { if (c.k === "work" && o && o.work) return { k: c.k, label: c.label, e: c.e, color: c.color, groups: o.work }; return c; }); }
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
   // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
+  // Domain palette ALIGNED TO THE BENTO categories (David 2026-06-25): energy=orange, work=blue, hobby=purple, love=pink — no more lime/yellow/teal/slate. Subtle in-family shades keep a workout vs a meal vs sleep distinguishable; ghost/past/present treatments modify this base.
   var DOM = {
-    move:    { l: "Move",    e: "🏃", c: "#ff8a3a", light: "#ffa24a", dark: "#ff741a", ring: "#ffcf9a", ink: "#4a2400", ti: "ti-run" },
-    nourish: { l: "Nourish", e: "🍎", c: "#34d39a", light: "#5fe0b2", dark: "#22c089", ring: "#9fe8cf", ink: "#0a3326", ti: "ti-bowl-spoon" },
-    focus:   { l: "Focus",   e: "🎯", c: "#36b3f0", light: "#5ec4f5", dark: "#22a6e8", ring: "#aadcf8", ink: "#08283c", ti: "ti-brain" },
-    create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },
-    connect: { l: "Connect", e: "💛", c: "#ff5fa0", light: "#ff7ab0", dark: "#ff4f96", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },
-    play:    { l: "Play",    e: "🎮", c: "#ffc83d", light: "#ffd56a", dark: "#f0b62a", ring: "#ffe9a8", ink: "#5a3a00", ti: "ti-device-gamepad-2" },
-    restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
-    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
-    drift:   { l: "Drift",   e: "🌫️", c: "#c4607f", light: "#d17f99", dark: "#a84e69", ring: "#e0a8bb", ink: "#3a0f1e", ti: "ti-windmill" }
+    move:    { l: "Move",    e: "🏃", c: "#ff8a1e", light: "#ffa44a", dark: "#ea7a0c", ring: "#ffd6a3", ink: "#4a2400", ti: "ti-run" },       // ENERGY (bento orange)
+    nourish: { l: "Nourish", e: "🍎", c: "#ff7a33", light: "#ff975a", dark: "#ec6a1e", ring: "#ffccab", ink: "#4a2000", ti: "ti-bowl-spoon" }, // energy · food (warm orange)
+    focus:   { l: "Focus",   e: "🎯", c: "#2a9fe0", light: "#54b1ea", dark: "#1f86c6", ring: "#a8d8f5", ink: "#06283c", ti: "ti-brain" },      // WORK (bento blue)
+    create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },    // hobby · creative (purple)
+    connect: { l: "Connect", e: "💛", c: "#ff4fa0", light: "#ff74b6", dark: "#ec3f8e", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },      // LOVE (bento pink)
+    play:    { l: "Play",    e: "🎮", c: "#9a5cf0", light: "#b483f5", dark: "#8443e0", ring: "#d6c2fb", ink: "#241548", ti: "ti-device-gamepad-2" }, // HOBBY (bento purple — was yellow)
+    restore: { l: "Restore", e: "🌙", c: "#ffab4a", light: "#ffc274", dark: "#ef9528", ring: "#ffe0b8", ink: "#4a2a00", ti: "ti-moon" },       // energy · rest (soft amber)
+    upkeep:  { l: "Upkeep",  e: "🧹", c: "#d98f4e", light: "#e8a96e", dark: "#c07835", ring: "#ecd0b0", ink: "#3a2208", ti: "ti-broom" },      // energy · space (muted tan)
+    drift:   { l: "Drift",   e: "🌫️", c: "#7a6b96", light: "#968aad", dark: "#5f5279", ring: "#c2b8d4", ink: "#241d33", ti: "ti-windmill" }   // drift = faded grey-violet (off the plan, not punishment)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -584,7 +585,7 @@
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
   // Smooth hour-zoom that rebuilds ONLY the day-card timelines — the header (and the zoom slider you're dragging) stay intact, so a slider/pinch never destroys itself mid-gesture (David 2026-06-25)
   function zoomTimeline(nv, curOnly) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(36, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
     pullHourPx = nv;
     var cards = pb.querySelectorAll(curOnly ? ".day-card.cur" : ".day-card");
@@ -592,12 +593,13 @@
     var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null;
     if (cs) cs.scrollTop = Math.max(0, anchor * (nv / old) - fy); // keep the time under the viewport-centre put
   }
-  var _zoomRaf = 0, _zoomPending = 0;
-  // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place instead of bouncing (David 2026-06-25)
-  function relayoutHourPx(nv) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(36, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+  var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null;
+  // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place; anchorY (pinch thumb-midpoint) keeps the time under your fingers put (David 2026-06-25)
+  function relayoutHourPx(nv, anchorY) {
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
     pb.classList.add("zooming");
-    var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
+    var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
+    var fy = (anchorY == null) ? vh * 0.42 : Math.max(0, Math.min(vh, anchorY - (sc ? sc.getBoundingClientRect().top : 0))), anchor = prevTop + fy;
     pullHourPx = nv;
     var cal = pb.querySelector(".day-card.cur .day-sec .cal");
     if (cal) {
@@ -609,11 +611,11 @@
     if (sc) sc.scrollTop = Math.max(0, anchor * (nv / old) - fy);
   }
   function zoomCommit() { var pb = el("pullBody"); if (!pb) return; pb.classList.remove("zooming"); var sc = pb.querySelector(".day-card.cur .day-cardscroll"), prevTop = sc ? sc.scrollTop : 0; var cards = pb.querySelectorAll(".day-card"); for (var i = 0; i < cards.length; i++) { var sec = cards[i].querySelector(".day-sec"); if (!sec) continue; var dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); } var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null; if (cs) cs.scrollTop = prevTop; } // settle: one crisp re-render at the final zoom (redraws gridlines/labels/now-line); scroll already anchored by the live pass
-  function zoomLive(nv) { _zoomPending = nv; if (_zoomRaf) return; _zoomRaf = requestAnimationFrame(function () { _zoomRaf = 0; relayoutHourPx(_zoomPending); }); } // throttle live drag to one cheap reposition per frame
+  function zoomLive(nv, anchorY) { _zoomPending = nv; _zoomAnchor = anchorY; if (_zoomRaf) return; _zoomRaf = requestAnimationFrame(function () { _zoomRaf = 0; relayoutHourPx(_zoomPending, _zoomAnchor); }); } // throttle live drag to one cheap reposition per frame
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
-    nv = Math.max(36, Math.min(300, Math.round(nv))); if (nv === old) return;
+    nv = Math.max(20, Math.min(300, Math.round(nv))); if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
     var fy = (focusScreenY == null) ? vh * 0.42 : (focusScreenY - (sc ? sc.getBoundingClientRect().top : 0));
     var anchor = prevTop + fy;
@@ -653,7 +655,7 @@
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
-      if (pullZoom === "day") { var zr = add(head, "div", "pull-zoomrow"); var zoi = add(zr, "span", "zr-ic"); zoi.innerHTML = '<i class="ti ti-zoom-out"></i>'; var zs = document.createElement("input"); zs.type = "range"; zs.min = "36"; zs.max = "300"; zs.step = "1"; zs.value = String(pullHourPx); zs.className = "zoom-slider"; zs.setAttribute("aria-label", "zoom timeline density"); zr.appendChild(zs); var zii = add(zr, "span", "zr-ic"); zii.innerHTML = '<i class="ti ti-zoom-in"></i>'; zs.addEventListener("input", function () { zoomLive(+zs.value); }); zs.addEventListener("change", function () { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pullHourPx = Math.max(36, Math.min(300, Math.round(+zs.value))); zoomCommit(); }); } // smooth zoom slider, under the day/week/month buttons (David 2026-06-25)
+      if (pullZoom === "day") { var zr = add(head, "div", "pull-zoomrow"); var zoi = add(zr, "span", "zr-ic"); zoi.innerHTML = '<i class="ti ti-zoom-out"></i>'; var zs = document.createElement("input"); zs.type = "range"; zs.min = "20"; zs.max = "300"; zs.step = "1"; zs.value = String(pullHourPx); zs.className = "zoom-slider"; zs.setAttribute("aria-label", "zoom timeline density"); zr.appendChild(zs); var zii = add(zr, "span", "zr-ic"); zii.innerHTML = '<i class="ti ti-zoom-in"></i>'; zs.addEventListener("input", function () { zoomLive(+zs.value); }); zs.addEventListener("change", function () { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pullHourPx = Math.max(20, Math.min(300, Math.round(+zs.value))); zoomCommit(); }); } // smooth zoom slider, under the day/week/month buttons (David 2026-06-25)
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next"); // day tools: habit stacks · enhance · clear (David 2026-06-24)
         var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apk.onclick = function () { presetsSheet(pullFocusK || todayK()); };
@@ -703,25 +705,26 @@
     }
     if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = hour-density zoom · one-finger horizontal SWIPE = page to prev/next day (David 2026-06-24)
       pb._gw = 1;
-      var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
+      var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, pAnchorY = null, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
       function pdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); }
+      function pmidY() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? null : (v[0].y + v[1].y) / 2; }
       pb.addEventListener("pointerdown", function (e) {
         if (e.isPrimary) { ptrs = {}; pD0 = 0; pDLast = 0; single = false; swOn = false; swPgr = null; if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pb.classList.remove("zooming"); } // a fresh gesture clears any stale/stuck pointers + zoom-suppress class (kills phantom pinch-zoom / stuck transitions) — David 2026-06-25
         ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
-        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // day-swipe works across the whole timeline (bubbles, gaps, live) — only tiny controls opt out (David 2026-06-25)
-        else if (n === 2) { single = false; swOn = false; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; }
+        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".calblk,.grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // day-swipe ONLY off a bubble (header / empty gaps) — never over a bubble, so a bubble gesture can't page the day (David 2026-06-25)
+        else if (n === 2) { single = false; swOn = false; if (swPgr) { swPgr.style.transition = "transform .15s"; swPgr.style.transform = "translateX(-33.3333%)"; } swPgr = null; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; pAnchorY = pmidY(); } // 2 fingers down → kill any pager drag (a pinch can NEVER page) + latch the thumb-midpoint as the zoom anchor (David 2026-06-25)
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
-        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); zoomLive(Math.max(36, Math.min(300, Math.round(pHP0 * (pDLast / pD0))))); e.preventDefault(); return; } // pinch tracks the fingers LIVE through the same cheap reposition (no DOM teardown → no phantom zoom) — David 2026-06-25
-        if (single && swPgr && pullZoom === "day") { var dx = e.clientX - sX, dy = e.clientY - sY;
+        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); zoomLive(Math.max(20, Math.min(300, Math.round(pHP0 * (pDLast / pD0)))), pAnchorY); e.preventDefault(); return; } // pinch tracks the fingers LIVE, anchored at the latched thumb-midpoint (David 2026-06-25)
+        if (single && swPgr && pullZoom === "day") { if (Object.keys(ptrs).length >= 2) { swPgr = null; return; } var dx = e.clientX - sX, dy = e.clientY - sY;
           if (!swOn) { if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; } else if (Math.abs(dy) > 10) { swPgr = null; return; } else return; }
           e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; // the day card follows the finger like an iPhone photo
         }
       }, { passive: false });
       function gend(e) {
         var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; var pmid = null; if (wasPinch) { var others = Object.keys(ptrs).filter(function (i) { return i != e.pointerId; }); pmid = others.length ? (ptrs[others[0]].y + ey) / 2 : ey; } delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
-        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } var nHP = Math.max(36, Math.min(300, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; pDLast = 0; single = false; pullHourPx = nHP; zoomCommit(); return; } // settle on release: crisp re-render at the final zoom (David 2026-06-25)
+        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } var nHP = Math.max(20, Math.min(300, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; pDLast = 0; pAnchorY = null; single = false; pullHourPx = nHP; zoomCommit(); return; } // settle on release: crisp re-render at the final zoom (David 2026-06-25)
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX; if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; } } swOn = false; swPgr = null; single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
@@ -761,14 +764,14 @@
     var cur = Math.max(0, now - 300);
     // 3 TRULY ADJACENT matched activities, edge-to-edge (any kind counts) = a real streak of 3
     matched("move", "Workout", cur, 45); cur += 45;
-    matched("play", "Breakfast", cur, 30); cur += 30;
+    matched("nourish", "Breakfast", cur, 30); cur += 30;
     matched("focus", "Deep work", cur, 60); cur += 60;
     // MISS — planned but skipped → dark ghost, breaks the streak
     plan("play", "Read", cur, 30, false); cur += 30;
     // free gap, then a DRIFT — planned focus, actually scrolled (mauve real bar over the ghosted plan)
     cur += 15; plan("focus", "Deep work", cur, 45, false); real("drift", "Scroll", cur, 40);
     real("nourish", "Coffee", cur + 50, 8); cur += 65; // a quick standalone log → renders as the thin full-width line + name beside it
-
+    real("connect", "Quick text", now - 3, 1); // a few-seconds log right before NOW → near-now sliver (lifted clear of the now-line, labelled)
     // LIVE, straddling now, on plan
     plan("focus", "Focus block", now - 12, 90, false);
     // FUTURE (matte)
@@ -783,10 +786,10 @@
     var dk = el("liveDock"); if (!dk) return;
     var run = activeTimers(), t = run[run.length - 1];
     var ad = el("ldAct"), su = el("ldSub"), elx = el("ldEl"), st = el("ldStop");
-    dk.classList.add("on"); // always present on Today; idle vs live state below
+    var nb0 = nextPlannedBlock(todayK());
+    dk.classList.add("on"); dk.classList.toggle("noplan", !nb0); // no plan today → only Plan + Drift make sense (Replan hidden — nothing to re-plan) — David 2026-06-25
     if (!t) { // IDLE — nothing tracking: the dock is a "start" bar
       dk.classList.add("idle"); if (st) st.innerHTML = '<i class="ti ti-player-play"></i>';
-      var nb0 = nextPlannedBlock(todayK());
       if (ad) ad.innerHTML = '<i class="ti ti-clock"></i> Not tracking';
       if (su) su.textContent = nb0 ? ("next: " + nb0.title) : "tap ▶ or pick below to start";
       if (elx) { elx.textContent = ""; elx.removeAttribute("data-tid"); }
@@ -795,7 +798,7 @@
       var dom = domainOf(t), D = DOM[dom] || DOM.focus, drift = (dom === "drift");
       var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), on = false;
       if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
-      var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ffe2db;background:#c4607f;border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
+      var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ece6f2;background:' + DOM.drift.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
       if (ad) ad.innerHTML = tiIcon(t) + ' ' + esc(t.title || "Tracking") + ' ' + badge;
       if (su) su.textContent = on ? "matches your plan" : (drift ? "off plan — logged honestly" : "tracking · no plan");
       if (elx) { elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); }
@@ -1877,6 +1880,7 @@
   }
   // edge-resize on touch needs a deliberate HOLD first, exactly like pick-up-to-move — so a finger that lands on a grip while scrolling scrolls instead of resizing (David 2026-06-25)
   function gripHold(ev, card, beginResize) {
+    if (card.dataset.gate && card.dataset.gate !== "full") return; // too thin to resize → DON'T stopPropagation, let it bubble to the card body so the touch becomes a move/menu, not a resize (David 2026-06-25)
     ev.stopPropagation();
     if (ev.pointerType !== "touch") { ev.preventDefault(); beginResize(ev.clientY); return; } // mouse = immediate resize
     var scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody");
@@ -1909,7 +1913,7 @@
       var lb = add(ml, "span", "timemark-lab"); lb.style.color = tm[3]; lb.innerHTML = '<i class="ti ' + tm[2] + '"></i> ' + tm[0];
     });
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(14, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // low floor → short activities render short, then their content degrades (David 2026-06-24)
-    function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("csmall", "ctiny"); if (h < 15) card.classList.add("ctiny"); else if (h < 28) card.classList.add("csmall"); } // tall = icon+title · short = icon only · tiny = colour only (David 2026-06-24)
+    function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("csmall", "ctiny", "nosub"); if (h < 15) card.classList.add("ctiny"); else if (h < 28) card.classList.add("csmall"); else if (h < 42) card.classList.add("nosub"); card.dataset.gate = h < 16 ? "menu" : h < 34 ? "move" : "full"; } // content degrades by height; gate = edge-resize (full, ≥34) vs move-only (16–34) vs menu-only (<16) so you never accidentally resize a thin bubble (David 2026-06-25)
     function rr() { renderToday(); }
     function editBlk(b) { if (!b.title) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(b, x, k); } }); else blockEdit(b, k); } // empty bubble → pick what it is; filled → edit (David 2026-06-24)
     var planCards = [], burnedSomething = false;
@@ -1935,9 +1939,9 @@
       var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
       degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
       if (status === "ok") {
-        card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; // SHINING metallic stripes in the activity's own colour (David 2026-06-25)
-        card.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,.42),0 0 0 3px " + D.ring + ",0 0 13px " + D.c + ",0 3px 0 #160510"; card.style.borderColor = "#160510";
-        add(card, "div", "shine"); add(card, "div", "foil");
+        card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // matched = its own colour, matte-metallic stripes (calmer — no neon glow) (David 2026-06-25)
+        card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.2),0 0 0 2px " + D.ring + ",0 3px 0 #160510"; card.style.borderColor = "#160510"; card.style.filter = "saturate(.92)";
+        add(card, "div", "shine");
       } else if (dark) { // missed/ghost — a domain-tinted-dark hollow with a clear domain OUTLINE + domain title (David's image 4)
         card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";
       } else { // future = THEORETICAL: faint domain hatch, fainter the further ahead it is, no glow (David 2026-06-25 · F1)
@@ -1955,13 +1959,14 @@
       xb.addEventListener("click", function (ev) { ev.stopPropagation(); pushUndo(); var a = blocks(k), i = a.indexOf(b); if (i >= 0) a.splice(i, 1); var p2 = planCards.indexOf(pc); if (p2 >= 0) planCards.splice(p2, 1); card.style.transform = "scale(.4)"; card.style.opacity = "0"; setTimeout(function () { card.remove(); reflow(k); save(); renderToday(); }, 150); });
       var grip = add(card, "div", "grip"), gripT = add(card, "div", "gript");
       card.addEventListener("pointerdown", function (ev) {
-        if (ev.target === grip || ev.target === gripT || ev.target === xb) return;
+        if (ev.target === xb || ((ev.target === grip || ev.target === gripT) && card.dataset.gate === "full")) return; // a thin (gated) card's grip falls through to here → move/menu, not resize
         var touch = ev.pointerType === "touch", scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody"); if (!touch) ev.preventDefault(); // mouse drags immediately
-        var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch, scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0, snapped = false;
-        if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 280); // longer "breath" (~280ms) → pick it up to MOVE; a clear drag scrolls/pages, so scrolling never moves a bubble (David 2026-06-25)
+        var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0, snapped = false;
+        if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu") return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 280); // longer "breath" (~280ms) → pick it up to MOVE; a too-tiny (menu-gated) card never picks up — a tap opens its menu instead (David 2026-06-25)
         function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
         function mv2(e) {
           if (touch && !picked) { var ady = Math.abs(e.clientY - sy0), adx = Math.abs(e.clientX - sx0); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 22 || adx > 22)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { e.preventDefault(); scE.scrollTop -= (e.clientY - lastY); lastY = e.clientY; } return; } // horizontal → let the day-swipe page · vertical drag = scroll the card · stay within 22px to pick up & move
+          if (card.dataset.gate === "menu") return; // too tiny to move — only its tap-menu acts
           var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); }
         }
         function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // moved → save (snapshot taken on pick-up) · scrolled → nothing · clean tap → edit
@@ -2005,20 +2010,23 @@
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
         card.style.borderColor = "#160510"; card.style.background = drift ? ("linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")") : onp ? ("repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)") : ("linear-gradient(150deg," + D.light + "," + D.c + ")"); card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; if (onp) { add(card, "div", "shine"); add(card, "div", "foil"); } // matched real = SHINING stripes · drift = mauve gradient (David 2026-06-25)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
-        var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""); if (cardH < 15) { card.classList.add("tinylog"); card.style.left = "34px"; card.style.right = "4px"; card.style.height = "3px"; cn.style.color = D.light; } else { card.dataset.dur = it.e - it.s; if (cardH < 28) card.classList.add("csmall"); } // tiny past log → thin full-width line + name floated beside it (David 2026-06-25)
+        var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
+        if (cardH < 18) { var _nn = (showNow && k === todayK() && it.e <= now && (now - it.e) <= 6); card.classList.add("tinylog"); if (_nn) card.classList.add("nearnow"); card.style.left = "34px"; card.style.right = "4px"; card.style.height = "12px"; cn.style.color = D.light; var _st = topFor(it.s); if (_nn) _st = Math.min(_st, topFor(now) - 18); card.style.top = _st + "px"; card.dataset.gate = "menu"; } // tiny past log → a thin full-width bar sized up to stay tappable + name beside it, lifted clear of the now-line; tap opens its menu (David 2026-06-25)
+        else { card.dataset.dur = it.e - it.s; card.dataset.gate = cardH < 34 ? "move" : "full"; if (cardH < 28) card.classList.add("csmall"); }
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); pushUndo(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) { pushUndo(); var sy = startY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); });
         var lgT = add(card, "div", "gript"); lgT.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) { pushUndo(); var sy = startY, endM = it.e, cs = card.querySelector(".csub"); function mv(e2) { var ns = Math.max(0, Math.min(endM - 5, it.s + Math.round(((e2.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; e.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); e.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(24, nm / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(ns) + "–" + fmt(endM); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); }); // drag the top edge → move the START earlier/later (end fixed) (David 2026-06-24)
-        card.addEventListener("pointerdown", function (ev) { // hold to rearrange a past activity · drag = scroll · tap = re-label (David 2026-06-24)
-          if (ev.target === xb || ev.target === lg || ev.target === lgT) return;
+        card.addEventListener("pointerdown", function (ev) { // hold to rearrange a past activity · drag = scroll · tap = re-label/menu (David 2026-06-24)
+          if (ev.target === xb || ((ev.target === lg || ev.target === lgT) && card.dataset.gate === "full")) return;
           var touch = ev.pointerType === "touch", scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody"); if (!touch) ev.preventDefault();
-          var sy = ev.clientY, sx = ev.clientX, lastY = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch, scrolling = false, holdT = null, cur2 = sm0, snapped = false;
-          if (touch) holdT = setTimeout(function () { if (scrolling) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 280);
+          var sy = ev.clientY, sx = ev.clientX, lastY = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, cur2 = sm0, snapped = false;
+          if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu") return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 280);
           function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
           function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
           function mv2(ev2) {
             if (touch && !picked) { var ady = Math.abs(ev2.clientY - sy), adx = Math.abs(ev2.clientX - sx); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 22 || adx > 22)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { ev2.preventDefault(); scE.scrollTop -= (ev2.clientY - lastY); lastY = ev2.clientY; } return; }
+            if (card.dataset.gate === "menu") return; // too tiny to move — only its tap-menu acts
             var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
           }
           function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!wasScroll) relabel(); }
