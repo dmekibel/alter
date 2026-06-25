@@ -466,6 +466,9 @@
   .calblk .csub{ font-weight:600; font-size:10.5px; margin-top:2px; opacity:.85; position:relative; z-index:2; padding-right:18px; }
   .calblk.lift{ transform:scale(1.05); box-shadow:0 16px 34px rgba(0,0,0,.6); z-index:9; }
   .calblk.dragging{ transition:transform .14s,box-shadow .14s; }
+  /* cross-lane drop hints: drag a past bubble into the OTHER lane to convert it (real = "I did it" · plan = "this was the plan") — David 2026-06-25 */
+  .calblk.over-real{ box-shadow:0 0 0 3px #ff5fa8,0 0 22px rgba(255,95,168,.6),0 16px 34px rgba(0,0,0,.6) !important; }
+  .calblk.over-plan{ box-shadow:0 0 0 3px #5ec4f5,0 0 22px rgba(94,196,245,.55),0 16px 34px rgba(0,0,0,.6) !important; }
   .calblk.cele{ animation:celePop .42s cubic-bezier(.2,.9,.3,1.45); }
   .calblk .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 34%,rgba(255,252,240,.5) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 3.2s linear infinite; }
   .calblk .shine{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(116deg,rgba(255,255,255,.42) 0%,transparent 22%,transparent 60%,rgba(255,255,255,.3) 80%,transparent 100%); } /* static metallic gloss for shining past success (David 2026-06-25) */
@@ -1121,6 +1124,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=472"></script>
+  <script src="app.js?v=473"></script>
 </body>
 </html>
