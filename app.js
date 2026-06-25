@@ -1965,7 +1965,7 @@
     // LABEL INTELLIGENCE by bar height (David 2026-06-25): tall = icon+name (+subtitle) · medium = icon+name one line · thin = icon/emoji only · too-thin = name on the SIDE
     function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; } // name only on TALL bars (≥22) so zoom-out stays minimal; resize only on genuinely tall bars (≥48) so a small bubble rearranges instead of stretching (David 2026-06-25)
     function rr() { renderToday(); }
-    function editBlk(b) { if (!b.title) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(b, x, k); } }); else blockEdit(b, k); } // empty bubble → pick what it is; filled → edit (David 2026-06-24)
+    function editBlk(b) { blockEdit(b, k); } // ANY bubble — empty or filled — opens the full editor menu; the hero ("Choose activity") is how you pick what an empty one is (David 2026-06-26)
     var planCards = [], burnedSomething = false;
     var _liveT = (showNow && k === todayK()) ? (function () { var r = activeTimers(); return r[r.length - 1]; })() : null, _convFused = false; // the activity being tracked NOW → its straddling plan block becomes the matte→shining conversion block (David 2026-06-25)
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
@@ -2176,15 +2176,14 @@
         if (hold) { clearTimeout(hold); hold = null; }
         cal.style.touchAction = ""; lockScroll(false); try { cal.releasePointerCapture(pid); } catch (e0) {}
         document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
-        if (creating) { if (ghost) ghost.remove(); var id0 = uid(); blocks(k).push({ id: id0, time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: Math.max(5, ge - gs), title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); var nb0 = blocks(k).filter(function (b) { return b.id === id0; })[0]; if (nb0) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb0, x, k); }, onCancel: function () { var a = blocks(k), bi = a.indexOf(nb0); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } } }); return; } // stretched a bubble → name it (cancel removes it)
+        if (creating) { if (ghost) ghost.remove(); var id0 = uid(); blocks(k).push({ id: id0, time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: Math.max(5, ge - gs), title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); var nb0 = blocks(k).filter(function (b) { return b.id === id0; })[0]; if (nb0) editBlk(nb0); return; } // stretched a bubble → opens the full editor (pick activity + tune); close without picking and it persists as an empty bubble you can tap or trash later (David 2026-06-26)
         if (Math.abs(e.clientY - dy) > 9 || Math.abs(e.clientX - dx) > 9 || Date.now() - t0 > 450) return;
         if (lx0 > rect0.width * 0.5 && showNow && !isFuture) {
           bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } });
         } else {
           var tm = timeFromY(e.clientY - rect0.top, startH, HP), id = uid();
-          blocks(k).push({ id: id, time: tm, mins: 60, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
-          var nb = blocks(k).filter(function (b) { return b.id === id; })[0];
-          bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, k); }, onCancel: function () { var a = blocks(k), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } } });
+          blocks(k).push({ id: id, time: tm, mins: 60, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
+          var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (nb) editBlk(nb); // quick tap on empty timeline → an empty bubble + the full editor (David 2026-06-26)
         }
       }
       document.addEventListener("pointermove", mv, { passive: false }); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
@@ -2251,7 +2250,7 @@
     function commit() { if (isLog) reflowLogs(k); else if (!blockPast(k, o)) reflow(k); save(); renderToday(); } // every change applies live — no Save button
     // HERO — the activity name IS the switch button, in its own colour
     var hero = add(B, "button", "ed-hero");
-    function paintHero() { var d = D(); hero.style.setProperty("background", d.c, "important"); hero.style.setProperty("color", d.ink, "important"); hero.style.setProperty("border-color", "#160510", "important"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ' + tiClass(o) + '"></i> ' + esc(o.title || "Choose activity") + '</span><i class="ti ti-switch-horizontal ed-swap"></i>'; }
+    function paintHero() { if (!o.title) { hero.classList.add("ed-hero-empty"); hero.style.removeProperty("background"); hero.style.removeProperty("color"); hero.style.removeProperty("border-color"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ti-plus"></i> choose activity</span><i class="ti ti-chevron-right ed-swap"></i>'; return; } hero.classList.remove("ed-hero-empty"); var d = D(); hero.style.setProperty("background", d.c, "important"); hero.style.setProperty("color", d.ink, "important"); hero.style.setProperty("border-color", "#160510", "important"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ' + tiClass(o) + '"></i> ' + esc(o.title) + '</span><i class="ti ti-switch-horizontal ed-swap"></i>'; } // empty bubble → a dashed "choose activity" prompt; filled → the activity in its own colour (David 2026-06-26)
     paintHero();
     hero.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { o.title = x.title; o.catK = x.catK || null; o.color = x.color || o.color; if (x.domain) o.domain = x.domain; paintHero(); commit(); } }); };
     // SCRUBBER — drag the segment to move, pull the right edge to resize

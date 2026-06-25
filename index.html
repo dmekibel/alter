@@ -104,6 +104,7 @@
   .rngread b{ color:#fff2f9; font-weight:800; }
   /* REDESIGNED activity editor — merged hero + draggable scrubber + auto-save (David 2026-06-25) */
   .ed-hero{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; border:2px solid #160510; border-radius:16px; padding:14px 16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; margin-bottom:14px; box-shadow:none; }
+  .ed-hero.ed-hero-empty{ background:#3a1226 !important; color:#ffb0cf !important; border:2px dashed #ff5fa0 !important; }
   .ed-hero .ed-heroname{ display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ed-hero .ed-heroname .ti{ font-size:20px; }
   .ed-hero .ed-swap{ font-size:18px; opacity:.7; flex:none; }
@@ -1163,6 +1164,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=480"></script>
+  <script src="app.js?v=481"></script>
 </body>
 </html>
