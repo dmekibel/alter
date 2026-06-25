@@ -1838,6 +1838,7 @@
     function rr() { renderToday(); }
     function editBlk(b) { if (!b.title) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(b, x, k); } }); else blockEdit(b, k); } // empty bubble → pick what it is; filled → edit (David 2026-06-24)
     var planCards = [], burnedSomething = false;
+    var _liveT = (showNow && k === todayK()) ? (function () { var r = activeTimers(); return r[r.length - 1]; })() : null, _convFused = false; // the activity being tracked NOW → its straddling plan block becomes the matte→shining conversion block (David 2026-06-25)
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
     function settle() { planCards.forEach(function (pc) { pc.card.style.top = topFor(hm(pc.b.time)) + "px"; pc.card.style.height = Math.max(14, (pc.b.mins || 30) / 60 * HP - 4) + "px"; degrade(pc.card); }); }
     function preview(ex, ds, de) { planCards.filter(function (pc) { return pc.card !== ex; }).sort(function (a, c) { return hm(a.b.time) - hm(c.b.time); }).reduce(function (cur, pc) { var dur = pc.b.mins || 30, s = hm(pc.b.time); if (cur >= 0 && s < cur) s = cur; if (s < de && s + dur > ds) s = de; pc.card.style.top = topFor(s) + "px"; return s + dur; }, -1); }
@@ -1855,6 +1856,8 @@
       place(card, bs, b.mins || 30, "P");
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
       if (status === "ok") { card.style.right = "4px"; card.classList.add("fusedbar"); } // matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
+      var convLive = _liveT && bs < now && be > now && domainOf(_liveT) === dom && dom !== "drift"; // you're living THIS plan block right now
+      if (convLive) { _convFused = true; card.style.right = "4px"; card.classList.add("convbar"); card.style.background = "transparent"; card.style.filter = "none"; card.style.opacity = "1"; card.style.boxShadow = "0 3px 0 #160510"; var _lf = Math.max(6, Math.min(95, (now - bs) / (be - bs) * 100)); var _cb = add(card, "div", "convbase"); _cb.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; var _cl = add(card, "div", "convlived"); _cl.style.height = _lf + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; add(_cl, "div", "shine"); add(_cl, "div", "foil"); } // conversion: top = shining lived, bottom = matte planned, now-edge between (David 2026-06-25)
       var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
       degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
       if (status === "ok") {
@@ -1918,6 +1921,7 @@
     var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
       if (it.kind === "log" && fusedIntoPlan(it, domainOf(it.ref))) return; // matched: shown as the fused full-width plan bar, not a separate real bar (David 2026-06-25)
+      if (it.kind === "timer" && _convFused && domainOf(it.ref) === domainOf(_liveT)) return; // live on-plan: shown AS the conversion block, not a separate live bar (David 2026-06-25)
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
       var cardH;
       if (it.kind === "timer") { var _nowY = topFor(now), _startY = topFor(it.s), _cTop = Math.min(_startY, _nowY - 58); cardH = _nowY - _cTop; card.style.top = _cTop + "px"; card.style.height = Math.max(58, cardH) + "px"; liveBottom = Math.max(liveBottom, _nowY); } // LIVE card's BOTTOM is pinned to the now-line (the present); it grows UPWARD and never crosses into the future, so "now" can't cover it (David 2026-06-24)
@@ -1952,13 +1956,10 @@
         card.style.borderColor = "#160510"; card.style.background = drift ? ("linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")") : onp ? ("repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)") : ("linear-gradient(150deg," + D.light + "," + D.c + ")"); if (onp) { add(card, "div", "shine"); add(card, "div", "foil"); } // on-plan LIVE = SHINING stripes · drift = mauve gradient (David 2026-06-25)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span>';
-        // live footer (mockup 007): elapsed bottom-left + a BIG pink stop button bottom-right — the live activity is never squished
-        var lf = add(card, "div", "livefoot");
-        var elps = add(lf, "span", "live-elapsed", elapsedStr(t)); elps.style.color = D.ink; elps.setAttribute("data-tid", t.id);
-        var stop = add(lf, "button", "live-stop"); stop.innerHTML = '<i class="ti ti-player-stop-filled"></i>'; stop.addEventListener("pointerdown", function (e2) { e2.stopPropagation(); }); stop.addEventListener("click", function (e2) { e2.stopPropagation(); stopTimer(t.id); });
+        // live controls now live in the pull-up dock (#liveDock) — no redundant in-card stop (David 2026-06-25)
         var gT = add(card, "div", "gript");
         gT.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); ev.preventDefault(); card.classList.add("dragging"); var sy = ev.clientY, s0 = t.start, ct = card.querySelector(".ct"); var d0s = new Date(t.start), startMin0 = d0s.getHours() * 60 + d0s.getMinutes(); var prevLog = null, prevEnd = -1; lgs.forEach(function (L) { var le = hm(L.time) + (L.mins || 0); if (le <= startMin0 && le > prevEnd) { prevEnd = le; prevLog = L; } }); var floorMin = prevLog ? hm(prevLog.time) : startH * 60; var fb = new Date(t.start); fb.setHours(Math.floor(floorMin / 60), floorMin % 60, 0, 0); var floorMs = fb.getTime(); function mv(e3) { var dmin = Math.round(((e3.clientY - sy) / HP * 60) / 5) * 5, ns = Math.max(floorMs, Math.min(Date.now(), s0 + dmin * 60000)); t.start = ns; var nd = new Date(ns), tsm = nd.getHours() * 60 + nd.getMinutes(); var topPx = topFor(tsm); card.style.top = topPx + "px"; card.style.height = Math.max(24, Math.max(5, (Date.now() - ns) / 60000) / 60 * HP - 3) + "px"; if (ct) ct.textContent = fmt(tsm); var bk = cal.querySelectorAll(".backfill"); for (var bi = 0; bi < bk.length; bi++) { var sl = bk[bi], sTop = parseFloat(sl.style.top) || 0, sH = parseFloat(sl.style.height) || 0; if (sTop < topPx && sTop + sH > topPx) { sl.style.height = Math.max(0, topPx - sTop - 4) + "px"; sl.style.opacity = (topPx - sTop < 22) ? "0" : "1"; } } } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); var nm2 = new Date(t.start).getHours() * 60 + new Date(t.start).getMinutes(); if (prevLog && nm2 < prevEnd) { var ps = hm(prevLog.time), trimmed = nm2 - ps; if (trimmed < 5) { var ix = logs(k).indexOf(prevLog); if (ix >= 0) logs(k).splice(ix, 1); } else prevLog.mins = trimmed; } save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // extend into the past → the previous activity's end shifts to match (never side-by-side)
-        card.addEventListener("click", function (ev) { if (ev.target === gT || lf.contains(ev.target)) return; startOrSwitch(); }); // tap the running activity → switch what you're doing now (David 2026-06-23)
+        card.addEventListener("click", function (ev) { if (ev.target === gT) return; startOrSwitch(); }); // tap the running activity → switch (David 2026-06-23)
       }
     });
     // BACKFILL — ANY untracked gap in the REAL lane is a tap-to-fill invitation (§7/§14, David 2026-06-23): you're placed WHERE you tap (tap-Y → that time), then you stretch it.
@@ -1969,7 +1970,7 @@
       if (now - cur >= 10) gaps.push([cur, now]);
       gaps.forEach(function (g) {
         var slot = add(cal, "div", "backfill"); slot.style.top = topFor(g[0]) + "px"; slot.style.height = Math.max(20, (g[1] - g[0]) / 60 * HP - 4) + "px"; slot.style.left = "calc(50% + 4px)"; slot.style.right = "4px";
-        slot.innerHTML = '<i class="ti ti-arrows-vertical"></i> fill it in?';
+        slot.innerHTML = '<i class="ti ti-plus"></i>'; slot.style.opacity = ".38"; slot.style.fontSize = "12px"; // subtle forgot-to-track tap, not a loud prompt (David 2026-06-25)
         slot.addEventListener("click", function (e) {
           var gs, gm;
           if ((g[1] - g[0]) <= 75) { gs = g[0]; gm = g[1] - g[0]; } // small/medium gap → fill it COMPLETELY, no leftover slivers (David 2026-06-23)
@@ -1978,18 +1979,7 @@
         });
       });
     }
-    // "start new" — a dashed REAL-lane slot at the now-line (mockups 006/007, §13): stop the live activity + start the next (startOrSwitch). Sits just below the live bubble.
-    if (showNow && k === todayK() && now >= startH * 60 && now <= endH * 60) {
-      var nbk = nextPlannedBlock(todayK()), _run = activeTimers(), _live = _run[_run.length - 1];
-      var onNow = nbk && _live && (_live.title || "").toLowerCase() === nbk.title.toLowerCase();
-      var sn = add(cal, "div", "startnew"); sn.style.top = (liveBottom + 4) + "px"; sn.style.left = "calc(50% + 4px)"; sn.style.right = "4px";
-      if (nbk && !onNow) { sn.classList.add("planned"); sn.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + esc(nbk.title) + ' <span class="sn-hint">hold to change</span>'; }
-      else { sn.innerHTML = '<i class="ti ti-plus"></i> start new <span class="sn-hint">hold to plan</span>'; }
-      var snH = null, snFired = false; // tap = do what's planned (1 click); press-hold = change + replan (pick + duration, pushes later plans) — David 2026-06-24
-      sn.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); snFired = false; snH = setTimeout(function () { snFired = true; snH = null; if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} } planBreak(); }, 350); });
-      function snEnd(ev) { ev.stopPropagation(); if (snH) { clearTimeout(snH); snH = null; } if (snFired) return; if (nbk && !onNow) startPlanned(nbk); else startOrSwitch(); }
-      sn.addEventListener("pointerup", snEnd); sn.addEventListener("pointercancel", function () { if (snH) { clearTimeout(snH); snH = null; } });
-    }
+    // "start new" slot removed — starting/switching now lives in the pull-up dock (#liveDock); nothing clutters below the now-line (David 2026-06-25)
     cal.addEventListener("pointerdown", function (ev) {
       if (ev.target !== cal) return;
       var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
