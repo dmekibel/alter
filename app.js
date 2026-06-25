@@ -2147,31 +2147,36 @@
     }
     // "start new" slot removed — starting/switching now lives in the pull-up dock (#liveDock); nothing clutters below the now-line (David 2026-06-25)
     cal.addEventListener("pointerdown", function (ev) {
-      if (ev.target !== cal) return;
-      var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
+      if (!cal.contains(ev.target)) return;
+      if (ev.target.closest && ev.target.closest(".calblk, .backfill, .railchip, .nowread, .nowtime")) return; // pressing a bubble/control is not a create gesture — only empty timeline / gridlines start one (David 2026-06-26)
+      var dy = ev.clientY, dx = ev.clientX, t0 = Date.now(), pid = ev.pointerId;
       var rect0 = cal.getBoundingClientRect(), lx0 = ev.clientX - rect0.left;
       var downM = hm(timeFromY(dy - rect0.top, startH, HP)); // the time you pressed at
-      var isFuture = (k > todayK()) || !showNow || downM >= nowMin(); // the future has NO plan|real split — the whole width is one lane (David 2026-06-25)
-      var planSide = isFuture || lx0 <= rect0.width * 0.5; // future → create anywhere full-width · past/present → left (plan) half only (right is the real lane / tap-to-track)
+      var isFuture = (k > todayK()) || !showNow || downM >= nowMin(); // the future has NO plan|real split — the whole width is one lane
+      var planSide = isFuture || lx0 <= rect0.width * 0.5; // future → create anywhere full-width · past/present → left (plan) half only
+      var scE = (cal.closest && cal.closest(".day-cardscroll")) || el("pullBody");
+      function lockScroll(on) { if (scE) { scE.style.overflowY = on ? "hidden" : ""; scE.style.touchAction = on ? "none" : ""; } } // hard-stop the timeline scroll while you stretch, so the drag can't fight it
       var hold = null, creating = false, anchor = 0, gs = 0, ge = 0, ghost = null;
-      if (planSide) hold = setTimeout(function () { // press-and-hold → pull out a custom-length EMPTY bubble you then tap to fill (David 2026-06-24)
-        creating = true; cal.style.touchAction = "none"; anchor = hm(timeFromY(dy - cal.getBoundingClientRect().top, startH, HP)); gs = anchor; ge = anchor + 60; // new bubble starts an HOUR tall (drag to resize) — David 2026-06-24
-        ghost = add(cal, "div", "calblk lane sched emptyblk newghost"); ghost.style.left = "26px"; ghost.style.right = isFuture ? "4px" : "calc(50% + 4px)"; ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(20, 60 / 60 * HP - 4) + "px";
+      if (planSide) hold = setTimeout(function () { // press-and-hold ~260ms → a ghost appears; then DRAG to size it (David 2026-06-24)
+        creating = true; lockScroll(true); cal.style.touchAction = "none"; try { cal.setPointerCapture(pid); } catch (e0) {}
+        anchor = hm(timeFromY(dy - cal.getBoundingClientRect().top, startH, HP)); gs = anchor; ge = anchor + 30;
+        ghost = add(cal, "div", "calblk lane sched emptyblk newghost"); ghost.style.left = "26px"; ghost.style.right = isFuture ? "4px" : "calc(50% + 4px)"; ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(16, 30 / 60 * HP - 4) + "px";
         add(ghost, "div", "cn").innerHTML = '<i class="ti ti-arrows-vertical"></i> drag to size';
-        if (navigator.vibrate) { try { navigator.vibrate(9); } catch (e) {} }
-      }, 300);
+        if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+      }, 260);
       function mv(e) {
-        if (!creating) { if (hold && (Math.abs(e.clientY - dy) > 8 || Math.abs(e.clientX - dx) > 8)) { clearTimeout(hold); hold = null; } return; }
+        if (!creating) { if (hold && (Math.abs(e.clientY - dy) > 16 || Math.abs(e.clientX - dx) > 16)) { clearTimeout(hold); hold = null; } return; } // generous: small jitter while pressing doesn't cancel; a real drag (to scroll) does
         e.preventDefault();
         var rect = cal.getBoundingClientRect(), cm = hm(timeFromY(e.clientY - rect.top, startH, HP));
-        if (cm >= anchor) { gs = anchor; ge = Math.max(anchor + 15, cm); } else { ge = anchor; gs = Math.min(anchor - 15, cm); }
-        ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(20, (ge - gs) / 60 * HP - 4) + "px";
+        if (cm >= anchor) { gs = anchor; ge = Math.max(anchor + 5, cm); } else { ge = anchor; gs = Math.min(anchor - 5, cm); }
+        ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(12, (ge - gs) / 60 * HP - 4) + "px";
         var gc = ghost.querySelector(".cn"); if (gc) gc.textContent = fmt(gs) + "–" + fmt(ge);
       }
       function up(e) {
         if (hold) { clearTimeout(hold); hold = null; }
-        cal.style.touchAction = ""; document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
-        if (creating) { if (ghost) ghost.remove(); var id0 = uid(); blocks(k).push({ id: id0, time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: Math.max(15, ge - gs), title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); return; } // empty bubble persists — tap it to choose
+        cal.style.touchAction = ""; lockScroll(false); try { cal.releasePointerCapture(pid); } catch (e0) {}
+        document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (creating) { if (ghost) ghost.remove(); var id0 = uid(); blocks(k).push({ id: id0, time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: Math.max(5, ge - gs), title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); var nb0 = blocks(k).filter(function (b) { return b.id === id0; })[0]; if (nb0) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb0, x, k); }, onCancel: function () { var a = blocks(k), bi = a.indexOf(nb0); if (bi >= 0) { a.splice(bi, 1); reflow(k); save(); renderToday(); } } }); return; } // stretched a bubble → name it (cancel removes it)
         if (Math.abs(e.clientY - dy) > 9 || Math.abs(e.clientX - dx) > 9 || Date.now() - t0 > 450) return;
         if (lx0 > rect0.width * 0.5 && showNow && !isFuture) {
           bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } });
