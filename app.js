@@ -368,7 +368,12 @@
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
-  function planBreak() { bentoPicker({ title: "Plan what you're doing — for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true }; blocks(k).push(nb); reflow(k); save(); activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }); } }); }
+  function planBreak() { bentoPicker({ title: "Replan from now — what, for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x);
+        // REPLAN (David 2026-06-25): the new plan owns NOW → the future. Any block the present line is currently splitting gets its future half ERASED (truncated to end at now → it stays as the past ghost half).
+        blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
+        var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true };
+        blocks(k).push(nb); reflow(k); save(); // pinned at now → reflow pushes the following (movable) blocks down to make room (shorten-by-priority comes with the non-negotiable system)
+        activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }); } }); }
   // ENHANCE PLAN — fill in the day-to-day fundamentals you haven't planned/done yet (David 2026-06-24)
   var FUNDAMENTALS = [{ t: "Shower", d: "upkeep", m: 15, slot: 420 }, { t: "Breakfast", d: "nourish", m: 25, slot: 480 }, { t: "Meditate", d: "restore", m: 15, slot: 510 }, { t: "Lunch", d: "nourish", m: 40, slot: 750 }, { t: "Walk", d: "move", m: 20, slot: 900 }, { t: "Tidy", d: "upkeep", m: 15, slot: 1020 }, { t: "Dinner", d: "nourish", m: 45, slot: 1110 }];
   function getFund() { return (S.profile && S.profile.fundamentals && S.profile.fundamentals.length) ? S.profile.fundamentals : FUNDAMENTALS; } // user-customised set, else the default
@@ -1956,7 +1961,7 @@
       var ml = add(cal, "div", "timemark"); ml.style.top = ((tm[1] - startH * 60) / 60 * HP) + "px"; ml.dataset.mn = tm[1]; ml.style.borderTopColor = tm[3] + "55";
       var lb = add(ml, "span", "timemark-lab"); lb.style.color = tm[3]; lb.innerHTML = '<i class="ti ' + tm[2] + '"></i> ' + tm[0];
     });
-    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(5, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // bars are their TRUE time-height (low floor) so back-to-back bubbles can't overlap; the label then adapts to the height (David 2026-06-25)
+    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(5, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "26px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // bars are their TRUE time-height (low floor) so back-to-back bubbles can't overlap; the label then adapts to the height (David 2026-06-25)
     // LABEL INTELLIGENCE by bar height (David 2026-06-25): tall = icon+name (+subtitle) · medium = icon+name one line · thin = icon/emoji only · too-thin = name on the SIDE
     function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; } // name only on TALL bars (≥22) so zoom-out stays minimal; resize only on genuinely tall bars (≥48) so a small bubble rearranges instead of stretching (David 2026-06-25)
     function rr() { renderToday(); }
@@ -1977,6 +1982,7 @@
       var newlyPassed = false;
       if (status === "miss" && !b.passed) { b.passed = true; newlyPassed = true; burnedSomething = true; }
       var dark = (status !== "ok" && (b.passed || status === "miss")) || !!partial; // a partial's BASE is a ghost (the part you planned but didn't keep)
+      var _straddle = showNow && k === todayK() && bs < now && be > now && status !== "ok" && !partial; // the present line splits this block (past ghost half + matte future half) — David 2026-06-25
       var stt = (status === "ok" && !partial) ? "cele" : dark ? "ghost" : "sched";
       var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
@@ -1996,23 +2002,23 @@
         card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510"; card.style.filter = "saturate(.72) brightness(.72)"; // MATTE = same domain hue, just dimmed (David 2026-06-25)
         var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.52, 0.92 - Math.max(0, _ahead) * 0.05) : 0.74);
       }
-      if (showNow && k === todayK() && bs < now && be > now && status !== "ok" && !partial) { // STRADDLING NOW (David 2026-06-25): the present line SPLITS the block — the past half is GHOST (planned but not done), the future half is MATTE; if you're tracking the same activity, the tracked stretch becomes a connected striped (matched) bar.
+      if (_straddle) { // STRADDLING NOW (David 2026-06-25): the present line SPLITS the block — the past half is GHOST (planned but not done), the future half is MATTE; if you're tracking the same activity, the tracked stretch becomes a connected striped (matched) bar.
         var _trk = _liveT && domainOf(_liveT) === dom, _tsd = _trk ? new Date(_liveT.start) : null, _tsm = _trk ? Math.max(bs, Math.min(now, _tsd.getHours() * 60 + _tsd.getMinutes())) : now; // when tracking started (= now if not tracking → no matched part)
         card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1"; card.style.background = "none"; card.style.boxShadow = "0 3px 0 #160510"; card.style.borderColor = "#160510"; card.style.right = "4px"; card.classList.add("fusedbar");
         var _fut = add(card, "div", "convfut"); _fut.style.top = ((now - bs) / (be - bs) * 100) + "%"; _fut.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; // FUTURE half = matte (still ahead)
-        if (_tsm > bs + 0.5) { var _cg = add(card, "div", "convghost"); _cg.style.height = ((_tsm - bs) / (be - bs) * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.84); } // past half NOT tracked = ghost (planned but failed)
+        if (_tsm > bs + 0.5) { var _cg = add(card, "div", "convghost"); _cg.style.height = ((_tsm - bs) / (be - bs) * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.86); _cg.style.boxShadow = "inset 0 0 0 2px " + mixHex(D.c, "#160510", 0.32); } // past half NOT tracked = ghost BONE: domain-tinted-dark hollow + clear domain outline (same as the established miss-ghost, image 4)
         if (_trk && now > _tsm + 0.5) { var _cl = add(card, "div", "convmatch"); _cl.style.top = ((_tsm - bs) / (be - bs) * 100) + "%"; _cl.style.height = ((now - _tsm) / (be - bs) * 100) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; _cl.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.18),inset 0 -3px 0 #ff5fa8"; } // TRACKED stretch = connected striped (matched) bar
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
         var _mh = Math.max(5, (_pm.end - _pm.start) / 60 * HP - 4); // same floor/margin → no bounce
-        var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "34px"; seg.style.right = "4px";
+        var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "26px"; seg.style.right = "4px";
         seg.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.18),0 2px 0 #160510";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
         var _sc = add(seg, "div", "mscn"); _sc.style.color = D.ink; _sc.innerHTML = (_mh >= 15 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : '') + '<i class="ti ti-circle-check"></i>'; add(seg, "div", "shine"); // matched span: icon + name + ✓ (the part you actually did)
       }
-      var ink = dark ? D.light : D.ink;
-      var cn = add(card, "div", "cn"); cn.style.color = ink;
+      var ink = (dark || _straddle) ? D.light : D.ink; // straddling block reads its name like a ghost bone — bright domain-light (David 2026-06-25)
+      var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""));
       if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = "rgba(255,240,249,.45)"; } // muted "missed" (David's image 4)
@@ -2137,7 +2143,7 @@
       var hold = null, creating = false, anchor = 0, gs = 0, ge = 0, ghost = null;
       if (planSide) hold = setTimeout(function () { // press-and-hold → pull out a custom-length EMPTY bubble you then tap to fill (David 2026-06-24)
         creating = true; cal.style.touchAction = "none"; anchor = hm(timeFromY(dy - cal.getBoundingClientRect().top, startH, HP)); gs = anchor; ge = anchor + 60; // new bubble starts an HOUR tall (drag to resize) — David 2026-06-24
-        ghost = add(cal, "div", "calblk lane sched emptyblk newghost"); ghost.style.left = "34px"; ghost.style.right = "calc(50% + 4px)"; ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(20, 60 / 60 * HP - 4) + "px";
+        ghost = add(cal, "div", "calblk lane sched emptyblk newghost"); ghost.style.left = "26px"; ghost.style.right = "calc(50% + 4px)"; ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(20, 60 / 60 * HP - 4) + "px";
         add(ghost, "div", "cn").innerHTML = '<i class="ti ti-arrows-vertical"></i> drag to size';
         if (navigator.vibrate) { try { navigator.vibrate(9); } catch (e) {} }
       }, 300);
