@@ -453,12 +453,14 @@
   .lanehead .lhx.plan{ color:#d2aae8; } .lanehead .lhx.real{ color:#ffb8d6; }
   .cal{ position:relative; margin:0; background:none; border:none; }
   .calhour{ position:absolute; left:34px; right:6px; height:0; border-top:1px solid #44203a; }
-  .calhalf{ position:absolute; left:34px; right:6px; height:0; border-top:1px dashed rgba(122,74,98,.38); }
+  .calhalf{ position:absolute; left:19px; width:11px; height:0; border-top:1.5px solid rgba(176,116,146,.5); } /* minimal gutter DASH (not a full-width rule) — = the half/quarter hour (David 2026-06-25) */
   .calhrl{ position:absolute; left:2px; width:28px; text-align:right; font-weight:700; font-size:13px; color:#cd9bb6; }
   .calhalfl{ position:absolute; left:2px; width:28px; text-align:right; font-weight:700; font-size:12px; color:#7a4a62; }
   .calsub{ position:absolute; left:0; width:30px; text-align:right; font-weight:700; font-size:10px; color:#8a5a72; }
   .calblk{ position:absolute; border:2px solid #160510; border-radius:11px; padding:5px 9px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
     transition:transform .16s cubic-bezier(.2,.85,.3,1.3),box-shadow .14s,top .2s cubic-bezier(.2,.8,.25,1),height .16s,opacity .15s,background .6s,filter .6s,border-color .5s; }
+  /* while zooming (slider drag OR pinch) the timeline is repositioned by JS every frame — kill the top/height transition so bubbles SNAP and never bounce (David 2026-06-25) */
+  #pullBody.zooming .calblk, #pullBody.zooming .nowline, #pullBody.zooming .nowcirc, #pullBody.zooming .nowread, #pullBody.zooming .calhour, #pullBody.zooming .calhalf, #pullBody.zooming .calhrl, #pullBody.zooming .calsub, #pullBody.zooming .timemark{ transition:none !important; }
   .calblk .cn{ font-weight:700; font-size:13.5px; line-height:1.15; position:relative; z-index:2; }
   .calblk .cn .ti{ font-size:15px; }
   .calblk .csub{ font-weight:600; font-size:10.5px; margin-top:2px; opacity:.85; position:relative; z-index:2; padding-right:18px; }
@@ -663,7 +665,7 @@
   .zoom-slider{ -webkit-appearance:none; appearance:none; width:160px; max-width:55%; height:7px; border-radius:6px; background:#48122f; border:2px solid #160510; outline:none; cursor:pointer; }
   .zoom-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; box-shadow:0 2px 0 #160510; cursor:grab; }
   .zoom-slider::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; box-shadow:0 2px 0 #160510; cursor:grab; }
-  .pull-next{ display:flex; align-items:center; gap:7px; }
+  .pull-next{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; } /* wrap so every tool (incl. undo + dev test-day) stays on-screen (David 2026-06-25) */
   .pn-go{ flex:1 1 auto; min-width:0; border:2px solid #160510; border-radius:11px; box-shadow:0 3px 0 #160510; padding:8px 11px; font-family:"Jost",sans-serif; font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pn-go:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
   .pn-go .ti{ font-size:16px; }
@@ -921,8 +923,23 @@
   .calblk.csmall .cn-t, .calblk.csmall .step-n, .calblk.csmall .csub{ display:none !important; }
   .calblk.csmall .cn{ display:flex; align-items:center; justify-content:center; padding-right:0; }
   .calblk.csmall .calx{ display:none !important; }
-  .calblk.ctiny{ padding:0 !important; }
-  .calblk.ctiny .cn, .calblk.ctiny .csub, .calblk.ctiny .calx, .calblk.ctiny .foil, .calblk.ctiny .grip, .calblk.ctiny .gript{ display:none !important; }
+  /* tiny PLAN sliver = still LABELED (one tiny line) + coloured + tappable → its menu lets you extend it (David 2026-06-25) */
+  .calblk.ctiny{ padding:0 6px !important; display:flex; align-items:center; }
+  .calblk.ctiny .cn{ font-size:10px; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .calblk.ctiny .cn .ti{ font-size:11px; }
+  .calblk.ctiny .cn-t{ display:inline; }
+  .calblk.ctiny .csub, .calblk.ctiny .calx, .calblk.ctiny .foil, .calblk.ctiny .grip, .calblk.ctiny .gript, .calblk.ctiny .step-n, .calblk.ctiny .ti-sparkles{ display:none !important; }
+  /* tiny past LOG = a thin full-width line with its NAME floated beside it (David 2026-06-25) */
+  .calblk.tinylog{ padding:0 !important; height:3px !important; border-width:0 !important; border-radius:2px !important; overflow:visible !important; box-shadow:none !important; filter:none !important; opacity:1 !important; }
+  .calblk.tinylog .cn{ position:absolute; right:6px; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; pointer-events:none; padding:0; text-shadow:0 1px 3px rgba(0,0,0,.78); }
+  .calblk.tinylog .cn .ti{ font-size:12px; }
+  .calblk.tinylog .cn-t{ display:inline; }
+  .calblk.tinylog .csub, .calblk.tinylog .calx, .calblk.tinylog .grip, .calblk.tinylog .gript, .calblk.tinylog .foil, .calblk.tinylog .shine, .calblk.tinylog .ti-sparkles{ display:none !important; }
+  /* +/− steppers in the block-edit menu — set/extend a sliver you can't grab by its edges (David 2026-06-25) */
+  .stepper{ display:flex; align-items:center; gap:12px; margin:3px 0 11px; }
+  .stepper .stp{ width:42px; height:42px; border-radius:13px; background:#fff; border:2.5px solid #160510; font-size:23px; font-weight:800; color:#160510; box-shadow:0 3px 0 #160510; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--bub); -webkit-tap-highlight-color:transparent; }
+  .stepper .stp:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .stepper .stpv{ min-width:78px; text-align:center; font-family:var(--bub); font-weight:800; font-size:17px; color:#160510; }
   /* kill the yellow predicted/selected rings — picked = a bold dark ring + ✓ (on-theme, never yellow) */
   .bchip.pred{ box-shadow:none !important; }
   .bchip.sel{ box-shadow:0 0 0 3px #160510 !important; transform:scale(1.04); }
@@ -1070,6 +1087,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=458"></script>
+  <script src="app.js?v=459"></script>
 </body>
 </html>
