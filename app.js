@@ -371,11 +371,12 @@
   function planBreak() { bentoPicker({ title: "Plan what you're doing — for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true }; blocks(k).push(nb); reflow(k); save(); activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); }); } }); }
   // ENHANCE PLAN — fill in the day-to-day fundamentals you haven't planned/done yet (David 2026-06-24)
   var FUNDAMENTALS = [{ t: "Shower", d: "upkeep", m: 15, slot: 420 }, { t: "Breakfast", d: "nourish", m: 25, slot: 480 }, { t: "Meditate", d: "restore", m: 15, slot: 510 }, { t: "Lunch", d: "nourish", m: 40, slot: 750 }, { t: "Walk", d: "move", m: 20, slot: 900 }, { t: "Tidy", d: "upkeep", m: 15, slot: 1020 }, { t: "Dinner", d: "nourish", m: 45, slot: 1110 }];
+  function getFund() { return (S.profile && S.profile.fundamentals && S.profile.fundamentals.length) ? S.profile.fundamentals : FUNDAMENTALS; } // user-customised set, else the default
   function enhancePlan(k) {
     k = k || todayK();
     var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; }); logs(k).forEach(function (e) { have[(e.title || "").toLowerCase()] = 1; });
     var added = [], now = (k === todayK()) ? nowMin() : 0;
-    FUNDAMENTALS.forEach(function (f) {
+    getFund().forEach(function (f) {
       if (have[f.t.toLowerCase()]) return;
       var t0 = Math.max(f.slot, now + 5); if (t0 + f.m > 1430) t0 = f.slot;
       blocks(k).push({ id: uid(), time: pad(Math.floor(t0 / 60)) + ":" + pad(t0 % 60), mins: f.m, title: f.t, prio: 1, color: DOM[f.d].c, domain: f.d, done: false });
@@ -593,25 +594,27 @@
     var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null;
     if (cs) cs.scrollTop = Math.max(0, anchor * (nv / old) - fy); // keep the time under the viewport-centre put
   }
-  var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null;
+  var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null, _zoomScroll = null;
   // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place; anchorY (pinch thumb-midpoint) keeps the time under your fingers put (David 2026-06-25)
-  function relayoutHourPx(nv, anchorY) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+  function relayoutHourPx(nv, anchorY, scrollTop) {
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(300, Math.round(nv)));
+    var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, old = pullHourPx;
+    if (nv === old && scrollTop == null) return; // nothing to do (no zoom, no pan)
     pb.classList.add("zooming");
-    var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
-    var fy = (anchorY == null) ? vh * 0.42 : Math.max(0, Math.min(vh, anchorY - (sc ? sc.getBoundingClientRect().top : 0))), anchor = prevTop + fy;
-    pullHourPx = nv;
-    var cal = pb.querySelector(".day-card.cur .day-sec .cal");
-    if (cal) {
-      var startH = +cal.dataset.startH; if (isNaN(startH)) startH = 7; var endH = +cal.dataset.endH; if (isNaN(endH)) endH = 27;
-      cal.style.height = ((endH - startH) * nv + 10) + "px";
-      var list = cal.querySelectorAll("[data-mn]");
-      for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(14, (+e.dataset.dur) / 60 * nv - 4) + "px"; }
+    if (nv !== old) {
+      pullHourPx = nv;
+      var cal = pb.querySelector(".day-card.cur .day-sec .cal");
+      if (cal) {
+        var startH = +cal.dataset.startH; if (isNaN(startH)) startH = 7; var endH = +cal.dataset.endH; if (isNaN(endH)) endH = 27;
+        cal.style.height = ((endH - startH) * nv + 10) + "px";
+        var list = cal.querySelectorAll("[data-mn]");
+        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(4, (+e.dataset.dur) / 60 * nv - 4) + "px"; }
+      }
     }
-    if (sc) sc.scrollTop = Math.max(0, anchor * (nv / old) - fy);
+    if (sc) { if (scrollTop != null) sc.scrollTop = Math.max(0, scrollTop); else { var fy = (anchorY == null) ? vh * 0.42 : Math.max(0, Math.min(vh, anchorY - sc.getBoundingClientRect().top)); sc.scrollTop = Math.max(0, (prevTop + fy) * (nv / old) - fy); } }
   }
   function zoomCommit() { var pb = el("pullBody"); if (!pb) return; pb.classList.remove("zooming"); var sc = pb.querySelector(".day-card.cur .day-cardscroll"), prevTop = sc ? sc.scrollTop : 0; var cards = pb.querySelectorAll(".day-card"); for (var i = 0; i < cards.length; i++) { var sec = cards[i].querySelector(".day-sec"); if (!sec) continue; var dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); } var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null; if (cs) cs.scrollTop = prevTop; } // settle: one crisp re-render at the final zoom (redraws gridlines/labels/now-line); scroll already anchored by the live pass
-  function zoomLive(nv, anchorY) { _zoomPending = nv; _zoomAnchor = anchorY; if (_zoomRaf) return; _zoomRaf = requestAnimationFrame(function () { _zoomRaf = 0; relayoutHourPx(_zoomPending, _zoomAnchor); }); } // throttle live drag to one cheap reposition per frame
+  function zoomLive(nv, anchorY, scrollTop) { _zoomPending = nv; _zoomAnchor = anchorY; _zoomScroll = scrollTop; if (_zoomRaf) return; _zoomRaf = requestAnimationFrame(function () { _zoomRaf = 0; relayoutHourPx(_zoomPending, _zoomAnchor, _zoomScroll); }); } // throttle live drag/pinch to one cheap reposition+scroll per frame
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
@@ -647,12 +650,27 @@
     sel.forEach(function (x) { if (!x) return; var dom = domainOf(x); arr.push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: 30, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: 2 }); start += 30; });
     reflow(k); save(); renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
   }
-  var FUNDAMENTALS = [{ title: "Move", catK: "energy" }, { title: "Breakfast", catK: "energy" }, { title: "Deep work", catK: "work" }, { title: "Connect", catK: "love" }, { title: "Wind down", catK: "energy" }];
+  // EDIT-FUNDAMENTALS menu (David 2026-06-25): customise the recurring basics that "Daily fundamentals" drops in (saved per-profile, falls back to the default set)
+  function fundamentalsMenu() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "Daily fundamentals");
+    add(B, "div", "lbl", "Your recurring basics — “Daily fundamentals” fills these into a day.");
+    var list = add(B, "div", "fund-list");
+    function draw() {
+      list.innerHTML = ""; var arr = getFund();
+      arr.forEach(function (f, i) { var row = add(list, "div", "fund-row"); var sw = add(row, "span", "fund-sw"); sw.style.background = (DOM[f.d] || DOM.focus).c; add(row, "span", "fund-n", f.t + " · " + f.m + "m"); var rm = add(row, "button", "fund-x"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { var a = getFund().slice(); a.splice(i, 1); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); draw(); }; });
+      var ab = add(list, "button", "add2"); ab.innerHTML = '<i class="ti ti-plus"></i> add a fundamental'; ab.style.margin = "6px 0 0"; ab.onclick = function () { bentoPicker({ title: "Add a daily fundamental", onPick: function (x) { if (!x) return; var a = getFund().slice(); a.push({ t: x.title, d: domainOf(x), m: 30, slot: 720 }); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); draw(); } }); };
+    }
+    draw();
+    if (S.profile && S.profile.fundamentals) { var rs = add(B, "button", "add2"); rs.innerHTML = '<i class="ti ti-rotate"></i> reset to defaults'; rs.style.margin = "8px 0 0"; rs.onclick = function () { delete S.profile.fundamentals; save(); fundamentalsMenu(); }; }
+    add(B, "button", "done2", "Done").onclick = function () { planDay(todayK()); };
+  }
   function planDay(k) {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
     add(B, "div", "sttl", "Plan " + relLabel(k).toLowerCase());
     add(B, "div", "lbl", "Pick activities or drop in a stack — they land on your timeline to arrange.");
-    var f = add(B, "button", "add2"); f.innerHTML = '<i class="ti ti-stars"></i> Daily fundamentals'; f.style.margin = "4px 0"; f.onclick = function () { distributePlan(k, FUNDAMENTALS); closeSheet(); };
+    var f = add(B, "button", "add2"); f.innerHTML = '<i class="ti ti-stars"></i> Daily fundamentals'; f.style.margin = "4px 0 0"; f.onclick = function () { closeSheet(); enhancePlan(k); };
+    var fe = add(B, "button", "add2"); fe.innerHTML = '<i class="ti ti-settings"></i> edit fundamentals'; fe.style.cssText = "margin:0 0 8px;font-size:11.5px;padding:7px;opacity:.85;"; fe.onclick = function () { fundamentalsMenu(); };
     var p = add(B, "button", "add2"); p.innerHTML = '<i class="ti ti-checkbox"></i> Pick activities'; p.style.margin = "4px 0"; p.onclick = function () { bentoPicker({ title: "Pick everything for " + relLabel(k).toLowerCase(), multi: true, onPickMulti: function (sel) { distributePlan(k, sel); }, onPick: function (x) { if (x) distributePlan(k, [x]); } }); };
     var s = add(B, "button", "add2"); s.innerHTML = '<i class="ti ti-stack-2"></i> Use a habit stack'; s.style.margin = "4px 0"; s.onclick = function () { presetsSheet(k); };
     add(B, "button", "done2", "Done").onclick = function () { closeSheet(); };
@@ -725,26 +743,26 @@
     }
     if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = hour-density zoom · one-finger horizontal SWIPE = page to prev/next day (David 2026-06-24)
       pb._gw = 1;
-      var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, pAnchorY = null, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
-      function pdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); }
+      var ptrs = {}, pVD0 = 0, pHP0 = 0, pHPLast = 0, pMid0 = 0, pScroll0 = 0, pContTop = 0, pAnchorContent = 0, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
+      function pvdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.abs(v[0].y - v[1].y); } // VERTICAL finger distance → zoom only stretches up/down (David 2026-06-25)
       function pmidY() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? null : (v[0].y + v[1].y) / 2; }
       pb.addEventListener("pointerdown", function (e) {
-        if (e.isPrimary) { ptrs = {}; pD0 = 0; pDLast = 0; single = false; swOn = false; swPgr = null; if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pb.classList.remove("zooming"); } // a fresh gesture clears any stale/stuck pointers + zoom-suppress class (kills phantom pinch-zoom / stuck transitions) — David 2026-06-25
+        if (e.isPrimary) { ptrs = {}; pVD0 = 0; single = false; swOn = false; swPgr = null; if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pb.classList.remove("zooming"); } // a fresh gesture clears any stale/stuck pointers + zoom-suppress class (David 2026-06-25)
         ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
         if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".calblk,.grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // day-swipe ONLY off a bubble (header / empty gaps) — never over a bubble, so a bubble gesture can't page the day (David 2026-06-25)
-        else if (n === 2) { single = false; swOn = false; if (swPgr) { swPgr.style.transition = "transform .15s"; swPgr.style.transform = "translateX(-33.3333%)"; } swPgr = null; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; pAnchorY = pmidY(); } // 2 fingers down → kill any pager drag (a pinch can NEVER page) + latch the thumb-midpoint as the zoom anchor (David 2026-06-25)
+        else if (n === 2) { single = false; swOn = false; if (swPgr) { swPgr.style.transition = "transform .15s"; swPgr.style.transform = "translateX(-33.3333%)"; } swPgr = null; var _sc = pb.querySelector(".day-card.cur .day-cardscroll"); pVD0 = Math.max(8, pvdist()); pHP0 = pHPLast = pullHourPx; pMid0 = pmidY(); pScroll0 = _sc ? _sc.scrollTop : 0; pContTop = _sc ? _sc.getBoundingClientRect().top : 0; pAnchorContent = pScroll0 + (pMid0 - pContTop); } // 2 fingers → PINCH+PAN: vertical spread zooms, midpoint pans, both live (iPhone Photos) — David 2026-06-25
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
-        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); zoomLive(Math.max(20, Math.min(300, Math.round(pHP0 * (pDLast / pD0)))), pAnchorY); e.preventDefault(); return; } // pinch tracks the fingers LIVE, anchored at the latched thumb-midpoint (David 2026-06-25)
+        if (!single && pVD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { var vd = Math.max(8, pvdist()); pHPLast = Math.max(20, Math.min(300, Math.round(pHP0 * (vd / pVD0)))); var mid = pmidY(); var st = pAnchorContent * (pHPLast / pHP0) - (mid - pContTop); zoomLive(pHPLast, null, st); e.preventDefault(); return; } // pinch (vertical) zooms + midpoint pans, together (David 2026-06-25)
         if (single && swPgr && pullZoom === "day") { if (Object.keys(ptrs).length >= 2) { swPgr = null; return; } var dx = e.clientX - sX, dy = e.clientY - sY;
           if (!swOn) { if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; } else if (Math.abs(dy) > 10) { swPgr = null; return; } else return; }
           e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; // the day card follows the finger like an iPhone photo
         }
       }, { passive: false });
       function gend(e) {
-        var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; var pmid = null; if (wasPinch) { var others = Object.keys(ptrs).filter(function (i) { return i != e.pointerId; }); pmid = others.length ? (ptrs[others[0]].y + ey) / 2 : ey; } delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
-        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } var nHP = Math.max(20, Math.min(300, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; pDLast = 0; pAnchorY = null; single = false; pullHourPx = nHP; zoomCommit(); return; } // settle on release: crisp re-render at the final zoom (David 2026-06-25)
+        var wasPinch = !single && pVD0 > 0, ex = e.clientX; delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
+        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pVD0 = 0; single = false; pullHourPx = pHPLast; zoomCommit(); return; } // settle: crisp re-render at the final zoom, keeping the panned scroll — no bounce (David 2026-06-25)
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX; if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; } } swOn = false; swPgr = null; single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
@@ -1918,13 +1936,14 @@
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = pullHourPx; // hour height = the timeline-density zoom (AE-style); start early enough to show NOW; run to ~3am (David 2026-06-24)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px"; cal.dataset.startH = startH; cal.dataset.endH = endH; // cached so live-zoom can reposition nodes without a rebuild
+    var railItems = []; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = ((mm - startH * 60) / 60 * HP), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 8) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -8; }
       else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }
-    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = "#ff5fa8"; nl.style.boxShadow = "0 0 11px #ff5fa8"; nl.dataset.mn = now; nowLineEl = nl; var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 13) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.dataset.mn = now; nc.dataset.off = -13; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; if (_lv) { var nr = add(cal, "div", "nowread"); nr.style.top = (_ny + 7) + "px"; nr.style.color = _lc; nr.dataset.mn = now; nr.dataset.off = 7; nr.innerHTML = tiIcon(_lv) + ' <span class="cn-t">' + esc(_lv.title || "Tracking") + '</span> · <span class="live-elapsed" data-tid="' + _lv.id + '">' + elapsedStr(_lv) + '</span>'; } else { var np = add(cal, "div", "nowtime"); np.style.top = (_ny + 5) + "px"; np.dataset.mn = now; np.dataset.off = 5; np.style.left = "auto"; np.style.right = "6px"; np.innerHTML = '<b style="letter-spacing:.5px">NOW</b> ' + fmt(now); } } // now-line + icon circle (no label under it) + a right-side readout: current activity in its colour + elapsed (David 2026-06-25)
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = "#ff5fa8"; nl.style.boxShadow = "0 0 11px #ff5fa8"; nl.dataset.mn = now; nowLineEl = nl; var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 11) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.dataset.mn = now; nc.dataset.off = -11; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; if (_lv) { var nr = add(cal, "div", "nowread"); nr.style.top = (_ny + 7) + "px"; nr.style.color = _lc; nr.dataset.mn = now; nr.dataset.off = 7; nr.innerHTML = tiIcon(_lv) + ' <span class="cn-t">' + esc(_lv.title || "Tracking") + '</span> · <span class="live-elapsed" data-tid="' + _lv.id + '">' + elapsedStr(_lv) + '</span>'; } else { var np = add(cal, "div", "nowtime"); np.style.top = (_ny + 5) + "px"; np.dataset.mn = now; np.dataset.off = 5; np.style.left = "auto"; np.style.right = "6px"; np.innerHTML = '<b style="letter-spacing:.5px">NOW</b> ' + fmt(now); } } // now-line + icon circle (no label under it) + a right-side readout: current activity in its colour + elapsed (David 2026-06-25)
     // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
     [["midnight", 0, "ti-clock-hour-12", "#5f8dd6"], ["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"], ["midnight", 1440, "ti-clock-hour-12", "#5f8dd6"]].forEach(function (tm) {
@@ -1961,7 +1980,7 @@
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(3, _gh) + "px"; } // cap height to the gap so back-to-back bubbles NEVER overlap, at any zoom (David 2026-06-25)
       if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(5, (_uE - _uS) / 60 * HP - 4) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble (the matched part is its own shining bubble) — David 2026-06-25
-      degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
+      degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(b), c: D.c, ink: D.ink }); // too thin to label → its symbol goes to the right rail (David 2026-06-25)
       if (status === "ok" && !partial) {
         card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // matched = its own colour, matte-metallic stripes (calmer — no neon glow) (David 2026-06-25)
         card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.16),0 3px 0 #160510"; card.style.borderColor = "#160510"; card.style.filter = "saturate(.92)"; // no light outline ring — just the dark edge (David 2026-06-25)
@@ -2014,14 +2033,14 @@
         card.classList.add("dragging"); pushUndo();
         var sy = startY, sm = b.mins || 30, ct = card.querySelector(".ct");
         function mv(e) { var v = Math.max(5, Math.round((sm + (e.clientY - sy) / HP * 60) / 5) * 5); b.mins = v; card.style.height = Math.max(18, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "–" + fmt(hm(b.time) + v); preview(card, hm(b.time), hm(b.time) + v); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); reflow(k); save(); renderToday(); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); if (!blockPast(k, b)) reflow(k); save(); renderToday(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }); });
       gripT.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) {
         card.classList.add("dragging"); pushUndo();
         var sy = startY, sm = b.mins || 30, sStart = hm(b.time), endM = sStart + sm, ct = card.querySelector(".ct");
         function mv(e) { var ns = Math.max(0, Math.min(endM - 5, sStart + Math.round(((e.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(18, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "–" + fmt(endM); preview(card, ns, endM); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); reflow(k); save(); renderToday(); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); if (!blockPast(k, b)) reflow(k); save(); renderToday(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }); });
     });
@@ -2051,7 +2070,7 @@
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
         card.dataset.dur = it.e - it.s; degrade(card);
-        if (card.classList.contains("lbl-s")) { cn.style.color = D.light; var _clr = !bls.some(function (pb) { var s2 = hm(pb.time), e2 = s2 + (pb.mins || 30); return it.s < e2 && it.e > s2; }); if (_clr) card.classList.add("clr"); } // too-thin log → stays in the RIGHT lane (never crosses into the plan lane); show its name in the clear LEFT space ONLY if no plan sits there, otherwise just the clean line (David 2026-06-25)
+        if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(e), c: D.c, ink: D.ink }); // too thin to label → its symbol goes to the right rail; the bar stays a clean line (David 2026-06-25)
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); pushUndo(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) { pushUndo(); var sy = startY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); });
@@ -2137,6 +2156,9 @@
       }
       document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
     });
+    // RIGHT SYMBOL RAIL — the symbols of bars too thin to label, stacked in order, never overlapping (David 2026-06-25)
+    railItems.sort(function (a, b) { return a.y - b.y; });
+    var _ry = -99; railItems.forEach(function (it) { var y = Math.max(it.y - 8, _ry + 2); _ry = y + 16; var chip = add(cal, "div", "railchip"); chip.style.top = y + "px"; chip.style.background = it.c; chip.style.color = it.ink; chip.innerHTML = '<i class="ti ' + it.ic + '"></i>'; });
   }
   function weekGrid(L, baseK, onDay) {
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
@@ -2193,8 +2215,8 @@
     var frm = add(B, "div", "frm"); var tm = document.createElement("input"); tm.type = "time"; tm.value = b.time; var tx = document.createElement("input"); tx.type = "text"; tx.value = b.title; frm.appendChild(tm); frm.appendChild(tx);
     var swb = add(B, "button", "add2"); swb.style.margin = "8px 0 4px"; swb.innerHTML = '<i class="ti ti-replace"></i> switch activity'; swb.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { b.title = x.title; b.catK = x.catK || null; b.color = x.color || b.color; if (x.domain) b.domain = x.domain; tx.value = x.title; reflow(k); save(); renderToday(); } }); }; // tap to swap what this activity IS → bento, then re-pack the day (David 2026-06-25)
     function _dlbl(m) { return m < 60 ? m + "m" : (m % 60 ? (Math.floor(m / 60) + "h " + (m % 60) + "m") : (m / 60 + "h")); }
-    add(B, "div", "lbl", "duration — tap ± to extend (works on a tiny sliver too)"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setD((b.mins || 30) - 5); }; var vv = add(w, "span", "stpv", _dlbl(b.mins || 30)); add(w, "button", "stp", "+").onclick = function () { setD((b.mins || 30) + 5); }; function setD(v) { b.mins = Math.max(5, Math.min(720, v)); vv.textContent = _dlbl(b.mins); reflow(k); save(); renderToday(); } })();
-    add(B, "div", "lbl", "start"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setS(hm(b.time) - 5); }; var vv = add(w, "span", "stpv", fmt(hm(b.time))); add(w, "button", "stp", "+").onclick = function () { setS(hm(b.time) + 5); }; function setS(v) { v = Math.max(0, Math.min(1740, v)); b.time = pad(Math.floor(v / 60)) + ":" + pad(v % 60); reflow(k); save(); renderToday(); vv.textContent = fmt(hm(b.time)); tm.value = b.time; } })();
+    add(B, "div", "lbl", "duration — tap ± to extend (works on a tiny sliver too)"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setD((b.mins || 30) - 5); }; var vv = add(w, "span", "stpv", _dlbl(b.mins || 30)); add(w, "button", "stp", "+").onclick = function () { setD((b.mins || 30) + 5); }; function setD(v) { b.mins = Math.max(5, Math.min(720, v)); vv.textContent = _dlbl(b.mins); if (!blockPast(k, b)) reflow(k); save(); renderToday(); } })();
+    add(B, "div", "lbl", "start"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setS(hm(b.time) - 5); }; var vv = add(w, "span", "stpv", fmt(hm(b.time))); add(w, "button", "stp", "+").onclick = function () { setS(hm(b.time) + 5); }; function setS(v) { v = Math.max(0, Math.min(1740, v)); b.time = pad(Math.floor(v / 60)) + ":" + pad(v % 60); if (!blockPast(k, b)) reflow(k); save(); renderToday(); vv.textContent = fmt(hm(b.time)); tm.value = b.time; } })();
     var _be = hm(b.time) + (b.mins || 30), _future = (k > todayK()) || (k === todayK() && _be > nowMin());
     if (_future) { add(B, "div", "lbl", "priority"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === (b.prio || 2) ? " on" : ""), p.l); x.onclick = function () { b.prio = p.v; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; }); } // priority only matters for what's still ahead (David 2026-06-25)
     add(B, "div", "lbl", "📌 pin = fixed time; flexible activities flow around it"); var pc = add(B, "div", "pchips"); var px = add(pc, "div", "pchip" + (b.pin ? " on" : ""), b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"); px.onclick = function () { b.pin = !b.pin; px.classList.toggle("on"); px.textContent = b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"; };
@@ -2410,6 +2432,7 @@
     ];
     S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); save();
   }
+  function blockPast(k, b) { return k < todayK() || (k === todayK() && hm(b.time) + (b.mins || 30) <= nowMin()); } // a finished/past block — editing it must NOT reflow the others (you edit the past independently) — David 2026-06-25
   function reflow(k) {
     var all = blocks(k).slice();
     var pins = all.filter(function (b) { return b.pin; }).map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
