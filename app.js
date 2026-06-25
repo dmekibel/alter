@@ -582,6 +582,18 @@
   }
   var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
+  // Smooth hour-zoom that rebuilds ONLY the day-card timelines — the header (and the zoom slider you're dragging) stay intact, so a slider/pinch never destroys itself mid-gesture (David 2026-06-25)
+  function zoomTimeline(nv, curOnly) {
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(36, Math.min(124, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+    var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
+    pullHourPx = nv;
+    var cards = pb.querySelectorAll(curOnly ? ".day-card.cur" : ".day-card");
+    for (var i = 0; i < cards.length; i++) { var sec = cards[i].querySelector(".day-sec"); if (!sec) continue; var dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); }
+    var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null;
+    if (cs) cs.scrollTop = Math.max(0, anchor * (nv / old) - fy); // keep the time under the viewport-centre put
+  }
+  var _zoomRaf = 0, _zoomPending = 0;
+  function zoomLive(nv) { _zoomPending = nv; if (_zoomRaf) return; _zoomRaf = requestAnimationFrame(function () { _zoomRaf = 0; zoomTimeline(_zoomPending, true); }); } // throttle live drag to one (current-card-only) relayout per frame
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
@@ -621,10 +633,11 @@
       var rt = add(top, "div", "pull-rt");
       if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
       else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb2.onclick = function () { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); }; tdb2.style.display = (pullFocusK && pullFocusK !== todayK()) ? "" : "none"; } // jump back to today when you've paged away (David 2026-06-24)
-      if (pullZoom === "day") { var hz = add(rt, "div", "scope-seg hour-zoom"); var zo = add(hz, "button", "scope-b"); zo.innerHTML = '<i class="ti ti-minus"></i>'; zo.title = "zoom out"; zo.onclick = function () { setHourPx(-16); }; var zi = add(hz, "button", "scope-b"); zi.innerHTML = '<i class="ti ti-plus"></i>'; zi.title = "zoom in"; zi.onclick = function () { setHourPx(16); }; } // convenient hour-density zoom buttons (David 2026-06-24)
+      // (hour +/- buttons replaced by the zoom slider below the scope buttons — David 2026-06-25)
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
+      if (pullZoom === "day") { var zr = add(head, "div", "pull-zoomrow"); var zoi = add(zr, "span", "zr-ic"); zoi.innerHTML = '<i class="ti ti-zoom-out"></i>'; var zs = document.createElement("input"); zs.type = "range"; zs.min = "36"; zs.max = "124"; zs.step = "1"; zs.value = String(pullHourPx); zs.className = "zoom-slider"; zs.setAttribute("aria-label", "zoom timeline density"); zr.appendChild(zs); var zii = add(zr, "span", "zr-ic"); zii.innerHTML = '<i class="ti ti-zoom-in"></i>'; zs.addEventListener("input", function () { zoomLive(+zs.value); }); zs.addEventListener("change", function () { zoomTimeline(+zs.value, false); }); } // smooth zoom slider, under the day/week/month buttons (David 2026-06-25)
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next"); // day tools: habit stacks · enhance · clear (David 2026-06-24)
         var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apk.onclick = function () { presetsSheet(pullFocusK || todayK()); };
@@ -675,12 +688,12 @@
       function pdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); }
       pb.addEventListener("pointerdown", function (e) {
         ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
-        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.startnew,.backfill,.day-sepauto,.bento-add,button"))) ? pb.querySelector(".day-pager") : null; }
+        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // day-swipe works across the whole timeline (bubbles, gaps, live) — only tiny controls opt out (David 2026-06-25)
         else if (n === 2) { single = false; swOn = false; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; }
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
-        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); e.preventDefault(); return; } // pinch
+        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); zoomLive(pHP0 * (pDLast / pD0)); e.preventDefault(); return; } // pinch = LIVE zoom (David 2026-06-25)
         if (single && swPgr && pullZoom === "day") { var dx = e.clientX - sX, dy = e.clientY - sY;
           if (!swOn) { if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; } else if (Math.abs(dy) > 10) { swPgr = null; return; } else return; }
           e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; // the day card follows the finger like an iPhone photo
@@ -688,7 +701,7 @@
       }, { passive: false });
       function gend(e) {
         var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; var pmid = null; if (wasPinch) { var others = Object.keys(ptrs).filter(function (i) { return i != e.pointerId; }); pmid = others.length ? (ptrs[others[0]].y + ey) / 2 : ey; } delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
-        if (wasPinch && n < 2 && pullZoom === "day") { var nHP = Math.max(36, Math.min(124, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; if (nHP !== pullHourPx) animateHourPx(nHP, pmid); if (n === 0) single = false; return; }
+        if (wasPinch && n < 2 && pullZoom === "day") { var nHP = Math.max(36, Math.min(124, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; zoomTimeline(nHP, false); if (n === 0) single = false; return; } // commit: relayout all 3 cards (David 2026-06-25)
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX; if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; } } swOn = false; swPgr = null; single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
@@ -1817,6 +1830,7 @@
       var stt = status === "ok" ? "cele" : dark ? "ghost" : "sched";
       var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
+      if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
       var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
       degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
       if (status === "ok") {
