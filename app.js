@@ -637,6 +637,26 @@
     var done = false; function fin() { if (done) return; done = true; pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); }
     pgr.addEventListener("transitionend", fin); setTimeout(fin, 320);
   }
+  // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
+  function distributePlan(k, sel) {
+    if (!sel || !sel.length) return;
+    pushUndo();
+    var arr = blocks(k), start = 8 * 60;
+    arr.forEach(function (b) { start = Math.max(start, hm(b.time) + (b.mins || 30)); });
+    if (k === todayK()) start = Math.max(start, nowMin());
+    sel.forEach(function (x) { if (!x) return; var dom = domainOf(x); arr.push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: 30, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: 2 }); start += 30; });
+    reflow(k); save(); renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
+  }
+  var FUNDAMENTALS = [{ title: "Move", catK: "energy" }, { title: "Breakfast", catK: "energy" }, { title: "Deep work", catK: "work" }, { title: "Connect", catK: "love" }, { title: "Wind down", catK: "energy" }];
+  function planDay(k) {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "Plan " + relLabel(k).toLowerCase());
+    add(B, "div", "lbl", "Pick activities or drop in a stack — they land on your timeline to arrange.");
+    var f = add(B, "button", "add2"); f.innerHTML = '<i class="ti ti-stars"></i> Daily fundamentals'; f.style.margin = "4px 0"; f.onclick = function () { distributePlan(k, FUNDAMENTALS); closeSheet(); };
+    var p = add(B, "button", "add2"); p.innerHTML = '<i class="ti ti-checkbox"></i> Pick activities'; p.style.margin = "4px 0"; p.onclick = function () { bentoPicker({ title: "Pick everything for " + relLabel(k).toLowerCase(), multi: true, onPickMulti: function (sel) { distributePlan(k, sel); }, onPick: function (x) { if (x) distributePlan(k, [x]); } }); };
+    var s = add(B, "button", "add2"); s.innerHTML = '<i class="ti ti-stack-2"></i> Use a habit stack'; s.style.margin = "4px 0"; s.onclick = function () { presetsSheet(k); };
+    add(B, "button", "done2", "Done").onclick = function () { closeSheet(); };
+  }
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
     var k = pullK || todayK();
@@ -658,7 +678,7 @@
       if (pullZoom === "day") { var zr = add(head, "div", "pull-zoomrow"); var zoi = add(zr, "span", "zr-ic"); zoi.innerHTML = '<i class="ti ti-zoom-out"></i>'; var zs = document.createElement("input"); zs.type = "range"; zs.min = "20"; zs.max = "300"; zs.step = "1"; zs.value = String(pullHourPx); zs.className = "zoom-slider"; zs.setAttribute("aria-label", "zoom timeline density"); zr.appendChild(zs); var zii = add(zr, "span", "zr-ic"); zii.innerHTML = '<i class="ti ti-zoom-in"></i>'; zs.addEventListener("input", function () { zoomLive(+zs.value); }); zs.addEventListener("change", function () { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pullHourPx = Math.max(20, Math.min(300, Math.round(+zs.value))); zoomCommit(); }); } // smooth zoom slider, under the day/week/month buttons (David 2026-06-25)
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next"); // day tools: habit stacks · enhance · clear (David 2026-06-24)
-        var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apk.onclick = function () { presetsSheet(pullFocusK || todayK()); };
+        var apk = add(nx, "button", "pn-break pn-plan"); apk.innerHTML = '<i class="ti ti-calendar-plus"></i> Plan day'; apk.onclick = function () { planDay(pullFocusK || todayK()); }; // top entry point — stacks live inside this now (David 2026-06-25)
         var enh = add(nx, "button", "pn-break"); enh.innerHTML = '<i class="ti ti-wand"></i> enhance'; enh.onclick = function () { enhancePlan(pullFocusK || todayK()); };
         var clr = add(nx, "button", "pn-break"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear'; clr.onclick = function () { var ck = pullFocusK || todayK(); if (clr._armed) { pushUndo(); S.blocks[ck] = []; reflow(ck); save(); buildPull(); toast("🧹 cleared " + relLabel(ck).toLowerCase()); } else { clr._armed = true; clr.classList.add("arm"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear all?'; setTimeout(function () { if (clr && clr.parentNode) { clr._armed = false; clr.classList.remove("arm"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear'; } }, 2600); } }; // 2-tap confirm so it can't wipe the day by accident (David 2026-06-24)
         var udo = add(nx, "button", "pn-break"); udo.innerHTML = '<i class="ti ti-arrow-back-up"></i> undo'; udo.onclick = function () { popUndo(); }; // multi-level undo for accidental timeline edits (David 2026-06-25)
@@ -2000,7 +2020,7 @@
       }); });
     });
     if (burnedSomething) save(); // persist the burn so a passed plan stays dark across renders / when pushed forward
-    if (!bls.length) { var pe = add(cal, "div", "plan-empty"); pe.style.top = (showNow ? topFor(Math.max(startH * 60 + 30, now)) : topFor((startH + 2) * 60)) + "px"; pe.innerHTML = '<i class="ti ti-stars"></i> plan ' + esc(relLabel(k).toLowerCase()); pe.onclick = function (ev) { ev.stopPropagation(); presetsSheet(k); }; } // empty PLAN lane → inviting one-tap auto-plan (David 2026-06-24 night)
+    // (removed the below-now "plan today" button on the left — planning starts from the Plan day button up top now; David 2026-06-25)
     // a REAL item is "on-plan" (→ gold) when it overlaps a PLAN block of the SAME domain (§24 Guitar-Hero win); drift is shown honestly, never hidden
     function onPlanMatch(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom) return true; } return false; }
     function fusedIntoPlan(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom && blockStatus(k, bls[i]) === "ok") return true; } return false; } // matched & complete → the plan bar goes full-width and represents BOTH lanes; don't draw this real log separately (David 2026-06-25)
