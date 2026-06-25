@@ -514,10 +514,11 @@
   .nowline{ position:absolute; left:34px; right:6px; height:0; border-top:4px solid #ff5fa0; z-index:6; }
   .nowline::before{ display:none; }
   .nowcirc{ position:absolute; left:0; width:20px; height:20px; border-radius:50%; border:2.5px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:10px; z-index:9; box-shadow:0 0 11px #ff5fa8; } /* small + fully on-screen (not clipped), sits clear of the gutter numbers (David 2026-06-25) */
+  /* STRADDLING-NOW block split by the present line: future (matte) · past ghost (failed) · tracked stretch (matched stripes) — David 2026-06-25 */
   .calblk.convbar{ overflow:hidden; }
-  .calblk.convbar .convbase{ position:absolute; inset:0; z-index:0; filter:saturate(.5) brightness(.42); } /* REMAINING heavily dimmed so the charged part pops (David 2026-06-25) */
-  .calblk.convbar .convghost{ position:absolute; left:0; right:0; top:0; z-index:1; filter:saturate(.45) brightness(.6); } /* planned but NOT tracked before you started = ghost */
-  .calblk.convbar .convlived{ position:absolute; left:0; right:0; z-index:2; overflow:hidden; }
+  .calblk.convbar .convfut{ position:absolute; left:0; right:0; bottom:0; z-index:0; filter:saturate(.72) brightness(.68); } /* FUTURE half = matte (still ahead) */
+  .calblk.convbar .convghost{ position:absolute; left:0; right:0; top:0; z-index:1; filter:saturate(.5) brightness(.7); } /* PAST half not done = ghost */
+  .calblk.convbar .convmatch{ position:absolute; left:0; right:0; z-index:2; overflow:hidden; } /* TRACKED stretch = connected matched stripes */
   .calblk.convbar .cn{ position:relative; z-index:3; }
   .nowread{ position:absolute; right:6px; z-index:8; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:5px; background:rgba(28,5,18,.8); border:1.5px solid #160510; border-radius:9px; padding:2px 8px; max-width:64%; white-space:nowrap; overflow:hidden; }
   #liveDock.idle .ld-el{ display:none; }
@@ -860,6 +861,10 @@
   body.tab-day:not(.gaming) #t-day{ display:none !important; }                /* retired inline calendar (kept in DOM so its old handlers don't error) */
   body:not(.tab-day):not(.gaming) #pullSheet{ display:none !important; }       /* hidden while on Goals / You */
   /* pull-up live-tracker dock — only on Today, only while tracking (David 2026-06-25) */
+  /* drag-to-trash bin — appears bottom-middle while dragging a bubble (David 2026-06-25) */
+  #trashZone{ position:fixed; left:50%; bottom:200px; transform:translateX(-50%); width:54px; height:54px; border-radius:50%; background:#3a1226; border:2.5px dashed #ff5fa0; color:#ff9dc6; display:none; align-items:center; justify-content:center; font-size:24px; z-index:75; box-shadow:0 6px 20px rgba(0,0,0,.55); pointer-events:none; }
+  #trashZone.on{ display:flex; }
+  #trashZone.armed{ background:#ff5fa0; color:#fff; border-style:solid; transform:translateX(-50%) scale(1.28); }
   #liveDock{ display:none; }
   body.tab-day:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:calc(70px + env(safe-area-inset-bottom,0px)); z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; } /* slimmer dock → more timeline (David 2026-06-25) */
   #liveDock .ld-grab{ width:36px; height:4px; border-radius:3px; background:#5a2c44; margin:0 auto 4px; }
@@ -1116,6 +1121,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=468"></script>
+  <script src="app.js?v=469"></script>
 </body>
 </html>

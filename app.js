@@ -247,7 +247,7 @@
     play:    { l: "Play",    e: "🎮", c: "#ffc83d", light: "#ffd56a", dark: "#f0b62a", ring: "#ffe9a8", ink: "#5a3a00", ti: "ti-device-gamepad-2" },
     restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
     upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
-    drift:   { l: "Drift",   e: "🌫️", c: "#7a1f29", light: "#7a1f29", dark: "#3a0e14", ring: "#3a0e14", ink: "#160510", ti: "ti-windmill" }   // solid dark red + black letters (David 2026-06-25)
+    drift:   { l: "Drift",   e: "🌫️", c: "#180608", light: "#180608", dark: "#0a0203", ring: "#3a0e14", ink: "#e0545f", ti: "ti-windmill" }   // BLACK bubble + dark-red letters (David 2026-06-25)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -816,7 +816,7 @@
     plan("create", "Make art", now + 80, 60, false);
     plan("move", "Evening walk", now + 170, 45, false);
     S.blocks[k] = bl; S.log[k] = lg;
-    S.timers = [{ id: uid(), title: "Focus block", catK: "work", emoji: "", color: DOM.focus.c, start: Date.now() - 30 * 60000, dayK: k }];
+    S.timers = []; // NO tracking in the test → the straddling Focus block reads ghost-past (failed) + matte-future, split by the present line (David 2026-06-25)
     S.game = S.game || {}; S.game.streak = 3; S.game.streakDay = k;
     save(); pendingScrollNow = true; renderAll(); buildPull(); toast("🧪 test day — streak ×3 · a miss · a drift · live · future");
   }
@@ -983,6 +983,11 @@
   var undoStack = [];
   function pushUndo() { try { var snap = JSON.stringify({ blocks: S.blocks, log: S.log, timers: S.timers, game: S.game }); if (undoStack.length && undoStack[undoStack.length - 1] === snap) return; undoStack.push(snap); if (undoStack.length > 25) undoStack.shift(); } catch (e) {} } // dedupe identical consecutive snapshots so just-looking never piles up no-op undo steps
   function popUndo() { if (!undoStack.length) { toast("nothing to undo"); return; } try { var s = JSON.parse(undoStack.pop()); S.blocks = s.blocks; S.log = s.log; S.timers = s.timers; S.game = s.game; save(); pendingScrollNow = false; renderAll(); buildPull(); toast("↶ undone" + (undoStack.length ? " · " + undoStack.length + " more" : "")); } catch (e) {} }
+  // DRAG-TO-TRASH (David 2026-06-25): while dragging a bubble, a bin appears bottom-middle; drop on it to delete
+  function trashEl() { var t = el("trashZone"); if (!t) { t = document.createElement("div"); t.id = "trashZone"; t.innerHTML = '<i class="ti ti-trash"></i>'; document.body.appendChild(t); } return t; }
+  function showTrash() { trashEl().classList.add("on"); }
+  function hideTrash() { var t = el("trashZone"); if (t) t.classList.remove("on", "armed"); }
+  function overTrash(x, y) { var t = el("trashZone"); if (!t || !t.classList.contains("on")) return false; var r = t.getBoundingClientRect(), hit = x >= r.left - 24 && x <= r.right + 24 && y >= r.top - 24 && y <= r.bottom + 24; t.classList.toggle("armed", hit); return hit; }
   function toast(msg) { var t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.classList.add("show"); }, 10); setTimeout(function () { t.classList.remove("show"); setTimeout(function () { t.remove(); }, 320); }, 2600); }
   function copyFallback(json) { var ta = document.createElement("textarea"); ta.value = json; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("📋 backup copied"); } catch (e) { toast("⚠️ couldn't copy — use Download"); } ta.remove(); }
   function exportData(mode) {
@@ -1991,12 +1996,12 @@
         card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510"; card.style.filter = "saturate(.72) brightness(.72)"; // MATTE = same domain hue, just dimmed (David 2026-06-25)
         var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.52, 0.92 - Math.max(0, _ahead) * 0.05) : 0.74);
       }
-      if (_liveT && showNow && k === todayK() && domainOf(_liveT) === dom && bs < now && be > now) { // BATTERY (David 2026-06-25): only the part you've actually TRACKED charges; the planned-but-untracked stretch BEFORE you started tracking stays ghost (you only "print" non-ghost by tracking the same activity / replanning).
-        var _tsd = new Date(_liveT.start), _tsm = Math.max(bs, Math.min(now, _tsd.getHours() * 60 + _tsd.getMinutes())); // when tracking started, clamped into this block's past
-        card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1"; card.style.background = "none"; card.style.boxShadow = "0 3px 0 #160510"; card.style.borderColor = "#160510";
-        var _cb = add(card, "div", "convbase"); _cb.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // base = matte (the part still ahead)
-        if (_tsm > bs + 0.5) { var _cg = add(card, "div", "convghost"); _cg.style.height = ((_tsm - bs) / (be - bs) * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.8); } // planned but NOT tracked before you started = ghost
-        var _cl = add(card, "div", "convlived"); _cl.style.top = ((_tsm - bs) / (be - bs) * 100) + "%"; _cl.style.height = Math.max(0, Math.min(100, (now - _tsm) / (be - bs) * 100)) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; _cl.style.boxShadow = "inset 0 -3px 0 #ff5fa8,0 0 16px " + D.light; // LIVED = bright shining from where you started tracking → the now-line
+      if (showNow && k === todayK() && bs < now && be > now && status !== "ok" && !partial) { // STRADDLING NOW (David 2026-06-25): the present line SPLITS the block — the past half is GHOST (planned but not done), the future half is MATTE; if you're tracking the same activity, the tracked stretch becomes a connected striped (matched) bar.
+        var _trk = _liveT && domainOf(_liveT) === dom, _tsd = _trk ? new Date(_liveT.start) : null, _tsm = _trk ? Math.max(bs, Math.min(now, _tsd.getHours() * 60 + _tsd.getMinutes())) : now; // when tracking started (= now if not tracking → no matched part)
+        card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1"; card.style.background = "none"; card.style.boxShadow = "0 3px 0 #160510"; card.style.borderColor = "#160510"; card.style.right = "4px"; card.classList.add("fusedbar");
+        var _fut = add(card, "div", "convfut"); _fut.style.top = ((now - bs) / (be - bs) * 100) + "%"; _fut.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; // FUTURE half = matte (still ahead)
+        if (_tsm > bs + 0.5) { var _cg = add(card, "div", "convghost"); _cg.style.height = ((_tsm - bs) / (be - bs) * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.84); } // past half NOT tracked = ghost (planned but failed)
+        if (_trk && now > _tsm + 0.5) { var _cl = add(card, "div", "convmatch"); _cl.style.top = ((_tsm - bs) / (be - bs) * 100) + "%"; _cl.style.height = ((now - _tsm) / (be - bs) * 100) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; _cl.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.18),inset 0 -3px 0 #ff5fa8"; } // TRACKED stretch = connected striped (matched) bar
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
@@ -2022,13 +2027,13 @@
         var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0, snapped = false;
         var _bpast = blockPast(k, b);
         if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu") return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, _bpast ? 460 : 280); // the PAST feels set in stone → a longer, deliberate hold to move it (David 2026-06-25)
-        function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
+        function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); hideTrash(); }
         function mv2(e) {
           if (touch && !picked) { var ady = Math.abs(e.clientY - sy0), adx = Math.abs(e.clientX - sx0); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 22 || adx > 22)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { e.preventDefault(); scE.scrollTop -= (e.clientY - lastY); lastY = e.clientY; } return; } // horizontal → let the day-swipe page · vertical drag = scroll the card · stay within 22px to pick up & move
           if (card.dataset.gate === "menu") return; // too tiny to move — only its tap-menu acts
-          var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); if (!_bpast) preview(card, dragMin, dragMin + (b.mins || 30)); }
+          var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); showTrash(); overTrash(e.clientX, e.clientY); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); if (!_bpast) preview(card, dragMin, dragMin + (b.mins || 30)); }
         }
-        function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); if (!_bpast) reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // moved → save; a PAST move doesn't reflow the others (set in stone) · scrolled → nothing · clean tap → edit
+        function up2(e) { var wasMoved = moved, wasScroll = scrolling, trashed = wasMoved && e && overTrash(e.clientX, e.clientY); clean(); if (trashed) { var a = blocks(k), i = a.indexOf(b); if (i >= 0) a.splice(i, 1); reflow(k); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate([8, 30, 8]); } catch (e2) {} toast("🗑 deleted"); } else if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); if (!_bpast) reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // dropped on the bin → delete · moved → save · tap → edit
         function cancel() { clean(); }
         document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
       });
@@ -2085,13 +2090,13 @@
           var sy = ev.clientY, sx = ev.clientX, lastY = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, cur2 = sm0, snapped = false;
           if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu") return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 280);
           function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
-          function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
+          function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); hideTrash(); }
           function mv2(ev2) {
             if (touch && !picked) { var ady = Math.abs(ev2.clientY - sy), adx = Math.abs(ev2.clientX - sx); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 22 || adx > 22)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { ev2.preventDefault(); scE.scrollTop -= (ev2.clientY - lastY); lastY = ev2.clientY; } return; }
             if (card.dataset.gate === "menu") return; // too tiny to move — only its tap-menu acts
-            var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { ev2.preventDefault(); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
+            var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { ev2.preventDefault(); showTrash(); overTrash(ev2.clientX, ev2.clientY); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); card.style.top = topFor(cur2) + "px"; }
           }
-          function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!wasScroll) relabel(); }
+          function up2(ev3) { var wasMoved = moved, wasScroll = scrolling, trashed = wasMoved && ev3 && overTrash(ev3.clientX, ev3.clientY); clean(); if (trashed) { var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate([8, 30, 8]); } catch (e2) {} toast("🗑 deleted"); } else if (wasMoved) { e.time = pad(Math.floor(cur2 / 60)) + ":" + pad(cur2 % 60); save(); renderToday(); } else if (!wasScroll) relabel(); }
           function cancel() { clean(); }
           document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
         });
