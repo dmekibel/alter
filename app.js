@@ -237,17 +237,17 @@
   function activeCats() { var o = OCC_BY_K[(typeof S !== "undefined" && S && S.profile) ? S.profile.occ : null]; return CATS.map(function (c) { if (c.k === "work" && o && o.work) return { k: c.k, label: c.label, e: c.e, color: c.color, groups: o.work }; return c; }); }
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
   // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
-  // Domain palette ALIGNED TO THE BENTO categories (David 2026-06-25): energy=orange, work=blue, hobby=purple, love=pink — no more lime/yellow/teal/slate. Subtle in-family shades keep a workout vs a meal vs sleep distinguishable; ghost/past/present treatments modify this base.
+  // Domain palette — the ORIGINAL varied/beautiful set restored (David 2026-06-25: collapsing the energy family to orange made it "ugly orange"). Each domain its own colour; drift is the solid dark-red.
   var DOM = {
-    move:    { l: "Move",    e: "🏃", c: "#ff8a1e", light: "#ffa44a", dark: "#ea7a0c", ring: "#ffd6a3", ink: "#4a2400", ti: "ti-run" },       // ENERGY (bento orange)
-    nourish: { l: "Nourish", e: "🍎", c: "#ff7a33", light: "#ff975a", dark: "#ec6a1e", ring: "#ffccab", ink: "#4a2000", ti: "ti-bowl-spoon" }, // energy · food (warm orange)
-    focus:   { l: "Focus",   e: "🎯", c: "#2a9fe0", light: "#54b1ea", dark: "#1f86c6", ring: "#a8d8f5", ink: "#06283c", ti: "ti-brain" },      // WORK (bento blue)
-    create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },    // hobby · creative (purple)
-    connect: { l: "Connect", e: "💛", c: "#ff4fa0", light: "#ff74b6", dark: "#ec3f8e", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },      // LOVE (bento pink)
-    play:    { l: "Play",    e: "🎮", c: "#9a5cf0", light: "#b483f5", dark: "#8443e0", ring: "#d6c2fb", ink: "#241548", ti: "ti-device-gamepad-2" }, // HOBBY (bento purple — was yellow)
-    restore: { l: "Restore", e: "🌙", c: "#ffab4a", light: "#ffc274", dark: "#ef9528", ring: "#ffe0b8", ink: "#4a2a00", ti: "ti-moon" },       // energy · rest (soft amber)
-    upkeep:  { l: "Upkeep",  e: "🧹", c: "#d98f4e", light: "#e8a96e", dark: "#c07835", ring: "#ecd0b0", ink: "#3a2208", ti: "ti-broom" },      // energy · space (muted tan)
-    drift:   { l: "Drift",   e: "🌫️", c: "#7a1f29", light: "#7a1f29", dark: "#3a0e14", ring: "#3a0e14", ink: "#160510", ti: "ti-windmill" }   // drift = SOLID dark red + black letters, no gradient (David 2026-06-25)
+    move:    { l: "Move",    e: "🏃", c: "#ff8a3a", light: "#ffa24a", dark: "#ff741a", ring: "#ffcf9a", ink: "#4a2400", ti: "ti-run" },
+    nourish: { l: "Nourish", e: "🍎", c: "#34d39a", light: "#5fe0b2", dark: "#22c089", ring: "#9fe8cf", ink: "#0a3326", ti: "ti-bowl-spoon" },
+    focus:   { l: "Focus",   e: "🎯", c: "#36b3f0", light: "#5ec4f5", dark: "#22a6e8", ring: "#aadcf8", ink: "#08283c", ti: "ti-brain" },
+    create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },
+    connect: { l: "Connect", e: "💛", c: "#ff5fa0", light: "#ff7ab0", dark: "#ff4f96", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },
+    play:    { l: "Play",    e: "🎮", c: "#ffc83d", light: "#ffd56a", dark: "#f0b62a", ring: "#ffe9a8", ink: "#5a3a00", ti: "ti-device-gamepad-2" },
+    restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
+    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
+    drift:   { l: "Drift",   e: "🌫️", c: "#7a1f29", light: "#7a1f29", dark: "#3a0e14", ring: "#3a0e14", ink: "#160510", ti: "ti-windmill" }   // solid dark red + black letters (David 2026-06-25)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -608,7 +608,7 @@
         var startH = +cal.dataset.startH; if (isNaN(startH)) startH = 7; var endH = +cal.dataset.endH; if (isNaN(endH)) endH = 27;
         cal.style.height = ((endH - startH) * nv + 10) + "px";
         var list = cal.querySelectorAll("[data-mn]");
-        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(4, (+e.dataset.dur) / 60 * nv - 4) + "px"; }
+        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(5, (+e.dataset.dur) / 60 * nv - 4) + "px"; } // SAME floor/margin as the render → live + commit heights match → no bounce on release
       }
     }
     if (sc) { if (scrollTop != null) sc.scrollTop = Math.max(0, scrollTop); else { var fy = (anchorY == null) ? vh * 0.42 : Math.max(0, Math.min(vh, anchorY - sc.getBoundingClientRect().top)); sc.scrollTop = Math.max(0, (prevTop + fy) * (nv / old) - fy); } }
@@ -1943,7 +1943,7 @@
       else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }
-    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = "#ff5fa8"; nl.style.boxShadow = "0 0 11px #ff5fa8"; nl.dataset.mn = now; nowLineEl = nl; var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 11) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.dataset.mn = now; nc.dataset.off = -11; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; if (_lv) { var nr = add(cal, "div", "nowread"); nr.style.top = (_ny + 7) + "px"; nr.style.color = _lc; nr.dataset.mn = now; nr.dataset.off = 7; nr.innerHTML = tiIcon(_lv) + ' <span class="cn-t">' + esc(_lv.title || "Tracking") + '</span> · <span class="live-elapsed" data-tid="' + _lv.id + '">' + elapsedStr(_lv) + '</span>'; } else { var np = add(cal, "div", "nowtime"); np.style.top = (_ny + 5) + "px"; np.dataset.mn = now; np.dataset.off = 5; np.style.left = "auto"; np.style.right = "6px"; np.innerHTML = '<b style="letter-spacing:.5px">NOW</b> ' + fmt(now); } } // now-line + icon circle (no label under it) + a right-side readout: current activity in its colour + elapsed (David 2026-06-25)
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = "#ff5fa8"; nl.style.boxShadow = "0 0 11px #ff5fa8"; nl.dataset.mn = now; nowLineEl = nl; var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 10) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.dataset.mn = now; nc.dataset.off = -10; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; if (_lv) { var nr = add(cal, "div", "nowread"); nr.style.top = (_ny + 7) + "px"; nr.style.color = _lc; nr.dataset.mn = now; nr.dataset.off = 7; nr.innerHTML = tiIcon(_lv) + ' <span class="cn-t">' + esc(_lv.title || "Tracking") + '</span> · <span class="live-elapsed" data-tid="' + _lv.id + '">' + elapsedStr(_lv) + '</span>'; } else { var np = add(cal, "div", "nowtime"); np.style.top = (_ny + 5) + "px"; np.dataset.mn = now; np.dataset.off = 5; np.style.left = "auto"; np.style.right = "6px"; np.innerHTML = '<b style="letter-spacing:.5px">NOW</b> ' + fmt(now); } } // now-line + icon circle (no label under it) + a right-side readout: current activity in its colour + elapsed (David 2026-06-25)
     // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
     [["midnight", 0, "ti-clock-hour-12", "#5f8dd6"], ["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"], ["midnight", 1440, "ti-clock-hour-12", "#5f8dd6"]].forEach(function (tm) {
@@ -1978,7 +1978,7 @@
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
       if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
-      var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(3, _gh) + "px"; } // cap height to the gap so back-to-back bubbles NEVER overlap, at any zoom (David 2026-06-25)
+      // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
       if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(5, (_uE - _uS) / 60 * HP - 4) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble (the matched part is its own shining bubble) — David 2026-06-25
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(b), c: D.c, ink: D.ink }); // too thin to label → its symbol goes to the right rail (David 2026-06-25)
       if (status === "ok" && !partial) {
@@ -1994,11 +1994,11 @@
       if (_liveT && showNow && k === todayK() && domainOf(_liveT) === dom && bs < now && be > now) { // BATTERY (David 2026-06-25): the block you're living RIGHT NOW charges matte→shining top-down, the now-line is the fill edge. Height as a % of the block so it auto-tracks zoom (no bounce).
         card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1"; card.style.background = "none"; card.style.boxShadow = "0 3px 0 #160510"; card.style.borderColor = "#160510";
         var _cb = add(card, "div", "convbase"); _cb.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // REMAINING = dark/matte, heavily dimmed (CSS)
-        var _cl = add(card, "div", "convlived"); _cl.style.height = Math.max(0, Math.min(100, (now - bs) / (be - bs) * 100)) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; _cl.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,.5),inset 0 -3px 0 #ff5fa8,0 0 16px " + D.light; // LIVED = bright shining + a pink fill-edge glow at the now-line (David 2026-06-25)
+        var _cl = add(card, "div", "convlived"); _cl.style.height = Math.max(0, Math.min(100, (now - bs) / (be - bs) * 100)) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; _cl.style.boxShadow = "inset 0 -3px 0 #ff5fa8,0 0 16px " + D.light; // LIVED = bright shining + a pink fill-edge glow at the now-line only (no stray top line) — David 2026-06-25
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
-        var _mh = Math.max(10, (_pm.end - _pm.start) / 60 * HP - 2);
+        var _mh = Math.max(5, (_pm.end - _pm.start) / 60 * HP - 4); // same floor/margin → no bounce
         var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "34px"; seg.style.right = "4px";
         seg.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.18),0 2px 0 #160510";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
@@ -2054,7 +2054,6 @@
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
     if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
     layoutLane(acts);
-    (function () { var byc = {}; acts.forEach(function (it) { if (it.kind === "log") (byc[it.col] = byc[it.col] || []).push(it); }); Object.keys(byc).forEach(function (c) { var a = byc[c].sort(function (x, y) { return x.s - y.s; }); for (var i = 0; i < a.length - 1; i++) a[i].nextS = a[i + 1].s; }); })(); // next log in each column → cap its height so real-lane logs never overlap at any zoom (David 2026-06-25)
     var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
       if (it.kind === "log" && fusedIntoPlan(it, domainOf(it.ref))) return; // matched: shown as the fused full-width plan bar, not a separate real bar (David 2026-06-25)
@@ -2062,7 +2061,7 @@
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
       var cardH;
       if (it.kind === "timer") { var _nowY = topFor(now), _startY = topFor(it.s), _cTop = Math.min(_startY, _nowY - 58); cardH = _nowY - _cTop; card.style.top = _cTop + "px"; card.style.height = Math.max(58, cardH) + "px"; liveBottom = Math.max(liveBottom, _nowY); } // LIVE card's BOTTOM is pinned to the now-line (the present); it grows UPWARD and never crosses into the future, so "now" can't cover it (David 2026-06-24)
-      else { cardH = Math.max(5, (it.e - it.s) / 60 * HP - 3); if (it.nextS != null) { var _cap = (it.nextS - it.s) / 60 * HP - 2; if (_cap < cardH) cardH = Math.max(3, _cap); } card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); }
+      else { cardH = Math.max(5, (it.e - it.s) / 60 * HP - 4); card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); } // floor-5/margin-4, no cap → matches the live-zoom relayout exactly (no bounce)
       card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; card.style.width = "auto"; // one activity at a time — real lane is always full width, never split into multitasking columns (David 2026-06-23)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
