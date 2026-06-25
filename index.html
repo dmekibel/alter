@@ -806,7 +806,7 @@
   .pull-hbtns{ display:flex; gap:7px; flex:none; }
   .pull-switch{ background:#ffc83d; color:#5a3a00; border:2px solid #160510; border-radius:9px; box-shadow:0 3px 0 #160510; padding:6px 10px; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; }
   .pull-x{ width:30px; height:30px; border-radius:9px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:13px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
-  #pullBody{ position:relative; flex:1 1 auto; min-height:0; overflow:auto; padding:0 3px 2px 1px; -webkit-overflow-scrolling:touch; touch-action:pan-y; scrollbar-width:none; }
+  #pullBody{ position:relative; flex:1 1 auto; min-height:0; overflow:auto; padding:0 3px 2px 1px; -webkit-overflow-scrolling:touch; touch-action:pan-y; scrollbar-width:none; overscroll-behavior:contain; }
   #pullBody::-webkit-scrollbar, .day-cardscroll::-webkit-scrollbar{ display:none; } /* no visible scrollbar covering content (David 2026-06-25) */ /* no top padding → the sticky PLAN/REAL header sits flush; relative for scroll math; pan-y yields h-swipe+pinch to JS (David 2026-06-24) */
   #pullGrab{ flex:none; text-align:center; color:#ffb8d8; font-size:11px; font-weight:700; padding:9px 0 13px; cursor:grab; background:#1c0512; border-top:2px solid #160510; touch-action:none; }
   .pull-handle{ display:block; width:42px; height:5px; border-radius:3px; background:#ffb8d8; margin:0 auto 6px; }
@@ -984,8 +984,9 @@
   .calblk.lbl-i{ padding:0 !important; }
   .calblk.lbl-i .cn, .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
   /* the right SYMBOL RAIL: a stacked, non-overlapping column of activity icons, in chronological order */
-  .railchip{ position:absolute; right:1px; width:18px; height:16px; border-radius:5px; display:flex; align-items:center; justify-content:center; z-index:6; border:1.5px solid #160510; box-shadow:0 1px 2px rgba(0,0,0,.5); pointer-events:none; } /* far-right rail, fully inside the track so it can't be clipped (David 2026-06-25) */
-  .railchip .ti{ font-size:11px; }
+  .railchip{ position:absolute; right:1px; width:23px; height:21px; border-radius:6px; display:flex; align-items:center; justify-content:center; z-index:8; border:1.5px solid #160510; box-shadow:0 1px 3px rgba(0,0,0,.55); pointer-events:none; } /* far-right rail, fully inside the track so it can't be clipped; bigger = easier to tap a tiny bar (David 2026-06-25) */
+  .railchip:active{ transform:scale(.9); }
+  .railchip .ti{ font-size:13px; }
   #pullBody.zooming .railchip{ display:none; }
   .calblk.lbl-i .cn-t, .calblk.lbl-i .csub, .calblk.lbl-i .step-n, .calblk.lbl-i .ti-sparkles, .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
   /* SIDE (<9px): too thin for even an icon → a clean coloured line in its OWN lane (never crosses lanes). No label unless there is clear space beside it (David 2026-06-25) */
@@ -1049,7 +1050,7 @@
   .day-cardlab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
   .day-card.today .day-cardlab{ color:#ff5fa0; }
   .day-card .lanehead{ position:static !important; box-shadow:none !important; padding:3px 0 3px 34px !important; }
-  .day-cardscroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; -webkit-overflow-scrolling:touch; position:relative; scrollbar-width:none; }
+  .day-cardscroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; -webkit-overflow-scrolling:touch; position:relative; scrollbar-width:none; overscroll-behavior:contain; }
   .day-cardscroll::-webkit-scrollbar{ width:0; }
   /* ============ v447 — bento 2-column + stripes + shimmer · ghost=image4 · streak tiers (David 2026-06-24) ============ */
   /* BENTO: two-column grid of category panels with wrapped chips (David's image 1) */
@@ -1162,6 +1163,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=478"></script>
+  <script src="app.js?v=479"></script>
 </body>
 </html>
