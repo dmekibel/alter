@@ -731,8 +731,29 @@
   }
   function openPull() { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.add("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.add("on"); bd.style.opacity = ""; } }
   function closePull() { var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } }
+  function renderLiveDock() { // the pull-up live-tracker panel (Today only, while tracking) — David 2026-06-25
+    var dk = el("liveDock"); if (!dk) return;
+    var run = activeTimers(), t = run[run.length - 1];
+    if (!t) { dk.classList.remove("on"); return; }
+    dk.classList.add("on");
+    var dom = domainOf(t), D = DOM[dom] || DOM.focus, drift = (dom === "drift");
+    var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), on = false;
+    if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
+    var ad = el("ldAct"), su = el("ldSub"), elx = el("ldEl");
+    var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ffe2db;background:#c4607f;border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
+    if (ad) ad.innerHTML = tiIcon(t) + ' ' + esc(t.title || "Tracking") + ' ' + badge;
+    if (su) su.textContent = on ? "matches your plan" : (drift ? "off plan — logged honestly" : "tracking · no plan");
+    if (elx) { elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); }
+    if (!dk._wired) { dk._wired = 1;
+      el("ldStop").onclick = function () { var r = activeTimers(); if (r.length) stopTimer(r[r.length - 1].id); };
+      el("ldSw").onclick = function () { startOrSwitch(); };
+      el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); };
+      el("ldReplan").onclick = function () { planBreak(); };
+      el("ldDrift").onclick = function () { startOrSwitch(); };
+    }
+  }
   function renderLiveTracker() {
-    var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); if (!lt || !lb) return;
+    var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); renderLiveDock(); if (!lt || !lb) return;
     document.body.classList.add("tracker");
     var run = activeTimers(), t = run[run.length - 1];
     if (t) { var D = DOM[domainOf(t)]; lb.innerHTML = '<i class="ti ti-player-play-filled" style="color:' + D.c + '"></i> ' + esc(t.title || "Tracking") + ' · ' + liveSpan(t); lt.classList.add("live"); } // dark strip (matches the pull-down for one consistent color); the activity shows in the icon's color

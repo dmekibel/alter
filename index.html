@@ -843,6 +843,23 @@
   body.tab-day:not(.gaming) #pullHead .pull-x{ display:none !important; }     /* no close button — it's always open */
   body.tab-day:not(.gaming) #t-day{ display:none !important; }                /* retired inline calendar (kept in DOM so its old handlers don't error) */
   body:not(.tab-day):not(.gaming) #pullSheet{ display:none !important; }       /* hidden while on Goals / You */
+  /* pull-up live-tracker dock — only on Today, only while tracking (David 2026-06-25) */
+  #liveDock{ display:none; }
+  body.tab-day:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:calc(70px + env(safe-area-inset-bottom,0px)); z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:6px 12px 11px; font-family:"Jost",sans-serif; }
+  #liveDock .ld-grab{ width:40px; height:5px; border-radius:3px; background:#5a2c44; margin:0 auto 7px; }
+  #liveDock .ld-main{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  #liveDock .ld-stop{ width:42px; height:42px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:0 3px 0 #160510; cursor:pointer; }
+  #liveDock .ld-info{ flex:1; min-width:0; }
+  #liveDock .ld-act{ color:#ffe3f1; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #liveDock .ld-sub{ color:#cd9bb6; font-size:10px; font-weight:600; margin-top:1px; }
+  #liveDock .ld-el{ color:#ff8ac0; font-weight:700; font-size:14px; min-width:44px; text-align:center; }
+  #liveDock .ld-sw{ width:38px; height:38px; border-radius:11px; background:#3a1430; border:2.5px solid #160510; color:#ffb8d6; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
+  #liveDock .ld-seg{ display:flex; gap:6px; }
+  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:8px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+  #liveDock .ld-plan{ background:#36b3f0; color:#08283c; }
+  #liveDock .ld-replan{ background:#3a1430; color:#d2aae8; }
+  #liveDock .ld-drift{ background:#3a1430; color:#d4768f; }
+  @media (min-width:560px){ body.tab-day:not(.gaming) #liveDock.on{ left:50%; right:auto; width:min(508px,calc(100vw - 16px)); transform:translateX(-50%); } }
   /* Goals + You screen scaffolding */
   .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
   .screen-h .ti{ color:#ff5fa0; }
@@ -1014,6 +1031,20 @@
     </div>
   </div>
 
+  <div id="liveDock">
+    <div class="ld-grab"></div>
+    <div class="ld-main">
+      <button class="ld-stop" id="ldStop" aria-label="Stop"><i class="ti ti-player-stop"></i></button>
+      <div class="ld-info"><div class="ld-act" id="ldAct">—</div><div class="ld-sub" id="ldSub"></div></div>
+      <div class="ld-el live-elapsed" id="ldEl">0:00</div>
+      <button class="ld-sw" id="ldSw" aria-label="Switch activity"><i class="ti ti-switch-horizontal"></i></button>
+    </div>
+    <div class="ld-seg">
+      <button class="ld-b ld-plan" id="ldPlan"><i class="ti ti-route"></i> Plan</button>
+      <button class="ld-b ld-replan" id="ldReplan"><i class="ti ti-arrows-shuffle"></i> Replan</button>
+      <button class="ld-b ld-drift" id="ldDrift"><i class="ti ti-windmill"></i> Drift</button>
+    </div>
+  </div>
   <nav id="nav">
     <button class="nb" data-tab="goals"><i class="ti ti-target ne"></i><span class="nl2">Goals</span></button>
     <button class="nb on" data-tab="day"><i class="ti ti-layout-list ne"></i><span class="nl2">Today</span></button>
@@ -1033,6 +1064,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=455"></script>
+  <script src="app.js?v=456"></script>
 </body>
 </html>
