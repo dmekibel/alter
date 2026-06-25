@@ -506,8 +506,9 @@
   .plan-empty{ position:absolute; left:34px; right:calc(50% + 4px); display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; border:2px dashed #ff5fa0; border-radius:12px; background:repeating-linear-gradient(45deg,rgba(255,95,160,.13),rgba(255,95,160,.13) 7px,rgba(255,95,160,.04) 7px,rgba(255,95,160,.04) 14px); color:#ff9dc6; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; z-index:3; text-transform:capitalize; }
   .plan-empty:active{ transform:scale(.97); }
   .backfill .ti{ font-size:13px; }
-  .nowline{ position:absolute; left:34px; right:6px; height:0; border-top:3px dashed #ff5fa0; z-index:6; box-shadow:none; }
+  .nowline{ position:absolute; left:34px; right:6px; height:0; border-top:4px solid #ff5fa0; z-index:6; }
   .nowline::before{ display:none; }
+  .nowcirc{ position:absolute; left:1px; width:28px; height:28px; border-radius:50%; border:3px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:14px; z-index:9; box-shadow:0 0 13px #ff5fa8; }
   .nowpill{ position:absolute; right:6px; background:#ff5fa0; color:#4a1126; font-size:11px; font-weight:700; border:2px solid #160510; border-radius:7px; padding:0 7px; z-index:7; animation:nowPulse 2.6s ease-in-out infinite; } /* gentle "you are here" heartbeat (David 2026-06-24 night) */
   @keyframes nowPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,95,160,.55); } 55%{ box-shadow:0 0 0 6px rgba(255,95,160,0); } }
   /* wake / noon / bed anchors — never lost in time (David 2026-06-24) */
@@ -1032,6 +1033,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=454"></script>
+  <script src="app.js?v=455"></script>
 </body>
 </html>

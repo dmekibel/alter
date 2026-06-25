@@ -1804,7 +1804,7 @@
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
     var _step = HP < 90 ? 60 : HP < 150 ? 30 : HP < 220 ? 15 : 5; // zoom deeper → finer grid: hour → :30 → :15 → :05 with real times (David 2026-06-25)
     for (var mm = startH * 60; mm <= endH * 60; mm += _step) { var _t = ((mm - startH * 60) / 60 * HP), _hh = Math.floor(mm / 60), _mn = mm % 60, _isHr = (_mn === 0); var _ln = add(cal, "div", _isHr ? "calhour" : "calhalf"); _ln.style.top = _t + "px"; if (_isHr) { var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 8) + "px"; } else { var _sl = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":" + pad(_mn)); _sl.style.top = (_t - 7) + "px"; } }
-    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nowLineEl = nl; var np = add(cal, "div", "nowtime", fmt(now)); np.style.top = (_ny - 8) + "px"; } // the present time lives on the LEFT axis (gutter) so it never covers a bubble (David 2026-06-24)
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = _lc; nl.style.boxShadow = "0 0 11px " + _lc; nowLineEl = nl; var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 14) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; var np = add(cal, "div", "nowtime"); np.style.top = (_ny + 6) + "px"; np.style.left = "0"; np.style.width = "30px"; np.style.textAlign = "center"; np.style.lineHeight = "1.05"; np.innerHTML = '<b style="font-size:8px;letter-spacing:.5px;display:block">NOW</b>' + fmt(now); } // thick activity-coloured now-line + pink NOW circle carrying the activity icon (David 2026-06-25)
     // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
     [["midnight", 0, "ti-clock-hour-12", "#5f8dd6"], ["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"], ["midnight", 1440, "ti-clock-hour-12", "#5f8dd6"]].forEach(function (tm) {
@@ -1833,6 +1833,7 @@
       var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
+      if (status === "ok") { card.style.right = "4px"; card.classList.add("fusedbar"); } // matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
       var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
       degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
       if (status === "ok") {
@@ -1888,12 +1889,14 @@
     if (!bls.length) { var pe = add(cal, "div", "plan-empty"); pe.style.top = (showNow ? topFor(Math.max(startH * 60 + 30, now)) : topFor((startH + 2) * 60)) + "px"; pe.innerHTML = '<i class="ti ti-stars"></i> plan ' + esc(relLabel(k).toLowerCase()); pe.onclick = function (ev) { ev.stopPropagation(); presetsSheet(k); }; } // empty PLAN lane → inviting one-tap auto-plan (David 2026-06-24 night)
     // a REAL item is "on-plan" (→ gold) when it overlaps a PLAN block of the SAME domain (§24 Guitar-Hero win); drift is shown honestly, never hidden
     function onPlanMatch(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom) return true; } return false; }
+    function fusedIntoPlan(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom && blockStatus(k, bls[i]) === "ok") return true; } return false; } // matched & complete → the plan bar goes full-width and represents BOTH lanes; don't draw this real log separately (David 2026-06-25)
     var acts = [];
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
     if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
     layoutLane(acts);
     var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
+      if (it.kind === "log" && fusedIntoPlan(it, domainOf(it.ref))) return; // matched: shown as the fused full-width plan bar, not a separate real bar (David 2026-06-25)
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
       var cardH;
       if (it.kind === "timer") { var _nowY = topFor(now), _startY = topFor(it.s), _cTop = Math.min(_startY, _nowY - 58); cardH = _nowY - _cTop; card.style.top = _cTop + "px"; card.style.height = Math.max(58, cardH) + "px"; liveBottom = Math.max(liveBottom, _nowY); } // LIVE card's BOTTOM is pinned to the now-line (the present); it grows UPWARD and never crosses into the future, so "now" can't cover it (David 2026-06-24)
