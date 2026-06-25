@@ -936,11 +936,12 @@
   .calblk.lbl-i .cn{ display:flex; align-items:center; justify-content:center; height:100%; font-size:0; line-height:0; }
   .calblk.lbl-i .cn .ti{ font-size:11px; }
   .calblk.lbl-i .cn-t, .calblk.lbl-i .csub, .calblk.lbl-i .step-n, .calblk.lbl-i .ti-sparkles, .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
-  /* SIDE (<9px): too thin for even an icon → the coloured line STOPS short and the NAME sits in clear dark space beside it (never ON the line — David 2026-06-25) */
-  .calblk.lbl-s{ left:34px !important; right:132px !important; padding:0 !important; border-width:0 !important; border-radius:3px !important; overflow:visible !important; box-shadow:0 1px 3px rgba(0,0,0,.4) !important; filter:none !important; opacity:1 !important; z-index:7; }
-  .calblk.lbl-s .cn{ position:absolute; left:calc(100% + 8px); right:auto; top:50%; transform:translateY(-50%); max-width:120px; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; padding:0; }
-  .calblk.lbl-s .cn .ti{ font-size:12px; flex:none; }
-  .calblk.lbl-s .cn-t{ display:inline; overflow:hidden; text-overflow:ellipsis; }
+  /* SIDE (<9px): too thin for even an icon → a clean coloured line in its OWN lane (never crosses lanes). No label unless there is clear space beside it (David 2026-06-25) */
+  .calblk.lbl-s{ padding:0 !important; border-width:0 !important; border-radius:3px !important; overflow:visible !important; box-shadow:0 1px 3px rgba(0,0,0,.4) !important; filter:none !important; opacity:1 !important; z-index:4; }
+  .calblk.lbl-s .cn{ display:none; } /* no room → no text, never crammed */
+  .calblk.lbl-s.clr .cn{ display:flex; position:absolute; right:calc(100% + 8px); left:auto; top:50%; transform:translateY(-50%); max-width:46vw; align-items:center; justify-content:flex-end; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; padding:0; } /* clear space to the LEFT → name there, off the line, legible */
+  .calblk.lbl-s.clr .cn .ti{ font-size:12px; flex:none; }
+  .calblk.lbl-s.clr .cn-t{ display:inline; overflow:hidden; text-overflow:ellipsis; }
   .calblk.lbl-s .csub, .calblk.lbl-s .calx, .calblk.lbl-s .grip, .calblk.lbl-s .gript, .calblk.lbl-s .foil, .calblk.lbl-s .shine, .calblk.lbl-s .ti-sparkles, .calblk.lbl-s .step-n{ display:none !important; }
   /* FULL but <42px → drop the second (subtitle) line so it never clips */
   .calblk.nosub .csub{ display:none !important; }
@@ -1103,6 +1104,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=463"></script>
+  <script src="app.js?v=464"></script>
 </body>
 </html>
