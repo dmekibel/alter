@@ -2148,45 +2148,27 @@
     // "start new" slot removed — starting/switching now lives in the pull-up dock (#liveDock); nothing clutters below the now-line (David 2026-06-25)
     cal.addEventListener("pointerdown", function (ev) {
       if (!cal.contains(ev.target)) return;
-      if (ev.target.closest && ev.target.closest(".calblk, .backfill, .railchip, .nowread, .nowtime")) return; // pressing a bubble/control is not a create gesture — only empty timeline / gridlines start one (David 2026-06-26)
-      var dy = ev.clientY, dx = ev.clientX, t0 = Date.now(), pid = ev.pointerId;
+      if (ev.target.closest && ev.target.closest(".calblk, .backfill, .railchip, .nowread, .nowtime")) return; // a bubble/control is not a create gesture
+      var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
       var rect0 = cal.getBoundingClientRect(), lx0 = ev.clientX - rect0.left;
       var downM = hm(timeFromY(dy - rect0.top, startH, HP)); // the time you pressed at
-      var isFuture = (k > todayK()) || !showNow || downM >= nowMin(); // the future has NO plan|real split — the whole width is one lane
-      var planSide = isFuture || lx0 <= rect0.width * 0.5; // future → create anywhere full-width · past/present → left (plan) half only
-      var scE = (cal.closest && cal.closest(".day-cardscroll")) || el("pullBody");
-      function lockScroll(on) { if (scE) { scE.style.overflowY = on ? "hidden" : ""; scE.style.touchAction = on ? "none" : ""; } } // hard-stop the timeline scroll while you stretch, so the drag can't fight it
-      var hold = null, creating = false, anchor = 0, gs = 0, ge = 0, ghost = null;
-      if (planSide) hold = setTimeout(function () { // press-and-hold ~260ms → a ghost appears; then DRAG to size it (David 2026-06-24)
-        creating = true; lockScroll(true); cal.style.touchAction = "none"; try { cal.setPointerCapture(pid); } catch (e0) {}
-        anchor = hm(timeFromY(dy - cal.getBoundingClientRect().top, startH, HP)); gs = anchor; ge = anchor + 30;
-        ghost = add(cal, "div", "calblk lane sched emptyblk newghost"); ghost.style.left = "26px"; ghost.style.right = isFuture ? "4px" : "calc(50% + 4px)"; ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(16, 30 / 60 * HP - 4) + "px";
-        add(ghost, "div", "cn").innerHTML = '<i class="ti ti-arrows-vertical"></i> drag to size';
-        if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
-      }, 260);
-      function mv(e) {
-        if (!creating) { if (hold && (Math.abs(e.clientY - dy) > 16 || Math.abs(e.clientX - dx) > 16)) { clearTimeout(hold); hold = null; } return; } // generous: small jitter while pressing doesn't cancel; a real drag (to scroll) does
-        e.preventDefault();
-        var rect = cal.getBoundingClientRect(), cm = hm(timeFromY(e.clientY - rect.top, startH, HP));
-        if (cm >= anchor) { gs = anchor; ge = Math.max(anchor + 5, cm); } else { ge = anchor; gs = Math.min(anchor - 5, cm); }
-        ghost.style.top = topFor(gs) + "px"; ghost.style.height = Math.max(12, (ge - gs) / 60 * HP - 4) + "px";
-        var gc = ghost.querySelector(".cn"); if (gc) gc.textContent = fmt(gs) + "–" + fmt(ge);
-      }
+      var isFuture = (k > todayK()) || !showNow || downM >= nowMin();
+      var rightTrack = !isFuture && showNow && lx0 > rect0.width * 0.5; // present/past REAL lane → tap-to-track, not create
+      var planSide = isFuture || lx0 <= rect0.width * 0.5;
+      var moved = false, done = false, holdT = null;
+      function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 30, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (nb) editBlk(nb); } // a 30-min empty bubble + its editor; the slider sizes it (drag-on-timeline can't beat the scroller, so we don't try) — David 2026-06-26
+      // PRESS-AND-HOLD STILL on empty space → make a bubble. We keep the move listener PASSIVE so a real drag just scrolls the timeline normally; only a stationary hold (no scroll) creates.
+      if (planSide && !rightTrack) holdT = setTimeout(function () { if (moved) return; holdT = null; done = true; try { if (navigator.vibrate) navigator.vibrate(11); } catch (e) {} makeBlock(); }, 300);
+      function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 12 || Math.abs(e.clientX - dx) > 12)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // a drag means you're scrolling → cancel the create
       function up(e) {
-        if (hold) { clearTimeout(hold); hold = null; }
-        cal.style.touchAction = ""; lockScroll(false); try { cal.releasePointerCapture(pid); } catch (e0) {}
+        if (holdT) { clearTimeout(holdT); holdT = null; }
         document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
-        if (creating) { if (ghost) ghost.remove(); var id0 = uid(); blocks(k).push({ id: id0, time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: Math.max(5, ge - gs), title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); var nb0 = blocks(k).filter(function (b) { return b.id === id0; })[0]; if (nb0) editBlk(nb0); return; } // stretched a bubble → opens the full editor (pick activity + tune); close without picking and it persists as an empty bubble you can tap or trash later (David 2026-06-26)
-        if (Math.abs(e.clientY - dy) > 9 || Math.abs(e.clientX - dx) > 9 || Date.now() - t0 > 450) return;
-        if (lx0 > rect0.width * 0.5 && showNow && !isFuture) {
-          bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } });
-        } else {
-          var tm = timeFromY(e.clientY - rect0.top, startH, HP), id = uid();
-          blocks(k).push({ id: id, time: tm, mins: 60, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday();
-          var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (nb) editBlk(nb); // quick tap on empty timeline → an empty bubble + the full editor (David 2026-06-26)
-        }
+        if (done) return; // already created on the hold
+        if (moved || Date.now() - t0 > 500) return; // scrolled / lingering → not a deliberate tap
+        if (rightTrack) { bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); }
+        else makeBlock(); // quick tap on empty plan / future → new bubble + editor
       }
-      document.addEventListener("pointermove", mv, { passive: false }); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+      document.addEventListener("pointermove", mv, { passive: true }); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
     });
     // RIGHT SYMBOL RAIL — the symbols of bars too thin to label, stacked in order, never overlapping (David 2026-06-25)
     railItems.sort(function (a, b) { return a.y - b.y; });
