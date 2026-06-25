@@ -469,6 +469,9 @@
   .calblk.cele{ animation:celePop .42s cubic-bezier(.2,.9,.3,1.45); }
   .calblk .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 34%,rgba(255,252,240,.5) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 3.2s linear infinite; }
   .calblk .shine{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(116deg,rgba(255,255,255,.42) 0%,transparent 22%,transparent 60%,rgba(255,255,255,.3) 80%,transparent 100%); } /* static metallic gloss for shining past success (David 2026-06-25) */
+  /* PARTIAL MATCH: the matched span shines full-width over both lanes; below it the ghost-plan (left) + drift (right) show where you diverged (David 2026-06-25) */
+  .matchseg{ position:absolute; border:2px solid #160510; border-radius:11px; overflow:hidden; z-index:5; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; padding:0 8px; box-sizing:border-box; }
+  .matchseg > .ti, .matchseg > i{ position:relative; z-index:2; font-size:15px; }
   /* future plan = LIT (holographic sheen, §14) — a note coming toward the now-line */
   .calblk.sched .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 38%,rgba(255,252,240,.26) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 4.6s linear infinite; }
   /* empty bubble pulled out by press-hold-drag — dashed candy placeholder you tap to choose (David 2026-06-24) */
@@ -1096,6 +1099,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=460"></script>
+  <script src="app.js?v=461"></script>
 </body>
 </html>

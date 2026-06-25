@@ -766,12 +766,12 @@
     matched("move", "Workout", cur, 45); cur += 45;
     matched("nourish", "Breakfast", cur, 30); cur += 30;
     matched("focus", "Deep work", cur, 60); cur += 60;
-    // MISS — planned but skipped → dark ghost, breaks the streak
-    plan("play", "Read", cur, 30, false); cur += 30;
-    // free gap, then a DRIFT — planned focus, actually scrolled (mauve real bar over the ghosted plan)
-    cur += 15; plan("focus", "Deep work", cur, 45, false); real("drift", "Scroll", cur, 40);
-    real("nourish", "Coffee", cur + 50, 8); cur += 65; // a quick standalone log → renders as the thin full-width line + name beside it
-    real("connect", "Quick text", now - 3, 1); // a few-seconds log right before NOW → near-now sliver (lifted clear of the now-line, labelled)
+    // PARTIAL — planned 60 of "Project work", did 25 then drifted: the matched 25min shines, the rest splits to ghost-plan | drift
+    plan("focus", "Project work", cur, 60, false); real("focus", "Project work", cur, 25); real("drift", "Scroll", cur + 25, 30); cur += 60;
+    // MISS — planned but skipped → dark ghost
+    plan("play", "Read", cur, 30, false); cur += 35;
+    real("nourish", "Coffee", cur, 8); cur += 18; // a quick standalone log → thin full-width line + name beside it
+    real("connect", "Quick text", now - 3, 1); // a few-seconds log right before NOW → near-now sliver (lifted clear, labelled)
     // LIVE, straddling now, on plan
     plan("focus", "Focus block", now - 12, 90, false);
     // FUTURE (matte)
@@ -1926,32 +1926,39 @@
       var bs = hm(b.time), be = bs + (b.mins || 30), status = blockStatus(k, b);
       // PLAN lane, 3 states (§23, mockups 030/031/034): sched = two-tone diagonal hatch · cele = activity-colored celebration · ghost = domain-outlined hollow
       var dom = domainOf(b), D = DOM[dom];
+      // PARTIAL MATCH (David 2026-06-25): a same-domain log covers only PART of the plan → that span shines (matched), the rest of the block falls back to ghost-plan | drift (split)
+      var _pm = (status === "ok" && !b.done) ? matchedSpan(b, dom) : null, partial = (_pm && _pm.cov < (be - bs) - 5) ? _pm : null;
       // BURNING TIMELINE (David 2026-06-23): future plan = BRIGHT/lit (a note coming), the now-line sweeping past it burns bright→dark, past = DARK. Burnt sticks — a plan pushed from the past stays dark until actually done (then it celebrates).
       var newlyPassed = false;
       if (status === "miss" && !b.passed) { b.passed = true; newlyPassed = true; burnedSomething = true; }
-      var dark = status !== "ok" && (b.passed || status === "miss");
-      var stt = status === "ok" ? "cele" : dark ? "ghost" : "sched";
+      var dark = (status !== "ok" && (b.passed || status === "miss")) || !!partial; // a partial's BASE is a ghost (the part you planned but didn't keep)
+      var stt = (status === "ok" && !partial) ? "cele" : dark ? "ghost" : "sched";
       var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
-      if (status === "ok") { card.style.right = "4px"; card.classList.add("fusedbar"); } // matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
+      if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
       degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
-      if (status === "ok") {
+      if (status === "ok" && !partial) {
         card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // matched = its own colour, matte-metallic stripes (calmer — no neon glow) (David 2026-06-25)
         card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.2),0 0 0 2px " + D.ring + ",0 3px 0 #160510"; card.style.borderColor = "#160510"; card.style.filter = "saturate(.92)";
         add(card, "div", "shine");
-      } else if (dark) { // missed/ghost — a domain-tinted-dark hollow with a clear domain OUTLINE + domain title (David's image 4)
+      } else if (dark) { // missed/ghost (and the unmatched base of a partial) — a domain-tinted-dark hollow with a clear domain OUTLINE + title (David's image 4)
         card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";
       } else { // future = THEORETICAL: faint domain hatch, fainter the further ahead it is, no glow (David 2026-06-25 · F1)
         card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510"; card.style.filter = "saturate(.72) brightness(.72)"; // MATTE = same domain hue, just dimmed (David 2026-06-25)
         var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.52, 0.92 - Math.max(0, _ahead) * 0.05) : 0.74);
       }
+      if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
+        var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = Math.max(10, (_pm.end - _pm.start) / 60 * HP - 2) + "px"; seg.style.left = "34px"; seg.style.right = "4px";
+        seg.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px " + D.ring + ",0 2px 0 #160510"; seg.style.color = D.dark;
+        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start); seg.innerHTML = '<i class="ti ti-circle-check"></i>'; add(seg, "div", "shine");
+      }
       var ink = dark ? D.light : D.ink;
       var cn = add(card, "div", "cn"); cn.style.color = ink;
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
-      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""));
+      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""));
       if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = "rgba(255,240,249,.45)"; } // muted "missed" (David's image 4)
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>';
@@ -1993,6 +2000,7 @@
     // a REAL item is "on-plan" (→ gold) when it overlaps a PLAN block of the SAME domain (§24 Guitar-Hero win); drift is shown honestly, never hidden
     function onPlanMatch(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom) return true; } return false; }
     function fusedIntoPlan(it, dom) { for (var i = 0; i < bls.length; i++) { var s2 = hm(bls[i].time), e2 = s2 + (bls[i].mins || 30); if (it.s < e2 && it.e > s2 && domainOf(bls[i]) === dom && blockStatus(k, bls[i]) === "ok") return true; } return false; } // matched & complete → the plan bar goes full-width and represents BOTH lanes; don't draw this real log separately (David 2026-06-25)
+    function matchedSpan(b, dom) { var s = null, e = null, bs = hm(b.time), be = bs + (b.mins || 30); for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs && domainOf(lgs[i]) === dom) { var cs = Math.max(bs, ls), ce = Math.min(be, le); if (s === null || cs < s) s = cs; if (e === null || ce > e) e = ce; } } return s === null ? null : { start: s, end: e, cov: e - s }; } // bounding span where same-domain real logs cover the plan block (David 2026-06-25)
     var acts = [];
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
     if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
