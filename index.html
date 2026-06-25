@@ -870,7 +870,7 @@
   #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:6px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
   #liveDock .ld-plan{ background:#36b3f0; color:#08283c; }
   #liveDock .ld-replan{ background:#3a1430; color:#d2aae8; }
-  #liveDock .ld-drift{ background:#3a1430; color:#b3a6c8; }
+  #liveDock .ld-drift{ background:#3a1430; color:#e89aa0; }
   #liveDock.noplan .ld-replan{ display:none; } /* no plan today → Plan + Drift only (David 2026-06-25) */
   @media (min-width:560px){ body.tab-day:not(.gaming) #liveDock.on{ left:50%; right:auto; width:min(508px,calc(100vw - 16px)); transform:translateX(-50%); } }
   /* Goals + You screen scaffolding */
@@ -922,28 +922,30 @@
   .timemark{ z-index:1 !important; }
   .calblk{ z-index:2; }
   .calblk.live{ z-index:3; }
-  /* tall bubble = icon+title · short = icon only (title drops) · tiny = colour only (icon drops too) */
+  /* LABEL INTELLIGENCE — the label adapts to bar HEIGHT so text never overflows (David 2026-06-25) */
   .cn-t{ display:inline; }
-  .calblk.csmall{ padding:2px 4px !important; }
-  .calblk.csmall .cn-t, .calblk.csmall .step-n, .calblk.csmall .csub{ display:none !important; }
-  .calblk.csmall .cn{ display:flex; align-items:center; justify-content:center; padding-right:0; }
-  .calblk.csmall .calx{ display:none !important; }
-  /* tiny PLAN sliver = still LABELED (one tiny line) + coloured + tappable → its menu lets you extend it (David 2026-06-25) */
-  .calblk.ctiny{ padding:0 6px !important; display:flex; align-items:center; }
-  .calblk.ctiny .cn{ font-size:10px; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .calblk.ctiny .cn .ti{ font-size:11px; }
-  .calblk.ctiny .cn-t{ display:inline; }
-  .calblk.ctiny .csub, .calblk.ctiny .calx, .calblk.ctiny .foil, .calblk.ctiny .grip, .calblk.ctiny .gript, .calblk.ctiny .step-n, .calblk.ctiny .ti-sparkles{ display:none !important; }
-  /* tiny past LOG = a thin full-width line with its NAME floated beside it (David 2026-06-25) */
-  .calblk.tinylog{ padding:0 !important; border-width:0 !important; border-radius:3px !important; overflow:visible !important; box-shadow:0 1px 3px rgba(0,0,0,.4) !important; filter:none !important; opacity:1 !important; z-index:7; } /* height set by JS (~12px) so it's a tappable bar, z-index above the now-line so a near-now sliver is never hidden (David 2026-06-25) */
-  .calblk.tinylog .cn{ position:absolute; right:6px; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; pointer-events:none; padding:0; text-shadow:0 1px 3px rgba(0,0,0,.78); }
-  .calblk.tinylog .cn .ti{ font-size:12px; }
-  .calblk.tinylog .cn-t{ display:inline; }
-  .calblk.tinylog .csub, .calblk.tinylog .calx, .calblk.tinylog .grip, .calblk.tinylog .gript, .calblk.tinylog .foil, .calblk.tinylog .shine, .calblk.tinylog .ti-sparkles{ display:none !important; }
-  .calblk.tinylog.nearnow .cn{ left:40px; right:auto; } /* near-now sliver: float the name LEFT so it never overlaps the now readout (David 2026-06-25) */
-  /* nothing cut off — hide the 2nd line + sparkle by HEIGHT instead of letting overflow:hidden crop them (David 2026-06-25) */
+  /* COMPACT (~15–27px): icon + name, ONE line, no subtitle */
+  .calblk.lbl-c{ padding:1px 8px !important; }
+  .calblk.lbl-c .cn{ font-size:12px; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .calblk.lbl-c .cn .ti{ font-size:13px; }
+  .calblk.lbl-c .csub, .calblk.lbl-c .step-n, .calblk.lbl-c .ti-sparkles, .calblk.lbl-c .calx{ display:none !important; }
+  /* ICON (~9–15px): just the icon/emoji, centred — no text (it would not fit) */
+  .calblk.lbl-i{ padding:0 !important; }
+  .calblk.lbl-i .cn{ display:flex; align-items:center; justify-content:center; height:100%; font-size:0; line-height:0; }
+  .calblk.lbl-i .cn .ti{ font-size:11px; }
+  .calblk.lbl-i .cn-t, .calblk.lbl-i .csub, .calblk.lbl-i .step-n, .calblk.lbl-i .ti-sparkles, .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
+  /* SIDE (<9px): too thin for even an icon → the coloured line STOPS short and the NAME sits in clear dark space beside it (never ON the line — David 2026-06-25) */
+  .calblk.lbl-s{ left:34px !important; right:132px !important; padding:0 !important; border-width:0 !important; border-radius:3px !important; overflow:visible !important; box-shadow:0 1px 3px rgba(0,0,0,.4) !important; filter:none !important; opacity:1 !important; z-index:7; }
+  .calblk.lbl-s .cn{ position:absolute; left:calc(100% + 8px); right:auto; top:50%; transform:translateY(-50%); max-width:120px; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; padding:0; }
+  .calblk.lbl-s .cn .ti{ font-size:12px; flex:none; }
+  .calblk.lbl-s .cn-t{ display:inline; overflow:hidden; text-overflow:ellipsis; }
+  .calblk.lbl-s .csub, .calblk.lbl-s .calx, .calblk.lbl-s .grip, .calblk.lbl-s .gript, .calblk.lbl-s .foil, .calblk.lbl-s .shine, .calblk.lbl-s .ti-sparkles, .calblk.lbl-s .step-n{ display:none !important; }
+  /* FULL but <42px → drop the second (subtitle) line so it never clips */
   .calblk.nosub .csub{ display:none !important; }
-  .calblk.csmall .ti-sparkles{ display:none !important; }
+  /* the matched-segment label on a partial (icon + name + ✓) */
+  .matchseg .mscn{ position:relative; z-index:2; display:flex; align-items:center; gap:5px; width:100%; font-weight:700; font-size:12px; line-height:1; white-space:nowrap; overflow:hidden; }
+  .matchseg .mscn .ti{ font-size:13px; }
+  .matchseg .mscn .ti-circle-check{ margin-left:auto; }
   /* resize-gating — a thin bubble shows NO edge grips (tap = move/menu, never accidental resize) — David 2026-06-25 */
   .calblk[data-gate="move"] .grip, .calblk[data-gate="move"] .gript, .calblk[data-gate="menu"] .grip, .calblk[data-gate="menu"] .gript{ display:none !important; }
   .calblk[data-gate="menu"]{ cursor:pointer; }
@@ -1099,6 +1101,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=461"></script>
+  <script src="app.js?v=462"></script>
 </body>
 </html>

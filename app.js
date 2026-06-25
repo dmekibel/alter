@@ -247,7 +247,7 @@
     play:    { l: "Play",    e: "🎮", c: "#9a5cf0", light: "#b483f5", dark: "#8443e0", ring: "#d6c2fb", ink: "#241548", ti: "ti-device-gamepad-2" }, // HOBBY (bento purple — was yellow)
     restore: { l: "Restore", e: "🌙", c: "#ffab4a", light: "#ffc274", dark: "#ef9528", ring: "#ffe0b8", ink: "#4a2a00", ti: "ti-moon" },       // energy · rest (soft amber)
     upkeep:  { l: "Upkeep",  e: "🧹", c: "#d98f4e", light: "#e8a96e", dark: "#c07835", ring: "#ecd0b0", ink: "#3a2208", ti: "ti-broom" },      // energy · space (muted tan)
-    drift:   { l: "Drift",   e: "🌫️", c: "#7a6b96", light: "#968aad", dark: "#5f5279", ring: "#c2b8d4", ink: "#241d33", ti: "ti-windmill" }   // drift = faded grey-violet (off the plan, not punishment)
+    drift:   { l: "Drift",   e: "🌫️", c: "#5e1820", light: "#7a2230", dark: "#120406", ring: "#3a0e14", ink: "#f4aab0", ti: "ti-windmill" }   // drift = black + dark-red vibes (off the plan) — David 2026-06-25
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -1912,8 +1912,9 @@
       var ml = add(cal, "div", "timemark"); ml.style.top = ((tm[1] - startH * 60) / 60 * HP) + "px"; ml.dataset.mn = tm[1]; ml.style.borderTopColor = tm[3] + "55";
       var lb = add(ml, "span", "timemark-lab"); lb.style.color = tm[3]; lb.innerHTML = '<i class="ti ' + tm[2] + '"></i> ' + tm[0];
     });
-    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(14, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // low floor → short activities render short, then their content degrades (David 2026-06-24)
-    function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("csmall", "ctiny", "nosub"); if (h < 15) card.classList.add("ctiny"); else if (h < 28) card.classList.add("csmall"); else if (h < 42) card.classList.add("nosub"); card.dataset.gate = h < 16 ? "menu" : h < 34 ? "move" : "full"; } // content degrades by height; gate = edge-resize (full, ≥34) vs move-only (16–34) vs menu-only (<16) so you never accidentally resize a thin bubble (David 2026-06-25)
+    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(5, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "34px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // bars are their TRUE time-height (low floor) so back-to-back bubbles can't overlap; the label then adapts to the height (David 2026-06-25)
+    // LABEL INTELLIGENCE by bar height (David 2026-06-25): tall = icon+name (+subtitle) · medium = icon+name one line · thin = icon/emoji only · too-thin = name on the SIDE
+    function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 15) card.classList.add("lbl-i"); else if (h < 27) card.classList.add("lbl-c"); else if (h < 42) card.classList.add("nosub"); card.dataset.gate = h < 16 ? "menu" : h < 34 ? "move" : "full"; } // gate = edge-resize (full ≥34) · move-only (16–34) · menu-only (<16)
     function rr() { renderToday(); }
     function editBlk(b) { if (!b.title) bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(b, x, k); } }); else blockEdit(b, k); } // empty bubble → pick what it is; filled → edit (David 2026-06-24)
     var planCards = [], burnedSomething = false;
@@ -1938,7 +1939,7 @@
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
       if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
-      var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(13, _gh) + "px"; } // cap height to the gap so short back-to-back bubbles never overlap (David 2026-06-24)
+      var _nb = _bsorted[_bi + 1]; if (_nb) { var _gh = (hm(_nb.time) - bs) / 60 * HP - 2, _ch = parseFloat(card.style.height) || 26; if (_gh < _ch) card.style.height = Math.max(3, _gh) + "px"; } // cap height to the gap so back-to-back bubbles NEVER overlap, at any zoom (David 2026-06-25)
       degrade(card); // short bubble → drop title (keep icon+colour); tiny → colour only
       if (status === "ok" && !partial) {
         card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // matched = its own colour, matte-metallic stripes (calmer — no neon glow) (David 2026-06-25)
@@ -1951,14 +1952,17 @@
         var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.52, 0.92 - Math.max(0, _ahead) * 0.05) : 0.74);
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
-        var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = Math.max(10, (_pm.end - _pm.start) / 60 * HP - 2) + "px"; seg.style.left = "34px"; seg.style.right = "4px";
-        seg.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px " + D.ring + ",0 2px 0 #160510"; seg.style.color = D.dark;
-        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start); seg.innerHTML = '<i class="ti ti-circle-check"></i>'; add(seg, "div", "shine");
+        var _mh = Math.max(10, (_pm.end - _pm.start) / 60 * HP - 2);
+        var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "34px"; seg.style.right = "4px";
+        seg.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px " + D.ring + ",0 2px 0 #160510";
+        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
+        var _sc = add(seg, "div", "mscn"); _sc.style.color = D.ink; _sc.innerHTML = (_mh >= 15 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : '') + '<i class="ti ti-circle-check"></i>'; add(seg, "div", "shine"); // matched span: icon + name + ✓ (the part you actually did)
       }
       var ink = dark ? D.light : D.ink;
       var cn = add(card, "div", "cn"); cn.style.color = ink;
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : ""));
+      if (partial) cn.style.display = "none"; // the matched segment + the drift carry the labels; the ghost remainder stays quiet (David 2026-06-25)
       if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = "rgba(255,240,249,.45)"; } // muted "missed" (David's image 4)
       var pc = { b: b, card: card }; planCards.push(pc);
       var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>';
@@ -2005,6 +2009,7 @@
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
     if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
     layoutLane(acts);
+    (function () { var byc = {}; acts.forEach(function (it) { if (it.kind === "log") (byc[it.col] = byc[it.col] || []).push(it); }); Object.keys(byc).forEach(function (c) { var a = byc[c].sort(function (x, y) { return x.s - y.s; }); for (var i = 0; i < a.length - 1; i++) a[i].nextS = a[i + 1].s; }); })(); // next log in each column → cap its height so real-lane logs never overlap at any zoom (David 2026-06-25)
     var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
       if (it.kind === "log" && fusedIntoPlan(it, domainOf(it.ref))) return; // matched: shown as the fused full-width plan bar, not a separate real bar (David 2026-06-25)
@@ -2012,15 +2017,15 @@
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
       var cardH;
       if (it.kind === "timer") { var _nowY = topFor(now), _startY = topFor(it.s), _cTop = Math.min(_startY, _nowY - 58); cardH = _nowY - _cTop; card.style.top = _cTop + "px"; card.style.height = Math.max(58, cardH) + "px"; liveBottom = Math.max(liveBottom, _nowY); } // LIVE card's BOTTOM is pinned to the now-line (the present); it grows UPWARD and never crosses into the future, so "now" can't cover it (David 2026-06-24)
-      else { cardH = Math.max(14, (it.e - it.s) / 60 * HP - 3); card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); }
+      else { cardH = Math.max(5, (it.e - it.s) / 60 * HP - 3); if (it.nextS != null) { var _cap = (it.nextS - it.s) / 60 * HP - 2; if (_cap < cardH) cardH = Math.max(3, _cap); } card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); }
       card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; card.style.width = "auto"; // one activity at a time — real lane is always full width, never split into multitasking columns (David 2026-06-23)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
         card.style.borderColor = "#160510"; card.style.background = drift ? ("linear-gradient(120deg," + D.light + "," + D.c + " 55%," + D.dark + ")") : onp ? ("repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)") : ("linear-gradient(150deg," + D.light + "," + D.c + ")"); card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; if (onp) { add(card, "div", "shine"); add(card, "div", "foil"); } // matched real = SHINING stripes · drift = mauve gradient (David 2026-06-25)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
-        if (cardH < 18) { var _nn = (showNow && k === todayK() && it.e <= now && (now - it.e) <= 6); card.classList.add("tinylog"); if (_nn) card.classList.add("nearnow"); card.style.left = "34px"; card.style.right = "4px"; card.style.height = "12px"; cn.style.color = D.light; var _st = topFor(it.s); if (_nn) _st = Math.min(_st, topFor(now) - 18); card.style.top = _st + "px"; card.dataset.gate = "menu"; } // tiny past log → a thin full-width bar sized up to stay tappable + name beside it, lifted clear of the now-line; tap opens its menu (David 2026-06-25)
-        else { card.dataset.dur = it.e - it.s; card.dataset.gate = cardH < 34 ? "move" : "full"; if (cardH < 28) card.classList.add("csmall"); }
+        card.dataset.dur = it.e - it.s; degrade(card);
+        if (card.classList.contains("lbl-s")) { cn.style.color = D.light; var _nn = (showNow && k === todayK() && it.e <= now && (now - it.e) <= 6); if (_nn) { card.style.top = Math.min(topFor(it.s), topFor(now) - parseFloat(card.style.height) - 6) + "px"; } } // a SIDE (too-thin) log → name in clear space beside the line; if it's right at NOW, lift it clear of the now-line (David 2026-06-25)
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); pushUndo(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
         var lg = add(card, "div", "grip"); lg.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) { pushUndo(); var sy = startY, sm = e.mins || 15, cs = card.querySelector(".csub"); function mv(e2) { var v = Math.max(5, Math.round((sm + (e2.clientY - sy) / HP * 60) / 5) * 5); e.mins = v; card.style.height = Math.max(24, v / 60 * HP - 3) + "px"; if (cs) cs.textContent = fmt(it.s) + "–" + fmt(it.s + v); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); save(); renderToday(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); });
@@ -2059,7 +2064,7 @@
       ivs.forEach(function (g) { if (g[0] - cur >= 10) gaps.push([cur, g[0]]); cur = Math.max(cur, g[1]); });
       if (now - cur >= 10) gaps.push([cur, now]);
       gaps.forEach(function (g) {
-        var slot = add(cal, "div", "backfill"); slot.style.top = topFor(g[0]) + "px"; slot.style.height = Math.max(20, (g[1] - g[0]) / 60 * HP - 4) + "px"; slot.style.left = "calc(50% + 4px)"; slot.style.right = "4px";
+        var slot = add(cal, "div", "backfill"); slot.style.top = topFor(g[0]) + "px"; slot.style.height = Math.max(20, (g[1] - g[0]) / 60 * HP - 4) + "px"; slot.style.left = "calc(50% + 4px)"; slot.style.right = "4px"; slot.dataset.mn = g[0]; slot.dataset.dur = (g[1] - g[0]); // tag so the backfill "+" tracks zoom like everything else (David 2026-06-25)
         slot.innerHTML = '<i class="ti ti-plus"></i>'; slot.style.opacity = ".38"; slot.style.fontSize = "12px"; // subtle forgot-to-track tap, not a loud prompt (David 2026-06-25)
         slot.addEventListener("click", function (e) {
           var gs, gm;
