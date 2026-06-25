@@ -811,12 +811,12 @@
     real("nourish", "Coffee", cur, 8); cur += 18; // a quick standalone log → thin full-width line + name beside it
     real("connect", "Quick text", now - 3, 1); // a few-seconds log right before NOW → near-now sliver (lifted clear, labelled)
     // LIVE, straddling now, on plan — ~40 min into a 90-min block so the charging battery is clearly half-full
-    plan("focus", "Focus block", now - 40, 90, false);
+    plan("focus", "Focus block", now - 50, 90, false); // planned 50 min ago; you started tracking 30 min ago → first 20 min ghost, last 30 charged
     // FUTURE (matte)
     plan("create", "Make art", now + 80, 60, false);
     plan("move", "Evening walk", now + 170, 45, false);
     S.blocks[k] = bl; S.log[k] = lg;
-    S.timers = [{ id: uid(), title: "Focus block", catK: "work", emoji: "", color: DOM.focus.c, start: Date.now() - 40 * 60000, dayK: k }];
+    S.timers = [{ id: uid(), title: "Focus block", catK: "work", emoji: "", color: DOM.focus.c, start: Date.now() - 30 * 60000, dayK: k }];
     S.game = S.game || {}; S.game.streak = 3; S.game.streakDay = k;
     save(); pendingScrollNow = true; renderAll(); buildPull(); toast("🧪 test day — streak ×3 · a miss · a drift · live · future");
   }
@@ -1991,10 +1991,12 @@
         card.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510"; card.style.filter = "saturate(.72) brightness(.72)"; // MATTE = same domain hue, just dimmed (David 2026-06-25)
         var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.52, 0.92 - Math.max(0, _ahead) * 0.05) : 0.74);
       }
-      if (_liveT && showNow && k === todayK() && domainOf(_liveT) === dom && bs < now && be > now) { // BATTERY (David 2026-06-25): the block you're living RIGHT NOW charges matte→shining top-down, the now-line is the fill edge. Height as a % of the block so it auto-tracks zoom (no bounce).
+      if (_liveT && showNow && k === todayK() && domainOf(_liveT) === dom && bs < now && be > now) { // BATTERY (David 2026-06-25): only the part you've actually TRACKED charges; the planned-but-untracked stretch BEFORE you started tracking stays ghost (you only "print" non-ghost by tracking the same activity / replanning).
+        var _tsd = new Date(_liveT.start), _tsm = Math.max(bs, Math.min(now, _tsd.getHours() * 60 + _tsd.getMinutes())); // when tracking started, clamped into this block's past
         card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1"; card.style.background = "none"; card.style.boxShadow = "0 3px 0 #160510"; card.style.borderColor = "#160510";
-        var _cb = add(card, "div", "convbase"); _cb.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // REMAINING = dark/matte, heavily dimmed (CSS)
-        var _cl = add(card, "div", "convlived"); _cl.style.height = Math.max(0, Math.min(100, (now - bs) / (be - bs) * 100)) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; _cl.style.boxShadow = "inset 0 -3px 0 #ff5fa8,0 0 16px " + D.light; // LIVED = bright shining + a pink fill-edge glow at the now-line only (no stray top line) — David 2026-06-25
+        var _cb = add(card, "div", "convbase"); _cb.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // base = matte (the part still ahead)
+        if (_tsm > bs + 0.5) { var _cg = add(card, "div", "convghost"); _cg.style.height = ((_tsm - bs) / (be - bs) * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.8); } // planned but NOT tracked before you started = ghost
+        var _cl = add(card, "div", "convlived"); _cl.style.top = ((_tsm - bs) / (be - bs) * 100) + "%"; _cl.style.height = Math.max(0, Math.min(100, (now - _tsm) / (be - bs) * 100)) + "%"; _cl.style.background = "repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)"; _cl.style.boxShadow = "inset 0 -3px 0 #ff5fa8,0 0 16px " + D.light; // LIVED = bright shining from where you started tracking → the now-line
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
@@ -2018,29 +2020,32 @@
         if (ev.target === xb || ((ev.target === grip || ev.target === gripT) && card.dataset.gate === "full")) return; // a thin (gated) card's grip falls through to here → move/menu, not resize
         var touch = ev.pointerType === "touch", scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody"); if (!touch) ev.preventDefault(); // mouse drags immediately
         var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0, snapped = false;
-        if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu") return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, 280); // longer "breath" (~280ms) → pick it up to MOVE; a too-tiny (menu-gated) card never picks up — a tap opens its menu instead (David 2026-06-25)
+        var _bpast = blockPast(k, b);
+        if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu") return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, _bpast ? 460 : 280); // the PAST feels set in stone → a longer, deliberate hold to move it (David 2026-06-25)
         function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); }
         function mv2(e) {
           if (touch && !picked) { var ady = Math.abs(e.clientY - sy0), adx = Math.abs(e.clientX - sx0); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 22 || adx > 22)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { e.preventDefault(); scE.scrollTop -= (e.clientY - lastY); lastY = e.clientY; } return; } // horizontal → let the day-swipe page · vertical drag = scroll the card · stay within 22px to pick up & move
           if (card.dataset.gate === "menu") return; // too tiny to move — only its tap-menu acts
-          var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); preview(card, dragMin, dragMin + (b.mins || 30)); }
+          var dy = e.clientY - sy0, dx = e.clientX - sx0; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); } if (moved) { e.preventDefault(); dragMin = Math.max(0, Math.min(1740, sm0 + Math.round((dy / HP * 60) / 15) * 15)); card.style.top = topFor(dragMin) + "px"; if (ct0) ct0.textContent = fmt(dragMin) + "–" + fmt(dragMin + (b.mins || 30)); if (!_bpast) preview(card, dragMin, dragMin + (b.mins || 30)); }
         }
-        function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // moved → save (snapshot taken on pick-up) · scrolled → nothing · clean tap → edit
+        function up2() { var wasMoved = moved, wasScroll = scrolling; clean(); if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); if (!_bpast) reflow(k); save(); renderToday(); } else if (!wasScroll) editBlk(b); } // moved → save; a PAST move doesn't reflow the others (set in stone) · scrolled → nothing · clean tap → edit
         function cancel() { clean(); }
         document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
       });
       grip.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) {
         card.classList.add("dragging"); pushUndo();
-        var sy = startY, sm = b.mins || 30, ct = card.querySelector(".ct");
-        function mv(e) { var v = Math.max(5, Math.round((sm + (e.clientY - sy) / HP * 60) / 5) * 5); b.mins = v; card.style.height = Math.max(18, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "–" + fmt(hm(b.time) + v); preview(card, hm(b.time), hm(b.time) + v); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); if (!blockPast(k, b)) reflow(k); save(); renderToday(); }
+        var sy = startY, sm = b.mins || 30, ct = card.querySelector(".ct"), past = blockPast(k, b);
+        var maxM = past ? (function () { var ns = 1740; bls.forEach(function (x) { if (x !== b) { var xs = hm(x.time); if (xs >= hm(b.time) && xs < ns) ns = xs; } }); return Math.max(5, ns - hm(b.time)); })() : 720; // PAST = can only grow into FREE space, never push the next block (David 2026-06-25)
+        function mv(e) { var v = Math.max(5, Math.min(maxM, Math.round((sm + (e.clientY - sy) / HP * 60) / 5) * 5)); b.mins = v; card.style.height = Math.max(18, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "–" + fmt(hm(b.time) + v); if (!past) preview(card, hm(b.time), hm(b.time) + v); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); if (!past) reflow(k); save(); renderToday(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }); });
       gripT.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) {
         card.classList.add("dragging"); pushUndo();
-        var sy = startY, sm = b.mins || 30, sStart = hm(b.time), endM = sStart + sm, ct = card.querySelector(".ct");
-        function mv(e) { var ns = Math.max(0, Math.min(endM - 5, sStart + Math.round(((e.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(18, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "–" + fmt(endM); preview(card, ns, endM); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); if (!blockPast(k, b)) reflow(k); save(); renderToday(); }
+        var sy = startY, sm = b.mins || 30, sStart = hm(b.time), endM = sStart + sm, ct = card.querySelector(".ct"), past = blockPast(k, b);
+        var minS = past ? (function () { var ps = 0; bls.forEach(function (x) { if (x !== b) { var xe = hm(x.time) + (x.mins || 30); if (xe <= sStart && xe > ps) ps = xe; } }); return ps; })() : 0; // PAST = can only grow the start back into FREE space, never push the previous block
+        function mv(e) { var ns = Math.max(minS, Math.min(endM - 5, sStart + Math.round(((e.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(18, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "–" + fmt(endM); if (!past) preview(card, ns, endM); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); if (!past) reflow(k); save(); renderToday(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }); });
     });
