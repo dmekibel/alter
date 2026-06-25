@@ -102,6 +102,36 @@
   #sheet.edsheet .done2{ background:#ff5fa0 !important; color:#2a0d1c !important; border:none !important; box-shadow:none !important; }
   .rngread{ background:#2a0d1c; border:1.5px solid #6a3050; border-radius:11px; padding:9px 11px; margin:0 2px 12px; color:#ffd9ea; font-weight:700; font-size:13px; font-family:"Jost",sans-serif; display:flex; align-items:center; gap:7px; }
   .rngread b{ color:#fff2f9; font-weight:800; }
+  /* REDESIGNED activity editor — merged hero + draggable scrubber + auto-save (David 2026-06-25) */
+  .ed-hero{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; border:2px solid #160510; border-radius:16px; padding:14px 16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; margin-bottom:14px; box-shadow:none; }
+  .ed-hero .ed-heroname{ display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ed-hero .ed-heroname .ti{ font-size:20px; }
+  .ed-hero .ed-swap{ font-size:18px; opacity:.7; flex:none; }
+  .ed-hint{ color:#c98ca6; font-size:12px; font-weight:700; font-family:"Jost",sans-serif; margin:0 2px 7px; }
+  .ed-scrub{ position:relative; height:60px; background:#2a0d1c; border:1.5px solid #6a3050; border-radius:13px; margin-bottom:9px; overflow:hidden; touch-action:none; }
+  .ed-tick{ position:absolute; top:0; bottom:15px; width:1px; background:rgba(255,255,255,.08); }
+  .ed-ticklbl{ position:absolute; bottom:3px; font-size:9px; color:#8a5a72; font-family:"Jost",sans-serif; transform:translateX(2px); pointer-events:none; }
+  .ed-seg{ position:absolute; top:8px; bottom:19px; border:2px solid #160510; border-radius:9px; display:flex; align-items:center; justify-content:flex-end; cursor:grab; touch-action:none; box-shadow:0 2px 0 #160510; }
+  .ed-seg.grab{ cursor:grabbing; }
+  .ed-handle{ width:8px; height:60%; background:#160510; border-radius:3px; margin-right:5px; cursor:ew-resize; touch-action:none; }
+  .ed-read{ text-align:center; color:#fff2f9; font-weight:800; font-size:17px; font-family:"Jost",sans-serif; margin-bottom:15px; }
+  .ed-read .ed-arrow{ color:#c98ca6; margin:0 3px; }
+  .ed-read .ed-dur{ color:#ff8fbd; font-size:14px; margin-left:3px; }
+  .ed-prow{ display:flex; gap:8px; align-items:stretch; margin-bottom:14px; }
+  .ed-seg3{ display:flex; flex:1; background:#3a1226; border:1.5px solid #6a3050; border-radius:12px; overflow:hidden; }
+  .ed-prio{ flex:1; text-align:center; padding:10px 0; color:#ffe6f2; font-weight:700; font-family:"Jost",sans-serif; cursor:pointer; border-right:1.5px solid #6a3050; }
+  .ed-prio:last-child{ border-right:none; }
+  .ed-prio.on{ background:#ff5fa0; color:#2a0d1c; font-weight:800; }
+  .ed-pin{ width:48px; display:flex; align-items:center; justify-content:center; background:#3a1226; border:1.5px solid #6a3050; border-radius:12px; color:#ffb0cf; cursor:pointer; font-size:18px; }
+  .ed-pin.on{ background:#ff5fa0; color:#2a0d1c; }
+  .ed-steps{ margin-bottom:14px; }
+  .ed-stephead{ width:100%; display:flex; align-items:center; justify-content:space-between; background:#3a1226; border:1.5px solid #6a3050; border-radius:12px; padding:11px 13px; color:#ffd9ea; font-weight:700; font-family:"Jost",sans-serif; font-size:13px; cursor:pointer; }
+  .ed-stepbody{ padding-top:8px; }
+  .ed-didit{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; background:#3a1226; border:1.5px solid #6a3050; border-radius:13px; padding:12px; color:#ffe6f2; font-weight:800; font-family:"Jost",sans-serif; font-size:15px; cursor:pointer; margin-bottom:14px; }
+  .ed-didit.on{ background:#2a0d1c; border:1.5px solid #ff5fa0; color:#ff9fc6; }
+  .ed-foot{ display:flex; gap:10px; margin-top:2px; }
+  .ed-done{ flex:1; background:#ff5fa0; border:none; border-radius:14px; padding:14px; color:#2a0d1c; font-weight:800; font-size:16px; font-family:"Jost",sans-serif; cursor:pointer; }
+  .ed-del{ width:56px; display:flex; align-items:center; justify-content:center; background:#3a1226; border:1.5px solid #6a3050; border-radius:14px; color:#ff8fa8; cursor:pointer; font-size:18px; }
   .subi{display:flex;align-items:center;gap:12px;padding:11px 6px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;margin-bottom:8px;font-size:15px;font-weight:600;cursor:pointer;}
   .c-stats{background:#ffd9a8;}
   .statrow{display:flex;align-items:center;gap:10px;padding:7px 2px;}
@@ -1135,6 +1165,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=476"></script>
+  <script src="app.js?v=477"></script>
 </body>
 </html>

@@ -2236,53 +2236,64 @@
     subs.forEach(function (s) { var c = add(wrap, "div", "sugchip"); c.style.background = D.c; c.style.color = D.ink; c.innerHTML = '<i class="ti ' + tiClass({ title: s, domain: dom }) + '"></i> ' + esc(s); c.onclick = function () { if (added[s]) return; added[s] = 1; c.style.opacity = ".55"; c.innerHTML = '<i class="ti ti-check"></i> ' + esc(s) + ' · added'; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 20, title: s, prio: 2, color: D.c, domain: dom, done: false }); reflow(k); save(); renderToday(); }; });
     var foot = add(card, "div", "bento-foot"); var ab = add(foot, "button", "bento-go"); ab.innerHTML = '<i class="ti ti-list-check"></i> add all steps'; ab.onclick = function () { subs.forEach(function (s) { if (!added[s]) blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 20, title: s, prio: 2, color: D.c, domain: dom, done: false }); }); reflow(k); save(); renderToday(); ov.remove(); }; return true;
   }
-  function blockEdit(b, k) {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); el("sheet").classList.add("edsheet"); pushUndo(); add(B, "div", "sttl", "Edit block");
-    var frm = add(B, "div", "frm"); var tm = document.createElement("input"); tm.type = "time"; tm.value = b.time; var tx = document.createElement("input"); tx.type = "text"; tx.value = b.title; frm.appendChild(tm); frm.appendChild(tx);
-    var swb = add(B, "button", "add2 swcol"); swb.style.margin = "8px 0 4px"; var _swD = DOM[domainOf(b)] || DOM.focus; function _paint(D2) { swb.style.setProperty("background", D2.c, "important"); swb.style.setProperty("color", D2.ink, "important"); swb.style.setProperty("border-color", "#160510", "important"); } _paint(_swD); swb.innerHTML = '<i class="ti ' + tiClass(b) + '"></i> switch activity'; swb.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { b.title = x.title; b.catK = x.catK || null; b.color = x.color || b.color; if (x.domain) b.domain = x.domain; tx.value = x.title; _paint(DOM[domainOf(b)] || DOM.focus); swb.innerHTML = '<i class="ti ' + tiClass(b) + '"></i> switch activity'; reflow(k); save(); renderToday(); } }); }; // the switch button wears the CURRENT activity's colour (David 2026-06-25)
-    function _dlbl(m) { return m < 60 ? m + "m" : (m % 60 ? (Math.floor(m / 60) + "h " + (m % 60) + "m") : (m / 60 + "h")); }
-    var _rng; function _updRng() { if (_rng) _rng.innerHTML = '<i class="ti ti-clock"></i> begins <b>' + fmt(hm(b.time)) + '</b> · ends <b>' + fmt(hm(b.time) + (b.mins || 30)) + '</b>'; }
-    add(B, "div", "lbl", "duration — tap ± to set how long (past or future)"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setD((b.mins || 30) - 5); }; var vv = add(w, "span", "stpv", _dlbl(b.mins || 30)); add(w, "button", "stp", "+").onclick = function () { setD((b.mins || 30) + 5); }; function setD(v) { b.mins = Math.max(5, Math.min(720, v)); vv.textContent = _dlbl(b.mins); if (!blockPast(k, b)) reflow(k); save(); renderToday(); _updRng(); } })();
-    _rng = add(B, "div", "rngread"); _updRng(); // begins/ends readout — changing the length OR the start updates it live (David 2026-06-25)
-    add(B, "div", "lbl", "start"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setS(hm(b.time) - 5); }; var vv = add(w, "span", "stpv", fmt(hm(b.time))); add(w, "button", "stp", "+").onclick = function () { setS(hm(b.time) + 5); }; function setS(v) { v = Math.max(0, Math.min(1740, v)); b.time = pad(Math.floor(v / 60)) + ":" + pad(v % 60); if (!blockPast(k, b)) reflow(k); save(); renderToday(); vv.textContent = fmt(hm(b.time)); tm.value = b.time; _updRng(); } })();
-    add(B, "div", "lbl", "priority"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === (b.prio || 2) ? " on" : ""), p.l); x.onclick = function () { b.prio = p.v; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; }); // priority shows on EVERY bubble you open, not just future ones (David 2026-06-25)
-    add(B, "div", "lbl", "📌 pin = fixed time; flexible activities flow around it"); var pc = add(B, "div", "pchips"); var px = add(pc, "div", "pchip" + (b.pin ? " on" : ""), b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"); px.onclick = function () { b.pin = !b.pin; px.classList.toggle("on"); px.textContent = b.pin ? "📌 Pinned — fixed" : "📌 Pin to this time"; };
-    // STEPS — add YOUR OWN ordered sub-parts to any activity (e.g. a Deep Work session split into your real work items, in order)
-    b.subs = b.subs || [];
-    add(B, "div", "lbl", "🧩 steps — split this into your own ordered parts (optional)");
-    var stepsW = add(B, "div", "steps-w");
-    (function drawSteps() {
-      stepsW.innerHTML = "";
-      b.subs.forEach(function (s, i) {
-        var r = add(stepsW, "div", "step-row" + (s.done ? " sdone" : ""));
-        var ck = add(r, "button", "step-ck" + (s.done ? " on" : "")); ck.innerHTML = s.done ? '<i class="ti ti-check"></i>' : ""; ck.onclick = function () { s.done = !s.done; save(); drawSteps(); };
-        add(r, "span", "step-t", s.t);
-        var up = add(r, "button", "step-mv"); up.innerHTML = '<i class="ti ti-chevron-up"></i>'; up.disabled = i === 0; up.onclick = function () { var x = b.subs.splice(i, 1)[0]; b.subs.splice(i - 1, 0, x); save(); drawSteps(); };
-        var dn = add(r, "button", "step-mv"); dn.innerHTML = '<i class="ti ti-chevron-down"></i>'; dn.disabled = i === b.subs.length - 1; dn.onclick = function () { var x = b.subs.splice(i, 1)[0]; b.subs.splice(i + 1, 0, x); save(); drawSteps(); };
-        var rm = add(r, "button", "step-rm"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { b.subs.splice(i, 1); save(); drawSteps(); };
-      });
-      var ab = add(stepsW, "button", "step-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a step'; ab.onclick = function () { bentoPicker({ title: "Add a step to " + b.title, onPick: function (x) { b.subs.push({ t: x.title, done: false }); save(); drawSteps(); } }); };
-    })();
-    if (/clean|tidy|chore|dishes|laundry|vacuum/i.test(b.title)) { var cbtn = add(B, "button", "add2", "🧹 open your Space — chores + state"); cbtn.style.margin = "2px 0 10px"; cbtn.onclick = function () { closeSheet(); choresSheet(); }; }
-    var row = add(B, "div", "frm");
-    add(row, "button", "add", b.done ? "✓ undo done" : "✓ Mark done").onclick = function () { b.done = !b.done; b.title = tx.value.trim() || b.title; b.time = tm.value; if (b.done) { var _st = bumpStreak(); celebrate(DOM[domainOf(b)].c, _st); } else coolStreak(); reflow(k); save(); closeSheet(); renderAll(); };
-    add(row, "button", "add", "🗑 Delete").onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); closeSheet(); renderAll(); };
-    add(B, "button", "done2", "Save").onclick = function () { b.title = tx.value.trim() || b.title; b.time = tm.value; reflow(k); save(); closeSheet(); renderAll(); };
+  function editorSheet(o, k, isLog) { // unified activity editor — merged hero (name = switch), draggable scrubber, auto-save (David 2026-06-25)
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); el("sheet").classList.add("edsheet"); el("sheet").classList.add("edpro"); pushUndo();
+    var DEF = isLog ? 15 : 30;
+    function D() { return DOM[domainOf(o)] || DOM.focus; }
+    function dlbl(m) { return m < 60 ? m + "m" : (m % 60 ? (Math.floor(m / 60) + "h " + (m % 60) + "m") : (m / 60 + "h")); }
+    function commit() { if (isLog) reflowLogs(k); else if (!blockPast(k, o)) reflow(k); save(); renderToday(); } // every change applies live — no Save button
+    // HERO — the activity name IS the switch button, in its own colour
+    var hero = add(B, "button", "ed-hero");
+    function paintHero() { var d = D(); hero.style.setProperty("background", d.c, "important"); hero.style.setProperty("color", d.ink, "important"); hero.style.setProperty("border-color", "#160510", "important"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ' + tiClass(o) + '"></i> ' + esc(o.title || "Choose activity") + '</span><i class="ti ti-switch-horizontal ed-swap"></i>'; }
+    paintHero();
+    hero.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { o.title = x.title; o.catK = x.catK || null; o.color = x.color || o.color; if (x.domain) o.domain = x.domain; paintHero(); commit(); } }); };
+    // SCRUBBER — drag the segment to move, pull the right edge to resize
+    add(B, "div", "ed-hint", "drag to move · pull the right edge to resize");
+    var scrub = add(B, "div", "ed-scrub");
+    var winS = Math.max(0, hm(o.time) - 150), winE = Math.min(1440, hm(o.time) + (o.mins || DEF) + 150); if (winE - winS < 120) winE = Math.min(1440, winS + 120); var winMin = winE - winS;
+    for (var _h = Math.ceil(winS / 60); _h * 60 < winE; _h++) { var _x = (_h * 60 - winS) / winMin * 100; var tk = add(scrub, "div", "ed-tick"); tk.style.left = _x + "%"; var tl = add(scrub, "div", "ed-ticklbl", ((_h % 12) || 12) + ((_h % 24) < 12 ? "a" : "p")); tl.style.left = _x + "%"; }
+    var seg = add(scrub, "div", "ed-seg"); var handle = add(seg, "div", "ed-handle");
+    var read = add(B, "div", "ed-read");
+    function layout() { var bs = hm(o.time), dur = o.mins || DEF, d = D(); seg.style.left = ((bs - winS) / winMin * 100) + "%"; seg.style.width = (dur / winMin * 100) + "%"; seg.style.background = "repeating-linear-gradient(45deg," + d.light + "," + d.light + " 7px," + d.c + " 7px," + d.c + " 14px)"; read.innerHTML = '<b>' + fmt(bs) + '</b> <span class="ed-arrow">→</span> <b>' + fmt(bs + dur) + '</b> <span class="ed-dur">· ' + dlbl(dur) + '</span>'; }
+    layout();
+    function trackW() { return scrub.getBoundingClientRect().width || 1; }
+    seg.addEventListener("pointerdown", function (ev) { if (ev.target === handle) return; ev.preventDefault(); seg.classList.add("grab"); var sx = ev.clientX, s0 = hm(o.time), w = trackW(); function mv(e) { var dmin = Math.round(((e.clientX - sx) / w * winMin) / 5) * 5; var dur = o.mins || DEF; var ns = Math.max(winS, Math.min(winE - dur, s0 + dmin)); o.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); layout(); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); seg.classList.remove("grab"); commit(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+    handle.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); var sx = ev.clientX, d0 = o.mins || DEF, w = trackW(); function mv(e) { var dmin = Math.round(((e.clientX - sx) / w * winMin) / 5) * 5; var nd = Math.max(5, Math.min(winE - hm(o.time), d0 + dmin)); o.mins = nd; layout(); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); commit(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+    // PRIORITY (segmented) + PIN (plan only)
+    var prow = add(B, "div", "ed-prow");
+    var seg3 = add(prow, "div", "ed-seg3"); PRIOS.forEach(function (p) { var c = add(seg3, "div", "ed-prio" + (p.v === (o.prio || 2) ? " on" : ""), p.l); c.onclick = function () { o.prio = p.v; Array.prototype.forEach.call(seg3.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); commit(); }; });
+    if (!isLog) { var pinb = add(prow, "button", "ed-pin" + (o.pin ? " on" : "")); pinb.innerHTML = '<i class="ti ti-pin"></i>'; pinb.onclick = function () { o.pin = !o.pin; pinb.classList.toggle("on"); commit(); }; }
+    // STEPS (plan only) — collapsed behind a toggle
+    if (!isLog) {
+      o.subs = o.subs || [];
+      var stExp = add(B, "div", "ed-steps"); var stHead = add(stExp, "button", "ed-stephead"); var stBody = add(stExp, "div", "ed-stepbody"); stBody.style.display = o.subs.length ? "block" : "none";
+      function stHeadTxt() { stHead.innerHTML = '<span><i class="ti ti-puzzle"></i> steps' + (o.subs.length ? ' · ' + o.subs.length : '') + '</span><i class="ti ti-chevron-' + (stBody.style.display === "none" ? "down" : "up") + '"></i>'; }
+      stHeadTxt(); stHead.onclick = function () { stBody.style.display = stBody.style.display === "none" ? "block" : "none"; stHeadTxt(); };
+      (function drawSteps() {
+        stBody.innerHTML = "";
+        o.subs.forEach(function (s, i) {
+          var r = add(stBody, "div", "step-row" + (s.done ? " sdone" : ""));
+          var ck = add(r, "button", "step-ck" + (s.done ? " on" : "")); ck.innerHTML = s.done ? '<i class="ti ti-check"></i>' : ""; ck.onclick = function () { s.done = !s.done; save(); drawSteps(); };
+          add(r, "span", "step-t", s.t);
+          var up = add(r, "button", "step-mv"); up.innerHTML = '<i class="ti ti-chevron-up"></i>'; up.disabled = i === 0; up.onclick = function () { var x = o.subs.splice(i, 1)[0]; o.subs.splice(i - 1, 0, x); save(); drawSteps(); };
+          var dn = add(r, "button", "step-mv"); dn.innerHTML = '<i class="ti ti-chevron-down"></i>'; dn.disabled = i === o.subs.length - 1; dn.onclick = function () { var x = o.subs.splice(i, 1)[0]; o.subs.splice(i + 1, 0, x); save(); drawSteps(); };
+          var rm = add(r, "button", "step-rm"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { o.subs.splice(i, 1); save(); drawSteps(); stHeadTxt(); };
+        });
+        var ab = add(stBody, "button", "step-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a step'; ab.onclick = function () { bentoPicker({ title: "Add a step to " + o.title, onPick: function (x) { o.subs.push({ t: x.title, done: false }); save(); drawSteps(); stHeadTxt(); } }); };
+      })();
+    }
+    // MARK DONE (plan only)
+    if (!isLog) {
+      var didit = add(B, "button", "ed-didit" + (o.done ? " on" : "")); function ddTxt() { didit.innerHTML = o.done ? '<i class="ti ti-circle-check"></i> did it · tap to undo' : '<i class="ti ti-circle"></i> mark done'; } ddTxt();
+      didit.onclick = function () { o.done = !o.done; didit.classList.toggle("on"); ddTxt(); if (o.done) { var _st = bumpStreak(); celebrate(D().c, _st); } else coolStreak(); commit(); };
+    }
+    // FOOTER — auto-save means no Save; just Done + delete
+    var foot = add(B, "div", "ed-foot");
+    var done = add(foot, "button", "ed-done"); done.innerHTML = '<i class="ti ti-check"></i> Done'; done.onclick = function () { closeSheet(); renderAll(); };
+    var del = add(foot, "button", "ed-del"); del.innerHTML = '<i class="ti ti-trash"></i>'; del.onclick = function () { var a = isLog ? logs(k) : blocks(k); var ix = a.indexOf(o); if (ix >= 0) a.splice(ix, 1); save(); closeSheet(); renderAll(); };
   }
-  function logEdit(e, k) { // tapping a REAL-lane bubble opens the SAME kind of menu as a plan bubble — type, duration, start, priority (David 2026-06-25)
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); el("sheet").classList.add("edsheet"); pushUndo(); add(B, "div", "sttl", "Edit activity");
-    var frm = add(B, "div", "frm"); var tm = document.createElement("input"); tm.type = "time"; tm.value = e.time; var tx = document.createElement("input"); tx.type = "text"; tx.value = e.title; frm.appendChild(tm); frm.appendChild(tx);
-    add(B, "div", "lbl", "type — what this activity is"); var swb = add(B, "button", "add2 swcol"); swb.style.margin = "4px 0"; var _swD = DOM[domainOf(e)] || DOM.focus; function _paint(D2) { swb.style.setProperty("background", D2.c, "important"); swb.style.setProperty("color", D2.ink, "important"); swb.style.setProperty("border-color", "#160510", "important"); } _paint(_swD); swb.innerHTML = '<i class="ti ' + tiClass(e) + '"></i> ' + esc(e.title) + ' — switch'; swb.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { e.title = x.title; e.catK = x.catK || null; e.color = x.color || e.color; if (x.domain) e.domain = x.domain; tx.value = x.title; _paint(DOM[domainOf(e)] || DOM.focus); reflowLogs(k); save(); renderToday(); swb.innerHTML = '<i class="ti ' + tiClass(e) + '"></i> ' + esc(e.title) + ' — switch'; } }); }; // switch button wears the current activity's colour (David 2026-06-25)
-    function _dlbl(m) { return m < 60 ? m + "m" : (m % 60 ? (Math.floor(m / 60) + "h " + (m % 60) + "m") : (m / 60 + "h")); }
-    var _rng; function _updRng() { if (_rng) _rng.innerHTML = '<i class="ti ti-clock"></i> begins <b>' + fmt(hm(e.time)) + '</b> · ends <b>' + fmt(hm(e.time) + (e.mins || 15)) + '</b>'; }
-    add(B, "div", "lbl", "duration — tap ± to set how long (past or future)"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setD((e.mins || 15) - 5); }; var vv = add(w, "span", "stpv", _dlbl(e.mins || 15)); add(w, "button", "stp", "+").onclick = function () { setD((e.mins || 15) + 5); }; function setD(v) { e.mins = Math.max(5, Math.min(720, v)); vv.textContent = _dlbl(e.mins); reflowLogs(k); save(); renderToday(); _updRng(); } })();
-    _rng = add(B, "div", "rngread"); _updRng();
-    add(B, "div", "lbl", "start"); (function () { var w = add(B, "div", "stepper"); add(w, "button", "stp", "−").onclick = function () { setS(hm(e.time) - 5); }; var vv = add(w, "span", "stpv", fmt(hm(e.time))); add(w, "button", "stp", "+").onclick = function () { setS(hm(e.time) + 5); }; function setS(v) { v = Math.max(0, Math.min(1740, v)); e.time = pad(Math.floor(v / 60)) + ":" + pad(v % 60); reflowLogs(k); save(); renderToday(); vv.textContent = fmt(hm(e.time)); tm.value = e.time; _updRng(); } })();
-    add(B, "div", "lbl", "priority"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === (e.prio || 2) ? " on" : ""), p.l); x.onclick = function () { e.prio = p.v; Array.prototype.forEach.call(c3.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; });
-    var row = add(B, "div", "frm");
-    add(row, "button", "add", "🗑 Delete").onclick = function () { var a = logs(k); a.splice(a.indexOf(e), 1); save(); closeSheet(); renderAll(); };
-    add(B, "button", "done2", "Save").onclick = function () { e.title = tx.value.trim() || e.title; e.time = tm.value; reflowLogs(k); save(); closeSheet(); renderAll(); };
-  }
+  function blockEdit(b, k) { editorSheet(b, k, false); }
+  function logEdit(e, k) { editorSheet(e, k, true); }
   function renderHabits() {
     var L = el("habitList"); if (!L) return; L.innerHTML = ""; var dm = doneMap(todayK()), done = 0; // Habits menu removed — same thing as the bento (David 2026-06-23)
     S.habits.forEach(function (hb) {
