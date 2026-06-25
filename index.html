@@ -465,7 +465,8 @@
   .calblk.lift{ transform:scale(1.05); box-shadow:0 16px 34px rgba(0,0,0,.6); z-index:9; }
   .calblk.dragging{ transition:transform .14s,box-shadow .14s; }
   .calblk.cele{ animation:celePop .42s cubic-bezier(.2,.9,.3,1.45); }
-  .calblk.cele .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 34%,rgba(255,252,240,.45) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 3.2s linear infinite; }
+  .calblk .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 34%,rgba(255,252,240,.5) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 3.2s linear infinite; }
+  .calblk .shine{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(116deg,rgba(255,255,255,.42) 0%,transparent 22%,transparent 60%,rgba(255,255,255,.3) 80%,transparent 100%); } /* static metallic gloss for shining past success (David 2026-06-25) */
   /* future plan = LIT (holographic sheen, §14) — a note coming toward the now-line */
   .calblk.sched .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 38%,rgba(255,252,240,.26) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 4.6s linear infinite; }
   /* empty bubble pulled out by press-hold-drag — dashed candy placeholder you tap to choose (David 2026-06-24) */
@@ -477,7 +478,7 @@
   /* the now-line burning PAST a plan: one-shot ember flash → settle to dark (Guitar-Hero / piano-roll feel) */
   .calblk.burning{ animation:burnOut 1.15s ease-out; }
   @keyframes burnOut{ 0%{ opacity:1; filter:brightness(1.5) saturate(1.3); box-shadow:0 0 22px 3px #ff8a3a,0 0 0 1px #160510; } 45%{ opacity:.85; filter:brightness(1) saturate(.9); } 100%{ opacity:.62; filter:saturate(.5) brightness(.78); box-shadow:none; } }
-  .calblk.act.onplan{ box-shadow:0 0 0 3px #ffd54a inset, 0 3px 0 #160510, 0 5px 12px rgba(0,0,0,.4) !important; }
+  .calblk.act.onplan{ box-shadow:0 0 0 3px rgba(255,255,255,.5) inset, 0 3px 0 #160510, 0 5px 14px rgba(0,0,0,.4) !important; } /* matched = bright shine rim in the activity's own colour, NOT gold (David 2026-06-25) */
   .calblk.live{ animation:livePulse 1.7s ease-in-out infinite; }
   @keyframes celePop{ 0%{transform:scale(.6);} 60%{transform:scale(1.05);} 100%{transform:scale(1);} }
   @keyframes foilSlide{ 0%{background-position:-40% 0;} 100%{background-position:140% 0;} }
@@ -1031,6 +1032,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=453"></script>
+  <script src="app.js?v=454"></script>
 </body>
 </html>
