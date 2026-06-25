@@ -516,7 +516,7 @@
   .backfill .ti{ font-size:13px; }
   .nowline{ position:absolute; left:26px; right:4px; height:0; border-top:4px solid #ff5fa0; z-index:6; }
   .nowline::before{ display:none; }
-  .nowcirc{ position:absolute; left:0; width:18px; height:18px; border-radius:50%; border:2.5px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:9px; z-index:9; box-shadow:0 0 11px #ff5fa8; } /* small + fully on-screen, pulled to the edge (David 2026-06-25) */
+  .nowcirc{ position:absolute; left:-3px; width:16px; height:16px; border-radius:50%; border:2.5px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:8.5px; z-index:9; box-shadow:0 0 8px #ff5fa8; } /* smaller + pulled hard to the left edge so it clears the hour numbers (David 2026-06-25) */
   /* STRADDLING-NOW block split by the present line: future (matte) · past ghost (failed) · tracked stretch (matched stripes) — David 2026-06-25 */
   .calblk.convbar{ overflow:hidden; }
   .calblk.convbar .convfut{ position:absolute; left:0; right:0; bottom:0; z-index:0; filter:saturate(.72) brightness(.68); } /* FUTURE half = matte (still ahead) */
@@ -1124,6 +1124,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=473"></script>
+  <script src="app.js?v=474"></script>
 </body>
 </html>
