@@ -91,6 +91,17 @@
   .pchip:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink);}
   .pchip.on{background:var(--purple);color:#fff;}
   .lbl{font-family:var(--bub);font-size:13px;color:var(--ink);font-weight:700;margin:4px 2px 8px;}
+  /* EDIT SHEET — berry restyle in the app's own vibe, scoped to the activity editor only (no white pills, no chunky shadows) — David 2026-06-25 */
+  #sheet.edsheet .scard{ background:#260b18 !important; border-color:#5a2942 !important; box-shadow:none !important; }
+  #sheet.edsheet .frm input, #sheet.edsheet .add2:not(.swcol), #sheet.edsheet .add, #sheet.edsheet .stp, #sheet.edsheet .pchip{ background:#3a1226 !important; border:1.5px solid #6a3050 !important; color:#ffe6f2 !important; box-shadow:none !important; }
+  #sheet.edsheet .add2.swcol{ box-shadow:none !important; border:1.5px solid #160510 !important; }
+  #sheet.edsheet .stpv{ color:#ffe6f2 !important; }
+  #sheet.edsheet .pchip.on{ background:#ff5fa0 !important; color:#2a0d1c !important; border-color:#ff5fa0 !important; }
+  #sheet.edsheet .lbl{ color:#c98ca6 !important; }
+  #sheet.edsheet .sttl{ color:#fff2f9 !important; }
+  #sheet.edsheet .done2{ background:#ff5fa0 !important; color:#2a0d1c !important; border:none !important; box-shadow:none !important; }
+  .rngread{ background:#2a0d1c; border:1.5px solid #6a3050; border-radius:11px; padding:9px 11px; margin:0 2px 12px; color:#ffd9ea; font-weight:700; font-size:13px; font-family:"Jost",sans-serif; display:flex; align-items:center; gap:7px; }
+  .rngread b{ color:#fff2f9; font-weight:800; }
   .subi{display:flex;align-items:center;gap:12px;padding:11px 6px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;margin-bottom:8px;font-size:15px;font-weight:600;cursor:pointer;}
   .c-stats{background:#ffd9a8;}
   .statrow{display:flex;align-items:center;gap:10px;padding:7px 2px;}
@@ -1124,6 +1135,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=475"></script>
+  <script src="app.js?v=476"></script>
 </body>
 </html>
