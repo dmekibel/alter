@@ -2248,17 +2248,19 @@
     paintHero();
     hero.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { o.title = x.title; o.catK = x.catK || null; o.color = x.color || o.color; if (x.domain) o.domain = x.domain; paintHero(); commit(); } }); };
     // SCRUBBER — drag the segment to move, pull the right edge to resize
-    add(B, "div", "ed-hint", "drag to move · pull the right edge to resize");
-    var scrub = add(B, "div", "ed-scrub");
-    var winS = Math.max(0, hm(o.time) - 150), winE = Math.min(1440, hm(o.time) + (o.mins || DEF) + 150); if (winE - winS < 120) winE = Math.min(1440, winS + 120); var winMin = winE - winS;
-    for (var _h = Math.ceil(winS / 60); _h * 60 < winE; _h++) { var _x = (_h * 60 - winS) / winMin * 100; var tk = add(scrub, "div", "ed-tick"); tk.style.left = _x + "%"; var tl = add(scrub, "div", "ed-ticklbl", ((_h % 12) || 12) + ((_h % 24) < 12 ? "a" : "p")); tl.style.left = _x + "%"; }
-    var seg = add(scrub, "div", "ed-seg"); var handle = add(seg, "div", "ed-handle");
+    // LENGTH — one simple slider, 30s → 12h (log-scaled so tiny lengths are easy to land) — David 2026-06-25
+    var MINM = 0.5, MAXM = 720;
+    function snapMin(v) { return v < 5 ? Math.round(v * 2) / 2 : v < 60 ? Math.round(v / 5) * 5 : Math.round(v / 15) * 15; }
+    function posToMin(p) { return snapMin(MINM * Math.pow(MAXM / MINM, p / 1000)); }
+    function minToPos(m) { m = Math.max(MINM, Math.min(MAXM, m)); return Math.round(1000 * Math.log(m / MINM) / Math.log(MAXM / MINM)); }
+    function lenLbl(m) { return m < 1 ? Math.round(m * 60) + "s" : m < 60 ? ((m % 1 ? m.toFixed(1) : m) + "m") : (Math.floor(m / 60) + "h" + (Math.round(m % 60) ? " " + Math.round(m % 60) + "m" : "")); }
+    add(B, "div", "ed-hint", "length — slide from 30s to 12h");
+    var sld = document.createElement("input"); sld.type = "range"; sld.min = "0"; sld.max = "1000"; sld.step = "1"; sld.value = minToPos(o.mins || DEF); sld.className = "ed-slider"; B.appendChild(sld);
     var read = add(B, "div", "ed-read");
-    function layout() { var bs = hm(o.time), dur = o.mins || DEF, d = D(); seg.style.left = ((bs - winS) / winMin * 100) + "%"; seg.style.width = (dur / winMin * 100) + "%"; seg.style.background = "repeating-linear-gradient(45deg," + d.light + "," + d.light + " 7px," + d.c + " 7px," + d.c + " 14px)"; read.innerHTML = '<b>' + fmt(bs) + '</b> <span class="ed-arrow">→</span> <b>' + fmt(bs + dur) + '</b> <span class="ed-dur">· ' + dlbl(dur) + '</span>'; }
+    function layout() { var bs = hm(o.time), dur = o.mins || DEF; read.innerHTML = '<b>' + lenLbl(dur) + '</b> <span class="ed-dur">· ends ' + fmt(bs + dur) + '</span>'; }
     layout();
-    function trackW() { return scrub.getBoundingClientRect().width || 1; }
-    seg.addEventListener("pointerdown", function (ev) { if (ev.target === handle) return; ev.preventDefault(); seg.classList.add("grab"); var sx = ev.clientX, s0 = hm(o.time), w = trackW(); function mv(e) { var dmin = Math.round(((e.clientX - sx) / w * winMin) / 5) * 5; var dur = o.mins || DEF; var ns = Math.max(winS, Math.min(winE - dur, s0 + dmin)); o.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); layout(); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); seg.classList.remove("grab"); commit(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
-    handle.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); var sx = ev.clientX, d0 = o.mins || DEF, w = trackW(); function mv(e) { var dmin = Math.round(((e.clientX - sx) / w * winMin) / 5) * 5; var nd = Math.max(5, Math.min(winE - hm(o.time), d0 + dmin)); o.mins = nd; layout(); } function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); commit(); } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); });
+    sld.addEventListener("input", function () { o.mins = posToMin(+sld.value); layout(); });
+    sld.addEventListener("change", function () { o.mins = posToMin(+sld.value); commit(); });
     // PRIORITY (segmented) + PIN (plan only)
     var prow = add(B, "div", "ed-prow");
     var seg3 = add(prow, "div", "ed-seg3"); PRIOS.forEach(function (p) { var c = add(seg3, "div", "ed-prio" + (p.v === (o.prio || 2) ? " on" : ""), p.l); c.onclick = function () { o.prio = p.v; Array.prototype.forEach.call(seg3.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); commit(); }; });

@@ -108,13 +108,10 @@
   .ed-hero .ed-heroname .ti{ font-size:20px; }
   .ed-hero .ed-swap{ font-size:18px; opacity:.7; flex:none; }
   .ed-hint{ color:#c98ca6; font-size:12px; font-weight:700; font-family:"Jost",sans-serif; margin:0 2px 7px; }
-  .ed-scrub{ position:relative; height:60px; background:#2a0d1c; border:1.5px solid #6a3050; border-radius:13px; margin-bottom:9px; overflow:hidden; touch-action:none; }
-  .ed-tick{ position:absolute; top:0; bottom:15px; width:1px; background:rgba(255,255,255,.08); }
-  .ed-ticklbl{ position:absolute; bottom:3px; font-size:9px; color:#8a5a72; font-family:"Jost",sans-serif; transform:translateX(2px); pointer-events:none; }
-  .ed-seg{ position:absolute; top:8px; bottom:19px; border:2px solid #160510; border-radius:9px; display:flex; align-items:center; justify-content:flex-end; cursor:grab; touch-action:none; box-shadow:0 2px 0 #160510; }
-  .ed-seg.grab{ cursor:grabbing; }
-  .ed-handle{ width:8px; height:60%; background:#160510; border-radius:3px; margin-right:5px; cursor:ew-resize; touch-action:none; }
-  .ed-read{ text-align:center; color:#fff2f9; font-weight:800; font-size:17px; font-family:"Jost",sans-serif; margin-bottom:15px; }
+  .ed-slider{ -webkit-appearance:none; appearance:none; width:100%; height:10px; border-radius:7px; background:#3a1226; border:1.5px solid #6a3050; outline:none; margin:3px 0 12px; }
+  .ed-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:28px; height:28px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; box-shadow:0 2px 6px rgba(0,0,0,.5); cursor:pointer; }
+  .ed-slider::-moz-range-thumb{ width:28px; height:28px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; cursor:pointer; }
+  .ed-read{ text-align:center; color:#fff2f9; font-weight:800; font-size:18px; font-family:"Jost",sans-serif; margin-bottom:15px; }
   .ed-read .ed-arrow{ color:#c98ca6; margin:0 3px; }
   .ed-read .ed-dur{ color:#ff8fbd; font-size:14px; margin-left:3px; }
   .ed-prow{ display:flex; gap:8px; align-items:stretch; margin-bottom:14px; }
@@ -1165,6 +1162,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=477"></script>
+  <script src="app.js?v=478"></script>
 </body>
 </html>
