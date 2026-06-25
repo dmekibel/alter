@@ -584,7 +584,7 @@
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
   // Smooth hour-zoom that rebuilds ONLY the day-card timelines — the header (and the zoom slider you're dragging) stay intact, so a slider/pinch never destroys itself mid-gesture (David 2026-06-25)
   function zoomTimeline(nv, curOnly) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(36, Math.min(124, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(36, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
     pullHourPx = nv;
     var cards = pb.querySelectorAll(curOnly ? ".day-card.cur" : ".day-card");
@@ -597,7 +597,7 @@
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
-    nv = Math.max(36, Math.min(124, Math.round(nv))); if (nv === old) return;
+    nv = Math.max(36, Math.min(300, Math.round(nv))); if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
     var fy = (focusScreenY == null) ? vh * 0.42 : (focusScreenY - (sc ? sc.getBoundingClientRect().top : 0));
     var anchor = prevTop + fy;
@@ -637,7 +637,7 @@
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
       var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
-      if (pullZoom === "day") { var zr = add(head, "div", "pull-zoomrow"); var zoi = add(zr, "span", "zr-ic"); zoi.innerHTML = '<i class="ti ti-zoom-out"></i>'; var zs = document.createElement("input"); zs.type = "range"; zs.min = "36"; zs.max = "124"; zs.step = "1"; zs.value = String(pullHourPx); zs.className = "zoom-slider"; zs.setAttribute("aria-label", "zoom timeline density"); zr.appendChild(zs); var zii = add(zr, "span", "zr-ic"); zii.innerHTML = '<i class="ti ti-zoom-in"></i>'; zs.addEventListener("input", function () { zoomLive(+zs.value); }); zs.addEventListener("change", function () { zoomTimeline(+zs.value, false); }); } // smooth zoom slider, under the day/week/month buttons (David 2026-06-25)
+      if (pullZoom === "day") { var zr = add(head, "div", "pull-zoomrow"); var zoi = add(zr, "span", "zr-ic"); zoi.innerHTML = '<i class="ti ti-zoom-out"></i>'; var zs = document.createElement("input"); zs.type = "range"; zs.min = "36"; zs.max = "300"; zs.step = "1"; zs.value = String(pullHourPx); zs.className = "zoom-slider"; zs.setAttribute("aria-label", "zoom timeline density"); zr.appendChild(zs); var zii = add(zr, "span", "zr-ic"); zii.innerHTML = '<i class="ti ti-zoom-in"></i>'; zs.addEventListener("input", function () { zoomLive(+zs.value); }); zs.addEventListener("change", function () { zoomTimeline(+zs.value, false); }); } // smooth zoom slider, under the day/week/month buttons (David 2026-06-25)
       if (pullZoom === "day") {
         var nx = add(head, "div", "pull-next"); // day tools: habit stacks · enhance · clear (David 2026-06-24)
         var apk = add(nx, "button", "pn-break"); apk.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apk.onclick = function () { presetsSheet(pullFocusK || todayK()); };
@@ -687,13 +687,14 @@
       var ptrs = {}, pD0 = 0, pHP0 = 0, pDLast = 0, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
       function pdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y); }
       pb.addEventListener("pointerdown", function (e) {
+        if (e.isPrimary) { ptrs = {}; pD0 = 0; pDLast = 0; single = false; swOn = false; swPgr = null; if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } } // a fresh gesture clears any stale/stuck pointers (kills phantom pinch-zoom) — David 2026-06-25
         ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
         if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // day-swipe works across the whole timeline (bubbles, gaps, live) — only tiny controls opt out (David 2026-06-25)
         else if (n === 2) { single = false; swOn = false; pD0 = pdist(); pDLast = pD0; pHP0 = pullHourPx; }
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
-        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); zoomLive(pHP0 * (pDLast / pD0)); e.preventDefault(); return; } // pinch = LIVE zoom (David 2026-06-25)
+        if (!single && pD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { pDLast = pdist(); e.preventDefault(); return; } // pinch measured live, applied on release — live DOM-rebuild under the fingers caused phantom zoom (David 2026-06-25)
         if (single && swPgr && pullZoom === "day") { var dx = e.clientX - sX, dy = e.clientY - sY;
           if (!swOn) { if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; } else if (Math.abs(dy) > 10) { swPgr = null; return; } else return; }
           e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; // the day card follows the finger like an iPhone photo
@@ -701,7 +702,7 @@
       }, { passive: false });
       function gend(e) {
         var wasPinch = !single && pD0 > 0, ex = e.clientX, ey = e.clientY; var pmid = null; if (wasPinch) { var others = Object.keys(ptrs).filter(function (i) { return i != e.pointerId; }); pmid = others.length ? (ptrs[others[0]].y + ey) / 2 : ey; } delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
-        if (wasPinch && n < 2 && pullZoom === "day") { var nHP = Math.max(36, Math.min(124, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; zoomTimeline(nHP, false); if (n === 0) single = false; return; } // commit: relayout all 3 cards (David 2026-06-25)
+        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } var nHP = Math.max(36, Math.min(300, Math.round(pHP0 * (pDLast / pD0)))); pD0 = 0; pDLast = 0; zoomTimeline(nHP, false); if (n === 0) single = false; return; } // commit on release: relayout all 3 cards (David 2026-06-25)
         if (single && n === 0 && pullZoom === "day") { var dx = ex - sX; if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; } } swOn = false; swPgr = null; single = false; }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
@@ -1801,7 +1802,8 @@
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = pullHourPx; // hour height = the timeline-density zoom (AE-style); start early enough to show NOW; run to ~3am (David 2026-06-24)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px";
-    for (var h = startH; h < endH; h++) { var gl = add(cal, "div", "calhour"); gl.style.top = ((h - startH) * HP) + "px"; var hl = add(cal, "div", "calhrl", "" + ((h % 12) || 12)); hl.style.top = ((h - startH) * HP - 8) + "px"; var hd = add(cal, "div", "calhalfl", "–"); hd.style.top = ((h - startH) * HP + HP / 2 - 8) + "px"; var hf = add(cal, "div", "calhalf"); hf.style.top = ((h - startH) * HP + HP / 2) + "px"; }
+    var _step = HP < 90 ? 60 : HP < 150 ? 30 : HP < 220 ? 15 : 5; // zoom deeper → finer grid: hour → :30 → :15 → :05 with real times (David 2026-06-25)
+    for (var mm = startH * 60; mm <= endH * 60; mm += _step) { var _t = ((mm - startH * 60) / 60 * HP), _hh = Math.floor(mm / 60), _mn = mm % 60, _isHr = (_mn === 0); var _ln = add(cal, "div", _isHr ? "calhour" : "calhalf"); _ln.style.top = _t + "px"; if (_isHr) { var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 8) + "px"; } else { var _sl = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":" + pad(_mn)); _sl.style.top = (_t - 7) + "px"; } }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nowLineEl = nl; var np = add(cal, "div", "nowtime", fmt(now)); np.style.top = (_ny - 8) + "px"; } // the present time lives on the LEFT axis (gutter) so it never covers a bubble (David 2026-06-24)
     // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
