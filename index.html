@@ -515,8 +515,8 @@
   .nowline::before{ display:none; }
   .nowcirc{ position:absolute; left:1px; width:28px; height:28px; border-radius:50%; border:3px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:14px; z-index:9; box-shadow:0 0 13px #ff5fa8; }
   .calblk.convbar{ overflow:hidden; }
-  .calblk.convbar .convbase{ position:absolute; inset:0; z-index:0; filter:saturate(.7) brightness(.72); }
-  .calblk.convbar .convlived{ position:absolute; left:0; right:0; top:0; z-index:1; overflow:hidden; box-shadow:inset 0 2px 0 rgba(255,255,255,.42); }
+  .calblk.convbar .convbase{ position:absolute; inset:0; z-index:0; filter:saturate(.5) brightness(.42); } /* REMAINING heavily dimmed so the charged part pops (David 2026-06-25) */
+  .calblk.convbar .convlived{ position:absolute; left:0; right:0; top:0; z-index:2; overflow:hidden; }
   .calblk.convbar .cn{ position:relative; z-index:3; }
   .nowread{ position:absolute; right:6px; z-index:8; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:5px; background:rgba(28,5,18,.8); border:1.5px solid #160510; border-radius:9px; padding:2px 8px; max-width:64%; white-space:nowrap; overflow:hidden; }
   #liveDock.idle .ld-el{ display:none; }
@@ -921,7 +921,7 @@
   .calblk .calx{ top:1px !important; right:2px !important; width:auto !important; height:auto !important; min-width:0 !important; padding:1px 3px !important; border:none !important; border-radius:0 !important; background:none !important; box-shadow:none !important; color:rgba(0,0,0,.5) !important; font-size:12px !important; opacity:.8; }
   .calblk.ghost .calx{ color:rgba(255,240,249,.6) !important; }
   /* midnight / wake / noon / bed markers sit BEHIND the bubbles so the label never covers one */
-  .timemark{ z-index:1 !important; }
+  .timemark{ z-index:5 !important; } /* noon/wake/bed markers sit ABOVE bubbles so they're never covered (David 2026-06-25) */
   .calblk{ z-index:2; }
   .calblk.live{ z-index:3; }
   /* LABEL INTELLIGENCE — the label adapts to bar HEIGHT so text never overflows (David 2026-06-25) */
@@ -1104,6 +1104,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=464"></script>
+  <script src="app.js?v=465"></script>
 </body>
 </html>
