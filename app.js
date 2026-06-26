@@ -699,6 +699,31 @@
   // The top-right pill is "Today" when you've scrolled/paged away, and flips to "Now" once today is centered — tap it from any scroll position to jump straight to the now-line (David 2026-06-26)
   function setTodayBtn(btn, isToday) { if (!btn) return; btn.innerHTML = isToday ? '<i class="ti ti-clock-bolt"></i> Now' : '<i class="ti ti-current-location"></i> Today'; btn.classList.toggle("is-now", isToday); btn.style.display = ""; }
   function scrollToNow() { var pb = el("pullBody"); var sc = pb && pb.querySelector(".day-card.cur .day-cardscroll"); var nl = sc && sc.querySelector(".nowline"); if (nl && nl.offsetParent !== null) { nl.scrollIntoView({ block: "center", behavior: "smooth" }); } else { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } } // jump to the present moment within today
+  // Apple-Calendar mini week strip: the 7 days of focus's week (Sun→Sat), weekday letter over the date number; selected day filled, today tinted; tap to jump (David 2026-06-26)
+  function weekStrip(host, focusK) {
+    var sow = startOfWeek(focusK), tk = todayK(), L = "SMTWTFS";
+    for (var i = 0; i < 7; i++) { (function (dk) {
+      var d = kd(dk), wd = d.getDay(), sel = (dk === focusK), isT = (dk === tk);
+      var cell = add(host, "button", "pws-day" + (sel ? " sel" : "") + (isT ? " today" : ""));
+      add(cell, "span", "pws-l", L.charAt(wd)); add(cell, "span", "pws-n", String(d.getDate()));
+      cell.onclick = function () { if (dk === (pullFocusK || tk)) { if (dk === tk) scrollToNow(); return; } pullFocusK = dk; pendingScrollNow = (dk === tk); buildPull(); };
+    })(keyAdd(sow, i)); }
+  }
+  // the ⋯ overflow: day tools that used to sit in their own bar row (Plan day / enhance / clear / undo / test) — keeps the header at 2 rows (David 2026-06-26)
+  function dayToolsMenu(anchor) {
+    var head = el("pullHead"); if (!head) return; var ex = head.querySelector(".pull-toolsmenu"); if (ex) { ex.remove(); return; } // tap again = close
+    var k = pullFocusK || todayK();
+    var menu = add(head, "div", "pull-toolsmenu");
+    var r = anchor.getBoundingClientRect(), hr = head.getBoundingClientRect();
+    menu.style.top = (r.bottom - hr.top + 5) + "px"; menu.style.right = Math.max(4, hr.right - r.right) + "px";
+    function item(cls, ic, label, fn) { var b = add(menu, "button", "ptm-item" + (cls ? " " + cls : "")); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.onclick = function (e) { e.stopPropagation(); menu.remove(); fn(); }; }
+    item("plan", "ti-calendar-plus", "Plan day", function () { planDay(k); });
+    item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
+    item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
+    item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
+    item("dev", "ti-flask", "Test day", function () { fillTestDay(); });
+    setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
+  }
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
   function distributePlan(k, sel) {
     if (!sel || !sel.length) return;
@@ -743,23 +768,23 @@
     if (head) {
       head.innerHTML = "";
       var top = add(head, "div", "pull-top");
-      if (pullZoom === "day") { var dn = add(top, "div", "pull-datenav"); var pv = add(dn, "button", "pull-step"); pv.innerHTML = '<i class="ti ti-chevron-left"></i>'; pv.title = "Previous day"; pv.onclick = function () { pageSlide(-1); }; var dlab = add(dn, "button", "pull-date pull-datebtn", relLabel(pullFocusK || todayK())); dlab.id = "pullDayLabel"; dlab.onclick = function () { if ((pullFocusK || todayK()) !== todayK()) { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } }; var nf = add(dn, "button", "pull-step"); nf.innerHTML = '<i class="ti ti-chevron-right"></i>'; nf.title = "Next day"; nf.onclick = function () { pageSlide(1); }; } // ‹ prev · [day] (tap = today) · next › — Apple-Photos day paging (David 2026-06-24)
-      else { add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months"); }
-      var rt = add(top, "div", "pull-rt");
-      if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
-      else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.onclick = function () { if ((pullFocusK || todayK()) !== todayK()) { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } else scrollToNow(); }; setTodayBtn(tdb2, (pullFocusK || todayK()) === todayK()); } // "Today" when paged away → "Now" when today is centered (jump to the present) — David 2026-06-26
-      // (hour +/- buttons replaced by the zoom slider below the scope buttons — David 2026-06-25)
-      var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
-      [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
-      var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
-      // zoom slider removed (David 2026-06-26) — thinner top bar; pinch-to-zoom the timeline density still works via the _gw gesture
       if (pullZoom === "day") {
-        var nx = add(head, "div", "pull-next"); // day tools: habit stacks · enhance · clear (David 2026-06-24)
-        var apk = add(nx, "button", "pn-break pn-plan"); apk.innerHTML = '<i class="ti ti-calendar-plus"></i> Plan day'; apk.onclick = function () { planDay(pullFocusK || todayK()); }; // top entry point — stacks live inside this now (David 2026-06-25)
-        var enh = add(nx, "button", "pn-break"); enh.innerHTML = '<i class="ti ti-wand"></i> enhance'; enh.onclick = function () { enhancePlan(pullFocusK || todayK()); };
-        var clr = add(nx, "button", "pn-break"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear'; clr.onclick = function () { var ck = pullFocusK || todayK(); if (clr._armed) { pushUndo(); S.blocks[ck] = []; reflow(ck); save(); buildPull(); toast("🧹 cleared " + relLabel(ck).toLowerCase()); } else { clr._armed = true; clr.classList.add("arm"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear all?'; setTimeout(function () { if (clr && clr.parentNode) { clr._armed = false; clr.classList.remove("arm"); clr.innerHTML = '<i class="ti ti-eraser"></i> clear'; } }, 2600); } }; // 2-tap confirm so it can't wipe the day by accident (David 2026-06-24)
-        var udo = add(nx, "button", "pn-break"); udo.innerHTML = '<i class="ti ti-arrow-back-up"></i> undo'; udo.onclick = function () { popUndo(); }; // multi-level undo for accidental timeline edits (David 2026-06-25)
-        var dev = add(nx, "button", "pn-break"); dev.innerHTML = '<i class="ti ti-flask"></i> test day'; dev.style.borderStyle = "dashed"; dev.onclick = function () { fillTestDay(); }; // DEV: fill a realistic day to see every state (David 2026-06-25)
+        // ROW 1 — LEFT: day/week/month scope (where "Today" used to sit); the WEEK button is also your "go back to the week" (David 2026-06-26)
+        var segL = add(top, "div", "scope-seg");
+        [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(segL, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
+        // ROW 1 — RIGHT: Now pill + ONE ⋯ tools button (Plan day / enhance / clear / undo / test) → the bar stays at 2 rows, most of the screen is calendar (David 2026-06-26)
+        var rt = add(top, "div", "pull-rt");
+        var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.onclick = function () { if ((pullFocusK || todayK()) !== todayK()) { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } else scrollToNow(); }; setTodayBtn(tdb2, (pullFocusK || todayK()) === todayK());
+        var tools = add(rt, "button", "pull-toolsbtn"); tools.innerHTML = '<i class="ti ti-dots"></i>'; tools.setAttribute("aria-label", "day tools"); tools.onclick = function (e) { e.stopPropagation(); dayToolsMenu(tools); };
+        // ROW 2 — the mini week strip
+        weekStrip(add(head, "div", "pull-weekstrip"), pullFocusK || todayK());
+      } else {
+        add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months");
+        var rt = add(top, "div", "pull-rt");
+        var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; // "find yourself" → smooth-scroll back to the current week/month
+        var seg = add(rt, "div", "scope-seg");
+        [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
+        var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
       }
     }
     var _curSc0 = pb.querySelector(".day-card.cur .day-cardscroll"); var keepTop = _curSc0 ? _curSc0.scrollTop : pb.scrollTop, _wsc0 = pb.querySelector(".week-scroller"), keepLeft = _wsc0 ? _wsc0.scrollLeft : 0; // preserve scroll across the minute-tick rebuild (per-card in paged day view)

@@ -1,4 +1,15 @@
-# ALTER — handoff (2026-06-26) · live v496
+# ALTER — handoff (2026-06-26) · live v498
+
+## TOP-BAR REDESIGN v498 (2026-06-26) — Apple-Calendar compact header
+David: "remove the very top bar; max 2 rows; most of the screen = calendar, not random buttons." Built a compact day-view header in `buildPull` (`if(head)`):
+- **Row 1:** LEFT = day/week/month `scope-seg` (where "Today" used to sit; the week button = "go back to the week"). RIGHT = the Now/Today pill (`#pullTodayBtn`) + a single **`.pull-toolsbtn` (⋯)** that opens `dayToolsMenu()`.
+- **Row 2:** `weekStrip(host, focusK)` — Apple-style 7-day strip (Sun→Sat of focus's week): weekday letter over date number; **selected = pink fill (`.pws-day.sel`), today = pink text (`.pws-day.today`)**; tap a day → jump (`pullFocusK=dk; buildPull()`).
+- **`dayToolsMenu()`** (the ⋯ overflow) holds Plan day / Enhance / Clear day / Undo / Test day — was the old `.pull-next` row, now gone. Clear is immediate-with-undo now (was 2-tap arm).
+- **Removed:** the `.pull-datenav` ‹ Today › chevrons + the `#pullDayLabel` text label (week strip is the date indicator now). The `‹ ›` day-step is replaced by week-strip taps + horizontal swipe. All `el("pullDayLabel")` reads are guarded, so safe.
+- CSS: `.pull-weekstrip` / `.pws-day` / `.pull-toolsbtn` / `.pull-toolsmenu` / `.ptm-item`; `#pullHead{position:relative}` anchors the menu.
+- **DECISIONS to confirm w/ David (built as v1, screenshot-for-OK):** (a) day-tools tucked in ⋯ vs Plan day on the bar; (b) dropped the relative "Today/Tomorrow" text label — strip-only; (c) no separate back-chevron (week scope button IS back-to-week). Horizontal swipe→pageSlide still wired but **FEEL UNTESTED ON DEVICE**.
+
+
 
 **Live:** https://dmekibel.github.io/alter/ · **always test via** https://dmekibel.github.io/alter/**fresh.html** (dodges cache).
 **Stack:** `app.js` (one IIFE, ~2800 lines) + `index.html` (inline CSS). localStorage key `alter_plan2`. $0 vanilla JS, GitHub Pages from `main`. No build step.
