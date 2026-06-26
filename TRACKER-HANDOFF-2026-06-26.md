@@ -1,4 +1,4 @@
-# ALTER — handoff (2026-06-26) · live v493
+# ALTER — handoff (2026-06-26) · live v494
 
 **Live:** https://dmekibel.github.io/alter/ · **always test via** https://dmekibel.github.io/alter/**fresh.html** (dodges cache).
 **Stack:** `app.js` (one IIFE, ~2800 lines) + `index.html` (inline CSS). localStorage key `alter_plan2`. $0 vanilla JS, GitHub Pages from `main`. No build step.
@@ -69,7 +69,7 @@
 1. **Cross-day drag visual polish** — make the bubble FLOAT into the neighbour day as you drag (currently pins at the edge, lands on release). David flagged this.
 2. **Scroll "wall" feel** — David must test on device; tune proximity-snap vs a softer custom JS dampening if it's too grabby / not grabby enough.
 3. **Verify the whole continuous-scroll + day-model on a REAL phone** — slow pull, the wall, cross-day drag, the 4am rollover at actual late-night, side-slide off a bubble. Several of these were only synthetic-verified.
-4. **Wake/bed in onboarding** is captured but there's no quick re-set in settings beyond "Redo setup"; consider a 1-tap wake/bed editor.
+4. ~~**Wake/bed quick editor**~~ ✅ DONE (v494) — **You tab → "🌅 Wake & bedtime"** opens `wakeBedSheet()`: the same onboarding wake/sleep/peak range-pills, standalone, writing straight to `S.profile.wake/sleep/peak`. Live recomputes `dayWindow()` (a "your day on the timeline: 5am → 2am" hint) and rebuilds the Today timeline on the spot. Reuses `.nb-ov`/`.ob-ch` styles; gold-ring = the existing onboarding *selection* affordance (not a timeline reward-state). Also added to the garden Notebook menu. Verified end-to-end in preview (no gesture risk).
 5. Older backlog still open: drift-overrun fork, non-negotiables (🔒 hold-to-end, out-of-time → ask), the side-stretch-to-fuse gesture (plan↔real fusing without a full lane cross), Plan-day arrange flow polish.
 
 ## Known caveats / gotchas

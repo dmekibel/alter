@@ -591,9 +591,37 @@
       { ic: "ti-target", l: "Goals", sub: "break down & schedule", c: "#34d39a", fn: function () { ov.remove(); goalsSheet(); } },
       { ic: "ti-affiliate", l: "Your life", sub: "see who you're being", c: "#b07aff", fn: function () { ov.remove(); mindmapSheet(); } },
       { ic: "ti-brain", l: "Brain", sub: "free AI (optional)", c: "#7f9bc4", fn: function () { ov.remove(); brainSheet(); } },
+      { ic: "ti-sun", l: "Wake & bedtime", sub: wakeBedSub(), c: "#ffb02e", fn: function () { ov.remove(); wakeBedSheet(); } },
       { ic: "ti-sparkles", l: "Redo setup", sub: "re-run onboarding", c: "#ffc83d", fn: function () { ov.remove(); onboard(); } }
     ];
     items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
+  }
+  // 1-tap wake/bed re-set — same ranges as onboarding step 6, but standalone; live-rebuilds the timeline window so you SEE the day reframe (David 2026-06-26)
+  var WAKE_OPTS = ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"];
+  var BED_OPTS = ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"];
+  function fmtHour(h) { h = ((Math.round(h) % 24) + 24) % 24; var ap = h < 12 ? "am" : "pm"; var x = h % 12 || 12; return x + ap; } // 0–28 → "5am" / "1am"
+  function wakeBedSub() { var P = S.profile || {}; if (!P.wake && !P.sleep) return "set your day's frame"; return "up " + (P.wake || "?") + " · bed " + (P.sleep || "?"); }
+  function wakeBedSheet() {
+    S.profile = S.profile || {}; var P = S.profile;
+    var ov = add(document.body, "div", "nb-ov"); var card = add(ov, "div", "nb-card");
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-sun"></i> Wake &amp; bedtime';
+    var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
+    var body = add(card, "div", "nb-body"); var wrap = add(body, "div", "");
+    function chip(p, label, on) { var s = add(p, "span", "ob-ch" + (on ? " on" : "")); s.innerHTML = label; return s; }
+    function commit() { save(); draw(); if (timelineIsHome()) buildPull(); else renderToday(); }
+    function draw() {
+      wrap.innerHTML = "";
+      var sb = add(wrap, "div", "ob-lbl"); sb.style.cssText = "margin:0 0 4px;text-transform:none;font-size:12px;color:#caa0bd;letter-spacing:0;"; sb.textContent = "rough is fine — the timeline frames your day from these.";
+      add(wrap, "div", "ob-lbl", "I USUALLY WAKE");
+      var ur = add(wrap, "div", "ob-row"); WAKE_OPTS.forEach(function (t) { var c = chip(ur, t, P.wake === t); c.onclick = function () { P.wake = t; commit(); }; });
+      add(wrap, "div", "ob-lbl", "I USUALLY SLEEP");
+      var br = add(wrap, "div", "ob-row"); BED_OPTS.forEach(function (t) { var c = chip(br, t, P.sleep === t); c.onclick = function () { P.sleep = t; commit(); }; });
+      add(wrap, "div", "ob-lbl", "SHARPEST");
+      var lr = add(wrap, "div", "ob-row"); [["lark", "Morning", "ti-sun"], ["owl", "Night", "ti-moon"], ["mixed", "It varies", "ti-windmill"]].forEach(function (o) { var c = chip(lr, '<i class="ti ' + o[0 + 2] + '"></i> ' + o[1], P.peak === o[0]); c.onclick = function () { P.peak = o[0]; P.lark = (o[0] !== "owl"); commit(); }; });
+      var dw = dayWindow(); var hint = add(wrap, "div", ""); hint.style.cssText = "margin-top:15px;padding:11px 13px;border-radius:13px;background:#1c0512;border:2px solid #160510;color:#ffd9ec;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;"; hint.innerHTML = '<i class="ti ti-clock-hour-9" style="color:#ffb02e;font-size:17px;"></i> your day on the timeline: <b style="color:#ffe3f1;">' + fmtHour(dw.startH) + ' → ' + fmtHour(dw.endH) + '</b>';
+    }
+    draw();
   }
   var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
@@ -1641,6 +1669,7 @@
     var sv = add(L, "button", "add", "📊 calibrate my levels"); sv.style.cssText = "margin:10px auto 0;display:block;"; sv.onclick = surveySheet;
     var bn = add(L, "button", "add", "🧠 brain (free AI)"); bn.style.cssText = "margin:8px auto 0;display:block;"; bn.onclick = brainSheet;
     var ml = add(L, "button", "add", "🌳 See your life"); ml.style.cssText = "margin:8px auto 0;display:block;"; ml.onclick = mindmapSheet; // the identity mindmap (§21)
+    var wb = add(L, "button", "add", "🌅 Wake & bedtime"); wb.style.cssText = "margin:8px auto 0;display:block;"; wb.onclick = wakeBedSheet; // 1-tap re-set of the day frame (David 2026-06-26)
     var rs = add(L, "button", "add", "✨ Redo setup"); rs.style.cssText = "margin:8px auto 0;display:block;"; rs.onclick = onboard; // re-run onboarding anytime (David asked)
     var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
     renderPulls();
