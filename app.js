@@ -2090,10 +2090,12 @@
       // BURNING TIMELINE (David 2026-06-23): future plan = BRIGHT/lit (a note coming), the now-line sweeping past it burns bright→dark, past = DARK. Burnt sticks — a plan pushed from the past stays dark until actually done (then it celebrates).
       var newlyPassed = false;
       if (status === "miss" && !b.passed) { b.passed = true; newlyPassed = true; burnedSomething = true; }
+      var newlyCele = false;
+      if (status === "ok" && !partial && !b.celed) { b.celed = true; burnedSomething = true; if (showNow && k === todayK()) newlyCele = true; } // celebrate-pop ONCE, at the moment of completion — never replay it on every re-render (that scale-pop replaying on completed past plans was the "bounce" on zoom); past completions are marked celebrated silently (David 2026-06-26)
       var dark = (status !== "ok" && (b.passed || status === "miss")) || !!partial; // a partial's BASE is a ghost (the part you planned but didn't keep)
       var _straddle = showNow && k === todayK() && bs < now && be > now && status !== "ok" && !partial; // the present line splits this block (past ghost half + matte future half) — David 2026-06-25
       var stt = (status === "ok" && !partial) ? "cele" : dark ? "ghost" : "sched";
-      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (!b.title ? " emptyblk" : ""));
+      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (newlyCele ? " celepop" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
       if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
