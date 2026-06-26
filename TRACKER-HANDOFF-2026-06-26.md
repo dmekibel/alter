@@ -1,4 +1,4 @@
-# ALTER — handoff (2026-06-26) · live v494
+# ALTER — handoff (2026-06-26) · live v496
 
 **Live:** https://dmekibel.github.io/alter/ · **always test via** https://dmekibel.github.io/alter/**fresh.html** (dodges cache).
 **Stack:** `app.js` (one IIFE, ~2800 lines) + `index.html` (inline CSS). localStorage key `alter_plan2`. $0 vanilla JS, GitHub Pages from `main`. No build step.
@@ -65,7 +65,19 @@
 
 ---
 
+## ⚠️ ARCHITECTURE CHANGE v496 (2026-06-26) — day-at-a-time, NOT continuous scroll
+David reported the swipe/scroll was broken: horizontal swipe bounced back to today / got stuck sliding infinitely (#2), and vertical fast-swipe jumped a whole day / felt choppy (#3). **Root cause:** two conflicting day-nav models ran at once — the v488 continuous-infinite-vertical stack (`attachInfinite` recentered the buffer on scroll) AND the horizontal `pageSlide` pager. They fought (pager set focus → the infinite-watcher yanked it back = bounce).
+
+**Fix (v496, David picked "day-at-a-time"):** the CUR card now renders **ONE day** (single `.day-sec`), not a 5-day stack. `attachInfinite` is **no longer called** (def left dead). Removed `scroll-snap-type:y proximity` + `.day-sec` snap-align from `.day-cardscroll`. Result: free vertical scroll bounded to ONE day (the day's own top/bottom IS the wall, via `overscroll-behavior:contain`), and the horizontal pager (`pageSlide`/`_gw`) changes days cleanly with no bounce. DOM-verified: scrolling to either edge keeps `cur` day stable (no drift); chevron/swipe lands on the adjacent day and stays. **FEEL UNTESTED ON DEVICE — David must confirm free-scroll + swipe + the wall.**
+
+**Still TODO in this model:**
+- **(b) Push-through at the edge** — David wants: hit the wall (day top/bottom), push a little harder → jump to next/prev day. NOT yet built (deferred so the base day-at-a-time feel could be device-confirmed first, isolating the gesture-risk). Resurrect the v485 "hill" overscroll-to-next-day approach (arm only at a scroll edge captured on pointerdown — works WITH native scroll). Currently day-change = sideways swipe + ‹ › chevrons + Today/Now button only.
+- pageSlide currently keeps the same pixel scroll (`keepTop`) on day-change = same time-of-day on the new day. Confirm David likes that vs always-top-of-day.
+- `attachInfinite` + `var R` are now dead — clean up when convenient.
+
 ## OPEN ITEMS / next (priority order)
+0. **Phase 2 — the "make more space" redesign (David: "just build + ship it", 2026-06-26):** Apple-Music collapsing bottom nav (on scroll: Goals/You hide, Today icon slides left with a "more behind it" affordance, the live tracker dock drops to the bottom row beside it → frees vertical space; tap the Today icon → nav expands back + tracker lifts above) + **move the zoom slider to the TOP / thin the top bar** + **kill the top rim → full-screen**. Sequenced AFTER v496 so the collapsing-nav (scroll-driven) rides on the settled day-at-a-time scroll model.
+0b. **Push-through at the day edge** (see architecture note above) — the "bump, push harder → next day" gesture.
 1. **Cross-day drag visual polish** — make the bubble FLOAT into the neighbour day as you drag (currently pins at the edge, lands on release). David flagged this.
 2. **Scroll "wall" feel** — David must test on device; tune proximity-snap vs a softer custom JS dampening if it's too grabby / not grabby enough.
 3. **Verify the whole continuous-scroll + day-model on a REAL phone** — slow pull, the wall, cross-day drag, the 4am rollover at actual late-night, side-slide off a bubble. Several of these were only synthetic-verified.

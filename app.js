@@ -790,11 +790,9 @@
         var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
         var lh = add(card, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
         var sc = add(card, "div", "day-cardscroll");
-        if (off === 0) { // CUR → a continuous stack of days you scroll through
-          for (var d = -R; d <= R; d++) { var sk = keyAdd(focus, d), skT = (sk === todayK());
-            var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
-            var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = sk; calendarView(ssec, sk, skT, true); }
-          attachInfinite(sc);
+        if (off === 0) { // CUR → ONE day you scroll FREELY within; swipe sideways (or, later, push past the edge) to change days — day-at-a-time, no continuous cross-day stack that fought the pager (David 2026-06-26)
+          var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(dk)); dayHeadInfo(sep, dk);
+          var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = dk; calendarView(ssec, dk, isT, true);
         } else { var hd = add(card, "div", "day-cardhead"); add(hd, "div", "day-cardlab", dayLabelFull(dk)); dayHeadInfo(hd, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); }
       })
       ; // forEach
