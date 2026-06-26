@@ -635,6 +635,17 @@
     var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null;
     if (cs) cs.scrollTop = Math.max(0, anchor * (nv / old) - fy); // keep the time under the viewport-centre put
   }
+  // Density by bubble height (text → icon → sliver). Module-level so the LIVE pinch can re-grade every frame, not just the commit re-render (David 2026-06-26)
+  function degradeCard(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; }
+  // LIVE content reflow during a pinch: re-grade every bubble by its new height (text hides/shows seamlessly) and rebuild the right symbol-rail (thin bars' icons appear/move LIVE, not snapping in on release). Reads only inline styles (no forced layout). Makes the commit a visual no-op = no bounce. (David 2026-06-26)
+  function liveReflowCal(cal) {
+    var nl = cal.querySelector(".nowline"), band = null; if (nl) { var nt = parseFloat(nl.style.top) || 0; band = [nt - 6, nt + 30]; }
+    var oldChips = cal.querySelectorAll(".railchip"); for (var i = 0; i < oldChips.length; i++) oldChips[i].remove();
+    var blks = cal.querySelectorAll(".calblk"), items = [];
+    for (var j = 0; j < blks.length; j++) { var c = blks[j]; degradeCard(c); if ((c.classList.contains("lbl-i") || c.classList.contains("lbl-s")) && c.dataset.ic) items.push({ y: (parseFloat(c.style.top) || 0) + (parseFloat(c.style.height) || 4) / 2, ic: c.dataset.ic, c: c.dataset.c || "#8a5cf0", ink: c.dataset.ink || "#fff" }); }
+    items.sort(function (a, b) { return a.y - b.y; });
+    var ry = -99; for (var m = 0; m < items.length; m++) { var it = items[m], y = Math.max(it.y - 8, ry + 2); if (band && y + 16 > band[0] && y < band[1]) y = band[1] + 2; ry = y + 16; var chip = add(cal, "div", "railchip"); chip.style.top = y + "px"; chip.style.background = it.c; chip.style.color = it.ink; chip.innerHTML = '<i class="ti ' + it.ic + '"></i>'; }
+  }
   var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null, _zoomScroll = null;
   // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place; anchorY (pinch thumb-midpoint) keeps the time under your fingers put (David 2026-06-25)
   function relayoutHourPx(nv, anchorY, scrollTop) {
@@ -650,6 +661,7 @@
         cal.style.height = ((endH - startH) * nv + 10) + "px";
         var list = cal.querySelectorAll("[data-mn]");
         for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(5, (+e.dataset.dur) / 60 * nv - 4) + "px"; } // SAME floor/margin as the render → live + commit heights match → no bounce on release
+        liveReflowCal(cal); // re-grade bubbles + rebuild the symbol-rail live this frame → text/icons reflow seamlessly as you pinch, and the commit changes nothing (no bounce)
       }
     }
     if (sc) { if (scrollTop != null && typeof scrollTop === "object") { var _as = sc.querySelector('.day-sec[data-dk="' + scrollTop.dk + '"]'); if (_as) { var _anchorY = _as.offsetTop + (scrollTop.calOff || 0) + (scrollTop.min - scrollTop.startH * 60) / 60 * nv; sc.scrollTop = Math.max(0, _anchorY - scrollTop.fy); } } else if (scrollTop != null) sc.scrollTop = Math.max(0, scrollTop); else { var fy = (anchorY == null) ? vh * 0.42 : Math.max(0, Math.min(vh, anchorY - sc.getBoundingClientRect().top)); sc.scrollTop = Math.max(0, (prevTop + fy) * (nv / old) - fy); } }
@@ -2060,7 +2072,7 @@
     });
     function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(5, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "26px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // bars are their TRUE time-height (low floor) so back-to-back bubbles can't overlap; the label then adapts to the height (David 2026-06-25)
     // LABEL INTELLIGENCE by bar height (David 2026-06-25): tall = icon+name (+subtitle) · medium = icon+name one line · thin = icon/emoji only · too-thin = name on the SIDE
-    function degrade(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; } // name only on TALL bars (≥22) so zoom-out stays minimal; resize only on genuinely tall bars (≥48) so a small bubble rearranges instead of stretching (David 2026-06-25)
+    function degrade(card) { degradeCard(card); } // delegates to the module-level grader (shared with the live pinch reflow) — name only on TALL bars (≥22) so zoom-out stays minimal; resize only on genuinely tall bars (≥48) so a small bubble rearranges instead of stretching (David 2026-06-25)
     function rr() { renderToday(); }
     function editBlk(b) { blockEdit(b, k); } // ANY bubble — empty or filled — opens the full editor menu; the hero ("Choose activity") is how you pick what an empty one is (David 2026-06-26)
     var planCards = [], burnedSomething = false;
@@ -2088,6 +2100,7 @@
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
       if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(5, (_uE - _uS) / 60 * HP - 4) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble (the matched part is its own shining bubble) — David 2026-06-25
+      card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(b), c: D.c, ink: D.ink, open: (function (bb) { return function () { editBlk(bb); }; })(b) }); // too thin to label → its symbol goes to the right rail; tap the chip to open it (David 2026-06-25)
       if (status === "ok" && !partial) {
         card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // matched = its own colour, matte-metallic stripes (calmer — no neon glow) (David 2026-06-25)
@@ -2193,7 +2206,7 @@
         card.style.borderColor = "#160510"; card.style.background = drift ? D.c : onp ? ("repeating-linear-gradient(45deg," + D.light + "," + D.light + " 7px," + D.c + " 7px," + D.c + " 14px)") : ("linear-gradient(150deg," + D.light + "," + D.c + ")"); card.style.boxShadow = "0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; if (onp) { add(card, "div", "shine"); add(card, "div", "foil"); } // matched real = SHINING stripes · drift = mauve gradient (David 2026-06-25)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.ink; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.dark + '"></i>' : "");
-        card.dataset.dur = it.e - it.s; degrade(card);
+        card.dataset.dur = it.e - it.s; card.dataset.ic = tiClass(e); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card);
         if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(e), c: D.c, ink: D.ink, open: (function (ee) { return function () { logEdit(ee, k); }; })(e) }); // too thin to label → its symbol goes to the right rail; tap the chip to open it (David 2026-06-25)
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
         var xb = add(card, "div", "calx"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); xb.addEventListener("click", function (ev) { ev.stopPropagation(); pushUndo(); var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); });
