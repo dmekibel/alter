@@ -1052,6 +1052,7 @@
   .day-card.today .day-cardlab{ color:#ff5fa0; }
   .day-card .lanehead{ position:static !important; box-shadow:none !important; padding:3px 0 3px 34px !important; }
   .day-cardscroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; -webkit-overflow-scrolling:touch; position:relative; scrollbar-width:none; overscroll-behavior:contain; }
+  .hill-hint{ position:absolute; left:50%; transform:translateX(-50%); z-index:12; background:#3a1228; border:1.5px solid #6a3050; color:#ffb3d6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; padding:7px 14px; border-radius:999px; display:flex; align-items:center; gap:6px; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,.5); white-space:nowrap; }
   .day-cardscroll::-webkit-scrollbar{ width:0; }
   /* ============ v447 — bento 2-column + stripes + shimmer · ghost=image4 · streak tiers (David 2026-06-24) ============ */
   /* BENTO: two-column grid of category panels with wrapped chips (David's image 1) */
@@ -1164,6 +1165,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=484"></script>
+  <script src="app.js?v=485"></script>
 </body>
 </html>

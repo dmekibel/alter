@@ -649,6 +649,16 @@
     var done = false; function fin() { if (done) return; done = true; pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); }
     pgr.addEventListener("transitionend", fin); setTimeout(fin, 320);
   }
+  function attachHill(sc) { // SEAMLESS day-to-day: pull PAST the bottom edge → tomorrow, past the top → yesterday (a "hill" you climb with resistance) — David 2026-06-26
+    if (sc._hill) return; sc._hill = 1;
+    var y0 = 0, edge = 0, over = 0, active = false, hint = null;
+    function showHint(dir, amt) { if (!hint) { hint = document.createElement("div"); hint.className = "hill-hint"; sc.appendChild(hint); } var near = Math.min(1, amt / 70); hint.style.opacity = String(0.35 + near * 0.65); hint.innerHTML = dir > 0 ? '<i class="ti ti-chevron-down"></i> ' + (near >= 1 ? "release for tomorrow" : "keep pulling — tomorrow") : '<i class="ti ti-chevron-up"></i> ' + (near >= 1 ? "release for yesterday" : "keep pulling — yesterday"); hint.style.top = dir > 0 ? "auto" : "8px"; hint.style.bottom = dir > 0 ? "8px" : "auto"; }
+    function clearHint() { if (hint) { hint.remove(); hint = null; } }
+    sc.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") return; y0 = e.clientY; over = 0; active = false; var atTop = sc.scrollTop <= 0, atBot = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1; edge = atTop ? -1 : atBot ? 1 : 0; });
+    sc.addEventListener("pointermove", function (e) { if (e.pointerType !== "touch" || !edge) return; var dy = e.clientY - y0, pull = edge === 1 ? -dy : dy; if (pull <= 2) { if (active) { active = false; over = 0; sc.style.transform = ""; clearHint(); } return; } active = true; over = pull; e.preventDefault(); var res = Math.min(150, pull * 0.45); sc.style.transform = "translateY(" + (edge === 1 ? -res : res) + "px)"; showHint(edge, pull); }, { passive: false });
+    function end() { if (!active) { edge = 0; return; } var fire = over > 70, dir = edge; active = false; over = 0; edge = 0; clearHint(); sc.style.transition = "transform .2s cubic-bezier(.3,.7,.25,1)"; sc.style.transform = ""; setTimeout(function () { sc.style.transition = ""; }, 230); if (fire) { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e0) {} pageSlide(dir); } }
+    sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", end);
+  }
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
   function distributePlan(k, sel) {
     if (!sel || !sel.length) return;
@@ -740,7 +750,7 @@
         if (isFut) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; }
         else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(hd, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; }
         var lh = add(card, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
-        var sc = add(card, "div", "day-cardscroll"); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
+        var sc = add(card, "div", "day-cardscroll"); attachHill(sc); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
       })
       ; // forEach
       pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
