@@ -77,14 +77,18 @@
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
   function key(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
-  var DAYSTART = 6 * 60; // the day rolls over at 6am — a 2am activity belongs to the night before (David 2026-06-26)
-  function logicalK(d) { var x = new Date(d); if (x.getHours() * 60 + x.getMinutes() < DAYSTART) x.setDate(x.getDate() - 1); return key(x); } // which LOGICAL day a timestamp belongs to (before 6am → the previous date)
+  var DAYSTART = 4 * 60; // the day rolls over at 4am — the dead of night, when you're asleep, so you never SEE the date change; a 1–2am activity still belongs to the night before (David 2026-06-26)
+  function logicalK(d) { var x = new Date(d); if (x.getHours() * 60 + x.getMinutes() < DAYSTART) x.setDate(x.getDate() - 1); return key(x); } // which LOGICAL day a timestamp belongs to (before 4am → the previous date)
   function todayK() { return logicalK(new Date()); }
   function tomK() { var d = new Date(); if (d.getHours() * 60 + d.getMinutes() < DAYSTART) d.setDate(d.getDate() - 1); d.setDate(d.getDate() + 1); return key(d); }
   function uid() { return "x" + Math.random().toString(36).slice(2, 8); }
   function nowMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); } // wall-clock minutes (0–1439) — for elapsed/timers
-  function logicalNowMin() { var m = nowMin(); return m < DAYSTART ? m + 1440 : m; } // minutes within the 6am→6am window (360–1799) — the timeline's notion of "now"
-  function toWin(m) { return m < DAYSTART ? m + 1440 : m; } // map a 0–1439 clock minute into the 6am-start window
+  function logicalNowMin() { var m = nowMin(); return m < DAYSTART ? m + 1440 : m; } // minutes within the 4am→4am window — the timeline's notion of "now"
+  function toWin(m) { return m < DAYSTART ? m + 1440 : m; } // map a 0–1439 clock minute into the 4am-start window
+  // YOUR day = wake → bedtime (from onboarding) — top of the timeline ≈ when you wake, bottom ≈ when you sleep (David 2026-06-26)
+  function wakeHour() { var w = (S.profile && S.profile.wake) || "", m = { "before 6": 5, "6–7": 6, "7–8": 7, "8–9": 8, "9–10": 9, "later": 10, "varies": 6 }; return m[w] != null ? m[w] : 6; }
+  function bedHour() { var b = (S.profile && S.profile.sleep) || "", m = { "before 10": 22, "10–11": 23, "11–12": 24, "12–1": 25, "1–2": 26, "later": 27, "varies": 24 }; return m[b] != null ? m[b] : 24; }
+  function dayWindow() { var s = wakeHour(), e = Math.max(s + 12, Math.ceil(bedHour()) + 1); return { startH: s, endH: Math.min(28, e) }; } // the day's visible window; ≥12h tall, ends ~1h past bedtime, never past the 4am rollover
   function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
   function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
@@ -832,7 +836,7 @@
     function plan(d, t, start, mins, done) { var D = DOM[d]; bl.push({ id: uid(), time: ts(start), mins: mins, title: t, domain: d, color: D.c, prio: 2, done: !!done }); }
     function real(d, t, start, mins) { var D = DOM[d]; lg.push({ id: uid(), time: ts(start), mins: mins, title: t, catK: CATR[d] || null, color: D.c, domain: d }); }
     function matched(d, t, start, mins) { plan(d, t, start, mins, true); real(d, t, start, mins); }
-    var cur = Math.max(0, now - 300);
+    var cur = Math.max(wakeHour() * 60, now - 300); // keep the demo's past run inside your wake→bed window (David 2026-06-26)
     // 3 TRULY ADJACENT matched activities, edge-to-edge (any kind counts) = a real streak of 3
     matched("move", "Workout", cur, 45); cur += 45;
     matched("nourish", "Breakfast", cur, 30); cur += 30;
@@ -1972,7 +1976,7 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); sb.style.cssText = "display:flex;align-items:center;margin:2px 0 9px;"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> ' + _sk + ' in a row'; sl.style.cssText = "display:inline-flex;align-items:center;gap:5px;font-family:'Jost',sans-serif;font-weight:700;font-size:12px;letter-spacing:.3px;color:#ffb3d6;background:#3a1228;border:1.5px solid #5a1c3c;border-radius:999px;padding:3px 11px;"; } // minimal berry chip — no gradient/glow/tier-name (David 2026-06-25)
     if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var now = logicalNowMin(), startH = 6, endH = 30, HP = pullHourPx; // the LOGICAL day is a FIXED 6am → 6am window (6..30h) so every day-section is the same height and can stack seamlessly into a continuous, scroll-into-it timeline (David 2026-06-26)
+    var now = logicalNowMin(), _dw = dayWindow(), startH = _dw.startH, endH = _dw.endH, HP = pullHourPx; // YOUR day = wake → bedtime (from onboarding); the SAME window for every day so the sections are uniform and stack into one continuous scroll-into-it timeline (David 2026-06-26)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px"; cal.dataset.startH = startH; cal.dataset.endH = endH; // cached so live-zoom can reposition nodes without a rebuild
     var railItems = [], nowRightBand = null; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order; nowRightBand = the Y-band the NOW readout occupies on the right so rail chips dodge it (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
