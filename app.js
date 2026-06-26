@@ -692,11 +692,11 @@
       if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day")) document.body.classList.add("nav-collapsed"); // Apple-Music: the moment you actually scroll the timeline, Goals/You tuck behind the Today pill and the live tracker drops beside it (David 2026-06-26)
       if (raf || _infRebuild || _paging) return; // never recenter mid-page-turn (that was the old bounce) — David 2026-06-26
       raf = requestAnimationFrame(function () { raf = 0;
-        var cy = sc.scrollTop + sc.clientHeight * 0.4, secs = sc.querySelectorAll(".day-sec"), centerDk = null;
-        for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= cy) centerDk = secs[i].dataset.dk; }
+        var cy = sc.scrollTop + sc.clientHeight * 0.4, secs = sc.querySelectorAll(".day-sec"), centerDk = null, centerIdx = -1;
+        for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= cy) { centerDk = secs[i].dataset.dk; centerIdx = i; } }
         if (!centerDk) return;
-        setStripSel(centerDk); setTodayBtn(el("pullTodayBtn"), centerDk === todayK());
-        if (centerDk !== pullFocusK) { _infRebuild = 1; pullFocusK = centerDk; pendingScrollNow = false; buildPull(); setTimeout(function () { _infRebuild = 0; }, 160); } // crossed into another day → slide the buffer to follow (keepAnchor keeps your exact view = seamless). The 160ms cooldown lets the restored scroll settle so the rebuild can't immediately re-trigger and oscillate
+        setStripSel(centerDk); setTodayBtn(el("pullTodayBtn"), centerDk === todayK()); // header tracks the centred day on EVERY scroll (cheap, no rebuild) so it always knows which day you're in
+        if ((centerIdx <= 0 || centerIdx >= secs.length - 1) && centerDk !== pullFocusK) { _infRebuild = 1; pullFocusK = centerDk; pendingScrollNow = false; buildPull(); setTimeout(function () { _infRebuild = 0; }, 160); } // recenter the buffer ONLY when you reach its very EDGE — inside the ±3-day window scrolling is pure native scroll, never a mid-day rebuild (kills the "confused where the day starts" jitter) — David 2026-06-26
       });
     });
   }
@@ -825,7 +825,7 @@
     }
     else { // CONTINUOUS day view: the CUR card is a multi-day STACK you scroll through seamlessly (no cut); prev/next single-day cards exist only for the horizontal side-slide (Apple-Photos) — David 2026-06-26
       if (pendingScrollNow || !pullFocusK) pullFocusK = pullK || todayK();
-      var focus = pullFocusK, R = 2;
+      var focus = pullFocusK, R = 3; // ±3 days of buffer → you can scroll several days smoothly before any rebuild (no mid-day jitter) — David 2026-06-26
       var pager = add(pb, "div", "day-pager");
       function dayHeadInfo(hd, dk) { if (dk > todayK()) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; } else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(hd, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; } }
       [-1, 0, 1].forEach(function (off) {
