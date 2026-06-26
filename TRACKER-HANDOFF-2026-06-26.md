@@ -18,6 +18,9 @@
 
 ---
 
+## 🗂️ GRAND AUDIT (2026-06-26) — the canonical backlog now lives in `GRAND-AUDIT-2026-06-26.md`
+David's recurring fear ("big-vision asks + small features get silently dropped") was excavated for real: **515 raw asks → 352 canonical requests** mined from all 12 session transcripts (genesis `f1b6612d` June 21–23 in the parent `claudeCode` folder + the 9 alter-dir sessions), each cross-checked against the shipped code + git. **✅ 201 built · 🟡 112 partial · 🔴 36 dropped · ❓ 3 unclear.** The DROPPED + the vision/big PARTIALs are the real backlog — read that doc, don't re-derive. Biggest dropped pillars: health-data integrations (Oura/bloodwork/scale/steps), money/bank integration, the Brian-Johnson/fieldguide **KB never wired into the AI brain**, tiered-gamification vision, "ask plan-or-track on open" reactive mode, doctor reminders, monetization plan. Built via the `_dev` corpus pipeline (`/tmp/alter-audit/*.py`, regenerable).
+
 ## 📋 THE LEDGER (own this — surface it every step)
 
 ### ✅ Done & shipped this session (v494→v505)
