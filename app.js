@@ -77,10 +77,14 @@
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
   function key(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
-  function todayK() { return key(new Date()); }
-  function tomK() { var d = new Date(); d.setDate(d.getDate() + 1); return key(d); }
+  var DAYSTART = 6 * 60; // the day rolls over at 6am — a 2am activity belongs to the night before (David 2026-06-26)
+  function logicalK(d) { var x = new Date(d); if (x.getHours() * 60 + x.getMinutes() < DAYSTART) x.setDate(x.getDate() - 1); return key(x); } // which LOGICAL day a timestamp belongs to (before 6am → the previous date)
+  function todayK() { return logicalK(new Date()); }
+  function tomK() { var d = new Date(); if (d.getHours() * 60 + d.getMinutes() < DAYSTART) d.setDate(d.getDate() - 1); d.setDate(d.getDate() + 1); return key(d); }
   function uid() { return "x" + Math.random().toString(36).slice(2, 8); }
-  function nowMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  function nowMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); } // wall-clock minutes (0–1439) — for elapsed/timers
+  function logicalNowMin() { var m = nowMin(); return m < DAYSTART ? m + 1440 : m; } // minutes within the 6am→6am window (360–1799) — the timeline's notion of "now"
+  function toWin(m) { return m < DAYSTART ? m + 1440 : m; } // map a 0–1439 clock minute into the 6am-start window
   function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
   function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
@@ -93,7 +97,7 @@
   function relLabel(k) { if (k === todayK()) return "Today"; if (k === tomK()) return "Tomorrow"; if (k === keyAdd(todayK(), -1)) return "Yesterday"; return kd(k).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }); }
   function dayLabelFull(k) { var rl = relLabel(k); if (rl === "Today" || rl === "Tomorrow" || rl === "Yesterday") return rl + " · " + kd(k).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); return rl; } // Tomorrow/Today/Yesterday also show weekday + date (David 2026-06-24)
   function relShort(k) { return kd(k).toLocaleDateString([], { month: "short", day: "numeric" }); }
-  function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false, bd = domainOf(b); for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs && domainOf(dl[i]) === bd) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= nowMin()) return "miss"; return "plan"; } // "done" only if you actually did the SAME domain; otherwise a passed plan goes ghost/dark (David 2026-06-23)
+  function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false, bd = domainOf(b); for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs && domainOf(dl[i]) === bd) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= logicalNowMin()) return "miss"; return "plan"; } // "done" only if you actually did the SAME domain; otherwise a passed plan goes ghost/dark (David 2026-06-23)
   var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, nowLineEl = null;
 
   var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
@@ -320,7 +324,7 @@
     add(ov, "div", "cele-combo", tier >= 4 ? "ON FIRE · x" + streak : tier >= 3 ? "🔥 streak x" + streak : tier >= 2 ? "combo x" + streak : "on plan!");
     setTimeout(function () { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 300); }, 1500);
   }
-  function planActiveNow(dom) { var bl = blocks(todayK()), n = nowMin(); for (var i = 0; i < bl.length; i++) { var s = hm(bl[i].time), e = s + (bl[i].mins || 30); if (n >= s - 20 && n < e + 20 && domainOf(bl[i]) === dom && !bl[i].done) return bl[i]; } return null; }
+  function planActiveNow(dom) { var bl = blocks(todayK()), n = logicalNowMin(); for (var i = 0; i < bl.length; i++) { var s = hm(bl[i].time), e = s + (bl[i].mins || 30); if (n >= s - 20 && n < e + 20 && domainOf(bl[i]) === dom && !bl[i].done) return bl[i]; } return null; }
   function onPlanBlockFor(t, dk) { var dom = domainOf(t); if (dom === "drift") return null; var d0 = new Date(t.start), s = d0.getHours() * 60 + d0.getMinutes(), e = s + Math.max(1, Math.round((Date.now() - t.start) / 60000)); var bl = blocks(dk); for (var i = 0; i < bl.length; i++) { var bs = hm(bl[i].time), be = bs + (bl[i].mins || 30); if (bs < e && be > s && domainOf(bl[i]) === dom && !bl[i].done) return bl[i]; } return null; } // the plan block this finished activity fulfilled (David 2026-06-24 night: reward DOING what you planned)
   function maybeCelebrateTrack(t) { var dom = domainOf(t); if (dom === "drift") { coolStreak(); return; } if (planActiveNow(dom)) celebrate(DOM[dom].c, bumpStreak()); }
   // ---- PLANNING suggestion engine (mockups 037/039/040): reasoned hero + alts, each with a WHY; never a blank day ----
@@ -341,7 +345,7 @@
   }
   function nextFreeTime(k) {
     var bl = blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
-    var t = (k === todayK()) ? Math.max(nowMin(), 6 * 60) : 8 * 60;
+    var t = (k === todayK()) ? Math.max(logicalNowMin(), DAYSTART) : 8 * 60;
     bl.forEach(function (b) { var s = hm(b.time), e = s + (b.mins || 30); if (t < e && t + 30 > s) t = e; });
     t = Math.min(1410, Math.round(t / 15) * 15); return pad(Math.floor(t / 60)) + ":" + pad(t % 60);
   }
@@ -368,7 +372,7 @@
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
-  function planBreak() { bentoPicker({ title: "Replan from now — what, for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = nowMin(), dom = domainOf(x);
+  function planBreak() { bentoPicker({ title: "Replan from now — what, for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
         // REPLAN (David 2026-06-25): the new plan owns NOW → the future. Any block the present line is currently splitting gets its future half ERASED (truncated to end at now → it stays as the past ghost half).
         blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
         var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true };
@@ -380,7 +384,7 @@
   function enhancePlan(k) {
     k = k || todayK();
     var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; }); logs(k).forEach(function (e) { have[(e.title || "").toLowerCase()] = 1; });
-    var added = [], now = (k === todayK()) ? nowMin() : 0;
+    var added = [], now = (k === todayK()) ? logicalNowMin() : 0;
     getFund().forEach(function (f) {
       if (have[f.t.toLowerCase()]) return;
       var t0 = Math.max(f.slot, now + 5); if (t0 + f.m > 1430) t0 = f.slot;
@@ -651,7 +655,7 @@
     pushUndo();
     var arr = blocks(k), start = 8 * 60;
     arr.forEach(function (b) { start = Math.max(start, hm(b.time) + (b.mins || 30)); });
-    if (k === todayK()) start = Math.max(start, nowMin());
+    if (k === todayK()) start = Math.max(start, logicalNowMin());
     sel.forEach(function (x) { if (!x) return; var dom = domainOf(x); arr.push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: 30, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: 2 }); start += 30; });
     reflow(k); save(); renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
   }
@@ -798,8 +802,8 @@
   function closePull() { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } var _pb = el("pullBody"); if (_pb) _pb.classList.remove("zooming"); var ps = el("pullSheet"), bd = el("pullBackdrop"); if (ps) { ps.style.transition = ""; ps.classList.remove("on"); ps.style.transform = ""; } if (bd) { bd.style.transition = ""; bd.classList.remove("on"); bd.style.opacity = ""; } } // closing mid-pinch must not leave transitions frozen (David 2026-06-25)
   function fillTestDay() { // DEV: a realistic MIXED day — 3 truly-adjacent matched (a streak), a skipped miss, a drift, live + future (David 2026-06-25)
     pushUndo();
-    var k = todayK(), now = nowMin(), CATR = { move: "energy", focus: "work", play: "hobby", connect: "love", create: "art", nourish: "food", restore: "rest" };
-    function ts(m) { m = Math.max(0, Math.min(1439, Math.round(m))); return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
+    var k = todayK(), now = logicalNowMin(), CATR = { move: "energy", focus: "work", play: "hobby", connect: "love", create: "art", nourish: "food", restore: "rest" };
+    function ts(m) { m = Math.max(0, Math.min(1799, Math.round(m))); return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
     var bl = [], lg = [];
     function plan(d, t, start, mins, done) { var D = DOM[d]; bl.push({ id: uid(), time: ts(start), mins: mins, title: t, domain: d, color: D.c, prio: 2, done: !!done }); }
     function real(d, t, start, mins) { var D = DOM[d]; lg.push({ id: uid(), time: ts(start), mins: mins, title: t, catK: CATR[d] || null, color: D.c, domain: d }); }
@@ -982,7 +986,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.timers.forEach(function (t) { if (!t.dayK) t.dayK = key(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
   // multi-level UNDO for timeline edits — snapshot BEFORE each mutating action so an accidental move/resize/delete/clear is one tap to recover (David 2026-06-25)
   var undoStack = [];
@@ -1061,7 +1065,7 @@
 
   function schedule(k) {
     var pend = blocks(k).filter(function (b) { return !b.done; }).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
-    function fit(list) { var cur = nowMin(), out = []; list.forEach(function (b) { var st = Math.max(cur, hm(b.time)); out.push({ b: b, st: st }); cur = st + (b.mins || 30); }); return { sched: out, end: cur }; }
+    function fit(list) { var cur = logicalNowMin(), out = []; list.forEach(function (b) { var st = Math.max(cur, hm(b.time)); out.push({ b: b, st: st }); cur = st + (b.mins || 30); }); return { sched: out, end: cur }; }
     var active = pend.slice(), bumped = [], r = fit(active);
     while (r.end > DAY_END && active.length) { var lp = 99, idx = 0; for (var i = 0; i < active.length; i++) { var pr = active[i].prio || 2; if (pr < lp) { lp = pr; idx = i; } else if (pr === lp && hm(active[i].time) >= hm(active[idx].time)) idx = i; } bumped.push(active.splice(idx, 1)[0]); r = fit(active); }
     return { sched: r.sched, bumped: bumped, over: Math.max(0, r.end - DAY_END) };
@@ -1890,7 +1894,7 @@
     for (var i = 0; i < map.length; i++) if (t.indexOf(map[i][0]) !== -1) return map[i][1];
     return "🗓️";
   }
-  function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1740,Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); } // allow placing well past midnight (up to ~5am)
+  function timeFromY(y, startH, HP) { var mins = startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1800,Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); } // 6am-start day → allow placing all the way to 6am next day (1800)
   function radialMenu(opts, onPick, onCancel, multi) {
     var ov = document.createElement("div"); ov.className = "radial";
     var items = opts.slice(0, 8), n = items.length || 1, sel = [];
@@ -1944,7 +1948,7 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); sb.style.cssText = "display:flex;align-items:center;margin:2px 0 9px;"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> ' + _sk + ' in a row'; sl.style.cssText = "display:inline-flex;align-items:center;gap:5px;font-family:'Jost',sans-serif;font-weight:700;font-size:12px;letter-spacing:.3px;color:#ffb3d6;background:#3a1228;border:1.5px solid #5a1c3c;border-radius:999px;padding:3px 11px;"; } // minimal berry chip — no gradient/glow/tier-name (David 2026-06-25)
     if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var now = nowMin(), startH = Math.min(7, Math.floor(minS / 60), showNow ? Math.floor(now / 60) : 7), endH = Math.max(27, Math.ceil(maxE / 60)), HP = pullHourPx; // hour height = the timeline-density zoom (AE-style); start early enough to show NOW; run to ~3am (David 2026-06-24)
+    var now = logicalNowMin(), startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(30, Math.ceil(maxE / 60), showNow ? Math.ceil((now + 60) / 60) : 0), HP = pullHourPx; // the LOGICAL day runs 6am → 6am next day (6..30h); start at 6 (earlier only for legacy blocks), end at 30 / past now (David 2026-06-26)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px"; cal.dataset.startH = startH; cal.dataset.endH = endH; // cached so live-zoom can reposition nodes without a rebuild
     var railItems = [], nowRightBand = null; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order; nowRightBand = the Y-band the NOW readout occupies on the right so rail chips dodge it (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
@@ -2076,7 +2080,7 @@
     function matchedSpan(b, dom) { var s = null, e = null, bs = hm(b.time), be = bs + (b.mins || 30); for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs && domainOf(lgs[i]) === dom) { var cs = Math.max(bs, ls), ce = Math.min(be, le); if (s === null || cs < s) s = cs; if (e === null || ce > e) e = ce; } } return s === null ? null : { start: s, end: e, cov: e - s }; } // bounding span where same-domain real logs cover the plan block (David 2026-06-25)
     var acts = [];
     lgs.forEach(function (e) { var s = hm(e.time); acts.push({ kind: "log", ref: e, s: s, e: s + (e.mins || 15) }); });
-    if (showNow) S.timers.forEach(function (t) { if ((t.dayK || key(new Date(t.start))) !== k) return; var d = new Date(t.start), s = d.getHours() * 60 + d.getMinutes(); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, nowMin()) }); });
+    if (showNow) S.timers.forEach(function (t) { if (logicalK(new Date(t.start)) !== k) return; var d = new Date(t.start), s = toWin(d.getHours() * 60 + d.getMinutes()); acts.push({ kind: "timer", ref: t, s: s, e: Math.max(s + 5, logicalNowMin()) }); });
     layoutLane(acts);
     var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
@@ -2109,7 +2113,7 @@
           function mv2(ev2) {
             if (touch && !picked) { var ady = Math.abs(ev2.clientY - sy), adx = Math.abs(ev2.clientX - sx); if (adx > ady && adx > 10) return; if (!scrolling && (ady > 22 || adx > 22)) { scrolling = true; if (holdT) { clearTimeout(holdT); holdT = null; } } if (scrolling && scE) { ev2.preventDefault(); scE.scrollTop -= (ev2.clientY - lastY); lastY = ev2.clientY; } return; }
             if (card.dataset.gate === "menu") return; // too tiny to move — only its tap-menu acts
-            var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); if (_freeDrag) _ga = gapAdj(); } if (moved) { ev2.preventDefault(); showTrash(); overTrash(ev2.clientX, ev2.clientY); cur2 = Math.max(0, Math.min(nowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); var tpx = topFor(cur2); card.style.top = tpx + "px"; if (_freeDrag) { card.style.transform = "translateX(" + dx + "px) scale(1.04)"; card.style.zIndex = "30"; card.classList.toggle("over-plan", dx < -45); if (_ga) _ga(tpx, tpx + (parseFloat(card.style.height) || 0)); } }
+            var dy = ev2.clientY - sy, dx = ev2.clientX - sx; if (!moved && (Math.abs(dy) > 3 || Math.abs(dx) > 3)) { moved = true; if (!snapped) { snapped = true; pushUndo(); } card.classList.add("lift"); card.classList.add("dragging"); if (_freeDrag) _ga = gapAdj(); } if (moved) { ev2.preventDefault(); showTrash(); overTrash(ev2.clientX, ev2.clientY); cur2 = Math.max(0, Math.min(logicalNowMin() - dur, sm0 + Math.round((dy / HP * 60) / 5) * 5)); var tpx = topFor(cur2); card.style.top = tpx + "px"; if (_freeDrag) { card.style.transform = "translateX(" + dx + "px) scale(1.04)"; card.style.zIndex = "30"; card.classList.toggle("over-plan", dx < -45); if (_ga) _ga(tpx, tpx + (parseFloat(card.style.height) || 0)); } }
           }
           function up2(ev3) { var wasMoved = moved, wasScroll = scrolling, trashed = wasMoved && ev3 && overTrash(ev3.clientX, ev3.clientY); var dxEnd = ev3 ? ev3.clientX - sx : 0, droppedPlan = _freeDrag && wasMoved && !trashed && dxEnd < -45; card.style.transform = ""; card.style.zIndex = ""; card.classList.remove("over-plan"); clean();
             if (trashed) { var a = logs(k), i = a.indexOf(e); if (i >= 0) a.splice(i, 1); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate([8, 30, 8]); } catch (e2) {} toast("🗑 deleted"); }
@@ -2153,7 +2157,7 @@
       var dy = ev.clientY, dx = ev.clientX, t0 = Date.now();
       var rect0 = cal.getBoundingClientRect(), lx0 = ev.clientX - rect0.left;
       var downM = hm(timeFromY(dy - rect0.top, startH, HP)); // the time you pressed at
-      var isFuture = (k > todayK()) || !showNow || downM >= nowMin();
+      var isFuture = (k > todayK()) || !showNow || downM >= logicalNowMin();
       var rightTrack = !isFuture && showNow && lx0 > rect0.width * 0.5; // present/past REAL lane → tap-to-track, not create
       var planSide = isFuture || lx0 <= rect0.width * 0.5;
       var moved = false, done = false, holdT = null;
@@ -2475,7 +2479,7 @@
     ];
     S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); save();
   }
-  function blockPast(k, b) { return k < todayK() || (k === todayK() && hm(b.time) + (b.mins || 30) <= nowMin()); } // a finished/past block: feels set-in-stone (longer hold to move) but still REORDERS on overlap (David 2026-06-25)
+  function blockPast(k, b) { return k < todayK() || (k === todayK() && hm(b.time) + (b.mins || 30) <= logicalNowMin()); } // a finished/past block: feels set-in-stone (longer hold to move) but still REORDERS on overlap (David 2026-06-25)
   function reflowLogs(k) { // REAL lane: editing a log so it overlaps the next one pushes the neighbours forward instead of stacking on top (David 2026-06-25)
     var L = logs(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }); var cur = -1, changed = false;
     L.forEach(function (e) { var dur = e.mins || 15, s = cur < 0 ? hm(e.time) : Math.max(hm(e.time), cur); s = Math.min(1410, s); var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); if (nt !== e.time) { e.time = nt; changed = true; } cur = s + dur; });
@@ -2488,7 +2492,7 @@
     var changed = false, cur = -1;
     flex.forEach(function (b) {
       var dur = b.mins || 30;
-      if (k === todayK() && hm(b.time) <= nowMin()) { cur = Math.max(cur, hm(b.time) + dur); return; } // already STARTED today → fixed in place; a future edit must never reshuffle the past (David 2026-06-25)
+      if (k === todayK() && hm(b.time) <= logicalNowMin()) { cur = Math.max(cur, hm(b.time) + dur); return; } // already STARTED today → fixed in place; a future edit must never reshuffle the past (David 2026-06-25)
       var s = cur < 0 ? hm(b.time) : Math.max(hm(b.time), cur), moved = true, guard = 0;
       while (moved && guard++ < 60) { moved = false; for (var i = 0; i < pins.length; i++) { if (s < pins[i].e && s + dur > pins[i].s) { s = pins[i].e; moved = true; } } }
       s = Math.min(1410, s);
@@ -2500,7 +2504,7 @@
     return changed;
   }
   function nextFreeMin(k) {
-    var base = (k === todayK()) ? Math.ceil(nowMin() / 15) * 15 : 8 * 60, last = base;
+    var base = (k === todayK()) ? Math.ceil(logicalNowMin() / 15) * 15 : 8 * 60, last = base;
     blocks(k).forEach(function (b) { var e = hm(b.time) + (b.mins || 30); if (e > last) last = e; });
     return Math.min(1410, Math.max(base, last));
   }
