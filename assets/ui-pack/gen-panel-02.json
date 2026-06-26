@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1fad2e39-a7fa-46f8-baed-279b23fb515f",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_32mxtFAESjsd2gk8MKevzXdTRXt/hf_20260622_161619_1fad2e39-a7fa-46f8-baed-279b23fb515f.png",
+    "created_at": 1782144979.840552,
+    "params": {
+      "width": 2048,
+      "height": 2048,
+      "aspect_ratio": "1:1",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "A blank UI panel for a cozy mobile game, drawn as a page from a magical journal that blends a medieval illuminated storybook with a girl's color-coded notebook. Aged colored paper — warm cream and soft sage with a dusty-rose ribbon bookmark, never pure white, subtle paper grain. Hand-drawn dark-ink rounded frame with tiny vine and leaf doodles in the corners, small washi-tape tabs along the top edge in muted coordinated colors, faint hand-ruled lines inside. Centered flat-lay, soft drop shadow, plain background. No text, no words, no letters. Thick clean outlines, flat muted zen palette, 1930s storybook warmth."
+    }
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "73b4b866-526a-41cb-aeca-46e58005b3df",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_32mxtFAESjsd2gk8MKevzXdTRXt/hf_20260622_162245_73b4b866-526a-41cb-aeca-46e58005b3df.png",
+    "created_at": 1782145365.226764,
+    "params": {
+      "width": 2048,
+      "height": 2048,
+      "aspect_ratio": "1:1",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "An open color-coded notebook photographed flat on a dark mossy surface, soft twilight light. Game UI menu skin. The two pages are TONED KRAFT / TEA-STAINED paper in deep sage-olive and dusty mauve — clearly colored, NEVER white, NEVER cream, NEVER pale; a moody mid-to-deep value like aged botanical herbarium pages, with subtle texture and darker shading toward the edges. Delicate dark ink hand-drawn border and small pressed-flower botanical illustrations in the corners. Color-coded washi tabs along the top edge in muted green, plum, teal and amber. A thin dusty-rose ribbon bookmark. Faint hand-ruled lines just barely visible. Soft shadowy painterly lighting, cohesive girls'-keepsake-notebook feel but aged and toned, no text, no UI buttons, no people. Square composition, generous empty page space for overlaying menu content."
+    }
+  }
+]

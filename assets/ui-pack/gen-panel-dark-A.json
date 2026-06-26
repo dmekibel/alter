@@ -1,0 +1,22 @@
+[
+  {
+    "id": "43668d5e-a883-4c8c-9344-57b27f2cbc97",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_32mxtFAESjsd2gk8MKevzXdTRXt/hf_20260622_162234_43668d5e-a883-4c8c-9344-57b27f2cbc97.png",
+    "created_at": 1782145354.830796,
+    "params": {
+      "width": 2048,
+      "height": 2048,
+      "aspect_ratio": "1:1",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "An open hand-bound storybook journal photographed flat on a dark walnut desk, warm candlelight. Game UI menu skin. The two pages are AGED TONED PARCHMENT the color of strong tea, honey and tobacco — a deep warm tan, NEVER white, NEVER cream, NEVER pale, mid-to-deep value paper with visible age mottling and soft brown vignetting at the edges. Hand-drawn dark sepia ink border framing each page, botanical corner flourishes, faint ruled lines barely darker than the tan paper. Four small color-coded fabric tab bookmarks along the right edge in muted forest-green, dusty-rose, slate-blue and ochre. A dark oxblood ribbon bookmark down the center gutter. Worn leather binding edges in dark walnut brown. Soft moody storybook lighting, painterly, cohesive, no text, no UI buttons, no people. Square composition, generous empty page space for overlaying menu content."
+    }
+  }
+]

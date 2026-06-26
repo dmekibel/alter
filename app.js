@@ -102,7 +102,7 @@
   function dayLabelFull(k) { var rl = relLabel(k); if (rl === "Today" || rl === "Tomorrow" || rl === "Yesterday") return rl + " · " + kd(k).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); return rl; } // Tomorrow/Today/Yesterday also show weekday + date (David 2026-06-24)
   function relShort(k) { return kd(k).toLocaleDateString([], { month: "short", day: "numeric" }); }
   function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false, bd = domainOf(b); for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs && domainOf(dl[i]) === bd) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= logicalNowMin()) return "miss"; return "plan"; } // "done" only if you actually did the SAME domain; otherwise a passed plan goes ghost/dark (David 2026-06-23)
-  var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, pendingScrollEdge = null, nowLineEl = null; // pendingScrollEdge: 'top'|'bottom' — land a push-through day at that edge (David 2026-06-26)
+  var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, nowLineEl = null;
 
   var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
@@ -884,22 +884,6 @@
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
     }
-  }
-  function gotoAdjacentDay(dir) { // horizontal swipe: snap to the prev/next day's section (David 2026-06-24)
-    var pb = el("pullBody"); if (!pb) return; var secs = pb.querySelectorAll(".day-sec"); if (!secs.length) return;
-    var center = pb.scrollTop + pb.clientHeight * 0.4, cur = 0;
-    for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= center) cur = i; }
-    var ti = Math.max(0, Math.min(secs.length - 1, cur + dir)), tgt = secs[ti];
-    var sep = tgt.previousElementSibling, top = (sep && (sep.className || "").indexOf("day-sep") >= 0) ? sep.offsetTop : tgt.offsetTop;
-    pb.scrollTo({ top: Math.max(0, top - 6), behavior: "smooth" });
-  }
-  function scrollToDay(dk) { // day-view nav buttons: smooth-scroll to that day's section (today → the now-line) — David 2026-06-24
-    var pb = el("pullBody"); if (!pb) return;
-    pullFocusK = dk; var _lab = el("pullDayLabel"); if (_lab) _lab.textContent = relLabel(dk); // header reflects the target immediately
-    if (dk === todayK() && nowLineEl && nowLineEl.offsetParent !== null) { nowLineEl.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
-    var sec = pb.querySelector('.day-sec[data-dk="' + dk + '"]'); if (!sec) return;
-    var sep = sec.previousElementSibling, top = (sep && (sep.className || "").indexOf("day-sep") >= 0) ? sep.offsetTop : sec.offsetTop;
-    pb.scrollTo({ top: Math.max(0, top - 6), behavior: "smooth" });
   }
   function findToday() { // "find yourself" in week/month: smooth-scroll back to the current page — David 2026-06-24
     var pb = el("pullBody"); if (!pb) return;

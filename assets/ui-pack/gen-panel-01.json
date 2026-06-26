@@ -1,0 +1,22 @@
+[
+  {
+    "id": "725a3e73-dbaa-47e2-8092-86aac3d4bb40",
+    "status": "failed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "",
+    "created_at": 1782144762.305344,
+    "params": {
+      "width": 1024,
+      "height": 1024,
+      "aspect_ratio": "1:1",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "Mobile game UI panel designed as a page from a magical journal: a blend of a medieval illuminated storybook and a girl's color-coded notebook. Aged colored paper in warm cream, soft sage green, dusty rose and pale lavender — never pure white — with subtle paper grain. Hand-drawn dark-ink rounded border with tiny botanical vine and leaf doodles in the corners, a thin ribbon bookmark, small washi-tape tabs along the top edge in coordinated muted colors, faint hand-ruled lines. Flat lay top-down, centered, clean simple transparent-feeling background around the page, soft drop shadow. No text, no lettering, no words. Cozy hand-crafted cohesive aesthetic, 1930s storybook warmth, thick clean outlines, flat muted zen palette."
+    }
+  }
+]
