@@ -88,7 +88,7 @@
   // YOUR day = wake → bedtime (from onboarding) — top of the timeline ≈ when you wake, bottom ≈ when you sleep (David 2026-06-26)
   function wakeHour() { var w = (S.profile && S.profile.wake) || "", m = { "before 6": 5, "6–7": 6, "7–8": 7, "8–9": 8, "9–10": 9, "later": 10, "varies": 6 }; return m[w] != null ? m[w] : 6; }
   function bedHour() { var b = (S.profile && S.profile.sleep) || "", m = { "before 10": 22, "10–11": 23, "11–12": 24, "12–1": 25, "1–2": 26, "later": 27, "varies": 24 }; return m[b] != null ? m[b] : 24; }
-  function dayWindow() { var s = wakeHour(), e = Math.max(s + 12, Math.ceil(bedHour()) + 1); return { startH: s, endH: Math.min(28, e) }; } // the day's visible window; ≥12h tall, ends ~1h past bedtime, never past the 4am rollover
+  function dayWindow() { var s = Math.max(4, wakeHour() - 3), e = Math.min(28, Math.max(s + 12, Math.ceil(bedHour()) + 2)); return { startH: s, endH: e }; } // breathing room: start ~3h BEFORE wake (in case you're up early and want to plan), end ~2h past bedtime; never before the 4am rollover or past 4am next day (David 2026-06-26)
   function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
   function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
