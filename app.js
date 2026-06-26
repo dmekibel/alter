@@ -627,7 +627,7 @@
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
   // Smooth hour-zoom that rebuilds ONLY the day-card timelines — the header (and the zoom slider you're dragging) stay intact, so a slider/pinch never destroys itself mid-gesture (David 2026-06-25)
   function zoomTimeline(nv, curOnly) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(300, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(520, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
     pullHourPx = nv;
     var cards = pb.querySelectorAll(curOnly ? ".day-card.cur" : ".day-card");
@@ -638,7 +638,7 @@
   var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null, _zoomScroll = null;
   // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place; anchorY (pinch thumb-midpoint) keeps the time under your fingers put (David 2026-06-25)
   function relayoutHourPx(nv, anchorY, scrollTop) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(300, Math.round(nv)));
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(520, Math.round(nv)));
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, old = pullHourPx;
     if (nv === old && scrollTop == null) return; // nothing to do (no zoom, no pan)
     pb.classList.add("zooming");
@@ -659,7 +659,7 @@
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
-    nv = Math.max(20, Math.min(300, Math.round(nv))); if (nv === old) return;
+    nv = Math.max(20, Math.min(520, Math.round(nv))); if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
     var fy = (focusScreenY == null) ? vh * 0.42 : (focusScreenY - (sc ? sc.getBoundingClientRect().top : 0));
     var anchor = prevTop + fy;
@@ -866,7 +866,7 @@
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
-        if (!single && pVD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { var vd = Math.max(8, pvdist()); pHPLast = Math.max(20, Math.min(300, Math.round(pHP0 * (vd / pVD0)))); var mid = pmidY(); zoomLive(pHPLast, null, { dk: pAnchorSecDk, frac: pAnchorFrac, fy: mid - pContTop }); e.preventDefault(); return; } // pinch (vertical) zooms + midpoint pans, together; section-anchored so the time under your fingers stays put even across day-headers (David 2026-06-26)
+        if (!single && pVD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { var vd = Math.max(8, pvdist()); pHPLast = Math.max(20, Math.min(520, Math.round(pHP0 * (vd / pVD0)))); var mid = pmidY(); zoomLive(pHPLast, null, { dk: pAnchorSecDk, frac: pAnchorFrac, fy: mid - pContTop }); e.preventDefault(); return; } // pinch (vertical) zooms + midpoint pans, together; section-anchored so the time under your fingers stays put even across day-headers (David 2026-06-26)
         if (single && swPgr && pullZoom === "day") { if (Object.keys(ptrs).length >= 2) { swPgr = null; return; } var dx = e.clientX - sX, dy = e.clientY - sY;
           if (swOn) { e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; setStripSel((Math.abs(dx) > swW * 0.33) ? keyAdd(pullFocusK || todayK(), dx < 0 ? 1 : -1) : (pullFocusK || todayK())); return; } // horizontal swipe follows the finger AND the week-strip highlight moves LIVE to the day you're heading toward (David 2026-06-26)
           if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; e.preventDefault(); return; } // commit to a horizontal page
