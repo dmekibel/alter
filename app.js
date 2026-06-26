@@ -599,7 +599,7 @@
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
     pullHourPx = nv;
     var cards = pb.querySelectorAll(curOnly ? ".day-card.cur" : ".day-card");
-    for (var i = 0; i < cards.length; i++) { var sec = cards[i].querySelector(".day-sec"); if (!sec) continue; var dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); }
+    for (var i = 0; i < cards.length; i++) { var _secs = cards[i].querySelectorAll(".day-sec"); for (var _j = 0; _j < _secs.length; _j++) { var sec = _secs[_j], dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); } }
     var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null;
     if (cs) cs.scrollTop = Math.max(0, anchor * (nv / old) - fy); // keep the time under the viewport-centre put
   }
@@ -612,9 +612,9 @@
     pb.classList.add("zooming");
     if (nv !== old) {
       pullHourPx = nv;
-      var cal = pb.querySelector(".day-card.cur .day-sec .cal");
-      if (cal) {
-        var startH = +cal.dataset.startH; if (isNaN(startH)) startH = 7; var endH = +cal.dataset.endH; if (isNaN(endH)) endH = 27;
+      var cals = pb.querySelectorAll(".day-card.cur .day-sec .cal"); // the cur card is a STACK → live-zoom every day-section, not just the first (David 2026-06-26)
+      for (var ci = 0; ci < cals.length; ci++) { var cal = cals[ci];
+        var startH = +cal.dataset.startH; if (isNaN(startH)) startH = 6; var endH = +cal.dataset.endH; if (isNaN(endH)) endH = 30;
         cal.style.height = ((endH - startH) * nv + 10) + "px";
         var list = cal.querySelectorAll("[data-mn]");
         for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(5, (+e.dataset.dur) / 60 * nv - 4) + "px"; } // SAME floor/margin as the render → live + commit heights match → no bounce on release
@@ -622,7 +622,7 @@
     }
     if (sc) { if (scrollTop != null) sc.scrollTop = Math.max(0, scrollTop); else { var fy = (anchorY == null) ? vh * 0.42 : Math.max(0, Math.min(vh, anchorY - sc.getBoundingClientRect().top)); sc.scrollTop = Math.max(0, (prevTop + fy) * (nv / old) - fy); } }
   }
-  function zoomCommit() { var pb = el("pullBody"); if (!pb) return; pb.classList.remove("zooming"); var sc = pb.querySelector(".day-card.cur .day-cardscroll"), prevTop = sc ? sc.scrollTop : 0; var cards = pb.querySelectorAll(".day-card"); for (var i = 0; i < cards.length; i++) { var sec = cards[i].querySelector(".day-sec"); if (!sec) continue; var dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); } var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null; if (cs) cs.scrollTop = prevTop; } // settle: one crisp re-render at the final zoom (redraws gridlines/labels/now-line); scroll already anchored by the live pass
+  function zoomCommit() { var pb = el("pullBody"); if (!pb) return; pb.classList.remove("zooming"); var sc = pb.querySelector(".day-card.cur .day-cardscroll"), prevTop = sc ? sc.scrollTop : 0; var cards = pb.querySelectorAll(".day-card"); for (var i = 0; i < cards.length; i++) { var _secs = cards[i].querySelectorAll(".day-sec"); for (var _j = 0; _j < _secs.length; _j++) { var sec = _secs[_j], dk = sec.dataset.dk; calendarView(sec, dk, dk === todayK(), true); } } var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null; if (cs) cs.scrollTop = prevTop; } // settle: one crisp re-render at the final zoom (redraws gridlines/labels/now-line); scroll already anchored by the live pass
   function zoomLive(nv, anchorY, scrollTop) { _zoomPending = nv; _zoomAnchor = anchorY; _zoomScroll = scrollTop; if (_zoomRaf) return; _zoomRaf = requestAnimationFrame(function () { _zoomRaf = 0; relayoutHourPx(_zoomPending, _zoomAnchor, _zoomScroll); }); } // throttle live drag/pinch to one cheap reposition+scroll per frame
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
@@ -649,30 +649,20 @@
     var done = false; function fin() { if (done) return; done = true; pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); }
     pgr.addEventListener("transitionend", fin); setTimeout(fin, 320);
   }
-  function flowToDay(dir) { // VERTICAL flow into the prev/next day — NO sideways animation; you land at the CONTINUING edge so it reads as one timeline you scrolled into (the sideways flip is only for the horizontal side-slide) — David 2026-06-26
-    pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull();
-    requestAnimationFrame(function () { var pb = el("pullBody"), sc = pb && pb.querySelector(".day-card.cur .day-cardscroll"); if (sc) sc.scrollTop = dir > 0 ? 0 : Math.max(0, sc.scrollHeight - sc.clientHeight); }); // next day → its TOP (you kept scrolling down) · prev day → its BOTTOM (you kept scrolling up)
-  }
-  function attachHill(sc) { // SEAMLESS day-to-day: keep scrolling PAST the bottom → tomorrow, past the top → yesterday. Arms MID-gesture when the scroll reaches an edge and you keep pulling (slow is fine — it's distance, not speed). (David 2026-06-26)
-    if (sc._hill) return; sc._hill = 1;
-    var lastY = 0, edge = 0, over = 0, anchorY = 0, active = false, tracking = false, hint = null;
-    function showHint(dir, amt) { if (!hint) { hint = document.createElement("div"); hint.className = "hill-hint"; sc.appendChild(hint); } var near = Math.min(1, amt / 40); hint.style.opacity = String(0.4 + near * 0.6); hint.innerHTML = dir > 0 ? '<i class="ti ti-chevron-down"></i> ' + (near >= 1 ? "release for tomorrow" : "keep going — tomorrow") : '<i class="ti ti-chevron-up"></i> ' + (near >= 1 ? "release for yesterday" : "keep going — yesterday"); hint.style.top = dir > 0 ? "auto" : "8px"; hint.style.bottom = dir > 0 ? "8px" : "auto"; }
-    function clearHint() { if (hint) { hint.remove(); hint = null; } }
-    function reset() { if (active) { sc.style.transition = "transform .2s cubic-bezier(.3,.7,.25,1)"; sc.style.transform = ""; setTimeout(function () { sc.style.transition = ""; }, 230); } active = false; tracking = false; edge = 0; over = 0; clearHint(); }
-    sc.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") return; lastY = e.clientY; active = false; edge = 0; over = 0; tracking = true; });
-    sc.addEventListener("pointermove", function (e) {
-      if (e.pointerType !== "touch" || !tracking) return;
-      var dy = e.clientY - lastY; lastY = e.clientY;
-      if (!active) { var atBot = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 3, atTop = sc.scrollTop <= 2;
-        if (atBot && dy < -1) { active = true; edge = 1; anchorY = e.clientY - dy; } // hit the bottom, still pulling up → climb toward tomorrow (anchor at the edge-hit point, not the current one)
-        else if (atTop && dy > 1) { active = true; edge = -1; anchorY = e.clientY - dy; } // hit the top, still pulling down → climb toward yesterday
-        else return; }
-      var pull = edge === 1 ? (anchorY - e.clientY) : (e.clientY - anchorY);
-      if (pull <= 0) { active = false; over = 0; sc.style.transform = ""; clearHint(); return; } // pulled back into the day → release the hill
-      over = pull; e.preventDefault(); var res = Math.min(150, pull * 0.45); sc.style.transform = "translateY(" + (edge === 1 ? -res : res) + "px)"; showHint(edge, pull);
-    }, { passive: false });
-    function end() { var fire = active && over > 40, dir = edge; reset(); if (fire) { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e0) {} flowToDay(dir); } } // flow into the day (no sideways flip), low threshold so a slow deliberate pull is enough
-    sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", end);
+  var _infRebuild = 0;
+  function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the header tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
+    if (sc._inf) return; sc._inf = 1; var raf = 0;
+    sc.addEventListener("scroll", function () {
+      if (raf || _infRebuild) return;
+      raf = requestAnimationFrame(function () { raf = 0;
+        var cy = sc.scrollTop + sc.clientHeight * 0.4, secs = sc.querySelectorAll(".day-sec"), centerDk = null;
+        for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= cy) centerDk = secs[i].dataset.dk; }
+        if (!centerDk) return;
+        var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(centerDk);
+        var tb = el("pullTodayBtn"); if (tb) tb.style.display = (centerDk !== todayK()) ? "" : "none";
+        if (centerDk !== pullFocusK) { _infRebuild = 1; pullFocusK = centerDk; pendingScrollNow = false; buildPull(); setTimeout(function () { _infRebuild = 0; }, 0); } // crossed into another day → slide the buffer to follow (the scroll anchor keeps your exact view)
+      });
+    });
   }
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
   function distributePlan(k, sel) {
@@ -738,6 +728,7 @@
       }
     }
     var _curSc0 = pb.querySelector(".day-card.cur .day-cardscroll"); var keepTop = _curSc0 ? _curSc0.scrollTop : pb.scrollTop, _wsc0 = pb.querySelector(".week-scroller"), keepLeft = _wsc0 ? _wsc0.scrollLeft : 0; // preserve scroll across the minute-tick rebuild (per-card in paged day view)
+    var keepAnchor = null; if (_curSc0) { var _secs0 = _curSc0.querySelectorAll(".day-sec"), _cy0 = keepTop + _curSc0.clientHeight * 0.4; for (var _ai = 0; _ai < _secs0.length; _ai++) { if (_secs0[_ai].offsetTop <= _cy0) keepAnchor = { dk: _secs0[_ai].dataset.dk, off: keepTop - _secs0[_ai].offsetTop }; } } // remember WHICH day + offset is under the viewport, so a rebuild restores the exact same view in the continuous stack (David 2026-06-26)
     pb.classList.toggle("paged", pullZoom === "day");
     pb.classList.remove("zooming"); // never inherit a stale zoom-suppress class across a rebuild (would freeze all timeline transitions) — David 2026-06-25
     pb.innerHTML = "";
@@ -754,24 +745,32 @@
       if (pendingScrollNow) { var mpNow = pb.querySelector(".month-page.now"); if (mpNow) pb.scrollTop = mpNow.offsetTop; pendingScrollNow = false; } // center on this month (synchronous — offsetTop forces layout)
       else pb.scrollTop = keepTop;
     }
-    else { // PAGED day view: ONE day per card; swipe left/right slides to the next/previous day (Apple-Photos) — David 2026-06-24
+    else { // CONTINUOUS day view: the CUR card is a multi-day STACK you scroll through seamlessly (no cut); prev/next single-day cards exist only for the horizontal side-slide (Apple-Photos) — David 2026-06-26
       if (pendingScrollNow || !pullFocusK) pullFocusK = pullK || todayK();
-      var focus = pullFocusK;
+      var focus = pullFocusK, R = 2;
       var pager = add(pb, "div", "day-pager");
+      function dayHeadInfo(hd, dk) { if (dk > todayK()) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; } else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(hd, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; } }
       [-1, 0, 1].forEach(function (off) {
-        var dk = keyAdd(focus, off), isT = (dk === todayK()), isFut = dk > todayK();
+        var dk = keyAdd(focus, off), isT = (dk === todayK());
         var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
-        var hd = add(card, "div", "day-cardhead"); add(hd, "div", "day-cardlab", dayLabelFull(dk));
-        if (isFut) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; }
-        else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(hd, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; }
         var lh = add(card, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
-        var sc = add(card, "div", "day-cardscroll"); attachHill(sc); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true);
+        var sc = add(card, "div", "day-cardscroll");
+        if (off === 0) { // CUR → a continuous stack of days you scroll through
+          for (var d = -R; d <= R; d++) { var sk = keyAdd(focus, d), skT = (sk === todayK());
+            var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
+            var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = sk; calendarView(ssec, sk, skT, true); }
+          attachInfinite(sc);
+        } else { var hd = add(card, "div", "day-cardhead"); add(hd, "div", "day-cardlab", dayLabelFull(dk)); dayHeadInfo(hd, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); }
       })
       ; // forEach
       pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
       var curScroll = pager.querySelector(".day-card.cur .day-cardscroll");
       nowLineEl = curScroll ? curScroll.querySelector(".nowline") : null;
-      if (curScroll) { if (pendingScrollNow) { var _nl = curScroll.querySelector(".nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: "center" }); }); pendingScrollNow = false; } else curScroll.scrollTop = keepTop; } // only re-center on EXPLICIT open/Today — never yank the scroll on a routine rebuild (zoom, minute-tick) — David 2026-06-24
+      if (curScroll) {
+        if (pendingScrollNow) { var _nl = curScroll.querySelector(".nowline") || curScroll.querySelector('.day-sec[data-dk="' + focus + '"]'); var _ctr = _nl && _nl.classList && _nl.classList.contains("nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: _ctr ? "center" : "start" }); }); pendingScrollNow = false; }
+        else if (keepAnchor) { var _t = curScroll.querySelector('.day-sec[data-dk="' + keepAnchor.dk + '"]'); curScroll.scrollTop = _t ? (_t.offsetTop + keepAnchor.off) : keepTop; }
+        else curScroll.scrollTop = keepTop;
+      }
       var _lab0 = el("pullDayLabel"); if (_lab0) _lab0.textContent = relLabel(focus);
       var _tb0 = el("pullTodayBtn"); if (_tb0) _tb0.style.display = (focus !== todayK()) ? "" : "none";
     }
@@ -1973,7 +1972,7 @@
     var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); sb.style.cssText = "display:flex;align-items:center;margin:2px 0 9px;"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> ' + _sk + ' in a row'; sl.style.cssText = "display:inline-flex;align-items:center;gap:5px;font-family:'Jost',sans-serif;font-weight:700;font-size:12px;letter-spacing:.3px;color:#ffb3d6;background:#3a1228;border:1.5px solid #5a1c3c;border-radius:999px;padding:3px 11px;"; } // minimal berry chip — no gradient/glow/tier-name (David 2026-06-25)
     if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
-    var now = logicalNowMin(), startH = Math.min(6, Math.floor(minS / 60)), endH = Math.max(30, Math.ceil(maxE / 60), showNow ? Math.ceil((now + 60) / 60) : 0), HP = pullHourPx; // the LOGICAL day runs 6am → 6am next day (6..30h); start at 6 (earlier only for legacy blocks), end at 30 / past now (David 2026-06-26)
+    var now = logicalNowMin(), startH = 6, endH = 30, HP = pullHourPx; // the LOGICAL day is a FIXED 6am → 6am window (6..30h) so every day-section is the same height and can stack seamlessly into a continuous, scroll-into-it timeline (David 2026-06-26)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px"; cal.dataset.startH = startH; cal.dataset.endH = endH; // cached so live-zoom can reposition nodes without a rebuild
     var railItems = [], nowRightBand = null; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order; nowRightBand = the Y-band the NOW readout occupies on the right so rail chips dodge it (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
