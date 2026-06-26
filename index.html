@@ -950,6 +950,7 @@
   #liveDock .ld-replan{ background:#3a1430; color:#d2aae8; }
   #liveDock .ld-drift{ background:#3a1430; color:#e89aa0; }
   #liveDock.noplan .ld-replan{ display:none; } /* no plan today → Plan + Drift only (David 2026-06-25) */
+  #liveDock.hasplan .ld-plan{ display:none; } /* Play already starts the plan → drop the redundant Plan button (David 2026-06-26) */
   @media (min-width:560px){ body.tab-day:not(.gaming) #liveDock.on{ left:50%; right:auto; width:min(508px,calc(100vw - 16px)); transform:translateX(-50%); } }
   /* Goals + You screen scaffolding */
   .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
@@ -1192,6 +1193,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=502"></script>
+  <script src="app.js?v=503"></script>
 </body>
 </html>

@@ -701,7 +701,19 @@
   }
   // The top-right pill is "Today" when you've scrolled/paged away, and flips to "Now" once today is centered — tap it from any scroll position to jump straight to the now-line (David 2026-06-26)
   function setTodayBtn(btn, isToday) { if (!btn) return; btn.innerHTML = isToday ? '<i class="ti ti-clock-bolt"></i> Now' : '<i class="ti ti-current-location"></i> Today'; btn.classList.toggle("is-now", isToday); btn.style.display = ""; }
-  function scrollToNow() { var pb = el("pullBody"); var sc = pb && pb.querySelector(".day-card.cur .day-cardscroll"); var nl = sc && sc.querySelector(".nowline"); if (nl && nl.offsetParent !== null) { nl.scrollIntoView({ block: "center", behavior: "smooth" }); } else { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } } // jump to the present moment within today
+  function scrollToNow() { var pb = el("pullBody"); var sc = pb && pb.querySelector(".day-card.cur .day-cardscroll"); var nl = sc && sc.querySelector(".nowline"); if (nl && nl.offsetParent !== null) { _paging = 1; nl.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(function () { _paging = 0; }, 520); } else { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } } // jump to the present moment within today; _paging suppresses the continuous recenter DURING the smooth scroll so a mid-scroll rebuild can't destroy the now-line (the "now-line disappears" bug) — David 2026-06-26
+  function jumpToToday() { // the Today/Now pill: tap it to come back to today with a SWIPE animation in today's direction (David 2026-06-26)
+    var foc = pullFocusK || todayK(), tod = todayK();
+    if (foc === tod) { scrollToNow(); return; } // already on today → jump to now
+    var diff = Math.round((kd(tod) - kd(foc)) / 86400000), dir = diff > 0 ? 1 : -1; // dir = which way today is
+    if (Math.abs(diff) === 1) { pageSlide(dir); return; } // one day away → the normal day swipe carries you back
+    var pb = el("pullBody"), pgr = pb && pb.querySelector(".day-pager"); // further away → a quick directional slide, then land on today at the now-line
+    if (!pgr || pgr._sliding) { pullK = tod; pullFocusK = tod; pendingScrollNow = true; buildPull(); return; }
+    pgr._sliding = 1; _paging = 1;
+    pgr.style.transition = "transform .24s cubic-bezier(.3,.7,.25,1)"; pgr.style.transform = "translateX(" + (dir > 0 ? -66.6667 : 0) + "%)";
+    var done = false; function fin() { if (done) return; done = true; clearTimeout(to); pgr.removeEventListener("transitionend", fin); pullK = tod; pullFocusK = tod; pendingScrollNow = true; buildPull(); setTimeout(function () { _paging = 0; }, 80); }
+    pgr.addEventListener("transitionend", fin); var to = setTimeout(fin, 260);
+  }
   // Apple-Calendar mini week strip: the 7 days of focus's week (Sun→Sat), weekday letter over the date number; selected day filled, today tinted; tap to jump (David 2026-06-26)
   function weekStrip(host, focusK) {
     var sow = startOfWeek(focusK), tk = todayK(), L = "SMTWTFS";
@@ -779,7 +791,7 @@
         [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(segL, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
         // ROW 1 — RIGHT: Now pill + ONE ⋯ tools button (Plan day / enhance / clear / undo / test) → the bar stays at 2 rows, most of the screen is calendar (David 2026-06-26)
         var rt = add(top, "div", "pull-rt");
-        var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.onclick = function () { if ((pullFocusK || todayK()) !== todayK()) { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } else scrollToNow(); }; setTodayBtn(tdb2, (pullFocusK || todayK()) === todayK());
+        var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.onclick = function () { jumpToToday(); }; setTodayBtn(tdb2, (pullFocusK || todayK()) === todayK());
         var tools = add(rt, "button", "pull-toolsbtn"); tools.innerHTML = '<i class="ti ti-dots"></i>'; tools.setAttribute("aria-label", "day tools"); tools.onclick = function (e) { e.stopPropagation(); dayToolsMenu(tools); };
         // ROW 2 — the mini week strip
         weekStrip(add(head, "div", "pull-weekstrip"), pullFocusK || todayK());
@@ -930,12 +942,12 @@
     var nb0 = nextPlannedBlock(todayK());
     dk.classList.add("on"); dk.classList.toggle("noplan", !nb0); // no plan today → only Plan + Drift make sense (Replan hidden — nothing to re-plan) — David 2026-06-25
     if (!t) { // IDLE — nothing tracking: the dock is a "start" bar
-      dk.classList.add("idle"); if (st) st.innerHTML = '<i class="ti ti-player-play"></i>';
-      if (ad) ad.innerHTML = '<i class="ti ti-clock"></i> Not tracking';
-      if (su) su.textContent = nb0 ? ("next: " + nb0.title) : "tap ▶ or pick below to start";
+      dk.classList.add("idle"); dk.classList.toggle("hasplan", !!nb0); // Play IS "start the plan" → the separate Plan button is redundant and hidden (David 2026-06-26)
+      if (nb0) { var _pD = DOM[domainOf(nb0)] || DOM.focus; if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _pD.c, "important"); st.style.setProperty("color", _pD.ink, "important"); } if (ad) ad.innerHTML = tiIcon(nb0) + ' <b>' + esc(nb0.title) + '</b>'; if (su) su.textContent = "▶ start your plan"; } // the play button wears the upcoming activity's colour; pressing it = you agree to do the plan and start tracking it
+      else { if (st) { st.innerHTML = '<i class="ti ti-player-play"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); } if (ad) ad.innerHTML = '<i class="ti ti-clock"></i> Not tracking'; if (su) su.textContent = "tap ▶ or pick below to start"; }
       if (elx) { elx.textContent = ""; elx.removeAttribute("data-tid"); }
     } else {
-      dk.classList.remove("idle"); if (st) st.innerHTML = '<i class="ti ti-player-stop"></i>';
+      dk.classList.remove("idle"); dk.classList.remove("hasplan"); if (st) { st.innerHTML = '<i class="ti ti-player-stop"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); }
       var dom = domainOf(t), D = DOM[dom] || DOM.focus, drift = (dom === "drift");
       var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), on = false;
       if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
@@ -945,7 +957,7 @@
       if (elx) { elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); }
     }
     if (!dk._wired) { dk._wired = 1;
-      el("ldStop").onclick = function () { var r = activeTimers(); if (r.length) stopTimer(r[r.length - 1].id); else startOrSwitch(); };
+      el("ldStop").onclick = function () { var r = activeTimers(); if (r.length) { stopTimer(r[r.length - 1].id); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // Play = start the plan (sync up + track it); no plan → pick one — David 2026-06-26
       el("ldSw").onclick = function () { startOrSwitch(); };
       el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); };
       el("ldReplan").onclick = function () { planBreak(); };
