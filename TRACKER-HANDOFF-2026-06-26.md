@@ -1,4 +1,13 @@
-# ALTER — handoff (2026-06-26) · live v500
+# ALTER — handoff (2026-06-26) · live v502
+
+## CONTINUOUS SCROLL RESTORED + editor + live strip (v501–v502, 2026-06-26)
+David (frustrated, after the edge-push didn't work on his device): wants to SEE the prev/next day as you scroll past the edge = **continuous scroll**. He explicitly re-picked "continuous, done right" over the day-at-a-time edge-gesture.
+- **v501 — editor:** trash → top-right (`.ed-trash-top`), `#sheetX` hidden in the editor (restored via `openSheet`), footer trash dropped; exit = tap-above (already) + **swipe-card-down** (armed only when `.scard` scrollTop≤0). All verified in preview.
+- **v502 — CONTINUOUS SCROLL (reverts the v496 day-at-a-time):** the CUR card is again a vertical STACK `focus-2..focus+2` (5 `.day-sec`s + static `.day-stacksep` headers) and **`attachInfinite` is called again**. Old bounce FIXED: (a) `_paging` guard suppresses the recenter during a `pageSlide` turn; (b) `pageSlide` lands the vertical scroll ON the new focus via **`_scrollToFocus`** (NOT `pendingScrollNow`, which trips buildPull's reset-to-today guard); (c) the recenter cooldown is now **160ms** (was 0) so the restored scroll can't immediately re-trigger/oscillate. **Removed** the v500 vertical edge-push (`pageVertical`, vSwOn/vAtTop/etc.) — continuous scroll replaces it. **Item B:** the week-strip highlight now updates LIVE during a horizontal swipe (`setStripSel` in the `_gw` move) and during vertical scroll (in `attachInfinite`).
+- **⚠️ CANNOT VERIFY THE VERTICAL RECENTER IN PREVIEW:** `attachInfinite` is `requestAnimationFrame`-throttled and **rAF does not fire in the background preview context** (this also made earlier rAF-based test evals time out). Verified instead: the stack renders, the listener is attached (`sc._inf`), `centerDk` computes correctly at a scrolled position, horizontal swipe recenters the buffer + live strip, Today/Now flip. The vertical scroll-into-neighbour recenter is the proven v488 engine + the guards above — **needs David's real device.**
+- Dead code still present (audit): `gotoAdjacentDay`, `scrollToDay`, `pendingScrollEdge` (now unused). Safe to delete later.
+
+
 
 ## GRAND AUDIT + NAV FIXES v499–v500 (2026-06-26)
 A 7-agent code-grounded audit (David: "I'm tired of losing feedback") produced a full ledger of every ask vs the actual code. Fixes landing:

@@ -676,32 +676,26 @@
   }
   function pageSlide(dir) { // Apple-Photos day swipe: animate the pager from WHEREVER the finger left it to the prev/next card, then rebuild centered there (David 2026-06-24; smoothed 2026-06-26)
     var pb = el("pullBody"), pgr = pb && pb.querySelector(".day-pager");
-    if (!pgr) { pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); return; }
-    if (pgr._sliding) return; pgr._sliding = 1; // never double-fire a turn (was a source of wrong-day landings)
+    if (!pgr) { pullFocusK = keyAdd(pullFocusK || todayK(), dir); _scrollToFocus = true; buildPull(); return; }
+    if (pgr._sliding) return; pgr._sliding = 1; _paging = 1; // never double-fire a turn; suppress the continuous recenter until the new day's scroll settles
     var target = (dir > 0 ? -66.6667 : 0), cur = -33.3333, m = /translateX\(\s*([-0-9.]+)%/.exec(pgr.style.transform || ""); if (m) cur = parseFloat(m[1]);
     pgr.style.transition = "none"; pgr.style.transform = "translateX(" + cur + "%)"; void pgr.offsetWidth; // pin the start at the finger's last position, force a reflow → the tween always has a real distance (no freeze)
     pgr.style.transition = "transform .26s cubic-bezier(.3,.7,.25,1)"; pgr.style.transform = "translateX(" + target + "%)";
-    var done = false; function fin() { if (done) return; done = true; clearTimeout(to); pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); } // NOT pendingScrollNow (that would trip buildPull's reset-to-today guard and cancel the day change) — keepTop lands you at the same time-of-day on the new day
+    var done = false; function fin() { if (done) return; done = true; clearTimeout(to); pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); _scrollToFocus = true; buildPull(); setTimeout(function () { _paging = 0; }, 80); } // _scrollToFocus (NOT pendingScrollNow, which would trip buildPull's reset-to-today guard) jumps the vertical scroll onto the new day so the continuous recenter agrees and doesn't bounce
     pgr.addEventListener("transitionend", fin);
     var to = setTimeout(fin, Math.abs(target - cur) < 1 ? 24 : 300); // duration-matched fallback; if the finger already reached the target the transition won't fire → finish next frame instead of freezing 320ms
   }
-  function pageVertical(dir, edge) { // push-through at the day edge: the current day slides off vertically, the next/prev day lands at the matching edge (David 2026-06-26)
-    var pb = el("pullBody"), cc = pb && pb.querySelector(".day-card.cur"), H = (pb && pb.querySelector(".day-card.cur .day-cardscroll")) ? pb.querySelector(".day-card.cur .day-cardscroll").clientHeight : 600;
-    if (cc) { cc.style.transition = "transform .19s ease-in"; cc.style.transform = "translateY(" + (dir < 0 ? H : -H) + "px)"; }
-    setTimeout(function () { pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; pendingScrollEdge = edge; buildPull(); }, dir && cc ? 165 : 0); // after the slide-off, rebuild the new day landed at top (into tomorrow) / bottom (into yesterday)
-  }
   var _infRebuild = 0;
-  function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the header tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
+  function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the week-strip tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
     if (sc._inf) return; sc._inf = 1; var raf = 0;
     sc.addEventListener("scroll", function () {
-      if (raf || _infRebuild) return;
+      if (raf || _infRebuild || _paging) return; // never recenter mid-page-turn (that was the old bounce) — David 2026-06-26
       raf = requestAnimationFrame(function () { raf = 0;
         var cy = sc.scrollTop + sc.clientHeight * 0.4, secs = sc.querySelectorAll(".day-sec"), centerDk = null;
         for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= cy) centerDk = secs[i].dataset.dk; }
         if (!centerDk) return;
-        var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(centerDk);
-        setTodayBtn(el("pullTodayBtn"), centerDk === todayK());
-        if (centerDk !== pullFocusK) { _infRebuild = 1; pullFocusK = centerDk; pendingScrollNow = false; buildPull(); setTimeout(function () { _infRebuild = 0; }, 0); } // crossed into another day → slide the buffer to follow (the scroll anchor keeps your exact view)
+        setStripSel(centerDk); setTodayBtn(el("pullTodayBtn"), centerDk === todayK());
+        if (centerDk !== pullFocusK) { _infRebuild = 1; pullFocusK = centerDk; pendingScrollNow = false; buildPull(); setTimeout(function () { _infRebuild = 0; }, 160); } // crossed into another day → slide the buffer to follow (keepAnchor keeps your exact view = seamless). The 160ms cooldown lets the restored scroll settle so the rebuild can't immediately re-trigger and oscillate
       });
     });
   }
@@ -713,11 +707,13 @@
     var sow = startOfWeek(focusK), tk = todayK(), L = "SMTWTFS";
     for (var i = 0; i < 7; i++) { (function (dk) {
       var d = kd(dk), wd = d.getDay(), sel = (dk === focusK), isT = (dk === tk);
-      var cell = add(host, "button", "pws-day" + (sel ? " sel" : "") + (isT ? " today" : ""));
+      var cell = add(host, "button", "pws-day" + (sel ? " sel" : "") + (isT ? " today" : "")); cell.dataset.dk = dk;
       add(cell, "span", "pws-l", L.charAt(wd)); add(cell, "span", "pws-n", String(d.getDate()));
       cell.onclick = function () { if (dk === (pullFocusK || tk)) { if (dk === tk) scrollToNow(); return; } pullFocusK = dk; pendingScrollNow = (dk === tk); buildPull(); };
     })(keyAdd(sow, i)); }
   }
+  function setStripSel(dk) { var cells = document.querySelectorAll(".pull-weekstrip .pws-day"); for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("sel", cells[i].dataset.dk === dk); } // live-move the week-strip highlight to the day under the viewport / the day you're swiping toward (David 2026-06-26)
+  var _paging = 0, _scrollToFocus = false; // _paging suppresses the continuous-scroll recenter during a horizontal page turn; _scrollToFocus jumps the vertical scroll onto the new focus day after a page turn
   // the ⋯ overflow: day tools that used to sit in their own bar row (Plan day / enhance / clear / undo / test) — keeps the header at 2 rows (David 2026-06-26)
   function dayToolsMenu(anchor) {
     var head = el("pullHead"); if (!head) return; var ex = head.querySelector(".pull-toolsmenu"); if (ex) { ex.remove(); return; } // tap again = close
@@ -824,9 +820,11 @@
         var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
         var lh = add(card, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
         var sc = add(card, "div", "day-cardscroll");
-        if (off === 0) { // CUR → ONE day you scroll FREELY within; swipe sideways (or, later, push past the edge) to change days — day-at-a-time, no continuous cross-day stack that fought the pager (David 2026-06-26)
-          var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(dk)); dayHeadInfo(sep, dk);
-          var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = dk; calendarView(ssec, dk, isT, true);
+        if (off === 0) { // CUR → a CONTINUOUS vertical stack (focus-R..focus+R): you scroll freely within a day AND see the neighbour as you reach the edge; scrolling into it makes it the day. attachInfinite recenters the buffer (David picked continuous-done-right, 2026-06-26)
+          for (var d = -R; d <= R; d++) { var sk = keyAdd(focus, d), skT = (sk === todayK());
+            var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
+            var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = sk; calendarView(ssec, sk, skT, true); }
+          attachInfinite(sc);
         } else { var hd = add(card, "div", "day-cardhead"); add(hd, "div", "day-cardlab", dayLabelFull(dk)); dayHeadInfo(hd, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); }
       })
       ; // forEach
@@ -834,38 +832,31 @@
       var curScroll = pager.querySelector(".day-card.cur .day-cardscroll");
       nowLineEl = curScroll ? curScroll.querySelector(".nowline") : null;
       if (curScroll) {
-        if (pendingScrollEdge) { var _edge = pendingScrollEdge; pendingScrollEdge = null; pendingScrollNow = false; curScroll.scrollTop = _edge === "bottom" ? curScroll.scrollHeight : 0; requestAnimationFrame(function () { curScroll.scrollTop = _edge === "bottom" ? curScroll.scrollHeight : 0; }); } // push-through landed: start the incoming day at the matching edge (top when entering tomorrow, bottom when entering yesterday) — David 2026-06-26
-        else if (pendingScrollNow) { var _nl = curScroll.querySelector(".nowline") || curScroll.querySelector('.day-sec[data-dk="' + focus + '"]'); var _ctr = _nl && _nl.classList && _nl.classList.contains("nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: _ctr ? "center" : "start" }); }); pendingScrollNow = false; }
+        if (pendingScrollNow) { var _nl = curScroll.querySelector(".nowline") || curScroll.querySelector('.day-sec[data-dk="' + focus + '"]'); var _ctr = _nl && _nl.classList && _nl.classList.contains("nowline"); requestAnimationFrame(function () { if (_nl && _nl.offsetParent !== null) _nl.scrollIntoView({ block: _ctr ? "center" : "start" }); }); pendingScrollNow = false; _scrollToFocus = false; }
+        else if (_scrollToFocus) { _scrollToFocus = false; var _fnl = (focus === todayK()) ? curScroll.querySelector(".nowline") : null, _ft = curScroll.querySelector('.day-sec[data-dk="' + focus + '"]'); requestAnimationFrame(function () { if (_fnl && _fnl.offsetParent !== null) _fnl.scrollIntoView({ block: "center" }); else if (_ft) curScroll.scrollTop = Math.max(0, _ft.offsetTop - 4); }); } // a horizontal page turn lands the vertical scroll ON the new focus day (now-line if today, else its top) so the continuous recenter agrees
         else if (keepAnchor) { var _t = curScroll.querySelector('.day-sec[data-dk="' + keepAnchor.dk + '"]'); curScroll.scrollTop = _t ? (_t.offsetTop + keepAnchor.off) : keepTop; }
         else curScroll.scrollTop = keepTop;
       }
-      var _lab0 = el("pullDayLabel"); if (_lab0) _lab0.textContent = relLabel(focus);
-      setTodayBtn(el("pullTodayBtn"), focus === todayK());
+      setStripSel(focus); setTodayBtn(el("pullTodayBtn"), focus === todayK());
     }
     if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = hour-density zoom · one-finger horizontal SWIPE = page to prev/next day (David 2026-06-24)
       pb._gw = 1;
       var ptrs = {}, pVD0 = 0, pHP0 = 0, pHPLast = 0, pMid0 = 0, pScroll0 = 0, pContTop = 0, pAnchorContent = 0, sX = 0, sY = 0, single = false, swOn = false, swPgr = null, swW = 1;
-      var vSc = null, vAtTop = false, vAtBot = false, vSwOn = false, vDir = 0; // vertical EDGE push-through: armed only when the day's scroller starts AT its top/bottom (David 2026-06-26)
       function pvdist() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? 0 : Math.abs(v[0].y - v[1].y); } // VERTICAL finger distance → zoom only stretches up/down (David 2026-06-25)
       function pmidY() { var v = Object.keys(ptrs).map(function (i) { return ptrs[i]; }); return v.length < 2 ? null : (v[0].y + v[1].y) / 2; }
       pb.addEventListener("pointerdown", function (e) {
         if (e.isPrimary) { ptrs = {}; pVD0 = 0; single = false; swOn = false; swPgr = null; if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pb.classList.remove("zooming"); } // a fresh gesture clears any stale/stuck pointers + zoom-suppress class (David 2026-06-25)
         ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
-        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; vSwOn = false; vDir = 0; vSc = swPgr ? pb.querySelector(".day-card.cur .day-cardscroll") : null; vAtTop = vSc ? vSc.scrollTop <= 0 : false; vAtBot = vSc ? (vSc.scrollTop + vSc.clientHeight >= vSc.scrollHeight - 1) : false; } // also arm the vertical edge push-through, but ONLY if the day-scroller is already at its top/bottom at touch-down (so normal mid-day scrolling is never hijacked) — a quick HORIZONTAL swipe still pages the day even starting on a bubble (David 2026-06-26)
+        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // a quick HORIZONTAL swipe pages the day even starting on a bubble (the bubble only edits on a near-stationary tap); VERTICAL drags fall through to the continuous scroll which changes days on its own (David 2026-06-26)
         else if (n === 2) { single = false; swOn = false; if (swPgr) { swPgr.style.transition = "transform .15s"; swPgr.style.transform = "translateX(-33.3333%)"; } swPgr = null; var _sc = pb.querySelector(".day-card.cur .day-cardscroll"); pVD0 = Math.max(8, pvdist()); pHP0 = pHPLast = pullHourPx; pMid0 = pmidY(); pScroll0 = _sc ? _sc.scrollTop : 0; pContTop = _sc ? _sc.getBoundingClientRect().top : 0; pAnchorContent = pScroll0 + (pMid0 - pContTop); } // 2 fingers → PINCH+PAN: vertical spread zooms, midpoint pans, both live (iPhone Photos) — David 2026-06-25
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
         if (!single && pVD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { var vd = Math.max(8, pvdist()); pHPLast = Math.max(20, Math.min(300, Math.round(pHP0 * (vd / pVD0)))); var mid = pmidY(); var st = pAnchorContent * (pHPLast / pHP0) - (mid - pContTop); zoomLive(pHPLast, null, st); e.preventDefault(); return; } // pinch (vertical) zooms + midpoint pans, together (David 2026-06-25)
         if (single && swPgr && pullZoom === "day") { if (Object.keys(ptrs).length >= 2) { swPgr = null; return; } var dx = e.clientX - sX, dy = e.clientY - sY;
-          if (swOn) { e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; return; } // horizontal day swipe follows the finger like an iPhone photo
-          if (vSwOn) { e.preventDefault(); var _cc = pb.querySelector(".day-card.cur"); var _ov = vDir < 0 ? Math.max(0, dy) : Math.min(0, dy); if (_cc) _cc.style.transform = "translateY(" + (_ov * 0.42) + "px)"; return; } // vertical edge push: rubber-band the day toward the neighbour
-          // not yet committed — classify the gesture:
-          if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; e.preventDefault(); return; } // → horizontal page
-          if (Math.abs(dy) > 14 && Math.abs(dy) >= Math.abs(dx)) { // → vertical: edge push-through only if we started AT that edge and are pulling PAST it
-            if ((vAtTop && dy > 0) || (vAtBot && dy < 0)) { vSwOn = true; vDir = (vAtTop && dy > 0) ? -1 : 1; e.preventDefault(); var _cc2 = pb.querySelector(".day-card.cur"); if (_cc2) _cc2.style.transform = "translateY(" + (dy * 0.42) + "px)"; return; }
-            swPgr = null; return; // normal in-day vertical scroll → let native scroll own it
-          }
+          if (swOn) { e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; setStripSel((Math.abs(dx) > swW * 0.33) ? keyAdd(pullFocusK || todayK(), dx < 0 ? 1 : -1) : (pullFocusK || todayK())); return; } // horizontal swipe follows the finger AND the week-strip highlight moves LIVE to the day you're heading toward (David 2026-06-26)
+          if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPgr.style.transition = "none"; e.preventDefault(); return; } // commit to a horizontal page
+          if (Math.abs(dy) > 10) { swPgr = null; return; } // a vertical drag is just the continuous scroll → let native scroll own it
         }
       }, { passive: false });
       function gend(e) {
@@ -873,12 +864,7 @@
         if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pVD0 = 0; single = false; pullHourPx = pHPLast; zoomCommit(); return; } // settle: crisp re-render at the final zoom, keeping the panned scroll — no bounce (David 2026-06-25)
         if (single && n === 0 && pullZoom === "day") {
           var dx = ex - sX;
-          if (vSwOn) { var dyEnd = (e.clientY || sY) - sY, _cc = pb.querySelector(".day-card.cur"), _need = Math.max(70, (vSc ? vSc.clientHeight : 600) * 0.16), _go = (vDir < 0 ? dyEnd > 0 : dyEnd < 0) && Math.abs(dyEnd) > _need;
-            if (_go) { pageVertical(vDir, vDir < 0 ? "bottom" : "top"); } // pushed past the edge → turn to the neighbour day
-            else if (_cc) { _cc.style.transition = "transform .2s"; _cc.style.transform = "translateY(0)"; setTimeout(function () { try { _cc.style.transition = ""; } catch (er) {} }, 220); } // not far enough → spring back
-            vSwOn = false; vDir = 0; swOn = false; swPgr = null; single = false; return;
-          }
-          if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; } }
+          if (swOn && swPgr) { var th = swW * 0.2; if (dx < -th) pageSlide(1); else if (dx > th) pageSlide(-1); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; setStripSel(pullFocusK || todayK()); } } // under threshold → snap back + restore the strip highlight
           swOn = false; swPgr = null; single = false;
         }
       }
