@@ -1,4 +1,20 @@
-# ALTER — handoff (2026-06-26) · live v498
+# ALTER — handoff (2026-06-26) · live v500
+
+## GRAND AUDIT + NAV FIXES v499–v500 (2026-06-26)
+A 7-agent code-grounded audit (David: "I'm tired of losing feedback") produced a full ledger of every ask vs the actual code. Fixes landing:
+- **v499 — midnight window:** `dayWindow()` floored endH at **26 (2am)** so every profile (even early bedtimes that used to cap at 24=midnight) shows ~2h into the night. Also **past-block reorder unfrozen:** the `_started` guard (v483) froze *every* started/past block on today; narrowed to ONLY the live now-straddling block. Past blocks now drag/reorder with a `_ceil` at NOW (can't slide into the future); cascade stays future-only via reflow's now-gate. *(drag feel = device)*
+- **v500 — swipe animation + push-through (David picked "push-through at the edge"):**
+  - `pageSlide` rewritten: animates from the finger's last position (reflow-forced real distance), duration-matched completion + `_sliding` double-fire guard → kills the 320ms freeze + the occasional wrong-day land. **Gotcha fixed mid-build:** fin() must set `pendingScrollNow=false` (true tripped buildPull's reset-to-today guard and cancelled the turn).
+  - **NEW `pageVertical(dir,edge)` + edge push-through** in the `pb._gw` block: armed ONLY when the day-scroller is AT its top/bottom at pointerdown (`vAtTop`/`vAtBot`) so mid-day scroll is never hijacked. Drag past the edge → the day slides off and the neighbour lands at the matching edge (`pendingScrollEdge` 'top'/'bottom', handled in buildPull cur-scroll positioning). Verified in synthetic logic: swipe R→yesterday, L→tomorrow, push-down→tomorrow@top, push-up→prevday@bottom. **TOUCH FEEL UNTESTED ON DEVICE** — synthetic events skip touch-action arbitration; the real question is whether the native pan-y scroller releases the gesture at the edge.
+
+### Still open from the audit (next):
+- **PWA white-top REAL fix (S):** meta tags are right (v497) but `html,body` gradient has no solid bg fallback + `height:100%` → iOS paints white behind the status bar in standalone. Fix: add `background-color:#1a1726` + `min-height:100dvh` (and an `html{background:#1a1726}` rule).
+- **Full-bleed top rim (S):** `body.tab-day #pullSheet` still has `top:env(safe)+8px` + `left/right:2px`; set to 0 + `border-top:none` + square header corners.
+- **Dead code (M):** `attachInfinite`, `gotoAdjacentDay`, `scrollToDay`, `_infRebuild`, dead `pullDayLabel` lookups (832) — zero call sites after v496; safe to delete.
+- **Cross-day drag (v492) — OBSOLETE in day-at-a-time** (neighbour days are off-screen; can't drop on them). Consider drag-onto-the-week-strip to re-home instead.
+- Bigger: Apple-Music collapsing nav · planning-flow "ask what to keep" · drift fork / non-negotiables lock / bubble +/- steppers / sliver name-on-side.
+
+
 
 ## TOP-BAR REDESIGN v498 (2026-06-26) — Apple-Calendar compact header
 David: "remove the very top bar; max 2 rows; most of the screen = calendar, not random buttons." Built a compact day-view header in `buildPull` (`if(head)`):
