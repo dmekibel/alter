@@ -691,11 +691,14 @@
         for (var i = 0; i < secs.length; i++) { if (secs[i].offsetTop <= cy) centerDk = secs[i].dataset.dk; }
         if (!centerDk) return;
         var lab = el("pullDayLabel"); if (lab) lab.textContent = relLabel(centerDk);
-        var tb = el("pullTodayBtn"); if (tb) tb.style.display = (centerDk !== todayK()) ? "" : "none";
+        setTodayBtn(el("pullTodayBtn"), centerDk === todayK());
         if (centerDk !== pullFocusK) { _infRebuild = 1; pullFocusK = centerDk; pendingScrollNow = false; buildPull(); setTimeout(function () { _infRebuild = 0; }, 0); } // crossed into another day → slide the buffer to follow (the scroll anchor keeps your exact view)
       });
     });
   }
+  // The top-right pill is "Today" when you've scrolled/paged away, and flips to "Now" once today is centered — tap it from any scroll position to jump straight to the now-line (David 2026-06-26)
+  function setTodayBtn(btn, isToday) { if (!btn) return; btn.innerHTML = isToday ? '<i class="ti ti-clock-bolt"></i> Now' : '<i class="ti ti-current-location"></i> Today'; btn.classList.toggle("is-now", isToday); btn.style.display = ""; }
+  function scrollToNow() { var pb = el("pullBody"); var sc = pb && pb.querySelector(".day-card.cur .day-cardscroll"); var nl = sc && sc.querySelector(".nowline"); if (nl && nl.offsetParent !== null) { nl.scrollIntoView({ block: "center", behavior: "smooth" }); } else { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } } // jump to the present moment within today
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
   function distributePlan(k, sel) {
     if (!sel || !sel.length) return;
@@ -744,7 +747,7 @@
       else { add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months"); }
       var rt = add(top, "div", "pull-rt");
       if (pullZoom !== "day") { var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; } // "find yourself" → smooth-scroll back to the current week/month (David 2026-06-24)
-      else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb2.onclick = function () { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); }; tdb2.style.display = (pullFocusK && pullFocusK !== todayK()) ? "" : "none"; } // jump back to today when you've paged away (David 2026-06-24)
+      else { var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.onclick = function () { if ((pullFocusK || todayK()) !== todayK()) { pullFocusK = todayK(); pendingScrollNow = true; buildPull(); } else scrollToNow(); }; setTodayBtn(tdb2, (pullFocusK || todayK()) === todayK()); } // "Today" when paged away → "Now" when today is centered (jump to the present) — David 2026-06-26
       // (hour +/- buttons replaced by the zoom slider below the scope buttons — David 2026-06-25)
       var seg = add(rt, "div", "scope-seg"); // day/week/month = scope icons (David 2026-06-24)
       [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; }); // every scope switch re-centers on today (David 2026-06-24)
@@ -804,7 +807,7 @@
         else curScroll.scrollTop = keepTop;
       }
       var _lab0 = el("pullDayLabel"); if (_lab0) _lab0.textContent = relLabel(focus);
-      var _tb0 = el("pullTodayBtn"); if (_tb0) _tb0.style.display = (focus !== todayK()) ? "" : "none";
+      setTodayBtn(el("pullTodayBtn"), focus === todayK());
     }
     if (!pb._gw) { // physical gestures, wired once: two-finger PINCH = hour-density zoom · one-finger horizontal SWIPE = page to prev/next day (David 2026-06-24)
       pb._gw = 1;
