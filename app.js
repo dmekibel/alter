@@ -649,10 +649,14 @@
     var done = false; function fin() { if (done) return; done = true; pgr.removeEventListener("transitionend", fin); pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull(); }
     pgr.addEventListener("transitionend", fin); setTimeout(fin, 320);
   }
-  function attachHill(sc) { // SEAMLESS day-to-day: keep scrolling PAST the bottom → tomorrow, past the top → yesterday (a "hill" you climb with resistance). Arms MID-gesture when the scroll hits an edge and you keep pulling. (David 2026-06-26)
+  function flowToDay(dir) { // VERTICAL flow into the prev/next day — NO sideways animation; you land at the CONTINUING edge so it reads as one timeline you scrolled into (the sideways flip is only for the horizontal side-slide) — David 2026-06-26
+    pullFocusK = keyAdd(pullFocusK || todayK(), dir); pendingScrollNow = false; buildPull();
+    requestAnimationFrame(function () { var pb = el("pullBody"), sc = pb && pb.querySelector(".day-card.cur .day-cardscroll"); if (sc) sc.scrollTop = dir > 0 ? 0 : Math.max(0, sc.scrollHeight - sc.clientHeight); }); // next day → its TOP (you kept scrolling down) · prev day → its BOTTOM (you kept scrolling up)
+  }
+  function attachHill(sc) { // SEAMLESS day-to-day: keep scrolling PAST the bottom → tomorrow, past the top → yesterday. Arms MID-gesture when the scroll reaches an edge and you keep pulling (slow is fine — it's distance, not speed). (David 2026-06-26)
     if (sc._hill) return; sc._hill = 1;
     var lastY = 0, edge = 0, over = 0, anchorY = 0, active = false, tracking = false, hint = null;
-    function showHint(dir, amt) { if (!hint) { hint = document.createElement("div"); hint.className = "hill-hint"; sc.appendChild(hint); } var near = Math.min(1, amt / 60); hint.style.opacity = String(0.4 + near * 0.6); hint.innerHTML = dir > 0 ? '<i class="ti ti-chevron-down"></i> ' + (near >= 1 ? "release for tomorrow" : "keep going — tomorrow") : '<i class="ti ti-chevron-up"></i> ' + (near >= 1 ? "release for yesterday" : "keep going — yesterday"); hint.style.top = dir > 0 ? "auto" : "8px"; hint.style.bottom = dir > 0 ? "8px" : "auto"; }
+    function showHint(dir, amt) { if (!hint) { hint = document.createElement("div"); hint.className = "hill-hint"; sc.appendChild(hint); } var near = Math.min(1, amt / 40); hint.style.opacity = String(0.4 + near * 0.6); hint.innerHTML = dir > 0 ? '<i class="ti ti-chevron-down"></i> ' + (near >= 1 ? "release for tomorrow" : "keep going — tomorrow") : '<i class="ti ti-chevron-up"></i> ' + (near >= 1 ? "release for yesterday" : "keep going — yesterday"); hint.style.top = dir > 0 ? "auto" : "8px"; hint.style.bottom = dir > 0 ? "8px" : "auto"; }
     function clearHint() { if (hint) { hint.remove(); hint = null; } }
     function reset() { if (active) { sc.style.transition = "transform .2s cubic-bezier(.3,.7,.25,1)"; sc.style.transform = ""; setTimeout(function () { sc.style.transition = ""; }, 230); } active = false; tracking = false; edge = 0; over = 0; clearHint(); }
     sc.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") return; lastY = e.clientY; active = false; edge = 0; over = 0; tracking = true; });
@@ -667,7 +671,7 @@
       if (pull <= 0) { active = false; over = 0; sc.style.transform = ""; clearHint(); return; } // pulled back into the day → release the hill
       over = pull; e.preventDefault(); var res = Math.min(150, pull * 0.45); sc.style.transform = "translateY(" + (edge === 1 ? -res : res) + "px)"; showHint(edge, pull);
     }, { passive: false });
-    function end() { var fire = active && over > 60, dir = edge; reset(); if (fire) { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e0) {} pageSlide(dir); } }
+    function end() { var fire = active && over > 40, dir = edge; reset(); if (fire) { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e0) {} flowToDay(dir); } } // flow into the day (no sideways flip), low threshold so a slow deliberate pull is enough
     sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", end);
   }
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
