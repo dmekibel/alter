@@ -912,6 +912,16 @@
   #nav .nb.on{ color:#ff5fa0 !important; }
   #nav .nb.on .ne{ filter:drop-shadow(0 0 7px rgba(255,95,160,.45)); }
   #nav .nb:active{ transform:scale(.93); }
+  /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
+  body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:calc(8px + env(safe-area-inset-bottom)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="goals"], body.nav-collapsed.tab-day #nav .nb[data-tab="self"]{ display:none !important; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="day"]{ flex:none !important; width:62px !important; height:50px !important; border-radius:13px !important; padding:0 !important; position:relative; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="day"]::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; } /* two faint bars on the right edge = "Goals & You are tucked behind, tap to open" */
+  body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:calc(8px + env(safe-area-inset-bottom)) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
+  body.nav-collapsed.tab-day #liveDock .ld-seg{ display:none !important; } /* narrow row = play/info/elapsed only; expand the nav for the Replan/Drift row */
+  body.nav-collapsed.tab-day:not(.gaming) #pullSheet{ bottom:calc(66px + env(safe-area-inset-bottom)) !important; } /* the dock no longer floats over the timeline → reclaim that height */
   #screen{ padding-bottom:98px !important; }
   /* header is replaced by the live-tracker strip + per-screen titles */
   body.tracker header{ display:none; }
@@ -1193,6 +1203,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=503"></script>
+  <script src="app.js?v=504"></script>
 </body>
 </html>

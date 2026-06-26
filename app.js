@@ -689,6 +689,7 @@
   function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the week-strip tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
     if (sc._inf) return; sc._inf = 1; var raf = 0;
     sc.addEventListener("scroll", function () {
+      if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day")) document.body.classList.add("nav-collapsed"); // Apple-Music: the moment you actually scroll the timeline, Goals/You tuck behind the Today pill and the live tracker drops beside it (David 2026-06-26)
       if (raf || _infRebuild || _paging) return; // never recenter mid-page-turn (that was the old bounce) — David 2026-06-26
       raf = requestAnimationFrame(function () { raf = 0;
         var cy = sc.scrollTop + sc.clientHeight * 0.4, secs = sc.querySelectorAll(".day-sec"), centerDk = null;
@@ -725,7 +726,7 @@
     })(keyAdd(sow, i)); }
   }
   function setStripSel(dk) { var cells = document.querySelectorAll(".pull-weekstrip .pws-day"); for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("sel", cells[i].dataset.dk === dk); } // live-move the week-strip highlight to the day under the viewport / the day you're swiping toward (David 2026-06-26)
-  var _paging = 0, _scrollToFocus = false; // _paging suppresses the continuous-scroll recenter during a horizontal page turn; _scrollToFocus jumps the vertical scroll onto the new focus day after a page turn
+  var _paging = 0, _scrollToFocus = false, _navLock = 0; // _paging suppresses the continuous-scroll recenter during a horizontal page turn; _scrollToFocus jumps the vertical scroll onto the new focus day after a page turn; _navLock blocks the Apple-Music nav-collapse during programmatic scrolls
   // the ⋯ overflow: day tools that used to sit in their own bar row (Plan day / enhance / clear / undo / test) — keeps the header at 2 rows (David 2026-06-26)
   function dayToolsMenu(anchor) {
     var head = el("pullHead"); if (!head) return; var ex = head.querySelector(".pull-toolsmenu"); if (ex) { ex.remove(); return; } // tap again = close
@@ -848,6 +849,7 @@
         else if (_scrollToFocus) { _scrollToFocus = false; var _fnl = (focus === todayK()) ? curScroll.querySelector(".nowline") : null, _ft = curScroll.querySelector('.day-sec[data-dk="' + focus + '"]'); requestAnimationFrame(function () { if (_fnl && _fnl.offsetParent !== null) _fnl.scrollIntoView({ block: "center" }); else if (_ft) curScroll.scrollTop = Math.max(0, _ft.offsetTop - 4); }); } // a horizontal page turn lands the vertical scroll ON the new focus day (now-line if today, else its top) so the continuous recenter agrees
         else if (keepAnchor) { var _t = curScroll.querySelector('.day-sec[data-dk="' + keepAnchor.dk + '"]'); curScroll.scrollTop = _t ? (_t.offsetTop + keepAnchor.off) : keepTop; }
         else curScroll.scrollTop = keepTop;
+        _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); // the programmatic scroll-to-now/anchor must NOT trigger the nav-collapse — only a real user scroll after the view settles does (David 2026-06-26)
       }
       setStripSel(focus); setTodayBtn(el("pullTodayBtn"), focus === todayK());
     }
@@ -2962,7 +2964,7 @@
       scard.addEventListener("pointerup", sdEnd); scard.addEventListener("pointercancel", sdEnd);
     })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24)
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home
     renderAll();
