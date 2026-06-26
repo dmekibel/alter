@@ -2344,6 +2344,8 @@
   }
   function editorSheet(o, k, isLog) { // unified activity editor — merged hero (name = switch), draggable scrubber, auto-save (David 2026-06-25)
     var B = el("sheetBody"); B.innerHTML = ""; openSheet(); el("sheet").classList.add("edsheet"); el("sheet").classList.add("edpro"); pushUndo();
+    var _sx = el("sheetX"); if (_sx) _sx.style.display = "none"; // editor exits by tapping above or swiping down — the top-right slot is the TRASH now (David 2026-06-26)
+    var trashTop = add(B, "button", "ed-trash-top"); trashTop.innerHTML = '<i class="ti ti-trash"></i>'; trashTop.setAttribute("aria-label", "delete"); trashTop.onclick = function () { var a = isLog ? logs(k) : blocks(k); var ix = a.indexOf(o); if (ix >= 0) a.splice(ix, 1); save(); closeSheet(); renderAll(); };
     var DEF = isLog ? 15 : 30;
     function D() { return DOM[domainOf(o)] || DOM.focus; }
     function dlbl(m) { return m < 60 ? m + "m" : (m % 60 ? (Math.floor(m / 60) + "h " + (m % 60) + "m") : (m / 60 + "h")); }
@@ -2397,8 +2399,7 @@
     }
     // FOOTER — auto-save means no Save; just Done + delete
     var foot = add(B, "div", "ed-foot");
-    var done = add(foot, "button", "ed-done"); done.innerHTML = '<i class="ti ti-check"></i> Done'; done.onclick = function () { closeSheet(); renderAll(); };
-    var del = add(foot, "button", "ed-del"); del.innerHTML = '<i class="ti ti-trash"></i>'; del.onclick = function () { var a = isLog ? logs(k) : blocks(k); var ix = a.indexOf(o); if (ix >= 0) a.splice(ix, 1); save(); closeSheet(); renderAll(); };
+    var done = add(foot, "button", "ed-done"); done.innerHTML = '<i class="ti ti-check"></i> Done'; done.onclick = function () { closeSheet(); renderAll(); }; // trash moved to top-right; exit also via tap-above / swipe-down (David 2026-06-26)
   }
   function blockEdit(b, k) { editorSheet(b, k, false); }
   function logEdit(e, k) { editorSheet(e, k, true); }
@@ -2759,7 +2760,7 @@
   }
 
   // ---- character creation (multi-step) -----------------------------------
-  function openSheet() { el("sheet").classList.add("on"); el("sheet").classList.remove("edsheet"); } // default: not the edit sheet (blockEdit/logEdit re-add edsheet) — keeps the berry restyle scoped to the activity editor only (David 2026-06-25)
+  function openSheet() { el("sheet").classList.add("on"); el("sheet").classList.remove("edsheet"); var _sx = el("sheetX"); if (_sx) _sx.style.display = ""; } // default: not the edit sheet (blockEdit/logEdit re-add edsheet); restore the ✕ that the editor hides — keeps the berry restyle scoped to the activity editor only (David 2026-06-25)
   function closeSheet() { el("sheet").classList.remove("on"); el("sheet").classList.remove("edsheet"); }
   function charSheet() {
     var B = el("sheetBody"); var step = 0, STEPS = 3, inputs = {};
@@ -2953,8 +2954,15 @@
     el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
     document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; if (zoomMode === "day") pendingScrollNow = true; renderToday(); }; });
     document.querySelectorAll("#growTabs .zt").forEach(function (z) { z.onclick = function () { var g = z.dataset.g; document.querySelectorAll("#growTabs .zt").forEach(function (x) { x.classList.toggle("on", x === z); }); el("habitsPane").style.display = g === "habits" ? "" : "none"; el("statsPane").style.display = g === "stats" ? "" : "none"; }; });
-    el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); };
+    el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); }; // tap above the card = exit
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
+    (function () { // swipe the card DOWN to dismiss — armed only when the card is scrolled to its top, so it never fights inner scrolling (David 2026-06-26)
+      var scard = document.querySelector("#sheet .scard"); if (!scard) return; var sdOn = false, sdY = 0;
+      scard.addEventListener("pointerdown", function (e) { sdOn = scard.scrollTop <= 1; sdY = e.clientY; if (sdOn) scard.style.transition = "none"; });
+      scard.addEventListener("pointermove", function (e) { if (!sdOn) return; var dy = e.clientY - sdY; if (dy > 0 && scard.scrollTop <= 0) { scard.style.transform = "translateY(" + dy + "px)"; if (dy > 6) e.preventDefault(); } else if (dy < -2) { sdOn = false; scard.style.transition = ""; scard.style.transform = ""; } }, { passive: false });
+      function sdEnd(e) { if (!sdOn) return; sdOn = false; var dy = (e.clientY || sdY) - sdY; scard.style.transition = ""; if (dy > 90) { closeSheet(); setTimeout(function () { scard.style.transform = ""; }, 260); } else scard.style.transform = ""; }
+      scard.addEventListener("pointerup", sdEnd); scard.addEventListener("pointercancel", sdEnd);
+    })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
     document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24)
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
