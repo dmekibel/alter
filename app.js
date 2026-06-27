@@ -707,13 +707,37 @@
     pullHourPx = nv; buildPull();
     var sc2 = el("pullBody").querySelector(".day-card.cur .day-cardscroll"); if (sc2) sc2.scrollTop = Math.max(0, anchor * (nv / old) - fy);
   }
-  // smooth zoom between day/week/month — a self-completing CSS keyframe entrance (never gets stuck invisible; ends at the natural visible state) — David 2026-06-24
+  // smooth zoom between day/week/month — buttery CROSSFADE+SCALE: freeze the OUTGOING scope as a snapshot overlay, build the new scope underneath, then crossfade opacity + scale the new view INTO place (zoom-out grows past→present; zoom-in shrinks toward it) so the day appears to fold into its slot in the week and the week into the month. GPU transform+opacity only — no layout thrash, no glow (locked palette). Double-guarded cleanup so a ghost snapshot can never stick. (David 2026-06-27 — replaces the flat single-keyframe pop)
+  var _zoomSnapTO = 0;
   function zoomAnim(dir) {
+    var p = el("pullBody");
+    if (!p) { buildPull(); return; }
+    // tear down any in-flight snapshot from a rapid double-zoom so two ghosts can never stack
+    var stale = p.querySelector(".zoom-snap"); if (stale) stale.remove(); if (_zoomSnapTO) { clearTimeout(_zoomSnapTO); _zoomSnapTO = 0; }
+    // 1) freeze the CURRENT (outgoing) view as a visual-only overlay BEFORE buildPull wipes it
+    var snap = document.createElement("div"); snap.className = "zoom-snap";
+    var kids = p.childNodes, frag = document.createDocumentFragment();
+    for (var i = 0; i < kids.length; i++) frag.appendChild(kids[i].cloneNode(true));
+    snap.appendChild(frag);
+    // 2) build the new scope (this wipes p and repopulates it)
     buildPull();
-    var p = el("pullBody"); if (!p) return;
-    p.style.animation = "none"; void p.offsetHeight; // restart the animation each zoom
-    p.style.animation = (dir > 0 ? "zoomBroad" : "zoomClose") + " .26s cubic-bezier(.2,.7,.3,1)";
-    p.addEventListener("animationend", function () { p.style.animation = ""; }, { once: true });
+    p = el("pullBody"); if (!p) return;
+    // 3) layer the frozen outgoing snapshot ON TOP of the freshly-built new view
+    p.appendChild(snap);
+    // 4) crossfade + scale. Zoom OUT (dir>0): new view starts a touch LARGER (1.08) and settles to 1 → the day "lands" into the bigger frame; the snapshot shrinks+fades. Zoom IN (dir<0): new view starts smaller (0.92) and grows to 1; snapshot grows+fades. Mirror the snapshot the opposite way so the two meet seamlessly.
+    var inScale = dir > 0 ? 1.08 : 0.92, outScale = dir > 0 ? 0.9 : 1.12, EASE = "cubic-bezier(.2,.7,.3,1)", DUR = 0.30;
+    p.style.willChange = "transform, opacity";
+    p.style.transition = "none"; p.style.opacity = "0"; p.style.transform = "scale(" + inScale + ")";
+    snap.style.transition = "none"; snap.style.opacity = "1"; snap.style.transform = "scale(1)";
+    void p.offsetHeight; // flush the start state so the transition has somewhere to animate FROM
+    p.style.transition = "opacity " + DUR + "s " + EASE + ", transform " + DUR + "s " + EASE;
+    snap.style.transition = "opacity " + DUR + "s " + EASE + ", transform " + DUR + "s " + EASE;
+    p.style.opacity = "1"; p.style.transform = "scale(1)";
+    snap.style.opacity = "0"; snap.style.transform = "scale(" + outScale + ")";
+    var done = false;
+    function fin() { if (done) return; done = true; clearTimeout(_zoomSnapTO); _zoomSnapTO = 0; p.removeEventListener("transitionend", fin); try { snap.remove(); } catch (e) {} p.style.transition = ""; p.style.transform = ""; p.style.opacity = ""; p.style.willChange = ""; } // restore the live view to its natural state; drop the snapshot
+    p.addEventListener("transitionend", fin);
+    _zoomSnapTO = setTimeout(fin, DUR * 1000 + 120); // fallback so a missed transitionend never strands the snapshot (mirrors pageSlide's double-guard)
   }
   function pageSlide(dir) { // Apple-Photos day swipe: animate the pager from WHEREVER the finger left it to the prev/next card, then rebuild centered there (David 2026-06-24; smoothed 2026-06-26)
     var pb = el("pullBody"), pgr = pb && pb.querySelector(".day-pager");
@@ -840,11 +864,12 @@
         // ROW 2 — the mini week strip
         weekStrip(add(head, "div", "pull-weekstrip"), pullFocusK || todayK());
       } else {
+        // SCOPE SWITCHER STAYS LEFT in EVERY view (day/week/month) — it used to live on the RIGHT in week/month, so it jumped sides vs day view (David flagged it 2026-06-27). Now it's the first child of `top`, same left position as day view.
+        var seg = add(top, "div", "scope-seg");
+        [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
         add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months");
         var rt = add(top, "div", "pull-rt");
         var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; // "find yourself" → smooth-scroll back to the current week/month
-        var seg = add(rt, "div", "scope-seg");
-        [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
         var cx = add(rt, "button", "pull-x"); cx.innerHTML = '<i class="ti ti-x"></i>'; cx.onclick = closePull;
       }
     }
