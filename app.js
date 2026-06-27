@@ -2200,6 +2200,7 @@
     var liveBottom = topFor(now); // where the "start new" slot anchors — below the live bubble's real bottom (a young timer floors to 62px & would otherwise cover it)
     acts.forEach(function (it) {
       if (it.kind === "log" && fusedIntoPlan(it, domainOf(it.ref))) return; // matched: shown as the fused full-width plan bar, not a separate real bar (David 2026-06-25)
+      if (it.kind === "timer" && _convFused) return; // tracking ON-PLAN: the plan's straddle already drew the WIDE matched bar (plan+reality fused) + detached the ghost — don't ALSO draw the narrow live bubble (that duplicate was why the print looked narrow instead of wide) — David 2026-06-27
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
       var cardH;
       if (it.kind === "timer") { cardH = Math.max(0, (it.e - it.s) / 60 * HP - 2); card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; card.dataset.dur = (it.e - it.s); card.dataset.baseh = cardH; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); } // starts ~0 (invisible) at the now-line and grows UPWARD behind it as time passes — no minimum size, no extending below now (David 2026-06-27) // LIVE bubble PRINTS into the past: grows from its start down to the now-line as time passes, starting as a thin sliver (too small for text → the now-line readout covers the "what" until it's tall enough to switch to on-bubble text) — David 2026-06-27
