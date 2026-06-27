@@ -986,8 +986,10 @@
   .calblk .calx:active{ transform:scale(.9); }
   /* FULL-SCREEN CLEANUP (David 2026-06-27): kill the per-day pink outline boxes, the right symbol rail, and the day-separator bars so the timeline reads edge-to-edge and uncluttered */
   .railchip{ display:none !important; }
-  .day-stacksep{ background:transparent !important; border:none !important; box-shadow:none !important; max-width:none !important; width:auto !important; margin:10px 0 4px 26px !important; padding:0 !important; justify-content:flex-start !important; }
-  .day-stacksep .dss-lab{ color:rgba(255,227,241,.5) !important; font-size:11px !important; letter-spacing:.5px !important; }
+  /* day separators: NO MORE MAROON. The separator stays as a tiny INVISIBLE spacer (so the swipe-scroll math that anchors on it still works) but every visible part — the maroon "stacks"/"done" pills, the border, the label — is gone. The top header already tells you which day you're on. (David 2026-06-27) */
+  .day-stacksep{ background:transparent !important; border:none !important; box-shadow:none !important; height:10px !important; min-height:0 !important; max-width:none !important; width:auto !important; margin:0 !important; padding:0 !important; overflow:hidden !important; }
+  .day-stacksep > *{ display:none !important; }
+  .day-sep, .day-sepauto, .day-done{ display:none !important; }
   .plan-empty, .backfill, .startnew{ display:none !important; }
   .lanediv{ display:none !important; }
   .calblk.emptyblk{ background:#1c1228 !important; border:2px dashed #6a4a60 !important; } /* empty bubble no longer a loud pink candy box */
@@ -1221,6 +1223,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=557"></script>
+  <script src="app.js?v=558"></script>
 </body>
 </html>
