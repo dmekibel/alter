@@ -596,10 +596,12 @@
   .bento-ov{ position:fixed; inset:0; z-index:95; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; } /* above #trackerFull (z90) so pickers opened FROM the tracker are visible (David 2026-06-27) */
   .bento-card{ width:min(460px,96vw); max-height:90vh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
   @keyframes bentoIn{ from{ transform:translateY(-14px) scale(.96); opacity:0; } to{ transform:none; opacity:1; } }
-  /* zoom transitions between day/week/month (David 2026-06-24) */
+  /* zoom transitions between day/week/month (David 2026-06-24; rebuilt as a crossfade+scale 2026-06-27) */
   #pullBody{ transform-origin:50% 24%; }
   @keyframes zoomBroad{ from{ opacity:.4; transform:scale(1.14); } to{ opacity:1; transform:scale(1); } }
   @keyframes zoomClose{ from{ opacity:.4; transform:scale(.84); } to{ opacity:1; transform:scale(1); } }
+  /* frozen snapshot of the OUTGOING scope, layered over the new view during the buttery day↔week↔month crossfade — visual only (no pointer events, no scroll), same transform-origin so it folds toward the focus point. Removed the instant the fade finishes. (David 2026-06-27) */
+  .zoom-snap{ position:absolute; inset:0; z-index:6; pointer-events:none; overflow:hidden; transform-origin:50% 24%; will-change:transform,opacity; }
   .bento-head{ display:flex; align-items:center; justify-content:space-between; padding:13px 14px 8px; flex:none; }
   .bento-q{ color:#ffe3f1; font-size:17px; font-weight:700; }
   .bento-x{ width:32px; height:32px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
