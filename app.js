@@ -1005,20 +1005,22 @@
     dk.classList.add("on"); dk.classList.toggle("noplan", !nb0); // no plan today → only Plan + Drift make sense (Replan hidden — nothing to re-plan) — David 2026-06-25
     if (S.brk) { // ON A BREAK — a declared pause is running; the goal waits. Don't say "not tracking" — show the countdown + a one-tap resume (David 2026-06-27)
       dk.classList.add("idle"); dk.classList.remove("hasplan"); var _bD = DOM[S.brk.dom] || DOM.restore, _br = S.brk.start + S.brk.mins * 60000 - Date.now(), _bup = _br <= 0;
-      if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _bD.c, "important"); st.style.setProperty("color", _bD.ink, "important"); }
+      if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _bD.c, "important"); st.style.setProperty("color", _bD.ink, "important"); st.style.removeProperty("--ldrim"); }
       if (ad) ad.innerHTML = '<i class="ti ti-coffee"></i> On a break' + (S.brk.title ? ' · ' + esc(S.brk.title) + ' waits' : '');
       if (su) su.textContent = _bup ? "break's up — tap to resume" : "tap to resume your goal";
       if (elx) { elx.removeAttribute("data-tid"); elx.classList.add("ld-brkcd"); elx.setAttribute("data-brk", "1"); elx.textContent = fmtCD(Math.max(0, _br)); } // its own live hook — the 1s loop updates [data-brk] like it does .live-elapsed
     } else if (!t) { // IDLE — nothing tracking: the dock is a "start" bar
       dk.classList.add("idle"); dk.classList.toggle("hasplan", !!nb0); // Play IS "start the plan" → the separate Plan button is redundant and hidden (David 2026-06-26)
-      if (nb0) { var _pD = DOM[domainOf(nb0)] || DOM.focus; if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _pD.c, "important"); st.style.setProperty("color", _pD.ink, "important"); } if (ad) ad.innerHTML = tiIcon(nb0) + ' <b>' + esc(nb0.title) + '</b>'; if (su) su.textContent = "▶ start your plan"; } // the play button wears the upcoming activity's colour; pressing it = you agree to do the plan and start tracking it
-      else { if (st) { st.innerHTML = '<i class="ti ti-player-play"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); } if (ad) ad.innerHTML = '<i class="ti ti-clock"></i> Not tracking'; if (su) su.textContent = "tap ▶ or pick below to start"; }
+      if (nb0) { var _pD = DOM[domainOf(nb0)] || DOM.focus; if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _pD.c, "important"); st.style.setProperty("color", _pD.ink, "important"); st.style.removeProperty("--ldrim"); } if (ad) ad.innerHTML = tiIcon(nb0) + ' <b>' + esc(nb0.title) + '</b>'; if (su) su.textContent = "▶ start your plan"; } // the play button wears the upcoming activity's colour; pressing it = you agree to do the plan and start tracking it
+      else { if (st) { st.innerHTML = '<i class="ti ti-player-play"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); st.style.removeProperty("--ldrim"); } if (ad) ad.innerHTML = '<i class="ti ti-clock"></i> Not tracking'; if (su) su.textContent = "tap ▶ or pick below to start"; }
       if (elx) { elx.textContent = ""; elx.removeAttribute("data-tid"); elx.classList.remove("ld-brkcd"); elx.removeAttribute("data-brk"); }
     } else {
-      dk.classList.remove("idle"); dk.classList.remove("hasplan"); if (st) { st.innerHTML = '<i class="ti ti-player-stop"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); }
+      dk.classList.remove("idle"); dk.classList.remove("hasplan");
       var dom = domainOf(t), D = DOM[dom] || DOM.focus, drift = (dom === "drift");
       var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), on = false;
       if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
+      // FOLDED BUTTON = a MINI of the big ring (David 2026-06-28): a small STRIPED activity circle (same texture/colour as #tfTile) wearing the activity icon; a thin GREEN rim when on-plan = the mini reward band. It morphs into #tfRing on open. (Tapping it still stops the timer.)
+      if (st) { st.innerHTML = tiIcon(t); st.style.setProperty("background", tfStripe(D.c), "important"); st.style.setProperty("color", D.ink || "#160510", "important"); st.style.setProperty("--ldrim", on ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); }
       var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ece6f2;background:' + DOM.drift.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
       if (ad) ad.innerHTML = tiIcon(t) + ' ' + esc(t.title || "Tracking") + ' ' + badge;
       var driftMin = Math.floor((Date.now() - t.start) / 60000), nudge = !on && driftMin >= 10; // off-plan (drift or no covering block) for 10+ min → a gentle "back?" offer (David 2026-06-27)
@@ -1033,8 +1035,8 @@
       el("ldDrift").onclick = function () { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: "Drift", catK: "vice", color: DOM.drift.c }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); toast("🌫️ drifting — tap the log later to name it"); }; // UNNAMED DRIFT: one tap starts an honest drift, no picker; stays relabelable on the log (David 2026-06-27)
       var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"), _sub = el("ldSub"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
       if (_sub) { _sub.onclick = function (e) { if (!_sub.classList.contains("ld-nudge")) return; e.stopPropagation(); var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else planBreak(); }; } // nudge sub-line tap = get back on plan (1-tap), else fall through to the info-tap (David 2026-06-27)
-      if (_info) { _info.style.touchAction = "none"; _info.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // grab the dock body and DRAG UP to expand (a plain tap no longer auto-opens) — David 2026-06-27
-      if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // drag the dock handle UP → expand (finger-follow)
+      if (_info) { _info.style.touchAction = "none"; _info.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // TAP or DRAG-UP the dock body → expand via the shared-element morph (tap-to-open restored — David 2026-06-28)
+      if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // tap or drag the dock handle UP → expand (morph)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
       var _bd = el("tfBackdrop"); if (_bd) _bd.onclick = function () { closeTrackerFull(); }; // tap the calendar peek above the sheet → close
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
@@ -1066,29 +1068,59 @@
   // ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) =====
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
-  var TF_OPEN = false, _ringP = 0, _ringRaf = 0;
-  var TF_PEEK = 92; // px of calendar left visible above the open sheet — easy to close without reaching the very top (David 2026-06-28)
-  // "the dock card RISES": grow the OUTER clip's height bottom-up (no scale → ring/content never stretches). frac 0 = dock height, frac 1 = full sheet (a peek of calendar stays at the top).
-  // No hard cut at the start: over the first sliver of the drag the real dock CROSSFADES out while the tracker fades in (same size, same spot) → a smooth hand-off, not an instant swap.
-  function tfSetFrac(f) { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var r = dk ? dk.getBoundingClientRect() : null, vh = window.innerHeight || 800, dh = (r && r.height) ? r.height : 120;
-    f = Math.max(0, Math.min(1, f));
-    tf.style.height = (dh + ((vh - TF_PEEK) - dh) * f) + "px"; var br = 16 * (1 - f); tf.style.borderRadius = br + "px " + br + "px 0 0";
-    var x = Math.min(1, f / 0.16); tf.style.opacity = String(x); if (dk) dk.style.opacity = String(1 - x); } // crossfade over the first 16% of the drag — the dock hands off to the tracker, no flash
-  function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
-    tf.classList.remove("tf-anim"); tf.classList.add("on"); if (bd) bd.classList.add("on"); tfSetFrac(0); // start AS the dock card (dock still visible, tracker transparent)
-    void tf.offsetHeight; // force reflow so the start state registers (rAF is unreliable when the page isn't actively painting)
-    tf.classList.add("tf-anim"); tfSetFrac(1); } // then rise to full → the card grows + crossfades
-  function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return; tf.classList.add("tf-anim"); if (bd) bd.classList.remove("on"); tfSetFrac(0); // shrink back down into the dock
-    var done = function () { tf.removeEventListener("transitionend", done); tf.classList.remove("on", "tf-anim"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.style.opacity = ""; TF_OPEN = false; };
-    tf.addEventListener("transitionend", done); setTimeout(done, 430); }
-  function tfDrag(ev, opening) { // finger-follow: drag the dock card UP to grow it; drag the tracker DOWN to shrink it back into the dock (David 2026-06-27)
-    ev.preventDefault(); var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false, started = !opening;
-    if (!opening) tf.classList.remove("tf-anim"); // closing: tracker is already open → follow the finger immediately
-    function start() { if (started) return; started = true; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); var bd = el("tfBackdrop"); if (bd) bd.classList.add("on"); tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); } // OPEN setup happens only once the user actually drags — a plain tap does NOTHING; dock crossfades via opacity (no visibility cut)
-    function mv(e) { e.preventDefault(); var dy = e.clientY - sy; if (!moved && Math.abs(dy) > 4) moved = true; if (opening && moved) start(); if (!started) return; var f = opening ? (-dy / H * 1.35) : (1 + dy / H * 1.35); tfSetFrac(f); }
+  var TF_OPEN = false, TF_ANIM = false, _ringP = 0, _ringRaf = 0; // TF_ANIM = a morph is in flight → guards against a second open/close firing mid-animation (the "expands all over again" bug — David 2026-06-28)
+  // ===== SHARED-ELEMENT MORPH (FLIP) — the folded dock's mini elements FLY/GROW into their big counterparts, and back (David 2026-06-28) =====
+  // Replaces the old height-rise + content-crossfade. Pairs: mini #ldStop circle → big #tfRing circle (UNIFORM scale only — never distort);
+  // mini #ldAct → big #tfTitle; mini #ldEl → big #tfTime; mini .ld-seg → big #tfCtrls. Secondary content (verdict/ctx/chips/clock/spark) just fades.
+  var TF_PAIRS = [["ldStop", "tfRing", true], ["ldAct", "tfTitle", false], ["ldEl", "tfTime", false], [".ld-seg", "tfCtrls", false]]; // [miniSel, bigId, isCircle]
+  function _tfNode(sel) { return sel.charAt(0) === "." ? document.querySelector("#liveDock " + sel) : el(sel); }
+  // For each pair: measure the BIG element's final rect (Last) and the MINI element's rect (First); return the inverse transform that
+  // makes the big element START at the mini position+size. Circles use a single uniform scale (width ratio) so they never stretch.
+  function _flipStart(big, mini) { // rectangular pairs: top-left FLIP (transform-origin:0 0) — translate the big's corner onto the mini's, scale to the mini's size
+    var b = big.getBoundingClientRect(), m = mini.getBoundingClientRect();
+    if (!b.width || !m.width) return "";
+    return "translate(" + (m.left - b.left) + "px," + (m.top - b.top) + "px) scale(" + (m.width / b.width) + "," + (m.height / b.height) + ")";
+  }
+  function _flipStartCircle(big, mini) { // circle pairs: UNIFORM scale only (no distortion), centres coincide
+    var b = big.getBoundingClientRect(), m = mini.getBoundingClientRect(); if (!b.width || !m.width) return "";
+    var s = Math.min(m.width / b.width, m.height / b.height);
+    var bcx = b.left + b.width / 2, bcy = b.top + b.height / 2, mcx = m.left + m.width / 2, mcy = m.top + m.height / 2;
+    // transform-origin is 0 0; scale about top-left then correct so the CENTRES coincide
+    var dx = mcx - (b.left + b.width / 2 * s), dy = mcy - (b.top + b.height / 2 * s);
+    return "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+  }
+  function tfMorph(opening, done) { // run the FLIP forward (opening) or reverse (closing); call done() at the end
+    var tf = el("trackerFull"); if (!tf) { if (done) done(); return; }
+    var pairs = []; TF_PAIRS.forEach(function (p) { var big = el(p[1]), mini = _tfNode(p[0]); if (!big || !mini) return;
+      var start = p[2] ? _flipStartCircle(big, mini) : _flipStart(big, mini); if (!start) return; pairs.push({ big: big, start: start }); });
+    tf.classList.add("tf-morphing"); pairs.forEach(function (q) { q.big.classList.add("tf-morph"); }); // arm the elements
+    if (opening) { pairs.forEach(function (q) { q.big.style.transform = q.start; q.big.style.opacity = "0.001"; }); tf.classList.remove("tf-bg"); tf.style.opacity = "0"; } // OPEN: start AT the mini spot, transparent bg
+    else { pairs.forEach(function (q) { q.big.style.transform = ""; q.big.style.opacity = ""; }); tf.classList.remove("tf-bg"); tf.style.opacity = ""; } // CLOSE: start AT the big spot (identity), bg shown
+    void tf.offsetHeight; // FORCE REFLOW so the start state registers before the transition (rAF is throttled in the headless preview — this repo relies on this)
+    tf.classList.add("tf-bg");
+    if (opening) { tf.style.opacity = "1"; pairs.forEach(function (q) { q.big.style.transform = ""; q.big.style.opacity = ""; }); } // → fly to the big spots + fade bg in
+    else { tf.style.opacity = "0"; pairs.forEach(function (q) { q.big.style.transform = q.start; q.big.style.opacity = "0.001"; }); } // → shrink back into the mini spots + fade bg out
+    var fin = function () { tf.removeEventListener("transitionend", fin); clearTimeout(to);
+      tf.classList.remove("tf-morphing"); pairs.forEach(function (q) { q.big.classList.remove("tf-morph"); q.big.style.transform = ""; q.big.style.opacity = ""; });
+      if (done) done(); };
+    var to = setTimeout(fin, 460); tf.addEventListener("transitionend", function te(e) { if (e.target === tf && e.propertyName === "opacity") { tf.removeEventListener("transitionend", te); fin(); } });
+  }
+  function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
+    if (TF_OPEN || TF_ANIM) return; // ONE clean expand per gesture — never re-open while open or mid-morph (David 2026-06-28)
+    TF_OPEN = true; TF_ANIM = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
+    tf.style.height = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); if (bd) bd.classList.add("on");
+    if (dk) dk.classList.add("ld-morphing"); // hide the mini dock elements during the morph (their big twins are flying)
+    tfMorph(true, function () { TF_ANIM = false; }); }
+  function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
+    if (!TF_OPEN || TF_ANIM) return; TF_ANIM = true; if (bd) bd.classList.remove("on");
+    tfMorph(false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); }
+  function tfDrag(ev, opening) { // folded: drag UP on the dock → expand (morph). open: drag DOWN on the sheet → close (morph). A real drag past threshold commits; otherwise it snaps back. (David 2026-06-28)
+    ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
+    if (opening && (TF_OPEN || TF_ANIM)) return; if (!opening && (!TF_OPEN || TF_ANIM)) return;
+    function mv(e) { var dy = e.clientY - sy; if (!moved && Math.abs(dy) > 4) moved = true; }
     function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); var dy = e.clientY - sy;
-      if (opening) { if (started && moved && -dy > H * 0.12) openTrackerFull(); else if (started) closeTrackerFull(); } // OPEN only on a real drag UP; a pure tap never even starts (no flash, dock stays)
-      else { if (moved && dy > H * 0.14) closeTrackerFull(); else openTrackerFull(); } } // CLOSE only on a real drag DOWN; otherwise snap back open
+      if (opening) { if (-dy > H * 0.06 || !moved) openTrackerFull(); } // drag UP (even a small one) OR a plain tap → expand via the morph (tap-to-open restored — David 2026-06-28)
+      else { if (moved && dy > H * 0.10) closeTrackerFull(); } } // drag DOWN past threshold → close; a tap on the sheet body does nothing
     document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
   }
   function claimableBlock() { // the single most-likely plan block covering a passed/straddling gap with NO matching real log — the welcome-back "claim" target
