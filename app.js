@@ -330,6 +330,27 @@
     var floor = 0; (g.unlocked || []).forEach(function (n) { if (typeof n === "number" && n > floor) floor = n; });
     return Math.max(gate, floor);
   }
+  // ===== JOURNEY CURRICULUM (JX-NODES, David 2026-06-28): the 6-node spine. Each node = one daily action + a reward-never-shame next-step card. `done(k)` is a PURE read of today's real signals → drives the one-obvious-next-step + landing. `act()` picks which stage the cockpit wears (or which sheet it opens). Voice: warm, never should/must/missed/behind. =====
+  var JOURNEY = [
+    { id: 0, key: "showup", title: "Show up", line: "Track one thing you're doing right now — that's the whole step.",
+      cta: "Track one thing", done: function (k) { return (logs(k) || []).length > 0 || (blocks(k) || []).some(function (b) { return b.done; }); }, act: function () { closeTrackerFull(); nowSheet(); } },
+    { id: 1, key: "plansmall", title: "Plan small", line: "Name tomorrow's one thing — just one — and let it wait for you.",
+      cta: "Name tomorrow's one thing", done: function (k) { return (blocks(tomK()) || []).some(function (b) { return b.title; }); }, act: function () { closeTrackerFull(); planSheet(tomK(), "tomorrow"); } },
+    { id: 2, key: "morning", title: "The morning", line: "Open the day on purpose — who you're being, your one thing.", timed: "morning",
+      cta: "Start the morning", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done); }, act: function () { enterStage("am", { byTap: true }); } },
+    { id: 3, key: "reflect", title: "Reflect", line: "Close the day with one honest line. A line is enough.", timed: "evening",
+      cta: "Close the day", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || (((S.bk || {})[k] || {}).journal || []).length > 0; }, act: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } },
+    { id: 4, key: "identity", title: "Identity", line: "Each kept block is a vote for who you're becoming. Cast one.",
+      cta: "Cast a vote", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done) || (blocks(k) || []).some(function (b) { return b.done; }); }, act: function () { enterStage("am", { byTap: true }); } },
+    { id: 5, key: "mastery", title: "Mastery", line: "You've got the rhythm. This is yours now — I'll be here on the arc.",
+      cta: "Carry on", done: function (k) { return true; }, act: function () { closeTrackerFull(); } }
+  ];
+  function journeyActionDoneToday() { var n = journeyNode(), node = JOURNEY[Math.max(0, Math.min(JOURNEY.length - 1, n))]; try { return !!node.done(todayK()); } catch (e) { return false; } }
+  function journeyTick() { // once per logical day: persist the inferred node as a sticky floor in S.guide.unlocked so an existing user (David) is met at his true level + never demotes. PURE-driven by readiness(); writes only the floor.
+    var g = S.guide; if (!g) return; var k = todayK(); if (g.tickK === k) return; g.tickK = k;
+    var n = journeyNode(); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
+    save();
+  }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
   function celebrate(color, streak) {
@@ -834,8 +855,26 @@
     item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
+    item("", "ti-compass", "Guidance", function () { guidanceSheet(); });
     item("dev", "ti-flask", "Test day", function () { fillTestDay(); });
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
+  }
+  // ===== GUIDANCE DIAL (JX-GUIDANCE-TOGGLE, David 2026-06-28): the autonomy knob — Guided / Light / Off. Clones the brainSheet engine-picker idiom (pchips). Default 'off' restores today's behavior + reveals everything; choosing less is framed as leveling up, never desertion. Off silences journey nudges but the engine keeps computing silently. =====
+  function guidanceSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    var g = S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null };
+    add(B, "div", "sttl", "Guidance");
+    add(B, "div", "lbl", "How much should I lead? Change it anytime — choosing less is itself leveling up.");
+    var opts = [["guided", "Guided", "I greet you with one next step each day."], ["light", "Light", "Quieter — the timeline leads, I just hint."], ["off", "Off", "Everything open, no nudges. This is yours."]];
+    var er = add(B, "div", "pchips");
+    opts.forEach(function (o) { var x = add(er, "div", "pchip" + (g.mode === o[0] ? " on" : ""), o[1]); x.onclick = function () {
+      var was = g.mode; g.mode = o[0]; if (g.cache) g.cache = {}; save();
+      if ((o[0] === "light" || o[0] === "off") && was === "guided") { try { earn(12, {}); } catch (e) {} try { celebrateGated(DOM.restore.c, 1); } catch (e) {} } // graduation: taking the wheel is readiness-positive, gently rewarded (once/day)
+      guidanceSheet();
+    }; });
+    var cur = opts.filter(function (o) { return o[0] === g.mode; })[0];
+    if (cur) add(B, "div", "lbl", cur[2]).style.cssText = "color:#e6cfe0;font-size:13px;";
+    add(B, "button", "done2", "Done").onclick = closeSheet;
   }
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
   function distributePlan(k, sel) {
@@ -1334,7 +1373,7 @@
   function stageModeFor() { // PURE ordered early-return ladder — never OR'd (or the stage flaps across 1s ticks). Read by NOTHING this wave (no auto-mount); here so CKPT-7 can wire landing.
     if (TF_MODE_USERSET) return TF_MODE; // explicit tap wins this open-session
     var run = activeTimers(), t = run[run.length - 1]; if (t && t.flow) return t.flow; // a running guided timer's tag drives the stage so a redraw re-derives the right panel
-    var g = (S.guide || {}); if (g.mode === "guided") { var jn = (typeof journeyNode === "function") ? journeyNode() : 0; if (jn != null) return "journey"; }
+    var g = (S.guide || {}); if (g.mode === "guided" && !journeyActionDoneToday()) return "journey"; // one-obvious-next-step: only when today's node action isn't done yet (else fall through to today's track ring)
     return null; // track
   }
   function renderStage(mode) { // dispatcher: writes ONLY #tfStageBody, IDEMPOTENT via dataset.mode guard so the 1s live-tick never wipes a textarea mid-flow
@@ -1343,10 +1382,22 @@
     sb.dataset.mode = mode || "";
     switch (mode) {
       case "journal": journalStageStep(sb); break;
+      case "journey": journeyStageStep(sb); break;
       case "tool": sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">Toolbox</div><div class="tfs-sub">Coming soon — a calm shelf of tools for the moment you need one.</div></div>'; break;
-      case "am": case "pm": case "journey": default:
-        sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break; // Wave-1 placeholder; real flows land in CKPT-5/6/7/8
+      case "am": case "pm": default:
+        sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break; // Wave placeholder; AM/PM full flows land in CKPT-6/8
     }
+  }
+  // ===== JOURNEY STAGE (JX-PROACTIVE-GATE, David 2026-06-28): the ONE next-step card. Reward-never-shame — one warm line + one primary CTA that runs the node's act() (enterStage/sheet). Greets by name of the node, never a pile of chips, never a nag. =====
+  function journeyStageStep(sb) {
+    var n = journeyNode(), node = JOURNEY[Math.max(0, Math.min(JOURNEY.length - 1, n))];
+    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
+    var greet = (phase() === "morning") ? "Good morning" : (phase() === "evening" || phase() === "night") ? "Good evening" : "Here's your next step";
+    add(card, "div", "tfs-sub", greet).style.opacity = ".8";
+    add(card, "div", "tfs-h", node.title);
+    add(card, "div", "tfs-sub").textContent = node.line;
+    var b = add(card, "button", "tf-b tf-done"); b.style.marginTop = "4px"; b.innerHTML = '<i class="ti ti-arrow-right"></i>' + esc(node.cta);
+    b.onclick = function () { try { node.act(); } catch (e) {} };
   }
   // ===== JOURNAL STAGE (CKPT-5, David 2026-06-28): the fusion proof — guidance IS tracking. One adaptive question + a textarea + an optional mood face, rendered into #tfStageBody while the Reflection ring tracks in the corner. Built ONCE (renderStage's dataset.mode guard skips rebuild), so the 1s live-tick never wipes what you're typing. =====
   function openJournal() { enterStage("journal", { trackTitle: "Reflection", byTap: true }); } // the Journal chip's door: lights the ring + slides it aside + fills the stage in one gesture
@@ -1435,7 +1486,10 @@
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }]; // Close = abandon: stop the timer WITHOUT writing a journal entry, ring un-corners
-      case "pm": case "pm-mirror": case "pm-ask": case "am": case "am-greet": case "journey":
+      case "journey": // the next-step card owns its primary CTA (in #tfStageBody); the bar just offers an escape to the open timeline + a do-anytime track door (never traps the user)
+        return [{ icon: "ti-list-search", label: "Just track instead", fn: function () { TF_MODE = null; TF_MODE_USERSET = true; renderTrackerFull(); }, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
+      case "pm": case "pm-mirror": case "pm-ask": case "am": case "am-greet":
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "tool":
@@ -3589,6 +3643,8 @@
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home
     renderAll();
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
+    // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
+    if (S.profile && S.profile.set && (S.guide || {}).mode === "guided") { try { journeyTick(); if (!journeyActionDoneToday()) setTimeout(function () { enterStage("journey", { byTap: false }); }, 360); } catch (e) {} }
     if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); // first-run onboarding (mockups 041/043)
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
