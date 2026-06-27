@@ -950,7 +950,7 @@
   body:not(.tab-day):not(.gaming) #pullSheet{ display:none !important; }       /* hidden while on Goals / You */
   /* pull-up live-tracker dock — only on Today, only while tracking (David 2026-06-25) */
   /* drag-to-trash bin — appears bottom-middle while dragging a bubble (David 2026-06-25) */
-  #trashZone{ position:fixed; left:50%; bottom:200px; transform:translateX(-50%); width:54px; height:54px; border-radius:50%; background:#3a1226; border:2.5px dashed #ff5fa0; color:#ff9dc6; display:none; align-items:center; justify-content:center; font-size:24px; z-index:75; box-shadow:0 6px 20px rgba(0,0,0,.55); pointer-events:none; }
+  #trashZone{ position:fixed; left:50%; bottom:96px; transform:translateX(-50%); width:54px; height:54px; border-radius:50%; background:#3a1226; border:2.5px dashed #ff5fa0; color:#ff9dc6; display:none; align-items:center; justify-content:center; font-size:24px; z-index:75; box-shadow:0 6px 20px rgba(0,0,0,.55); pointer-events:none; }
   #trashZone.on{ display:flex; }
   #trashZone.armed{ background:#ff5fa0; color:#fff; border-style:solid; transform:translateX(-50%) scale(1.28); }
   #liveDock{ display:none; }
@@ -1214,6 +1214,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=547"></script>
+  <script src="app.js?v=548"></script>
 </body>
 </html>
