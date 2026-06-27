@@ -3472,7 +3472,12 @@
     { id: "meditate", layer: "Clear the mind",          name: "Meditate",          emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", fn: function () { meditation(); } },
     { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", fn: function () { tapping(); } },
     { id: "reversal", layer: "Feel it through",         name: "Reversal of Desire",emoji: "🔥", thinker: "Stutz — Tool 1", when: "right before something you've been avoiding", fn: function () { reversalOfDesire(null); } },
+    { id: "activelove",layer: "Feel it through",        name: "Active Love",       emoji: "💗", thinker: "Stutz — Tool 2", when: "when someone's living rent-free in your head and you can't stop rehearsing the argument", fn: function () { activeLove(); } },
+    { id: "blacksun", layer: "Feel it through",         name: "Black Sun",         emoji: "🌑", thinker: "Stutz — Tool 6", when: "the pull to scroll / snack / numb — the “I deserve this” voice", fn: function () { blackSun(); } },
+    { id: "vortex",   layer: "Feel it through",         name: "The Vortex",        emoji: "🌪️", thinker: "Stutz — Tool 7", when: "lethargy, a mid-day crash, or the flat gap between tasks", fn: function () { vortex(); } },
+    { id: "jeopardy", layer: "Feel it through",         name: "Jeopardy",          emoji: "⏳", thinker: "Stutz — Tool 5", when: "demoralized and stuck — or right after a win, when the work quietly stops", fn: function () { jeopardy(); } },
     { id: "mantra",   layer: "Become who you're being", name: "Mantra",            emoji: "🗣️", thinker: "Murphy · Goddard", when: "the morning identity step, low self-trust, or pre-performance", fn: function () { mantraPlayer(); } },
+    { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   emoji: "🦁", thinker: "Stutz — Tool 3", when: "before a hard conversation or performance, or when you freeze up", fn: function () { innerAuthority(); } },
     { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", fn: function () { selfHypnosis(); } },
     { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", fn: function () { gratefulFlow(); } }
   ];
@@ -3567,6 +3572,67 @@
     });
     if (avoidedBlock) toast("after this — “" + esc(avoidedBlock.title) + "”"); // tiny pre-frame so the close action isn't a surprise
   }
+  // ===== TB-STUTZ-FANOUT (David 2026-06-28): the remaining Stutz arsenal. Each a beatRunner clone with VERBATIM KB cues (phil-stutz-master-guide.md). Each logs a tracked Restore + earns Spark + GENTLE celebrateGated + ticks the skill ladder. Reward-never-shame: using one on a hard day IS the win. =====
+  // ACTIVE LOVE — Stutz Tool 2 (master-guide L194-211), L4 / Outflow. When-to-use (verbatim): when someone "takes up residence in your head" and you can't stop rehearsing the argument (the Maze). Framed as self-interest, NOT virtue — this frees YOU. MUST precede Grateful Flow while a grievance is live (master-guide L119). Concentration → Transmission → Penetration.
+  function activeLove() {
+    beatRunner({
+      id: "activelove", title: "Active Love", logTitle: "Active Love", catK: "love", color: "#ff4fa0", spark: 7, voiceProf: VPROF.mantra,
+      beats: [
+        { lab: "Concentration", sub: "feel love flowing through your whole body — not at anyone yet, just the raw force, radiating from your chest", orb: "in" },
+        { lab: "Transmission", sub: "direct that love at the person who wronged you — see them bathed in it. Not forgiving — generating an infinite force, because it serves YOUR liberation", orb: "" },
+        { lab: "Penetration", sub: "feel the love enter them and fill them completely — and as it does, feel the Outflow return to you, greater than what you sent", orb: "out" },
+        { lab: "They're out of your head", sub: "the loop is discharged — that was for you, not for them" }
+      ], lastLabel: "Finish ✓"
+    });
+  }
+  // INNER AUTHORITY — Stutz Tool 3 (master-guide L215-232), L5 / Force of Self-Expression. When-to-use (verbatim): before a hard conversation or performance, or when you freeze out of fear the Shadow will be exposed. WITH a breath pre-roll (regulate first). Partners the Shadow, never shames it.
+  function innerAuthority() {
+    beatRunner({
+      id: "innerauth", title: "Inner Authority", logTitle: "Inner Authority", catK: "love", color: "#8a5cf0", spark: 7, voiceProf: VPROF.mantra,
+      beats: [
+        { lab: "One slow breath first", sub: "drop the shoulders, settle — you can't speak from your core on a wound-up body", orb: "in" },
+        { lab: "Project your Shadow", sub: "see the version of yourself you're most ashamed of — weak, imperfect, broken — a vivid image standing right in front of you", orb: "" },
+        { lab: "Feel the bond", sub: "this is you. Not your enemy. Your other half. Feel the connection between you and the Shadow", orb: "in" },
+        { lab: "Together: “LISTEN!”", sub: "you and the Shadow speak with one voice. The Force of Self-Expression flows — your authority comes from inside, not from their approval", orb: "" }
+      ], lastLabel: "Finish ✓"
+    });
+  }
+  // JEOPARDY — Stutz Tool 5 (master-guide L257-273), the META-TOOL. When-to-use (verbatim): demoralized and can't use any other tool, OR right after a success (the Exoneration Fantasy — Stutz's #1 documented relapse, L121). Angel-offered after a celebrate()/win. Deathbed self → the scream → use the spark.
+  function jeopardy(launchAfter) {
+    beatRunner({
+      id: "jeopardy", title: "Jeopardy", logTitle: "Jeopardy", catK: "energy", color: "#ff8a3a", spark: 6, voiceProf: VPROF.breath,
+      beats: [
+        { lab: "Your deathbed self", sub: "he has run out of present moments. He is looking back at THIS one — the one you're about to waste", orb: "" },
+        { lab: "Feel him scream at you", sub: "he knows the value of this moment because he has none left. Let his urgency enter you", orb: "in" },
+        { lab: "Use the spark", sub: "this urgency is real, not manufactured. Use it — launch the next thing right now" }
+      ], lastLabel: "Use it ▶",
+      onFinish: function (skip) { if (!skip && typeof launchAfter === "function") setTimeout(launchAfter, 50); } // hand the spark straight into whatever's next
+    });
+  }
+  // BLACK SUN — Stutz Tool 6 (master-guide L277-291), Coming Alive / counters self-gratification mode. When-to-use (verbatim): the pull to scroll/snack/numb, the "I deserve this / one break won't hurt" voice. A body-first tool — can precede labeling. Void → orb of dark light → fills from inside → give outward.
+  function blackSun() {
+    beatRunner({
+      id: "blacksun", title: "Black Sun", logTitle: "Black Sun", catK: "energy", color: "#6a4fd0", spark: 6, voiceProf: VPROF.breath,
+      beats: [
+        { lab: "Feel the void underneath", sub: "not the craving itself — the emptiness driving it. The deprivation that wants to be filled from outside", orb: "out" },
+        { lab: "A Black Sun rises", sub: "from that void, an orb of dark light lifts — the compressed Life Force itself", orb: "in" },
+        { lab: "It fills you from inside", sub: "the void fills from within, not from the screen or the snack — you're full", orb: "in" },
+        { lab: "Give that energy outward", sub: "send it back out into your day — that's where it wants to go" }
+      ], lastLabel: "Finish ✓"
+    });
+  }
+  // VORTEX — Stutz Tool 7 (master-guide L295-311), Coming Alive / counters lethargy mode. When-to-use (verbatim): lethargy/flatness, mid-day crash, and above all TRANSITIONS between tasks (the unguarded window, L311). Restores the observer so labeling becomes possible. Twelve suns → rise → grow and expand → energy fills you.
+  function vortex() {
+    beatRunner({
+      id: "vortex", title: "The Vortex", logTitle: "The Vortex", catK: "energy", color: "#ff8a3a", spark: 6, voiceProf: VPROF.breath,
+      beats: [
+        { lab: "Twelve suns around you", sub: "picture twelve suns arranged in a circle, surrounding you", orb: "" },
+        { lab: "They begin to rise", sub: "slowly they lift around you", orb: "in" },
+        { lab: "They grow and expand", sub: "they swell outward — feel the non-physical energy pour in and fill you", orb: "in" },
+        { lab: "Carry it into the next thing", sub: "you're back online — move" }
+      ], lastLabel: "Finish ✓"
+    });
+  }
   // SELF-HYPNOSIS — Blair eyes-open induction (fieldguide KB SN-141/SN-143): reading a hypnotic script aloud IS the induction. Sourced from David's KB, not invented. Body-scan → descent → reading-room → the SN-143 5-section suggestion template → emergence. Eyes-open: it READS the script (you read along / aloud). (TB-SELFHYPNOSIS)
   function selfHypnosis() {
     // SN-143 5-section suggestion template, instantiated with a calm, identity-neutral default goal ("steady, capable, at ease"). David can later swap in confidence/calm/sleep scripts; the SHELL + template are shippable now.
@@ -3594,29 +3660,29 @@
     ];
     beatRunner({ id: "selfhyp", title: "Self-Hypnosis", logTitle: "Self-Hypnosis", catK: "love", color: "#8a5cf0", spark: 8, voiceProf: VPROF.mantra, beats: BEATS, lastLabel: "Open eyes ✓" });
   }
-  // PART-X TRIAGE (TB-PARTX-TRIAGE) — the in-the-moment front door. Enforces Stutz's ordering (master-guide L130): BODY first → Label → Tool. On an acute spike, regulate the nervous system (breath) BEFORE any cognitive/identity tool. Grateful Flow is blocked while a grievance is live. (Coming-Alive runners Black Sun/Vortex/Mother/Tower land in TB-STUTZ-FANOUT; here the labels route to what already ships: Reversal of Desire + breath + the adopted kit.)
+  // PART-X TRIAGE (TB-PARTX-TRIAGE, full) — the in-the-moment front door, rendered as Stutz's Part-X attack-mode router. Enforces the ordering rule VERBATIM (master-guide L126-132): BODY first → Observer → Label "that's Part X" → Tool → Higher force. On an acute spike, a sub-60s physiological reset (breath) fires BEFORE any cognitive/identity tool — you can't reframe a dysregulated nervous system. Grateful Flow stays HARD-BLOCKED while a grievance is live (Active Love discharges it first, L119). The five attack modes route to the dedicated Coming-Alive runners: avoidance→Reversal, grievance→Active Love, post-win stall→Jeopardy, lethargy/transition→Vortex, urge-to-numb→Black Sun.
   function partXTriage(opts) {
     opts = opts || {};
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "🆘 What's loud right now?");
-    function regulateFirst(then) { // Beat-0: body-first if hot — you can't reframe a dysregulated nervous system
-      var C = el("sheetBody"); C.innerHTML = "";
+    function regulateFirst() { // BODY first — sub-60s physiological reset before any cognitive/identity tool (Stutz ordering L126-132)
+      var C = el("sheetBody"); C.innerHTML = ""; openSheet();
       add(C, "div", "sttl", "First — let's get the body back online");
-      add(C, "div", "lbl", "one slow round of breath, then we name what's loud. (the order matters — Stutz)");
+      add(C, "div", "lbl", "one slow round of breath, then we name what's loud. the order matters — you can't reframe a wound-up nervous system (Stutz).");
       add(C, "div", "breathorb");
       add(C, "button", "done2", "Breathe with me ▶").onclick = function () { closeSheet(); breathwork(2, function () { setTimeout(label, 60); }); };
       var sk = add(C, "button", "add", "I'm already calm — skip to labeling"); sk.style.cssText = "display:block;margin:10px auto 0;"; sk.onclick = label;
     }
-    function label() {
+    function label() { // OBSERVER + LABEL — name the attack mode; "that's Part X, not you" is reward-never-shame at the mechanism level
       var C = el("sheetBody"); C.innerHTML = ""; openSheet();
       add(C, "div", "sttl", "Name it — that's the skill");
       add(C, "div", "lbl", "Part X is the part that pulls you off. It's not you. Which one's loud?");
-      // the four Stutz attack modes → routed to what ships today (breath/Reversal/Grateful-Flow guarded), with a note where a dedicated Coming-Alive tool will land
+      var live = haveLiveGrievance();
+      // the five Stutz attack modes → each routes to its dedicated tool (TOOL step). Grateful Flow is never in this set; a live grievance forces Active Love.
       var MODES = [
-        { chip: "Pulling me to numb out", mode: "self-gratification", line: "That's Part X — the pull to numb. Not you.", route: function () { closeSheet(); breathwork(2); }, note: "fill the void from the inside — a steadying breath for now" },
-        { chip: "Draining my drive", mode: "lethargy", line: "That's Part X — lethargy. Not you.", route: function () { closeSheet(); breathwork(2); }, note: "lift the energy — a breath to come back online" },
-        { chip: "Avoiding something", mode: "avoidance", line: "That's Part X — avoidance. Not you.", route: function () { closeSheet(); reversalOfDesire(null); }, note: "move toward it — Reversal of Desire" },
-        { chip: "Stuck on a hurt", mode: "hurt", line: "That's Part X — a hurt that hardened. Not you.", route: function () { closeSheet(); var live = haveLiveGrievance(); if (live) { breathwork(2); } else { gratefulFlow(); } }, note: "soften it — a breath, then gratitude when you're ready" }
+        { chip: "Pulling me to numb out", line: "That's Part X — the pull to numb. Not you.", route: function () { closeSheet(); blackSun(); }, note: "fill the void from the inside, not the screen — Black Sun" },
+        { chip: "Draining my drive", line: "That's Part X — lethargy. Not you.", route: function () { closeSheet(); vortex(); }, note: "lift the energy — twelve suns, the Vortex" },
+        { chip: "Avoiding something", line: "That's Part X — avoidance. Not you.", route: function () { closeSheet(); reversalOfDesire(null); }, note: "move toward it — Reversal of Desire" },
+        { chip: "Stalled right after a win", line: "That's Part X — the exoneration fantasy. Not you.", route: function () { closeSheet(); jeopardy(); }, note: "the work quietly stops after a win — Jeopardy snaps you back" },
+        { chip: "Stuck on a hurt", line: "That's Part X — a hurt that hardened. Not you.", route: function () { closeSheet(); activeLove(); }, note: "discharge it for YOUR liberation — Active Love" }
       ];
       var wrap = add(C, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:9px;margin-top:6px;";
       MODES.forEach(function (m) {
@@ -3630,8 +3696,9 @@
           var cl = add(D, "button", "add", "just naming it was enough"); cl.style.cssText = "display:block;margin:10px auto 0;"; cl.onclick = function () { closeSheet(); toast("you labeled it — that's the whole skill 🙏"); };
         };
       });
+      if (live) { var note = add(C, "div", "lbl", "a grievance is still live — Grateful Flow stays parked until Active Love clears it. that's by design."); note.style.cssText = "margin-top:12px;opacity:.75;font-size:12px;"; }
     }
-    if (opts.hot) regulateFirst(); else label(); // an acute spike (low mood + drift) regulates first; a calm tap goes straight to labeling
+    if (opts.hot) regulateFirst(); else label(); // an acute spike (low mood OR live grievance) regulates first; a calm tap goes straight to labeling
   }
   function haveLiveGrievance() { // a running/recent drift log tagged angry, OR a PM reflection grievance signal — gates Grateful Flow (Active Love must discharge it first; here we route to breath until Active Love ships)
     var k = todayK(); var run = activeTimers();
@@ -3640,6 +3707,16 @@
     return false;
   }
   function gratefulFlow(onDone) {
+    // HARD GUARD (master-guide L119): Grateful Flow is blocked while a grievance is live — Active Love must discharge it first. Offer the redirect rather than running on top of an unresolved loop. (Bypassed when called as the bookend close via onDone, where the user explicitly chose the gratitude beat.)
+    if (!onDone && typeof haveLiveGrievance === "function" && haveLiveGrievance()) {
+      var GB = el("sheetBody"); GB.innerHTML = ""; openSheet();
+      add(GB, "div", "sttl", "First, clear what's live");
+      add(GB, "div", "lbl", "there's a grievance still running — gratitude won't land on top of it. Active Love discharges it first (for YOUR liberation, 60s), then gratitude lights up.");
+      add(GB, "div", "breathorb");
+      add(GB, "button", "done2", "💗 Active Love ▶").onclick = function () { closeSheet(); activeLove(); };
+      var sk = add(GB, "button", "add", "do gratitude anyway"); sk.style.cssText = "display:block;margin:10px auto 0;"; sk.onclick = function () { gratefulFlow(function () { closeSheet(); renderAll(); }); }; // explicit override routes through the onDone branch (bypasses the guard)
+      return;
+    }
     var grats = [];
     function gather() {
       var B = el("sheetBody"); B.innerHTML = ""; openSheet();
