@@ -481,9 +481,19 @@
       var node = add(stage, "div", "mind-node" + (d === "drift" ? " drift" : "")); node.style.left = x2 + "%"; node.style.top = y2 + "%"; node.style.width = sz + "px"; node.style.height = sz + "px"; node.style.background = d === "drift" ? mixDark(D.c) : "radial-gradient(circle at 35% 30%," + D.light + "," + D.c + ")"; node.style.color = D.ink; node.style.fontSize = Math.round(sz * 0.42) + "px";
       node.innerHTML = '<i class="ti ' + D.ti + '"></i>'; add(node, "span", "mind-lab", D.l);
       node.onclick = function () { ov.remove(); bentoPicker({ title: D.l + " — what?", multi: true, onPickMulti: function (sel) { var tt = startTrackerNow(); assignTimerMulti(tt, sel); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); }, onPick: function (xx) { var tt = startTrackerNow(); assignTimer(tt, xx); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); } }); };
+      // SUB-BRANCHES: any custom activity in this domain that owns sub-habits branches outward from its planet — "see a life through its habits" (David 2026-06-27)
+      var subs = (S.acts || []).filter(function (s) { return s.domain === d && s.children && s.children.length; });
+      subs.forEach(function (sa, si) {
+        var nsub = sa.children.length, base = a + (si - (subs.length - 1) / 2) * 0.38;
+        sa.children.forEach(function (kid, ki) {
+          var ka = base + (ki - (nsub - 1) / 2) * 0.16, KR = R + 17, kx = 50 + KR * Math.cos(ka), ky = 50 + KR * Math.sin(ka);
+          var kl = document.createElementNS("http://www.w3.org/2000/svg", "line"); kl.setAttribute("x1", x2); kl.setAttribute("y1", y2); kl.setAttribute("x2", kx); kl.setAttribute("y2", ky); kl.setAttribute("stroke", "#3a1730"); kl.setAttribute("stroke-width", "0.7"); svg.appendChild(kl);
+          var kn = add(stage, "div", "mind-sub-node"); kn.style.left = kx + "%"; kn.style.top = ky + "%"; kn.style.background = mixDark(D.c); kn.style.borderColor = D.dark; kn.title = kid;
+        });
+      });
     });
     var you = add(stage, "div", "mind-you"); you.innerHTML = '<i class="ti ti-mood-smile"></i>';
-    add(body, "div", "goal-foot", "bigger = more of your life · tap a planet to do something there");
+    add(body, "div", "goal-foot", "bigger = more of your life · sprigs = your sub-habits · tap a planet to do something there");
   }
   // ---- MASTERPIECE DAYS / presets (David 2026-06-24): cookie-cutter day plans — apply to today/tomorrow, save your own, name them ----
   var DAY_PRESETS = [
@@ -547,10 +557,10 @@
     var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
     var head = add(card, "div", "bento-head"); var hq = add(head, "div", "bento-q"); hq.innerHTML = '<i class="ti ti-checkup-list"></i> Your habits'; var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    var body = add(card, "div", "bento-body"), adding = false;
+    var body = add(card, "div", "bento-body"), adding = false, openSub = null; // openSub = the parent activity whose sub-habit editor is showing (David 2026-06-27)
     function draw() {
       body.innerHTML = "";
-      add(body, "div", "sughead", "everything you can plan or track — remove your own with ✕, or add new");
+      add(body, "div", "sughead", "everything you can plan or track — tap your own to break it into sub-habits, remove with ✕, or add new");
       var by = bentoByDomain();
       DOM_ORDER.forEach(function (d) {
         var acts = by[d]; if (!acts || !acts.length) return; var D = DOM[d];
@@ -558,10 +568,12 @@
         var row = add(body, "div", "habit-row");
         acts.forEach(function (a) {
           var custom = (S.acts || []).filter(function (c) { return (c.title || "").toLowerCase() === (a.title || "").toLowerCase(); })[0];
+          var kids = (custom && custom.children) || [];
           var chip = add(row, "span", "bchip"); if (a.domain !== "drift") { chip.style.background = D.c; chip.style.color = D.ink; }
-          chip.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title);
-          if (custom) { var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); save(); draw(); }; }
+          chip.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title) + (kids.length ? ' <span class="bchip-n">' + kids.length + '</span>' : '');
+          if (custom) { chip.style.cursor = "pointer"; chip.onclick = function () { openSub = (openSub === custom ? null : custom); adding = false; draw(); }; var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); openSub = null; save(); draw(); }; }
         });
+        if (openSub && openSub.domain === d) drawSubEditor(body, openSub, D);
       });
       if (!adding) { var ab = add(body, "div", "bento-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a habit / activity'; ab.onclick = function () { adding = true; draw(); }; }
       else {
@@ -570,9 +582,22 @@
         add(frm, "div", "bento-lbl", "category");
         var crow = add(frm, "div", "bento-cats"), chosen = { d: "focus" };
         DOM_ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
-        var go = add(frm, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>'; go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; if (!(S.acts.some(function (c) { return c.title.toLowerCase() === nm.toLowerCase(); }) || TITLE2CAT[nm.toLowerCase()])) S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); adding = false; draw(); toast("added " + nm); };
+        var go = add(frm, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>'; go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; if (!(S.acts.some(function (c) { return c.title.toLowerCase() === nm.toLowerCase(); }) || TITLE2CAT[nm.toLowerCase()])) S.acts.push({ title: nm, catK: null, domain: chosen.d, children: [] }); save(); adding = false; draw(); toast("added " + nm); };
         setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
       }
+    }
+    // sub-habit editor for ONE parent: lists its children as mini-chips, add/remove tap-driven (David 2026-06-27)
+    function drawSubEditor(parent_, p, D) {
+      var pan = add(parent_, "div", "subhab-pan"); pan.style.borderColor = D.c;
+      var hd = add(pan, "div", "subhab-hd"); hd.style.color = D.light; hd.innerHTML = '<i class="ti ' + tiClass(p) + '"></i> ' + esc(p.title) + ' — sub-habits';
+      p.children = p.children || [];
+      var srow = add(pan, "div", "habit-row");
+      if (!p.children.length) add(srow, "div", "subhab-empty", "no sub-habits yet — break it into smaller steps");
+      p.children.forEach(function (kid, i) { var k = add(srow, "span", "bchip sub"); k.style.background = D.dark; k.style.color = "#fff"; k.innerHTML = '<i class="ti ti-corner-down-right"></i> ' + esc(kid); var kd = document.createElement("i"); kd.className = "ti ti-x habit-del"; k.appendChild(kd); kd.onclick = function (e) { e.stopPropagation(); p.children.splice(i, 1); save(); draw(); }; });
+      var sf = add(pan, "div", "habit-addform");
+      var si = document.createElement("input"); si.type = "text"; si.className = "bento-input"; si.placeholder = "sub-habit (e.g. Define the ONE thing)…"; sf.appendChild(si);
+      var sg = add(sf, "button", "bento-save"); sg.innerHTML = 'add step <i class="ti ti-check"></i>'; sg.onclick = function () { var nm = si.value.trim(); if (!nm) { si.focus(); return; } if (p.children.some(function (c) { return c.toLowerCase() === nm.toLowerCase(); })) { si.value = ""; return; } p.children.push(nm); save(); draw(); };
+      setTimeout(function () { try { si.focus(); } catch (e) {} }, 60);
     }
     draw();
   }
@@ -1196,7 +1221,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
   // multi-level UNDO for timeline edits — snapshot BEFORE each mutating action so an accidental move/resize/delete/clear is one tap to recover (David 2026-06-25)
   var undoStack = [];
@@ -1830,6 +1855,27 @@
   function renderHero() { var cap = el("guardianCap"); if (cap) { if (S.profile && S.profile.set && vState) cap.innerHTML = "<b>" + (VCLASS[vState.top.k] || "Awakening") + "</b> · Lv " + vState.level + "  ·  ✨ " + S.game.spark.toLocaleString(); else cap.textContent = "your mirror — it grows when you do"; } var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
 
   var vState = null;
+  // CHARACTER CARD (David 2026-06-27): tap the guardian → a clean berry card of who you're becoming — class, level, virtue stars + their skill trees. Reuses virtues()/VCLASS/virtueDetail.
+  function characterCard() {
+    if (!(S.profile && S.profile.set)) { onboard(); return; }
+    var v = virtues(); vState = v;
+    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var head = add(card, "div", "bento-head"); var hq = add(head, "div", "bento-q"); hq.innerHTML = '<i class="ti ti-shield-star"></i> ' + (VCLASS[v.top.k] || "Your character"); var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
+    var body = add(card, "div", "bento-body");
+    var P = S.profile, bits = ["Lv " + v.level]; if (P.age) bits.push(P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.occ) bits.push(esc(P.occ));
+    add(body, "div", "char-sub", bits.join(" · ") + " · ✨ " + (S.game.spark || 0).toLocaleString());
+    add(body, "div", "sughead", "your virtues — they level by living. tap one to open its skill tree");
+    var grid = add(body, "div", "char-grid");
+    v.list.slice().sort(function (a, b) { return b.lv - a.lv; }).forEach(function (vv) {
+      var t = add(grid, "button", "char-vrow" + (vv.focus ? " foc" : "")); t.style.borderColor = vv.c;
+      var ic = add(t, "span", "char-vic"); ic.style.background = mixDark(vv.c); ic.style.color = vv.c; ic.textContent = vv.e;
+      var mid = add(t, "div", "char-vmid"); var nm = add(mid, "div", "char-vn"); nm.innerHTML = esc(vv.l) + ' <span class="char-vlv" style="color:' + vv.c + '">Lv ' + vv.lv + (vv.focus ? ' ★' : '') + '</span>';
+      var bar = add(mid, "div", "char-vbar"); var bi = add(bar, "i"); bi.style.width = Math.round((vv.glow || 0.4) * 100) + "%"; bi.style.background = vv.c;
+      add(t, "i", "ti ti-chevron-right char-vchev");
+      t.onclick = function () { ov.remove(); virtueDetail(vv); };
+    });
+  }
   function renderChar() {
     var L = el("charFoot"); L.innerHTML = "";
     if (!(S.profile && S.profile.set)) { el("statLvl").textContent = ""; vState = null; renderPulls(); var b = add(L, "button", "done2", "✨ Set up your world →"); b.onclick = onboard; return; }
@@ -3126,6 +3172,7 @@
     var gr = el("gear"); if (gr) gr.onclick = brainSheet;
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
     var ew = el("enterWorld"); if (ew) ew.onclick = openGame;
+    var gcv = el("guardian"); if (gcv) gcv.addEventListener("click", function () { characterCard(); }); // tap the mirror → your character card (David 2026-06-27)
     var gx = el("gameExit"); if (gx) gx.onclick = closeGame;
     var fc = el("featClose"); if (fc) fc.onclick = closeFeature;
     var fb = el("featBackdrop"); if (fb) fb.onclick = closeFeature;
