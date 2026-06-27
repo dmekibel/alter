@@ -1033,8 +1033,9 @@
         _info.addEventListener("pointerup", function () { if (_hT) { clearTimeout(_hT); _hT = null; } });
         _info.onclick = function () { if (_held) { _held = false; return; } openTrackerFull(); };
       }
-      if (_grab) _grab.onclick = function () { openTrackerFull(); };
+      if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // drag the dock handle UP → expand (finger-follow)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
+      var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
     }
     if (TF_OPEN) renderTrackerFull(); // keep the expanded ring in sync whenever the dock re-renders
   }
@@ -1065,6 +1066,17 @@
   var TF_OPEN = false, _ringP = 0, _ringRaf = 0;
   function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); tf.classList.add("on"); } // _ringP=0 → the ring fills from empty on every open (the "see the green filling" reward); re-evaluate claim on open (David 2026-06-27)
   function closeTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = false; tf.classList.remove("on"); }
+  function tfDrag(ev, opening) { // finger-follow: drag UP from the dock grab to expand, drag DOWN on the tracker to close (David 2026-06-27)
+    ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
+    if (opening) { TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); } // populate content so the reveal isn't empty
+    tf.classList.add("tf-dragging", "on");
+    function setY(pct) { tf.style.transform = "translateY(" + pct + "%)"; tf.style.opacity = String(Math.max(0.12, 1 - pct / 100)); }
+    function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var pct = opening ? Math.max(0, Math.min(100, 100 + dy / H * 100)) : Math.max(0, Math.min(100, dy / H * 100)); setY(pct); }
+    function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); tf.classList.remove("tf-dragging"); tf.style.transform = ""; tf.style.opacity = ""; var dy = e.clientY - sy;
+      var keepOpen = opening ? (!moved || -dy > H * 0.16) : (dy < H * 0.22); // open if dragged up enough (or a tap); when closing, only stay open if you barely moved
+      if (keepOpen) openTrackerFull(); else closeTrackerFull(); }
+    document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+  }
   function claimableBlock() { // the single most-likely plan block covering a passed/straddling gap with NO matching real log — the welcome-back "claim" target
     var k = todayK(), now = logicalNowMin(), best = null;
     blocks(k).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs >= now) return; if (b.done || blockStatus(k, b) === "ok") return; if (be <= bs) return; if (!best || bs > hm(best.time)) best = b; }); // most-recent unfulfilled block whose start is already behind now
