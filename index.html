@@ -1136,8 +1136,8 @@
   .railchip .ti{ font-size:13px; }
   #pullBody.zooming .railchip{ transition:none; } /* rail icons now reflow LIVE during the pinch (rebuilt each frame), so keep them visible — just no transition so they track instantly (David 2026-06-26) */
   .calblk.lbl-i .cn-t, .calblk.lbl-i .csub, .calblk.lbl-i .step-n, .calblk.lbl-i .ti-sparkles, .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
-  /* SIDE (<9px): too thin for even an icon → a clean coloured line in its OWN lane (never crosses lanes). No label unless there is clear space beside it (David 2026-06-25) */
-  .calblk.lbl-s{ padding:0 !important; border-width:0 !important; border-radius:3px !important; overflow:visible !important; box-shadow:0 1px 3px rgba(0,0,0,.4) !important; filter:none !important; opacity:1 !important; z-index:4; }
+  /* SIDE (<9px): too thin for a label → its icon goes to the right rail. STYLE STAYS CONSISTENT with a normal bubble — same 2px ink border, same rounded corners, same inline 0 3px 0 drop-shadow — just smaller. (Was: border stripped to 0, radius 3px, a flat shadow → looked like a bare line, inconsistent with the bordered/shadowed bubbles above it — David 2026-06-27.) box-shadow/border-width are NOT overridden so the per-bubble inline shadow (the "0 3px 0 #160510" the render sets) shows through. overflow:visible lets the side .clr label sit outside. */
+  .calblk.lbl-s{ padding:0 !important; border-radius:8px !important; overflow:visible !important; filter:none !important; opacity:1 !important; z-index:4; }
   .calblk.lbl-s .cn{ display:none; } /* no room → no text, never crammed */
   .calblk.lbl-s.clr .cn{ display:flex; position:absolute; right:calc(100% + 8px); left:auto; top:50%; transform:translateY(-50%); max-width:46vw; align-items:center; justify-content:flex-end; gap:4px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; padding:0; } /* clear space to the LEFT → name there, off the line, legible */
   .calblk.lbl-s.clr .cn .ti{ font-size:12px; flex:none; }
