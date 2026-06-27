@@ -701,10 +701,10 @@
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
   /* ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) ===== */
-  #trackerFull{ display:flex; position:fixed; inset:0; z-index:90; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); flex-direction:column; align-items:center; justify-content:flex-start; font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); opacity:0; pointer-events:none; will-change:transform,opacity; border-radius:18px; touch-action:none; overscroll-behavior:none; } /* grows from the dock via UNIFORM scale (origin set in JS); no browser gestures (David 2026-06-27) */
+  #trackerFull{ position:fixed; left:0; right:0; bottom:0; top:auto; height:0; z-index:90; overflow:hidden; opacity:0; pointer-events:none; will-change:height; border-radius:18px 18px 0 0; touch-action:none; overscroll-behavior:none; } /* OUTER = clip; its height GROWS bottom-up (no scale → no stretch) so the dock card rises into the tracker (David 2026-06-27) */
   #trackerFull.on{ opacity:1; pointer-events:auto; }
-  #trackerFull.tf-anim{ transition:transform .36s cubic-bezier(.2,.8,.3,1), opacity .24s, border-radius .36s; } /* animate the grow/shrink; removed while finger-dragging */
-  #trackerFull.tf-anim .tf-stage, #trackerFull.tf-anim .tf-ctrls{ transition:opacity .32s ease .04s; } /* ring/content fades in as the card grows (instant during finger-drag) */
+  #trackerFull.tf-anim{ transition:height .4s cubic-bezier(.2,.82,.3,1), opacity .12s, border-radius .4s; } /* animate the rise/shrink; removed while finger-dragging */
+  .tf-inner{ position:absolute; left:0; right:0; bottom:0; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); box-sizing:border-box; } /* full-height content, anchored to the bottom — the outer clip reveals it upward, no reflow, no distortion */
   #trackerFull .tf-grab{ position:absolute; top:0; left:0; right:0; height:40px; background:transparent; cursor:grab; touch-action:none; z-index:3; } /* full-width tall touch zone — drag DOWN to close (visual bar is ::before) */
   #trackerFull .tf-grab::before{ content:""; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:#5a4a64; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:4; } /* above the tf-grab drag zone so the chevron tap still closes */
@@ -1323,6 +1323,7 @@
   <div id="pullBackdrop"></div>
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="trackerFull"><!-- expanded live tracker: the reward RING (album-in-ring + radial dial) — circle-in-circle, never square-in-circle (David 2026-06-27) -->
+   <div class="tf-inner"><!-- full-height content; the outer clips it bottom-up so the card GROWS upward (no scale = no stretch) -->
     <div class="tf-grab" id="tfGrab"></div><!-- drag DOWN to close -->
     <button id="tfClose" class="tf-close" aria-label="Close"><i class="ti ti-chevron-down"></i></button>
     <div class="tf-clock" id="tfClock"></div><!-- current wall-clock time (status-bar style, am/pm) — distinct from the mm:ss elapsed -->
@@ -1339,9 +1340,10 @@
       <div class="tf-switch" id="tfSwitch"></div>
     </div>
     <div class="tf-ctrls" id="tfCtrls"></div>
+   </div>
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=583"></script>
+  <script src="app.js?v=584"></script>
 </body>
 </html>
