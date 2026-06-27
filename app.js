@@ -88,7 +88,7 @@
   // YOUR day = wake → bedtime (from onboarding) — top of the timeline ≈ when you wake, bottom ≈ when you sleep (David 2026-06-26)
   function wakeHour() { var w = (S.profile && S.profile.wake) || "", m = { "before 6": 5, "6–7": 6, "7–8": 7, "8–9": 8, "9–10": 9, "later": 10, "varies": 6 }; return m[w] != null ? m[w] : 6; }
   function bedHour() { var b = (S.profile && S.profile.sleep) || "", m = { "before 10": 22, "10–11": 23, "11–12": 24, "12–1": 25, "1–2": 26, "later": 27, "varies": 24 }; return m[b] != null ? m[b] : 24; }
-  function dayWindow() { var s = Math.max(4, wakeHour() - 3), e = Math.min(28, Math.max(s + 12, Math.ceil(bedHour()) + 2, 26)); return { startH: s, endH: e }; } // breathing room: start ~3h BEFORE wake, end ~2h past bedtime BUT always at least 26 (2am) so you can always scroll a couple hours into the night, even with an early bedtime; capped at 28 (4am rollover) (David 2026-06-26)
+  function dayWindow() { var s = Math.max(4, wakeHour() - 3); return { startH: s, endH: s + 24 }; } // FULL 24h window starting ~3h before wake → each day TILES seamlessly into the next (bottom hour == next day's top hour), so there's no 2am–4am hole at the boundary (the "missing 3" + background break). You still LAND on now/wake; scroll up reveals the quiet early hours. (David 2026-06-27)
   function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
   function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
@@ -252,10 +252,10 @@
     focus:   { l: "Focus",   e: "🎯", c: "#36b3f0", light: "#5ec4f5", dark: "#22a6e8", ring: "#aadcf8", ink: "#08283c", ti: "ti-brain" },
     create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },
     connect: { l: "Connect", e: "💛", c: "#ff5fa0", light: "#ff7ab0", dark: "#ff4f96", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },
-    play:    { l: "Play",    e: "🎮", c: "#ffc83d", light: "#ffd56a", dark: "#f0b62a", ring: "#ffe9a8", ink: "#5a3a00", ti: "ti-device-gamepad-2" },
+    play:    { l: "Play",    e: "🎮", c: "#d99f30", light: "#f0c860", dark: "#c08a22", ring: "#f2d894", ink: "#4a3000", ti: "ti-device-gamepad-2" },
     restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
     upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
-    drift:   { l: "Drift",   e: "🌫️", c: "#180608", light: "#180608", dark: "#0a0203", ring: "#3a0e14", ink: "#e0545f", ti: "ti-windmill" }   // BLACK bubble + dark-red letters (David 2026-06-25)
+    drift:   { l: "Drift",   e: "🌫️", c: "#4a3d54", light: "#b3a7bf", dark: "#241b2e", ring: "#6a5c75", ink: "#d8ccdf", ti: "ti-windmill" }   // cool slate-mauve "fog" smudge + readable lilac text (was invisible black-on-black) (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -850,10 +850,10 @@
         var sc = add(card, "div", "day-cardscroll");
         if (off === 0) { // CUR → a CONTINUOUS vertical stack (focus-R..focus+R): you scroll freely within a day AND see the neighbour as you reach the edge; scrolling into it makes it the day. attachInfinite recenters the buffer (David picked continuous-done-right, 2026-06-26)
           for (var d = -R; d <= R; d++) { var sk = keyAdd(focus, d), skT = (sk === todayK());
-            var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
+            var sep = add(sc, "div", "day-stacksep" + (skT ? " today-sep" : "")); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
             var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = sk; calendarView(ssec, sk, skT, true); }
           attachInfinite(sc);
-        } else { var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(dk)); dayHeadInfo(sep, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); } // preview (off ±1) MATCHES the continuous-stack structure — stacksep INSIDE the scroll (not a fixed day-cardhead) — so when the slide lands and the day rebuilds into the stack, the day-section sits at the SAME Y = no bounce on arrival (David 2026-06-27)
+        } else { var sep = add(sc, "div", "day-stacksep" + (isT ? " today-sep" : "")); add(sep, "span", "dss-lab", dayLabelFull(dk)); dayHeadInfo(sep, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); } // preview (off ±1) MATCHES the continuous-stack structure — stacksep INSIDE the scroll (not a fixed day-cardhead) — so when the slide lands and the day rebuilds into the stack, the day-section sits at the SAME Y = no bounce on arrival (David 2026-06-27)
       })
       ; // forEach
       pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
@@ -964,7 +964,12 @@
       el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); };
       el("ldReplan").onclick = function () { planBreak(); };
       el("ldDrift").onclick = function () { startOrSwitch(); };
+      var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
+      if (_info) _info.onclick = function () { openTrackerFull(); };
+      if (_grab) _grab.onclick = function () { openTrackerFull(); };
+      var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
     }
+    if (TF_OPEN) renderTrackerFull(); // keep the expanded ring in sync whenever the dock re-renders
   }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); renderLiveDock(); if (!lt || !lb) return;
@@ -986,6 +991,56 @@
       var bd = el("pullBackdrop"); if (bd) bd.addEventListener("click", closePull);
       var pg = el("pullGrab"); if (pg) pg.addEventListener("pointerdown", function (ev) { ev.preventDefault(); var sy = ev.clientY, ps = el("pullSheet"), bd2 = el("pullBackdrop"), H = (ps && ps.offsetHeight) || 600, moved = false; if (ps) ps.style.transition = "none"; if (bd2) bd2.style.transition = "none"; function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 3) moved = true; var fr = Math.max(0, Math.min(1, -dy / H)); if (ps) ps.style.transform = "translateY(" + (-fr * 100) + "%)"; if (bd2) bd2.style.opacity = String(0.82 * (1 - fr)); } function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd2) bd2.style.transition = ""; var dy = e.clientY - sy; if (!moved || -dy > H * 0.28) closePull(); else { if (ps) { ps.classList.add("on"); ps.style.transform = ""; } if (bd2) bd2.style.opacity = ""; } } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // drag the bottom handle UP to close — same smooth finger-follow (David 2026-06-24)
     }
+  }
+  // ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) =====
+  // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
+  // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
+  var TF_OPEN = false;
+  function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; renderTrackerFull(); tf.classList.add("on"); }
+  function closeTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = false; tf.classList.remove("on"); }
+  function trackerState() { // derive the matrix state from live data (S1 on-plan / S4 off-plan / S6 idle; break+reconcile come next)
+    var run = activeTimers(), t = run[run.length - 1];
+    if (!t) return { id: "idle", t: null };
+    var dom = domainOf(t); if (dom === "drift") return { id: "off", t: t, dom: dom, drift: true };
+    var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), onb = null;
+    blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom && !b.done) onb = b; });
+    return { id: onb ? "onplan" : "off", t: t, dom: dom, block: onb };
+  }
+  function renderTrackerFull() {
+    var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
+    var S0 = trackerState(), t = S0.t, prog = el("tfProg"), dot = el("tfDot"), disc = el("tfDisc");
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle");
+    if (!t) { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
+      el("tfTitle").textContent = nb ? nb.title : "Nothing tracking";
+      el("tfVerdict").textContent = nb ? "next up" : "";
+      el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
+      el("tfSpark").innerHTML = '🔥 streak <b>×' + ((S.game && S.game.streak) || 0) + '</b>';
+      if (disc) { disc.style.background = "radial-gradient(circle at 35% 30%," + ND.light + "," + ND.c + ")"; disc.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
+      setRing(0); renderTFControls("idle", nb);
+      return;
+    }
+    var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
+    tf.classList.add(onplan ? "st-onplan" : "st-off");
+    if (disc) { disc.style.background = "radial-gradient(circle at 35% 30%," + D.light + "," + D.c + ")"; disc.innerHTML = tiIcon(t); }
+    el("tfTitle").textContent = t.title || "Tracking";
+    el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan");
+    el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t);
+    var streak = (S.game && S.game.streak) || 0;
+    el("tfSpark").innerHTML = onplan ? ('⚡ <b>+3</b> Spark/min · 🔥 streak <b>×' + streak + '</b>') : ('🔥 streak <b>×' + streak + '</b>');
+    // radial progress = elapsed toward the on-plan block length (or a 60-min default cadence when unplanned)
+    var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
+    setRing(p);
+    renderTFControls(onplan ? "onplan" : "off", null);
+  }
+  function setRing(p) { var prog = el("tfProg"), dot = el("tfDot"), ring = el("tfRing"); if (!prog) return;
+    var C = 2 * Math.PI * 52; prog.style.strokeDasharray = C; prog.style.strokeDashoffset = C * (1 - p);
+    if (dot && ring) { var R = ring.clientWidth / 2, rr = R * (52 / 60), th = p * 2 * Math.PI; dot.style.left = (R + rr * Math.sin(th)) + "px"; dot.style.top = (R - rr * Math.cos(th)) + "px"; dot.style.transform = "translate(-50%,-50%)"; dot.style.display = p > 0.001 ? "block" : "none"; }
+  }
+  function renderTFControls(state, nb) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
+    function b(cls, ic, lab, fn) { var x = add(c, "button", "tf-b" + (cls ? " " + cls : "")); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
+    if (state === "idle") { b("tf-prim", "ti-player-play-filled", "Start", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); b("", "ti-list-search", "Pick", function () { startOrSwitch(); renderTrackerFull(); }); }
+    else if (state === "onplan") { b("", "ti-player-pause", "Break", function () { planBreak(); }); b("", "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b("", "ti-windmill", "Off-plan", function () { startOrSwitch(); renderTrackerFull(); }); }
+    else { b("tf-prim", "ti-arrow-back-up", "Back on plan", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); b("", "ti-check", "Keep it", function () { startOrSwitch(); renderTrackerFull(); }); }
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
@@ -2079,7 +2134,7 @@
     // DAY/NIGHT (David 2026-06-27, v5): tint PER-HOUR to match the actual clock — deep indigo night, rose dawn, cool calm day, red dusk — so midnight reads DARK and noon cool (not one ambient wash). A moon + stars live in the NIGHT-hour rows themselves (always, not "now"). Smooth keyframe-interpolated, %-based so it scales with zoom.
     (function () {
       var sky = add(cal, "div", "skybg"); sky.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;";
-      var KF = [[0, [22, 18, 44]], [5, [29, 24, 54]], [6.5, [37, 17, 40]], [8, [42, 12, 27]], [12, [48, 13, 30]], [16, [42, 12, 27]], [18, [40, 17, 38]], [20, [31, 25, 56]], [22, [27, 22, 50]], [24, [22, 18, 44]]]; // DAY = deep wine-RED (#280b19-ish), NIGHT = deep navy-BLUE (#1f1939-ish) — sampled from David's two reference images, 2026-06-27; the sky runs blue(night) → red(day) → blue(night) // night deep-indigo (kept) · day = living cool blue (was a dull gray-indigo) · dawn softer rose · dusk a smooth magenta-purple BRIDGE not a muddy red — fixes the day-meh + bad-transition (David 2026-06-27)
+      var KF = [[0, [22, 18, 44]], [5, [29, 24, 54]], [6.5, [37, 17, 40]], [8, [42, 12, 27]], [12, [48, 13, 30]], [16, [42, 12, 27]], [18, [40, 17, 38]], [20, [31, 25, 56]], [22, [27, 22, 50]], [24, [22, 18, 44]]]; // DAY = deep wine-RED, NIGHT = deep navy-BLUE — sampled from David's reference images, 2026-06-27 // DAY = deep wine-RED (#280b19-ish), NIGHT = deep navy-BLUE (#1f1939-ish) — sampled from David's two reference images, 2026-06-27; the sky runs blue(night) → red(day) → blue(night) // night deep-indigo (kept) · day = living cool blue (was a dull gray-indigo) · dawn softer rose · dusk a smooth magenta-purple BRIDGE not a muddy red — fixes the day-meh + bad-transition (David 2026-06-27)
       function skyAt(c) { c = ((c % 24) + 24) % 24; for (var i = 0; i < KF.length - 1; i++) { if (c >= KF[i][0] && c <= KF[i + 1][0]) { var t = (c - KF[i][0]) / (KF[i + 1][0] - KF[i][0]), a = KF[i][1], b = KF[i + 1][1]; return "rgb(" + Math.round(a[0] + (b[0] - a[0]) * t) + "," + Math.round(a[1] + (b[1] - a[1]) * t) + "," + Math.round(a[2] + (b[2] - a[2]) * t) + ")"; } } return "rgb(16,14,38)"; }
       var stops = []; for (var h = startH; h <= endH; h += 0.5) { stops.push(skyAt(h) + " " + ((h - startH) / (endH - startH) * 100).toFixed(1) + "%"); }
       sky.style.background = "linear-gradient(180deg," + stops.join(",") + ")";
@@ -2246,7 +2301,7 @@
       card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; card.style.width = "auto"; // one activity at a time — real lane is always full width, never split into multitasking columns (David 2026-06-23)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.background = drift ? mixHex(D.c, "#160510", 0.82) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
+        card.style.background = drift ? mixHex(D.c, "#160510", 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "");
         card.dataset.dur = it.e - it.s; card.dataset.ic = tiClass(e); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card);
@@ -2278,7 +2333,7 @@
         });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.background = drift ? mixHex(D.c, "#160510", 0.82) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
+        card.style.background = drift ? mixHex(D.c, "#160510", 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span> · <span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span>';
         card.dataset.ic = tiClass(t); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card); // density by height: a short sliver hides its text (the now-line readout shows it); once tall enough the title+elapsed live ON the bubble (David 2026-06-27)

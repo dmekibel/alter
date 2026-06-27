@@ -674,6 +674,35 @@
   #liveTracker:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
+  /* ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) ===== */
+  #trackerFull{ display:none; position:fixed; inset:0; z-index:90; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); flex-direction:column; align-items:center; justify-content:flex-start; font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); }
+  #trackerFull.on{ display:flex; }
+  .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 12px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .tf-stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; gap:0; }
+  .tf-ring{ position:relative; width:min(74vw,300px); aspect-ratio:1; display:flex; align-items:center; justify-content:center; }
+  .tf-svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+  .tf-track{ fill:none; stroke:rgba(255,255,255,.07); stroke-width:7; }
+  .tf-prog{ fill:none; stroke:#28cf86; stroke-width:7.5; stroke-linecap:round; transition:stroke-dashoffset .5s linear, stroke .4s; filter:drop-shadow(0 0 7px rgba(40,207,134,.5)); }
+  .tf-disc{ position:relative; width:62%; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:54px; color:#fff2f9; border:2.5px solid #160510; box-shadow:inset 0 2px 0 rgba(255,255,255,.14), 0 6px 18px rgba(0,0,0,.5); }
+  .tf-dot{ position:absolute; width:13px; height:13px; border-radius:50%; background:#7dffc0; box-shadow:0 0 10px #28cf86,0 0 3px #fff; border:1.5px solid #0c3a26; top:50%; left:50%; }
+  .tf-title{ margin-top:22px; font-weight:800; font-size:23px; letter-spacing:.3px; color:#ffe3f1; text-align:center; }
+  .tf-verdict{ margin-top:3px; font-weight:700; font-size:12px; letter-spacing:1.6px; text-transform:uppercase; color:#5fe0a8; }
+  .tf-time{ margin-top:14px; font-family:"DM Mono","SFMono-Regular",ui-monospace,monospace; font-weight:500; font-size:52px; line-height:1; color:#ffe3f1; font-variant-numeric:tabular-nums; }
+  .tf-spark{ margin-top:13px; display:flex; align-items:center; gap:14px; font-size:13px; font-weight:700; color:#cda9c2; }
+  .tf-spark b{ color:#ffd98a; }
+  .tf-ctrls{ width:100%; max-width:420px; display:flex; gap:9px; justify-content:center; }
+  .tf-b{ flex:1; max-width:130px; border:2px solid #160510; border-radius:14px; padding:12px 6px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; background:#2a1226; color:#e6cfe0; box-shadow:0 3px 0 #160510; }
+  .tf-b i{ font-size:18px; }
+  .tf-b:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .tf-b.tf-prim{ background:#28cf86; color:#08321f; }
+  /* verdict palettes by state */
+  #trackerFull.st-break .tf-prog{ stroke:#e8b53a; filter:drop-shadow(0 0 7px rgba(232,181,58,.5)); }
+  #trackerFull.st-break .tf-dot{ background:#ffd98a; box-shadow:0 0 10px #e8b53a,0 0 3px #fff; border-color:#5a3a00; }
+  #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
+  #trackerFull.st-off .tf-prog{ stroke:#7a5870; filter:none; }
+  #trackerFull.st-off .tf-dot{ display:none; }
+  #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
+  #trackerFull.st-off .tf-disc{ filter:saturate(.35) brightness(.7); }
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
   /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
@@ -987,8 +1016,9 @@
   /* FULL-SCREEN CLEANUP (David 2026-06-27): kill the per-day pink outline boxes, the right symbol rail, and the day-separator bars so the timeline reads edge-to-edge and uncluttered */
   .railchip{ display:none !important; }
   /* day separators: NO MORE MAROON. The separator stays as a tiny INVISIBLE spacer (so the swipe-scroll math that anchors on it still works) but every visible part — the maroon "stacks"/"done" pills, the border, the label — is gone. The top header already tells you which day you're on. (David 2026-06-27) */
-  .day-stacksep{ background:transparent !important; border:none !important; box-shadow:none !important; height:10px !important; min-height:0 !important; max-width:none !important; width:auto !important; margin:0 !important; padding:0 !important; overflow:hidden !important; }
-  .day-stacksep > *{ display:none !important; }
+  .day-stacksep{ background:#16122c !important; border:none !important; box-shadow:none !important; min-height:0 !important; max-width:none !important; width:auto !important; margin:0 !important; padding:9px 6px 8px 14px !important; display:flex !important; align-items:center !important; gap:9px !important; overflow:visible !important; } /* day-title track restored, clean (no maroon pill) on a night-navy band that blends the day boundary into a header, not a break (David 2026-06-27) */
+  .day-stacksep .dss-lab{ display:block !important; color:#9a8fb5 !important; font-family:"Jost",sans-serif !important; font-weight:800 !important; font-size:12px !important; letter-spacing:1.3px !important; text-transform:uppercase !important; }
+  .day-stacksep.today-sep .dss-lab{ color:#ff8ac0 !important; }
   .day-sep, .day-sepauto, .day-done{ display:none !important; }
   .plan-empty, .backfill, .startnew{ display:none !important; }
   .lanediv{ display:none !important; }
@@ -1226,8 +1256,26 @@
   </div>
   <div id="pullBackdrop"></div>
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
+  <div id="trackerFull"><!-- expanded live tracker: the reward RING (album-in-ring + radial dial) — circle-in-circle, never square-in-circle (David 2026-06-27) -->
+    <button id="tfClose" class="tf-close" aria-label="Close"><i class="ti ti-chevron-down"></i></button>
+    <div class="tf-stage">
+      <div class="tf-ring" id="tfRing">
+        <svg class="tf-svg" viewBox="0 0 120 120">
+          <circle class="tf-track" cx="60" cy="60" r="52"></circle>
+          <circle class="tf-prog" id="tfProg" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="tf-disc" id="tfDisc"><i class="ti ti-brain"></i></div>
+        <div class="tf-dot" id="tfDot"></div>
+      </div>
+      <div class="tf-title" id="tfTitle">—</div>
+      <div class="tf-verdict" id="tfVerdict"></div>
+      <div class="tf-time live-elapsed" id="tfTime" data-tid="">0:00</div>
+      <div class="tf-spark" id="tfSpark"></div>
+    </div>
+    <div class="tf-ctrls" id="tfCtrls"></div>
+  </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=562"></script>
+  <script src="app.js?v=563"></script>
 </body>
 </html>
