@@ -312,6 +312,24 @@
     return { grad: "linear-gradient(90deg,#ffe14a,#ffd23a)", glow: "0 0 7px rgba(255,210,60,.4)", name: "", txt: "#ffe14a", cls: "" };
   }
   function curStreak() { if (!S || !S.game) return 0; if (S.game.streakDay && S.game.streakDay !== todayK()) return 0; return S.game.streak || 0; }
+  // ===== JOURNEY ENGINE (CKPT-4, David 2026-06-28): PURE functions that DECIDE (never render), READ by nothing yet (S.guide.mode defaults 'off' → inert until CKPT-7). Additive, no SCHEMA bump. =====
+  function readiness() { // a pure 0..1 read of recent follow-through — cached per logical-day in S.guide.cache; never writes anything else
+    var g = (S.guide || {}); if (g.cache && g.cache.computedK === todayK() && typeof g.cache.r === "number") return g.cache.r;
+    var days = lastDays(14), planned = 0, kept = 0;
+    days.forEach(function (dk) { (((S.blocks || {})[dk]) || []).forEach(function (b) { if (!b.title) return; planned++; if (blockStatus(dk, b) === "ok") kept++; }); });
+    var follow = planned ? kept / planned : 0;
+    var bkDays = 0; days.forEach(function (dk) { var e = (S.bk || {})[dk] || {}; if ((e.am && e.am.done) || (e.pm && e.pm.done)) bkDays++; });
+    var bkRate = bkDays / 14, streakN = Math.min(1, curStreak() / 8);
+    var r = Math.max(0, Math.min(1, follow * 0.55 + bkRate * 0.25 + streakN * 0.20));
+    if (S.guide) { S.guide.cache = { computedK: todayK(), r: r }; } // cache only (no save() — pure read path; persisted lazily by the next save())
+    return r;
+  }
+  function journeyNode() { // monotonic sticky floor: max(first failing gate, max(S.guide.unlocked)) — never removes from unlocked = reward-never-shame as math
+    var g = (S.guide || {}), r = readiness();
+    var gate = r >= 0.75 ? 4 : r >= 0.55 ? 3 : r >= 0.35 ? 2 : r >= 0.15 ? 1 : 0; // first failing gate → the node readiness alone would suggest
+    var floor = 0; (g.unlocked || []).forEach(function (n) { if (typeof n === "number" && n > floor) floor = n; });
+    return Math.max(gate, floor);
+  }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
   function celebrate(color, streak) {
@@ -1038,7 +1056,7 @@
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
       var _bd = el("tfBackdrop"); if (_bd) _bd.onclick = function () { closeTrackerFull(); }; // tap the calendar peek above the sheet → close
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
-      var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable")) return; tfDrag(e, false); }); } // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
+      var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable,textarea,input,[contenteditable],#tfStageBody")) return; tfDrag(e, false); }); } // CKPT-3: also bail on stage inputs/scroll so a textarea tap or stage scroll isn't eaten by tfDrag(down) (the iOS-keyboard rule) // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
     }
     if (TF_OPEN) renderTrackerFull(); // keep the expanded ring in sync whenever the dock re-renders
   }
@@ -1074,6 +1092,8 @@
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
   var TF_OPEN = false, TF_ANIM = false, _ringP = 0, _ringRaf = 0; // TF_ANIM = a morph is in flight → guards against a second open/close firing mid-animation (the "expands all over again" bug — David 2026-06-28)
+  // ===== COCKPIT STAGE MODE (CKPT-2, David 2026-06-28): a SINGLE transient axis layered on TOP of trackerState(). null/'track' = today's centered ring (the 6 trackerState branches, UNCHANGED). Non-null = a guided flow that corner-poses the ring + fills #tfStageBody. Reset on close + at the top of load() so a crash never strands a half-built flow with a dangling timer. Default null + S.guide.mode 'off' = byte-for-byte today (no auto-trigger this wave). =====
+  var TF_MODE = null, TF_MODE_USERSET = false, TF_BLOCKID = null;
   // ===== SHARED-ELEMENT MORPH (FLIP) — the folded dock's mini elements FLY/GROW into their big counterparts, and back (David 2026-06-28) =====
   // Replaces the old height-rise + content-crossfade. Pairs: mini #ldStop circle → big #tfRing circle (UNIFORM scale only — never distort);
   // mini #ldAct → big #tfTitle; mini #ldEl → big #tfTime; mini .ld-seg → big #tfCtrls. Secondary content (verdict/ctx/chips/clock/spark) just fades.
@@ -1143,6 +1163,8 @@
     tfMorph(true, function () { TF_ANIM = false; }); }
   function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
     if (!TF_OPEN || TF_ANIM) return; TF_ANIM = true; if (bd) bd.classList.remove("on");
+    // CRITICAL FLIP GUARD (CKPT-2): clear the stage mode + un-stage the ring BEFORE tfMorph(false), so the close FLIP never measures a corner-posed ring and flies to the wrong spot. (David 2026-06-28)
+    TF_MODE = null; TF_MODE_USERSET = false; tf.classList.remove("tf-staged");
     tfMorph(false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); }
   function tfDrag(ev, opening) { // folded: drag UP on the dock → expand (FINGER-FOLLOWED morph). open: drag DOWN on the sheet → close (morph). A real drag past threshold commits; otherwise it snaps back. A plain tap plays the full animated morph. (David 2026-06-28)
     ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
@@ -1204,6 +1226,19 @@
   function renderSwitchChips(curTitle) { var w = el("tfSwitch"); if (!w) return; w.innerHTML = ""; var tg = tfSwitchTargets(curTitle); if (!tg.length) { w.style.display = "none"; return; } w.style.display = ""; add(w, "span", "tf-swlab", "SWITCH TO"); tg.forEach(function (o) { var D = DOM[o.dom] || DOM.focus, c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + (o.block ? tiClass(o.block) : (o.act ? tiClass(o.act) : D.ti)) + '" style="color:' + D.light + '"></i> ' + esc(o.title); c.onclick = (function (it) { return function () { tfSwitchTo(it); }; })(o); }); }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
+    // COCKPIT PRE-BRANCH (CKPT-2): if a guided stage mode is active, corner-pose the ring (CSS .tf-staged) + delegate the freed area to #tfStageBody, then RETURN. With TF_MODE null (default) this is a no-op and the existing 6-state body below runs UNTOUCHED → zero behavior change. (David 2026-06-28)
+    tf.classList.toggle("tf-staged", !!TF_MODE);
+    if (TF_MODE) {
+      var _ck2 = el("tfClock"); if (_ck2) _ck2.textContent = fmt(nowMin()).toUpperCase();
+      var _S0 = trackerState(), _t = _S0.t; // keep the corner puck a LIVE mini-tracker: show WHAT + running mm:ss off the live timer
+      var _tt2 = el("tfTitle"); if (_tt2) { _tt2.classList.remove("switchable"); _tt2.style.background = ""; _tt2.style.color = ""; _tt2.style.borderColor = ""; _tt2.onclick = null; _tt2.textContent = _t ? (_t.title || "Tracking") : (stageLabel(TF_MODE) || ""); }
+      var _ti2 = el("tfTile"); if (_ti2) { var _D2 = _t ? (DOM[domainOf(_t)] || DOM.restore) : DOM.restore; _ti2.style.background = tfStripe(_D2.c); _ti2.style.filter = ""; _ti2.innerHTML = _t ? tiIcon(_t) : '<i class="ti ' + (_D2.ti || "ti-moon") + '"></i>'; }
+      var _tm2 = el("tfTime"); if (_tm2) { if (_t) { _tm2.setAttribute("data-tid", _t.id); _tm2.textContent = elapsedStr(_t); } else { _tm2.removeAttribute("data-tid"); _tm2.textContent = ""; } }
+      var _elMin2 = _t ? (Date.now() - _t.start) / 60000 : 0, _p2 = _t ? Math.max(0, Math.min(1, _elMin2 / 60)) : 1;
+      setRing(_p2, _t ? "#28cf86" : DOM.restore.c);
+      renderStage(TF_MODE); renderTFControls(TF_MODE);
+      return;
+    }
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night");
@@ -1270,6 +1305,35 @@
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
   }
+  // ===== COCKPIT FUNNELS (CKPT-2, David 2026-06-28): one door in (enterStage), one out (exitStage), one dispatcher (renderStage), one pure router (stageModeFor). Wired to NOTHING that auto-triggers this wave — defaults keep TF_MODE null. =====
+  function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", track: "" })[mode] || ""; }
+  function enterStage(mode, opts) { // the single entry door every guided flow uses
+    opts = opts || {};
+    if (opts.trackTitle) { startTimer({ title: opts.trackTitle, catK: "rest", color: DOM.restore.c, flow: mode }); var r = activeTimers(); TF_BLOCKID = r.length ? r[r.length - 1].id : null; } // the ring lights + will slide aside in the SAME gesture (guidance+tracking fused); finish stops it
+    TF_MODE = mode; TF_MODE_USERSET = !!opts.byTap;
+    if (!TF_OPEN) openTrackerFull(); else renderTrackerFull();
+  }
+  function exitStage(commit) { // the single exit door: stop the flow timer (logs + Spark + GENTLE celebrate), un-corner the ring
+    if (TF_BLOCKID) { try { stopTimer(TF_BLOCKID); } catch (e) {} TF_BLOCKID = null; }
+    TF_MODE = null; TF_MODE_USERSET = false;
+    if (TF_OPEN) renderTrackerFull();
+  }
+  function stageModeFor() { // PURE ordered early-return ladder — never OR'd (or the stage flaps across 1s ticks). Read by NOTHING this wave (no auto-mount); here so CKPT-7 can wire landing.
+    if (TF_MODE_USERSET) return TF_MODE; // explicit tap wins this open-session
+    var run = activeTimers(), t = run[run.length - 1]; if (t && t.flow) return t.flow; // a running guided timer's tag drives the stage so a redraw re-derives the right panel
+    var g = (S.guide || {}); if (g.mode === "guided") { var jn = (typeof journeyNode === "function") ? journeyNode() : 0; if (jn != null) return "journey"; }
+    return null; // track
+  }
+  function renderStage(mode) { // dispatcher: writes ONLY #tfStageBody, IDEMPOTENT via dataset.mode guard so the 1s live-tick never wipes a textarea mid-flow
+    var sb = el("tfStageBody"); if (!sb) return;
+    if (sb.dataset.mode === mode && sb.childNodes.length) return; // already mounted this mode → leave content (inputs) alive
+    sb.dataset.mode = mode || "";
+    switch (mode) {
+      case "tool": sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">Toolbox</div><div class="tfs-sub">Coming soon — a calm shelf of tools for the moment you need one.</div></div>'; break;
+      case "am": case "pm": case "journal": case "journey": default:
+        sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break; // Wave-1 placeholder; real flows land in CKPT-5/6/7/8
+    }
+  }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
     function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; }
     if (_ringRaf) { cancelAnimationFrame(_ringRaf); _ringRaf = 0; }
@@ -1329,6 +1393,12 @@
         return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true },
                 { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
                 { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
+      // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
+      case "journal": case "pm": case "pm-mirror": case "pm-ask": case "am": case "am-greet": case "journey":
+        return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(true); }, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
+      case "tool":
+        return [{ icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, primary: true }];
       default: { // OFF-PLAN: no nonsensical "back on plan" — CREATE a plan (none yet) or REPLAN (change the one you have); both pick activity + minutes (David 2026-06-27)
         var first = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan, primary: true }
                                 : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan, primary: true };
@@ -1448,7 +1518,8 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
+  function bk(k) { S.bk = S.bk || {}; return (S.bk[k] = S.bk[k] || { am: {}, pm: {} }); } // bookend baton accessor — guarded lazy shape (CKPT-4)
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
   // multi-level UNDO for timeline edits — snapshot BEFORE each mutating action so an accidental move/resize/delete/clear is one tap to recover (David 2026-06-25)
   var undoStack = [];
@@ -3228,7 +3299,7 @@
   }
 
   // ---- timers ------------------------------------------------------------
-  function startTimer(p) { S.timers.push({ id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }); save(); }
+  function startTimer(p) { var t = { id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }; if (p.flow) t.flow = p.flow; S.timers.push(t); save(); } /* p.flow (optional) tags a guided-cockpit timer so stageModeFor can re-derive its stage on redraw (CKPT-2) */
   function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i]; if ((Date.now() - t.start) / 1000 < 15) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ too short — discarded"); return; } var dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} } toast(_covered ? "✨ completed your plan · +" + bonus + " Spark" : "✓ on-plan stretch tracked · +" + bonus + " Spark"); } S.timers.splice(i, 1); save(); renderAll(); } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {

@@ -717,6 +717,19 @@
   #trackerFull .tf-grab::before{ content:""; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:#5a4a64; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:4; } /* above the tf-grab drag zone so the chevron tap still closes */
   .tf-stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; gap:0; }
+  /* ===== COCKPIT STAGE (CKPT-1, David 2026-06-28): #trackerFull.tf-staged shrinks the ring to a top-LEFT corner puck (still a LIVE mini-tracker) and hands the freed area to #tfStageBody. Without .tf-staged the layout is byte-identical to today. Pure class toggle on already-laid-out elements — no JS geometry, animates for free, never re-measures the FLIP pairs (ALL ids unchanged). Reuses .tf-chip/.tf-b material — NO new colors/neon/glow/white. */
+  #tfStageBody{ display:none; }
+  #trackerFull.tf-staged .tf-stage{ flex:none; flex-direction:row; align-items:center; justify-content:flex-start; gap:12px; }
+  #trackerFull.tf-staged .tf-ring{ width:64px; transition:width .4s cubic-bezier(.2,.82,.3,1); }
+  #trackerFull.tf-staged .tf-tile{ font-size:26px; }
+  #trackerFull.tf-staged .tf-title{ margin:0; font-size:14px; font-weight:700; text-align:left; max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #trackerFull.tf-staged .tf-title.switchable{ margin:0; padding:5px 12px; font-size:13px; }
+  #trackerFull.tf-staged .tf-time{ margin:0; font-size:15px; }
+  #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark{ display:none; }
+  #trackerFull.tf-staged #tfStageBody{ display:flex; flex:1; flex-direction:column; width:100%; gap:14px; margin-top:16px; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; } /* overscroll-behavior:contain is MANDATORY — stage scroll must never bubble to the timeline's infinite-recenter watcher */
+  .tf-stagecard{ background:#241328; border:2px solid #160510; border-radius:14px; box-shadow:0 3px 0 #160510; color:#e6cfe0; padding:16px; font-family:"Jost",sans-serif; } /* reuses the .tf-chip/.tf-b material — no new colors */
+  .tf-stagecard .tfs-h{ font-weight:800; font-size:15px; color:#ffe3f1; margin-bottom:6px; }
+  .tf-stagecard .tfs-sub{ font-size:13px; color:#b596ad; }
   /* #14 album-in-reward-ring: a flat conic reward band (no glow) hugging a STRIPED activity tile (matches the timeline bubbles) */
   .tf-ring{ position:relative; width:min(58vw,232px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(#28cf86 0% 0%, rgba(255,255,255,.10) 0%); transition:background .5s linear; }
   .tf-tile{ position:relative; width:calc(100% - 26px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:46px; color:#fff2f9; border:2.5px solid #160510; box-shadow:inset 0 2px 0 rgba(255,255,255,.10), 0 6px 18px rgba(0,0,0,.5); }
@@ -1351,6 +1364,7 @@
       <div class="tf-ctx" id="tfCtx"></div>
       <div class="tf-switch" id="tfSwitch"></div>
     </div>
+    <div id="tfStageBody"></div><!-- cockpit STAGE: guided-flow workspace (CKPT-1) — empty + display:none unless #trackerFull.tf-staged -->
     <div class="tf-ctrls" id="tfCtrls"></div>
    </div>
   </div>
