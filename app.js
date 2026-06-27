@@ -701,6 +701,7 @@
   function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the week-strip tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
     if (sc._inf) return; sc._inf = 1; var raf = 0;
     sc.addEventListener("scroll", function () {
+      if (!sc.classList.contains("scrolling")) sc.classList.add("scrolling"); clearTimeout(sc._sct); sc._sct = setTimeout(function () { sc.classList.remove("scrolling"); }, 140); // pause the cele/foil shimmer + sparkle WHILE scrolling — mix-blend-mode + animated background-position can't GPU-composite mid-scroll, so a big zoomed-in completed bubble repaints every frame = the "choppy slide". Restored 140ms after you stop. (David 2026-06-26)
       if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day")) document.body.classList.add("nav-collapsed"); // Apple-Music: the moment you actually scroll the timeline, Goals/You tuck behind the Today pill and the live tracker drops beside it (David 2026-06-26)
       if (raf || _infRebuild || _paging || _pinching) return; // never recenter mid-page-turn or mid-pinch (that was the old bounce / the pinch snap-to-today) — David 2026-06-26
       raf = requestAnimationFrame(function () { raf = 0;
@@ -2106,7 +2107,7 @@
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(b), c: D.c, ink: D.ink, open: (function (bb) { return function () { editBlk(bb); }; })(b) }); // too thin to label → its symbol goes to the right rail; tap the chip to open it (David 2026-06-25)
       if (status === "ok" && !partial) {
         card.style.background = "repeating-linear-gradient(45deg," + D.c + "," + D.c + " 7px," + D.dark + " 7px," + D.dark + " 14px)"; // matched = its own colour, matte-metallic stripes (calmer — no neon glow) (David 2026-06-25)
-        card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.16),0 3px 0 #160510"; card.style.borderColor = "#160510"; card.style.filter = "saturate(.92)"; // no light outline ring — just the dark edge (David 2026-06-25)
+        card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.16),0 3px 0 #160510"; card.style.borderColor = "#160510"; // (removed filter:saturate(.92) — a CSS filter forces the bubble to re-rasterize every scroll frame = the choppy slide on big zoomed-in completed plans; the 8% desat was imperceptible) David 2026-06-26
         add(card, "div", "shine");
       } else if (dark) { // missed/ghost (and the unmatched base of a partial) — a domain-tinted-dark hollow with a clear domain OUTLINE + title (David's image 4)
         card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";

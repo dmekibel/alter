@@ -247,6 +247,7 @@
   .calblk.cele .cn,.calblk.cele .ct{text-shadow:none;} /* matched text reads like the rest — no extra weight/shadow (David 2026-06-25) */
   .calblk.cele .foil{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%);background-size:200% 100%;animation:foilSlide 3.4s linear infinite;mix-blend-mode:overlay;}
   .calblk.cele .spk{position:absolute;top:2px;right:27px;font-size:12px;pointer-events:none;animation:spkTwinkle 1.7s ease-in-out infinite;}
+  .day-cardscroll.scrolling .foil{ animation-play-state:paused; } /* PERF stopgap: pause the animated-background-position foil sweep while scrolling (it repaints every frame and can't GPU-composite). The static gloss (.shine) stays. The completed-bubble filter is removed at source. A transform-based shimmer (below) would stay live during scroll — TODO. (David 2026-06-26) */
   .calblk.ghost{opacity:.5;} .calblk.ghost .cn{opacity:.85;}
   .calblk.act.onplan{box-shadow:0 0 0 3px #ffd24a,0 0 16px rgba(255,210,74,.6),0 4px 0 #160510,0 7px 14px rgba(0,0,0,.42) !important;}
   .calblk.act.drift .cn,.calblk.act.drift .ct{color:#ffe2db;}
@@ -1209,6 +1210,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=518"></script>
+  <script src="app.js?v=519"></script>
 </body>
 </html>
