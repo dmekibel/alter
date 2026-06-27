@@ -1029,6 +1029,7 @@
       if (_info) { _info.style.touchAction = "none"; _info.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // grab the dock body and DRAG UP to expand (a plain tap no longer auto-opens) — David 2026-06-27
       if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // drag the dock handle UP → expand (finger-follow)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
+      var _bd = el("tfBackdrop"); if (_bd) _bd.onclick = function () { closeTrackerFull(); }; // tap the calendar peek above the sheet → close
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
       var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable")) return; tfDrag(e, false); }); } // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
     }
@@ -1059,21 +1060,24 @@
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
   var TF_OPEN = false, _ringP = 0, _ringRaf = 0;
-  // "the dock card RISES": grow the OUTER clip's height bottom-up (no scale → ring/content never stretches). frac 0 = dock height, frac 1 = full screen. The full-height inner is revealed upward.
+  var TF_PEEK = 92; // px of calendar left visible above the open sheet — easy to close without reaching the very top (David 2026-06-28)
+  // "the dock card RISES": grow the OUTER clip's height bottom-up (no scale → ring/content never stretches). frac 0 = dock height, frac 1 = full sheet (a peek of calendar stays at the top).
+  // No hard cut at the start: over the first sliver of the drag the real dock CROSSFADES out while the tracker fades in (same size, same spot) → a smooth hand-off, not an instant swap.
   function tfSetFrac(f) { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var r = dk ? dk.getBoundingClientRect() : null, vh = window.innerHeight || 800, dh = (r && r.height) ? r.height : 120;
     f = Math.max(0, Math.min(1, f));
-    tf.style.height = (dh + (vh - dh) * f) + "px"; tf.style.opacity = "1"; var br = 16 * (1 - f); tf.style.borderRadius = br + "px " + br + "px 0 0"; }
-  function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
-    tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); if (dk) dk.style.visibility = "hidden"; // start AS the dock card, hide the real dock
+    tf.style.height = (dh + ((vh - TF_PEEK) - dh) * f) + "px"; var br = 16 * (1 - f); tf.style.borderRadius = br + "px " + br + "px 0 0";
+    var x = Math.min(1, f / 0.16); tf.style.opacity = String(x); if (dk) dk.style.opacity = String(1 - x); } // crossfade over the first 16% of the drag — the dock hands off to the tracker, no flash
+  function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
+    tf.classList.remove("tf-anim"); tf.classList.add("on"); if (bd) bd.classList.add("on"); tfSetFrac(0); // start AS the dock card (dock still visible, tracker transparent)
     void tf.offsetHeight; // force reflow so the start state registers (rAF is unreliable when the page isn't actively painting)
-    tf.classList.add("tf-anim"); tfSetFrac(1); } // then grow to full → the card expands
-  function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; tf.classList.add("tf-anim"); tfSetFrac(0); // shrink back down into the dock
-    var done = function () { tf.removeEventListener("transitionend", done); tf.classList.remove("on", "tf-anim"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.style.visibility = ""; TF_OPEN = false; };
+    tf.classList.add("tf-anim"); tfSetFrac(1); } // then rise to full → the card grows + crossfades
+  function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return; tf.classList.add("tf-anim"); if (bd) bd.classList.remove("on"); tfSetFrac(0); // shrink back down into the dock
+    var done = function () { tf.removeEventListener("transitionend", done); tf.classList.remove("on", "tf-anim"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.style.opacity = ""; TF_OPEN = false; };
     tf.addEventListener("transitionend", done); setTimeout(done, 430); }
   function tfDrag(ev, opening) { // finger-follow: drag the dock card UP to grow it; drag the tracker DOWN to shrink it back into the dock (David 2026-06-27)
     ev.preventDefault(); var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false, started = !opening;
     if (!opening) tf.classList.remove("tf-anim"); // closing: tracker is already open → follow the finger immediately
-    function start() { if (started) return; started = true; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); if (dk) dk.style.visibility = "hidden"; tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); } // OPEN setup happens only once the user actually drags — a plain tap does NOTHING
+    function start() { if (started) return; started = true; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); var bd = el("tfBackdrop"); if (bd) bd.classList.add("on"); tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); } // OPEN setup happens only once the user actually drags — a plain tap does NOTHING; dock crossfades via opacity (no visibility cut)
     function mv(e) { e.preventDefault(); var dy = e.clientY - sy; if (!moved && Math.abs(dy) > 4) moved = true; if (opening && moved) start(); if (!started) return; var f = opening ? (-dy / H * 1.35) : (1 + dy / H * 1.35); tfSetFrac(f); }
     function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); var dy = e.clientY - sy;
       if (opening) { if (started && moved && -dy > H * 0.12) openTrackerFull(); else if (started) closeTrackerFull(); } // OPEN only on a real drag UP; a pure tap never even starts (no flash, dock stays)
