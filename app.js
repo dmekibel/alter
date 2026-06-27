@@ -1073,7 +1073,7 @@
     function setY(pct) { tf.style.transform = "translateY(" + pct + "%)"; tf.style.opacity = String(Math.max(0.12, 1 - pct / 100)); }
     function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var pct = opening ? Math.max(0, Math.min(100, 100 + dy / H * 100)) : Math.max(0, Math.min(100, dy / H * 100)); setY(pct); }
     function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); tf.classList.remove("tf-dragging"); tf.style.transform = ""; tf.style.opacity = ""; var dy = e.clientY - sy;
-      var keepOpen = opening ? (!moved || -dy > H * 0.16) : (dy < H * 0.22); // open if dragged up enough (or a tap); when closing, only stay open if you barely moved
+      var keepOpen = opening ? (!moved || -dy > H * 0.16) : (dy < -H * 0.10); // OPEN: a tap or a decent up-drag opens. CLOSE handle: a tap OR any down-drag closes; only a clear up-drag keeps it open.
       if (keepOpen) openTrackerFull(); else closeTrackerFull(); }
     document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
   }
