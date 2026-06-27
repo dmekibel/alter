@@ -641,7 +641,7 @@
   function liveReflowCal(cal) {
     var nl = cal.querySelector(".nowline"), band = null; if (nl) { var nt = parseFloat(nl.style.top) || 0; band = [nt - 6, nt + 30]; }
     var oldChips = cal.querySelectorAll(".railchip"); for (var i = 0; i < oldChips.length; i++) oldChips[i].remove();
-    var blks = cal.querySelectorAll(".calblk"), items = [];
+    var blks = cal.querySelectorAll(".calblk:not(.live)"), items = []; // exclude the live bubble — the commit render never rails it, so including it here made the rail re-space (rearrange) on release (David 2026-06-27)
     for (var j = 0; j < blks.length; j++) { var c = blks[j]; degradeCard(c); if ((c.classList.contains("lbl-i") || c.classList.contains("lbl-s")) && c.dataset.ic) items.push({ y: (parseFloat(c.style.top) || 0) + (parseFloat(c.style.height) || 4) / 2, ic: c.dataset.ic, c: c.dataset.c || "#8a5cf0", ink: c.dataset.ink || "#fff" }); }
     items.sort(function (a, b) { return a.y - b.y; });
     var _rf = items.length ? (items[0].y - 8) : 0, _rpitch = items.length > 1 ? Math.max(18, ((items[items.length - 1].y - 8) - _rf) / (items.length - 1)) : 18; // EVEN-distribute rail icons (match the commit render — David 2026-06-27)
@@ -933,7 +933,7 @@
     S.blocks[k] = bl; S.log[k] = lg;
     S.timers = []; // NO tracking in the test → the straddling Focus block reads ghost-past (failed) + matte-future, split by the present line (David 2026-06-25)
     S.game = S.game || {}; S.game.streak = 3; S.game.streakDay = k;
-    save(); pendingScrollNow = true; renderAll(); buildPull(); toast("🧪 test day — streak ×3 · a miss · a drift · live · future");
+    save(); pullFocusK = todayK(); pendingScrollNow = true; renderAll(); buildPull(); setTimeout(scrollToNow, 70); toast("🧪 test day — streak ×3 · a miss · a drift · live · future"); // land ON the now-line, not thrown away from the present (David 2026-06-27)
   }
   function renderLiveDock() { // the pull-up live-tracker panel (Today only, while tracking) — David 2026-06-25
     var dk = el("liveDock"); if (!dk) return;
