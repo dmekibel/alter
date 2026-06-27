@@ -993,6 +993,11 @@
   .plan-empty, .backfill, .startnew{ display:none !important; }
   .lanediv{ display:none !important; }
   .calblk.emptyblk{ background:#1c1228 !important; border:2px dashed #6a4a60 !important; } /* empty bubble no longer a loud pink candy box */
+  /* THE RIM — kill EVERY frame around the timeline once and for all (David, repeatedly): sheet drop-shadow + outline, the header wine band + its border, the lanehead wine band. The sky bg now runs edge to edge with nothing framing it. (David 2026-06-27) */
+  body.tab-day:not(.gaming) #pullSheet{ box-shadow:none !important; outline:none !important; border:none !important; }
+  body.tab-day:not(.gaming) #pullHead{ background:transparent !important; border:none !important; box-shadow:none !important; outline:none !important; }
+  body.tab-day:not(.gaming) .lanehead{ background:transparent !important; box-shadow:none !important; border:none !important; }
+  body.tab-day:not(.gaming) #pullBody{ outline:none !important; }
   /* bento search: dark candy (never white) + it scrolls away with the content instead of sticking */
   .bento-search{ position:static !important; top:auto !important; z-index:auto !important; background:transparent !important; padding:2px 0 10px !important; }
   input.bento-sinput[type=text]{ background:#1c0512 !important; color:#fff2f9 !important; border:2px solid #160510 !important; }
@@ -1223,6 +1228,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=560"></script>
+  <script src="app.js?v=561"></script>
 </body>
 </html>
