@@ -1027,8 +1027,7 @@
       el("tfVerdict").textContent = nb ? "ready when you are" : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
-      el("tfSpark").innerHTML = '🔥 streak <b>×' + streak + '</b>';
-      el("tfToday").innerHTML = '<i class="ti ti-clock-hour-4"></i> <b>' + dur(tfDomMinsToday(null)) + '</b> tracked today';
+      el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ⏱ <b>' + dur(tfDomMinsToday(null)) + '</b>';
       if (tile) { tile.style.background = tfStripe(ND.c); tile.style.filter = "saturate(.5) brightness(.78)"; tile.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
       return;
@@ -1042,10 +1041,9 @@
     // context = pacing: how long is left in the planned block, and when it ends
     if (S0.block) { var bs = hm(S0.block.time), be = bs + (S0.block.mins || 30), rem = be - nowMin(); el("tfCtx").textContent = (rem > 0 ? rem + "m left" : "over by " + (-rem) + "m") + " · ends " + fmt(be); }
     else el("tfCtx").textContent = drift ? "off your plan" : "no plan — free tracking";
-    el("tfSpark").innerHTML = onplan ? ('⚡ <b>+3</b>/min · 🔥 streak <b>×' + streak + '</b>') : ('🔥 streak <b>×' + streak + '</b>');
     var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
-    var onAct = tfDomMinsToday(S0.dom) + Math.round(elMin), allToday = tfDomMinsToday(null) + Math.round(elMin);
-    el("tfToday").innerHTML = '<i class="ti ti-clock-hour-4"></i> <b>' + dur(onAct) + '</b> on this today · <b>' + dur(allToday) + '</b> all';
+    var onAct = tfDomMinsToday(S0.dom) + Math.round(elMin);
+    el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ⏱ <b>' + dur(onAct) + '</b>';
     setRing(p, onplan ? "#28cf86" : "#6a5870");
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
