@@ -1376,12 +1376,30 @@
       var qp = (sbp && sbp.dataset.q) || "", mp = (sbp && sbp.dataset.mood != null && sbp.dataset.mood !== "") ? +sbp.dataset.mood : null;
       var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = txt; recp.pm.q = qp; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true; save();
     }
-    if (commit && mode === "am") { // AM bookend → bk(todayK()).am = {identity[], virtue, why, ts, done} (AM-GREET / AM-INTRINSIC). Writes the live profile so the day reads it.
+    if (commit && mode === "am") { // AM bookend → bk(todayK()).am = {identity[], virtue, why, goalKey, goalMove, oneThing, ts, done}. Writes the live profile + does the SAFE flow-down (skeletonDay / blocks.push / reflow). No #sheet, no calendarView touch.
       var sba = el("tfStageBody"); var idents = (sba && sba.dataset.ident) ? sba.dataset.ident.split("|").filter(Boolean) : [];
       var virt = (sba && sba.dataset.virtue) || "", why = (sba && sba.dataset.why) || "";
-      var reca = bk(todayK()); reca.am = reca.am || {}; reca.am.identity = idents; reca.am.virtue = virt; reca.am.why = why; reca.am.ts = Date.now(); reca.am.done = true;
+      var goalKey = (sba && sba.dataset.goalKey) || "", goalMove = (sba && sba.dataset.goalMove) || "", oneThing = (sba && sba.dataset.oneThing) || "";
+      var amK = todayK(), reca = bk(amK); reca.am = reca.am || {};
+      reca.am.identity = idents; reca.am.virtue = virt; reca.am.why = why;
+      reca.am.goalKey = goalKey; reca.am.goalMove = goalMove; reca.am.oneThing = oneThing; reca.am.ts = Date.now(); reca.am.done = true;
       if (S.profile) { if (idents.length) S.profile.todayIdentity = idents.slice(); if (virt) S.profile.todayVirtues = [virt]; } // keep the canonical profile in sync (no divergent copy)
+      // FLOW-DOWN (a): the ONE thing → a starred prio-3 block (de-duped) via the already-safe write path
+      try {
+        var theOne = oneThing || goalMove;
+        if (theOne) {
+          var have = (blocks(amK) || []).some(function (b) { return (b.title || "").toLowerCase() === theOne.toLowerCase(); });
+          if (!have) { if (!(blocks(amK) || []).some(function (b) { return b.title; })) { skeletonDay(amK, theOne); } else { var t1 = nextFreeMin(amK); blocks(amK).push({ id: uid(), time: pad(Math.floor(t1 / 60)) + ":" + pad(t1 % 60), mins: 90, title: theOne, prio: 3, color: "#2a9fe0", done: false, star: true, fromAM: true }); reflow(amK); } }
+        }
+        // FLOW-DOWN: the goal-move (if distinct from the one-thing) → a pushed block, de-duped
+        if (goalMove && goalMove.toLowerCase() !== (theOne || "").toLowerCase()) {
+          var have2 = (blocks(amK) || []).some(function (b) { return (b.title || "").toLowerCase() === goalMove.toLowerCase(); });
+          if (!have2) { var dom2 = domainOf({ title: goalMove }), t2 = nextFreeMin(amK); blocks(amK).push({ id: uid(), time: pad(Math.floor(t2 / 60)) + ":" + pad(t2 % 60), mins: 30, title: goalMove, prio: 2, color: (DOM[dom2] || DOM.focus).c, domain: dom2, done: false, goalId: goalKey || null, fromAM: true }); reflow(amK); }
+        }
+      } catch (e) {}
       save();
+      // FLOW-DOWN (c) the chosen-virtue glyph is rendered additively at the bubble label via amVirtueGlyph() (no write here).
+      try { renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull(); } catch (e) {} // repaint so the new blocks + glyph show
     }
     if (TF_BLOCKID) { try { stopTimer(TF_BLOCKID); } catch (e) {} TF_BLOCKID = null; } // logs a Restore "Reflection" block + earns Spark (no covered-plan, so its own celebrate won't fire)
     if (commit && mode) { try { celebrateGated(DOM.restore.c, curStreak() || 1); } catch (e) {} } // GENTLE reward for showing up, gated once/logical-day across am/pm/journal
@@ -1496,44 +1514,133 @@
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
   }
+  // ===== AM BOOKEND — FULL MORNING RITUAL (David 2026-06-28) =====
+  // Multi-beat flow rendered ENTIRELY into #tfStageBody (no #sheet). One internal step index (sb.dataset.amStep);
+  // the 'Morning bookend' ring tracks throughout (lit by enterStage's trackTitle). The dataset preserves all picks
+  // across beats and across the 1s live-tick. Beats: 0 GREET+HARVEST · 1 AIM (virtue → intrinsic why) ·
+  // 2 BIG GOAL+move · 3 FLOW-DOWN/CLOSE confirm. exitStage('am', commit) reads sb.dataset.{ident,virtue,why,
+  // goalKey,goalMove,oneThing} and does the SAFE flow-down (skeletonDay / blocks(k).push / reflow). NO #sheet, no calendarView touch.
+  function amRotateGoal() { // surface ONE active goal, rotated by day so all get attention over the week
+    var gs = activeGoals(); if (!gs.length) return null;
+    var idx = Math.floor(Date.now() / 86400000) % gs.length; return gs[idx];
+  }
+  function amVirtueGlyph(b) { // FLOW-DOWN (c): a dim glyph appended to a matched bubble label — PURE additive innerHTML, zero geometry. Reward-only, never a deficit mark.
+    try { var am = ((S.bk || {})[todayK()] || {}).am || {}; if (!am.virtue || !am.done) return "";
+      if (virtueOf(b) !== am.virtue) return ""; var v = VIRTUES.filter(function (z) { return z.k === am.virtue; })[0]; if (!v) return "";
+      return ' <span class="am-vglyph" style="opacity:.5;font-size:.85em" title="today\'s virtue">' + v.e + '</span>';
+    } catch (e) { return ""; }
+  }
+  function amStep(sb) { return Math.max(0, Math.min(3, parseInt(sb.dataset.amStep || "0", 10) || 0)); }
+  function amGoStep(sb, n) { sb.dataset.amStep = String(Math.max(0, Math.min(3, n))); amStageStep(sb); } // rebuild this beat (amStageStep clears #tfStageBody itself)
   function amStageStep(sb) {
     var k = todayK(), rec = (S.bk || {})[k] || {}, prevAm = rec.am || {};
-    // seed: this morning's record (if re-opened) OR a PM-planted seed written last night under today's key
-    var seedIdent = (prevAm.identity && prevAm.identity.length) ? prevAm.identity.slice()
-                  : ((S.profile && S.profile.todayIdentity) ? S.profile.todayIdentity.slice() : []);
-    var seedVirt = prevAm.virtue || (S.profile && S.profile.todayVirtues && S.profile.todayVirtues[0]) || "";
-    sb.dataset.ident = seedIdent.join("|"); sb.dataset.virtue = seedVirt; sb.dataset.why = prevAm.why || "";
+    // seed every field ONCE per logical day (first mount) from this morning's record OR a PM-planted seed written last night under today's key
+    if (sb.dataset.amSeeded !== k) {
+      var seedIdent = (prevAm.identity && prevAm.identity.length) ? prevAm.identity.slice()
+                    : ((S.profile && S.profile.todayIdentity) ? S.profile.todayIdentity.slice() : []);
+      sb.dataset.ident = seedIdent.join("|");
+      sb.dataset.virtue = prevAm.virtue || (S.profile && S.profile.todayVirtues && S.profile.todayVirtues[0]) || "";
+      sb.dataset.why = prevAm.why || "";
+      sb.dataset.goalKey = prevAm.goalKey || ""; sb.dataset.goalMove = prevAm.goalMove || ""; sb.dataset.oneThing = prevAm.oneThing || "";
+      sb.dataset.amStep = "0"; sb.dataset.amSeeded = k;
+    }
+    sb.innerHTML = "";
+    var step = amStep(sb);
     var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
-    add(card, "div", "tfs-h", "Good morning.");
-    // reflect last night's / prior seed back, warmly
-    if (seedVirt || seedIdent.length) {
-      var vlab = seedVirt ? (VCLASS[seedVirt] || (VIRTUES.filter(function (v) { return v.k === seedVirt; })[0] || {}).l || "") : "";
-      var rb = add(card, "div", "tfs-sub"); rb.textContent = vlab ? ("Last time you chose to wake as " + vlab + ". Still true?") : "Who do you want to be today?";
-      rb.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.45;");
-    } else { add(card, "div", "tfs-sub").textContent = "Who do you want to be today?"; }
-    // confirm virtue (single pick) — the identity you wake as
-    add(card, "div", "tfs-sub", "Wake as someone…").style.fontSize = "13px";
-    var vg = add(card, "div", "am-vrow"); vg.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
-    VIRTUES.forEach(function (v) {
-      var on = sb.dataset.virtue === v.k, b = add(vg, "button", "tf-chip");
-      b.innerHTML = '<span style="font-size:1.05em">' + v.e + '</span> ' + v.l;
-      if (on) { b.style.borderColor = v.c; b.style.color = v.c; }
-      b.onclick = (function (vk) { return function () { sb.dataset.virtue = (sb.dataset.virtue === vk) ? "" : vk;
-        Array.prototype.forEach.call(vg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
-        if (sb.dataset.virtue) { var vv = VIRTUES.filter(function (z) { return z.k === sb.dataset.virtue; })[0]; b.style.borderColor = vv ? vv.c : ""; b.style.color = vv ? vv.c : ""; }
-      }; })(v.k);
-    });
-    // INTRINSIC-WHY chip row (SDT) — autonomy/identity reasons ONLY; no extrinsic option
-    add(card, "div", "tfs-sub", "…because?").style.fontSize = "13px";
-    var wg = add(card, "div", "am-whyrow"); wg.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
-    AM_WHYS.forEach(function (w) {
-      var on = sb.dataset.why === w, b = add(wg, "button", "tf-chip"); b.textContent = w;
-      if (on) { b.style.borderColor = DOM.restore.light; b.style.color = DOM.restore.light; }
-      b.onclick = (function (ww) { return function () { sb.dataset.why = (sb.dataset.why === ww) ? "" : ww;
-        Array.prototype.forEach.call(wg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
-        if (sb.dataset.why) { b.style.borderColor = DOM.restore.light; b.style.color = DOM.restore.light; }
-      }; })(w);
-    });
+    // progress pips (4 beats) — soft, never a "you're behind" bar
+    var pips = add(card, "div"); pips.style.cssText = "display:flex;gap:6px;align-self:center;margin-bottom:2px;";
+    for (var pi = 0; pi < 4; pi++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;display:block;background:" + (pi <= step ? DOM.restore.light : "#3a2230") + ";"; }
+    function nextBtn(label, onTap) { var b = add(card, "button", "tf-b tf-done"); b.style.marginTop = "4px"; b.innerHTML = '<i class="ti ti-arrow-right"></i>' + esc(label); b.onclick = onTap; return b; }
+    function backLink() { if (step <= 0) return; var bk2 = add(card, "button", "tf-chip"); bk2.style.cssText = "align-self:flex-start;opacity:.7;"; bk2.innerHTML = '<i class="ti ti-arrow-left"></i> back'; bk2.onclick = function () { amGoStep(sb, step - 1); }; }
+
+    if (step === 0) {
+      // ----- BEAT 0: GREET + HARVEST last night's seed -----
+      add(card, "div", "tfs-h", "Good morning.");
+      var mr = bookendMirror((lastDays(2) || [])[1]); // a one-line read of YESTERDAY
+      var yLine = mr.planned ? ("Yesterday you showed up for " + mr.kept + " of " + mr.planned + (mr.strong && (mr.domMin[mr.strong] || 0) > 0 ? " — strong on " + ((DOM[mr.strong] && DOM[mr.strong].l) || mr.strong) : "") + ".")
+                             : "A fresh page today.";
+      add(card, "div", "tfs-sub").textContent = yLine;
+      var seedVirt = sb.dataset.virtue, seedIdent = (sb.dataset.ident || "").split("|").filter(Boolean);
+      var hasSeed = !!(seedVirt || seedIdent.length || sb.dataset.oneThing);
+      if (hasSeed) {
+        var vlab = seedVirt ? (VCLASS[seedVirt] || (VIRTUES.filter(function (v) { return v.k === seedVirt; })[0] || {}).l || "") : "";
+        var parts = []; if (vlab) parts.push("you'd wake as " + vlab); if (sb.dataset.oneThing) parts.push("your one thing is " + sb.dataset.oneThing);
+        var rb = add(card, "div", "tfs-sub"); rb.textContent = "Last time you chose: " + (parts.join(", ") || "an intention") + ". Still true?";
+        rb.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.45;");
+        nextBtn("Lock it", function () { amGoStep(sb, 2); }); // honor the seed → straight to the BIG GOAL beat
+        var adj = add(card, "button", "tf-chip"); adj.style.cssText = "align-self:center;opacity:.85;"; adj.textContent = "Adjust"; adj.onclick = function () { amGoStep(sb, 1); };
+      } else {
+        add(card, "div", "tfs-sub").textContent = "Let's set who you wake as.";
+        nextBtn("Begin", function () { amGoStep(sb, 1); });
+      }
+    } else if (step === 1) {
+      // ----- BEAT 1: AIM — identity/virtue → intrinsic why -----
+      add(card, "div", "tfs-h", "Who do you want to be today?");
+      add(card, "div", "tfs-sub", "Wake as someone…").style.fontSize = "13px";
+      var vg = add(card, "div", "am-vrow"); vg.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+      VIRTUES.forEach(function (v) {
+        var on = sb.dataset.virtue === v.k, b = add(vg, "button", "tf-chip");
+        b.innerHTML = '<span style="font-size:1.05em">' + v.e + '</span> ' + v.l;
+        if (on) { b.style.borderColor = v.c; b.style.color = v.c; }
+        b.onclick = (function (vk) { return function () { sb.dataset.virtue = (sb.dataset.virtue === vk) ? "" : vk;
+          Array.prototype.forEach.call(vg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
+          if (sb.dataset.virtue) { var vv = VIRTUES.filter(function (z) { return z.k === sb.dataset.virtue; })[0]; b.style.borderColor = vv ? vv.c : ""; b.style.color = vv ? vv.c : ""; }
+        }; })(v.k);
+      });
+      // INTRINSIC-WHY chip row (SDT) — autonomy/identity reasons ONLY; no extrinsic option
+      add(card, "div", "tfs-sub", "…because?").style.fontSize = "13px";
+      var wg = add(card, "div", "am-whyrow"); wg.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+      AM_WHYS.forEach(function (w) {
+        var on = sb.dataset.why === w, b = add(wg, "button", "tf-chip"); b.textContent = w;
+        if (on) { b.style.borderColor = DOM.restore.light; b.style.color = DOM.restore.light; }
+        b.onclick = (function (ww) { return function () { sb.dataset.why = (sb.dataset.why === ww) ? "" : ww;
+          Array.prototype.forEach.call(wg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
+          if (sb.dataset.why) { b.style.borderColor = DOM.restore.light; b.style.color = DOM.restore.light; }
+        }; })(w);
+      });
+      nextBtn("Next", function () { amGoStep(sb, 2); });
+      backLink();
+    } else if (step === 2) {
+      // ----- BEAT 2: BIG GOAL + smallest move -----
+      var g = amRotateGoal();
+      if (!g) {
+        add(card, "div", "tfs-h", "Your one thing");
+        add(card, "div", "tfs-sub").textContent = "What's the one move today that future-you would thank you for?";
+        var ta0 = add(card, "textarea", "jr-ta"); ta0.rows = 2; ta0.placeholder = "the one thing…"; ta0.value = sb.dataset.oneThing || sb.dataset.goalMove || "";
+        ta0.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
+        ta0.oninput = function () { sb.dataset.oneThing = ta0.value.trim(); };
+        nextBtn("Next", function () { sb.dataset.oneThing = ta0.value.trim(); amGoStep(sb, 3); });
+        backLink();
+      } else {
+        sb.dataset.goalKey = g.title;
+        add(card, "div", "tfs-h", "Toward " + g.title);
+        add(card, "div", "tfs-sub").textContent = "You're building toward " + g.title + ". What's one small move today?";
+        var taG; // declared first so subtask chips can mirror into it
+        var subs = (g.subtasks || []).filter(function (s) { return !s.done; }).slice(0, 3);
+        if (subs.length) { var sw = add(card, "div"); sw.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;"; subs.forEach(function (s) { var c = add(sw, "button", "tf-chip"); c.textContent = s.title; if (sb.dataset.goalMove === s.title) { c.style.borderColor = DOM.restore.light; c.style.color = DOM.restore.light; } c.onclick = (function (tt) { return function () { sb.dataset.goalMove = (sb.dataset.goalMove === tt) ? "" : tt; if (taG) taG.value = sb.dataset.goalMove; Array.prototype.forEach.call(sw.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; }); if (sb.dataset.goalMove) { c.style.borderColor = DOM.restore.light; c.style.color = DOM.restore.light; } }; })(s.title); }); }
+        taG = add(card, "textarea", "jr-ta"); taG.rows = 2; taG.placeholder = "…or type your own move"; taG.value = sb.dataset.goalMove || "";
+        taG.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
+        taG.oninput = function () { sb.dataset.goalMove = taG.value.trim(); };
+        nextBtn("Next", function () { sb.dataset.goalMove = taG.value.trim(); amGoStep(sb, 3); });
+        backLink();
+      }
+    } else {
+      // ----- BEAT 3: FLOW-DOWN summary + CLOSE (confirm) -----
+      add(card, "div", "tfs-h", "Frame the day");
+      var seedVirt2 = sb.dataset.virtue, vlab2 = seedVirt2 ? (VCLASS[seedVirt2] || (VIRTUES.filter(function (v) { return v.k === seedVirt2; })[0] || {}).l || "") : "";
+      var sumParts = [];
+      if (vlab2) sumParts.push("Wake as " + vlab2 + (sb.dataset.why ? " " + sb.dataset.why : ""));
+      var theOne = sb.dataset.oneThing || sb.dataset.goalMove;
+      if (theOne) sumParts.push("One thing: " + theOne);
+      if (sb.dataset.goalKey && sb.dataset.goalMove && sb.dataset.goalMove !== theOne) sumParts.push("Toward " + sb.dataset.goalKey + ": " + sb.dataset.goalMove);
+      var sumc = add(card, "div", "tfs-sub"); sumc.innerHTML = sumParts.length ? sumParts.map(function (p) { return esc(p); }).join("<br>") : "A free, open day — that's allowed too.";
+      sumc.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.6;");
+      add(card, "div", "tfs-sub").textContent = "I'll place these on your timeline and carry your intention through the day.";
+      card.lastChild.style.cssText = "font-size:12px;color:#cfa8c4;";
+      // Save commits via exitStage('am', true) — same as the trackerControls 'am' primary; mirrored here as the obvious finish.
+      nextBtn("Save the morning ☀️", function () { exitStage(true); });
+      backLink();
+    }
   }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
     function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; }
@@ -2877,7 +2984,7 @@
       var ink = D.light; // ALL bubbles are now dark-hollow → bright domain-light text everywhere (legible + cool, per David's ghost-look preference, 2026-06-27)
       var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
-      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : ""));
+      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "") + amVirtueGlyph(b)); /* AM FLOW-DOWN (c): dim today's-virtue glyph — PURE additive concat, no geometry */
       if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = "rgba(255,240,249,.45)"; } // muted "missed" (David's image 4)
       // ARMED AT PRESENT (David 2026-06-27): a FUTURE plan slid UP until its start bumps the now-line → a round Play affordance appears ON the bubble. Tap = startPlanned(b): tracking begins charging from now, so it "prints in both lanes" (plan stays left, the tracked half flows down the right via the existing straddle/matched render). Shows only when the block sits at/just-after now, is still a plan (not done/matched), isn't the live straddling block, and nothing of its own domain is already tracking. Render-driven (not a transient flag) so it survives the full-DOM rebuild a drop triggers. (regression contract #2: bs >= now means it never crossed into the past)
       var _nowFloor = Math.ceil(now / 15) * 15, _trkDom = !!(_liveT && domainOf(_liveT) === dom);
