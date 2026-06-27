@@ -1,0 +1,217 @@
+{
+  "summary": "Design ALTER's AM/PM bookend + clever-journaling guardian-angel system from 7 lenses; synthesize a grand design + build-ready specs",
+  "agentCount": 8,
+  "logs": [
+    "7/7 lenses returned — synthesizing the grand design"
+  ],
+  "result": {
+    "lensCount": 7,
+    "synth": {
+      "vision": "ALTER stops being a planner you operate and becomes a guardian who runs the day WITH you. The transformation is a single shared object, S.bk[dayK], that owns the whole arc of a day: a morning intention, the live day it shapes, an evening reflection, and tomorrow's pre-committed plan. Each phase reads the last one, so the loop literally closes — tonight's \"plan tomorrow\" is the exact thing tomorrow's morning opens and reflects back. That continuity (\"last night you chose this; still true?\") is the guardian-angel feeling, and it is the ~1000x lever: it turns a tracker that forgets into a companion that remembers. Crucially, none of this is a new app — it is the half-built ritual stubs already in the code (recommitSheet as the AM bookend, the EVENING_RITUAL checklist as the PM stub, proactive() already swapping copy by phase) ELEVATED into one adaptive spine. No third menu system, no timeline-render risk: every bookend is a #sheet, every flow-down reuses skeletonDay/blocks().push/reflow().\n\nThe cleverness is concentrated in two moves, both fully offline. First, the angel reads the day BACK to you before asking anything — the PM bookend computes kept/drifted/missed from blockStatus() and domain minutes you already log, so reflection starts from a mirror, not a blank box. Second, the journal question is COMPUTED, not fixed: a small scored rule bank (modeled on the existing WISDOM/MICRO arrays) reads today's real signals — drift, streak, lagging virtue, yesterday's stated intention — and fires the single most relevant question (\"you aimed for Focused this morning and shipped three hours of deep work — what made it click?\"). The optional BYO-key brain (askBrain, already wired) is a thin lubricant that can rewrite any one prompt warmer; the app is fully alive with no key.\n\nThe morning connects DOWN from identity, the evening reflects UP from data, and both are grounded in David's own Field Guide KB: identity-before-behavior (Clear's \"every action is a vote\"), intrinsic-over-extrinsic (Self-Determination Theory / Csikszentmihalyi's autotelic — the AM why-chips offer only autonomy/identity reasons, never \"to look good\"), the Stoic evening review reframed warm-not-stern, pre-commitment as an Odysseus contract written as real blocks on tomorrow's timeline, and Withers' no-shame stance rendered as a hard copy rule: a miss is neutral data (\"the day went a different way — that's information\"), never a verdict. The angel is a witness, not a coach: it reflects and asks, it never commands or counts what you wasted. That discipline is the emotional moat.",
+      "ritualSpine": [
+        "PM PLANTS (evening) — the loop starts here, because tonight seeds tomorrow. proactive() evening branch opens pmBookend() instead of the dumb EVENING_RITUAL checklist.",
+        "STEP 1 MIRROR (auto, no input): the angel reads today back — kept/drifted/missed computed live from blockStatus() over blocks(todayK()) + domain minutes + curStreak(). 'You showed up for 4 of 6 — strong on Focus, quiet on Move. Streak safe.' Pure read, zero render risk.",
+        "STEP 2 REFLECT (adaptive question): pickPrompt('pm') fires the single most relevant question from the day's shape (drift > miss > streak > big-win > quiet). Textarea ('a line is enough') + optional MOODS face. Saves to S.bk[k].pm; logs a tracked Restore 'Reflection' entry that earns Spark.",
+        "STEP 3 RE-STORY DRIFT (reward-never-shame): each missed/drifted block gets three calm taps — [Right call] (intentional, no log) / [Carry to tomorrow] (pre-commits a block on tomK) / [Let go] (clears, no trace). Drift uses mauve, never red.",
+        "STEP 4 PRE-COMMIT TOMORROW (Odysseus): name tomorrow's ONE thing; it lands as a real starred block on tomK() via skeletonDay/blocks(tomK()).push + reflow. Carry-overs from Step 3 land too. The morning is now pre-loaded.",
+        "STEP 5 SET THE SEED + REST: pick who you wake as (identity chips + virtues), stored into S.bk[tomK()]. Forward-looking close: 'Tomorrow you wake as someone Disciplined. Rest now — I've got the morning.' Marks S.bk[k].pm.done; never re-nags.",
+        "SLEEP — REM consolidates the seed; the app goes quiet (existing night tracker state).",
+        "AM HARVESTS (morning) — first open after wakeHour with no S.bk[k].am. proactive() morning opens amBookend() (extended recommitSheet).",
+        "GREET + RECEIVE: if S.bk[todayK()] was written last night, the angel reflects it back instead of asking cold — 'Last night you chose: today is about Focus, you'd wake as someone Disciplined, your one thing is ship the build. Still true?' [Lock it] / [Adjust].",
+        "AIM (identity → virtue → intrinsic why): confirm/pick identity + virtue, then a one-tap intrinsic-why chip row (only autonomy/identity reasons exist — no extrinsic option). Surfaces ONE active goal (rotated) and asks for the smallest move toward it.",
+        "FLOW-DOWN: the ONE thing becomes a starred prio-3 block via skeletonDay; the goal-move pushes as a block; the chosen virtue marks matching bubbles with a dim glyph (additive innerHTML only). The day now embodies the intention. Logs 'Morning bookend', earns Spark, ticks the ritual streak.",
+        "LIVE DAY (intention-aware): the existing live tracker reads S.bk[todayK()] — an on-plan intrinsic block reads 'the work you love'; drift nudges phrase against intention ('you aimed for Focused — one small rep back?'), never 'you failed'. One gentle midday nudge max, only on real drift.",
+        "META-STREAK: a day counts toward the ritual chain if AM done OR PM done (generous OR). The home arc shows recent closed days as soft lit dots; missing dims one dot, never resets to a red zero. 'Welcome back — close today and it lights right back up.'"
+      ],
+      "principles": [
+        "EXTEND, never duplicate — there is already a morning ritual (recommitSheet), an evening stub (EVENING_RITUAL/ritualSheet), and a phase router (proactive). Upgrade these in place. A parallel ritual surface is the 'two clashing menu systems' landmine; a third gets rejected.",
+        "ONE shared object, two times — S.bk[dayK] is the baton. PM writes the FORWARD entry under tomK(); AM reads it under todayK(). Continuity ('last night you chose…') IS the guardian feeling. Never store parallel copies of identity/virtue that can diverge — write the existing S.profile.todayIdentity/todayVirtues and keep bookend-only extras in S.bk.",
+        "Mirror before question — never open reflection with a blank box. Compute the day from data already in S (blockStatus, domain mins, streak) and show it first. You can't reflect on a day you can't see.",
+        "The question is computed, not fixed — adaptive journaling = a scored rule bank reading real signals (drift/miss/streak/lagging-virtue/yesterday's intention), firing the single most relevant prompt. The brain (askBrain) is an optional lubricant, never a dependency; the app is fully alive with no key.",
+        "Intrinsic over extrinsic is built into the copy — the AM why-chips offer only autonomy/identity reasons ('because it's who I am', 'because it feels alive'); no extrinsic option exists. Frame goals as being/process, never outcome/payoff (SDT, Csikszentmihalyi autotelic).",
+        "Identity before behavior — the morning installs WHO before WHAT (Clear's votes); the day's blocks become votes for that identity, surfaced as warmth ('+1 vote: focused creator'), never as a deficit bar.",
+        "Reward-never-shame is a copy LINT, not a vibe — every miss is neutral data with a no-guilt re-story ([right call]/[carry]/[let go]); drift renders mauve, never red; ban should/must/wasted/failed/missed-your-ritual; a quiet day reads warm ('rest is part of the work'); celebrate() uses the GENTLE tier on reflection, never EPIC fireworks.",
+        "Stay OFF the fragile timeline render — bookends are #sheets. Flow-down writes only via skeletonDay/blocks(k).push/reflow(k) (the already-safe path) and additive innerHTML glyphs. Never touch calendarView/buildPull geometry. Any tomorrow-block appearance on the live timeline is DEVICE-UNTESTED until David confirms on his phone.",
+        "Tiny, warm, daily, skippable — each bookend is 30–90s, 2–5 steps, skippable at every step, gated to fire at most once per logical day (respect the 4am DAYSTART rollover). Over-triggering turns the angel into an alarm clock."
+      ],
+      "specs": [
+        {
+          "id": "BK-STATE",
+          "title": "S.bk baton store + lazy load() default",
+          "what": "Add top-level S.bk = {} keyed by logical dayK. Per-day record: {am:{done,ts,identity:[],virtues:[],why:'',goalKey,goalMove,oneThing}, pm:{done,ts,reflectQ,reflect:'',mood,drifts:[{title,domain,choice}]}}. PM writes the FORWARD entry under tomK(); AM reads under todayK(). Lazily default in load() exactly like S.mood/S.acts: `S.bk = S.bk || {};`. Every read guards with (S.bk[k]||{}). Rides export/import + pushUndo for free (whole-S envelope).",
+          "why": "The single shared object is the whole 1000x lever — it is what lets tonight seed tomorrow and the morning reflect last night back. Without it the bookends are two disconnected forms.",
+          "region": "app.js load() ~line 1334 (beside S.mood/S.acts defaults); new helper bk(k)=S.bk[k]=S.bk[k]||{} near blocks()/logs() ~1375",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "Additive top-level object; NO SCHEMA bump (matches mood/microState/acts precedent — bump only on reshape). One line in load()."
+        },
+        {
+          "id": "PM-MIRROR",
+          "title": "PM bookend Step 1: the angel reads your day back",
+          "what": "New pmBookend() on #sheet (clone recommitSheet's openSheet/obarT/sttl/lbl chrome). Step 1 computes the day live: iterate blocks(todayK()), bucket via blockStatus() into kept/drift/missed, tally domain minutes, read curStreak(). Render a calm summary card ('You showed up for 4 of 6 — strong on Focus, quiet on Move. Streak safe.'). Quiet/empty day reads warm, never a zero. Pure read — touches no timeline render.",
+          "why": "Reflection must start from a mirror, not a blank box (SN-006 missing-information). This single screen makes the angel feel like it watched the whole day.",
+          "region": "new pmBookend() near recommitSheet ~3052; reuses blockStatus()@104, domainOf()@274, curStreak()@314",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none (reads existing S.log/S.blocks)"
+        },
+        {
+          "id": "PM-ASK",
+          "title": "Adaptive journal question engine (pickPrompt)",
+          "what": "Add JPROMPTS: a small array of {id,phase,q,when:fn(ctx)->bool,weight} modeled on the existing WISDOM/MICRO arrays (~12 PM rules + ~6 AM rules). ctx = {drift,missCount,streak,lagVirtue (from virtues()), bigWin, quiet, yIntent (yesterday's S.bk intention)}. pickPrompt(phase) returns the highest-weight matching prompt via a priority ladder (drift>miss>streak>big-win>quiet>generic). Wire as PM Step 2: render the chosen question + textarea ('a line is enough') + optional MOODS face; debounced save to S.bk[k].pm.reflect (NEVER commit()/renderToday() per keystroke — drops the iOS keyboard). Store reflectQ so it isn't re-asked and AM can quote it.",
+          "why": "This IS the 'intelligent journaling' brief — the angel asks the ONE right question from real data instead of a generic prompt, fully offline. Being SEEN, not told.",
+          "region": "new JPROMPTS const + pickPrompt() near WISDOM/MICRO; consumed in pmBookend() Step 2 and (later) amBookend()",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none (writes S.bk only)"
+        },
+        {
+          "id": "PM-WIRE",
+          "title": "Route the evening hero to pmBookend; log + Spark + close",
+          "what": "In proactive() evening branch (app.js:1441) replace `ritualSheet(EVENING_RITUAL)` with `pmBookend`. On finish: push a tracked Restore 'Reflection' log entry (mins:3) so reflecting shows on the timeline and earns Spark via earn(), set S.bk[todayK()].pm.done=true (guard so it never nags twice/day), GENTLE close line, closeSheet(), renderAll(). Keep the 'Plan tomorrow' chip.",
+          "why": "Turns the evening from a dumb checklist into the reflective close, and makes the act of reflecting itself a rewarded, tracked block (reward-never-shame).",
+          "region": "proactive() app.js:1441; earn()@2013, logs()@1376",
+          "effort": "S",
+          "conflictRisk": "med",
+          "schema": "none"
+        },
+        {
+          "id": "PM-PLAN",
+          "title": "PM Step: pre-commit tomorrow's ONE thing (Odysseus)",
+          "what": "PM final step: 'Name tomorrow's ONE thing.' Writes it as a starred prio-3 block onto tomK() via skeletonDay(tomK(),oneThing) (if empty) or blocks(tomK()).push(...star)+reflow(tomK()) (if a plan exists). De-dupe by title match like skeletonDay already does. Store S.bk[tomK()].am.oneThing so the morning quotes it verbatim. Optional 'fill from my ideal day' reuses fillMasterpiece(tomK()).",
+          "why": "Pre-commitment is the offensive move (SN-230 Odysseus contract) — decide tomorrow tonight when System-2 is calm, so 2pm-tomorrow-you doesn't have to. A real block on the timeline you wake to.",
+          "region": "pmBookend() final step; skeletonDay()@3013, fillMasterpiece()@2991, reflow()@2953",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none (writes blocks(tomK()) + S.bk)"
+        },
+        {
+          "id": "PM-RESTORY",
+          "title": "PM Step: re-story the drift, never shame",
+          "what": "For each missed/drifted block from PM-MIRROR, a calm row with three taps: [Right call] (mark intentional, no log) / [Carry to tomorrow] (push a block onto tomK() via nextFreeMin+reflow) / [Let go] (remove, zero trace). No row mandatory; skip always present. Drifts render in mauve (DOM.drift), never red, never a frown.",
+          "why": "Renders the whole reward-never-shame constitution as an interaction — a miss is neutral data you re-story without guilt (SN-014 opinion-added-to-event).",
+          "region": "pmBookend() between Mirror and Plan; reuses nextFreeMin()@2975, reflow()@2953",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "AM-GREET",
+          "title": "AM bookend: greeting + harvest last night's seed",
+          "what": "Extend recommitSheet() into amBookend(): add a Beat-0 greeting ('Good morning, The Disciplined.') with a one-line read from yesterday's data. If S.bk[todayK()] exists (written last night by PM), RECEIVE panel reflects it back — 'Last night you chose: today is about Focus, you'd wake as someone Disciplined, your one thing is ship the build. Still true?' [Lock it] (places pre-committed blocks live + sets todayIdentity/todayVirtues) / [Adjust] (falls into the normal recommit steps, pre-filled). If no PM seed, behave as today's recommit.",
+          "why": "The harvest is where continuity becomes visible — the morning doesn't ask you to invent cold at 7am, it confirms what calm-you decided last night. This closing of the loop IS the guardian feeling.",
+          "region": "recommitSheet() app.js:3052 (extend in place); reads S.bk via BK-STATE",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none"
+        },
+        {
+          "id": "AM-INTRINSIC",
+          "title": "AM Step: intrinsic-why chip row (SDT)",
+          "what": "After the virtue pick in amBookend, show a one-tap why-chip row containing ONLY autonomy/identity reasons: [because it's who I am] [because it feels alive] [because I'd respect myself] [because I love the craft]. Deliberately NO extrinsic option. Store S.bk[k].am.why. One tap, skippable, never blocks progress (coercing the autonomy answer defeats the point).",
+          "why": "The cleverest fieldguide-grounded beat — Self-Determination Theory says intrinsic reasons sustain; the angel literally won't let you anchor the day to an external prize. Concrete anti-extrinsic mechanic.",
+          "region": "amBookend() after the existing virtue step (recommitSheet step 1 ~3071)",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "AM-GOAL",
+          "title": "AM Step: connect to ONE big goal + smallest move",
+          "what": "Surface ONE activeGoals() goal (rotate by dayIndex % activeGoals().length so all 3 get attention over the week). 'You're building toward [Grow my business]. What's one move today the future-you would thank you for?' Suggested micro-moves from the goal's domain (reuse suggestSheet/subtask helpers) + type-your-own. The chosen move becomes a block via blocks(k).push+reflow and is stored S.bk[k].am.goalMove.",
+          "why": "Gives the BIG goal a body in the day (Frankl will-to-meaning) — the day in service of the north star, not just busywork.",
+          "region": "amBookend() new step; activeGoals()@414, reflow()@2953",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "AM-FLOWDOWN",
+          "title": "AM flow-down: intention reshapes the timeline",
+          "what": "On amBookend confirm: (a) the ONE thing → starred prio-3 block via skeletonDay(k,oneThing) (de-duped); (b) goalMove → pushed block; (c) chosen virtue → at render time, bubbles whose virtueOf(block)===S.bk[k].am.virtue get a dim virtue glyph appended to the existing label innerHTML (pure read, additive concat, NO render-math change, per the journal-catalog safe-glyph pattern). Mark AM-created blocks fromAM:true so re-running de-dupes instead of stacking.",
+          "why": "The flow-down is the payoff — you affirm 'Disciplined / make art / ship the pitch' and the timeline literally rearranges to embody it. Identity becomes the day.",
+          "region": "amBookend finalize (reuse recommitSheet finalize ~3057); glyph at the bubble label-build sites (low-risk additive innerHTML only)",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none (fromAM is absent-safe optional field)"
+        },
+        {
+          "id": "RITUAL-STREAK",
+          "title": "Meta-habit streak: did I close the loop?",
+          "what": "Add S.bkStreak={count,lastK}. A day counts if S.bk[k].am.done OR pm.done (generous OR). tick from both bookend finalizers using daysSince/todayK. Distinct from S.game.streak (activity streak) — do NOT overload it. Surface as soft lit dots, never a number you can fail; missing dims one dot ('welcome back — close today and it lights right back up'). Compute on read where possible to avoid a stale counter.",
+          "why": "The keystone behavioral loop — the thing that makes David OPEN the app at the two hinges of the day, which is the entire brief. Reward-never-shame: counts up, never shows a red broken zero.",
+          "region": "new S.bkStreak default in load(); tickRitualStreak() called from amBookend + pmBookend finalizers",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "Additive; no SCHEMA bump"
+        },
+        {
+          "id": "DAY-ARC",
+          "title": "Home hero day-arc (presence without nagging)",
+          "what": "Replace the hero kicker in renderHero() with a small static inline-SVG/pixel arc (sunrise → noon → moon) with a NOW dot and the next bookend lit, plus a soft chain of recent closed-loop dots from S.bkStreak. Built from DOM/berry colors only, no neon/glow. STATIC repaint on render — NOT an rAF loop (must not fight the timeline's recenter watcher). An undone morning at 2pm reads 'still time to set today' — never 'you missed'.",
+          "why": "Presence = a lit dot on the arc, not a notification. Makes the spine visible and the streak felt, honoring 'guardian who knows your rhythm, never a nag'.",
+          "region": "renderHero() app.js:1965; CSS in index.html :root palette",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "INTENTION-LIVE",
+          "title": "Intention-aware live tracker + one gentle midday nudge",
+          "what": "renderTrackerFull reads S.bk[todayK()].am — an on-plan block matching today's intrinsic work reads 'the work you love'; the existing drift nudge re-phrases against intention ('you aimed for Focused — one small rep back?'), never 'you failed'. One midday nudge max, gated on a S.bk[k].middayShown flag + the existing drift threshold. Verdict-text changes only — no render-geometry change.",
+          "why": "Threads the morning intention through the live day so the angel feels continuous, not two disconnected bookends. The day is held, not just logged.",
+          "region": "renderTrackerFull ~1116 + the existing drift nudge ~1017 (verdict text only)",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none"
+        },
+        {
+          "id": "BRAIN-DEEPEN",
+          "title": "Optional 'go deeper' brain overlay on any prompt",
+          "what": "Add a dim 'go deeper ✨' button under any pickPrompt question that appears ONLY when brainCfg().engine!=='off'. It sends a richer journalBrainContext() (the picked prompt + a 14-day pattern digest + entry-so-far) to askBrain and streams a warmer reflection or sharper follow-up into the same textarea region. Degrades silently to nothing when no key — the rule-picked prompt always stands.",
+          "why": "10x's the cleverest moments for David when a key is configured, while the app stays fully alive at $0 — honors the locked 'genius without AI, AI is a thin lubricant' vision.",
+          "region": "new journalBrainContext() near brainContext()@3168; button in pmBookend/amBookend prompt steps; askBrain()@3148",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "PATTERN-MIRROR",
+          "title": "Longitudinal pattern-mirror (the learning angel)",
+          "what": "journalPatterns() scans lastDays(21) of S.log/S.bk/S.blocks for conservative, gated truths (min ≥6 occurrences over ≥14 days + a confidence field): recurring block slip-time, mood↔activity correlation, drift-time clustering, streak fragility. Surface as an occasional PM Step ('your best days all had a morning Move — protect it tomorrow?') and a standalone 'Mirror' card in the journal surface. Below threshold the angel stays silent (better silent than wrong). Cache to S.bkPatterns={computedK,items} so it recomputes once/day, not per render.",
+          "why": "Answers the audit's #2 root inferiority ('it doesn't learn or understand you') with zero server — reflections compound into self-knowledge.",
+          "region": "new journalPatterns() reading lastDays()@96; cached in S.bkPatterns; consumed by pickPrompt + journal surface",
+          "effort": "L",
+          "conflictRisk": "low",
+          "schema": "Additive S.bkPatterns cache; no bump"
+        },
+        {
+          "id": "JOURNAL-SURFACE",
+          "title": "Journal feed + resurfacing ('on this day')",
+          "what": "A journalSheet (reached from the ⋯ dayToolsMenu) showing a chronological feed of S.bk reflections + per-log notes (from journal-catalog Feature 1), a top Mirror card (PATTERN-MIRROR output), and an 'on this day' resurfacing strip (your entry 7/30/90 days ago). Tap any entry to reopen; a search field filters by text/mood/domain. Reuses #sheet/bento surfaces — not a new menu system.",
+          "why": "Turns write-only journaling into a companion that remembers you — resurfacing closes the loop and is what makes a text box feel alive.",
+          "region": "new journalSheet near recommitSheet; entry from dayToolsMenu ~769",
+          "effort": "L",
+          "conflictRisk": "low",
+          "schema": "none (reads S.bk + log note field)"
+        }
+      ],
+      "firstWave": [
+        "BK-STATE",
+        "PM-MIRROR",
+        "PM-ASK",
+        "PM-WIRE",
+        "AM-INTRINSIC",
+        "DAY-ARC"
+      ],
+      "openQuestions": [
+        "Is the loop's STARTING anchor the evening (PM plants tomorrow → AM harvests) as designed, or do you want a self-contained morning that can stand alone on day one before any PM seed exists?",
+        "The intrinsic-why chips deliberately offer NO extrinsic option — do you want it fully locked (autonomy-only, the strongest SDT stance) or a soft 'something else…' free-type escape hatch so it never feels coercive?",
+        "Should the meta-streak (did-I-close-the-loop) be VISIBLE on the home arc as lit dots, or kept a private internal signal? Visible drives the open-the-app habit but risks reading as a streak you can 'break' despite the generous OR.",
+        "How hard should the morning push the BIG-goal connection — surface one goal every single day (rotated), or only on days where the day looks goal-light? Daily is more identity-saturating; conditional is calmer.",
+        "Name + voice: keep the established 'Sage' guardian persona from onboarding for all bookend copy, or do you want a different name/register for the AM vs PM voice?",
+        "The brain 'go deeper' overlay sends recent journal text + 14-day patterns to a third-party API (OpenRouter/Groq/Gemini). Comfortable with that for your real reflections, or should the deepen-button be gated behind an explicit per-use opt-in?"
+      ]
+    }
+  }
+}
