@@ -1065,16 +1065,25 @@
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
   var TF_OPEN = false, _ringP = 0, _ringRaf = 0;
-  function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); tf.classList.add("on"); } // _ringP=0 → the ring fills from empty on every open (the "see the green filling" reward); re-evaluate claim on open (David 2026-06-27)
-  function closeTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = false; tf.classList.remove("on"); }
-  function tfDrag(ev, opening) { // finger-follow: drag UP from the dock grab to expand, drag DOWN on the tracker to close (David 2026-06-27)
-    ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
-    if (opening) { TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); } // populate content so the reveal isn't empty
-    tf.classList.add("tf-dragging", "on");
-    function setClip(pct) { tf.style.clipPath = "inset(" + pct + "% 0 0 0)"; } // pct = top inset → grows from the bottom (dock) up
-    function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var pct = opening ? Math.max(0, Math.min(100, 100 + dy / H * 100)) : Math.max(0, Math.min(100, dy / H * 100)); setClip(pct); }
-    function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); tf.classList.remove("tf-dragging"); tf.style.clipPath = ""; var dy = e.clientY - sy;
-      var keepOpen = opening ? (!moved || -dy > H * 0.16) : !(moved && dy > H * 0.14); // OPEN: tap or up-drag opens. CLOSE: only a real DOWN-drag closes (a tap on the ring/center does nothing).
+  // FLIP "the dock card itself grows": map the full-screen tracker onto the dock's rect (frac 0) and grow to full (frac 1). transform-origin is top-left.
+  function tfSetFrac(f) { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf || !dk) return; var r = dk.getBoundingClientRect(), vw = window.innerWidth || 390, vh = window.innerHeight || 800; if (!r.width) { tf.style.transform = (f >= 1 ? "none" : "translateY(100%)"); tf.style.opacity = String(f); return; }
+    f = Math.max(0, Math.min(1, f)); var sx = r.width / vw + (1 - r.width / vw) * f, sy = r.height / vh + (1 - r.height / vh) * f, tx = r.left * (1 - f), ty = r.top * (1 - f);
+    tf.style.transform = (f >= 0.999) ? "none" : ("translate(" + tx + "px," + ty + "px) scale(" + sx + "," + sy + ")"); tf.style.opacity = String(Math.min(1, 0.55 + f * 2)); tf.style.borderRadius = (18 * (1 - f)) + "px"; // card bg goes solid fast (reads as a growing card, no see-through)
+    var cf = Math.max(0, Math.min(1, (f - 0.42) / 0.5)); ["tf-stage", "tf-ctrls"].forEach(function (c) { var n = tf.querySelector("." + c); if (n) n.style.opacity = String(cf); }); } // the ring/content fades in only in the LATTER half of the grow, so the squished-while-scaling ring is never seen
+  function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
+    tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); if (dk) dk.style.visibility = "hidden"; // start AS the dock card, hide the real dock
+    void tf.offsetHeight; // force reflow so the start state registers (rAF is unreliable when the page isn't actively painting)
+    tf.classList.add("tf-anim"); tfSetFrac(1); } // then grow to full → the card expands
+  function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; tf.classList.add("tf-anim"); tfSetFrac(0); // shrink back down into the dock
+    var done = function () { tf.removeEventListener("transitionend", done); tf.classList.remove("on", "tf-anim"); tf.style.transform = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; ["tf-stage", "tf-ctrls"].forEach(function (c) { var n = tf.querySelector("." + c); if (n) n.style.opacity = ""; }); if (dk) dk.style.visibility = ""; TF_OPEN = false; };
+    tf.addEventListener("transitionend", done); setTimeout(done, 430); }
+  function tfDrag(ev, opening) { // finger-follow: drag the dock card UP to grow it; drag the tracker DOWN to shrink it back into the dock (David 2026-06-27)
+    ev.preventDefault(); var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
+    if (opening) { TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); if (dk) dk.style.visibility = "hidden"; }
+    tf.classList.remove("tf-anim"); tf.classList.add("on");
+    function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var f = opening ? (-dy / H * 1.35) : (1 + dy / H * 1.35); tfSetFrac(f); }
+    function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); var dy = e.clientY - sy;
+      var keepOpen = opening ? (!moved || -dy > H * 0.16) : !(moved && dy > H * 0.14); // OPEN: tap or up-drag. CLOSE: only a real down-drag shrinks it away.
       if (keepOpen) openTrackerFull(); else closeTrackerFull(); }
     document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
   }
