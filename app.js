@@ -1106,15 +1106,32 @@
   function toast(msg) { var t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.classList.add("show"); }, 10); setTimeout(function () { t.classList.remove("show"); setTimeout(function () { t.remove(); }, 320); }, 2600); }
   function copyFallback(json) { var ta = document.createElement("textarea"); ta.value = json; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("📋 backup copied"); } catch (e) { toast("⚠️ couldn't copy — use Download"); } ta.remove(); }
   function exportData(mode) {
-    var json = localStorage.getItem(KEY) || JSON.stringify(S);
+    var json = JSON.stringify({ app: "ALTER", schema: SCHEMA, exportedAt: new Date().toISOString(), data: JSON.parse(localStorage.getItem(KEY) || JSON.stringify(S)) }); // versioned envelope = future-proof (a later app reads schema + migrates); import accepts this OR a raw old backup (David 2026-06-27)
     if (mode === "download") { var blob = new Blob([json], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = "alter-backup-" + key(new Date()) + ".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); toast("⬇ backup downloaded"); }
     else if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(json).then(function () { toast("📋 backup copied — keep it safe"); }, function () { copyFallback(json); }); }
     else copyFallback(json);
   }
+  function parseBackup(txt) { var obj; try { obj = JSON.parse(txt); } catch (e) { toast("⚠️ not valid backup JSON"); return null; } var d = (obj && obj.data) ? obj.data : obj; if (!d || (!d.habits && !d.blocks && !d.log)) { toast("⚠️ doesn't look like an ALTER backup"); return null; } return d; }
+  // FUTURE-PROOF MERGE: combine a backup into the current data (instead of replacing). Days union by id, habits dedupe by name (remapping their done-history), game takes the best, and ANY unknown future field is carried over untouched — so backups stay importable as the app grows. (David 2026-06-27)
+  function mergeImport(d) {
+    var norm = function (s) { return (s || "").toLowerCase().trim(); };
+    var remap = {}, byTitle = {}; (S.habits || []).forEach(function (h) { byTitle[norm(h.l)] = h.id; });
+    (d.habits || []).forEach(function (h) { var t = norm(h.l); if (byTitle[t]) { remap[h.id] = byTitle[t]; } else { S.habits.push(h); byTitle[t] = h.id; remap[h.id] = h.id; } }); // a custom habit that now ships prebuilt (same name) dedupes into the existing one
+    ["blocks", "log"].forEach(function (m) { S[m] = S[m] || {}; var src = d[m] || {}; Object.keys(src).forEach(function (day) { var have = {}; S[m][day] = S[m][day] || []; S[m][day].forEach(function (x) { have[x.id] = 1; }); (src[day] || []).forEach(function (x) { if (!have[x.id]) S[m][day].push(x); }); }); }); // union by id
+    S.habitDone = S.habitDone || {}; var sd = d.habitDone || {}; Object.keys(sd).forEach(function (day) { var tgt = S.habitDone[day] = S.habitDone[day] || {}, src = sd[day] || {}; Object.keys(src).forEach(function (id) { var nid = remap[id] || id; if (tgt[nid] == null) tgt[nid] = src[id]; }); }); // remap done-history onto the deduped habit ids
+    ["mood", "microState"].forEach(function (m) { S[m] = S[m] || {}; var src = d[m] || {}; Object.keys(src).forEach(function (day) { if (S[m][day] == null) S[m][day] = src[day]; }); });
+    if (d.game) { S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark = Math.max(S.game.spark || 0, d.game.spark || 0); S.game.total = Math.max(S.game.total || 0, d.game.total || 0); S.game.ups = S.game.ups || {}; var du = d.game.ups || {}; Object.keys(du).forEach(function (k) { S.game.ups[k] = Math.max(S.game.ups[k] || 0, du[k] || 0); }); if (d.game.garden && (!S.game.garden || !S.game.garden.length)) S.game.garden = d.game.garden; }
+    var handled = { habits: 1, blocks: 1, log: 1, habitDone: 1, mood: 1, microState: 1, game: 1, timers: 1, v: 1 };
+    Object.keys(d).forEach(function (k) { if (!handled[k] && S[k] == null) S[k] = d[k]; }); // carry any unknown future field
+    save(); load(); renderAll(); buildPull(); toast("⧉ merged in — nothing overwritten");
+  }
   function restoreUI(B) {
-    var w = add(B, "div"); w.style.marginTop = "10px"; add(w, "div", "lbl", "paste a backup, then Restore (replaces current data):");
+    var w = add(B, "div"); w.style.marginTop = "10px"; add(w, "div", "lbl", "paste a backup (or pick a file), then Merge to combine or Restore to replace:");
     var ta = document.createElement("textarea"); ta.placeholder = "paste backup JSON here…"; ta.style.cssText = "width:100%;height:88px;background:#161020;color:#ece4f7;border:2.5px solid #4a4068;border-radius:14px;padding:11px;font-size:12px;font-family:inherit;"; w.appendChild(ta);
-    add(w, "button", "done2", "♻ Restore from this").onclick = function () { var txt = ta.value.trim(); if (!txt) return; var obj; try { obj = JSON.parse(txt); } catch (e) { toast("⚠️ not valid backup JSON"); return; } if (!obj || (!obj.habits && !obj.blocks && !obj.log)) { toast("⚠️ doesn't look like an ALTER backup"); return; } if (!window.confirm("Replace ALL current data with this backup?")) return; localStorage.setItem(KEY, txt); location.reload(); };
+    var fi = document.createElement("input"); fi.type = "file"; fi.accept = "application/json,.json"; fi.style.cssText = "margin:8px 0;font-size:12px;color:#caa0bd;"; w.appendChild(fi); fi.onchange = function () { var f = fi.files && fi.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { ta.value = r.result; toast("📄 loaded — now Merge or Restore"); }; r.readAsText(f); };
+    var row = add(w, "div"); row.style.cssText = "display:flex;gap:8px;";
+    var mg = add(row, "button", "done2", "⧉ Merge in"); mg.style.flex = "1"; mg.onclick = function () { var d = parseBackup(ta.value.trim()); if (d) mergeImport(d); };
+    var rs = add(row, "button", "done2", "♻ Replace"); rs.style.cssText = "flex:1;background:#3a2147;"; rs.onclick = function () { var d = parseBackup(ta.value.trim()); if (!d) return; if (!window.confirm("Replace ALL current data with this backup?")) return; localStorage.setItem(KEY, JSON.stringify(d)); location.reload(); };
   }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
