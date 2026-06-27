@@ -856,6 +856,7 @@
     item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
+    item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
     item("", "ti-compass", "Guidance", function () { guidanceSheet(); });
     item("dev", "ti-flask", "Test day", function () { fillTestDay(); });
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
@@ -1435,10 +1436,29 @@
     sb.dataset.q = q; if (sb.dataset.mood == null) sb.dataset.mood = "";
     var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
     add(card, "div", "tfs-h", "Reflection");
+    // PATTERN-MIRROR: ONE gated, conservative longitudinal truth at the top — curious, never shaming. Silent below threshold.
+    var pat = pickPattern();
+    if (pat) { var mir = add(card, "div", "tfs-sub"); mir.innerHTML = '<i class="ti ti-sparkles" style="color:' + DOM.restore.light + ';margin-right:5px"></i>' + esc(pat.line);
+      mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-left:3px solid " + DOM.restore.light + ";border-radius:11px;padding:10px 12px;line-height:1.45;font-size:13px;color:#e6cfe0;"); }
     add(card, "div", "tfs-sub").textContent = q;
     var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough"; ta.rows = 4;
     ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
     var prev = ((S.bk || {})[todayK()] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect; // restore a draft if re-opened same day
+    // ADAPTIVE DEPTH: one OPTIONAL follow-up, surfaced after the first answer. Never forces — a dim chip that swaps in a deeper question computed from the answer's signals / the pattern.
+    var deeper = add(card, "div", "tfs-sub"); deeper.setAttribute("style", "display:none;background:#1c0f20;border:2px dashed #2a1830;border-radius:11px;padding:9px 12px;line-height:1.4;font-size:13px;color:#cbb3c6;");
+    var fuChip = add(card, "button", "tf-chip"); fuChip.innerHTML = '<i class="ti ti-arrow-down-right"></i> go a little deeper';
+    fuChip.setAttribute("style", "display:none;align-self:flex-start;opacity:.8;font-size:13px;");
+    ta.addEventListener("input", function () { if (ta.value.trim().length >= 6 && fuChip.style.display === "none" && deeper.style.display === "none") fuChip.style.display = ""; });
+    fuChip.onclick = function () { deeper.textContent = followupQ(ta.value, pat); deeper.style.display = ""; fuChip.style.display = "none"; ta.focus(); };
+    // BRAIN-DEEPEN: a dim 'go deeper ✨' that appears ONLY with a configured brain; rewrites the question warmer/sharper. Degrades silently with no key.
+    if (brainCfg().engine !== "off" && brainCfg().key) {
+      var bd = add(card, "button", "tf-chip"); bd.innerHTML = '<i class="ti ti-sparkles"></i> go deeper ✨';
+      bd.setAttribute("style", "align-self:flex-start;opacity:.7;font-size:13px;color:" + DOM.restore.light + ";");
+      bd.onclick = function () { bd.disabled = true; bd.innerHTML = '<i class="ti ti-loader"></i> thinking…';
+        askBrain(journalBrainContext(q, ta.value, pat), function (t, err) { bd.disabled = false; bd.innerHTML = '<i class="ti ti-sparkles"></i> go deeper ✨';
+          if (t) { var nq = t.split("\n")[0].replace(/^["']|["']$/g, "").trim(); if (nq) { sb.dataset.q = nq; var qn = card.querySelectorAll(".tfs-sub")[pat ? 1 : 0]; if (qn) qn.textContent = nq; ta.focus(); } }
+        }); };
+    }
     var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
     add(moodWrap, "div", "tfs-sub", "How'd it feel?").setAttribute("style", "display:none"); // label kept terse via faces alone
     MOODS.forEach(function (m, i) {
@@ -1447,6 +1467,26 @@
       f.textContent = m.e; f.title = m.l;
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
+  }
+  // ADAPTIVE-DEPTH follow-up: a deeper, optional second question computed from the answer's signals + the surfaced pattern. Offline, warm, never forced.
+  function followupQ(answer, pat) {
+    var a = (answer || "").toLowerCase();
+    if (pat && pat.id === "slip") return "When it slips, what's usually in the way — and is the plan-time even the right one?";
+    if (pat && pat.id === "goodDay") return "What makes that morning anchor hard to keep — and what would make it easier tomorrow?";
+    if (/tired|exhaust|drain|low|heavy|foggy/.test(a)) return "What took the most out of you — and what, even small, would refill the tank?";
+    if (/proud|good|great|won|shipped|focus|flow|click/.test(a)) return "What made that click — and how would you set up tomorrow to repeat it?";
+    if (/stress|anx|worr|overwhelm|behind/.test(a)) return "What's underneath that — and what's the one piece that's actually yours to move?";
+    if (/skip|miss|didn'?t|couldn'?t|failed|drift/.test(a)) return "No judgment — what would've made it 10% easier to show up?";
+    return "Say a little more — what's the part of that you'd want tomorrow-you to remember?";
+  }
+  // BRAIN-DEEPEN context: richer than brainContext — the picked prompt + a 14-day pattern digest + the entry-so-far, asked to rewrite ONE warmer/sharper question.
+  function journalBrainContext(q, entry, pat) {
+    var pats = journalPatterns().slice(0, 3).map(function (p) { return p.line; }).join(" / ") || "none yet";
+    var mr = bookendMirror(todayK());
+    return "You are ALTER, a warm, no-shame reflective companion (never a coach, never preachy). My day: showed up for " + mr.kept + " of " + mr.planned + " plans"
+      + (mr.drift ? ", some drift" : "") + ". Patterns you've noticed in me lately: " + pats + ". The reflection question on screen is: \"" + q + "\"."
+      + (entry && entry.trim() ? " So far I wrote: \"" + entry.trim().slice(0, 400) + "\"." : "")
+      + " Rewrite the ONE question warmer and more personal to me, or ask one gently deeper follow-up. Reply with ONLY the single question, no preamble, under 20 words, never shaming.";
   }
   // ===== PM / AM BOOKEND STAGES (David 2026-06-28): mirror the journal pattern exactly. Built ONCE per open (renderStage's dataset.mode guard skips rebuild) so the 1s live-tick never wipes inputs. =====
   // reward-never-shame copy lint: a miss is NEUTRAL data, never guilt; drift renders in the cool-gray DOM.drift, never red.
@@ -2493,6 +2533,63 @@
     if (!best) return "A line about today is enough. What stood out?";
     return best.q.replace("{int}", esc(ctx.lastInt || "your intention")).replace("{lagv}", esc(ctx.lagVirtue || "A virtue"));
   }
+  // ===== PATTERN-MIRROR (the learning angel, David 2026-06-28): journalPatterns() scans lastDays(21) of S.log/S.bk/S.blocks for CONSERVATIVE, gated truths.
+  // A pattern only surfaces if it recurs >=6 times across >=14 distinct active days, with a confidence field. Below threshold the angel stays SILENT — better silent than wrong.
+  // Reward-never-shame: every line is curious, never a verdict ("worth a look?"), never "you should". Cached to S.bkPatterns so it computes once/logical-day, not per render.
+  function journalPatterns() {
+    var cache = S.bkPatterns || (S.bkPatterns = {});
+    if (cache.computedK === todayK() && cache.items) return cache.items; // once/day
+    var days = lastDays(21), spanDays = {}, items = [];
+    function lab(d) { return (DOM[d] && DOM[d].l) || d; }
+    var slip = {};        // blockTitle -> recurring slip-time tracker
+    var domByMood = {};   // mood(0-4) -> { dom -> mins }  (mood<->domain correlation)
+    var goodDayDoms = {}; // dom -> count of "good" days that opened with it (what precedes good days)
+    var goodDayN = 0, moodN = 0;
+    days.forEach(function (k) {
+      var lg = (S.log && S.log[k]) || [], bl = (S.blocks && S.blocks[k]) || [], rec = (S.bk && S.bk[k]) || {};
+      var hadData = lg.length || (rec.pm && (rec.pm.reflect || rec.pm.mood != null));
+      if (hadData) spanDays[k] = 1;
+      // 1) recurring slip: a planned block whose matching same-domain log landed notably later
+      bl.forEach(function (b) {
+        if (!b.title) return; var t = (b.title || "").trim().toLowerCase(); if (!t) return;
+        var ph = hm(b.time), bd = domainOf(b), match = null;
+        lg.forEach(function (l) { if (domainOf(l) === bd && (l.title || "").trim().toLowerCase() === t) match = l; });
+        if (match) { var s = slip[t] || (slip[t] = { dom: bd, plan: ph, deltas: [], days: {} }); s.deltas.push(hm(match.time) - ph); s.days[k] = 1; s.plan = ph; }
+      });
+      // 2) mood <-> domain: on days with a recorded mood, which domain got the most time
+      if (rec.pm && rec.pm.mood != null) {
+        moodN++; var dm = domByMood[rec.pm.mood] || (domByMood[rec.pm.mood] = {});
+        lg.forEach(function (l) { var d = domainOf(l); if (d === "drift") return; dm[d] = (dm[d] || 0) + (l.mins || 0); });
+      }
+      // 3) what precedes good days: good = mood>=3 OR kept>=2; tally pre-noon domains on those days
+      var kept = 0; bl.forEach(function (b) { if (b.title && blockStatus(k, b) === "ok") kept++; });
+      var good = (rec.pm && rec.pm.mood != null && rec.pm.mood >= 3) || kept >= 2;
+      if (good) { goodDayN++; var seen = {}; lg.forEach(function (l) { if (hm(l.time) < 720) { var d = domainOf(l); if (d !== "drift" && !seen[d]) { seen[d] = 1; goodDayDoms[d] = (goodDayDoms[d] || 0) + 1; } } }); }
+    });
+    var totalSpan = Object.keys(spanDays).length, GATE_N = 6, GATE_DAYS = 14;
+    if (totalSpan >= GATE_DAYS) {
+      Object.keys(slip).forEach(function (t) {
+        var s = slip[t]; if (Object.keys(s.days).length < GATE_N) return;
+        var avg = s.deltas.reduce(function (a, b) { return a + b; }, 0) / s.deltas.length; if (avg < 45) return;
+        var late = s.deltas.filter(function (d) { return d >= 30; }); if (late.length < GATE_N) return;
+        items.push({ id: "slip", conf: Math.min(0.95, late.length / Math.max(1, s.deltas.length)), n: late.length,
+          line: "You keep planning “" + esc(t) + "” for " + fmt(s.plan) + ", but it tends to land about " + (Math.round(avg / 30) * 30) + " min later. Worth a look?" });
+      });
+      if (moodN >= GATE_N) {
+        var bright = {}; [3, 4].forEach(function (mi) { var dm = domByMood[mi]; if (dm) Object.keys(dm).forEach(function (d) { bright[d] = (bright[d] || 0) + dm[d]; }); });
+        var top = "", best = 0; Object.keys(bright).forEach(function (d) { if (bright[d] > best) { best = bright[d]; top = d; } });
+        if (top && best >= 60) items.push({ id: "moodDom", conf: Math.min(0.85, moodN / 14), n: moodN, line: "Your brighter days tend to have more " + esc(lab(top)) + ". Maybe it's feeding you." });
+      }
+      if (goodDayN >= GATE_N) {
+        var topG = "", bestG = 0; Object.keys(goodDayDoms).forEach(function (d) { if (goodDayDoms[d] > bestG) { bestG = goodDayDoms[d]; topG = d; } });
+        if (topG && bestG >= GATE_N) items.push({ id: "goodDay", conf: Math.min(0.9, bestG / Math.max(1, goodDayN)), n: bestG, line: "Your best days almost all start with a morning " + esc(lab(topG)) + ". Worth protecting tomorrow?" });
+      }
+    }
+    items.sort(function (a, b) { return (b.conf || 0) - (a.conf || 0); });
+    cache.computedK = todayK(); cache.items = items; save();
+    return items;
+  }
+  function pickPattern() { var it = journalPatterns(); return it && it.length ? it[0] : null; } // the single most-confident truth, or null (stay silent)
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
     var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
@@ -3863,6 +3960,80 @@
       };
     });
     add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); };
+  }
+  // ===== JOURNAL-SURFACE (David 2026-06-28): a browse/history view — chronological feed of bk reflections + per-log notes, an 'on this day' resurfacing card, and the pattern-mirror at the top.
+  // This surface MAY use #sheet (it's a read-only browse view, not a guided flow). Reuses the existing sheet chrome; adds no new menu system.
+  function journalEntries() { // flatten S.bk reflections + per-log notes into a date-sorted feed (newest first)
+    var out = [];
+    Object.keys(S.bk || {}).forEach(function (k) {
+      var rec = S.bk[k] || {};
+      if (rec.pm && (rec.pm.reflect || rec.pm.mood != null)) out.push({ k: k, ts: rec.pm.ts || kd(k).getTime(), q: rec.pm.q || "", text: rec.pm.reflect || "", mood: (rec.pm.mood != null ? rec.pm.mood : null), kind: "pm" });
+      (rec.journal || []).forEach(function (j) { out.push({ k: k, ts: j.ts || kd(k).getTime(), q: j.q || "", text: j.text || "", mood: (j.mood != null ? j.mood : null), kind: "journal" }); });
+    });
+    Object.keys(S.log || {}).forEach(function (k) { (S.log[k] || []).forEach(function (l) { if (l.note && String(l.note).trim()) out.push({ k: k, ts: kd(k).getTime() + hm(l.time || "0:0") * 60000, q: l.title || "", text: l.note, mood: null, kind: "note" }); }); });
+    out.sort(function (a, b) { return b.ts - a.ts; });
+    return out;
+  }
+  function journalSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "📔 Journal");
+    // PATTERN-MIRROR at the top — ONE gated, curious truth (or silent)
+    var pat = pickPattern();
+    if (pat) { var mc = add(B, "div", "lbl"); mc.innerHTML = '<i class="ti ti-sparkles" style="color:#ff8fd0;margin-right:5px"></i>' + esc(pat.line);
+      mc.style.cssText = "background:#241328;border:2px solid #160510;border-left:3px solid #ff8fd0;border-radius:11px;padding:10px 12px;line-height:1.45;color:#e6cfe0;font-size:13px;margin-bottom:6px;"; }
+    // ON THIS DAY — resurfacing strip (your entry 7 / 30 / 90 days ago)
+    var byK = {}; journalEntries().forEach(function (e) { if (!byK[e.k]) byK[e.k] = e; });
+    var resurf = [];
+    [7, 30, 90, 365].forEach(function (n) { var ek = keyAdd(todayK(), -n); if (byK[ek]) resurf.push({ n: n, e: byK[ek] }); });
+    if (resurf.length) {
+      add(B, "div", "lbl", "🕰️ On this day").style.cssText = "margin-top:4px;color:#e6cfe0;font-size:13px;";
+      resurf.forEach(function (r) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;cursor:pointer;";
+        var head = (r.n === 365 ? "a year ago" : r.n + " days ago") + " · " + relLabel(r.e.k);
+        add(card, "div", "lt", head).style.cssText = "color:#b89bb4;font-size:11px;";
+        add(card, "div", "ln", (r.e.mood != null && MOODS[r.e.mood] ? MOODS[r.e.mood].e + "  " : "") + (r.e.text || r.e.q)).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
+        card.onclick = function () { journalDaySheet(r.e.k); };
+      });
+    }
+    // SEARCH + FEED
+    var entries = journalEntries();
+    if (!entries.length) { add(B, "div", "empty", "No reflections yet — your first one starts the thread."); return; }
+    var si = document.createElement("input"); si.type = "text"; si.placeholder = "search reflections…"; si.style.cssText = "width:100%;margin:6px 0 8px;"; B.appendChild(si);
+    var feed = add(B, "div", "jfeed");
+    function draw() {
+      feed.innerHTML = ""; var ql = si.value.trim().toLowerCase();
+      var shown = entries.filter(function (e) { if (!ql) return true; var moodL = (e.mood != null && MOODS[e.mood]) ? MOODS[e.mood].l.toLowerCase() : ""; return (e.text + " " + e.q + " " + moodL).toLowerCase().indexOf(ql) >= 0; });
+      if (!shown.length) { add(feed, "div", "empty", "Nothing matches that."); return; }
+      shown.slice(0, 120).forEach(function (e) {
+        var row = add(feed, "div", "logi"); row.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;cursor:pointer;";
+        var meta = relLabel(e.k) + (e.q ? " · " + e.q : "");
+        add(row, "div", "lt", meta).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
+        add(row, "div", "ln", (e.mood != null && MOODS[e.mood] ? MOODS[e.mood].e + "  " : "") + (e.text || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
+        row.onclick = function () { journalDaySheet(e.k); };
+      });
+    }
+    si.oninput = draw; draw();
+  }
+  function journalDaySheet(k) { // tap an entry → reopen that day's full record (reflections + that day's notes)
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "📔 " + relLabel(k));
+    var back = add(B, "button", "add", "← all entries"); back.style.cssText = "display:block;margin:0 0 8px;"; back.onclick = journalSheet;
+    var rec = (S.bk || {})[k] || {}, any = false;
+    if (rec.am && (rec.am.virtue || (rec.am.identity && rec.am.identity.length) || rec.am.why)) {
+      any = true; add(B, "div", "lbl", "🌅 morning intention");
+      var v = rec.am.virtue ? (VCLASS[rec.am.virtue] || rec.am.virtue) : "", line = [v, rec.am.why].filter(Boolean).join(" — ");
+      add(B, "div", "logi", line || "set").style.cssText = "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;line-height:1.4;";
+    }
+    var refs = [];
+    if (rec.pm && (rec.pm.reflect || rec.pm.mood != null)) refs.push({ q: rec.pm.q, text: rec.pm.reflect, mood: rec.pm.mood });
+    (rec.journal || []).forEach(function (j) { refs.push({ q: j.q, text: j.text, mood: j.mood }); });
+    if (refs.length) { any = true; add(B, "div", "lbl", "🌙 reflections");
+      refs.forEach(function (r) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;";
+        if (r.q) add(card, "div", "lt", r.q).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
+        add(card, "div", "ln", (r.mood != null && MOODS[r.mood] ? MOODS[r.mood].e + "  " : "") + (r.text || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; });
+    }
+    var notes = (logs(k) || []).filter(function (l) { return l.note && String(l.note).trim(); });
+    if (notes.length) { any = true; add(B, "div", "lbl", "📝 notes"); notes.forEach(function (l) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;"; add(card, "div", "lt", (l.time || "") + " · " + (l.title || "")).style.cssText = "color:#b89bb4;font-size:11px;"; add(card, "div", "ln", l.note).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; }); }
+    if (!any) add(B, "div", "empty", "Nothing written that day.");
   }
   function yesterdaySheet() {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "📓 Yesterday");
