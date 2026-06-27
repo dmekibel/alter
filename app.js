@@ -998,7 +998,8 @@
   var TF_OPEN = false;
   function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; renderTrackerFull(); tf.classList.add("on"); }
   function closeTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = false; tf.classList.remove("on"); }
-  function trackerState() { // derive the matrix state from live data (S1 on-plan / S4 off-plan / S6 idle; break+reconcile come next)
+  function trackerState() { // derive the matrix state from live data (on-plan / off / idle / break / breakup)
+    if (S.brk) { var bend = S.brk.start + S.brk.mins * 60000; return { id: (Date.now() < bend ? "break" : "breakup"), brk: S.brk }; } // a declared break is running (or its time is up)
     var run = activeTimers(), t = run[run.length - 1];
     if (!t) return { id: "idle", t: null };
     var dom = domainOf(t); if (dom === "drift") return { id: "off", t: t, dom: dom, drift: true };
@@ -1022,14 +1023,27 @@
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle");
-    if (!t) { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
+    if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = nb ? nb.title : "Nothing tracking";
       el("tfVerdict").textContent = nb ? "ready when you are" : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ⏱ <b>' + dur(tfDomMinsToday(null)) + '</b>';
       if (tile) { tile.style.background = tfStripe(ND.c); tile.style.filter = "saturate(.5) brightness(.78)"; tile.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
+      el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
+      return;
+    }
+    if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _bend = B.start + B.mins * 60000, _rem = _bend - Date.now(), _up = _rem <= 0;
+      if (tile) { tile.style.background = tfStripe("#e8b53a"); tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-coffee"></i>'; }
+      el("tfTitle").textContent = _up ? "Break's up" : "On a break";
+      el("tfVerdict").textContent = _up ? "ready to come back" : "held · streak safe";
+      el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = fmtCD(Math.max(0, _rem));
+      el("tfElabel").textContent = _up ? "time's up" : "left";
+      el("tfCtx").textContent = B.title ? ((_up ? "back to " : "resume ") + B.title) : (_up ? "break over" : "paused");
+      el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ☕ break';
+      setRing(_up ? 1 : Math.max(0, Math.min(1, (Date.now() - B.start) / (B.mins * 60000))), "#e8b53a");
+      renderSwitchChips(B.title); renderTFControls(_up ? "breakup" : "break");
       return;
     }
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
@@ -1037,7 +1051,7 @@
     if (tile) { tile.style.background = tfStripe(D.c); tile.style.filter = ""; tile.innerHTML = tiIcon(t); }
     el("tfTitle").textContent = t.title || "Tracking";
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan");
-    el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t);
+    el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
     // context = pacing: how long is left in the planned block, and when it ends
     if (S0.block) { var bs = hm(S0.block.time), be = bs + (S0.block.mins || 30), rem = be - nowMin(); el("tfCtx").textContent = (rem > 0 ? rem + "m left" : "over by " + (-rem) + "m") + " · ends " + fmt(be); }
     else el("tfCtx").textContent = drift ? "off your plan" : "no plan — free tracking";
@@ -1051,12 +1065,19 @@
   }
   function setRing(p, col) { var ring = el("tfRing"); if (!ring) return; var pct = Math.max(0, Math.min(100, Math.round(p * 100))); ring.style.background = "conic-gradient(" + (col || "#28cf86") + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; } // flat green/grey conic band — no glow (David's no-neon rule); fills clockwise with elapsed
   function tfDone() { var run = activeTimers(); closeTrackerFull(); if (run.length) stopTimer(run[run.length - 1].id); } // finish the activity → close, then log it + fire the on-plan reward (stopTimer)
+  function fmtCD(ms) { var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); } // countdown m:ss (or h:mm:ss)
+  function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; durationSheet("Break", function (mins) { if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: mins }; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); }); } // declared break: log what you did so far, then hold a timed pause with the goal waiting
+  function tfResumeBreak() { var B = S.brk; S.brk = null; save(); if (B && B.title) startTimer({ title: B.title, catK: B.catK, color: B.color }); renderLiveTracker(); renderToday(); renderTrackerFull(); } // come back → restart the paused goal
+  function tfEndBreak() { S.brk = null; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); } // end the break without resuming → idle
+  function tfBreakPlus(m) { if (S.brk) { S.brk.mins += m; save(); renderTrackerFull(); } }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     function prim(ic, lab, fn) { var x = add(c, "button", "tf-b tf-done"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
     function b(r, ic, lab, fn) { var x = add(r, "button", "tf-b"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
     var r = function () { return add(c, "div", "tf-row"); };
     if (state === "idle") { prim("ti-player-play-filled", "Start", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); var r0 = r(); b(r0, "ti-list-search", "Pick something", function () { startOrSwitch(); renderTrackerFull(); }); return; }
-    if (state === "onplan") { prim("ti-circle-check", "Done", tfDone); var r1 = r(); b(r1, "ti-player-pause", "Pause", function () { planBreak(); }); b(r1, "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b(r1, "ti-windmill", "Off-plan", function () { startOrSwitch(); renderTrackerFull(); }); return; }
+    if (state === "break") { prim("ti-player-play-filled", "Resume", tfResumeBreak); var rbk = r(); b(rbk, "ti-plus", "+5 min", function () { tfBreakPlus(5); }); b(rbk, "ti-x", "End break", tfEndBreak); return; }
+    if (state === "breakup") { prim("ti-arrow-back-up", "Back to it", tfResumeBreak); var rbu = r(); b(rbu, "ti-plus", "+5 min", function () { tfBreakPlus(5); }); b(rbu, "ti-x", "End", tfEndBreak); return; }
+    if (state === "onplan") { prim("ti-circle-check", "Done", tfDone); var r1 = r(); b(r1, "ti-player-pause", "Pause", tfStartBreak); b(r1, "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b(r1, "ti-windmill", "Off-plan", function () { startOrSwitch(); renderTrackerFull(); }); return; }
     prim("ti-arrow-back-up", "Back on plan", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); var r2 = r(); b(r2, "ti-check", "Keep it", function () { startOrSwitch(); renderTrackerFull(); }); b(r2, "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b(r2, "ti-player-stop", "Stop", tfDone);
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
@@ -3047,6 +3068,7 @@
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
       var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = elapsedStr(ct); }
       if (TF_OPEN) { var _tc = el("tfClock"); if (_tc) _tc.textContent = fmt(nowMin()).toUpperCase(); } // keep the tracker's wall-clock live
+      if (TF_OPEN && S.brk) { var _be = S.brk.start + S.brk.mins * 60000, _br = _be - Date.now(), _tt = el("tfTime"); if (_tt) _tt.textContent = fmtCD(Math.max(0, _br)); if (_br <= 0 && _br > -1500) renderTrackerFull(); } // live break countdown + flip to "break's up" when it hits 0
       // per-second now-line creep REMOVED (David 2026-06-27): it moved the now-line by transform but NOT the static block-splits below it, so as the line crept past the ghost/future boundary the matte stripes peeked above it, and its leftover transform fed the fast-zoom jump. The planner updates the now-line per-minute (below); true seconds-precision printing belongs in Tracker Mode's dedicated per-second render, where every now-anchored element redraws together.
       var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!document.querySelector(".calblk.dragging") && !document.querySelector("#pullBody.zooming")) { var _pb = el("pullBody"), _sc = _pb ? _pb.scrollTop : 0; renderToday(); if (_pb) _pb.scrollTop = _sc; } } // burning timeline: each minute re-sweep — but never tear down the timeline mid-drag OR mid-zoom (David 2026-06-25)
     }, 1000);
