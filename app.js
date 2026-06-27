@@ -346,6 +346,11 @@
     add(ov, "div", "cele-combo", tier >= 4 ? "ON FIRE · x" + streak : tier >= 3 ? "🔥 streak x" + streak : tier >= 2 ? "combo x" + streak : "on plan!");
     setTimeout(function () { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 300); }, 1500);
   }
+  function celebrateGated(color, streak) { // GENTLE bookend reward, GATED once-per-logical-day so journal+PM+AM don't triple-fire the full burst (CKPT-5, David 2026-06-28)
+    S.guide = S.guide || {}; var k = todayK();
+    if (S.guide.celeK === k) { try { earn(8, {}); } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {} return; } // already fired today → quiet Spark only, no second burst
+    S.guide.celeK = k; celebrate(color, streak || 1);
+  }
   function planActiveNow(dom) { var bl = blocks(todayK()), n = logicalNowMin(); for (var i = 0; i < bl.length; i++) { var s = hm(bl[i].time), e = s + (bl[i].mins || 30); if (n >= s - 20 && n < e + 20 && domainOf(bl[i]) === dom && !bl[i].done) return bl[i]; } return null; }
   function onPlanBlockFor(t, dk) { var dom = domainOf(t); if (dom === "drift") return null; var d0 = new Date(t.start), s = d0.getHours() * 60 + d0.getMinutes(), e = s + Math.max(1, Math.round((Date.now() - t.start) / 60000)); var bl = blocks(dk); for (var i = 0; i < bl.length; i++) { var bs = hm(bl[i].time), be = bs + (bl[i].mins || 30); if (bs < e && be > s && domainOf(bl[i]) === dom && !bl[i].done) return bl[i]; } return null; } // the plan block this finished activity fulfilled (David 2026-06-24 night: reward DOING what you planned)
   function maybeCelebrateTrack(t) { var dom = domainOf(t); if (dom === "drift") { coolStreak(); return; } if (planActiveNow(dom)) celebrate(DOM[dom].c, bumpStreak()); }
@@ -1240,6 +1245,7 @@
       return;
     }
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
+    renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night");
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
@@ -1309,12 +1315,19 @@
   function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", track: "" })[mode] || ""; }
   function enterStage(mode, opts) { // the single entry door every guided flow uses
     opts = opts || {};
-    if (opts.trackTitle) { startTimer({ title: opts.trackTitle, catK: "rest", color: DOM.restore.c, flow: mode }); var r = activeTimers(); TF_BLOCKID = r.length ? r[r.length - 1].id : null; } // the ring lights + will slide aside in the SAME gesture (guidance+tracking fused); finish stops it
+    if (opts.trackTitle) { startTimer({ title: opts.trackTitle, catK: "restore", color: DOM.restore.c, flow: mode }); var r = activeTimers(); TF_BLOCKID = r.length ? r[r.length - 1].id : null; } // the ring lights + will slide aside in the SAME gesture (guidance+tracking fused); finish stops it
     TF_MODE = mode; TF_MODE_USERSET = !!opts.byTap;
     if (!TF_OPEN) openTrackerFull(); else renderTrackerFull();
   }
-  function exitStage(commit) { // the single exit door: stop the flow timer (logs + Spark + GENTLE celebrate), un-corner the ring
-    if (TF_BLOCKID) { try { stopTimer(TF_BLOCKID); } catch (e) {} TF_BLOCKID = null; }
+  function exitStage(commit) { // the single exit door: write the flow's data (if commit), stop the flow timer (logs a Restore block + earns Spark), GENTLE+gated celebrate, un-corner the ring
+    var mode = TF_MODE;
+    if (commit && mode === "journal") { // persist the journal entry onto the bookend baton (CKPT-5): additive, no SCHEMA bump, rides export/import/undo
+      var sb = el("tfStageBody"), ta = sb && sb.querySelector("textarea"), text = ta ? ta.value.trim() : "";
+      var q = (sb && sb.dataset.q) || "", mood = (sb && sb.dataset.mood != null && sb.dataset.mood !== "") ? +sb.dataset.mood : null;
+      if (text || mood != null) { var rec = bk(todayK()); rec.journal = (rec.journal || []).concat([{ q: q, text: text, mood: mood, ts: Date.now() }]); rec.pm = rec.pm || {}; if (text) rec.pm.reflect = text; if (mood != null) rec.pm.mood = mood; save(); }
+    }
+    if (TF_BLOCKID) { try { stopTimer(TF_BLOCKID); } catch (e) {} TF_BLOCKID = null; } // logs a Restore "Reflection" block + earns Spark (no covered-plan, so its own celebrate won't fire)
+    if (commit && mode) { try { celebrateGated(DOM.restore.c, curStreak() || 1); } catch (e) {} } // GENTLE reward for showing up, gated once/logical-day across am/pm/journal
     TF_MODE = null; TF_MODE_USERSET = false;
     if (TF_OPEN) renderTrackerFull();
   }
@@ -1329,10 +1342,35 @@
     if (sb.dataset.mode === mode && sb.childNodes.length) return; // already mounted this mode → leave content (inputs) alive
     sb.dataset.mode = mode || "";
     switch (mode) {
+      case "journal": journalStageStep(sb); break;
       case "tool": sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">Toolbox</div><div class="tfs-sub">Coming soon — a calm shelf of tools for the moment you need one.</div></div>'; break;
-      case "am": case "pm": case "journal": case "journey": default:
+      case "am": case "pm": case "journey": default:
         sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break; // Wave-1 placeholder; real flows land in CKPT-5/6/7/8
     }
+  }
+  // ===== JOURNAL STAGE (CKPT-5, David 2026-06-28): the fusion proof — guidance IS tracking. One adaptive question + a textarea + an optional mood face, rendered into #tfStageBody while the Reflection ring tracks in the corner. Built ONCE (renderStage's dataset.mode guard skips rebuild), so the 1s live-tick never wipes what you're typing. =====
+  function openJournal() { enterStage("journal", { trackTitle: "Reflection", byTap: true }); } // the Journal chip's door: lights the ring + slides it aside + fills the stage in one gesture
+  function renderStageChips() { // the BASE (track-mode) entry doors into guided flows — visible + tappable (not gesture-only). Built fresh each track render (cheap, no inputs to preserve). (CKPT-5)
+    var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";
+    var c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ti-feather" style="color:' + DOM.restore.light + '"></i> Journal'; c.onclick = openJournal;
+  }
+  function journalStageStep(sb) {
+    var q = pickPrompt("journal"); // computed from today's real signals (drift/streak/kept/last intention)
+    sb.dataset.q = q; if (sb.dataset.mood == null) sb.dataset.mood = "";
+    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
+    add(card, "div", "tfs-h", "Reflection");
+    add(card, "div", "tfs-sub").textContent = q;
+    var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough"; ta.rows = 4;
+    ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
+    var prev = ((S.bk || {})[todayK()] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect; // restore a draft if re-opened same day
+    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
+    add(moodWrap, "div", "tfs-sub", "How'd it feel?").setAttribute("style", "display:none"); // label kept terse via faces alone
+    MOODS.forEach(function (m, i) {
+      var f = add(moodWrap, "button", "jr-mood");
+      f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
+      f.textContent = m.e; f.title = m.l;
+      f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
+    });
   }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
     function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; }
@@ -1394,7 +1432,10 @@
                 { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
                 { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
       // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
-      case "journal": case "pm": case "pm-mirror": case "pm-ask": case "am": case "am-greet": case "journey":
+      case "journal":
+        return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }]; // Close = abandon: stop the timer WITHOUT writing a journal entry, ring un-corners
+      case "pm": case "pm-mirror": case "pm-ask": case "am": case "am-greet": case "journey":
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "tool":
@@ -2240,6 +2281,31 @@
     { e: "🗣️", l: "Mantra", catK: "love", mins: 3, sp: 7, mantra: true }
   ];
   var MICROPHASE = { morning: [2, 11, 13, 7], afternoon: [10, 1, 11, 12], evening: [11, 12, 6, 8], night: [2, 13, 11, 9] };
+  // ===== ADAPTIVE JOURNAL PROMPTS (CKPT-5/PM-ASK, David 2026-06-28): scored rule bank modeled on WISDOM/MICRO. Each {q, when:fn(ctx)->bool, weight}. pickPrompt fires the single highest-weight match over real signals (drift>miss>streak>big-win>quiet>generic). Reward-never-shame: drift/miss are NEUTRAL data, never guilt. =====
+  var JPROMPTS = [
+    { id: "drift",    q: "The day went its own way for a bit — what pulled your attention?",           when: function (c) { return c.drift; },                 weight: 90 },
+    { id: "lastint",  q: "This morning you leaned toward “" + "{int}" + "” — how did that land?", when: function (c) { return !!c.lastInt; },             weight: 85 },
+    { id: "miss",     q: "A plan or two slid by today — anything worth noticing about why?",            when: function (c) { return c.missCount >= 2; },         weight: 70 },
+    { id: "bigstreak",q: "You're on a roll — what's been keeping the momentum going?",                  when: function (c) { return c.streak >= 5; },            weight: 65 },
+    { id: "streak",   q: "You kept the thread today — what made it feel doable?",                       when: function (c) { return c.streak >= 2 && c.kept >= 2; }, weight: 55 },
+    { id: "bigwin",   q: "You put real time in today — what felt best about it?",                       when: function (c) { return c.mins >= 180; },            weight: 60 },
+    { id: "kept",     q: "Something went right today — what was it, even a small thing?",               when: function (c) { return c.kept >= 1; },              weight: 40 },
+    { id: "quiet",    q: "A quiet day. What's one thing you'd like tomorrow to hold?",                  when: function (c) { return true; },                     weight: 10 }
+  ];
+  function journalCtx() { // real signals from today's data — pure read, no writes
+    var k = todayK(), bl = blocks(k) || [], drift = false, missCount = 0, kept = 0;
+    bl.forEach(function (b) { if (!b.title) return; var st = blockStatus(k, b); if (st === "ok") kept++; else if (st === "miss") missCount++; });
+    var run = activeTimers(); run.forEach(function (t) { if (domainOf(t) === "drift") drift = true; });
+    (logs(k) || []).forEach(function (l) { if (domainOf(l) === "drift") drift = true; });
+    var yK = (lastDays(2) || [])[1], yBk = (S.bk || {})[yK] || {}, lastInt = (yBk.am && (yBk.am.why || (yBk.am.identity && yBk.am.identity[0]))) || ((S.bk || {})[k] && S.bk[k].am && S.bk[k].am.why) || "";
+    return { drift: drift, missCount: missCount, kept: kept, streak: curStreak(), mins: tfDomMinsToday(null), lastInt: lastInt };
+  }
+  function pickPrompt(phase, ctx) { // highest-weight matching rule; sensible default if none (the 'quiet' generic always matches)
+    ctx = ctx || journalCtx(); var best = null;
+    JPROMPTS.forEach(function (p) { try { if (p.when(ctx) && (!best || p.weight > best.weight)) best = p; } catch (e) {} });
+    if (!best) return "A line about today is enough. What stood out?";
+    return best.q.replace("{int}", esc(ctx.lastInt || "your intention"));
+  }
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
     var st = microState(), cur = st[mi], m = MICRO[mi], col = m.catK === "love" ? "#ff4fa0" : "#ff8a1e";
