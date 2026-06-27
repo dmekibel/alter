@@ -245,9 +245,9 @@
   @keyframes spkTwinkle{0%,100%{transform:scale(.8);opacity:.6;}50%{transform:scale(1.15);opacity:1;}}
   .calblk.celepop{animation:celePop .42s cubic-bezier(.2,.9,.3,1.45);} /* pop only on a FRESH completion (class added once), not on every re-render — kills the zoom "bounce" on completed past plans */
   .calblk.cele .cn,.calblk.cele .ct{text-shadow:none;} /* matched text reads like the rest — no extra weight/shadow (David 2026-06-25) */
-  .calblk.cele .foil{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%);background-size:200% 100%;animation:foilSlide 3.4s linear infinite;mix-blend-mode:overlay;}
+  .calblk.cele .foil{position:absolute;top:-25%;bottom:-25%;left:0;width:45%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-14deg) translateX(-180%);animation:foilSweep 3.4s linear infinite;}
   .calblk.cele .spk{position:absolute;top:2px;right:27px;font-size:12px;pointer-events:none;animation:spkTwinkle 1.7s ease-in-out infinite;}
-  .day-cardscroll.scrolling .foil{ animation-play-state:paused; } /* PERF stopgap: pause the animated-background-position foil sweep while scrolling (it repaints every frame and can't GPU-composite). The static gloss (.shine) stays. The completed-bubble filter is removed at source. A transform-based shimmer (below) would stay live during scroll — TODO. (David 2026-06-26) */
+  /* (v519 scroll-pause stopgap removed — the foil is now a transform-based sweep that GPU-composites, so it stays live during scroll/scale; no need to pause it) */
   .calblk.ghost{opacity:.5;} .calblk.ghost .cn{opacity:.85;}
   .calblk.act.onplan{box-shadow:0 0 0 3px #ffd24a,0 0 16px rgba(255,210,74,.6),0 4px 0 #160510,0 7px 14px rgba(0,0,0,.42) !important;}
   .calblk.act.drift .cn,.calblk.act.drift .ct{color:#ffe2db;}
@@ -516,13 +516,14 @@
   .calblk.over-real{ box-shadow:0 0 0 3px #ff5fa8,0 0 22px rgba(255,95,168,.6),0 16px 34px rgba(0,0,0,.6) !important; }
   .calblk.over-plan{ box-shadow:0 0 0 3px #5ec4f5,0 0 22px rgba(94,196,245,.55),0 16px 34px rgba(0,0,0,.6) !important; }
   .calblk.celepop{ animation:celePop .42s cubic-bezier(.2,.9,.3,1.45); } /* pop only on a FRESH completion, not on every re-render (the zoom "bounce" fix) */
-  .calblk .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 34%,rgba(255,252,240,.5) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 3.2s linear infinite; }
+  .calblk .foil{ position:absolute; top:-25%; bottom:-25%; left:0; width:45%; pointer-events:none; z-index:1; background:linear-gradient(90deg,transparent,rgba(255,252,240,.5),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 3.2s linear infinite; } /* GPU shimmer: a skewed light streak swept by transform:translateX — composites on the GPU, so it stays smooth during scroll AND pinch-scale (no background-position repaint, no mix-blend). David 2026-06-26 */
+  @keyframes foilSweep{ from{ transform:skewX(-14deg) translateX(-180%); } to{ transform:skewX(-14deg) translateX(320%); } }
   .calblk .shine{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(116deg,rgba(255,255,255,.42) 0%,transparent 22%,transparent 60%,rgba(255,255,255,.3) 80%,transparent 100%); } /* static metallic gloss for shining past success (David 2026-06-25) */
   /* PARTIAL MATCH: the matched span shines full-width over both lanes; below it the ghost-plan (left) + drift (right) show where you diverged (David 2026-06-25) */
   .matchseg{ position:absolute; border:2px solid #160510; border-radius:11px; overflow:hidden; z-index:5; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; padding:0 8px; box-sizing:border-box; }
   .matchseg > .ti, .matchseg > i{ position:relative; z-index:2; font-size:15px; }
   /* future plan = LIT (holographic sheen, §14) — a note coming toward the now-line */
-  .calblk.sched .foil{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(115deg,transparent 38%,rgba(255,252,240,.26) 50%,transparent 62%); background-size:220% 100%; animation:foilSlide 4.6s linear infinite; }
+  .calblk.sched .foil{ position:absolute; top:-25%; bottom:-25%; left:0; width:45%; pointer-events:none; z-index:1; background:linear-gradient(90deg,transparent,rgba(255,252,240,.26),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 4.6s linear infinite; }
   /* empty bubble pulled out by press-hold-drag — dashed candy placeholder you tap to choose (David 2026-06-24) */
   .calblk.emptyblk{ background:repeating-linear-gradient(45deg,rgba(255,95,160,.17),rgba(255,95,160,.17) 7px,rgba(255,95,160,.05) 7px,rgba(255,95,160,.05) 14px) !important; border:2px dashed #ff5fa0 !important; box-shadow:none !important; filter:none !important; opacity:1 !important; }
   .calblk.emptyblk .cn{ color:#ff9dc6 !important; display:flex; align-items:center; gap:5px; }
@@ -1210,6 +1211,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=519"></script>
+  <script src="app.js?v=520"></script>
 </body>
 </html>

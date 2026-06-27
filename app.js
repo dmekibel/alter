@@ -701,7 +701,6 @@
   function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the week-strip tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
     if (sc._inf) return; sc._inf = 1; var raf = 0;
     sc.addEventListener("scroll", function () {
-      if (!sc.classList.contains("scrolling")) sc.classList.add("scrolling"); clearTimeout(sc._sct); sc._sct = setTimeout(function () { sc.classList.remove("scrolling"); }, 140); // pause the cele/foil shimmer + sparkle WHILE scrolling — mix-blend-mode + animated background-position can't GPU-composite mid-scroll, so a big zoomed-in completed bubble repaints every frame = the "choppy slide". Restored 140ms after you stop. (David 2026-06-26)
       if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day")) document.body.classList.add("nav-collapsed"); // Apple-Music: the moment you actually scroll the timeline, Goals/You tuck behind the Today pill and the live tracker drops beside it (David 2026-06-26)
       if (raf || _infRebuild || _paging || _pinching) return; // never recenter mid-page-turn or mid-pinch (that was the old bounce / the pinch snap-to-today) — David 2026-06-26
       raf = requestAnimationFrame(function () { raf = 0;
