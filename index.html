@@ -240,7 +240,7 @@
   .calblk .cn,.calblk .ct{color:#fff2f9;}
   .calblk:active{transform:scale(.98);}
   .calblk.lift{transform:scale(1.05);box-shadow:0 16px 34px rgba(0,0,0,.62);z-index:6;opacity:.97;cursor:grabbing;}
-  .calblk.pin{border-style:solid;border-color:rgba(255,210,74,.65)!important;border-left-color:#ffd24a!important;}
+  .calblk.pin{border-style:solid;border-color:rgba(255,95,168,.45)!important;border-left:3px solid #ff5fa8!important;} /* pinned = a subtle pink left-edge, never yellow (David 2026-06-27) */
   .calblk.dragging{transition:transform .14s,box-shadow .14s;}
   .calx{position:absolute;top:3px;right:4px;width:21px;height:21px;border-radius:7px;background:rgba(10,6,20,.42);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:4;opacity:.7;}
   .calblk .grip,.calblk .gript{position:absolute;left:0;right:0;height:12px;display:flex;justify-content:center;cursor:ns-resize;touch-action:none;}
@@ -511,7 +511,7 @@
   .cal{ position:relative; margin:0; background:none; border:none; }
   .calhour{ position:absolute; left:26px; right:4px; height:0; border-top:1px solid #44203a; }
   .calhalf{ position:absolute; left:13px; width:10px; height:0; border-top:1.5px solid rgba(176,116,146,.5); } /* minimal gutter DASH (not a full-width rule) — = the half/quarter hour (David 2026-06-25) */
-  .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:13px; color:#cd9bb6; }
+  .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:800; font-size:14px; color:#dba9c2; } /* heavier, slightly larger + brighter hour numbers (David 2026-06-27) */
   .calhalfl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:12px; color:#7a4a62; }
   .calsub{ position:absolute; left:0; width:30px; text-align:right; font-weight:700; font-size:10px; color:#8a5a72; }
   .calblk{ position:absolute; border:2px solid #160510; border-radius:11px; padding:5px 9px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
@@ -520,7 +520,7 @@
   #pullBody.zooming .calblk, #pullBody.zooming .nowline, #pullBody.zooming .nowcirc, #pullBody.zooming .nowread, #pullBody.zooming .calhour, #pullBody.zooming .calhalf, #pullBody.zooming .calhrl, #pullBody.zooming .calsub, #pullBody.zooming .timemark{ transition:none !important; }
   /* while pinch-zooming, a finger resting on a bubble must NOT select/scale it — the pinch lives on #pullBody, so bubbles go inert + their :active scale is killed (David 2026-06-27) */
   #pullBody.zooming .calblk{ pointer-events:none !important; transform:none !important; }
-  .calblk .cn{ font-weight:700; font-size:13.5px; line-height:1.15; position:relative; z-index:2; }
+  .calblk .cn{ font-weight:800; font-size:14.5px; letter-spacing:.1px; line-height:1.15; position:relative; z-index:2; } /* bolder/larger bubble titles, readable on the deep stripes (David 2026-06-27) */
   .calblk .cn .ti{ font-size:15px; }
   .calblk .csub{ font-weight:600; font-size:10.5px; margin-top:2px; opacity:.85; position:relative; z-index:2; padding-right:18px; }
   .calblk.lift{ transform:scale(1.05); box-shadow:0 16px 34px rgba(0,0,0,.6); z-index:9; }
@@ -546,7 +546,7 @@
   /* the now-line burning PAST a plan: one-shot ember flash → settle to dark (Guitar-Hero / piano-roll feel) */
   .calblk.burning{ animation:burnOut 1.15s ease-out; }
   @keyframes burnOut{ 0%{ opacity:1; filter:brightness(1.5) saturate(1.3); box-shadow:0 0 22px 3px #ff8a3a,0 0 0 1px #160510; } 45%{ opacity:.85; filter:brightness(1) saturate(.9); } 100%{ opacity:.62; filter:saturate(.5) brightness(.78); box-shadow:none; } }
-  .calblk.act.onplan{ box-shadow:0 0 0 3px rgba(255,255,255,.5) inset, 0 3px 0 #160510, 0 5px 14px rgba(0,0,0,.4) !important; } /* matched = bright shine rim in the activity's own colour, NOT gold (David 2026-06-25) */
+  .calblk.act.onplan{ box-shadow:0 0 0 3px rgba(255,95,168,.5) inset, 0 3px 0 #160510, 0 5px 14px rgba(0,0,0,.4) !important; } /* matched = pink berry rim, never white (David 2026-06-27) */
   .calblk.live{ animation:livePulse 1.7s ease-in-out infinite; }
   @keyframes celePop{ 0%{transform:scale(.6);} 60%{transform:scale(1.05);} 100%{transform:scale(1);} }
   @keyframes foilSlide{ 0%{background-position:-40% 0;} 100%{background-position:140% 0;} }
@@ -574,8 +574,9 @@
   .plan-empty{ position:absolute; left:34px; right:calc(50% + 4px); display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; border:2px dashed #ff5fa0; border-radius:12px; background:repeating-linear-gradient(45deg,rgba(255,95,160,.13),rgba(255,95,160,.13) 7px,rgba(255,95,160,.04) 7px,rgba(255,95,160,.04) 14px); color:#ff9dc6; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; z-index:3; text-transform:capitalize; }
   .plan-empty:active{ transform:scale(.97); }
   .backfill .ti{ font-size:13px; }
-  .nowline{ position:absolute; left:26px; right:4px; height:0; border-top:4px solid #ff5fa0; z-index:6; }
-  .nowline::before{ display:none; }
+  .nowline{ position:absolute; left:26px; right:4px; height:0; border-top:5px solid #ff5fa0; z-index:6; } /* a touch thicker — the brightest thing on the timeline (David 2026-06-27) */
+  .nowline::before, .nowline::after{ content:""; position:absolute; top:-5px; width:7px; height:7px; border-radius:50%; background:#ff5fa0; box-shadow:0 0 8px #ff5fa8; display:block; } /* small balls capping each end of the now-line (David 2026-06-27) */
+  .nowline::before{ left:-3px; } .nowline::after{ right:-3px; }
   .nowcirc{ position:absolute; left:2px; width:16px; height:16px; border-radius:50%; border:2.5px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:8.5px; z-index:9; box-shadow:0 0 8px #ff5fa8; } /* sits just inside the left edge — fully visible, no longer clipped by the scroll container (was left:-3px = cut off + a stray border edge) — David 2026-06-27 */
   /* STRADDLING-NOW block split by the present line: future (matte) · past ghost (failed) · tracked stretch (matched stripes) — David 2026-06-25 */
   .calblk.convbar{ overflow:hidden; }
@@ -1110,7 +1111,7 @@
   .cn-t{ display:inline; }
   /* COMPACT (~15–27px): icon + name, ONE line, no subtitle */
   .calblk.lbl-c{ padding:1px 8px !important; }
-  .calblk.lbl-c .cn{ font-size:12px; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .calblk.lbl-c .cn{ font-size:12.5px; font-weight:800; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .calblk.lbl-c .cn .ti{ font-size:13px; }
   .calblk.lbl-c .csub, .calblk.lbl-c .step-n, .calblk.lbl-c .ti-sparkles, .calblk.lbl-c .calx{ display:none !important; }
   /* ICON (~9–15px): just the icon/emoji, centred — no text (it would not fit) */
@@ -1210,7 +1211,7 @@
   .streakfill.legendary{ animation-duration:1.8s; }
   @keyframes streakFlow{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
   /* ============ v448 — NOW = the live card's bottom edge · time lives in the left gutter (David 2026-06-24) ============ */
-  .nowtime{ position:absolute; left:0; color:#ff5fa0; font-family:"Jost",sans-serif; font-weight:700; font-size:10px; z-index:7; background:#2c081a; padding:0 2px; border-radius:4px; white-space:nowrap; line-height:1.4; }
+  .nowtime{ position:absolute; left:0; color:#ff7fb6; font-family:"Jost",sans-serif; font-weight:800; font-size:11px; z-index:7; background:#2c081a; padding:1px 4px; border-radius:5px; white-space:nowrap; line-height:1.4; } /* clearer NOW readout — brighter pink, a touch larger (David 2026-06-27) */
 </style>
 </head>
 <body>
