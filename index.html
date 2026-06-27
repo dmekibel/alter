@@ -677,7 +677,7 @@
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
   /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
-  #pullSheet{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 56px); left:10px; right:10px; z-index:68; background:#2c081a; border:3px solid #160510; border-radius:18px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-120%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:calc(100dvh - env(safe-area-inset-top,0px) - 66px); display:flex; flex-direction:column; overflow:hidden; }
+  #pullSheet{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 56px); left:10px; right:10px; z-index:68; background:linear-gradient(180deg,#280b19 0%,#241027 46%,#1b1030 70%,#16122c 100%); border:3px solid #160510; /* day-red→night-navy backdrop matches the sky → no maroon rim shows through the header/day-boundary spacer/bottom (David 2026-06-27) */ border-radius:18px; box-shadow:0 6px 0 #160510,0 22px 50px rgba(0,0,0,.6); transform:translateY(-120%); transition:transform .3s cubic-bezier(.2,.85,.3,1.05); height:calc(100dvh - env(safe-area-inset-top,0px) - 66px); display:flex; flex-direction:column; overflow:hidden; }
   #pullSheet.on{ transform:translateY(0); }
   #pullHead{ position:relative; flex:none; display:flex; flex-direction:column; align-items:stretch; gap:5px; background:#1c0512; border-radius:15px 15px 0 0; border-bottom:2px solid #160510; padding:7px 12px 6px; } /* slimmer chrome → more timeline (David 2026-06-25); position:relative anchors the ⋯ tools menu */
   /* Apple-Calendar-style mini week strip (David 2026-06-26): weekday letter + date number, tap a day to jump, selected highlighted */
@@ -1107,7 +1107,7 @@
   /* ============ v446 — PAGED day view: one day per card, horizontal swipe pages between days (Apple-Photos slide) — David 2026-06-24 ============ */
   #pullBody.paged{ overflow:hidden !important; touch-action:none; padding:0 !important; }
   .day-pager{ display:flex; width:300%; height:100%; will-change:transform; }
-  .day-card{ flex:0 0 33.3333%; min-width:0; height:100%; display:flex; flex-direction:column; padding:0 12px; }
+  .day-card{ flex:0 0 33.3333%; min-width:0; height:100%; display:flex; flex-direction:column; padding:0; } /* full-bleed: sky reaches the screen edges, no maroon #pullSheet rim around the timeline (David 2026-06-27) */
   .day-cardhead{ flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 2px 3px; }
   .day-cardlab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
   .day-card.today .day-cardlab{ color:#ff5fa0; }
@@ -1228,6 +1228,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=561"></script>
+  <script src="app.js?v=562"></script>
 </body>
 </html>
