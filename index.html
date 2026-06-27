@@ -427,8 +427,8 @@
   :root{ --ink:#3a2540 !important; --soft:#ffb3d9; --card:#ffdcef; --sh:3px 4px 0 rgba(58,37,64,.22); }
   html,body{ background:linear-gradient(170deg,#86205a 0%,#5c123c 55%,#480f2f 100%) !important; color:#3a2540; }
   /* iOS standalone PWA — KILL THE WHITE-TOP: every theme above sets `background` (a shorthand, some !important), which resets background-color to transparent → iOS paints WHITE in the status-bar / overscroll canvas gap. A solid html background-color, placed AFTER the !important theme so it actually wins the cascade, fills that gap dark; min-height:100dvh stops a short body from leaving a gap. Standalone-only effect; harmless in-browser. The timeline's own dark top is handled by the full-bleed pullSheet below. (David 2026-06-26) */
-  html{ background-color:#1a1726 !important; }
-  body{ min-height:100dvh; }
+  html{ background-color:#1a1726 !important; overscroll-behavior:none; }
+  body{ min-height:100dvh; overscroll-behavior:none; } /* kill Chrome pull-to-refresh so dragging the tracker down doesn't reload the page (David 2026-06-27) */
   /* page chrome (sits on the dark pink) → light text */
   #date{ color:#ffc4e2 !important; }
   #hello{ color:#fff2f9 !important; text-shadow:0 2px 0 rgba(0,0,0,.18) !important; }
@@ -701,7 +701,7 @@
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
   /* ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) ===== */
-  #trackerFull{ display:flex; position:fixed; inset:0; z-index:90; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); flex-direction:column; align-items:center; justify-content:flex-start; font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); transform-origin:top left; opacity:0; pointer-events:none; will-change:transform,opacity; border-radius:18px; } /* FLIP: starts mapped onto the dock's rect (small, bottom) and grows to full — the dock card itself expanding (David 2026-06-27) */
+  #trackerFull{ display:flex; position:fixed; inset:0; z-index:90; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); flex-direction:column; align-items:center; justify-content:flex-start; font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); opacity:0; pointer-events:none; will-change:transform,opacity; border-radius:18px; touch-action:none; overscroll-behavior:none; } /* grows from the dock via UNIFORM scale (origin set in JS); no browser gestures (David 2026-06-27) */
   #trackerFull.on{ opacity:1; pointer-events:auto; }
   #trackerFull.tf-anim{ transition:transform .36s cubic-bezier(.2,.8,.3,1), opacity .24s, border-radius .36s; } /* animate the grow/shrink; removed while finger-dragging */
   #trackerFull.tf-anim .tf-stage, #trackerFull.tf-anim .tf-ctrls{ transition:opacity .32s ease .04s; } /* ring/content fades in as the card grows (instant during finger-drag) */
@@ -1342,6 +1342,6 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=581"></script>
+  <script src="app.js?v=583"></script>
 </body>
 </html>

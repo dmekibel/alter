@@ -1026,13 +1026,7 @@
       el("ldDrift").onclick = function () { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: "Drift", catK: "vice", color: DOM.drift.c }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); toast("🌫️ drifting — tap the log later to name it"); }; // UNNAMED DRIFT: one tap starts an honest drift, no picker; stays relabelable on the log (David 2026-06-27)
       var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"), _sub = el("ldSub"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
       if (_sub) { _sub.onclick = function (e) { if (!_sub.classList.contains("ld-nudge")) return; e.stopPropagation(); var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else planBreak(); }; } // nudge sub-line tap = get back on plan (1-tap), else fall through to the info-tap (David 2026-06-27)
-      if (_info) { // tap = expand the ring; press-&-hold (~450ms) = "change what I'm doing + how long" (planBreak) — mirrors the bentoPicker hold-to-pin pattern (David 2026-06-27)
-        var _hT = null, _held = false;
-        _info.addEventListener("pointerdown", function () { _held = false; _hT = setTimeout(function () { _held = true; _hT = null; try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {} planBreak("Replan from now — what, for how long?"); }, 450); });
-        _info.addEventListener("pointermove", function () { if (_hT) { clearTimeout(_hT); _hT = null; } });
-        _info.addEventListener("pointerup", function () { if (_hT) { clearTimeout(_hT); _hT = null; } });
-        _info.onclick = function () { if (_held) { _held = false; return; } openTrackerFull(); };
-      }
+      if (_info) { _info.style.touchAction = "none"; _info.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // grab the dock body and DRAG UP to expand (a plain tap no longer auto-opens) — David 2026-06-27
       if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // drag the dock handle UP → expand (finger-follow)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
@@ -1065,11 +1059,15 @@
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
   var TF_OPEN = false, _ringP = 0, _ringRaf = 0;
-  // FLIP "the dock card itself grows": map the full-screen tracker onto the dock's rect (frac 0) and grow to full (frac 1). transform-origin is top-left.
-  function tfSetFrac(f) { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf || !dk) return; var r = dk.getBoundingClientRect(), vw = window.innerWidth || 390, vh = window.innerHeight || 800; if (!r.width) { tf.style.transform = (f >= 1 ? "none" : "translateY(100%)"); tf.style.opacity = String(f); return; }
-    f = Math.max(0, Math.min(1, f)); var sx = r.width / vw + (1 - r.width / vw) * f, sy = r.height / vh + (1 - r.height / vh) * f, tx = r.left * (1 - f), ty = r.top * (1 - f);
-    tf.style.transform = (f >= 0.999) ? "none" : ("translate(" + tx + "px," + ty + "px) scale(" + sx + "," + sy + ")"); tf.style.opacity = String(Math.min(1, 0.55 + f * 2)); tf.style.borderRadius = (18 * (1 - f)) + "px"; // card bg goes solid fast (reads as a growing card, no see-through)
-    var cf = Math.max(0, Math.min(1, (f - 0.42) / 0.5)); ["tf-stage", "tf-ctrls"].forEach(function (c) { var n = tf.querySelector("." + c); if (n) n.style.opacity = String(cf); }); } // the ring/content fades in only in the LATTER half of the grow, so the squished-while-scaling ring is never seen
+  // "the dock card grows": UNIFORM scale (so the ring stays circular — no stretch) from the dock's centre out to full. frac 0 = small at the dock, frac 1 = full.
+  function tfSetFrac(f) { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var r = dk ? dk.getBoundingClientRect() : null, vw = window.innerWidth || 390, vh = window.innerHeight || 800;
+    f = Math.max(0, Math.min(1, f));
+    var cx = (r && r.width) ? (r.left + r.width / 2) : (vw / 2), cy = (r && r.height) ? (r.top + r.height / 2) : (vh - 40); // grow from the dock's centre
+    var s = 0.2 + 0.8 * f; // UNIFORM scale → circle never distorts
+    tf.style.transformOrigin = cx + "px " + cy + "px";
+    tf.style.transform = (f >= 0.999) ? "none" : ("scale(" + s + ")");
+    tf.style.opacity = String(Math.min(1, f * 2.4)); tf.style.borderRadius = (22 * (1 - f)) + "px";
+    var cf = Math.max(0, Math.min(1, (f - 0.45) / 0.5)); ["tf-stage", "tf-ctrls"].forEach(function (c) { var n = tf.querySelector("." + c); if (n) n.style.opacity = String(cf); }); } // ring/content fades in over the latter half of the grow
   function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
     tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); if (dk) dk.style.visibility = "hidden"; // start AS the dock card, hide the real dock
     void tf.offsetHeight; // force reflow so the start state registers (rAF is unreliable when the page isn't actively painting)
@@ -1078,13 +1076,13 @@
     var done = function () { tf.removeEventListener("transitionend", done); tf.classList.remove("on", "tf-anim"); tf.style.transform = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; ["tf-stage", "tf-ctrls"].forEach(function (c) { var n = tf.querySelector("." + c); if (n) n.style.opacity = ""; }); if (dk) dk.style.visibility = ""; TF_OPEN = false; };
     tf.addEventListener("transitionend", done); setTimeout(done, 430); }
   function tfDrag(ev, opening) { // finger-follow: drag the dock card UP to grow it; drag the tracker DOWN to shrink it back into the dock (David 2026-06-27)
-    ev.preventDefault(); var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
-    if (opening) { TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); if (dk) dk.style.visibility = "hidden"; }
-    tf.classList.remove("tf-anim"); tf.classList.add("on");
-    function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var f = opening ? (-dy / H * 1.35) : (1 + dy / H * 1.35); tfSetFrac(f); }
+    ev.preventDefault(); var tf = el("trackerFull"), dk = el("liveDock"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false, started = !opening;
+    if (!opening) tf.classList.remove("tf-anim"); // closing: tracker is already open → follow the finger immediately
+    function start() { if (started) return; started = true; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); if (dk) dk.style.visibility = "hidden"; tf.classList.remove("tf-anim"); tf.classList.add("on"); tfSetFrac(0); } // OPEN setup happens only once the user actually drags — a plain tap does NOTHING
+    function mv(e) { e.preventDefault(); var dy = e.clientY - sy; if (!moved && Math.abs(dy) > 4) moved = true; if (opening && moved) start(); if (!started) return; var f = opening ? (-dy / H * 1.35) : (1 + dy / H * 1.35); tfSetFrac(f); }
     function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); var dy = e.clientY - sy;
-      var keepOpen = opening ? (!moved || -dy > H * 0.16) : !(moved && dy > H * 0.14); // OPEN: tap or up-drag. CLOSE: only a real down-drag shrinks it away.
-      if (keepOpen) openTrackerFull(); else closeTrackerFull(); }
+      if (opening) { if (started && moved && -dy > H * 0.12) openTrackerFull(); else if (started) closeTrackerFull(); } // OPEN only on a real drag UP; a pure tap never even starts (no flash, dock stays)
+      else { if (moved && dy > H * 0.14) closeTrackerFull(); else openTrackerFull(); } } // CLOSE only on a real drag DOWN; otherwise snap back open
     document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
   }
   function claimableBlock() { // the single most-likely plan block covering a passed/straddling gap with NO matching real log — the welcome-back "claim" target
