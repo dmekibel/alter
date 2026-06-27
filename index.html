@@ -507,6 +507,8 @@
     transition:transform .16s cubic-bezier(.2,.85,.3,1.3),box-shadow .14s,top .2s cubic-bezier(.2,.8,.25,1),height .16s,opacity .15s,background .6s,filter .6s,border-color .5s; }
   /* while zooming (slider drag OR pinch) the timeline is repositioned by JS every frame — kill the top/height transition so bubbles SNAP and never bounce (David 2026-06-25) */
   #pullBody.zooming .calblk, #pullBody.zooming .nowline, #pullBody.zooming .nowcirc, #pullBody.zooming .nowread, #pullBody.zooming .calhour, #pullBody.zooming .calhalf, #pullBody.zooming .calhrl, #pullBody.zooming .calsub, #pullBody.zooming .timemark{ transition:none !important; }
+  /* while pinch-zooming, a finger resting on a bubble must NOT select/scale it — the pinch lives on #pullBody, so bubbles go inert + their :active scale is killed (David 2026-06-27) */
+  #pullBody.zooming .calblk{ pointer-events:none !important; transform:none !important; }
   .calblk .cn{ font-weight:700; font-size:13.5px; line-height:1.15; position:relative; z-index:2; }
   .calblk .cn .ti{ font-size:15px; }
   .calblk .csub{ font-weight:600; font-size:10.5px; margin-top:2px; opacity:.85; position:relative; z-index:2; padding-right:18px; }
@@ -1211,6 +1213,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=535"></script>
+  <script src="app.js?v=536"></script>
 </body>
 </html>
