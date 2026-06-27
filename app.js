@@ -943,11 +943,17 @@
     var ad = el("ldAct"), su = el("ldSub"), elx = el("ldEl"), st = el("ldStop");
     var nb0 = nextPlannedBlock(todayK());
     dk.classList.add("on"); dk.classList.toggle("noplan", !nb0); // no plan today → only Plan + Drift make sense (Replan hidden — nothing to re-plan) — David 2026-06-25
-    if (!t) { // IDLE — nothing tracking: the dock is a "start" bar
+    if (S.brk) { // ON A BREAK — a declared pause is running; the goal waits. Don't say "not tracking" — show the countdown + a one-tap resume (David 2026-06-27)
+      dk.classList.add("idle"); dk.classList.remove("hasplan"); var _bD = DOM[S.brk.dom] || DOM.restore, _br = S.brk.start + S.brk.mins * 60000 - Date.now(), _bup = _br <= 0;
+      if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _bD.c, "important"); st.style.setProperty("color", _bD.ink, "important"); }
+      if (ad) ad.innerHTML = '<i class="ti ti-coffee"></i> On a break' + (S.brk.title ? ' · ' + esc(S.brk.title) + ' waits' : '');
+      if (su) su.textContent = _bup ? "break's up — tap to resume" : "tap to resume your goal";
+      if (elx) { elx.removeAttribute("data-tid"); elx.classList.add("ld-brkcd"); elx.setAttribute("data-brk", "1"); elx.textContent = fmtCD(Math.max(0, _br)); } // its own live hook — the 1s loop updates [data-brk] like it does .live-elapsed
+    } else if (!t) { // IDLE — nothing tracking: the dock is a "start" bar
       dk.classList.add("idle"); dk.classList.toggle("hasplan", !!nb0); // Play IS "start the plan" → the separate Plan button is redundant and hidden (David 2026-06-26)
       if (nb0) { var _pD = DOM[domainOf(nb0)] || DOM.focus; if (st) { st.innerHTML = '<i class="ti ti-player-play-filled"></i>'; st.style.setProperty("background", _pD.c, "important"); st.style.setProperty("color", _pD.ink, "important"); } if (ad) ad.innerHTML = tiIcon(nb0) + ' <b>' + esc(nb0.title) + '</b>'; if (su) su.textContent = "▶ start your plan"; } // the play button wears the upcoming activity's colour; pressing it = you agree to do the plan and start tracking it
       else { if (st) { st.innerHTML = '<i class="ti ti-player-play"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); } if (ad) ad.innerHTML = '<i class="ti ti-clock"></i> Not tracking'; if (su) su.textContent = "tap ▶ or pick below to start"; }
-      if (elx) { elx.textContent = ""; elx.removeAttribute("data-tid"); }
+      if (elx) { elx.textContent = ""; elx.removeAttribute("data-tid"); elx.classList.remove("ld-brkcd"); elx.removeAttribute("data-brk"); }
     } else {
       dk.classList.remove("idle"); dk.classList.remove("hasplan"); if (st) { st.innerHTML = '<i class="ti ti-player-stop"></i>'; st.style.removeProperty("background"); st.style.removeProperty("color"); }
       var dom = domainOf(t), D = DOM[dom] || DOM.focus, drift = (dom === "drift");
@@ -955,17 +961,25 @@
       if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
       var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ece6f2;background:' + DOM.drift.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
       if (ad) ad.innerHTML = tiIcon(t) + ' ' + esc(t.title || "Tracking") + ' ' + badge;
-      if (su) su.textContent = on ? "matches your plan" : (drift ? "off plan — logged honestly" : "tracking · no plan");
-      if (elx) { elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); }
+      var driftMin = Math.floor((Date.now() - t.start) / 60000), nudge = !on && driftMin >= 10; // off-plan (drift or no covering block) for 10+ min → a gentle "back?" offer (David 2026-06-27)
+      if (su) { su.textContent = nudge ? "drifting a while — tap to get back on plan" : (on ? "matches your plan" : (drift ? "off plan — logged honestly" : "tracking · no plan")); su.classList.toggle("ld-nudge", nudge); }
+      if (elx) { elx.setAttribute("data-tid", t.id); elx.classList.remove("ld-brkcd"); elx.removeAttribute("data-brk"); elx.textContent = elapsedStr(t); }
     }
     if (!dk._wired) { dk._wired = 1;
-      el("ldStop").onclick = function () { var r = activeTimers(); if (r.length) { stopTimer(r[r.length - 1].id); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // Play = start the plan (sync up + track it); no plan → pick one — David 2026-06-26
+      el("ldStop").onclick = function () { if (S.brk) { tfResumeBreak(); return; } var r = activeTimers(); if (r.length) { stopTimer(r[r.length - 1].id); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // on a break → resume the goal; else Play = start the plan / Stop = stop — David 2026-06-26
       el("ldSw").onclick = function () { startOrSwitch(); };
       el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); };
       el("ldReplan").onclick = function () { planBreak(); };
-      el("ldDrift").onclick = function () { startOrSwitch(); };
-      var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
-      if (_info) _info.onclick = function () { openTrackerFull(); };
+      el("ldDrift").onclick = function () { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: "Drift", catK: "vice", color: DOM.drift.c }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); toast("🌫️ drifting — tap the log later to name it"); }; // UNNAMED DRIFT: one tap starts an honest drift, no picker; stays relabelable on the log (David 2026-06-27)
+      var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"), _sub = el("ldSub"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
+      if (_sub) { _sub.onclick = function (e) { if (!_sub.classList.contains("ld-nudge")) return; e.stopPropagation(); var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else planBreak(); }; } // nudge sub-line tap = get back on plan (1-tap), else fall through to the info-tap (David 2026-06-27)
+      if (_info) { // tap = expand the ring; press-&-hold (~450ms) = "change what I'm doing + how long" (planBreak) — mirrors the bentoPicker hold-to-pin pattern (David 2026-06-27)
+        var _hT = null, _held = false;
+        _info.addEventListener("pointerdown", function () { _held = false; _hT = setTimeout(function () { _held = true; _hT = null; try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {} planBreak("Replan from now — what, for how long?"); }, 450); });
+        _info.addEventListener("pointermove", function () { if (_hT) { clearTimeout(_hT); _hT = null; } });
+        _info.addEventListener("pointerup", function () { if (_hT) { clearTimeout(_hT); _hT = null; } });
+        _info.onclick = function () { if (_held) { _held = false; return; } openTrackerFull(); };
+      }
       if (_grab) _grab.onclick = function () { openTrackerFull(); };
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
     }
@@ -3076,6 +3090,7 @@
     setInterval(function () {
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
       var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = elapsedStr(ct); }
+      if (S.brk) { var _lcd = document.querySelector("#ldEl[data-brk]"); if (_lcd) { var _lbr = S.brk.start + S.brk.mins * 60000 - Date.now(); _lcd.textContent = fmtCD(Math.max(0, _lbr)); if (_lbr <= 0 && _lbr > -1500) renderLiveDock(); } } // live dock break countdown (flips the sub-line to "break's up" at 0)
       if (TF_OPEN) { var _tc = el("tfClock"); if (_tc) _tc.textContent = fmt(nowMin()).toUpperCase(); } // keep the tracker's wall-clock live
       if (TF_OPEN && S.brk) { var _be = S.brk.start + S.brk.mins * 60000, _br = _be - Date.now(), _tt = el("tfTime"); if (_tt) _tt.textContent = fmtCD(Math.max(0, _br)); if (_br <= 0 && _br > -1500) renderTrackerFull(); } // live break countdown + flip to "break's up" when it hits 0
       // per-second now-line creep REMOVED (David 2026-06-27): it moved the now-line by transform but NOT the static block-splits below it, so as the line crept past the ghost/future boundary the matte stripes peeked above it, and its leftover transform fed the fast-zoom jump. The planner updates the now-line per-minute (below); true seconds-precision printing belongs in Tracker Mode's dedicated per-second render, where every now-anchored element redraws together.

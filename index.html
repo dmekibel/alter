@@ -574,6 +574,7 @@
   .calblk.convbar .cn{ position:relative; z-index:3; }
   .nowread{ position:absolute; right:6px; z-index:8; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:5px; background:rgba(28,5,18,.8); border:1.5px solid #160510; border-radius:9px; padding:2px 8px; max-width:64%; white-space:nowrap; overflow:hidden; }
   #liveDock.idle .ld-el{ display:none; }
+  #liveDock.idle .ld-el[data-brk]{ display:block; } /* but the break countdown stays visible on the idle-style break bar (David 2026-06-27) */
   .nowpill{ position:absolute; right:6px; background:#ff5fa0; color:#4a1126; font-size:11px; font-weight:700; border:2px solid #160510; border-radius:7px; padding:0 7px; z-index:7; animation:nowPulse 2.6s ease-in-out infinite; } /* gentle "you are here" heartbeat (David 2026-06-24 night) */
   @keyframes nowPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,95,160,.55); } 55%{ box-shadow:0 0 0 6px rgba(255,95,160,0); } }
   /* wake / noon / bed anchors — never lost in time (David 2026-06-24) */
@@ -994,6 +995,7 @@
   #liveDock .ld-info{ flex:1; min-width:0; }
   #liveDock .ld-act{ color:#ffe3f1; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #liveDock .ld-sub{ color:#cd9bb6; font-size:10px; font-weight:600; margin-top:1px; }
+  #liveDock .ld-sub.ld-nudge{ color:#ff8ac0; cursor:pointer; } /* gentle off-plan nudge — pink, no alarm/red (David 2026-06-27) */
   #liveDock .ld-el{ color:#ff8ac0; font-weight:700; font-size:14px; min-width:44px; text-align:center; }
   #liveDock .ld-sw{ width:34px; height:34px; border-radius:11px; background:#3a1430; border:2.5px solid #160510; color:#ffb8d6; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
   #liveDock .ld-seg{ display:flex; gap:6px; }
