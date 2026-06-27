@@ -2400,9 +2400,8 @@
         var slot = add(cal, "div", "backfill"); slot.style.top = topFor(g[0]) + "px"; slot.style.height = Math.max(20, (g[1] - g[0]) / 60 * HP - 4) + "px"; slot.style.left = "calc(50% + 4px)"; slot.style.right = "4px"; slot.dataset.mn = g[0]; slot.dataset.dur = (g[1] - g[0]); // tag so the backfill "+" tracks zoom like everything else (David 2026-06-25)
         slot.innerHTML = '<i class="ti ti-plus"></i>'; slot.style.opacity = ".38"; slot.style.fontSize = "12px"; // subtle forgot-to-track tap, not a loud prompt (David 2026-06-25)
         slot.addEventListener("click", function (e) {
-          var gs, gm;
-          if ((g[1] - g[0]) <= 75) { gs = g[0]; gm = g[1] - g[0]; } // small/medium gap → fill it COMPLETELY, no leftover slivers (David 2026-06-23)
-          else { var rect = cal.getBoundingClientRect(); gs = hm(timeFromY(e.clientY - rect.top, startH, HP)); gs = Math.max(g[0], Math.min(g[1] - 30, gs)); gm = g[1] - gs; } // big gap → fill from where you tapped DOWN to the present-side end: large enough, and only the gap ABOVE stays a "fill it in" (never a sliver below — that's closest to now) — David 2026-06-24
+          var gw = g[1] - g[0], rect = cal.getBoundingClientRect(), gs = hm(timeFromY(e.clientY - rect.top, startH, HP));
+          gs = Math.max(g[0], Math.min(g[1] - 5, gs)); var gm = Math.min(20, gw); gm = Math.min(gm, g[1] - gs); // STUB, not the whole gap: seed ~20 min at the tapped time, then grow it with the grips/stepper (David 2026-06-27)
           bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(gs / 60)) + ":" + pad(gs % 60), mins: gm, title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } });
         });
       });
@@ -2506,13 +2505,29 @@
     function posToMin(p) { return snapMin(MINM * Math.pow(MAXM / MINM, p / 1000)); }
     function minToPos(m) { m = Math.max(MINM, Math.min(MAXM, m)); return Math.round(1000 * Math.log(m / MINM) / Math.log(MAXM / MINM)); }
     function lenLbl(m) { return m < 1 ? Math.round(m * 60) + "s" : m < 60 ? ((m % 1 ? m.toFixed(1) : m) + "m") : (Math.floor(m / 60) + "h" + (Math.round(m % 60) ? " " + Math.round(m % 60) + "m" : "")); }
-    add(B, "div", "ed-hint", "length — slide from 30s to 12h");
+    // START TIME — nudge earlier/later in 5-min steps; start+end are always shown (David 2026-06-27)
+    var _floorS = 0, _ceilS = 1740;
+    add(B, "div", "ed-hint", "starts at — tap −/＋ to nudge");
+    var trow = add(B, "div", "ed-trow");
+    var tdn = add(trow, "button", "ed-tnudge"); tdn.innerHTML = '<i class="ti ti-minus"></i>';
+    var tlbl = add(trow, "div", "ed-tlbl");
+    var tup = add(trow, "button", "ed-tnudge"); tup.innerHTML = '<i class="ti ti-plus"></i>';
+    function setStart(ns) { ns = Math.max(_floorS, Math.min(_ceilS, Math.round(ns / 5) * 5)); o.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); }
+    tdn.onclick = function () { setStart(hm(o.time) - 5); layout(); commit(); };
+    tup.onclick = function () { setStart(hm(o.time) + 5); layout(); commit(); };
+    add(B, "div", "ed-hint", "length — slide, step ＋, or tap a chip");
     var sld = document.createElement("input"); sld.type = "range"; sld.min = "0"; sld.max = "1000"; sld.step = "1"; sld.value = minToPos(o.mins || DEF); sld.className = "ed-slider"; B.appendChild(sld);
     var read = add(B, "div", "ed-read");
-    function layout() { var bs = hm(o.time), dur = o.mins || DEF; read.innerHTML = '<b>' + lenLbl(dur) + '</b> <span class="ed-dur">· ends ' + fmt(bs + dur) + '</span>'; }
+    function layout() { var bs = hm(o.time), dur = o.mins || DEF; tlbl.innerHTML = '<i class="ti ti-clock"></i> ' + fmt(bs); read.innerHTML = '<b>' + lenLbl(dur) + '</b> <span class="ed-dur">· ' + fmt(bs) + '–' + fmt(bs + dur) + '</span>'; sld.value = minToPos(dur); if (typeof crow !== "undefined" && crow) Array.prototype.forEach.call(crow.children, function (n, i) { n.classList.toggle("on", [15, 30, 45, 60, 90, 120][i] === dur); }); }
     layout();
     sld.addEventListener("input", function () { o.mins = posToMin(+sld.value); layout(); });
     sld.addEventListener("change", function () { o.mins = posToMin(+sld.value); commit(); });
+    // LENGTH STEPPERS — grow a too-tiny bubble without hunting for a grip (David 2026-06-27)
+    var lrow = add(B, "div", "ed-lrow");
+    [-15, -5, 5, 15].forEach(function (d) { var b = add(lrow, "button", "ed-lstep", (d > 0 ? "＋" : "−") + Math.abs(d)); b.onclick = function () { o.mins = Math.max(MINM, Math.min(MAXM, snapMin((o.mins || DEF) + d))); layout(); commit(); }; });
+    // LENGTH CHIPS — quick common durations (same pattern as durationSheet) (David 2026-06-27)
+    var crow = add(B, "div", "ed-lchips");
+    [15, 30, 45, 60, 90, 120].forEach(function (m) { var c = add(crow, "button", "ed-lchip" + ((o.mins || DEF) === m ? " on" : ""), m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { o.mins = m; layout(); commit(); }; });
     // PRIORITY (segmented) + PIN (plan only)
     var prow = add(B, "div", "ed-prow");
     var seg3 = add(prow, "div", "ed-seg3"); PRIOS.forEach(function (p) { var c = add(seg3, "div", "ed-prio" + (p.v === (o.prio || 2) ? " on" : ""), p.l); c.onclick = function () { o.prio = p.v; Array.prototype.forEach.call(seg3.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); commit(); }; });
