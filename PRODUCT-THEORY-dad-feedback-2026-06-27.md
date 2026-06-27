@@ -38,13 +38,17 @@ Source: David's dad. Logged + analyzed by Alfred at David's request. This is **t
 
 ## PART 3 — The plans (concrete moves)
 
-### A. Tracker Mode (the new front door)
-A full-screen, dead-simple surface. Only two things visible: **NOW** (what you're tracking) and **NEXT** (the upcoming plan). No past, no completed clutter, no analytics.
-- Big "what are you doing now" with a live timer.
-- One clear **NEXT** card. One tap to start it.
-- **Pause** the track · **Replan next** · **I'm off track → for how long?** (the forcing-function: pick a duration, the app holds the line and resumes tracking after).
-- The rich timeline (plan+real, past+future) becomes the *secondary* "Plan/Reflect" surface for when the user has capacity. **Two-speed app:** Do (Tracker) vs Plan/Reflect (timeline).
-- Likely the **default surface** for new/low-capacity users.
+### A. Tracker Mode (the new front door) — David's refined direction 2026-06-27
+
+**It's not a separate feature — it's the DAY view's tracker, expanded.** The tracker lives in the day planner (the home screen), NOT in week or month. Tracker Mode = that same tracker, blown up full-screen. Day / Tracker are two sides of one coin: zoom *out* = day/week/month planning; zoom all the way *in* = Tracker Mode.
+
+- **Entry:** build on the existing bottom dock (`#liveDock`, the pull-up). Today it drags up from the bottom. Make **tapping it expand into the full-screen tracker** ("a full menu"). Keep the drag-up too. (Existing pieces to reuse: `openPull`/`closePull`/`pullGrab`/`pullSheet`, `renderLiveTracker`.)
+- **Exit:** a clear **button back to Day mode** (and/or slide it back down — same bottom mechanism).
+- **The view = extreme zoom on the live now-line.** So zoomed in that the now-line visibly *moves* and you see **seconds** ticking (the readout is already `m:ss` via `elapsedStr` — just surface it big). Auto-scale to roughly "current activity + the next block."
+- **Only NOW + NEXT.** No past, no completed clutter, no analytics. Big, minimalist, extremely functional — surface only the one current thing and the one next thing (the app's decision matrix: show the next action + current state, nothing else).
+- **Core controls (carried from the dock):** pause the track · replan the next activity · **off track → "for how long?"** forcing-function (pick a duration, app holds the line, resumes tracking after) → you always stay tracked.
+- The rich timeline (plan+real, past+future) is the *zoomed-out* Plan/Reflect surface for when the user has capacity. **Two-speed app:** Do (Tracker, zoomed in) ↔ Plan/Reflect (timeline, zoomed out).
+- Likely the **default surface** for new / low-capacity users.
 
 ### B. The baby-step progression engine (the retention core)
 - **Onboarding doesn't plan a day.** It asks for **one thing.** ("Pick the one habit that, if you did it daily, would change the most.")
