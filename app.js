@@ -557,22 +557,29 @@
     var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
     var head = add(card, "div", "bento-head"); var hq = add(head, "div", "bento-q"); hq.innerHTML = '<i class="ti ti-checkup-list"></i> Your habits'; var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    var body = add(card, "div", "bento-body"), adding = false, openSub = null; // openSub = the parent activity whose sub-habit editor is showing (David 2026-06-27)
+    var body = add(card, "div", "bento-body"), adding = false, openSub = null, openDom = {}; // openSub = parent whose sub-editor shows; openDom = which domains are expanded past the first few (David 2026-06-28)
+    var CAP = 8; // calm: show a few chips per domain, the rest behind one "+N more" so the page stops shouting (David 2026-06-28)
+    function isCustom(a) { return (S.acts || []).some(function (c) { return (c.title || "").toLowerCase() === (a.title || "").toLowerCase(); }); }
     function draw() {
       body.innerHTML = "";
-      add(body, "div", "sughead", "everything you can plan or track — tap your own to break it into sub-habits, remove with ✕, or add new");
+      add(body, "div", "sughead", "your activities — tap one to edit, ✕ to remove, or add a new one");
       var by = bentoByDomain();
       DOM_ORDER.forEach(function (d) {
-        var acts = by[d]; if (!acts || !acts.length) return; var D = DOM[d];
+        var acts = (by[d] || []).slice(); if (!acts.length) return; var D = DOM[d];
+        acts.sort(function (x, y) { return (isCustom(x) ? 0 : 1) - (isCustom(y) ? 0 : 1); }); // your own first — those are the ones you actually edit/remove here
         var sh = add(body, "div", "habit-dh"); sh.style.color = D.light; sh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
         var row = add(body, "div", "habit-row");
-        acts.forEach(function (a) {
+        var expanded = !!openDom[d], shown = expanded ? acts : acts.slice(0, CAP);
+        shown.forEach(function (a) {
           var custom = (S.acts || []).filter(function (c) { return (c.title || "").toLowerCase() === (a.title || "").toLowerCase(); })[0];
           var kids = (custom && custom.children) || [];
           var chip = add(row, "span", "bchip"); if (a.domain !== "drift") { chip.style.background = D.c; chip.style.color = D.ink; }
           chip.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title) + (kids.length ? ' <span class="bchip-n">' + kids.length + '</span>' : '');
           if (custom) { chip.style.cursor = "pointer"; chip.onclick = function () { openSub = (openSub === custom ? null : custom); adding = false; draw(); }; var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); openSub = null; save(); draw(); }; }
         });
+        var rest = acts.length - shown.length;
+        if (rest > 0) { var mo = add(row, "span", "bchip more"); mo.style.background = mixHex(D.c, "#160510", 0.5); mo.style.color = D.light; mo.textContent = "+" + rest + " more"; mo.onclick = function () { openDom[d] = true; draw(); }; }
+        else if (expanded && acts.length > CAP) { var le = add(row, "span", "bchip more"); le.style.background = mixHex(D.c, "#160510", 0.5); le.style.color = D.light; le.textContent = "less"; le.onclick = function () { openDom[d] = false; draw(); }; }
         if (openSub && openSub.domain === d) drawSubEditor(body, openSub, D);
       });
       if (!adding) { var ab = add(body, "div", "bento-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a habit / activity'; ab.onclick = function () { adding = true; draw(); }; }
