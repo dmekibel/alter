@@ -1006,36 +1006,34 @@
     blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom && !b.done) onb = b; });
     return { id: onb ? "onplan" : "off", t: t, dom: dom, block: onb };
   }
+  function tfStripe(C) { return "repeating-linear-gradient(45deg," + C + "," + C + " 9px," + mixHex(C, "#160510", 0.42) + " 9px," + mixHex(C, "#160510", 0.42) + " 18px)"; } // vivid striped activity tile (matches the timeline-bubble texture, brighter for the hero)
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
-    var S0 = trackerState(), t = S0.t, prog = el("tfProg"), dot = el("tfDot"), disc = el("tfDisc");
+    var S0 = trackerState(), t = S0.t, tile = el("tfTile");
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle");
     if (!t) { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = nb ? nb.title : "Nothing tracking";
       el("tfVerdict").textContent = nb ? "next up" : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfSpark").innerHTML = '🔥 streak <b>×' + ((S.game && S.game.streak) || 0) + '</b>';
-      if (disc) { disc.style.background = "radial-gradient(circle at 35% 30%," + ND.light + "," + ND.c + ")"; disc.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
-      setRing(0); renderTFControls("idle", nb);
+      if (tile) { tile.style.background = tfStripe(ND.c); tile.style.filter = "saturate(.5) brightness(.78)"; tile.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
+      setRing(0, "#6a5870"); renderTFControls("idle", nb);
       return;
     }
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
     tf.classList.add(onplan ? "st-onplan" : "st-off");
-    if (disc) { disc.style.background = "radial-gradient(circle at 35% 30%," + D.light + "," + D.c + ")"; disc.innerHTML = tiIcon(t); }
+    if (tile) { tile.style.background = tfStripe(D.c); tile.style.filter = ""; tile.innerHTML = tiIcon(t); }
     el("tfTitle").textContent = t.title || "Tracking";
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan");
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t);
     var streak = (S.game && S.game.streak) || 0;
     el("tfSpark").innerHTML = onplan ? ('⚡ <b>+3</b> Spark/min · 🔥 streak <b>×' + streak + '</b>') : ('🔥 streak <b>×' + streak + '</b>');
-    // radial progress = elapsed toward the on-plan block length (or a 60-min default cadence when unplanned)
+    // conic reward band fills as elapsed accrues toward the on-plan block length (or a 60-min cadence when unplanned)
     var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
-    setRing(p);
+    setRing(p, onplan ? "#28cf86" : "#6a5870");
     renderTFControls(onplan ? "onplan" : "off", null);
   }
-  function setRing(p) { var prog = el("tfProg"), dot = el("tfDot"), ring = el("tfRing"); if (!prog) return;
-    var C = 2 * Math.PI * 52; prog.style.strokeDasharray = C; prog.style.strokeDashoffset = C * (1 - p);
-    if (dot && ring) { var R = ring.clientWidth / 2, rr = R * (52 / 60), th = p * 2 * Math.PI; dot.style.left = (R + rr * Math.sin(th)) + "px"; dot.style.top = (R - rr * Math.cos(th)) + "px"; dot.style.transform = "translate(-50%,-50%)"; dot.style.display = p > 0.001 ? "block" : "none"; }
-  }
+  function setRing(p, col) { var ring = el("tfRing"); if (!ring) return; var pct = Math.max(0, Math.min(100, Math.round(p * 100))); ring.style.background = "conic-gradient(" + (col || "#28cf86") + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; } // flat green/grey conic band — no glow (David's no-neon rule); fills clockwise with elapsed
   function renderTFControls(state, nb) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     function b(cls, ic, lab, fn) { var x = add(c, "button", "tf-b" + (cls ? " " + cls : "")); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
     if (state === "idle") { b("tf-prim", "ti-player-play-filled", "Start", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); b("", "ti-list-search", "Pick", function () { startOrSwitch(); renderTrackerFull(); }); }

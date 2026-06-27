@@ -679,13 +679,10 @@
   #trackerFull.on{ display:flex; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 12px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .tf-stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; gap:0; }
-  .tf-ring{ position:relative; width:min(74vw,300px); aspect-ratio:1; display:flex; align-items:center; justify-content:center; }
-  .tf-svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
-  .tf-track{ fill:none; stroke:rgba(255,255,255,.07); stroke-width:7; }
-  .tf-prog{ fill:none; stroke:#28cf86; stroke-width:7.5; stroke-linecap:round; transition:stroke-dashoffset .5s linear, stroke .4s; filter:drop-shadow(0 0 7px rgba(40,207,134,.5)); }
-  .tf-disc{ position:relative; width:62%; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:54px; color:#fff2f9; border:2.5px solid #160510; box-shadow:inset 0 2px 0 rgba(255,255,255,.14), 0 6px 18px rgba(0,0,0,.5); }
-  .tf-dot{ position:absolute; width:13px; height:13px; border-radius:50%; background:#7dffc0; box-shadow:0 0 10px #28cf86,0 0 3px #fff; border:1.5px solid #0c3a26; top:50%; left:50%; }
-  .tf-title{ margin-top:22px; font-weight:800; font-size:23px; letter-spacing:.3px; color:#ffe3f1; text-align:center; }
+  /* #14 album-in-reward-ring: a flat GREEN conic band (no glow) hugging a STRIPED activity tile (matches the timeline bubbles) */
+  .tf-ring{ position:relative; width:min(74vw,300px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(#28cf86 0% 0%, rgba(255,255,255,.10) 0%); transition:background .5s linear; }
+  .tf-tile{ position:relative; width:calc(100% - 30px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:58px; color:#fff2f9; border:2.5px solid #160510; box-shadow:inset 0 2px 0 rgba(255,255,255,.10), 0 6px 18px rgba(0,0,0,.5); }
+  .tf-title{ margin-top:26px; font-weight:800; font-size:23px; letter-spacing:.3px; color:#ffe3f1; text-align:center; }
   .tf-verdict{ margin-top:3px; font-weight:700; font-size:12px; letter-spacing:1.6px; text-transform:uppercase; color:#5fe0a8; }
   .tf-time{ margin-top:14px; font-family:"DM Mono","SFMono-Regular",ui-monospace,monospace; font-weight:500; font-size:52px; line-height:1; color:#ffe3f1; font-variant-numeric:tabular-nums; }
   .tf-spark{ margin-top:13px; display:flex; align-items:center; gap:14px; font-size:13px; font-weight:700; color:#cda9c2; }
@@ -696,13 +693,9 @@
   .tf-b:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
   .tf-b.tf-prim{ background:#28cf86; color:#08321f; }
   /* verdict palettes by state */
-  #trackerFull.st-break .tf-prog{ stroke:#e8b53a; filter:drop-shadow(0 0 7px rgba(232,181,58,.5)); }
-  #trackerFull.st-break .tf-dot{ background:#ffd98a; box-shadow:0 0 10px #e8b53a,0 0 3px #fff; border-color:#5a3a00; }
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
-  #trackerFull.st-off .tf-prog{ stroke:#7a5870; filter:none; }
-  #trackerFull.st-off .tf-dot{ display:none; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
-  #trackerFull.st-off .tf-disc{ filter:saturate(.35) brightness(.7); }
+  #trackerFull.st-off .tf-tile{ filter:saturate(.3) brightness(.72); }
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
   /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
@@ -1259,13 +1252,8 @@
   <div id="trackerFull"><!-- expanded live tracker: the reward RING (album-in-ring + radial dial) — circle-in-circle, never square-in-circle (David 2026-06-27) -->
     <button id="tfClose" class="tf-close" aria-label="Close"><i class="ti ti-chevron-down"></i></button>
     <div class="tf-stage">
-      <div class="tf-ring" id="tfRing">
-        <svg class="tf-svg" viewBox="0 0 120 120">
-          <circle class="tf-track" cx="60" cy="60" r="52"></circle>
-          <circle class="tf-prog" id="tfProg" cx="60" cy="60" r="52"></circle>
-        </svg>
-        <div class="tf-disc" id="tfDisc"><i class="ti ti-brain"></i></div>
-        <div class="tf-dot" id="tfDot"></div>
+      <div class="tf-ring" id="tfRing"><!-- conic green reward band (set in JS) hugging a STRIPED activity tile = #14 album-in-reward-ring -->
+        <div class="tf-tile" id="tfTile"><i class="ti ti-brain"></i></div>
       </div>
       <div class="tf-title" id="tfTitle">—</div>
       <div class="tf-verdict" id="tfVerdict"></div>
@@ -1276,6 +1264,6 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=563"></script>
+  <script src="app.js?v=564"></script>
 </body>
 </html>
