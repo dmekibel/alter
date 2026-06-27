@@ -1078,12 +1078,8 @@
   #liveDock .ld-el{ color:#ff8ac0; font-weight:700; font-size:14px; min-width:44px; text-align:center; }
   #liveDock .ld-sw{ width:34px; height:34px; border-radius:11px; background:#3a1430; border:2.5px solid #160510; color:#ffb8d6; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
   #liveDock .ld-seg{ display:flex; gap:6px; }
-  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:6px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
-  #liveDock .ld-plan{ background:#36b3f0; color:#08283c; }
-  #liveDock .ld-replan{ background:#3a1430; color:#d2aae8; }
-  #liveDock .ld-drift{ background:#3a1430; color:#e89aa0; }
-  #liveDock.noplan .ld-replan{ display:none; } /* no plan today → Plan + Drift only (David 2026-06-25) */
-  #liveDock.hasplan .ld-plan{ display:none; } /* Play already starts the plan → drop the redundant Plan button (David 2026-06-26) */
+  /* secondary seg buttons (the non-primary actions of the shared matrix) — uniform compact berry style; the primary action is the play/stop circle. (David 2026-06-28) */
+  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:6px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; background:#3a1430; color:#d2aae8; }
   @media (min-width:560px){ body.tab-day:not(.gaming) #liveDock.on{ left:50%; right:auto; width:min(508px,calc(100vw - 16px)); transform:translateX(-50%); } }
   /* Goals + You screen scaffolding */
   .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
@@ -1318,11 +1314,7 @@
       <div class="ld-el live-elapsed" id="ldEl">0:00</div>
       <button class="ld-sw" id="ldSw" aria-label="Switch activity"><i class="ti ti-switch-horizontal"></i></button>
     </div>
-    <div class="ld-seg">
-      <button class="ld-b ld-plan" id="ldPlan"><i class="ti ti-calendar-plus"></i> Create plan</button>
-      <button class="ld-b ld-replan" id="ldReplan"><i class="ti ti-arrows-shuffle"></i> Replan</button>
-      <button class="ld-b ld-drift" id="ldDrift"><i class="ti ti-windmill"></i> Drift</button>
-    </div>
+    <div class="ld-seg"><!-- secondary controls rendered per-state from the shared trackerControls() matrix (David 2026-06-28) --></div>
   </div>
   <nav id="nav">
     <button class="nb" data-tab="goals"><i class="ti ti-target ne"></i><span class="nl2">Goals</span></button>

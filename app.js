@@ -1027,12 +1027,10 @@
       if (su) { su.textContent = nudge ? "drifting a while — tap to get back on plan" : (on ? "matches your plan" : (drift ? "off plan — logged honestly" : "tracking · no plan")); su.classList.toggle("ld-nudge", nudge); }
       if (elx) { elx.setAttribute("data-tid", t.id); elx.classList.remove("ld-brkcd"); elx.removeAttribute("data-brk"); elx.textContent = elapsedStr(t); }
     }
+    renderDockSeg(); // the folded seg row MIRRORS the expanded tracker's secondary controls (same shared matrix) — David 2026-06-28
     if (!dk._wired) { dk._wired = 1;
       el("ldStop").onclick = function () { if (S.brk) { tfResumeBreak(); return; } var r = activeTimers(); if (r.length) { stopTimer(r[r.length - 1].id); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // on a break → resume the goal; else Play = start the plan / Stop = stop — David 2026-06-26
       el("ldSw").onclick = function () { startOrSwitch(); };
-      el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else tfCreatePlan(); }; // no plan → pick activity + duration → a future plan block (David 2026-06-27)
-      el("ldReplan").onclick = function () { planBreak(); };
-      el("ldDrift").onclick = function () { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: "Drift", catK: "vice", color: DOM.drift.c }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); toast("🌫️ drifting — tap the log later to name it"); }; // UNNAMED DRIFT: one tap starts an honest drift, no picker; stays relabelable on the log (David 2026-06-27)
       var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"), _sub = el("ldSub"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
       if (_sub) { _sub.onclick = function (e) { if (!_sub.classList.contains("ld-nudge")) return; e.stopPropagation(); var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else planBreak(); }; } // nudge sub-line tap = get back on plan (1-tap), else fall through to the info-tap (David 2026-06-27)
       if (_info) { _info.style.touchAction = "none"; _info.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // TAP or DRAG-UP the dock body → expand via the shared-element morph (tap-to-open restored — David 2026-06-28)
@@ -1043,6 +1041,13 @@
       var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable")) return; tfDrag(e, false); }); } // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
     }
     if (TF_OPEN) renderTrackerFull(); // keep the expanded ring in sync whenever the dock re-renders
+  }
+  function renderDockSeg() { // FOLDED seg row = the EXPANDED tracker's secondary controls, compact (one shared matrix → folded == expanded per state) — David 2026-06-28
+    var seg = document.querySelector("#liveDock .ld-seg"); if (!seg) return;
+    var st = trackerState().id, sec = trackerControls(st).filter(function (x) { return !x.primary; }); // the primary action stays the play/stop circle (#ldStop) — the seg shows the rest
+    seg.innerHTML = "";
+    sec.forEach(function (x) { var bn = add(seg, "button", "ld-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; });
+    seg.style.display = sec.length ? "" : "none"; // nothing secondary for this state → no empty row (collapsed-corner rule still hides it via CSS)
   }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); renderLiveDock(); if (!lt || !lb) return;
@@ -1290,23 +1295,51 @@
   }
   function tfClaimDismiss() { S._claimDismissed = true; save(); renderTrackerFull(); } // "not mine" → clear the claim, fall through to idle/night
   function tfNightBreathe() { if (typeof breathwork === "function") breathwork(4); else toast("rest — I've got the morning."); } // calm chip: a 4-cycle breath, or a gentle line
+  // ===== ONE shared decision matrix (David 2026-06-28) =====
+  // The SINGLE source of truth for what controls a tracker state offers. Both the EXPANDED ring (renderTFControls)
+  // AND the FOLDED dock seg (renderLiveDock) render from this, so the two surfaces ALWAYS show the same actions
+  // (same labels, same handlers, same order) → the .ld-seg ↔ #tfCtrls morph pairs the buttons 1:1.
+  // Returns an ordered array of { icon, label, fn, primary }. Exactly one entry is primary (= the big #tfDone button
+  // expanded / the play-stop circle in the folded dock). The rest are the secondary seg/row actions.
+  function trackerControls(state) {
+    switch (state) {
+      case "claim":
+        return [{ icon: "ti-circle-check", label: "Claim it", fn: tfClaim, primary: true },
+                { icon: "ti-x", label: "Not mine", fn: tfClaimDismiss }];
+      case "night":
+        return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
+      case "idle": {
+        var n = nextPlannedBlock(todayK());
+        if (n) return [{ icon: "ti-player-play-filled", label: "Start", fn: function () { startPlanned(n); renderTrackerFull(); }, primary: true },
+                       { icon: "ti-list-search", label: "Just track", fn: function () { tfPickTrack("What are you doing?"); } },
+                       { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
+        return [{ icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan, primary: true },
+                { icon: "ti-list-search", label: "Just track", fn: function () { tfPickTrack("What are you doing?"); } }];
+      }
+      case "break":
+        return [{ icon: "ti-player-play-filled", label: "Resume", fn: tfResumeBreak, primary: true },
+                { icon: "ti-plus", label: "+5 min", fn: function () { tfBreakPlus(5); } },
+                { icon: "ti-x", label: "End break", fn: tfEndBreak }];
+      case "breakup":
+        return [{ icon: "ti-arrow-back-up", label: "Back to it", fn: tfResumeBreak, primary: true },
+                { icon: "ti-plus", label: "+5 min", fn: function () { tfBreakPlus(5); } },
+                { icon: "ti-x", label: "End", fn: tfEndBreak }];
+      case "onplan": // Switch removed — the colored title pill IS the switch now (David 2026-06-27)
+        return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true },
+                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
+                { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
+      default: { // OFF-PLAN: no nonsensical "back on plan" — CREATE a plan (none yet) or REPLAN (change the one you have); both pick activity + minutes (David 2026-06-27)
+        var first = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan, primary: true }
+                                : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan, primary: true };
+        return [first, { icon: "ti-player-stop", label: "Stop", fn: tfDone }]; // Switch removed — the title pill is the switch (David 2026-06-27)
+      }
+    }
+  }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
-    function prim(ic, lab, fn) { var x = add(c, "button", "tf-b tf-done"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
-    function b(r, ic, lab, fn) { var x = add(r, "button", "tf-b"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
-    var r = function () { return add(c, "div", "tf-row"); };
-    var hasPlan = tfHasPlan();
-    if (state === "claim") { prim("ti-circle-check", "Claim it", tfClaim); var rc = r(); b(rc, "ti-x", "Not mine", tfClaimDismiss); return; }
-    if (state === "night") { prim("ti-wind", "Breathe with me", tfNightBreathe); var rn = r(); b(rn, "ti-chevron-down", "Close", closeTrackerFull); return; }
-    if (state === "idle") { var n = nextPlannedBlock(todayK());
-      if (n) { prim("ti-player-play-filled", "Start", function () { startPlanned(n); renderTrackerFull(); }); var r0 = r(); b(r0, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); b(r0, "ti-arrows-shuffle", "Replan", tfReplan); }
-      else { prim("ti-calendar-plus", "Create plan", tfCreatePlan); var r0b = r(); b(r0b, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); }
-      return; }
-    if (state === "break") { prim("ti-player-play-filled", "Resume", tfResumeBreak); var rbk = r(); b(rbk, "ti-plus", "+5 min", function () { tfBreakPlus(5); }); b(rbk, "ti-x", "End break", tfEndBreak); return; }
-    if (state === "breakup") { prim("ti-arrow-back-up", "Back to it", tfResumeBreak); var rbu = r(); b(rbu, "ti-plus", "+5 min", function () { tfBreakPlus(5); }); b(rbu, "ti-x", "End", tfEndBreak); return; }
-    if (state === "onplan") { prim("ti-circle-check", "Done", tfDone); var r1 = r(); b(r1, "ti-player-pause", "Pause", tfStartBreak); b(r1, "ti-arrows-shuffle", "Replan", tfReplan); return; } // Switch removed — the colored title pill IS the switch now (David 2026-06-27)
-    // OFF-PLAN: no nonsensical "back on plan" — either CREATE a plan (none yet) or REPLAN (change the one you have) — both pick activity + minutes (David 2026-06-27)
-    if (hasPlan) prim("ti-arrows-shuffle", "Replan", tfReplan); else prim("ti-calendar-plus", "Create plan", tfCreatePlan);
-    var r2 = r(); b(r2, "ti-player-stop", "Stop", tfDone); // Switch removed — the title pill is the switch (David 2026-06-27)
+    var ctrls = trackerControls(state), prim = ctrls.filter(function (x) { return x.primary; }), sec = ctrls.filter(function (x) { return !x.primary; });
+    prim.forEach(function (x) { var bn = add(c, "button", "tf-b tf-done"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; });
+    if (sec.length) { var row = add(c, "div", "tf-row"); sec.forEach(function (x) { var bn = add(row, "button", "tf-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; }); }
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
