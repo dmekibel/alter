@@ -1326,6 +1326,18 @@
       var q = (sb && sb.dataset.q) || "", mood = (sb && sb.dataset.mood != null && sb.dataset.mood !== "") ? +sb.dataset.mood : null;
       if (text || mood != null) { var rec = bk(todayK()); rec.journal = (rec.journal || []).concat([{ q: q, text: text, mood: mood, ts: Date.now() }]); rec.pm = rec.pm || {}; if (text) rec.pm.reflect = text; if (mood != null) rec.pm.mood = mood; save(); }
     }
+    if (commit && mode === "pm") { // PM bookend → bk(todayK()).pm = {reflect, mood, q, ts, done} (PM-ASK). Marks done so the evening hero never nags twice/day.
+      var sbp = el("tfStageBody"), tap = sbp && sbp.querySelector("textarea"), txt = tap ? tap.value.trim() : "";
+      var qp = (sbp && sbp.dataset.q) || "", mp = (sbp && sbp.dataset.mood != null && sbp.dataset.mood !== "") ? +sbp.dataset.mood : null;
+      var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = txt; recp.pm.q = qp; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true; save();
+    }
+    if (commit && mode === "am") { // AM bookend → bk(todayK()).am = {identity[], virtue, why, ts, done} (AM-GREET / AM-INTRINSIC). Writes the live profile so the day reads it.
+      var sba = el("tfStageBody"); var idents = (sba && sba.dataset.ident) ? sba.dataset.ident.split("|").filter(Boolean) : [];
+      var virt = (sba && sba.dataset.virtue) || "", why = (sba && sba.dataset.why) || "";
+      var reca = bk(todayK()); reca.am = reca.am || {}; reca.am.identity = idents; reca.am.virtue = virt; reca.am.why = why; reca.am.ts = Date.now(); reca.am.done = true;
+      if (S.profile) { if (idents.length) S.profile.todayIdentity = idents.slice(); if (virt) S.profile.todayVirtues = [virt]; } // keep the canonical profile in sync (no divergent copy)
+      save();
+    }
     if (TF_BLOCKID) { try { stopTimer(TF_BLOCKID); } catch (e) {} TF_BLOCKID = null; } // logs a Restore "Reflection" block + earns Spark (no covered-plan, so its own celebrate won't fire)
     if (commit && mode) { try { celebrateGated(DOM.restore.c, curStreak() || 1); } catch (e) {} } // GENTLE reward for showing up, gated once/logical-day across am/pm/journal
     TF_MODE = null; TF_MODE_USERSET = false;
@@ -1344,8 +1356,10 @@
     switch (mode) {
       case "journal": journalStageStep(sb); break;
       case "tool": sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">Toolbox</div><div class="tfs-sub">Coming soon — a calm shelf of tools for the moment you need one.</div></div>'; break;
-      case "am": case "pm": case "journey": default:
-        sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break; // Wave-1 placeholder; real flows land in CKPT-5/6/7/8
+      case "pm": pmStageStep(sb); break;   // ===== PM bookend (David 2026-06-28): mirror the day back, then ask the one right question =====
+      case "am": amStageStep(sb); break;   // ===== AM bookend (David 2026-06-28): greet, reflect last night's seed, set who you wake as + intrinsic why =====
+      case "journey": default:
+        sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break; // Wave-1 placeholder; real flows land in CKPT-7
     }
   }
   // ===== JOURNAL STAGE (CKPT-5, David 2026-06-28): the fusion proof — guidance IS tracking. One adaptive question + a textarea + an optional mood face, rendered into #tfStageBody while the Reflection ring tracks in the corner. Built ONCE (renderStage's dataset.mode guard skips rebuild), so the 1s live-tick never wipes what you're typing. =====
@@ -1353,6 +1367,9 @@
   function renderStageChips() { // the BASE (track-mode) entry doors into guided flows — visible + tappable (not gesture-only). Built fresh each track render (cheap, no inputs to preserve). (CKPT-5)
     var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";
     var c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ti-feather" style="color:' + DOM.restore.light + '"></i> Journal'; c.onclick = openJournal;
+    // AM / PM bookend doors (David 2026-06-28) — greet, never auto-trap; a one-tap chip opens the stage
+    var am = add(w, "button", "tf-chip"); am.innerHTML = '<i class="ti ti-sun-high" style="color:#ffc83d"></i> Morning'; am.onclick = function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); };
+    var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
   }
   function journalStageStep(sb) {
     var q = pickPrompt("journal"); // computed from today's real signals (drift/streak/kept/last intention)
@@ -1370,6 +1387,93 @@
       f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
       f.textContent = m.e; f.title = m.l;
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
+    });
+  }
+  // ===== PM / AM BOOKEND STAGES (David 2026-06-28): mirror the journal pattern exactly. Built ONCE per open (renderStage's dataset.mode guard skips rebuild) so the 1s live-tick never wipes inputs. =====
+  // reward-never-shame copy lint: a miss is NEUTRAL data, never guilt; drift renders in the cool-gray DOM.drift, never red.
+  var DRIFT_GRAY = "#565b66"; // the calm "quiet/drift" ink — never red, never a frown
+  var AM_WHYS = [ // INTRINSIC only (SDT): autonomy/identity reasons. NO extrinsic option exists by design.
+    "because it's who I am", "because it feels alive", "because I'd respect myself", "because I love the craft"
+  ];
+  function bookendMirror(k) { // PM-MIRROR: read the day back from data already in S — pure read, touches no timeline render
+    k = k || todayK(); var bl = blocks(k) || [], kept = 0, drift = 0, missed = 0, domMin = {};
+    bl.forEach(function (b) { if (!b.title) return; var st = blockStatus(k, b); if (st === "ok") kept++; else if (st === "miss") missed++; });
+    var run = activeTimers(); run.forEach(function (t) { if (domainOf(t) === "drift") drift++; });
+    (logs(k) || []).forEach(function (l) { var d = domainOf(l); if (d === "drift") { drift++; } domMin[d] = (domMin[d] || 0) + (l.mins || 0); });
+    var planned = bl.filter(function (b) { return b.title; }).length;
+    // strongest + quietest non-drift domain (warm phrasing, never a deficit)
+    var strong = "", quiet = "", best = -1; DOM_ORDER.forEach(function (d) { var m = domMin[d] || 0; if (m > best) { best = m; strong = d; } });
+    return { kept: kept, missed: missed, drift: drift, planned: planned, domMin: domMin, strong: strong, streakSafe: (curStreak() > 0) };
+  }
+  function bookendMirrorLine(mr) { // warm summary; quiet/empty day reads warm, never a zero
+    var DOMl = function (d) { return (DOM[d] && DOM[d].l) || d; };
+    if (!mr.planned) return "A free-form day — nothing was on the books, and that's fine. Rest is part of the work.";
+    var head = "You showed up for " + mr.kept + " of " + mr.planned;
+    var strong = (mr.strong && (mr.domMin[mr.strong] || 0) > 0) ? " — strong on " + DOMl(mr.strong) : "";
+    var streak = mr.streakSafe ? ". Streak safe." : ".";
+    return head + strong + streak;
+  }
+  function pmStageStep(sb) {
+    var k = todayK(), mr = bookendMirror(k);
+    var ctx = journalCtx(); var q = pickPrompt("pm", ctx);
+    sb.dataset.q = q; if (sb.dataset.mood == null) sb.dataset.mood = "";
+    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
+    add(card, "div", "tfs-h", "Reflection");
+    // STEP 1 — MIRROR (pure read, no input)
+    var mir = add(card, "div", "tfs-sub"); mir.textContent = bookendMirrorLine(mr);
+    mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.45;");
+    if (mr.drift || mr.missed) { var note = add(card, "div", "tfs-sub"); note.textContent = (mr.drift ? "The day drifted for a bit" : "A plan or two slid by") + " — just information, not a verdict."; note.style.color = DRIFT_GRAY; note.style.fontSize = "13px"; note.style.marginTop = "-4px"; }
+    // STEP 2 — adaptive question + textarea + mood
+    add(card, "div", "tfs-sub").textContent = q;
+    var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough"; ta.rows = 4;
+    ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
+    var prev = ((S.bk || {})[k] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect; // restore a draft if re-opened same day
+    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
+    MOODS.forEach(function (m, i) {
+      var f = add(moodWrap, "button", "jr-mood");
+      f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
+      f.textContent = m.e; f.title = m.l;
+      if (prev && prev.mood === i) { f.style.borderColor = DOM.restore.light; }
+      f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
+    });
+  }
+  function amStageStep(sb) {
+    var k = todayK(), rec = (S.bk || {})[k] || {}, prevAm = rec.am || {};
+    // seed: this morning's record (if re-opened) OR a PM-planted seed written last night under today's key
+    var seedIdent = (prevAm.identity && prevAm.identity.length) ? prevAm.identity.slice()
+                  : ((S.profile && S.profile.todayIdentity) ? S.profile.todayIdentity.slice() : []);
+    var seedVirt = prevAm.virtue || (S.profile && S.profile.todayVirtues && S.profile.todayVirtues[0]) || "";
+    sb.dataset.ident = seedIdent.join("|"); sb.dataset.virtue = seedVirt; sb.dataset.why = prevAm.why || "";
+    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
+    add(card, "div", "tfs-h", "Good morning.");
+    // reflect last night's / prior seed back, warmly
+    if (seedVirt || seedIdent.length) {
+      var vlab = seedVirt ? (VCLASS[seedVirt] || (VIRTUES.filter(function (v) { return v.k === seedVirt; })[0] || {}).l || "") : "";
+      var rb = add(card, "div", "tfs-sub"); rb.textContent = vlab ? ("Last time you chose to wake as " + vlab + ". Still true?") : "Who do you want to be today?";
+      rb.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.45;");
+    } else { add(card, "div", "tfs-sub").textContent = "Who do you want to be today?"; }
+    // confirm virtue (single pick) — the identity you wake as
+    add(card, "div", "tfs-sub", "Wake as someone…").style.fontSize = "13px";
+    var vg = add(card, "div", "am-vrow"); vg.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+    VIRTUES.forEach(function (v) {
+      var on = sb.dataset.virtue === v.k, b = add(vg, "button", "tf-chip");
+      b.innerHTML = '<span style="font-size:1.05em">' + v.e + '</span> ' + v.l;
+      if (on) { b.style.borderColor = v.c; b.style.color = v.c; }
+      b.onclick = (function (vk) { return function () { sb.dataset.virtue = (sb.dataset.virtue === vk) ? "" : vk;
+        Array.prototype.forEach.call(vg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
+        if (sb.dataset.virtue) { var vv = VIRTUES.filter(function (z) { return z.k === sb.dataset.virtue; })[0]; b.style.borderColor = vv ? vv.c : ""; b.style.color = vv ? vv.c : ""; }
+      }; })(v.k);
+    });
+    // INTRINSIC-WHY chip row (SDT) — autonomy/identity reasons ONLY; no extrinsic option
+    add(card, "div", "tfs-sub", "…because?").style.fontSize = "13px";
+    var wg = add(card, "div", "am-whyrow"); wg.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+    AM_WHYS.forEach(function (w) {
+      var on = sb.dataset.why === w, b = add(wg, "button", "tf-chip"); b.textContent = w;
+      if (on) { b.style.borderColor = DOM.restore.light; b.style.color = DOM.restore.light; }
+      b.onclick = (function (ww) { return function () { sb.dataset.why = (sb.dataset.why === ww) ? "" : ww;
+        Array.prototype.forEach.call(wg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
+        if (sb.dataset.why) { b.style.borderColor = DOM.restore.light; b.style.color = DOM.restore.light; }
+      }; })(w);
     });
   }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
@@ -1435,11 +1539,15 @@
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }]; // Close = abandon: stop the timer WITHOUT writing a journal entry, ring un-corners
-      case "pm": case "pm-mirror": case "pm-ask": case "am": case "am-greet": case "journey":
+      case "pm-mirror": case "pm-ask": case "am-greet": case "journey":
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "tool":
         return [{ icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, primary: true }];
+      // ===== AM / PM bookend controls (David 2026-06-28): Save commits the bookend record + GENTLE gated celebrate; Close abandons (no write), ring un-corners. Added at the END so sibling-mode merges stay trivial. =====
+      case "pm": case "am":
+        return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }];
       default: { // OFF-PLAN: no nonsensical "back on plan" — CREATE a plan (none yet) or REPLAN (change the one you have); both pick activity + minutes (David 2026-06-27)
         var first = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan, primary: true }
                                 : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan, primary: true };
@@ -1666,8 +1774,8 @@
     var p = phase(), und = undone(), sc = schedule(todayK()), out = { chips: [] };
     if (sc.bumped.length) { out.kicker = "running tight"; out.line = "Over by " + dur(sc.over) + " today."; out.sub = "I bumped " + sc.bumped.length + " low-priority " + (sc.bumped.length === 1 ? "slot" : "slots") + " so what matters survives."; out.primary = { label: "Review today", fn: function () { window.scrollTo({ top: 320, behavior: "smooth" }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); return out; }
     if (p === "night") { out.kicker = "tonight"; out.line = "It's late — let's wind down."; out.sub = "tidy the surfaces, phone away, head toward bed."; out.primary = { label: "Wind down 😴", fn: function () { ritualSheet(WINDDOWN); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
-    else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — let's recommit."; out.sub = "60 seconds: who you're being, your one thing, gratitude — then I frame your day."; out.primary = { label: "Morning recommit ☀️", fn: recommitSheet }; out.chips.push({ label: "Quick bookend ✅", fn: function () { ritualSheet(MORNING_RITUAL); } }); out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
-    else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Evening bookend 🌙", fn: function () { ritualSheet(EVENING_RITUAL); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — let's recommit."; out.sub = "60 seconds: who you're being, your one thing, gratitude — then I frame your day."; out.primary = { label: "Morning recommit ☀️", fn: recommitSheet }; out.chips.push({ label: "Morning bookend 🌅", fn: function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); } }); out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // AM bookend door (David 2026-06-28): one-tap into the cockpit morning stage — greet, never auto-trap
+    else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Reflection 🌙", fn: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // PM bookend (David 2026-06-28): replaces the dumb EVENING_RITUAL #sheet with the cockpit Reflection stage
     else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "What should I do next? ✨", fn: function () { suggestSheet(todayK()); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
     return out;
@@ -2282,6 +2390,8 @@
   ];
   var MICROPHASE = { morning: [2, 11, 13, 7], afternoon: [10, 1, 11, 12], evening: [11, 12, 6, 8], night: [2, 13, 11, 9] };
   // ===== ADAPTIVE JOURNAL PROMPTS (CKPT-5/PM-ASK, David 2026-06-28): scored rule bank modeled on WISDOM/MICRO. Each {q, when:fn(ctx)->bool, weight}. pickPrompt fires the single highest-weight match over real signals (drift>miss>streak>big-win>quiet>generic). Reward-never-shame: drift/miss are NEUTRAL data, never guilt. =====
+  // phase tags: a rule fires for a requested phase if its `ph` array includes that phase (or `ph` is absent = shared by journal+pm).
+  // The PM rules (ph:["pm"]) are the evening-reflection question bank (PM-ASK); they never surface in the freeform Journal door.
   var JPROMPTS = [
     { id: "drift",    q: "The day went its own way for a bit — what pulled your attention?",           when: function (c) { return c.drift; },                 weight: 90 },
     { id: "lastint",  q: "This morning you leaned toward “" + "{int}" + "” — how did that land?", when: function (c) { return !!c.lastInt; },             weight: 85 },
@@ -2290,7 +2400,16 @@
     { id: "streak",   q: "You kept the thread today — what made it feel doable?",                       when: function (c) { return c.streak >= 2 && c.kept >= 2; }, weight: 55 },
     { id: "bigwin",   q: "You put real time in today — what felt best about it?",                       when: function (c) { return c.mins >= 180; },            weight: 60 },
     { id: "kept",     q: "Something went right today — what was it, even a small thing?",               when: function (c) { return c.kept >= 1; },              weight: 40 },
-    { id: "quiet",    q: "A quiet day. What's one thing you'd like tomorrow to hold?",                  when: function (c) { return true; },                     weight: 10 }
+    { id: "quiet",    q: "A quiet day. What's one thing you'd like tomorrow to hold?",                  when: function (c) { return true; },                     weight: 10 },
+    // ===== PM reflection bank (PM-ASK, David 2026-06-28): warm, never-shame; a miss is neutral data. Priority ladder drift>miss>intent>lagVirtue>bigwin>streak>kept>quiet. =====
+    { id: "pm-drift",  ph: ["pm"], q: "The day took its own route for a stretch — no judgment, what was calling you?",        when: function (c) { return c.drift; },               weight: 92 },
+    { id: "pm-miss",   ph: ["pm"], q: "A couple of plans drifted past — what does that tell you about today, gently?",       when: function (c) { return c.missCount >= 2; },      weight: 78 },
+    { id: "pm-intent", ph: ["pm"], q: "This morning you reached for “" + "{int}" + "” — how did living it feel?",   when: function (c) { return !!c.lastInt; },           weight: 74 },
+    { id: "pm-lagv",   ph: ["pm"], q: "{lagv} stayed quiet today — is it asking for a little room tomorrow?",               when: function (c) { return !!c.lagVirtue; },         weight: 66 },
+    { id: "pm-bigwin", ph: ["pm"], q: "You poured real hours in today — what part of that felt most like you?",            when: function (c) { return c.mins >= 180; },         weight: 62 },
+    { id: "pm-streak", ph: ["pm"], q: "You kept the thread going — what made showing up feel possible today?",             when: function (c) { return c.streak >= 2 && c.kept >= 1; }, weight: 50 },
+    { id: "pm-kept",   ph: ["pm"], q: "One good thing happened today, even a small one — what was it?",                     when: function (c) { return c.kept >= 1; },           weight: 38 },
+    { id: "pm-quiet",  ph: ["pm"], q: "A soft day — and rest is part of the work. What would you like tomorrow to hold?",   when: function (c) { return true; },                  weight: 12 }
   ];
   function journalCtx() { // real signals from today's data — pure read, no writes
     var k = todayK(), bl = blocks(k) || [], drift = false, missCount = 0, kept = 0;
@@ -2298,13 +2417,17 @@
     var run = activeTimers(); run.forEach(function (t) { if (domainOf(t) === "drift") drift = true; });
     (logs(k) || []).forEach(function (l) { if (domainOf(l) === "drift") drift = true; });
     var yK = (lastDays(2) || [])[1], yBk = (S.bk || {})[yK] || {}, lastInt = (yBk.am && (yBk.am.why || (yBk.am.identity && yBk.am.identity[0]))) || ((S.bk || {})[k] && S.bk[k].am && S.bk[k].am.why) || "";
-    return { drift: drift, missCount: missCount, kept: kept, streak: curStreak(), mins: tfDomMinsToday(null), lastInt: lastInt };
+    return { drift: drift, missCount: missCount, kept: kept, streak: curStreak(), mins: tfDomMinsToday(null), lastInt: lastInt, lagVirtue: lagVirtueLabel() };
   }
-  function pickPrompt(phase, ctx) { // highest-weight matching rule; sensible default if none (the 'quiet' generic always matches)
+  function lagVirtueLabel() { // the lowest-glow virtue today = the one "quiet" today (warm prompt only, never a deficit bar) — pure read
+    try { var vs = (typeof virtues === "function") ? virtues() : null; if (!vs || !vs.length) return ""; var lo = vs.slice().sort(function (a, b) { return (a.x || 0) - (b.x || 0); })[0]; return lo ? lo.l : ""; } catch (e) { return ""; }
+  }
+  function pickPrompt(phase, ctx) { // highest-weight matching rule for the requested phase; sensible default if none (the 'quiet' generic always matches)
     ctx = ctx || journalCtx(); var best = null;
-    JPROMPTS.forEach(function (p) { try { if (p.when(ctx) && (!best || p.weight > best.weight)) best = p; } catch (e) {} });
+    JPROMPTS.forEach(function (p) { if (p.ph) { if (p.ph.indexOf(phase) === -1) return; } else if (phase === "pm") { return; } // pm uses ONLY ph:["pm"] rules; journal uses the shared (no-ph) rules
+      try { if (p.when(ctx) && (!best || p.weight > best.weight)) best = p; } catch (e) {} });
     if (!best) return "A line about today is enough. What stood out?";
-    return best.q.replace("{int}", esc(ctx.lastInt || "your intention"));
+    return best.q.replace("{int}", esc(ctx.lastInt || "your intention")).replace("{lagv}", esc(ctx.lagVirtue || "A virtue"));
   }
   function microState() { var k = todayK(); S.microState = S.microState || {}; return (S.microState[k] = S.microState[k] || {}); }
   function microTap(mi, chip) {
@@ -2612,7 +2735,7 @@
     // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
     var _nowBand = Math.max(12, 26 / Math.max(20, HP) * 60); // minutes within which the NOW marker visually overlaps a temporal anchor (≈26px tall now-circle/label) — David 2026-06-28
-    [["midnight", 0, "ti-clock-hour-12", "#5f8dd6"], ["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sunrise", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"], ["midnight", 1440, "ti-clock-hour-12", "#5f8dd6"]].forEach(function (tm) {
+    [["midnight", 0, "ti-clock-hour-12", "#5f8dd6"], ["wake", hrToMin(S.profile && S.profile.wake, false), "ti-sun-high", "#ffae6a"], ["noon", 720, "ti-sun-high", "#ffd24a"], ["bed", hrToMin(S.profile && S.profile.sleep, true), "ti-moon", "#9a8cff"], ["midnight", 1440, "ti-clock-hour-12", "#5f8dd6"]].forEach(function (tm) {
       if (tm[1] == null || tm[1] < startH * 60 || tm[1] > endH * 60) return;
       var _isMid = tm[0] === "midnight";
       // Z-STACKING + NO-OVERLAP (David 2026-06-28): when NOW sits right on the midnight marker, HIDE midnight entirely so the two never cover each other — the now-line (brighter, higher z) wins and draws ON TOP.
