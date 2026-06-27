@@ -996,12 +996,21 @@
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
   var TF_OPEN = false;
-  function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; renderTrackerFull(); tf.classList.add("on"); }
+  function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; renderTrackerFull(); tf.classList.add("on"); } // re-evaluate the welcome-back claim on every open (David 2026-06-27)
   function closeTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = false; tf.classList.remove("on"); }
-  function trackerState() { // derive the matrix state from live data (on-plan / off / idle / break / breakup)
+  function claimableBlock() { // the single most-likely plan block covering a passed/straddling gap with NO matching real log — the welcome-back "claim" target
+    var k = todayK(), now = logicalNowMin(), best = null;
+    blocks(k).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs >= now) return; if (b.done || blockStatus(k, b) === "ok") return; if (be <= bs) return; if (!best || bs > hm(best.time)) best = b; }); // most-recent unfulfilled block whose start is already behind now
+    if (!best) return null; var bs = hm(best.time), be = bs + (best.mins || 30); return { block: best, gapStartMin: bs, gapEndMin: Math.min(be, now) };
+  }
+  function trackerState() { // derive the matrix state from live data (on-plan / off / idle / break / breakup / claim / night)
     if (S.brk) { var bend = S.brk.start + S.brk.mins * 60000; return { id: (Date.now() < bend ? "break" : "breakup"), brk: S.brk }; } // a declared break is running (or its time is up)
     var run = activeTimers(), t = run[run.length - 1];
-    if (!t) return { id: "idle", t: null };
+    if (!t) { // nothing tracking → check for a claimable gap (welcome-back), then logical-night (off-hours), else idle
+      if (!S._claimDismissed) { var cb = claimableBlock(); if (cb) return { id: "claim", block: cb.block, gapStartMin: cb.gapStartMin, gapEndMin: cb.gapEndMin }; }
+      var ln = logicalNowMin(); if (ln >= bedHour() * 60 || ln < DAYSTART + 60) return { id: "night" }; // after bedtime or before ~5am → calm nightlight
+      return { id: "idle", t: null };
+    }
     var dom = domainOf(t); if (dom === "drift") return { id: "off", t: t, dom: dom, drift: true };
     var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), onb = null;
     blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom && !b.done) onb = b; });
@@ -1022,7 +1031,29 @@
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle");
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night");
+    if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
+      if (tile) { tile.style.background = tfStripe(CD.c); tile.style.filter = ""; tile.innerHTML = '<i class="ti ' + tiClass(CB) + '"></i>'; }
+      el("tfTitle").textContent = CB.title;
+      el("tfVerdict").textContent = "welcome back";
+      el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = dur(gap);
+      el("tfElabel").textContent = "away";
+      el("tfCtx").textContent = "gap " + fmt(S0.gapStartMin) + "–now";
+      el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b>';
+      setRing(1, CD.c); renderSwitchChips(""); renderTFControls("claim");
+      return;
+    }
+    if (S0.id === "night") { tf.classList.add("st-night");
+      if (tile) { tile.style.background = tfStripe("#5a4a86"); tile.style.filter = "saturate(.4) brightness(.7)"; tile.innerHTML = '<i class="ti ti-moon"></i>'; }
+      el("tfTitle").textContent = "rest";
+      el("tfVerdict").textContent = "no plan tonight";
+      el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = "";
+      el("tfElabel").textContent = "";
+      el("tfCtx").textContent = "rest — I've got the morning";
+      el("tfSpark").innerHTML = "";
+      setRing(1, "#5a4a86"); renderSwitchChips(""); renderTFControls("night");
+      return;
+    }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = nb ? nb.title : "Nothing tracking";
       el("tfVerdict").textContent = nb ? "ready when you are" : "";
@@ -1073,11 +1104,21 @@
   function tfHasPlan() { return (blocks(todayK()) || []).some(function (b) { return b.title; }); } // is there a plan today at all?
   function tfReplan() { planBreak(tfHasPlan() ? "Replan from now — what, for how long?" : "Plan now — what, for how long?"); } // pick an activity (single tap) → pick minutes → it owns now→future + starts tracking
   function tfPickTrack(title) { bentoPicker({ title: title || "Switch to?", onPick: function (x) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); } }); } // single-tap: tap an activity = start tracking it now (no second Play tap, no plan change)
+  function tfClaim() { var cb = claimableBlock(); if (!cb) { S._claimDismissed = true; renderTrackerFull(); return; } // collect the gap as a real log, reward it, then keep tracking the same activity forward (David 2026-06-27)
+    var b = cb.block, dom = domainOf(b), D = DOM[dom] || DOM.focus, gapMin = Math.max(1, logicalNowMin() - cb.gapStartMin), sd = new Date(); sd.setHours(0, 0, 0, 0); sd = new Date(sd.getTime() + cb.gapStartMin * 60000);
+    logs(todayK()).push({ id: uid(), time: pad(sd.getHours()) + ":" + pad(sd.getMinutes()), title: b.title, mins: gapMin, catK: b.catK, color: b.color || D.c, habitId: b.habitId || null }); // the welcome-back WRITE-PATH: heal the gap
+    earn(Math.max(4, Math.round(gapMin / 3)), { catK: b.catK }); bumpStreak(); S._claimDismissed = false; save();
+    var nt = startTrackerNow(); assignTimer(nt, { title: b.title, color: b.color || D.c, catK: b.catK }); maybeCelebrateTrack(nt); renderLiveTracker(); renderToday(); renderTrackerFull(); // continue forward
+  }
+  function tfClaimDismiss() { S._claimDismissed = true; save(); renderTrackerFull(); } // "not mine" → clear the claim, fall through to idle/night
+  function tfNightBreathe() { if (typeof breathwork === "function") breathwork(4); else toast("rest — I've got the morning."); } // calm chip: a 4-cycle breath, or a gentle line
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     function prim(ic, lab, fn) { var x = add(c, "button", "tf-b tf-done"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
     function b(r, ic, lab, fn) { var x = add(r, "button", "tf-b"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
     var r = function () { return add(c, "div", "tf-row"); };
     var hasPlan = tfHasPlan();
+    if (state === "claim") { prim("ti-circle-check", "Claim it", tfClaim); var rc = r(); b(rc, "ti-x", "Not mine", tfClaimDismiss); return; }
+    if (state === "night") { prim("ti-wind", "Breathe with me", tfNightBreathe); var rn = r(); b(rn, "ti-chevron-down", "Close", closeTrackerFull); return; }
     if (state === "idle") { var n = nextPlannedBlock(todayK());
       if (n) { prim("ti-player-play-filled", "Start", function () { startPlanned(n); renderTrackerFull(); }); var r0 = r(); b(r0, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); b(r0, "ti-arrows-shuffle", "Replan", tfReplan); }
       else { prim("ti-calendar-plus", "Create plan", tfReplan); var r0b = r(); b(r0b, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); }
