@@ -896,6 +896,7 @@
         }
       }
       pb.addEventListener("pointerup", gend); pb.addEventListener("pointercancel", gend);
+      pb.addEventListener("touchmove", function (e) { if (_pinching || e.touches.length >= 2) e.preventDefault(); }, { passive: false }); // a 2-finger gesture is OURS (pinch+pan) — block the browser's native 2-finger scroll so it can't fight the handler (bubbles are touch-action:pan-y, which otherwise lets native 2-finger scroll run at the same time = the jumpy/wrong scroll when both thumbs are on bubbles) — David 2026-06-27
     }
   }
   function findToday() { // "find yourself" in week/month: smooth-scroll back to the current page — David 2026-06-24
