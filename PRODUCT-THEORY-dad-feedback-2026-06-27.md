@@ -84,3 +84,41 @@ Source: David's dad. Logged + analyzed by Alfred at David's request. This is **t
 ---
 
 *Status: logged for processing. Next step is David's calls on the 4 open decisions, then this folds into the TRACKER-HANDOFF build order.*
+
+---
+
+## PART 5 — The Developmental Engine (research-grounded, 2026-06-27)
+
+Researched from David's Field Guide KB (cited SNs) + Brian Johnson (Heroic), James Clear (Atomic Habits), Ken Wilber, and the Transtheoretical "Stages of Change" model. This is the philosophy that makes "meet you at your level and baby-step you" *clever* instead of arbitrary.
+
+### The spine insight (everything hangs off this)
+**The app must detect the user's level — the user can't.** The KB's "Doom Loop" (H-006, Sapolsky SN-164/169): when you're dysregulated, cortisol takes the prefrontal cortex offline — *the exact brain region that would notice you're stuck is the first thing the stuck-state disables.* So self-report onboarding for a struggling user is "asking the broken instrument to measure itself." → **Detect from body + behavior, not from a questionnaire.** This is the scientific justification for Dad's room-messiness idea: the app *watches signals* and infers the stage.
+
+And the framing that removes shame (Withers, Golden Rule 1): **"You're not broken — you're misaligned / biologically hijacked."** A low level is a state to regulate, not a failure. This is the emotional core of a non-shaming baby-steps app.
+
+### Three converging staging lenses (use all three)
+1. **WHAT to work on — the 8-Layer Self-Help Stack (David's KB spine).** L1 Biology → L2 State → L3 Awareness → L4 Emotion → L5 Identity → L6 Perception → L7 Environment → L8 Meta. **Rule: you cannot work a higher layer if a lower one is broken** (Johnson: "if you can't get out of bed, nothing else matters"). → The app always works the *lowest broken layer first.* This is "build on the fundamentals" made literal.
+2. **HOW READY they are — Transtheoretical Stages of Change** (Prochaska — the established science of detecting readiness): Precontemplation → Contemplation → Preparation → Action → Maintenance. The *same goal* needs a *different nudge* per stage. → Tailor the directive to readiness, not just the task.
+3. **WHERE their mood is — Withers' Emotional Scale** (a ready-made ladder): Despair → Anger → Frustration → Hope → Optimism → Joy. "Can't jump from very low to very high — climb one rung." Anger is an *improvement* on despair (more energy). → Meet the mood, move it one rung.
+
+**Ken Wilber ties it together:** *States vs Stages* (SN-126) — peak states (a good day, a motivation hit) don't stick; only repeated practice converts states into permanent **stages**. And *transcend-and-include* — each stage is built on the one below, never skipped. This is the deep grounding for fundamentals-first: you don't leap to the top, you include the floor.
+
+### Level detection = two systems (Dad's ask, made concrete)
+**A. Clever onboarding (seed the stage, minimal friction).** Not a quiz. 2-3 low-effort signals: a readiness read (Stages-of-Change), an energy/floor check, and "what's the one thing." For the lowest-capacity user (KB "Numb Drifter") → *zero onboarding, no account, "just try this one thing."*
+**B. Ongoing monitoring (the live detector).** The app watches **fundamentals** and infers stage from behavior: room messiness (Dad's example), sleep, did-you-track-today, streak breaks, energy checks, follow-through rate. **If a fundamental is broken ~a week straight → that becomes the foundation the app works on.** This is the Stack's "lowest broken layer first," automated.
+
+### Fundamentals-first build order (anti-overwhelm)
+- Start at **L1 / one keystone** (energy, sleep, nasal breathing — the KB's cheapest highest-leverage), never a full-day plan (overwhelm = the #1 quit trigger).
+- **Floors, not ceilings** (Johnson/Guise): ask for the non-negotiable minimum, not the ideal.
+- **Two-minute rule** (Clear): make starting impossible to refuse. **"Spray paint vs gardening"** (SN-008): fix roots, not symptoms.
+
+### Anti-quit architecture — and why the GAME ships in v1
+The KB's account of quitting: *arambhashura* (hero-in-the-beginning, SN-009), the *plateau / valley of disappointment* (SN-094), the *Dabbler* (SN-238), and dopamine depletion making natural rewards go gray. What sustains: **systems > goals** (SN-092), **environment design > willpower** (SN-171/SN-198), **recovery-speed not perfection** ("never miss twice," SN-243), **proceduralization to automaticity** (SN-180), and crucially —
+- **Feeling-based reward installs habits; wanting-based striving only creates craving (SN-157).** Dry goal-chasing and affirmations fail; a *felt* reward wires the loop. → **This is the scientific reason the GAME must ship in v1, not later: the game is the felt-reward engine — it's the retention mechanism, not decoration.** Dad's instinct (gamification = anti-quit) and David's "ship with the game built in" are both correct and KB-backed.
+- Non-shame everywhere ("misaligned, not broken"); a missed day is never "you failed" (the boss, not you).
+
+### The one design axiom
+**Detect the level from body + behavior (the user can't self-see — Doom Loop). Assume misalignment, not brokenness. Regulate biology before psychology. Work the lowest broken layer first. Walk them up one rung at a time — measuring recovery speed, not perfection. And make the reward *felt* (the game), because felt reward is what wires a habit.**
+
+### Sources
+KB: SN-004 (Areté Gap), SN-008 (spray-paint/gardening), SN-009 (arambhashura), SN-092 (systems>goals), SN-094 (plateau), SN-126 (states vs stages / Wilber), SN-157 (feeling vs wanting reward), SN-164/169 (cortisol/PFC), SN-171/198 (environment>willpower), SN-177 (small actions), SN-180 (willingness muscle/proceduralization), SN-238 (Leonard's four types), SN-243 (never miss twice); thinker-profiles/brian-johnson.md, brian-withers.md; the 5-cluster blueprint-catalog.md; mechanism-library/dopamine.md, neuroplasticity.md. Web: [Areté / Heroic (Sloww)](https://www.sloww.co/arete-brian-johnson/), [Atomic Habits summary](https://jamesclear.com/atomic-habits-summary), [Transtheoretical Model](https://www.thebehavioralscientist.com/glossary/transtheoretical-model).
