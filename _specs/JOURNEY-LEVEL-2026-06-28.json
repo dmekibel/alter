@@ -1,0 +1,157 @@
+{
+  "summary": "Design ALTER's Duolingo-style journey + intelligent level/calibration system from 7 lenses; synthesize a grand design + build-ready specs",
+  "agentCount": 8,
+  "logs": [
+    "7/7 lenses returned — synthesizing the journey/level design"
+  ],
+  "result": {
+    "lensCount": 7,
+    "synth": {
+      "vision": "ALTER's journey turns \"the whole app\" into a path the user walks one step at a time, rendered inside the guardian-world that already exists. There is no quiz and no placement test. Three or four warm onboarding taps set a STARTING TONE, and from the second app-open onward a single pure function, readiness(), continuously infers the user's level from behavior already sitting in S — follow-through, ritual consistency, streak, planning depth, drift-recovery. That living score does four things, all on surfaces that already exist: it gates which curriculum node is the user's current \"one obvious next step,\" it sets how chatty the angel is, it sizes the daily goal, and it blooms the world (garden tiles, guardian, tree) as real-life consistency accrues. Consistency IS the XP; the world growing IS the progress bar. A brand-new user never sees the planner, the goals, the brain, or the full bookend at once — proactive() shows ONLY the current node's single action, and locked capabilities appear as soft \"soon\" dots, never disabled buttons that nag. This is the structural answer to the overwhelm David keeps hitting.\n\nThe six-node spine — show up, plan small, the morning, reflect, identity, mastery — maps 1:1 onto the bookend capabilities (BK-STATE / PM-PLAN / AM-GREET / PM-MIRROR / AM-INTRINSIC), so the journey is not a parallel feature: it is the progressive REVEAL of the bookend system, gated by behavior instead of dumped all at once. Each node unlocks when the prior one is internalized (Csikszentmihalyi's just-beyond-current-ability edge made literal), the unlock fires a GENTLE celebrate() and plants one world tile, and the capability quietly appears. Nodes ratchet forward only and never re-lock — reward-never-shame is enforced as math, not vibe: a bad day can stall the score but never demote a node or un-bloom the world; drift-recovery is a positive INPUT, so coming back after a miss raises readiness. There is no visible \"level down\" event ever.\n\nGuidance is a first-class autonomy dial — Guided (default), Light, Off — orthogonal to level: turning the volume down never locks a capability. The angel auto-EASES as competence grows (terser copy, fewer nudges) and at mastery OFFERS to step back, but never auto-tightens after a rough week. Choosing Off is framed as graduation, not desertion (SN-097: you became the scaffold the angel was holding up; SDT: autonomy IS the win), is celebrated, and is itself logged as readiness-positive. Critically, a returning power user like David, with months of real data, is met at his TRUE level: readiness() cold-infers his node from history on first load, so he opens to mastery with the whole app revealed — never told to \"track his first block.\"",
+      "journeySpine": [
+        "THE SPINE is 6 fixed-order nodes, each mapped to a bookend capability it reveals: N0 SHOW UP (track 1 block) -> N1 PLAN SMALL (PM-PLAN: tomorrow's one thing) -> N2 THE MORNING (AM-GREET/amBookend) -> N3 REFLECT (PM-MIRROR + PM-ASK) -> N4 IDENTITY (AM-INTRINSIC + votes framing) -> N5 MASTERY (self-driven, wheels-off offer). Order is fixed (it is a curriculum); only the DOMAIN each node points at adapts to the user's weak spot.",
+        "THE READINESS LOOP (runs once per logical day, cached): on every app-open, journeyTick() checks if S.guide.cache.computedK !== todayK(); if stale, recompute readiness() over lastDays(14) from S, then while the current node's gate is satisfied AND tier permits, advance node and fire unlockNode().",
+        "GATE = readiness signals + a per-node local flag (so you can't skip). N0 granted at onboarding finish. N1 unlocks at >=3 tracked blocks across >=2 distinct days. N2 unlocks at planned-then-followed >=2 times. N3 unlocks at AM bookend done >=4 of last 7. N4 unlocks at loop closed (S.bkStreak via AM-or-PM) >=5 of last 7 AND drift-recovered >=1. N5 unlocks at sustained high readiness (>=75 for ~7 days) OR the user dialing guidance to Off.",
+        "unlockNode(n): flip the capability visible, append to S.guide.unlocked (sticky floor, append-only, never removed), push to hist, fire celebrate() at GENTLE tier (tier 1, +10), plant ONE garden tile via S.game.garden.push, show one warm one-liner. At N4 the angel auto-eases guide guided->light. Monotonic: node only increases, gates only flip true.",
+        "THE ONE-OBVIOUS-NEXT-STEP: a guided branch at the TOP of proactive() — if S.guide.mode==='guided' and the current node's daily action isn't done, RETURN that node's single CTA as the hero primary and SUPPRESS the normal chip pile (progressive disclosure). Higher tiers / light / off fall through to today's normal phase router. Time-bound nodes (morning/reflect) defer to their phase and always offer a do-anytime fallback so no double-gate deadlock.",
+        "THE WORLD IS THE PROGRESS BAR: each completed node = a permanent bloom in the EXISTING game layer (garden tile, guardian trait, tree branch lighting). No XP number to fail; the world simply gets bigger as readiness climbs. Painted STATIC on render (DAY-ARC idiom), never in an rAF loop that could fight the timeline recenter watcher.",
+        "RE-ENTRY: on open after a gap, readiness() recomputes from the WHOLE record (not just streak), so a lapsed user resumes at their true node — never dumped to N0. At most a silent one-tier graceful decay, wrapped in 'welcome back, let's pick up where we left off' pointed at the current node, never the missed days.",
+        "OFF-RAMP at any time: a Guidance row (Guided/Light/Off) lives in the existing dayToolsMenu / Brain settings surface beside 'Redo setup'. Off reveals every capability immediately, silences all nudges, but the engine keeps computing silently so the world still blooms. Off is logged readiness-positive and celebrated as graduation."
+      ],
+      "readinessModel": [
+        "readiness() is ONE pure function (beside curStreak()@314), reads ONLY data already in S (no quiz/server/AI), returns {score:0-100, tier:0-5, sub:{...}, why:'plain sentence', lowConfidence:bool}. Modeled on the WISDOM/MICRO scored-array pattern. Cached in S.guide.cache keyed by computedK===todayK() so it runs once per logical day, never per render.",
+        "SIGNAL 1 showUp (w .20): follow-through = ok-blocks / planned-blocks via blockStatus(dk,b) over blocks(dk) across lastDays(14); empty-plan days excluded from the denominator. 0-100.",
+        "SIGNAL 2 ritual (w .25, highest): closed-loop days / active days over 14d, day closed if (S.bk[k]||{}).am.done || (S.bk[k]||{}).pm.done. Reads the bookend baton; never a parallel counter.",
+        "SIGNAL 3 streak (w .12): curStreak() normalized asymptotically (100*(1-1/(1+streak/5))); a 0 reads 0, never negative. Reads ACTIVITY streak only; the ritual loop-streak comes via SIGNAL 2 / S.bkStreak — the two are kept distinct, never overloaded onto S.game.streak.",
+        "SIGNAL 4 depth (w .13): normalized blend of avg non-fundamental blocks(k).length/day + has-a-goal (activeGoals) + tomorrow pre-committed in S.bk[tomK].",
+        "SIGNAL 5 recovery (w .22, second-highest, the forgiveness signal): of days with a miss, fraction where the next active day had a kept block OR used PM-RESTORY [carry]/[right call]. Miss-then-return is a SCORE GAIN, never a loss.",
+        "SIGNAL 6 breadth (w .08, lowest): distinct DOM_ORDER domains touched / 8 over 14d (drift excluded). Volume/spread matters least.",
+        "SCORE = round(sum(signal*weight)); weights sum to 1, biased to ritual+recovery. TIER bands: 0:[0-15] 1:[16-35] 2:[36-55] 3:[56-72] 4:[73-87] 5:[88-100]. tier drives current-node ceiling, angel chattiness, goalSize(), world bloom.",
+        "SEED: S.guide.seedTier (0|1|2 from onboarding) blended with weight decaying to ~0 over the first ~10 active days (activeDays = distinct S.log/S.bk keys, not wall-clock); behavior dominates by ~day 10.",
+        "COLD-START: activeDays<3 -> lowConfidence=true, angel stays gentle ('still getting to know your rhythm'), lean on seedTier. DECAY: tier falls at most ONE step over a long gap, silently, wrapped in 'welcome back'; no user-visible level-down. unlocked[] is a sticky floor: journeyNode()=max(first failing gate, max(unlocked)) so earned capabilities never disappear.",
+        "TRANSPARENCY: why is a plain sentence from top sub-signals ('shown up 5 of 7 days, closed the loop 4 nights') — never surface the raw number as a droppable gauge (the hearts/punishment trap David refused)."
+      ],
+      "principles": [
+        "EXTEND, never duplicate — upgrade onboard(), proactive()/renderHero(), and openGame()/the game layer in place. A parallel journey surface or third menu is the 'two clashing menu systems' landmine and gets rejected.",
+        "Readiness is computed-on-read from existing S, cached once/logical-day — never a stored mutable score the user can fail or that can go stale. Reads curStreak()/blockStatus()/S.bk/S.bkStreak; never invents a parallel follow-through or streak counter.",
+        "Behavior wins, taps only seed — a few onboarding taps set tone; the seed decays to ~0 over ~10 active days so real follow-through governs the level (David's decision #1).",
+        "The journey IS the world — nodes render as blooms in the existing garden/tree/guardian; consistency is the XP, the world growing is the progress bar (David's decision #2). No new canvas, no timeline touch.",
+        "Progressive disclosure solves overwhelm — a new user sees ONLY the current node's one action; locked capabilities are soft 'soon' dots, never disabled nagging buttons. Off reveals everything.",
+        "Guidance is an autonomy dial orthogonal to level (Guided/Light/Off) — turning it down never locks a capability; Off silences narration but keeps every feature reachable and the world still blooms. Choosing less is celebrated as leveling up (David's decision #3, SDT autonomy).",
+        "Auto-ease, never auto-tighten — guidance softens as competence grows and the angel OFFERS to step back, but never re-imposes guidance after a rough week. Drift lowers the computed score silently; it never raises the guidance knob.",
+        "Reward-never-shame is math + a copy lint — nodes ratchet forward only, never demote or un-bloom; drift-recovery is a positive input; ban should/must/wasted/failed/missed/behind/'streak broken'/sad-guardian; drift renders mauve never red; unlock/journey celebrations use the GENTLE tier (tier 1), never EPIC fireworks.",
+        "One voice per phase — the journey CTA REPLACES the relevant proactive line, never stacks on it; every nudge gated behind guide==='guided' AND a once-per-day flag, respecting the 4am DAYSTART rollover, so the angel never becomes an alarm clock.",
+        "Existing users are met at their level — readiness() cold-infers node from full history on first load; a power user opens to mastery with the whole app revealed, never told to 'track your first block'.",
+        "No SCHEMA bump — S.guide is an additive top-level object matching the S.mood/S.acts/S.bk precedent; every read guards with (S.guide||{}) so old saves are safe with zero migration; rides export/import + pushUndo for free.",
+        "DEVICE-UNTESTED honesty — any world-bloom paint or hero-arc render near the game/timeline layer is labeled DEVICE-UNTESTED until David confirms on his iPhone; preview proves boot + node logic + tap CTAs, not gesture/render feel."
+      ],
+      "specs": [
+        {
+          "id": "JX-STATE",
+          "title": "S.guide journey/guidance state + lazy load() default + cold-infer migration",
+          "what": "Add additive top-level object S.guide = { mode:'guided', seedTier:0, unlocked:[], cache:{}, hist:[], offeredK:null }. One-line lazy default in load() (~app.js:1418, beside S.mood/S.acts/S.bk defaults) with per-field backfill guards (S.guide.unlocked = S.guide.unlocked || []; if(S.guide.mode==null)S.guide.mode='guided'). On first load where S.guide is absent AND S.profile.set is true (existing user), run a one-time catch-up: call readiness()+journeyNode() over real history and set S.guide.unlocked to all nodes up to the inferred node; set S.guide.migrated. So David lands at mastery, never N0.",
+          "why": "The load-bearing state for the whole engine; without the cold-infer migration a power user is insultingly dumped at 'track one block'. Additive object = zero data-wipe risk.",
+          "region": "app.js load()/state ~1418",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "Additive top-level S.guide; NO SCHEMA bump (matches S.mood/S.acts/S.bk precedent). All reads guard with (S.guide||{}). One-time cold-infer migration guarded by S.guide.migrated."
+        },
+        {
+          "id": "JX-READINESS",
+          "title": "readiness() pure function — the living behavioral score",
+          "what": "Add readiness() beside curStreak()@314 returning {score,tier,sub,why,lowConfidence}. MVP computes THREE signals (showUp via blockStatus() over lastDays(14); ritual via (S.bk[k]||{}).am/pm.done; streak via curStreak() normalized), weighted, blended with decaying seedTier, cached to S.guide.cache by computedK===todayK(). Add signals 4-6 (depth, recovery, breadth) in a fast-follow. Returns lowConfidence when activeDays<3. Guard every S.bk read with (S.bk[k]||{}) so it works before the bookend specs land (falls back to showUp+streak only).",
+          "why": "The engine behind every gate, chattiness level, goal size and world bloom. Pure + cached = no render-fight, no stale counter, can't be 'failed'.",
+          "region": "app.js scoring helpers ~314-330",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none (reads existing S.log/S.blocks/S.bk/S.game; caches in S.guide.cache from JX-STATE)"
+        },
+        {
+          "id": "JX-NODES",
+          "title": "journeyNode() curriculum + gate definitions + journeyTick() advance",
+          "what": "Add const JOURNEY = 6-node array [{id,key,gate(r),world,line},...] (show-up/plan-small/morning/reflect/identity/mastery) mapped to bookend capabilities. journeyNode() = max(first node whose gate(readiness()) fails, max(S.guide.unlocked)) — sticky floor, monotonic forward. journeyTick() runs once/logical-day (computedK guard) in load()/renderAll: while current gate passes, advance + call unlockNode(). unlockNode(n): append S.guide.unlocked, push hist, GENTLE celebrate(), plant one garden tile (S.game.garden.push), warm one-liner; at N4 auto-ease mode guided->light. Never decrements, never un-flips.",
+          "why": "Turns the score into a walkable path; the monotonic ratchet is what makes reward-never-shame structural, not cosmetic.",
+          "region": "app.js near readiness/virtues ~314-1473",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none (writes S.guide.unlocked/hist from JX-STATE + S.game.garden via existing plantGarden shape)"
+        },
+        {
+          "id": "JX-PROACTIVE-GATE",
+          "title": "Guided branch at top of proactive() — the one-obvious-next-step + progressive disclosure",
+          "what": "Add an early branch in proactive()@1520: if (S.guide||{}).mode==='guided' AND the current journeyNode()'s daily action isn't done today, RETURN {kicker,line,sub,primary,chips:[]} with primary = that node's single CTA (N0->nowSheet 'Track one thing'; N1->planSheet(tomK) 'Name tomorrow's one thing'; N2->amBookend/recommitSheet; N3->pmBookend; N4->AM-INTRINSIC) and SUPPRESS the chip pile. Time-bound nodes defer to their phase and always provide a do-anytime fallback CTA (no deadlock). mode==='light'/'off' or higher tiers fall through to today's existing phase router unchanged.",
+          "why": "Delivers Duolingo's one-next-step + progressive disclosure with ZERO new UI — it's a filter on the hero renderHero() already paints. Solves overwhelm on existing surface.",
+          "region": "app.js proactive() ~1520",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none (reads S.guide + journeyNode())"
+        },
+        {
+          "id": "JX-GUIDANCE-TOGGLE",
+          "title": "Guided / Light / Off dial in the existing settings surface",
+          "what": "Add a 'Guidance' pchips row (Guided/Light/Off) to dayToolsMenu()@803 and/or the Brain/Redo-setup surface@627 — clone the existing engine-picker idiom. On tap: set S.guide.mode, save(), re-render; choosing Light/Off fires a GENTLE celebrate() and logs a tracked 'Took the wheel' Spark earn (readiness-positive, framed as graduation). Off must reveal every gated capability (proactive falls through, no node suppression) and silence all journey nudges. Sub-label copy explains each level + 'change anytime, choosing less is itself leveling up'.",
+          "why": "David's decision #3 off-switch, made first-class and autonomy-respecting; the escape hatch that prevents anyone being trapped in tutorial mode.",
+          "region": "app.js dayToolsMenu ~803 / settings ~627",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "none (writes S.guide.mode)"
+        },
+        {
+          "id": "JX-ONBOARD-SEED",
+          "title": "Tiny day-1 tone seed in onboard() finish() + hand into Node 0",
+          "what": "In onboard() add ONE light step ('Where are you with this?' -> just starting / I try but slip / pretty steady) mapping to S.guide.seedTier 0/1/2, and a guidance pre-pick defaulting to 'guided'. In finish()@1366 write S.guide.seedTier + mode. Reframe the close to hand into Node 0's single act ('let's just track one block — what are you doing right now?' -> nowSheet) rather than dumping the full timeline. Keep the heavy stock-your-life steps reachable but offer them as a deferred day-2 'want me to stock your life?' card, not mandatory-first. Branch cleanly inside onboard (mode flag), do NOT fork a parallel overlay.",
+          "why": "David's decision #1 light-read seed; demoting stock-your-life from first-thing to later-offer is the direct fix for first-run overwhelm.",
+          "region": "app.js onboard() ~1354-1366",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none (writes S.guide.seedTier/mode + existing S.profile)"
+        },
+        {
+          "id": "JX-WORLD-BLOOM",
+          "title": "Per-node world bloom in the existing game layer (garden/guardian/tree)",
+          "what": "On unlockNode(), beyond planting a garden tile, key visible richness off journeyNode()/tier: more garden slots, guardian trait/aura warmth, tree branches lighting. Reuse drawGarden/renderWorld/treeFit/guardianFit — add node-typed tiles to the existing tile-type switch; flip existing S.game.ups flags (e.g. gold at mastery). STATIC repaint on render only (DAY-ARC idiom), never an rAF readiness() call. Add the 6 nodes as lit(solid)/current(brightest)/locked(dim-outline) markers along the existing world using opacity+fill contrast — NO neon/glow (berry palette lint).",
+          "why": "David's decision #2 — the world blooming IS the progress bar; consistency literally is the XP. Reuses the canvas, adds no surface.",
+          "region": "app.js game layer drawGarden/renderWorld/treeFit ~1540-2048",
+          "effort": "L",
+          "conflictRisk": "med",
+          "schema": "none (S.game.garden.push existing shape + S.game.ups flags)"
+        },
+        {
+          "id": "JX-DAILY-GOAL",
+          "title": "goalSize(tier) — the sizeable, fair daily goal + tiny-win",
+          "what": "Add goalSize(tier) returning the Duolingo daily goal string + completion test (tier0='track 1 block'; tier2='close the loop + 2 blocks'; tier5=self-set). Surface it in the hero sub-line under guided/light and fire a GENTLE tiny-win celebrate() on completion (once/day, computedK-gated). Off = no goal surfaced.",
+          "why": "Duolingo's sizeable-daily-goal + tiny-win-celebration mechanic, scaled to level so it's always fair, never punishing.",
+          "region": "app.js proactive()/renderHero ~1520-2049",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "none (reads tier; once/day flag in S.guide.cache)"
+        },
+        {
+          "id": "JX-AUTOEASE",
+          "title": "Mastery auto-ease offer + re-entry copy",
+          "what": "At tier 4+ (or N5 gate) surface a ONE-TIME dismissible hero card 'You've got the rhythm — want me to step back?' [Step back ▸ -> guide=light/off] [Keep guiding me], gated by S.guide.offeredK cooldown so it never nags; never auto-changes without a tap. On open after a gap, lead proactive() with 'Welcome back — let's pick up where we left off' pointed at the current node (reads the whole record, never the missed days, never a red zero). Choosing Off = GENTLE celebrate + 'this is yours now — I'll be here on the arc'.",
+          "why": "The auto-ease/graduation half of decision #3 (SDT, SN-097) + the reward-never-shame re-entry that meets a lapsed user at their true level.",
+          "region": "app.js proactive()/renderHero ~1520-2049",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none (S.guide.offeredK)"
+        }
+      ],
+      "firstWave": [
+        "JX-STATE",
+        "JX-READINESS",
+        "JX-NODES",
+        "JX-PROACTIVE-GATE",
+        "JX-GUIDANCE-TOGGLE"
+      ],
+      "openQuestions": [
+        "MVP independence: should Node 0/1 work standalone before the bookend specs (S.bk) ship, with readiness() falling back to showUp+streak only — or do we lock the build order bookends-first so ritual/recovery signals exist from day one? (The journey READS S.bk; until it exists those signals are empty.)",
+        "Node-gate generosity: bias gates LOW/generous so the app grows fast (risk: feels too easy), or tighter so unlocks feel earned (risk: a user plateaus and the app stays artificially small/empty)? This should be tuned against your REAL 14-day export, not synthetic data.",
+        "Should the 6 journey nodes be VISIBLE as lit/locked markers on the home day-arc/world (drives the open-the-app habit, but risks reading as a path you can fail), or kept a quieter trophy trail that only fills in?",
+        "Mastery off-ramp threshold: offer the 'wheels off' step at tier 4 (earlier, more autonomy-forward) or only after sustained tier 5 for ~2 weeks (more earned)? And when Off is chosen, keep computing the world silently (recommended) or fully freeze the journey?",
+        "Voice: keep the 'Sage' persona for all journey/unlock copy to match onboarding + the bookend voice, or a distinct register for journey moments vs bookends?",
+        "The day-1 tone tap: keep it as the single tiny self-report (recommended), or drop it entirely and seed purely from the existing onboarding vibe chip so there is ZERO new onboarding question?"
+      ]
+    }
+  }
+}

@@ -1044,7 +1044,7 @@
   }
   function renderDockSeg() { // FOLDED seg row = the EXPANDED tracker's secondary controls, compact (one shared matrix → folded == expanded per state) — David 2026-06-28
     var seg = document.querySelector("#liveDock .ld-seg"); if (!seg) return;
-    var st = trackerState().id, sec = trackerControls(st).filter(function (x) { return !x.primary; }); // the primary action stays the play/stop circle (#ldStop) — the seg shows the rest
+    var st = trackerState().id, sec = trackerControls(st); // FULL per-state set, identical to the expanded tracker (folded == expanded; nothing dropped; play/stop circle is a bonus quick-action) — David 2026-06-28
     seg.innerHTML = "";
     sec.forEach(function (x) { var bn = add(seg, "button", "ld-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; });
     seg.style.display = sec.length ? "" : "none"; // nothing secondary for this state → no empty row (collapsed-corner rule still hides it via CSS)
