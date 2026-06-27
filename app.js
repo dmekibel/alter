@@ -660,6 +660,9 @@
     var cs = pb.querySelector(".day-card.cur .day-cardscroll"); nowLineEl = cs ? cs.querySelector(".nowline") : null;
     if (cs) cs.scrollTop = Math.max(0, anchor * (nv / old) - fy); // keep the time under the viewport-centre put
   }
+  // ONE source of truth for a bar's pixel height (David 2026-06-27): true time-height MINUS a 4px margin, floored at a small minimum — but CLAMPED to never exceed the true slot (durMin/60*HP). The clamp is what kills the back-to-back overlap at zoom-out: a 5min bar at low zoom used to floor to 5px and eat into the next bubble; now it can never be taller than its own slot, so abutting bubbles always abut, never overlap. Tall bars (true-4 >= MINBAR) are UNCHANGED (= the old Math.max(5, …/60*HP-4) for anything >=9px tall). Used by place(), the straddle/partial/real heights AND the live-pinch relayout so live + commit stay byte-identical (no zoom-bounce). MINBAR matches the old floor (5) so nothing shifts for normal bars.
+  var MINBAR = 5;
+  function barH(durMin, HP) { var t = durMin / 60 * HP; return Math.min(t, Math.max(MINBAR, t - 4)); }
   // Density by bubble height (text → icon → sliver). Module-level so the LIVE pinch can re-grade every frame, not just the commit re-render (David 2026-06-26)
   function degradeCard(card) { var h = parseFloat(card.style.height) || 26; card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; }
   // LIVE content reflow during a pinch: re-grade every bubble by its new height (text hides/shows seamlessly) and rebuild the right symbol-rail (thin bars' icons appear/move LIVE, not snapping in on release). Reads only inline styles (no forced layout). Makes the commit a visual no-op = no bounce. (David 2026-06-26)
@@ -686,7 +689,7 @@
         var startH = +cal.dataset.startH; if (isNaN(startH)) startH = 6; var endH = +cal.dataset.endH; if (isNaN(endH)) endH = 30;
         cal.style.height = ((endH - startH) * nv + 10) + "px";
         var list = cal.querySelectorAll("[data-mn]");
-        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = Math.max(5, (+e.dataset.dur) / 60 * nv - 4) + "px"; } // SAME floor/margin as the render → live + commit heights match → no bounce on release
+        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = ((mn - startH * 60) / 60 * nv + off) + "px"; if (e.dataset.dur != null) e.style.height = barH(+e.dataset.dur, nv) + "px"; } // barH = SAME floor/margin/clamp as the render → live + commit heights match → no bounce on release (David 2026-06-27)
         liveReflowCal(cal); // re-grade bubbles + rebuild the symbol-rail live this frame → text/icons reflow seamlessly as you pinch, and the commit changes nothing (no bounce)
       }
     }
@@ -2306,7 +2309,7 @@
       var ml = add(cal, "div", "timemark"); ml.style.top = ((tm[1] - startH * 60) / 60 * HP) + "px"; ml.dataset.mn = tm[1]; ml.style.borderTopColor = tm[3] + "55";
       var lb = add(ml, "span", "timemark-lab"); lb.style.color = tm[3]; lb.innerHTML = '<i class="ti ' + tm[2] + '"></i> ' + tm[0];
     });
-    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = Math.max(5, durv / 60 * HP - 4) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "26px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // bars are their TRUE time-height (low floor) so back-to-back bubbles can't overlap; the label then adapts to the height (David 2026-06-25)
+    function place(card, mins, durv, lane) { card.style.top = ((mins - startH * 60) / 60 * HP) + "px"; card.style.height = barH(durv, HP) + "px"; card.dataset.mn = mins; card.dataset.dur = durv; if (lane === "P") { card.style.left = "26px"; card.style.right = "calc(50% + 4px)"; } else { card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; } } // bars are their TRUE time-height (low floor) so back-to-back bubbles can't overlap; the label then adapts to the height (David 2026-06-25)
     // LABEL INTELLIGENCE by bar height (David 2026-06-25): tall = icon+name (+subtitle) · medium = icon+name one line · thin = icon/emoji only · too-thin = name on the SIDE
     function degrade(card) { degradeCard(card); } // delegates to the module-level grader (shared with the live pinch reflow) — name only on TALL bars (≥22) so zoom-out stays minimal; resize only on genuinely tall bars (≥48) so a small bubble rearranges instead of stretching (David 2026-06-25)
     function rr() { renderToday(); }
@@ -2337,7 +2340,7 @@
       if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
-      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(5, (_uE - _uS) / 60 * HP - 4) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble (the matched part is its own shining bubble) — David 2026-06-25
+      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = barH(_uE - _uS, HP) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble (the matched part is its own shining bubble) — David 2026-06-25
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) railItems.push({ y: parseFloat(card.style.top) + (parseFloat(card.style.height) || 4) / 2, ic: tiClass(b), c: D.c, ink: D.ink, open: (function (bb) { return function () { editBlk(bb); }; })(b) }); // too thin to label → its symbol goes to the right rail; tap the chip to open it (David 2026-06-25)
       if (status === "ok" && !partial) { // DONE = deep-jewel diagonal STRIPES (the old metallic look, darkened for night) + ink edge — NO neon glow, NO shine; the now-line stays the brightest thing (David 2026-06-27)
@@ -2353,11 +2356,11 @@
         var _matte = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.74) + "," + mixHex(D.c, "#160510", 0.74) + " 9px," + mixHex(D.c, "#160510", 0.82) + " 9px," + mixHex(D.c, "#160510", 0.82) + " 18px)", _R = "13px";
         card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1";
         if (_trk) { // TRACKING → the GHOST separates from the active bubble (this is when it breaks off and gets its rounded bottom) — David 2026-06-27
-          if (_tsm > bs + 0.5) { card.style.height = Math.max(5, (_tsm - bs) / 60 * HP - 4) + "px"; card.dataset.mn = bs; card.dataset.dur = (_tsm - bs); card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderRadius = _R; card.style.boxShadow = "0 3px 0 #160510"; } // GHOST = untracked past (bs → _tsm) = the CARD, now a standalone FULLY-rounded narrow plan-lane bubble (keeps the plan name)
+          if (_tsm > bs + 0.5) { card.style.height = barH(_tsm - bs, HP) + "px"; card.dataset.mn = bs; card.dataset.dur = (_tsm - bs); card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderRadius = _R; card.style.boxShadow = "0 3px 0 #160510"; } // GHOST = untracked past (bs → _tsm) = the CARD, now a standalone FULLY-rounded narrow plan-lane bubble (keeps the plan name)
           else { card.style.height = "0px"; card.style.border = "none"; card.style.background = "none"; card.style.boxShadow = "none"; } // started exactly at the block top → no ghost head
           var _hasTrk = now > _tsm + 0.5;
           if (_hasTrk) { var _segH = (now - _tsm) / 60 * HP, _seg = add(cal, "div", "matchseg"); _seg.style.top = topFor(_tsm) + "px"; _seg.style.height = _segH + "px"; _seg.style.left = "26px"; _seg.style.right = "4px"; _seg.dataset.mn = _tsm; _seg.dataset.dur = (now - _tsm); _seg.style.borderRadius = _R + " " + _R + " 0 0"; _seg.style.borderBottom = "none"; _seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)"; _seg.style.borderColor = "#160510"; _seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09)"; if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = D.light; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:#fff2f9;"; } } // (2a) TRACKED stretch = bright activity-colour, rounded TOP, SQUARE bottom (flows into the future — no gap); thin sliver → emoji only, no pink
-          var _fw = add(cal, "div", "futwide"); _fw.style.cssText = "position:absolute;left:26px;right:4px;box-sizing:border-box;z-index:1;pointer-events:none;border:2px solid " + mixHex(D.c, "#160510", 0.46) + ";opacity:.5;"; _fw.style.top = topFor(now) + "px"; _fw.style.height = Math.max(5, (be - now) / 60 * HP - 4) + "px"; _fw.style.background = "transparent"; _fw.style.borderRadius = _hasTrk ? ("0 0 " + _R + " " + _R) : _R; if (_hasTrk) _fw.style.borderTop = "none"; _fw.dataset.mn = now; _fw.dataset.dur = (be - now); // (2b) FUTURE half while TRACKING = a FAINT HOLLOW outline (planned-ahead, unwritten) — NOT a solid bar, so the tracked bubble doesn't look like it leaked past the now-line (David 2026-06-27)
+          var _fw = add(cal, "div", "futwide"); _fw.style.cssText = "position:absolute;left:26px;right:4px;box-sizing:border-box;z-index:1;pointer-events:none;border:2px solid " + mixHex(D.c, "#160510", 0.46) + ";opacity:.5;"; _fw.style.top = topFor(now) + "px"; _fw.style.height = barH(be - now, HP) + "px"; _fw.style.background = "transparent"; _fw.style.borderRadius = _hasTrk ? ("0 0 " + _R + " " + _R) : _R; if (_hasTrk) _fw.style.borderTop = "none"; _fw.dataset.mn = now; _fw.dataset.dur = (be - now); // (2b) FUTURE half while TRACKING = a FAINT HOLLOW outline (planned-ahead, unwritten) — NOT a solid bar, so the tracked bubble doesn't look like it leaked past the now-line (David 2026-06-27)
         } else { // NOT tracking → ONE continuous bar in the plan lane: ghost-dark top + matte future-bottom, split ONLY by the now-line crossing it. It was correct this way before — the bubble separates only on Play (David 2026-06-27)
           card.style.background = "none"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 3px 0 #160510"; var _ch = Math.max(5, (be - bs) / 60 * HP - 4);
           var _cg = add(card, "div", "convghost"); _cg.style.height = ((now - bs) / 60 * HP / _ch * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.86); _cg.style.boxShadow = "inset 0 0 0 2px " + mixHex(D.c, "#160510", 0.32);
@@ -2366,7 +2369,7 @@
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
-        var _mh = Math.max(5, (_pm.end - _pm.start) / 60 * HP - 4); // same floor/margin → no bounce
+        var _mh = barH(_pm.end - _pm.start, HP); // same floor/margin/clamp → no bounce
         var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "26px"; seg.style.right = "4px";
         seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)"; seg.style.borderColor = "#160510"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 2px 0 #160510";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
@@ -2445,7 +2448,7 @@
       var card = add(cal, "div", "calblk lane act" + (it.kind === "timer" ? " live" : "")), colW = 50 / it.cols;
       var cardH;
       if (it.kind === "timer") { cardH = Math.max(0, (it.e - it.s) / 60 * HP - 2); card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; card.dataset.dur = (it.e - it.s); card.dataset.baseh = cardH; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); } // starts ~0 (invisible) at the now-line and grows UPWARD behind it as time passes — no minimum size, no extending below now (David 2026-06-27) // LIVE bubble PRINTS into the past: grows from its start down to the now-line as time passes, starting as a thin sliver (too small for text → the now-line readout covers the "what" until it's tall enough to switch to on-bubble text) — David 2026-06-27
-      else { cardH = Math.max(5, (it.e - it.s) / 60 * HP - 4); card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); } // floor-5/margin-4, no cap → matches the live-zoom relayout exactly (no bounce)
+      else { cardH = barH(it.e - it.s, HP); card.style.top = topFor(it.s) + "px"; card.style.height = cardH + "px"; card.dataset.mn = it.s; liveBottom = Math.max(liveBottom, topFor(it.s) + cardH); } // barH floor/margin/clamp → matches the live-zoom relayout exactly (no bounce) (David 2026-06-27)
       card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; card.style.width = "auto"; // one activity at a time — real lane is always full width, never split into multitasking columns (David 2026-06-23)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
@@ -2518,7 +2521,7 @@
       var rightTrack = !isFuture && showNow && lx0 > rect0.width * 0.5; // present/past REAL lane → tap-to-track, not create
       var planSide = isFuture || lx0 <= rect0.width * 0.5;
       var moved = false, done = false, holdT = null;
-      function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 30, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (nb) editBlk(nb); } // a 30-min empty bubble + its editor; the slider sizes it (drag-on-timeline can't beat the scroller, so we don't try) — David 2026-06-26
+      function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 30, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); bentoPicker({ title: "What's the plan?", onPick: function (x) { var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (!nb) return; nb.title = x.title; nb.color = x.color || (DOM[x.domain] || DOM.focus).c; nb.catK = x.catK || null; nb.domain = x.domain || domainOf(x); reflow(k); save(); renderToday(); }, onCancel: function () { var a = blocks(k), i = a.map(function (b) { return b.id; }).indexOf(id); if (i >= 0) { a.splice(i, 1); reflow(k); save(); renderToday(); } } }); } // tap an empty slot → a 30-min bubble lands AT the tapped time, then the bento opens immediately (single-tap to pick) and the activity appears in place; tap the placed bubble AGAIN to open the full editor. Dismiss the bento with no pick → the empty stub is removed (no litter). (David 2026-06-27 — was: created the stub then jumped straight into the full editor)
       // PRESS-AND-HOLD-to-create REMOVED (David 2026-06-27, "I don't like it") — empty bubbles are made by a deliberate quick TAP only (in up()), never an accidental hold. holdT stays null; the done/holdT guards below are harmless no-ops.
       function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 12 || Math.abs(e.clientX - dx) > 12)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // a drag means you're scrolling → cancel the create
       function up(e) {
@@ -2878,16 +2881,30 @@
     L.forEach(function (e) { var dur = e.mins || 15, s = cur < 0 ? hm(e.time) : Math.max(hm(e.time), cur); s = Math.min(1410, s); var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); if (nt !== e.time) { e.time = nt; changed = true; } cur = s + dur; });
     if (changed) save(); return changed;
   }
+  // PAST has DIVERGED from plan when, for TODAY, the plan and the real (tracked) lanes disagree in the past region: a missed plan, a partial match, or a drift log. When diverged the two are "disjoint timelines" — too messy to auto-reorder safely — so the past stays frozen (set-in-stone, the original contract). When the past is CLEAN (everything matched / on-plan), past blocks may reorder like the future. (David 2026-06-27: "reorder in the past just like the future UNLESS the plan mismatches — then pause.")
+  function pastDiverged(k) {
+    if (k !== todayK()) return false; // only today has a live plan↔real split; other days are pure history (already reorderable)
+    var now = logicalNowMin();
+    var bl = blocks(k); for (var i = 0; i < bl.length; i++) { var b = bl[i], be = hm(b.time) + (b.mins || 30); if (be <= now) { var st = blockStatus(k, b); if (st === "miss") return true; var dom = domainOf(b), pm = (st === "ok" && !b.done) ? matchedSpanFor(k, b, dom) : null; if (pm && pm.cov < (b.mins || 30) - 5) return true; } } // a missed or partially-matched past plan = divergence
+    var lg = logs(k); for (var j = 0; j < lg.length; j++) { var e = lg[j], ee = hm(e.time) + (e.mins || 0); if (ee <= now && domainOf(e) === "drift") return true; } // a past drift log = you went off-plan = divergence
+    return false;
+  }
+  // module-scope bounding span of same-domain real coverage over a plan block (the in-render matchedSpan is closure-scoped; this mirrors it for pastDiverged) — David 2026-06-27
+  function matchedSpanFor(k, b, dom) { var lgs = logs(k), s = null, e = null, bs = hm(b.time), be = bs + (b.mins || 30); for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs && domainOf(lgs[i]) === dom) { var cs = Math.max(bs, ls), ce = Math.min(be, le); if (s === null || cs < s) s = cs; if (e === null || ce > e) e = ce; } } return s === null ? null : { start: s, end: e, cov: e - s }; }
   function reflow(k) {
     var all = blocks(k).slice();
     var pins = all.filter(function (b) { return b.pin; }).map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
     var flex = all.filter(function (b) { return !b.pin; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
     var changed = false, cur = -1;
+    var _now = logicalNowMin(), _today = (k === todayK()), _pastFrozen = _today && pastDiverged(k); // when the past↔plan diverged, freeze the past (original set-in-stone behavior); when clean, the past reorders like the future (David 2026-06-27)
     flex.forEach(function (b) {
       var dur = b.mins || 30;
-      if (k === todayK() && hm(b.time) <= logicalNowMin()) { cur = Math.max(cur, hm(b.time) + dur); return; } // already STARTED today → fixed in place; a future edit must never reshuffle the past (David 2026-06-25)
-      var s = cur < 0 ? hm(b.time) : Math.max(hm(b.time), cur), moved = true, guard = 0;
+      var _bs = hm(b.time), _be = _bs + dur, _straddlesNow = _today && _bs <= _now && _be > _now, _isPast = _today && _be <= _now;
+      if (_today && _straddlesNow) { cur = Math.max(cur, _be); return; } // the LIVE straddling block never moves — set-in-stone (regression contract)
+      if (_isPast && _pastFrozen) { cur = Math.max(cur, _be); return; } // diverged past → frozen exactly as before (David 2026-06-25 contract)
+      var s = cur < 0 ? _bs : Math.max(_bs, cur), moved = true, guard = 0;
       while (moved && guard++ < 60) { moved = false; for (var i = 0; i < pins.length; i++) { if (s < pins[i].e && s + dur > pins[i].s) { s = pins[i].e; moved = true; } } }
+      if (_isPast) s = Math.min(s, Math.max(_bs, _now - dur)); // a reordering PAST block can shift to close a gap/overlap but NEVER crosses the now-line into the future (regression contract #2) — David 2026-06-27
       s = Math.min(1410, s);
       var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60);
       if (nt !== b.time) { b.time = nt; changed = true; }
