@@ -701,9 +701,15 @@
   #ltLabel{ font-size:14.5px; display:flex; align-items:center; gap:6px; }
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
   /* ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) ===== */
-  #trackerFull{ position:fixed; left:0; right:0; bottom:0; top:auto; height:0; z-index:90; overflow:hidden; opacity:0; pointer-events:none; will-change:height; border-radius:18px 18px 0 0; touch-action:none; overscroll-behavior:none; } /* OUTER = clip; its height GROWS bottom-up (no scale → no stretch) so the dock card rises into the tracker (David 2026-06-27) */
+  /* SHARED-ELEMENT MORPH (FLIP) model (David 2026-06-28): the sheet shows at FULL size; only its dark BACKGROUND fades in (content crossfade is banned). Each big element FLIES/GROWS from its mini dock counterpart — circles via uniform scale only, never distort. The outer no longer clips by height (no more rise/crossfade). */
+  #trackerFull{ position:fixed; left:0; right:0; bottom:0; top:auto; height:calc(100dvh - 92px); z-index:90; overflow:hidden; opacity:0; pointer-events:none; border-radius:18px 18px 0 0; touch-action:none; overscroll-behavior:none; }
   #trackerFull.on{ opacity:1; pointer-events:auto; }
-  #trackerFull.tf-anim{ transition:height .4s cubic-bezier(.2,.82,.3,1), opacity .12s, border-radius .4s; } /* animate the rise/shrink; removed while finger-dragging */
+  #trackerFull.tf-bg{ transition:opacity .26s linear, height .4s cubic-bezier(.2,.82,.3,1); } /* the dark sheet background fades in/out; height only animates on the finger-drag fallback */
+  /* the morphing shared elements: GPU transform from the top-left corner (FLIP math is corner-delta + size-ratio). tf-morph adds the spring; cleared after the morph so layout is normal. */
+  #tfRing, #tfTitle, #tfTime, #tfCtrls{ will-change:transform,opacity; transform-origin:0 0; }
+  #trackerFull.tf-morphing #tfRing.tf-morph, #trackerFull.tf-morphing #tfTitle.tf-morph, #trackerFull.tf-morphing #tfTime.tf-morph, #trackerFull.tf-morphing #tfCtrls.tf-morph{ transition:transform .4s cubic-bezier(.2,.82,.3,1), opacity .26s linear; }
+  /* the secondary content (verdict, elapsed-label, ctx, switch chips, clock, spark, grab handle) just fades — it has no mini counterpart, so it can't "fly"; a fade is not the banned content-crossfade of a morphing pair */
+  #trackerFull.tf-morphing .tf-verdict, #trackerFull.tf-morphing .tf-elabel, #trackerFull.tf-morphing .tf-ctx, #trackerFull.tf-morphing .tf-switch, #trackerFull.tf-morphing .tf-clock, #trackerFull.tf-morphing .tf-spark, #trackerFull.tf-morphing .tf-grab, #trackerFull.tf-morphing .tf-close{ transition:opacity .26s linear; }
   #tfBackdrop{ position:fixed; top:0; left:0; right:0; height:200px; z-index:97; background:transparent; pointer-events:none; } /* covers ONLY the calendar peek above the open sheet (above the z95/96 header) → tap it to close; never covers the sheet itself (David 2026-06-28) */
   #tfBackdrop.on{ pointer-events:auto; }
   .tf-inner{ position:absolute; left:0; right:0; bottom:0; height:calc(100dvh - 92px); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); box-sizing:border-box; } /* full-height content, anchored to the bottom — the outer clip reveals it upward, no reflow, no distortion */
@@ -1016,7 +1022,9 @@
   #nav .nb:active{ transform:scale(.93); }
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="goals"], body.nav-collapsed.tab-day #nav .nb[data-tab="self"]{ display:none !important; }
+  /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
+  #nav .nb[data-tab="goals"], #nav .nb[data-tab="self"]{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="goals"], body.nav-collapsed.tab-day #nav .nb[data-tab="self"]{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"]{ flex:none !important; width:62px !important; height:62px !important; border-radius:13px !important; padding:0 !important; position:relative; } /* match the dock's height so the corner button + dock sit at the same height (David 2026-06-27) */
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
@@ -1052,9 +1060,13 @@
   body.tab-day:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:calc(70px + env(safe-area-inset-bottom,0px)); z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; transition:left .26s cubic-bezier(.2,.85,.3,1),right .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* slimmer dock → more timeline (David 2026-06-25); base transition so it slides both into AND out of the collapsed corner (David 2026-06-27) */
   #liveDock .ld-grab{ width:100%; height:24px; background:transparent; margin:-4px 0 0; position:relative; cursor:grab; touch-action:none; } /* full-width tall touch zone — drag UP to expand (the visual bar is the ::before) (David 2026-06-27) */
   #liveDock .ld-grab::before{ content:""; position:absolute; top:7px; left:50%; transform:translateX(-50%); width:40px; height:5px; border-radius:3px; background:#5a2c44; }
-  #liveDock .ld-main{ display:flex; align-items:center; gap:8px; margin-bottom:5px; }
-  #liveDock .ld-stop{ width:37px; height:37px; border-radius:50%; background:#ff5fa0; border:2.5px solid #160510; color:#fff; font-size:17px; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:0 3px 0 #160510; cursor:pointer; }
+  #liveDock .ld-main{ display:flex; align-items:center; gap:9px; margin-bottom:5px; }
+  /* FOLDED DOCK = a MINIATURE of the big ring tracker (David 2026-06-28): the play/stop is a small striped activity CIRCLE — a mini #tfTile inside a thin ink ring that echoes the big reward band. It's the FLIP shared element that grows into #tfRing on open (uniform scale only — never distort). */
+  #liveDock .ld-stop{ width:40px; height:40px; border-radius:50%; background:#ff5fa0; border:3px solid #160510; color:#fff2f9; font-size:16px; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 3px 0 #160510; cursor:pointer; position:relative; }
+  #liveDock .ld-stop::after{ content:""; position:absolute; inset:-3px; border-radius:50%; border:2px solid var(--ldrim,rgba(0,0,0,0)); pointer-events:none; transition:border-color .3s; } /* reward-band rim: green when on-plan (set via --ldrim in JS) so the folded button reads like the mini ring; transparent otherwise */
   #liveDock .ld-info{ flex:1; min-width:0; }
+  /* during the FLIP morph the mini elements' big twins are flying into place — hide the originals so you don't see both (David 2026-06-28) */
+  #liveDock.ld-morphing .ld-stop, #liveDock.ld-morphing .ld-act, #liveDock.ld-morphing .ld-el, #liveDock.ld-morphing .ld-seg{ opacity:0; }
   #liveDock .ld-act{ color:#ffe3f1; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #liveDock .ld-sub{ color:#cd9bb6; font-size:10px; font-weight:600; margin-top:1px; }
   #liveDock .ld-sub.ld-nudge{ color:#ff8ac0; cursor:pointer; } /* gentle off-plan nudge — pink, no alarm/red (David 2026-06-27) */
@@ -1347,6 +1359,6 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=586"></script>
+  <script src="app.js?v=587"></script>
 </body>
 </html>
