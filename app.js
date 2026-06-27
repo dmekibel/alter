@@ -255,7 +255,7 @@
     play:    { l: "Play",    e: "🎮", c: "#d99f30", light: "#f0c860", dark: "#c08a22", ring: "#f2d894", ink: "#4a3000", ti: "ti-device-gamepad-2" },
     restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
     upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
-    drift:   { l: "Drift",   e: "🌫️", c: "#4a3d54", light: "#b3a7bf", dark: "#241b2e", ring: "#6a5c75", ink: "#d8ccdf", ti: "ti-windmill" }   // cool slate-mauve "fog" smudge + readable lilac text (was invisible black-on-black) (David 2026-06-27)
+    drift:   { l: "Drift",   e: "🌫️", c: "#565b66", light: "#b8bcc6", dark: "#2a2d34", ring: "#7a808c", ink: "#cdd2db", ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -993,7 +993,7 @@
     if (!dk._wired) { dk._wired = 1;
       el("ldStop").onclick = function () { if (S.brk) { tfResumeBreak(); return; } var r = activeTimers(); if (r.length) { stopTimer(r[r.length - 1].id); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // on a break → resume the goal; else Play = start the plan / Stop = stop — David 2026-06-26
       el("ldSw").onclick = function () { startOrSwitch(); };
-      el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); };
+      el("ldPlan").onclick = function () { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else tfCreatePlan(); }; // no plan → pick activity + duration → a future plan block (David 2026-06-27)
       el("ldReplan").onclick = function () { planBreak(); };
       el("ldDrift").onclick = function () { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: "Drift", catK: "vice", color: DOM.drift.c }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); toast("🌫️ drifting — tap the log later to name it"); }; // UNNAMED DRIFT: one tap starts an honest drift, no picker; stays relabelable on the log (David 2026-06-27)
       var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"), _sub = el("ldSub"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
@@ -1034,8 +1034,8 @@
   // ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) =====
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
-  var TF_OPEN = false;
-  function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; renderTrackerFull(); tf.classList.add("on"); } // re-evaluate the welcome-back claim on every open (David 2026-06-27)
+  var TF_OPEN = false, _ringP = 0, _ringRaf = 0;
+  function openTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); tf.classList.add("on"); } // _ringP=0 → the ring fills from empty on every open (the "see the green filling" reward); re-evaluate claim on open (David 2026-06-27)
   function closeTrackerFull() { var tf = el("trackerFull"); if (!tf) return; TF_OPEN = false; tf.classList.remove("on"); }
   function claimableBlock() { // the single most-likely plan block covering a passed/straddling gap with NO matching real log — the welcome-back "claim" target
     var k = todayK(), now = logicalNowMin(), best = null;
@@ -1071,6 +1071,7 @@
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night");
+    var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
       if (tile) { tile.style.background = tfStripe(CD.c); tile.style.filter = ""; tile.innerHTML = '<i class="ti ' + tiClass(CB) + '"></i>'; }
       el("tfTitle").textContent = CB.title;
@@ -1119,7 +1120,7 @@
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
     tf.classList.add(onplan ? "st-onplan" : "st-off");
     if (tile) { tile.style.background = tfStripe(D.c); tile.style.filter = ""; tile.innerHTML = tiIcon(t); }
-    el("tfTitle").textContent = t.title || "Tracking";
+    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#160510", 0.5); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // the activity name IS a colored pill = the switch button (David 2026-06-27)
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan");
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
     // context = pacing: how long is left in the planned block, and when it ends
@@ -1133,7 +1134,13 @@
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
   }
-  function setRing(p, col) { var ring = el("tfRing"); if (!ring) return; var pct = Math.max(0, Math.min(100, Math.round(p * 100))); ring.style.background = "conic-gradient(" + (col || "#28cf86") + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; } // flat green/grey conic band — no glow (David's no-neon rule); fills clockwise with elapsed
+  function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
+    function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; }
+    if (_ringRaf) { cancelAnimationFrame(_ringRaf); _ringRaf = 0; }
+    if (instant || Math.abs(target - _ringP) < 0.01) { _ringP = target; paint(target); return; }
+    function step() { var d = target - _ringP; if (Math.abs(d) < 0.006) { _ringP = target; paint(target); _ringRaf = 0; return; } _ringP += d * 0.16; paint(_ringP); _ringRaf = requestAnimationFrame(step); }
+    _ringRaf = requestAnimationFrame(step); // GUITAR-HERO fill: glide the green up to the live % (and from 0 on open) so being on-task visibly charges the ring (David 2026-06-27)
+  }
   function tfDone() { var run = activeTimers(); closeTrackerFull(); if (run.length) stopTimer(run[run.length - 1].id); } // finish the activity → close, then log it + fire the on-plan reward (stopTimer)
   function fmtCD(ms) { var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); } // countdown m:ss (or h:mm:ss)
   function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; durationSheet("Break", function (mins) { if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: mins }; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); }); } // declared break: log what you did so far, then hold a timed pause with the goal waiting
@@ -1143,6 +1150,7 @@
   function tfHasPlan() { return (blocks(todayK()) || []).some(function (b) { return b.title; }); } // is there a plan today at all?
   function tfReplan() { planBreak(tfHasPlan() ? "Replan from now — what, for how long?" : "Plan now — what, for how long?"); } // pick an activity (single tap) → pick minutes → it owns now→future + starts tracking
   function tfPickTrack(title) { bentoPicker({ title: title || "Switch to?", onPick: function (x) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); } }); } // single-tap: tap an activity = start tracking it now (no second Play tap, no plan change)
+  function tfCreatePlan() { bentoPicker({ title: "Plan what?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false }; blocks(k).push(nb); reflow(k); save(); renderToday(); renderTrackerFull(); toast("📅 planned " + esc(x.title) + " · " + dur(mins)); }); } }); } // NO-PLAN "Create plan": pick activity → choose minutes → a FUTURE plan block (does NOT start tracking; you tap Start when ready) — David 2026-06-27
   function tfClaim() { var cb = claimableBlock(); if (!cb) { S._claimDismissed = true; renderTrackerFull(); return; } // collect the gap as a real log, reward it, then keep tracking the same activity forward (David 2026-06-27)
     var b = cb.block, dom = domainOf(b), D = DOM[dom] || DOM.focus, gapMin = Math.max(1, logicalNowMin() - cb.gapStartMin), sd = new Date(); sd.setHours(0, 0, 0, 0); sd = new Date(sd.getTime() + cb.gapStartMin * 60000);
     logs(todayK()).push({ id: uid(), time: pad(sd.getHours()) + ":" + pad(sd.getMinutes()), title: b.title, mins: gapMin, catK: b.catK, color: b.color || D.c, habitId: b.habitId || null }); // the welcome-back WRITE-PATH: heal the gap
@@ -1160,14 +1168,14 @@
     if (state === "night") { prim("ti-wind", "Breathe with me", tfNightBreathe); var rn = r(); b(rn, "ti-chevron-down", "Close", closeTrackerFull); return; }
     if (state === "idle") { var n = nextPlannedBlock(todayK());
       if (n) { prim("ti-player-play-filled", "Start", function () { startPlanned(n); renderTrackerFull(); }); var r0 = r(); b(r0, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); b(r0, "ti-arrows-shuffle", "Replan", tfReplan); }
-      else { prim("ti-calendar-plus", "Create plan", tfReplan); var r0b = r(); b(r0b, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); }
+      else { prim("ti-calendar-plus", "Create plan", tfCreatePlan); var r0b = r(); b(r0b, "ti-list-search", "Just track", function () { tfPickTrack("What are you doing?"); }); }
       return; }
     if (state === "break") { prim("ti-player-play-filled", "Resume", tfResumeBreak); var rbk = r(); b(rbk, "ti-plus", "+5 min", function () { tfBreakPlus(5); }); b(rbk, "ti-x", "End break", tfEndBreak); return; }
     if (state === "breakup") { prim("ti-arrow-back-up", "Back to it", tfResumeBreak); var rbu = r(); b(rbu, "ti-plus", "+5 min", function () { tfBreakPlus(5); }); b(rbu, "ti-x", "End", tfEndBreak); return; }
-    if (state === "onplan") { prim("ti-circle-check", "Done", tfDone); var r1 = r(); b(r1, "ti-player-pause", "Pause", tfStartBreak); b(r1, "ti-switch-horizontal", "Switch", function () { tfPickTrack("Switch to?"); }); b(r1, "ti-arrows-shuffle", "Replan", tfReplan); return; }
+    if (state === "onplan") { prim("ti-circle-check", "Done", tfDone); var r1 = r(); b(r1, "ti-player-pause", "Pause", tfStartBreak); b(r1, "ti-arrows-shuffle", "Replan", tfReplan); return; } // Switch removed — the colored title pill IS the switch now (David 2026-06-27)
     // OFF-PLAN: no nonsensical "back on plan" — either CREATE a plan (none yet) or REPLAN (change the one you have) — both pick activity + minutes (David 2026-06-27)
-    if (hasPlan) prim("ti-arrows-shuffle", "Replan", tfReplan); else prim("ti-calendar-plus", "Create plan", tfReplan);
-    var r2 = r(); b(r2, "ti-switch-horizontal", "Switch", function () { tfPickTrack("Switch to?"); }); b(r2, "ti-player-stop", "Stop", tfDone);
+    if (hasPlan) prim("ti-arrows-shuffle", "Replan", tfReplan); else prim("ti-calendar-plus", "Create plan", tfCreatePlan);
+    var r2 = r(); b(r2, "ti-player-stop", "Stop", tfDone); // Switch removed — the title pill is the switch (David 2026-06-27)
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
