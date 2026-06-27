@@ -559,6 +559,10 @@
   .calblk.live .live-elapsed{ font-weight:800; font-size:14px; letter-spacing:.3px; }
   .calblk.live .live-stop{ width:32px; height:32px; border-radius:9px; background:#ff5fa0; border:2px solid #160510; color:#4a1126; font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 0 #160510; padding:0; flex:none; -webkit-tap-highlight-color:transparent; }
   .calblk.live .live-stop:active{ transform:translateY(1px); box-shadow:0 1px 0 #160510; }
+  /* ARMED-AT-PRESENT play button — a future plan slid up against the now-line gets a round Play; tap = start tracking now (David 2026-06-27). Berry round button in the activity colour, modelled on .ld-stop / .live-stop. */
+  .calblk .calplay{ position:absolute; right:6px; bottom:6px; width:30px; height:30px; border-radius:50%; background:#ff5fa0; border:2px solid #160510; color:#4a1126; font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 0 #160510; padding:0; z-index:6; -webkit-tap-highlight-color:transparent; }
+  .calblk .calplay:active{ transform:translateY(1px); box-shadow:0 1px 0 #160510; }
+  .calblk.armed-now{ box-shadow:0 0 0 2px #ff5fa0,0 3px 0 #160510 !important; } /* dragged up until it bumps the present — a calm pink rim (no neon), the now-line stays brightest */
   /* dashed "start new" slot in the REAL lane (mockups 006/007) */
   .startnew{ position:absolute; height:46px; border:2px dashed #9a6a86; border-radius:11px; background:#48123a; color:#e8b8d2; font-size:13px; font-weight:700; padding:0 11px; cursor:pointer; display:flex; align-items:center; gap:6px; z-index:2; transition:transform .12s,background .12s; overflow:hidden; }
   .startnew.planned{ border-style:solid; border-color:#ff5fa0; background:#3a1530; color:#ffe3f1; } /* shows your next planned thing — tap to do it (David 2026-06-24) */
