@@ -1050,7 +1050,7 @@
     renderTFControls(onplan ? "onplan" : "off");
   }
   function setRing(p, col) { var ring = el("tfRing"); if (!ring) return; var pct = Math.max(0, Math.min(100, Math.round(p * 100))); ring.style.background = "conic-gradient(" + (col || "#28cf86") + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; } // flat green/grey conic band — no glow (David's no-neon rule); fills clockwise with elapsed
-  function tfDone() { var run = activeTimers(); if (run.length) stopTimer(run[run.length - 1].id); closeTrackerFull(); } // finish the activity → logs it + fires the on-plan reward (stopTimer), then drop back to the day
+  function tfDone() { var run = activeTimers(); closeTrackerFull(); if (run.length) stopTimer(run[run.length - 1].id); } // finish the activity → close, then log it + fire the on-plan reward (stopTimer)
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     function prim(ic, lab, fn) { var x = add(c, "button", "tf-b tf-done"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
     function b(r, ic, lab, fn) { var x = add(r, "button", "tf-b"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
