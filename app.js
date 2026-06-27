@@ -2076,19 +2076,17 @@
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var now = logicalNowMin(), _dw = dayWindow(), startH = _dw.startH, endH = _dw.endH, HP = pullHourPx; // YOUR day = wake → bedtime (from onboarding); the SAME window for every day so the sections are uniform and stack into one continuous scroll-into-it timeline (David 2026-06-26)
     var cal = add(L, "div", "cal"); cal.style.height = ((endH - startH) * HP + 10) + "px"; cal.dataset.startH = startH; cal.dataset.endH = endH; // cached so live-zoom can reposition nodes without a rebuild
-    // DAY/NIGHT (David 2026-06-27, v4.1 — approved): the whole timeline tints to the CURRENT time of day so you FEEL the hour. Clean rose dawn, cool calm day, red dusk, deep indigo night with a moon + stars. Never bright. Refreshes on the per-minute re-render.
+    // DAY/NIGHT (David 2026-06-27, v5): tint PER-HOUR to match the actual clock — deep indigo night, rose dawn, cool calm day, red dusk — so midnight reads DARK and noon cool (not one ambient wash). A moon + stars live in the NIGHT-hour rows themselves (always, not "now"). Smooth keyframe-interpolated, %-based so it scales with zoom.
     (function () {
       var sky = add(cal, "div", "skybg"); sky.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;";
-      var _nm = logicalNowMin(), _c = ((((Math.floor(_nm / 60)) % 24) + 24) % 24) + (_nm % 60) / 60, _night = false, _bg;
-      if (_c >= 7.5 && _c < 17) _bg = "linear-gradient(165deg,#1b1a3a,#20204a 55%,#23223e)";        // day — cool calm
-      else if (_c >= 5 && _c < 7.5) _bg = "linear-gradient(165deg,#221634,#54204a 52%,#7a2860)";    // dawn — clean rose
-      else if (_c >= 17 && _c < 20) _bg = "linear-gradient(165deg,#231533,#561f40 52%,#6c2450)";    // dusk — cool red
-      else { _bg = "linear-gradient(165deg,#12112a,#171430 55%,#1f1634)"; _night = true; }          // night — deep indigo
-      sky.style.background = _bg;
-      if (_night) {
-        var _mn = add(sky, "div", "skymoon"); _mn.style.cssText = "position:absolute;left:9px;top:13px;width:16px;height:16px;border-radius:50%;background:transparent;box-shadow:inset -5px -2px 0 0 #dfe6ff;";
-        for (var hh = startH; hh < endH; hh++) { for (var si = 0; si < 2; si++) { var sx = [14, 46, 73, 31, 61, 87][(hh * 2 + si) % 6], sy = ((hh - startH) + (si + 1) / 3) / (endH - startH) * 100, sz = si % 2 ? 1.4 : 2.1; var str = add(sky, "div", "skystar"); str.style.cssText = "position:absolute;left:" + sx + "%;top:" + sy.toFixed(1) + "%;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:rgba(235,240,255,.6);box-shadow:0 0 3px rgba(190,205,255,.55);"; } }
-      }
+      var KF = [[0, [16, 14, 38]], [4.5, [18, 15, 42]], [6, [106, 42, 85]], [7.5, [27, 26, 58]], [12, [32, 29, 68]], [16.5, [27, 26, 58]], [18.5, [94, 34, 68]], [20, [21, 18, 44]], [24, [16, 14, 38]]];
+      function skyAt(c) { c = ((c % 24) + 24) % 24; for (var i = 0; i < KF.length - 1; i++) { if (c >= KF[i][0] && c <= KF[i + 1][0]) { var t = (c - KF[i][0]) / (KF[i + 1][0] - KF[i][0]), a = KF[i][1], b = KF[i + 1][1]; return "rgb(" + Math.round(a[0] + (b[0] - a[0]) * t) + "," + Math.round(a[1] + (b[1] - a[1]) * t) + "," + Math.round(a[2] + (b[2] - a[2]) * t) + ")"; } } return "rgb(16,14,38)"; }
+      var stops = []; for (var h = startH; h <= endH; h += 0.5) { stops.push(skyAt(h) + " " + ((h - startH) / (endH - startH) * 100).toFixed(1) + "%"); }
+      sky.style.background = "linear-gradient(180deg," + stops.join(",") + ")";
+      var moonAt = -1, span = endH - startH;
+      for (var hh = startH; hh < endH; hh++) { var cc = ((hh % 24) + 24) % 24; if (!(cc >= 20 || cc < 5)) continue; if (moonAt < 0 && cc >= 20) moonAt = hh; var yTop = (hh - startH) / span * 100; for (var si = 0; si < 2; si++) { var sx = [14, 44, 72, 30, 60, 86][(hh * 2 + si) % 6], sy = yTop + (si + 1) / 3 * (100 / span), sz = si % 2 ? 1.4 : 2.2; var str = add(sky, "div", "skystar"); str.style.cssText = "position:absolute;left:" + sx + "%;top:" + sy.toFixed(1) + "%;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:rgba(235,240,255,.66);box-shadow:0 0 3px rgba(190,205,255,.55);"; } }
+      if (moonAt < 0) for (var h2 = startH; h2 < endH; h2++) { var c2 = ((h2 % 24) + 24) % 24; if (c2 >= 20 || c2 < 5) { moonAt = h2; break; } }
+      if (moonAt >= 0) { var _mn = add(sky, "div", "skymoon"); _mn.style.cssText = "position:absolute;right:16px;top:calc(" + ((moonAt - startH) / span * 100).toFixed(1) + "% + 10px);width:18px;height:18px;border-radius:50%;background:transparent;box-shadow:inset -6px -2px 0 0 #e6ecff;"; }
     })();
     var railItems = [], nowRightBand = null; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order; nowRightBand = the Y-band the NOW readout occupies on the right so rail chips dodge it (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
