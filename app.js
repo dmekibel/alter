@@ -851,7 +851,7 @@
             var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
             var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = sk; calendarView(ssec, sk, skT, true); }
           attachInfinite(sc);
-        } else { var hd = add(card, "div", "day-cardhead"); add(hd, "div", "day-cardlab", dayLabelFull(dk)); dayHeadInfo(hd, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); }
+        } else { var sep = add(sc, "div", "day-stacksep"); add(sep, "span", "dss-lab", dayLabelFull(dk)); dayHeadInfo(sep, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); } // preview (off ±1) MATCHES the continuous-stack structure — stacksep INSIDE the scroll (not a fixed day-cardhead) — so when the slide lands and the day rebuilds into the stack, the day-section sits at the SAME Y = no bounce on arrival (David 2026-06-27)
       })
       ; // forEach
       pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
