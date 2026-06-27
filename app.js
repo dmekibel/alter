@@ -647,7 +647,7 @@
     var _rf = items.length ? (items[0].y - 8) : 0, _rpitch = items.length > 1 ? Math.max(18, ((items[items.length - 1].y - 8) - _rf) / (items.length - 1)) : 18; // EVEN-distribute rail icons (match the commit render — David 2026-06-27)
     for (var m = 0; m < items.length; m++) { var it = items[m], y = _rf + m * _rpitch; var chip = add(cal, "div", "railchip"); chip.style.top = y + "px"; chip.style.background = it.c; chip.style.color = it.ink; chip.innerHTML = '<i class="ti ' + it.ic + '"></i>'; } // PURE even spacing (match the commit render) — David 2026-06-27
   }
-  var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null, _zoomScroll = null;
+  var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null, _zoomScroll = null, _zoomEndedAt = 0; // _zoomEndedAt = when the last pinch ended → suppress an accidental bubble-open from a finger that was resting on a bubble during rapid micro-zooms (David 2026-06-27)
   // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place; anchorY (pinch thumb-midpoint) keeps the time under your fingers put (David 2026-06-25)
   function relayoutHourPx(nv, anchorY, scrollTop) {
     var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(520, Math.round(nv)));
@@ -888,7 +888,7 @@
       }, { passive: false });
       function gend(e) {
         var wasPinch = !single && pVD0 > 0, ex = e.clientX; delete ptrs[e.pointerId]; var n = Object.keys(ptrs).length;
-        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; relayoutHourPx(_zoomPending || pHPLast, _zoomAnchor, _zoomScroll); } pVD0 = 0; single = false; _pinching = 0; pullHourPx = pHPLast; zoomCommit(); return; } // settle: crisp re-render at the final zoom, keeping the panned scroll. FAST-RELEASE JUMP FIX (David 2026-06-27): a quick pinch ends with the final throttled frame still PENDING — cancelling it left the DOM at the previous frame's zoom while commit preserved that stale scrollTop. Now we apply that final frame synchronously (re-anchoring scrollTop to the minute under the fingers) BEFORE committing, so release never jumps.
+        if (wasPinch && n < 2 && pullZoom === "day") { if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; relayoutHourPx(_zoomPending || pHPLast, _zoomAnchor, _zoomScroll); } pVD0 = 0; single = false; _pinching = 0; _zoomEndedAt = Date.now(); pullHourPx = pHPLast; zoomCommit(); return; } // settle: crisp re-render at the final zoom, keeping the panned scroll. FAST-RELEASE JUMP FIX (David 2026-06-27): a quick pinch ends with the final throttled frame still PENDING — cancelling it left the DOM at the previous frame's zoom while commit preserved that stale scrollTop. Now we apply that final frame synchronously (re-anchoring scrollTop to the minute under the fingers) BEFORE committing, so release never jumps.
         if (single && n === 0 && pullZoom === "day") {
           var dx = (swLastX || ex) - sX, flick = swLastX - swPrevX;
           if (swOn && swPgr) { var th = swW * 0.2, dir = 0; if (Math.abs(flick) > 8) dir = (flick < 0 ? 1 : -1); else if (dx < -th) dir = 1; else if (dx > th) dir = -1; if (dir) pageSlide(dir); else { swPgr.style.transition = "transform .2s"; swPgr.style.transform = "translateX(-33.3333%)"; setStripSel(pullFocusK || todayK()); } } // a real flick at release wins over net displacement → a fast swipe pages the way the finger is ACTUALLY moving, never the opposite (David 2026-06-27)
@@ -2093,7 +2093,7 @@
     // LABEL INTELLIGENCE by bar height (David 2026-06-25): tall = icon+name (+subtitle) · medium = icon+name one line · thin = icon/emoji only · too-thin = name on the SIDE
     function degrade(card) { degradeCard(card); } // delegates to the module-level grader (shared with the live pinch reflow) — name only on TALL bars (≥22) so zoom-out stays minimal; resize only on genuinely tall bars (≥48) so a small bubble rearranges instead of stretching (David 2026-06-25)
     function rr() { renderToday(); }
-    function editBlk(b) { blockEdit(b, k); } // ANY bubble — empty or filled — opens the full editor menu; the hero ("Choose activity") is how you pick what an empty one is (David 2026-06-26)
+    function editBlk(b) { if (_pinching || (Date.now() - _zoomEndedAt) < 380) return; blockEdit(b, k); } // ANY bubble opens the full editor — BUT never from a finger that was resting on a bubble during a pinch / just after rapid micro-zooms (the accidental-select bug) — David 2026-06-27
     var planCards = [], burnedSomething = false;
     var _liveT = (showNow && k === todayK()) ? (function () { var r = activeTimers(); return r[r.length - 1]; })() : null, _convFused = false; // the activity being tracked NOW → its straddling plan block becomes the matte→shining conversion block (David 2026-06-25)
     function topFor(m) { return ((m - startH * 60) / 60 * HP); }
