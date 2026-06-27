@@ -851,6 +851,7 @@
     var r = anchor.getBoundingClientRect(), hr = head.getBoundingClientRect();
     menu.style.top = (r.bottom - hr.top + 5) + "px"; menu.style.right = Math.max(4, hr.right - r.right) + "px";
     function item(cls, ic, label, fn) { var b = add(menu, "button", "ptm-item" + (cls ? " " + cls : "")); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.onclick = function (e) { e.stopPropagation(); menu.remove(); fn(); }; }
+    item("", "ti-briefcase", "My toolbox", function () { openToolbox(); }); // WISDOM TOOLBOX entry (TB-SHEET) — opens the cockpit 'tool' stage
     item("plan", "ti-calendar-plus", "Plan day", function () { planDay(k); });
     item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
@@ -1244,6 +1245,11 @@
     blocks(k).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs >= now) return; if (b.done || blockStatus(k, b) === "ok") return; if (be <= bs) return; if (!best || bs > hm(best.time)) best = b; }); // most-recent unfulfilled block whose start is already behind now
     if (!best) return null; var bs = hm(best.time), be = bs + (best.mins || 30); return { block: best, gapStartMin: bs, gapEndMin: Math.min(be, now) };
   }
+  function avoidedBlock() { // a STARRED or high-prio plan block whose start has slid past the now-line, still undone, with no real coverage — the Reversal-of-Desire target (TB-DRIFT-HANDOFF)
+    var k = todayK(), now = logicalNowMin(), best = null;
+    blocks(k).forEach(function (b) { if (!b.title || b.done) return; if (!(b.star || (b.prio || 0) >= 3)) return; var bs = hm(b.time); if (bs >= now) return; if (blockStatus(k, b) === "ok") return; if (!best || bs > hm(best.time)) best = b; });
+    return best;
+  }
   function trackerState() { // derive the matrix state from live data (on-plan / off / idle / break / breakup / claim / night)
     if (S.brk) { var bend = S.brk.start + S.brk.mins * 60000; return { id: (Date.now() < bend ? "break" : "breakup"), brk: S.brk }; } // a declared break is running (or its time is up)
     var run = activeTimers(), t = run[run.length - 1];
@@ -1390,15 +1396,15 @@
   }
   function renderStage(mode) { // dispatcher: writes ONLY #tfStageBody, IDEMPOTENT via dataset.mode guard so the 1s live-tick never wipes a textarea mid-flow
     var sb = el("tfStageBody"); if (!sb) return;
+    if (mode === "tool") { sb.dataset.mode = "tool"; toolboxStageStep(sb); return; } // toolbox: no text inputs to preserve, so re-render each tick → the skill-ladder pips stay live after a tool finishes (TB-SHEET)
     if (sb.dataset.mode === mode && sb.childNodes.length) return; // already mounted this mode → leave content (inputs) alive
     sb.dataset.mode = mode || "";
     switch (mode) {
       case "journal": journalStageStep(sb); break;
       case "journey": journeyStageStep(sb); break;
-      case "tool": sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">Toolbox</div><div class="tfs-sub">Coming soon — a calm shelf of tools for the moment you need one.</div></div>'; break;
       case "pm": pmStageStep(sb); break;   // PM bookend: mirror the day back, then ask the one right question
       case "am": amStageStep(sb); break;   // AM bookend: greet, reflect last night's seed, set who you wake as + intrinsic why
-      default:
+      default:                              // 'tool' handled by the early return above (toolboxStageStep)
         sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break;
     }
   }
@@ -1414,6 +1420,7 @@
     b.onclick = function () { try { node.act(); } catch (e) {} };
   }
   // ===== JOURNAL STAGE (CKPT-5, David 2026-06-28): the fusion proof — guidance IS tracking. One adaptive question + a textarea + an optional mood face, rendered into #tfStageBody while the Reflection ring tracks in the corner. Built ONCE (renderStage's dataset.mode guard skips rebuild), so the 1s live-tick never wipes what you're typing. =====
+  function openToolbox() { enterStage("tool", { byTap: true }); } // WISDOM TOOLBOX (TB-SHEET): open the cockpit 'tool' stage — corner-poses the ring, fills #tfStageBody with the kit. No trackTitle: the toolbox is a shelf, individual tools track themselves on finish.
   function openJournal() { enterStage("journal", { trackTitle: "Reflection", byTap: true }); } // the Journal chip's door: lights the ring + slides it aside + fills the stage in one gesture
   function renderStageChips() { // the BASE (track-mode) entry doors into guided flows — visible + tappable (not gesture-only). Built fresh each track render (cheap, no inputs to preserve). (CKPT-5)
     var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";
@@ -1421,6 +1428,7 @@
     // AM / PM bookend doors (David 2026-06-28) — greet, never auto-trap; a one-tap chip opens the stage
     var am = add(w, "button", "tf-chip"); am.innerHTML = '<i class="ti ti-sun-high" style="color:#ffc83d"></i> Morning'; am.onclick = function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); };
     var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
+    var tb = add(w, "button", "tf-chip"); tb.innerHTML = '<i class="ti ti-briefcase" style="color:' + DOM.restore.light + '"></i> Toolbox'; tb.onclick = openToolbox; // WISDOM TOOLBOX entry door (TB-SHEET)
   }
   function journalStageStep(sb) {
     var q = pickPrompt("journal"); // computed from today's real signals (drift/streak/kept/last intention)
@@ -1721,7 +1729,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; }); S.v = SCHEMA; }
   function bk(k) { S.bk = S.bk || {}; return (S.bk[k] = S.bk[k] || { am: {}, pm: {} }); } // bookend baton accessor — guarded lazy shape (CKPT-4)
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
   // multi-level UNDO for timeline edits — snapshot BEFORE each mutating action so an accidental move/resize/delete/clear is one tap to recover (David 2026-06-25)
@@ -1832,6 +1840,8 @@
     else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Reflection 🌙", fn: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // PM bookend (David 2026-06-28): replaces the dumb EVENING_RITUAL #sheet with the cockpit Reflection stage
     else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "What should I do next? ✨", fn: function () { suggestSheet(todayK()); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
+    // WISDOM TOOLBOX — drift handoff (TB-DRIFT-HANDOFF): when a starred/high-prio block has slid past the now-line undone, the angel offers Reversal of Desire — the in-the-moment 'move toward the avoided thing' move. Gated ONCE per logical-day (S.tools.last.reversal), and only when the toolbox is reachable. Verdict copy only — no timeline geometry.
+    var _av = avoidedBlock(); if (_av && (S.tools && S.tools.last && S.tools.last.reversal) !== todayK()) { out.chips.push({ label: "Avoiding it? → reverse the desire", fn: function () { reversalOfDesire(_av); } }); }
     return out;
   }
 
@@ -2519,7 +2529,7 @@
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.35); osc.stop(actx.currentTime + 0.45); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); save(); renderAll(); }
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); tickTool("breathe"); save(); renderAll(); }
       if (onDone) onDone();
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
@@ -2558,7 +2568,7 @@
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); osc.stop(actx.currentTime + 0.5); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mindful moment", mins: 2, catK: "energy", color: "#9a5cf0" }); earn(5, { catK: "energy" }); save(); renderAll(); }
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mindful moment", mins: 2, catK: "energy", color: "#9a5cf0" }); earn(5, { catK: "energy" }); tickTool("relax"); save(); renderAll(); }
       if (onDone) onDone();
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
@@ -2606,7 +2616,7 @@
       try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
       var seq = G.seq, tail = seq.slice(-3), ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
       function cue() { if (done) return; var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; lab.textContent = line; say(line, VPROF.med); ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
-      function finish(skip) { if (done) return; done = true; TTS.stop(); if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); save(); renderAll(); }, 1700); }
+      function finish(skip) { if (done) return; done = true; TTS.stop(); if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); tickTool("meditate"); save(); renderAll(); }, 1700); }
       ov.querySelector(".bw-x").onclick = function () { finish(true); };
       cue(); cueT = setInterval(cue, FREQ[cfg.freq] * 1000); tickT = setInterval(function () { elapsed++; if (elapsed >= total) finish(false); }, 1000);
     }
@@ -2647,7 +2657,7 @@
         if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3); osc.stop(actx.currentTime + 0.4); } catch (e) {} }
         if (skip) { if (ov.parentNode) ov.remove(); return; }
         lab.textContent = "Done ✓"; sub.textContent = "let it settle"; orb.style.animation = ""; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)";
-        setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Tapping (EFT)", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); save(); renderAll(); }, 1500);
+        setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Tapping (EFT)", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); tickTool("tapping"); save(); renderAll(); }, 1500);
       }
       ov.querySelector(".bw-x").onclick = function () { finish(true); };
       function step() {
@@ -2679,7 +2689,7 @@
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); osc.stop(actx.currentTime + 0.6); } catch (e) {} }
       if (ov.parentNode) ov.remove();
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mantra", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); save(); renderAll(); }
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mantra", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); tickTool("mantra"); save(); renderAll(); }
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
     function step() {
@@ -3454,6 +3464,181 @@
     if (oneThing) { var have = false; blocks(k).forEach(function (b) { if (b.title.toLowerCase() === oneThing.toLowerCase()) have = true; }); if (!have) blocks(k).push({ id: uid(), time: "09:00", mins: 90, title: oneThing, prio: 3, color: "#2a9fe0", done: false, star: true }); }
     reflow(k); save();
   }
+  // ===== WISDOM TOOLBOX (TB-*, David 2026-06-28): the cockpit 'tool' stage mode. Adopts the six already-shipping runners under David's 8-Layer Self-Help Stack with KB-EXACT 'when to use me' lines, adds Stutz's Reversal of Desire + a Blair eyes-open self-hypnosis shell + a Part-X triage front door. Reward-never-shame: using a tool on a hard day IS the win. NOT a third menu — it renders into #tfStageBody via renderStage('tool'). =====
+  // The kit's single source of truth. layer = David's 8-Layer Self-Help Stack section; when = KB-EXACT verbatim 'when to use me'; fn launches the runner (the six adopted + the new ones). gateNode reserved for TB-JOURNEY-UNLOCK (all unlocked this wave). (TB-STATE)
+  var TOOLS = [
+    { id: "breathe",  layer: "Steady the body",        name: "Breathe",          emoji: "🌬️", thinker: "Huberman · Johnson", when: "acute stress, a spike, or right before something hard — any transition crash", fn: function () { breathwork(4); } },
+    { id: "relax",    layer: "Steady the body",        name: "Relax all muscles", emoji: "🧘", thinker: "Maltz — Psycho-Cybernetics", when: "tension, pre-sleep, or pre-focus", fn: function () { relaxMoment(); } },
+    { id: "meditate", layer: "Clear the mind",          name: "Meditate",          emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", fn: function () { meditation(); } },
+    { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", fn: function () { tapping(); } },
+    { id: "reversal", layer: "Feel it through",         name: "Reversal of Desire",emoji: "🔥", thinker: "Stutz — Tool 1", when: "right before something you've been avoiding", fn: function () { reversalOfDesire(null); } },
+    { id: "mantra",   layer: "Become who you're being", name: "Mantra",            emoji: "🗣️", thinker: "Murphy · Goddard", when: "the morning identity step, low self-trust, or pre-performance", fn: function () { mantraPlayer(); } },
+    { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", fn: function () { selfHypnosis(); } },
+    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", fn: function () { gratefulFlow(); } }
+  ];
+  var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
+  function toolboxStageStep(sb) { // renders the kit into #tfStageBody (the 'tool' cockpit stage). Reuses .tf-stagecard / .tf-chip material + berry palette. No new menu, no timeline touch.
+    sb.innerHTML = "";
+    var head = add(sb, "div", "tf-stagecard");
+    add(head, "div", "tfs-h", "🧰 Your toolbox");
+    add(head, "div", "tfs-sub", "the right move for the moment you're in — sourced from your Field Guide. Using one on a hard day is the win.");
+    var sos = add(head, "button", "tf-chip"); sos.style.marginTop = "11px"; sos.innerHTML = '<i class="ti ti-urgent"></i> What\'s loud right now?'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
+    // Favorites / Recents pinned row
+    var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
+    pins = pins.slice(0, 4);
+    if (pins.length) { var pwrap = add(sb, "div"); add(pwrap, "div", "tfs-sub", "Recent"); var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = T.emoji + " " + esc(T.name); c.onclick = function () { runTool(T); }; }); }
+    TOOL_LAYERS.forEach(function (layer) {
+      var inLayer = TOOLS.filter(function (t) { return t.layer === layer; }); if (!inLayer.length) return;
+      add(sb, "div", "tfs-sub", layer).style.cssText = "margin-top:6px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
+      inLayer.forEach(function (t) {
+        var card = add(sb, "button", "tf-stagecard"); card.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
+        var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:8px;";
+        add(top, "span", null, t.emoji).style.cssText = "font-size:20px;flex:none;";
+        var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
+        var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
+        add(card, "div", "tfs-sub", "when: " + t.when).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;";
+        card.onclick = function () { runTool(t); };
+      });
+    });
+  }
+  function runTool(t) { try { t.fn(); } catch (e) { toast("couldn't open that one"); } } // launch a tool from the grid (it logs its own use on finish via tickTool)
+  function tickTool(id) { // log a COMPLETED rep (counts up only — never a breakable streak). Called from each runner's finish() handler. De-duped per logical-day per microState precedent so re-running twice/day doesn't double-count the ladder.
+    S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.recents = S.tools.recents || [];
+    var k = todayK();
+    if (S.tools.last[id] !== k) { S.tools.use[id] = (S.tools.use[id] || 0) + 1; } // one ladder tick per day per tool (the de-dupe); repeated same-day finishes still log+earn (those happen in the runner), just don't inflate the rep count
+    S.tools.last[id] = k;
+    S.tools.recents = [id].concat(S.tools.recents.filter(function (x) { return x !== id; })).slice(0, 6);
+    save();
+  }
+  function toolRung(id) { var u = (S.tools && S.tools.use && S.tools.use[id]) || 0; return u >= 12 ? 3 : u >= 3 ? 2 : u >= 1 ? 1 : 0; } // Willingness(1) → Habit(2) → Grace(3) — Stutz's practice ladder (3-pip)
+  function toolRungLabel(r) { return ({ 1: "Willingness", 2: "Habit", 3: "Grace" })[r] || ""; }
+  // a small #breatheOv beat-runner that clones the breathwork/relaxMoment idiom: orb + TTS + optional WebAudio drone + one-tap-advance beats, then a finish() that logs a tracked Restore + earns Spark + GENTLE celebrate + ticks the ladder. Shared by Reversal of Desire + Part-X tools so each new Stutz tool is tiny.
+  function beatRunner(opts) {
+    // opts: { id, title, beats:[{lab, sub, orb?}], logTitle, catK, color, spark, voiceProf, drone, onFinish(skipped) }
+    TTS.unlock(); // gesture-bound (the tap that opened this) — unlock speech in the same synchronous tick
+    var voiceProf = opts.voiceProf || VPROF.relax, col = opts.color || DOM.restore.c;
+    var ov = document.createElement("div"); ov.id = "breatheOv";
+    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div><button class="done2 bw-next" style="max-width:260px;margin:30px auto 0;display:block;">Next ▶</button>';
+    document.body.appendChild(ov); addVoiceToggle(ov);
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nextB = ov.querySelector(".bw-next");
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
+    if (opts.drone !== false) { try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 160; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; } }
+    var i = 0, done = false;
+    function finish(skip) {
+      if (done) return; done = true; TTS.stop();
+      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); osc.stop(actx.currentTime + 0.5); } catch (e) {} }
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (!skip) {
+        var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: 2, catK: opts.catK || "love", color: col });
+        earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id);
+        try { celebrateGated(col, curStreak() || 1); } catch (e) {} // GENTLE, gated once/day — reward-never-shame
+        save(); renderAll();
+      }
+      if (opts.onFinish) opts.onFinish(skip);
+    }
+    ov.querySelector(".bw-x").onclick = function () { finish(true); };
+    function paint() {
+      if (done) return;
+      if (i >= opts.beats.length) { lab.textContent = "Done ✓"; sub.textContent = "carry it forward"; nextB.style.display = "none"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { finish(false); }, 1400); return; }
+      var b = opts.beats[i];
+      lab.textContent = b.lab; sub.textContent = b.sub || "";
+      orb.style.transition = "transform 1.1s ease"; orb.style.transform = b.orb === "in" ? "scale(1.3)" : b.orb === "out" ? "scale(.6)" : "scale(1)";
+      say((b.lab + (b.sub ? ". " + b.sub : "")), voiceProf);
+      nextB.textContent = (i === opts.beats.length - 1) ? (opts.lastLabel || "Finish ✓") : "Next ▶";
+    }
+    nextB.onclick = function () { if (done) return; i++; paint(); };
+    setTimeout(paint, 500);
+  }
+  // REVERSAL OF DESIRE — Stutz Tool 1 (master-guide L172-190), david-framework L4 / Force of Forward Motion. When-to-use (verbatim): right before something you've been avoiding (the Comfort Zone). The flagship trigger→tool tool: avoidance is the most common daily Part X mode. (TB-REVERSAL)
+  function reversalOfDesire(avoidedBlock) {
+    beatRunner({
+      id: "reversal", title: "Reversal of Desire", logTitle: "Reversal of Desire", catK: "energy", color: "#ff8a3a", spark: 6, voiceProf: VPROF.breath,
+      beats: [
+        { lab: "See the pain as a cloud", sub: "the thing you're avoiding — picture it as a cloud right in front of you", orb: "in" },
+        { lab: "“Bring it on!”", sub: "move toward the cloud — say it, mean it", orb: "in" },
+        { lab: "“I love pain!”", sub: "go all the way in — let the cloud surround you", orb: "" },
+        { lab: "“Pain sets me free!”", sub: "feel yourself pass through and out the far side into light", orb: "out" },
+        { lab: "Feel the forward motion", sub: "you're moving again — that's the whole point", orb: "" }
+      ], lastLabel: "Finish ✓",
+      onFinish: function (skip) {
+        if (skip) return;
+        if (avoidedBlock) { setTimeout(function () { try { startPlanned(avoidedBlock); toast("▶ started " + esc(avoidedBlock.title)); } catch (e) {} }, 50); } // "start the thing" — jump straight into the avoided block
+      }
+    });
+    if (avoidedBlock) toast("after this — “" + esc(avoidedBlock.title) + "”"); // tiny pre-frame so the close action isn't a surprise
+  }
+  // SELF-HYPNOSIS — Blair eyes-open induction (fieldguide KB SN-141/SN-143): reading a hypnotic script aloud IS the induction. Sourced from David's KB, not invented. Body-scan → descent → reading-room → the SN-143 5-section suggestion template → emergence. Eyes-open: it READS the script (you read along / aloud). (TB-SELFHYPNOSIS)
+  function selfHypnosis() {
+    // SN-143 5-section suggestion template, instantiated with a calm, identity-neutral default goal ("steady, capable, at ease"). David can later swap in confidence/calm/sleep scripts; the SHELL + template are shippable now.
+    var SUGG = [
+      "Right now, in this relaxed state, your mind is open and receptive.", // 1. set the receptive frame
+      "Picture yourself moving through your day steady, capable, and at ease.", // 2. the desired image (present-tense, vivid)
+      "With every breath, that calm, capable feeling grows stronger and more natural.", // 3. compounding suggestion
+      "This is simply who you are now — it needs no effort, it's already yours.", // 4. identity assumption (Murphy/Goddard)
+      "And it stays with you, long after you open your eyes." // 5. post-hypnotic carry-over
+    ];
+    var BEATS = [
+      { lab: "Eyes open, soft gaze", sub: "you don't need to close your eyes — just read along, slowly, in your mind or aloud" },
+      { lab: "Let your body settle", sub: "shoulders drop… jaw unclenches… each breath a little slower", orb: "in" },
+      { lab: "A quiet beach", sub: "picture a calm shore — warm light, the slow rhythm of the water", orb: "out" },
+      { lab: "Down the steps… 10", sub: "ten… nine… eight… each number takes you deeper and calmer", orb: "out" },
+      { lab: "…3, 2, 1", sub: "all the way down now, deeply relaxed, completely at ease", orb: "out" },
+      { lab: "The reading room", sub: "a still, safe place inside — and here you read the words that take hold" },
+      { lab: SUGG[0], sub: "read it slowly", orb: "" },
+      { lab: SUGG[1], sub: "see it", orb: "" },
+      { lab: SUGG[2], sub: "feel it grow", orb: "in" },
+      { lab: SUGG[3], sub: "it's already true", orb: "" },
+      { lab: SUGG[4], sub: "let it lock in", orb: "" },
+      { lab: "Coming back up… 1", sub: "one… beginning to return", orb: "in" },
+      { lab: "…4, 5 — eyes bright", sub: "fully back, calm and clear, carrying it with you", orb: "in" }
+    ];
+    beatRunner({ id: "selfhyp", title: "Self-Hypnosis", logTitle: "Self-Hypnosis", catK: "love", color: "#8a5cf0", spark: 8, voiceProf: VPROF.mantra, beats: BEATS, lastLabel: "Open eyes ✓" });
+  }
+  // PART-X TRIAGE (TB-PARTX-TRIAGE) — the in-the-moment front door. Enforces Stutz's ordering (master-guide L130): BODY first → Label → Tool. On an acute spike, regulate the nervous system (breath) BEFORE any cognitive/identity tool. Grateful Flow is blocked while a grievance is live. (Coming-Alive runners Black Sun/Vortex/Mother/Tower land in TB-STUTZ-FANOUT; here the labels route to what already ships: Reversal of Desire + breath + the adopted kit.)
+  function partXTriage(opts) {
+    opts = opts || {};
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "🆘 What's loud right now?");
+    function regulateFirst(then) { // Beat-0: body-first if hot — you can't reframe a dysregulated nervous system
+      var C = el("sheetBody"); C.innerHTML = "";
+      add(C, "div", "sttl", "First — let's get the body back online");
+      add(C, "div", "lbl", "one slow round of breath, then we name what's loud. (the order matters — Stutz)");
+      add(C, "div", "breathorb");
+      add(C, "button", "done2", "Breathe with me ▶").onclick = function () { closeSheet(); breathwork(2, function () { setTimeout(label, 60); }); };
+      var sk = add(C, "button", "add", "I'm already calm — skip to labeling"); sk.style.cssText = "display:block;margin:10px auto 0;"; sk.onclick = label;
+    }
+    function label() {
+      var C = el("sheetBody"); C.innerHTML = ""; openSheet();
+      add(C, "div", "sttl", "Name it — that's the skill");
+      add(C, "div", "lbl", "Part X is the part that pulls you off. It's not you. Which one's loud?");
+      // the four Stutz attack modes → routed to what ships today (breath/Reversal/Grateful-Flow guarded), with a note where a dedicated Coming-Alive tool will land
+      var MODES = [
+        { chip: "Pulling me to numb out", mode: "self-gratification", line: "That's Part X — the pull to numb. Not you.", route: function () { closeSheet(); breathwork(2); }, note: "fill the void from the inside — a steadying breath for now" },
+        { chip: "Draining my drive", mode: "lethargy", line: "That's Part X — lethargy. Not you.", route: function () { closeSheet(); breathwork(2); }, note: "lift the energy — a breath to come back online" },
+        { chip: "Avoiding something", mode: "avoidance", line: "That's Part X — avoidance. Not you.", route: function () { closeSheet(); reversalOfDesire(null); }, note: "move toward it — Reversal of Desire" },
+        { chip: "Stuck on a hurt", mode: "hurt", line: "That's Part X — a hurt that hardened. Not you.", route: function () { closeSheet(); var live = haveLiveGrievance(); if (live) { breathwork(2); } else { gratefulFlow(); } }, note: "soften it — a breath, then gratitude when you're ready" }
+      ];
+      var wrap = add(C, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:9px;margin-top:6px;";
+      MODES.forEach(function (m) {
+        var b = add(wrap, "button", "done2", m.chip); b.style.cssText = "text-align:left;";
+        b.onclick = function () {
+          var D = el("sheetBody"); D.innerHTML = ""; openSheet();
+          add(D, "div", "sttl", m.line);
+          add(D, "div", "lbl", m.note);
+          add(D, "div", "breathorb");
+          add(D, "button", "done2", "Use the tool ▶").onclick = m.route;
+          var cl = add(D, "button", "add", "just naming it was enough"); cl.style.cssText = "display:block;margin:10px auto 0;"; cl.onclick = function () { closeSheet(); toast("you labeled it — that's the whole skill 🙏"); };
+        };
+      });
+    }
+    if (opts.hot) regulateFirst(); else label(); // an acute spike (low mood + drift) regulates first; a calm tap goes straight to labeling
+  }
+  function haveLiveGrievance() { // a running/recent drift log tagged angry, OR a PM reflection grievance signal — gates Grateful Flow (Active Love must discharge it first; here we route to breath until Active Love ships)
+    var k = todayK(); var run = activeTimers();
+    for (var i = 0; i < run.length; i++) if (domainOf(run[i]) === "drift") return true;
+    var lg = logs(k) || []; for (var j = lg.length - 1; j >= 0 && j > lg.length - 4; j--) if (domainOf(lg[j]) === "drift") return true; // a very recent drift = a live grievance proxy
+    return false;
+  }
   function gratefulFlow(onDone) {
     var grats = [];
     function gather() {
@@ -3482,7 +3667,7 @@
       add(B, "div", "sttl", "✨ Let it rise");
       add(B, "div", "lbl", "now stop naming reasons. just feel grateful — for nothing, for everything. sense it radiating from the center of your chest.");
       add(B, "div", "breathorb breathorb--slow");
-      add(B, "button", "done2", "Done 🙏").onclick = function () { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Grateful Flow", mins: 5, catK: "love", color: "#ff4fa0" }); earn(12, { catK: "love" }); save(); if (onDone) onDone(); else { closeSheet(); renderAll(); } };
+      add(B, "button", "done2", "Done 🙏").onclick = function () { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Grateful Flow", mins: 5, catK: "love", color: "#ff4fa0" }); earn(12, { catK: "love" }); tickTool("grateful"); save(); if (onDone) onDone(); else { closeSheet(); renderAll(); } };
     }
     gather();
   }
