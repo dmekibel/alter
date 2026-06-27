@@ -1372,10 +1372,13 @@
       var q = (sb && sb.dataset.q) || "", mood = (sb && sb.dataset.mood != null && sb.dataset.mood !== "") ? +sb.dataset.mood : null;
       if (text || mood != null) { var rec = bk(todayK()); rec.journal = (rec.journal || []).concat([{ q: q, text: text, mood: mood, ts: Date.now() }]); rec.pm = rec.pm || {}; if (text) rec.pm.reflect = text; if (mood != null) rec.pm.mood = mood; save(); }
     }
-    if (commit && mode === "pm") { // PM bookend → bk(todayK()).pm = {reflect, mood, q, ts, done} (PM-ASK). Marks done so the evening hero never nags twice/day.
-      var sbp = el("tfStageBody"), tap = sbp && sbp.querySelector("textarea"), txt = tap ? tap.value.trim() : "";
+    if (commit && mode === "pm") { // PM bookend (multi-beat) → bk(todayK()).pm = {reflect, mood, q, ts, done}. Marks done so the evening hero never nags twice/day.
+      var sbp = el("tfStageBody"), tap = sbp && sbp.querySelector("textarea");
+      var txt = (tap ? tap.value.trim() : "") || (sbp && sbp.dataset.reflect) || ""; // close beat has no textarea → fall back to the value flushed when leaving the ask beat
       var qp = (sbp && sbp.dataset.q) || "", mp = (sbp && sbp.dataset.mood != null && sbp.dataset.mood !== "") ? +sbp.dataset.mood : null;
-      var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = txt; recp.pm.q = qp; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true; save();
+      var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = txt; recp.pm.q = qp; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true;
+      if (txt || mp != null) { recp.journal = (recp.journal || []).concat([{ q: qp, text: txt, mood: mp, ts: Date.now() }]); } // also feed the journal feed, like the journal door does
+      save();
     }
     if (commit && mode === "am") { // AM bookend → bk(todayK()).am = {identity[], virtue, why, ts, done} (AM-GREET / AM-INTRINSIC). Writes the live profile so the day reads it.
       var sba = el("tfStageBody"); var idents = (sba && sba.dataset.ident) ? sba.dataset.ident.split("|").filter(Boolean) : [];
@@ -1495,14 +1498,15 @@
     "because it's who I am", "because it feels alive", "because I'd respect myself", "because I love the craft"
   ];
   function bookendMirror(k) { // PM-MIRROR: read the day back from data already in S — pure read, touches no timeline render
-    k = k || todayK(); var bl = blocks(k) || [], kept = 0, drift = 0, missed = 0, domMin = {};
-    bl.forEach(function (b) { if (!b.title) return; var st = blockStatus(k, b); if (st === "ok") kept++; else if (st === "miss") missed++; });
+    k = k || todayK(); var bl = blocks(k) || [], kept = 0, drift = 0, missed = 0, domMin = {}, missBlocks = [];
+    bl.forEach(function (b) { if (!b.title) return; var st = blockStatus(k, b); if (st === "ok") kept++; else if (st === "miss") { missed++; missBlocks.push(b); } });
     var run = activeTimers(); run.forEach(function (t) { if (domainOf(t) === "drift") drift++; });
     (logs(k) || []).forEach(function (l) { var d = domainOf(l); if (d === "drift") { drift++; } domMin[d] = (domMin[d] || 0) + (l.mins || 0); });
     var planned = bl.filter(function (b) { return b.title; }).length;
     // strongest + quietest non-drift domain (warm phrasing, never a deficit)
     var strong = "", quiet = "", best = -1; DOM_ORDER.forEach(function (d) { var m = domMin[d] || 0; if (m > best) { best = m; strong = d; } });
-    return { kept: kept, missed: missed, drift: drift, planned: planned, domMin: domMin, strong: strong, streakSafe: (curStreak() > 0) };
+    var totMin = 0; for (var dkey in domMin) { if (dkey !== "drift") totMin += domMin[dkey] || 0; }
+    return { kept: kept, missed: missed, drift: drift, planned: planned, domMin: domMin, strong: strong, totMin: totMin, missBlocks: missBlocks, streak: curStreak(), streakSafe: (curStreak() > 0) };
   }
   function bookendMirrorLine(mr) { // warm summary; quiet/empty day reads warm, never a zero
     var DOMl = function (d) { return (DOM[d] && DOM[d].l) || d; };
@@ -1512,29 +1516,134 @@
     var streak = mr.streakSafe ? ". Streak safe." : ".";
     return head + strong + streak;
   }
-  function pmStageStep(sb) {
-    var k = todayK(), mr = bookendMirror(k);
-    var ctx = journalCtx(); var q = pickPrompt("pm", ctx);
-    sb.dataset.q = q; if (sb.dataset.mood == null) sb.dataset.mood = "";
+  // ===== PM BOOKEND — MULTI-BEAT (CKPT-PM, David 2026-06-28): the full evening close runs INSIDE the cockpit stage. =====
+  // Beats advance on the primary button via pmAdvance(); the Reflection ring keeps tracking throughout. One panel rebuilt per beat
+  // (renderStage's dataset.mode guard keeps the 1s tick from wiping inputs; pmAdvance rebuilds explicitly). reward-never-shame: a
+  // miss/drift is NEUTRAL data in DRIFT_GRAY, never red, never guilt. ALL tomorrow writes go through the safe path (skeletonDay /
+  // blocks(tomK()).push + reflow(tomK())) — never calendarView/buildPull.
+  var PM_BEATS = ["mirror", "restory", "ask", "plan", "close"];
+  function pmHasDrift(mr) { return (mr.missBlocks && mr.missBlocks.length) || mr.drift; }
+  function pmStageStep(sb) { // entry: reset to beat 0, then render. Called once per open (renderStage rebuilds only on mode change).
+    sb.dataset.step = "0"; sb.dataset.mood = ""; sb.dataset.carry = ""; sb.dataset.reflect = ""; sb.dataset.oneThing = "";
+    pmRenderBeat(sb);
+  }
+  function pmAdvance() { // primary-button handler: persist this beat's transient input, advance the step, rebuild — or commit+close on the last beat
+    var sb = el("tfStageBody"); if (!sb) return;
+    var step = Math.max(0, Math.min(PM_BEATS.length - 1, +(sb.dataset.step || 0)));
+    var mr = bookendMirror(todayK());
+    // flush the ask beat's transient inputs onto dataset so the later 'close' commit (no textarea in the DOM) still has them
+    if (PM_BEATS[step] === "ask") { var ta = sb.querySelector("textarea"); if (ta) sb.dataset.reflect = ta.value.trim(); }
+    if (step >= PM_BEATS.length - 1) { exitStage(true); return; } // final beat (close) → commit pm record + GENTLE celebrate + un-corner
+    // skip the re-story beat entirely when there's nothing to re-story
+    var next = step + 1;
+    if (PM_BEATS[next] === "restory" && !pmHasDrift(mr)) next++;
+    sb.dataset.step = String(next);
+    pmRenderBeat(sb);
+  }
+  function pmBeatName(sb) { var step = Math.max(0, Math.min(PM_BEATS.length - 1, +(sb.dataset.step || 0))); return PM_BEATS[step]; }
+  function pmPrimaryLabel() { var sb = el("tfStageBody"); if (!sb) return "Continue"; return (pmBeatName(sb) === "close") ? "Rest now" : "Continue"; }
+  function pmRenderBeat(sb) {
+    var k = todayK(), mr = bookendMirror(k), beat = pmBeatName(sb);
+    sb.innerHTML = "";
     var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
-    add(card, "div", "tfs-h", "Reflection");
-    // STEP 1 — MIRROR (pure read, no input)
+    // beat dots — soft progress, never a counter you can fail
+    var live = PM_BEATS.filter(function (b) { return b !== "restory" || pmHasDrift(mr); });
+    var dots = add(card, "div"); dots.setAttribute("style", "display:flex;gap:6px;align-items:center;");
+    live.forEach(function (b) { var d = add(dots, "div"); var on = (b === beat); d.setAttribute("style", "width:" + (on ? 18 : 7) + "px;height:7px;border-radius:4px;background:" + (on ? DOM.restore.light : "#3a2640") + ";transition:all .2s;"); });
+    if (beat === "mirror") pmBeatMirror(card, sb, mr, k);
+    else if (beat === "restory") pmBeatRestory(card, sb, mr, k);
+    else if (beat === "ask") pmBeatAsk(card, sb, mr, k);
+    else if (beat === "plan") pmBeatPlan(card, sb, mr, k);
+    else pmBeatClose(card, sb, mr, k);
+    try { renderTFControls("pm"); } catch (e) {} // refresh the primary label ("Continue" → "Rest now")
+  }
+  // ---- BEAT 1: MIRROR (richer) — kept/drifted/missed, domain minutes, streak, a standout note. Pure read, no timeline touch.
+  function pmBeatMirror(card, sb, mr, k) {
+    var DOMl = function (d) { return (DOM[d] && DOM[d].l) || d; };
+    add(card, "div", "tfs-h", "Let's close the day.");
     var mir = add(card, "div", "tfs-sub"); mir.textContent = bookendMirrorLine(mr);
-    mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.45;");
-    if (mr.drift || mr.missed) { var note = add(card, "div", "tfs-sub"); note.textContent = (mr.drift ? "The day drifted for a bit" : "A plan or two slid by") + " — just information, not a verdict."; note.style.color = DRIFT_GRAY; note.style.fontSize = "13px"; note.style.marginTop = "-4px"; }
-    // STEP 2 — adaptive question + textarea + mood
+    mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:11px 13px;line-height:1.45;");
+    // a second warm beat: time invested + a standout win OR a quiet-day note (never a zero, never shame)
+    var extra = "";
+    if (mr.totMin >= 30) extra = "About " + dur(mr.totMin) + " of real, chosen time" + (mr.strong && (mr.domMin[mr.strong] || 0) > 0 ? " — your " + DOMl(mr.strong) + " stood out." : ".");
+    else if (mr.kept >= 1) extra = "Even one thing kept is a vote for who you're becoming.";
+    else extra = "A soft day — and rest is part of the work, not a gap in it.";
+    var ex = add(card, "div", "tfs-sub"); ex.textContent = extra; ex.style.lineHeight = "1.45";
+    if (mr.streak >= 2) { var stk = add(card, "div", "tfs-sub"); stk.textContent = "🔥 " + mr.streak + "-day thread, still going."; stk.style.color = DOM.restore.light; stk.style.fontSize = "13px"; }
+    if (pmHasDrift(mr)) { var note = add(card, "div", "tfs-sub"); note.textContent = (mr.drift ? "The day drifted for a bit" : "A plan or two slid by") + " — just information, not a verdict. We'll re-story it next."; note.style.color = DRIFT_GRAY; note.style.fontSize = "13px"; }
+  }
+  // ---- BEAT 2: RE-STORY DRIFT (PM-RESTORY) — three calm taps per missed/drifted block. Drift in cool-gray, never red, never guilt.
+  function pmBeatRestory(card, sb, mr, k) {
+    add(card, "div", "tfs-h", "Re-story the drift.");
+    add(card, "div", "tfs-sub", "What slid by isn't a verdict — it's a choice you get to make now.").style.color = DRIFT_GRAY;
+    var list = add(card, "div"); list.setAttribute("style", "display:flex;flex-direction:column;gap:9px;");
+    var rows = (mr.missBlocks || []).slice();
+    if (!rows.length) { add(list, "div", "tfs-sub", "Nothing to re-story — you stayed close to the plan."); return; }
+    rows.forEach(function (b) {
+      var row = add(list, "div"); row.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 11px;display:flex;flex-direction:column;gap:8px;");
+      var ttl = add(row, "div"); ttl.setAttribute("style", "color:" + DRIFT_GRAY + ";font-size:14px;");
+      ttl.innerHTML = '<i class="ti ti-circle-dashed"></i> ' + esc(b.title) + ' · ' + esc(fmt(hm(b.time)));
+      var btns = add(row, "div"); btns.setAttribute("style", "display:flex;gap:6px;flex-wrap:wrap;");
+      var done = function (label) { row.innerHTML = ""; row.style.opacity = ".6"; var d = add(row, "div", "tfs-sub", label); d.style.color = DRIFT_GRAY; d.style.fontSize = "13px"; };
+      var bRight = add(btns, "button", "tf-chip"); bRight.innerHTML = '<i class="ti ti-check"></i> Right call';
+      bRight.onclick = function () { try { pushUndo(); b.done = true; b.intentional = true; save(); } catch (e) {} done("Right call — kept as a conscious choice."); }; // mark intentional so it stops reading as a miss; no log
+      var bCarry = add(btns, "button", "tf-chip"); bCarry.innerHTML = '<i class="ti ti-arrow-right"></i> Carry to tomorrow';
+      bCarry.onclick = function () { pmCarryToTomorrow(b); var c = (sb.dataset.carry || "").split("|").filter(Boolean); c.push(b.title); sb.dataset.carry = c.join("|"); done("Carried to tomorrow — it'll be waiting."); };
+      var bLet = add(btns, "button", "tf-chip"); bLet.innerHTML = '<i class="ti ti-wind"></i> Let go';
+      bLet.onclick = function () { try { pushUndo(); var a = blocks(k), i = a.indexOf(b); if (i >= 0) a.splice(i, 1); reflow(k); save(); renderToday(); } catch (e) {} done("Let go — no trace, no weight."); };
+    });
+  }
+  // ---- BEAT 3: ASK (adaptive) — pickPrompt over the PM bank + textarea + mood.
+  function pmBeatAsk(card, sb, mr, k) {
+    var q = pickPrompt("pm", journalCtx()); sb.dataset.q = q;
+    add(card, "div", "tfs-h", "One honest line.");
     add(card, "div", "tfs-sub").textContent = q;
-    var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough"; ta.rows = 4;
+    var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough — or a few"; ta.rows = 4;
     ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
-    var prev = ((S.bk || {})[k] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect; // restore a draft if re-opened same day
+    var prev = ((S.bk || {})[k] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect;
     var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
     MOODS.forEach(function (m, i) {
       var f = add(moodWrap, "button", "jr-mood");
       f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
       f.textContent = m.e; f.title = m.l;
-      if (prev && prev.mood === i) { f.style.borderColor = DOM.restore.light; }
+      if ((prev && prev.mood === i) || sb.dataset.mood === String(i)) { f.style.borderColor = DOM.restore.light; }
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
+  }
+  // ---- BEAT 4: PRE-COMMIT TOMORROW (PM-PLAN, Odysseus) — name tomorrow's ONE thing → starred prio-3 block on tomK() via the safe path.
+  function pmBeatPlan(card, sb, mr, k) {
+    add(card, "div", "tfs-h", "Name tomorrow's one thing.");
+    add(card, "div", "tfs-sub", "Decide it now, while you're calm — so tomorrow-you wakes to it already chosen.");
+    var carry = (sb.dataset.carry || "").split("|").filter(Boolean);
+    if (carry.length) { var cc = add(card, "div", "tfs-sub"); cc.style.color = DRIFT_GRAY; cc.style.fontSize = "13px"; cc.textContent = "Already waiting tomorrow: " + carry.join(", ") + "."; }
+    var inp = add(card, "input"); inp.type = "text"; inp.placeholder = "e.g. ship the build";
+    inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;-webkit-appearance:none;");
+    if (sb.dataset.oneThing) inp.value = sb.dataset.oneThing;
+    var done = ((S.bk || {})[tomK()] || {}).am || {};
+    var status = add(card, "div", "tfs-sub"); status.style.fontSize = "13px"; status.style.color = DOM.restore.light;
+    if (done.oneThing) status.textContent = "✓ Set for tomorrow: " + done.oneThing;
+    var setBtn = add(card, "button", "tf-chip"); setBtn.style.marginTop = "2px"; setBtn.innerHTML = '<i class="ti ti-star"></i> Set it for tomorrow';
+    setBtn.onclick = function () { var v = (inp.value || "").trim(); if (!v) { inp.focus(); return; } sb.dataset.oneThing = v; pmPlantOneThing(v); status.textContent = "✓ Set for tomorrow: " + v + " — starred and waiting."; };
+  }
+  // ---- BEAT 5: CLOSE — warm forward line. (commit happens in exitStage when the primary fires from this beat.)
+  function pmBeatClose(card, sb, mr, k) {
+    add(card, "div", "tfs-h", "That's the day, well closed.");
+    var one = ((S.bk || {})[tomK()] || {}).am || {}, line;
+    if (one.oneThing) line = "Tomorrow opens with one clear move: " + one.oneThing + ". I've got the morning — rest now.";
+    else line = "You met the day and named what mattered. Rest now — I've got the morning.";
+    var l = add(card, "div", "tfs-sub"); l.textContent = line; l.style.lineHeight = "1.5";
+    l.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:12px 14px;line-height:1.5;");
+  }
+  // ---- safe tomorrow-write helpers (PM-PLAN / PM-RESTORY) — ONLY skeletonDay / blocks(tomK()).push + reflow(tomK()); never the live timeline render
+  function pmPlantOneThing(title) {
+    var tk = tomK();
+    if (!(blocks(tk) || []).length) { skeletonDay(tk, title); } // empty tomorrow → seed a skeleton with the one thing as the starred deep-work block
+    else { var have = false; blocks(tk).forEach(function (b) { if ((b.title || "").toLowerCase() === title.toLowerCase()) have = true; }); if (!have) { blocks(tk).push({ id: uid(), time: "09:00", mins: 90, title: title, prio: 3, color: "#2a9fe0", domain: "focus", done: false, star: true }); reflow(tk); } }
+    var rec = bk(tk); rec.am = rec.am || {}; rec.am.oneThing = title; save();
+  }
+  function pmCarryToTomorrow(b) {
+    var tk = tomK(); var have = false; blocks(tk).forEach(function (x) { if ((x.title || "").toLowerCase() === (b.title || "").toLowerCase()) have = true; });
+    if (!have) { var t = nextFreeMin(tk); blocks(tk).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: b.mins || 30, title: b.title, prio: b.prio || 2, color: b.color || (DOM[domainOf(b)] || DOM.focus).c, domain: domainOf(b), catK: b.catK || null, done: false, carried: true }); reflow(tk); save(); }
   }
   function amStageStep(sb) {
     var k = todayK(), rec = (S.bk || {})[k] || {}, prevAm = rec.am || {};
@@ -1647,7 +1756,10 @@
       case "tool":
         return [{ icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, primary: true }];
       // ===== AM / PM bookend controls (David 2026-06-28): Save commits the bookend record + GENTLE gated celebrate; Close abandons (no write), ring un-corners. Added at the END so sibling-mode merges stay trivial. =====
-      case "pm": case "am":
+      case "pm": // MULTI-BEAT: primary ADVANCES the beat (pmAdvance commits on the final 'close' beat); Close abandons (no write), ring un-corners
+        return [{ icon: "ti-arrow-right", label: pmPrimaryLabel(), fn: pmAdvance, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }];
+      case "am":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }];
       default: { // OFF-PLAN: no nonsensical "back on plan" — CREATE a plan (none yet) or REPLAN (change the one you have); both pick activity + minutes (David 2026-06-27)
