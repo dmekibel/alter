@@ -726,6 +726,14 @@
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
   #trackerFull.st-off .tf-tile{ filter:saturate(.3) brightness(.72); }
+  /* welcome-back CLAIM: the verdict reads warm, the primary button is the reward-green Done style (reused) */
+  #trackerFull.st-claim .tf-verdict{ color:#ffc8e0; }
+  /* 2AM / OFF-HOURS: calmest + darkest; dim violet ring that slowly breathes, no streak pressure */
+  #trackerFull.st-night{ background:linear-gradient(180deg,#0e0717 0%,#0c0a1c 60%,#0a0a1e 100%); }
+  #trackerFull.st-night .tf-verdict{ color:#8a7fb0; font-size:10.5px; letter-spacing:1.4px; }
+  #trackerFull.st-night .tf-ring{ animation:tfNightPulse 7s ease-in-out infinite; }
+  #trackerFull.st-night .tf-ctx{ color:#7a6f9a; }
+  @keyframes tfNightPulse{ 0%,100%{ opacity:.6; } 50%{ opacity:.9; } }
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
   /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
