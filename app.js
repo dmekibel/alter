@@ -1007,17 +1007,20 @@
     return { id: onb ? "onplan" : "off", t: t, dom: dom, block: onb };
   }
   function tfStripe(C) { return "repeating-linear-gradient(45deg," + C + "," + C + " 9px," + mixHex(C, "#160510", 0.42) + " 9px," + mixHex(C, "#160510", 0.42) + " 18px)"; } // vivid striped activity tile (matches the timeline-bubble texture, brighter for the hero)
+  function nextUpBlock(afterMin) { var best = null; blocks(todayK()).forEach(function (b) { if (!b.title) return; var bs = hm(b.time); if (bs >= afterMin && blockStatus(todayK(), b) === "plan") { if (!best || bs < hm(best.time)) best = b; } }); return best; } // the next still-to-do planned block after a given minute → the "what's next" pointer
+  function setTFNext(afterMin) { var nx = el("tfNext"); if (!nx) return; var nu = nextUpBlock(afterMin); if (nu) { nx.style.display = ""; nx.innerHTML = '<i class="ti ti-arrow-right"></i> next <b>' + esc(nu.title) + '</b> · ' + fmt(hm(nu.time)); nx.onclick = function () { startPlanned(nu); renderTrackerFull(); }; } else { nx.style.display = "none"; nx.onclick = null; } }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
-    var S0 = trackerState(), t = S0.t, tile = el("tfTile");
+    var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle");
     if (!t) { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = nb ? nb.title : "Nothing tracking";
-      el("tfVerdict").textContent = nb ? "next up" : "";
+      el("tfVerdict").textContent = nb ? "ready when you are" : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
-      el("tfSpark").innerHTML = '🔥 streak <b>×' + ((S.game && S.game.streak) || 0) + '</b>';
+      el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
+      el("tfSpark").innerHTML = '🔥 streak <b>×' + streak + '</b>';
       if (tile) { tile.style.background = tfStripe(ND.c); tile.style.filter = "saturate(.5) brightness(.78)"; tile.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
-      setRing(0, "#6a5870"); renderTFControls("idle", nb);
+      setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderTFControls("idle");
       return;
     }
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
@@ -1026,19 +1029,24 @@
     el("tfTitle").textContent = t.title || "Tracking";
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan");
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t);
-    var streak = (S.game && S.game.streak) || 0;
-    el("tfSpark").innerHTML = onplan ? ('⚡ <b>+3</b> Spark/min · 🔥 streak <b>×' + streak + '</b>') : ('🔥 streak <b>×' + streak + '</b>');
-    // conic reward band fills as elapsed accrues toward the on-plan block length (or a 60-min cadence when unplanned)
+    // context = pacing: how long is left in the planned block, and when it ends
+    if (S0.block) { var bs = hm(S0.block.time), be = bs + (S0.block.mins || 30), rem = be - nowMin(); el("tfCtx").textContent = (rem > 0 ? rem + "m left" : "over by " + (-rem) + "m") + " · ends " + fmt(be); }
+    else el("tfCtx").textContent = drift ? "off your plan" : "no plan — free tracking";
+    el("tfSpark").innerHTML = onplan ? ('⚡ <b>+3</b>/min · 🔥 streak <b>×' + streak + '</b>') : ('🔥 streak <b>×' + streak + '</b>');
     var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
     setRing(p, onplan ? "#28cf86" : "#6a5870");
-    renderTFControls(onplan ? "onplan" : "off", null);
+    setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
+    renderTFControls(onplan ? "onplan" : "off");
   }
   function setRing(p, col) { var ring = el("tfRing"); if (!ring) return; var pct = Math.max(0, Math.min(100, Math.round(p * 100))); ring.style.background = "conic-gradient(" + (col || "#28cf86") + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; } // flat green/grey conic band — no glow (David's no-neon rule); fills clockwise with elapsed
-  function renderTFControls(state, nb) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
-    function b(cls, ic, lab, fn) { var x = add(c, "button", "tf-b" + (cls ? " " + cls : "")); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
-    if (state === "idle") { b("tf-prim", "ti-player-play-filled", "Start", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); b("", "ti-list-search", "Pick", function () { startOrSwitch(); renderTrackerFull(); }); }
-    else if (state === "onplan") { b("", "ti-player-pause", "Break", function () { planBreak(); }); b("", "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b("", "ti-windmill", "Off-plan", function () { startOrSwitch(); renderTrackerFull(); }); }
-    else { b("tf-prim", "ti-arrow-back-up", "Back on plan", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); b("", "ti-check", "Keep it", function () { startOrSwitch(); renderTrackerFull(); }); }
+  function tfDone() { var run = activeTimers(); if (run.length) stopTimer(run[run.length - 1].id); closeTrackerFull(); } // finish the activity → logs it + fires the on-plan reward (stopTimer), then drop back to the day
+  function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
+    function prim(ic, lab, fn) { var x = add(c, "button", "tf-b tf-done"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
+    function b(r, ic, lab, fn) { var x = add(r, "button", "tf-b"); x.innerHTML = '<i class="ti ' + ic + '"></i>' + lab; x.onclick = fn; return x; }
+    var r = function () { return add(c, "div", "tf-row"); };
+    if (state === "idle") { prim("ti-player-play-filled", "Start", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); var r0 = r(); b(r0, "ti-list-search", "Pick something", function () { startOrSwitch(); renderTrackerFull(); }); return; }
+    if (state === "onplan") { prim("ti-circle-check", "Done", tfDone); var r1 = r(); b(r1, "ti-player-pause", "Pause", function () { planBreak(); }); b(r1, "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b(r1, "ti-windmill", "Off-plan", function () { startOrSwitch(); renderTrackerFull(); }); return; }
+    prim("ti-arrow-back-up", "Back on plan", function () { var n = nextPlannedBlock(todayK()); if (n) startPlanned(n); else startOrSwitch(); renderTrackerFull(); }); var r2 = r(); b(r2, "ti-check", "Keep it", function () { startOrSwitch(); renderTrackerFull(); }); b(r2, "ti-switch-horizontal", "Switch", function () { startOrSwitch(); renderTrackerFull(); }); b(r2, "ti-player-stop", "Stop", tfDone);
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [

@@ -679,19 +679,25 @@
   #trackerFull.on{ display:flex; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 12px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .tf-stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; gap:0; }
-  /* #14 album-in-reward-ring: a flat GREEN conic band (no glow) hugging a STRIPED activity tile (matches the timeline bubbles) */
-  .tf-ring{ position:relative; width:min(74vw,300px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(#28cf86 0% 0%, rgba(255,255,255,.10) 0%); transition:background .5s linear; }
-  .tf-tile{ position:relative; width:calc(100% - 30px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:58px; color:#fff2f9; border:2.5px solid #160510; box-shadow:inset 0 2px 0 rgba(255,255,255,.10), 0 6px 18px rgba(0,0,0,.5); }
-  .tf-title{ margin-top:26px; font-weight:800; font-size:23px; letter-spacing:.3px; color:#ffe3f1; text-align:center; }
-  .tf-verdict{ margin-top:3px; font-weight:700; font-size:12px; letter-spacing:1.6px; text-transform:uppercase; color:#5fe0a8; }
-  .tf-time{ margin-top:14px; font-family:"DM Mono","SFMono-Regular",ui-monospace,monospace; font-weight:500; font-size:52px; line-height:1; color:#ffe3f1; font-variant-numeric:tabular-nums; }
-  .tf-spark{ margin-top:13px; display:flex; align-items:center; gap:14px; font-size:13px; font-weight:700; color:#cda9c2; }
+  /* #14 album-in-reward-ring: a flat conic reward band (no glow) hugging a STRIPED activity tile (matches the timeline bubbles) */
+  .tf-ring{ position:relative; width:min(58vw,232px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(#28cf86 0% 0%, rgba(255,255,255,.10) 0%); transition:background .5s linear; }
+  .tf-tile{ position:relative; width:calc(100% - 26px); aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:46px; color:#fff2f9; border:2.5px solid #160510; box-shadow:inset 0 2px 0 rgba(255,255,255,.10), 0 6px 18px rgba(0,0,0,.5); }
+  .tf-title{ margin-top:18px; font-weight:800; font-size:22px; letter-spacing:.3px; color:#ffe3f1; text-align:center; }
+  .tf-verdict{ margin-top:2px; font-weight:700; font-size:11.5px; letter-spacing:1.6px; text-transform:uppercase; color:#5fe0a8; }
+  .tf-time{ margin-top:10px; font-family:"DM Mono","SFMono-Regular",ui-monospace,monospace; font-weight:500; font-size:46px; line-height:1; color:#ffe3f1; font-variant-numeric:tabular-nums; }
+  .tf-ctx{ margin-top:6px; font-size:12.5px; font-weight:600; color:#b596ad; }
+  .tf-spark{ margin-top:10px; display:flex; align-items:center; gap:13px; font-size:12.5px; font-weight:700; color:#cda9c2; }
   .tf-spark b{ color:#ffd98a; }
-  .tf-ctrls{ width:100%; max-width:420px; display:flex; gap:9px; justify-content:center; }
-  .tf-b{ flex:1; max-width:130px; border:2px solid #160510; border-radius:14px; padding:12px 6px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; background:#2a1226; color:#e6cfe0; box-shadow:0 3px 0 #160510; }
+  .tf-next{ margin-top:14px; max-width:380px; width:100%; display:flex; align-items:center; justify-content:center; gap:7px; background:rgba(255,255,255,.04); border:1.5px solid #3a2740; border-radius:12px; padding:9px 12px; color:#c8acc4; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; cursor:pointer; }
+  .tf-next i{ font-size:14px; opacity:.8; }
+  .tf-next b{ color:#ffe3f1; }
+  .tf-ctrls{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:9px; }
+  .tf-row{ display:flex; gap:9px; }
+  .tf-b{ flex:1; border:2px solid #160510; border-radius:14px; padding:11px 6px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; background:#2a1226; color:#e6cfe0; box-shadow:0 3px 0 #160510; }
   .tf-b i{ font-size:18px; }
   .tf-b:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
-  .tf-b.tf-prim{ background:#28cf86; color:#08321f; }
+  .tf-b.tf-done{ flex-direction:row; gap:8px; font-size:15px; padding:14px; background:#28cf86; color:#08321f; }
+  .tf-b.tf-done i{ font-size:20px; }
   /* verdict palettes by state */
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
@@ -1258,12 +1264,14 @@
       <div class="tf-title" id="tfTitle">—</div>
       <div class="tf-verdict" id="tfVerdict"></div>
       <div class="tf-time live-elapsed" id="tfTime" data-tid="">0:00</div>
+      <div class="tf-ctx" id="tfCtx"></div>
       <div class="tf-spark" id="tfSpark"></div>
+      <button class="tf-next" id="tfNext"></button>
     </div>
     <div class="tf-ctrls" id="tfCtrls"></div>
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=564"></script>
+  <script src="app.js?v=565"></script>
 </body>
 </html>
