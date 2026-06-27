@@ -1011,6 +1011,7 @@
   function setTFNext(afterMin) { var nx = el("tfNext"); if (!nx) return; var nu = nextUpBlock(afterMin); if (nu) { nx.style.display = ""; nx.innerHTML = '<i class="ti ti-arrow-right"></i> next <b>' + esc(nu.title) + '</b> · ' + fmt(hm(nu.time)); nx.onclick = function () { startPlanned(nu); renderTrackerFull(); }; } else { nx.style.display = "none"; nx.onclick = null; } }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
+    var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle");
     if (!t) { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
@@ -3035,6 +3036,7 @@
     setInterval(function () {
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
       var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = elapsedStr(ct); }
+      if (TF_OPEN) { var _tc = el("tfClock"); if (_tc) _tc.textContent = fmt(nowMin()).toUpperCase(); } // keep the tracker's wall-clock live
       // per-second now-line creep REMOVED (David 2026-06-27): it moved the now-line by transform but NOT the static block-splits below it, so as the line crept past the ghost/future boundary the matte stripes peeked above it, and its leftover transform fed the fast-zoom jump. The planner updates the now-line per-minute (below); true seconds-precision printing belongs in Tracker Mode's dedicated per-second render, where every now-anchored element redraws together.
       var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!document.querySelector(".calblk.dragging") && !document.querySelector("#pullBody.zooming")) { var _pb = el("pullBody"), _sc = _pb ? _pb.scrollTop : 0; renderToday(); if (_pb) _pb.scrollTop = _sc; } } // burning timeline: each minute re-sweep — but never tear down the timeline mid-drag OR mid-zoom (David 2026-06-25)
     }, 1000);
