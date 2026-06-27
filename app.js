@@ -1036,6 +1036,7 @@
       if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // drag the dock handle UP → expand (finger-follow)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
+      var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable")) return; tfDrag(e, false); }); } // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
     }
     if (TF_OPEN) renderTrackerFull(); // keep the expanded ring in sync whenever the dock re-renders
   }
@@ -1070,10 +1071,10 @@
     ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
     if (opening) { TF_OPEN = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull(); } // populate content so the reveal isn't empty
     tf.classList.add("tf-dragging", "on");
-    function setY(pct) { tf.style.transform = "translateY(" + pct + "%)"; tf.style.opacity = String(Math.max(0.12, 1 - pct / 100)); }
-    function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var pct = opening ? Math.max(0, Math.min(100, 100 + dy / H * 100)) : Math.max(0, Math.min(100, dy / H * 100)); setY(pct); }
-    function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); tf.classList.remove("tf-dragging"); tf.style.transform = ""; tf.style.opacity = ""; var dy = e.clientY - sy;
-      var keepOpen = opening ? (!moved || -dy > H * 0.16) : (dy < -H * 0.10); // OPEN: a tap or a decent up-drag opens. CLOSE handle: a tap OR any down-drag closes; only a clear up-drag keeps it open.
+    function setClip(pct) { tf.style.clipPath = "inset(" + pct + "% 0 0 0)"; } // pct = top inset → grows from the bottom (dock) up
+    function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 4) moved = true; var pct = opening ? Math.max(0, Math.min(100, 100 + dy / H * 100)) : Math.max(0, Math.min(100, dy / H * 100)); setClip(pct); }
+    function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); tf.classList.remove("tf-dragging"); tf.style.clipPath = ""; var dy = e.clientY - sy;
+      var keepOpen = opening ? (!moved || -dy > H * 0.16) : !(moved && dy > H * 0.14); // OPEN: tap or up-drag opens. CLOSE: only a real DOWN-drag closes (a tap on the ring/center does nothing).
       if (keepOpen) openTrackerFull(); else closeTrackerFull(); }
     document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
   }
