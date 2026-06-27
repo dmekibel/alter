@@ -2592,7 +2592,7 @@
   function togglePin(a) { S.pinned = S.pinned || []; var t = (a.title || "").toLowerCase(), i = S.pinned.indexOf(t); if (i >= 0) S.pinned.splice(i, 1); else S.pinned.push(t); save(); }
   function bentoPicker(opts) {
     opts = opts || {};
-    var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null }, foot = null, searchQ = "";
+    var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null, grp: null }, foot = null, searchQ = "";
     var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
     var ov = add(document.body, "div", "bento-ov");
     var card = add(ov, "div", "bento-card");
@@ -2631,11 +2631,11 @@
         var acts = (by[d] || []).slice(); if (!acts.length) return;
         acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the front (David 2026-06-24)
         var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
-        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; render(); };
+        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; view.grp = null; render(); };
         var wrap = add(mc, "div", "bento-chips");
         var SHOWN = 6; acts.slice(0, SHOWN).forEach(function (a) { actChip(a, wrap, false); }); // 2-column grid: show the top few + a "+N" to open the rest (David's image 1)
         var rest = acts.length - SHOWN;
-        if (rest > 0) { var more = add(wrap, "span", "bchip more"); more.style.background = mixHex(D.c, "#160510", 0.5); more.style.color = D.light; more.textContent = "+" + rest; more.onclick = function () { view.cat = d; render(); }; }
+        if (rest > 0) { var more = add(wrap, "span", "bchip more"); more.style.background = mixHex(D.c, "#160510", 0.5); more.style.color = D.light; more.textContent = "+" + rest; more.onclick = function () { view.cat = d; view.grp = null; render(); }; }
         else { var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew; }
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
@@ -2652,19 +2652,38 @@
       si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
       drawResults(searchQ.trim());
     }
+    function groupsOf(d) { var groups = {}, order = []; (by[d] || []).forEach(function (a) { var gn = a.group || "More"; if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); }); return { groups: groups, order: order }; }
     function renderExpanded(d) {
-      var D = DOM[d];
+      var D = DOM[d], gd = groupsOf(d);
+      // top strip: back (steps up ONE level) + a breadcrumb + lateral domain tabs
       var strip = add(body, "div", "bento-strip");
-      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { view.cat = null; render(); };
-      DOM_ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; render(); }; });
+      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { if (view.grp) { view.grp = null; } else { view.cat = null; } render(); };
+      var crumb = add(strip, "span", "bento-crumb"); crumb.style.color = D.light;
+      crumb.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l) + (view.grp ? ' <i class="ti ti-chevron-right" style="opacity:.55;font-size:.85em"></i> ' + esc(view.grp) : '');
+      if (view.grp) { crumb.style.cursor = "pointer"; crumb.onclick = function () { view.grp = null; render(); }; } // tap the breadcrumb domain → back to its sub-groups
+      DOM_ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; view.grp = null; render(); }; });
       var pane = add(body, "div", "bento-pane"); pane.style.borderColor = D.c;
-      var h = add(pane, "div", "bento-paneh"); h.style.color = D.light; h.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
-      var groups = {}, order = []; by[d].forEach(function (a) { var gn = a.group || "More"; if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); });
-      order.forEach(function (gn) { if (order.length > 1) { var sh = add(pane, "div", "bento-subh", gn); sh.style.color = D.light; } var g = add(pane, "div", "bento-tiles"); groups[gn].forEach(function (a) { actChip(a, g, true); }); });
-      var ar = add(pane, "div", "bento-tiles"); var addt = add(ar, "span", "bchip big addt"); addt.innerHTML = '<i class="ti ti-plus"></i> add'; addt.onclick = addNew;
+      // LEVEL 2: more than one sub-group AND none chosen yet → show the sub-category list (drill down one more) — David 2026-06-27
+      if (gd.order.length > 1 && !view.grp) {
+        var h = add(pane, "div", "bento-paneh"); h.style.color = D.light; h.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
+        var gl = add(pane, "div", "bento-tiles");
+        gd.order.forEach(function (gn) { var t = add(gl, "span", "bchip big grp"); t.style.background = mixHex(D.c, "#160510", 0.55); t.style.color = D.light; t.style.borderColor = mixHex(D.c, "#160510", 0.2); t.innerHTML = '<i class="ti ti-folder"></i> ' + esc(gn) + ' <span class="grp-n">' + gd.groups[gn].length + '</span>'; t.onclick = function () { view.grp = gn; render(); }; });
+        var addt0 = add(gl, "span", "bchip big addt"); addt0.innerHTML = '<i class="ti ti-plus"></i> add'; addt0.onclick = addNew;
+        return;
+      }
+      // LEVEL 3 (or a single-group domain): the activities. Single tap = pick (commit).
+      var gn = view.grp || gd.order[0], acts = gd.groups[gn] || by[d] || [];
+      var h2 = add(pane, "div", "bento-paneh"); h2.style.color = D.light; h2.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(gn);
+      var g = add(pane, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, g, true); });
+      // type-in fallback: add a niche activity right here → goes into this domain (reuses S.acts) — David 2026-06-27
+      var tin = add(pane, "div", "bento-typein");
+      var ti = document.createElement("input"); ti.type = "text"; ti.className = "bento-tinput"; ti.placeholder = "add your own…"; tin.appendChild(ti);
+      var tgo = add(tin, "button", "bento-tadd"); tgo.innerHTML = '<i class="ti ti-plus"></i>';
+      function addTyped() { var nm = ti.value.trim(); if (!nm) { ti.focus(); return; } S.acts = S.acts || []; if (!S.acts.filter(function (x) { return (x.title || "").toLowerCase() === nm.toLowerCase(); })[0]) S.acts.push({ title: nm, catK: null, domain: d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: d, color: DOM[d].c }; if (multi) { if (sel.indexOf(a) < 0) sel.push(a); ti.value = ""; render(); renderFoot(); } else { close(); opts.onPick(a); } }
+      tgo.onclick = addTyped; ti.onkeydown = function (e) { if (e.key === "Enter") addTyped(); };
     }
     function addNew() {
-      view.cat = null; body.innerHTML = ""; if (foot) { foot.remove(); foot = null; }
+      view.cat = null; view.grp = null; body.innerHTML = ""; if (foot) { foot.remove(); foot = null; }
       add(body, "div", "bento-newh", "New activity");
       var inp = document.createElement("input"); inp.type = "text"; inp.className = "bento-input"; inp.placeholder = "name it once…"; body.appendChild(inp);
       add(body, "div", "bento-hint2", "type the name (once) → it becomes a bubble you tap forever");
