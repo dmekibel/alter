@@ -1031,6 +1031,11 @@
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"]::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; } /* two faint bars on the right edge = "Goals & You are tucked behind, tap to open" */
   body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   body.nav-collapsed.tab-day #liveDock .ld-seg{ display:none !important; } /* narrow row = play/info/elapsed only; expand the nav for the Replan/Drift row */
+  /* COLLAPSED DOCK = EXACTLY the Today pill's height (62px) — one compact even row beside it (David 2026-06-28). Drop the grab handle + the .ld-main bottom margin, slim the padding, vertically centre. */
+  body.nav-collapsed.tab-day #liveDock.on{ height:62px !important; box-sizing:border-box !important; padding:0 11px !important; display:flex !important; align-items:center !important; border-radius:14px !important; }
+  body.nav-collapsed.tab-day #liveDock .ld-grab{ display:none !important; } /* no drag handle in the slim corner row (drag-to-expand still works on the body) */
+  body.nav-collapsed.tab-day #liveDock .ld-main{ margin-bottom:0 !important; width:100% !important; }
+  body.nav-collapsed.tab-day #liveDock .ld-stop{ width:40px !important; height:40px !important; } /* the mini ring stays a clean 40px circle, vertically centred in the 62px row */
   body.nav-collapsed.tab-day:not(.gaming) #pullSheet{ bottom:calc(env(safe-area-inset-bottom,0px)) !important; transition:bottom .26s cubic-bezier(.2,.85,.3,1); } /* timeline EXTENDS to the screen bottom, BEHIND the floating dock — no ugly sheet edge above the tracker (David 2026-06-27) */
   body.nav-collapsed.tab-day:not(.gaming) .day-cardscroll{ padding-bottom:88px !important; } /* …but the last content can still scroll clear of the dock */
   #screen{ padding-bottom:98px !important; }
@@ -1359,6 +1364,6 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=588"></script>
+  <script src="app.js?v=589"></script>
 </body>
 </html>

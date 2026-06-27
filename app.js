@@ -1076,34 +1076,59 @@
   function _tfNode(sel) { return sel.charAt(0) === "." ? document.querySelector("#liveDock " + sel) : el(sel); }
   // For each pair: measure the BIG element's final rect (Last) and the MINI element's rect (First); return the inverse transform that
   // makes the big element START at the mini position+size. Circles use a single uniform scale (width ratio) so they never stretch.
-  function _flipStart(big, mini) { // rectangular pairs: top-left FLIP (transform-origin:0 0) — translate the big's corner onto the mini's, scale to the mini's size
+  function _flipStart(big, mini) { // rectangular pairs: top-left FLIP (transform-origin:0 0) — translate the big's corner onto the mini's, scale to the mini's size. Returns numeric components so the morph can be lerped frame-by-frame.
     var b = big.getBoundingClientRect(), m = mini.getBoundingClientRect();
-    if (!b.width || !m.width) return "";
-    return "translate(" + (m.left - b.left) + "px," + (m.top - b.top) + "px) scale(" + (m.width / b.width) + "," + (m.height / b.height) + ")";
+    if (!b.width || !m.width) return null;
+    return { tx: m.left - b.left, ty: m.top - b.top, sx: m.width / b.width, sy: m.height / b.height };
   }
   function _flipStartCircle(big, mini) { // circle pairs: UNIFORM scale only (no distortion), centres coincide
-    var b = big.getBoundingClientRect(), m = mini.getBoundingClientRect(); if (!b.width || !m.width) return "";
+    var b = big.getBoundingClientRect(), m = mini.getBoundingClientRect(); if (!b.width || !m.width) return null;
     var s = Math.min(m.width / b.width, m.height / b.height);
-    var bcx = b.left + b.width / 2, bcy = b.top + b.height / 2, mcx = m.left + m.width / 2, mcy = m.top + m.height / 2;
+    var mcx = m.left + m.width / 2, mcy = m.top + m.height / 2;
     // transform-origin is 0 0; scale about top-left then correct so the CENTRES coincide
     var dx = mcx - (b.left + b.width / 2 * s), dy = mcy - (b.top + b.height / 2 * s);
-    return "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+    return { tx: dx, ty: dy, sx: s, sy: s }; // uniform: sx===sy
   }
-  function tfMorph(opening, done) { // run the FLIP forward (opening) or reverse (closing); call done() at the end
+  function _tfTf(c, f) { // serialize a flip component at fraction f (0 = mini start, 1 = big/identity), lerping each component toward identity
+    var g = 1 - f; return "translate(" + (c.tx * g) + "px," + (c.ty * g) + "px) scale(" + (c.sx + (1 - c.sx) * f) + "," + (c.sy + (1 - c.sy) * f) + ")";
+  }
+  function _tfPairs() { // measure all pairs now; returns [{big, c}] where c is the flip components (circle = uniform). Big rects must already be at full layout (tf .on).
+    var out = []; TF_PAIRS.forEach(function (p) { var big = el(p[1]), mini = _tfNode(p[0]); if (!big || !mini) return;
+      var c = p[2] ? _flipStartCircle(big, mini) : _flipStart(big, mini); if (!c) return; out.push({ big: big, c: c }); }); return out;
+  }
+  function tfSetFrac(f, pairs) { // DRAG-DRIVEN morph: place every big element at its lerped position for fraction f (no transition — under the finger). Background opacity tracks f.
+    var tf = el("trackerFull"); if (!tf) return; f = Math.max(0, Math.min(1, f));
+    (pairs || _tfPairs()).forEach(function (q) { q.big.style.transform = _tfTf(q.c, f); q.big.style.opacity = (0.001 + 0.999 * f).toFixed(3); });
+    tf.style.opacity = f.toFixed(3);
+  }
+  function tfMorph(opening, done) { // run the FLIP forward (opening) or reverse (closing) via CSS transition; call done() at the end
     var tf = el("trackerFull"); if (!tf) { if (done) done(); return; }
-    var pairs = []; TF_PAIRS.forEach(function (p) { var big = el(p[1]), mini = _tfNode(p[0]); if (!big || !mini) return;
-      var start = p[2] ? _flipStartCircle(big, mini) : _flipStart(big, mini); if (!start) return; pairs.push({ big: big, start: start }); });
+    var pairs = _tfPairs();
     tf.classList.add("tf-morphing"); pairs.forEach(function (q) { q.big.classList.add("tf-morph"); }); // arm the elements
-    if (opening) { pairs.forEach(function (q) { q.big.style.transform = q.start; q.big.style.opacity = "0.001"; }); tf.classList.remove("tf-bg"); tf.style.opacity = "0"; } // OPEN: start AT the mini spot, transparent bg
+    if (opening) { pairs.forEach(function (q) { q.big.style.transform = _tfTf(q.c, 0); q.big.style.opacity = "0.001"; }); tf.classList.remove("tf-bg"); tf.style.opacity = "0"; } // OPEN: start AT the mini spot, transparent bg
     else { pairs.forEach(function (q) { q.big.style.transform = ""; q.big.style.opacity = ""; }); tf.classList.remove("tf-bg"); tf.style.opacity = ""; } // CLOSE: start AT the big spot (identity), bg shown
     void tf.offsetHeight; // FORCE REFLOW so the start state registers before the transition (rAF is throttled in the headless preview — this repo relies on this)
     tf.classList.add("tf-bg");
     if (opening) { tf.style.opacity = "1"; pairs.forEach(function (q) { q.big.style.transform = ""; q.big.style.opacity = ""; }); } // → fly to the big spots + fade bg in
-    else { tf.style.opacity = "0"; pairs.forEach(function (q) { q.big.style.transform = q.start; q.big.style.opacity = "0.001"; }); } // → shrink back into the mini spots + fade bg out
+    else { tf.style.opacity = "0"; pairs.forEach(function (q) { q.big.style.transform = _tfTf(q.c, 0); q.big.style.opacity = "0.001"; }); } // → shrink back into the mini spots + fade bg out
     var fin = function () { tf.removeEventListener("transitionend", fin); clearTimeout(to);
       tf.classList.remove("tf-morphing"); pairs.forEach(function (q) { q.big.classList.remove("tf-morph"); q.big.style.transform = ""; q.big.style.opacity = ""; });
       if (done) done(); };
     var to = setTimeout(fin, 460); tf.addEventListener("transitionend", function te(e) { if (e.target === tf && e.propertyName === "opacity") { tf.removeEventListener("transitionend", te); fin(); } });
+  }
+  function tfSettle(pairs, f0, toOpen, done) { // RELEASE: animate the remaining fraction from f0 → (toOpen?1:0) via the CSS transition, reusing the void-reflow trick (rAF is throttled in the preview)
+    var tf = el("trackerFull"); if (!tf) { if (done) done(); return; }
+    tf.classList.remove("tf-bg"); // ensure the start state is set WITHOUT a transition
+    tfSetFrac(f0, pairs); void tf.offsetHeight; // register start
+    tf.classList.add("tf-bg"); // now transitions are live
+    var f1 = toOpen ? 1 : 0;
+    pairs.forEach(function (q) { q.big.style.transform = toOpen ? "" : _tfTf(q.c, 0); q.big.style.opacity = toOpen ? "" : "0.001"; });
+    tf.style.opacity = String(f1);
+    var fin = function () { tf.removeEventListener("transitionend", te); clearTimeout(to);
+      tf.classList.remove("tf-morphing"); pairs.forEach(function (q) { q.big.classList.remove("tf-morph"); q.big.style.transform = ""; q.big.style.opacity = ""; });
+      if (done) done(); };
+    function te(e) { if (e.target === tf && e.propertyName === "opacity") fin(); }
+    var to = setTimeout(fin, 460); tf.addEventListener("transitionend", te);
   }
   function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
     if (TF_OPEN || TF_ANIM) return; // ONE clean expand per gesture — never re-open while open or mid-morph (David 2026-06-28)
@@ -1114,13 +1139,33 @@
   function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
     if (!TF_OPEN || TF_ANIM) return; TF_ANIM = true; if (bd) bd.classList.remove("on");
     tfMorph(false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); }
-  function tfDrag(ev, opening) { // folded: drag UP on the dock → expand (morph). open: drag DOWN on the sheet → close (morph). A real drag past threshold commits; otherwise it snaps back. (David 2026-06-28)
+  function tfDrag(ev, opening) { // folded: drag UP on the dock → expand (FINGER-FOLLOWED morph). open: drag DOWN on the sheet → close (morph). A real drag past threshold commits; otherwise it snaps back. A plain tap plays the full animated morph. (David 2026-06-28)
     ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
     if (opening && (TF_OPEN || TF_ANIM)) return; if (!opening && (!TF_OPEN || TF_ANIM)) return;
-    function mv(e) { var dy = e.clientY - sy; if (!moved && Math.abs(dy) > 4) moved = true; }
+    var TARGET = H * 0.42, dk = el("liveDock"), bd = el("tfBackdrop"), pairs = null, dragging = false; // TARGET = drag distance that = fully open (f=1)
+    function begin() { // arm the drag-morph: lay the sheet out full-size (so the big rects are real), measure pairs, snap everything to f=0 under the finger — NO transition yet
+      if (dragging) return; dragging = true; TF_ANIM = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
+      tf.style.height = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); if (bd) bd.classList.add("on");
+      if (dk) dk.classList.add("ld-morphing"); tf.classList.add("tf-morphing");
+      pairs = _tfPairs(); pairs.forEach(function (q) { q.big.classList.add("tf-morph"); });
+      void tf.offsetHeight; tfSetFrac(0, pairs); // start collapsed-into-the-mini-spot
+    }
+    function mv(e) { var dy = e.clientY - sy; if (!moved && Math.abs(dy) > 4) moved = true;
+      if (opening) { if (-dy > 4) { if (!dragging) begin(); if (dragging) tfSetFrac((-dy) / TARGET, pairs); } } // grow UNDER the finger in real time
+    }
     function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); var dy = e.clientY - sy;
-      if (opening) { if (-dy > H * 0.06 || !moved) openTrackerFull(); } // drag UP (even a small one) OR a plain tap → expand via the morph (tap-to-open restored — David 2026-06-28)
+      if (opening) {
+        if (!moved) { if (dragging) { /* never started a real drag */ } openTrackerFull_fromDrag(dragging, pairs); return; } // plain tap → full animated morph
+        var f = Math.max(0, Math.min(1, (-dy) / TARGET));
+        if (!dragging) { if (-dy > H * 0.06) openTrackerFull(); return; } // tiny flick before begin armed → just open
+        if (f >= 0.35) { tfSettle(pairs, f, true, function () { TF_OPEN = true; TF_ANIM = false; }); } // past threshold → finish opening
+        else { tfSettle(pairs, f, false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (bd) bd.classList.remove("on"); if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); } // snap back closed
+      }
       else { if (moved && dy > H * 0.10) closeTrackerFull(); } } // drag DOWN past threshold → close; a tap on the sheet body does nothing
+    function openTrackerFull_fromDrag(wasArmed, pr) { // tap path: if we already armed (laid out + measured), just run the full morph from f=0; else go through the normal open
+      if (!wasArmed) { openTrackerFull(); return; }
+      tfSettle(pr, 0, true, function () { TF_OPEN = true; TF_ANIM = false; });
+    }
     document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
   }
   function claimableBlock() { // the single most-likely plan block covering a passed/straddling gap with NO matching real log — the welcome-back "claim" target
