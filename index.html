@@ -1073,8 +1073,8 @@
   .bchip.fav .ti-check{ font-size:13px; }
   /* ============ v444 — drag-to-scroll + hold-to-move on touch (JS-controlled) + easy bottom-edge resize (David 2026-06-24) ============ */
   /* movable bubbles are fully JS-controlled (touch-action:none) so a drag can SCROLL the timeline (1:1) and a hold can MOVE — no native-scroll fight that broke move on iOS */
-  .calblk.lane{ touch-action:none !important; }
-  .calblk.act:not(.live){ touch-action:none !important; }
+  .calblk.lane{ touch-action:pan-y !important; } /* native momentum scroll when your thumb is on a bubble (buttery); a STILL long-press switches into JS drag, which blocks scroll itself — David 2026-06-27 */
+  .calblk.act:not(.live){ touch-action:pan-y !important; }
   .calblk.live{ touch-action:pan-y !important; } /* the live timer doesn't move → keep native momentum scroll + tap-to-switch */
   /* the bottom edge is a full-width resize handle (easy to grab); top stays a small corner */
   .calblk .grip{ left:0 !important; right:0 !important; width:auto !important; height:14px !important; bottom:0 !important; top:auto !important; }
@@ -1211,6 +1211,6 @@
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=521"></script>
+  <script src="app.js?v=522"></script>
 </body>
 </html>
