@@ -690,9 +690,17 @@
   .tf-ctx{ margin-top:8px; font-size:12.5px; font-weight:600; color:#b596ad; }
   .tf-spark{ margin-top:10px; display:flex; align-items:center; gap:13px; font-size:12.5px; font-weight:700; color:#cda9c2; }
   .tf-spark b{ color:#ffd98a; }
+  .tf-today{ margin-top:7px; font-size:12px; font-weight:600; color:#8f7f9c; display:flex; align-items:center; gap:6px; }
+  .tf-today i{ font-size:13px; opacity:.85; }
+  .tf-today b{ color:#cdb3c8; }
   .tf-next{ margin-top:14px; max-width:380px; width:100%; display:flex; align-items:center; justify-content:center; gap:7px; background:rgba(255,255,255,.04); border:1.5px solid #3a2740; border-radius:12px; padding:9px 12px; color:#c8acc4; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; cursor:pointer; }
   .tf-next i{ font-size:14px; opacity:.8; }
   .tf-next b{ color:#ffe3f1; }
+  .tf-switch{ margin-top:10px; max-width:420px; width:100%; display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:center; }
+  .tf-swlab{ font-size:9.5px; font-weight:800; letter-spacing:1.6px; color:#6f6080; text-transform:uppercase; }
+  .tf-chip{ display:flex; align-items:center; gap:5px; background:#241328; border:1.5px solid #160510; border-radius:11px; padding:7px 11px; color:#e6cfe0; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; box-shadow:0 2px 0 #160510; }
+  .tf-chip i{ font-size:14px; }
+  .tf-chip:active{ transform:translateY(1px); box-shadow:0 1px 0 #160510; }
   .tf-ctrls{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:9px; }
   .tf-row{ display:flex; gap:9px; }
   .tf-b{ flex:1; border:2px solid #160510; border-radius:14px; padding:11px 6px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; background:#2a1226; color:#e6cfe0; box-shadow:0 3px 0 #160510; }
@@ -1270,12 +1278,13 @@
       <div class="tf-elabel">elapsed</div>
       <div class="tf-ctx" id="tfCtx"></div>
       <div class="tf-spark" id="tfSpark"></div>
-      <button class="tf-next" id="tfNext"></button>
+      <div class="tf-today" id="tfToday"></div>
+      <div class="tf-switch" id="tfSwitch"></div>
     </div>
     <div class="tf-ctrls" id="tfCtrls"></div>
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=566"></script>
+  <script src="app.js?v=567"></script>
 </body>
 </html>

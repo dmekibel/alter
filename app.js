@@ -1009,6 +1009,14 @@
   function tfStripe(C) { return "repeating-linear-gradient(45deg," + C + "," + C + " 9px," + mixHex(C, "#160510", 0.42) + " 9px," + mixHex(C, "#160510", 0.42) + " 18px)"; } // vivid striped activity tile (matches the timeline-bubble texture, brighter for the hero)
   function nextUpBlock(afterMin) { var best = null; blocks(todayK()).forEach(function (b) { if (!b.title) return; var bs = hm(b.time); if (bs >= afterMin && blockStatus(todayK(), b) === "plan") { if (!best || bs < hm(best.time)) best = b; } }); return best; } // the next still-to-do planned block after a given minute → the "what's next" pointer
   function setTFNext(afterMin) { var nx = el("tfNext"); if (!nx) return; var nu = nextUpBlock(afterMin); if (nu) { nx.style.display = ""; nx.innerHTML = '<i class="ti ti-arrow-right"></i> next <b>' + esc(nu.title) + '</b> · ' + fmt(hm(nu.time)); nx.onclick = function () { startPlanned(nu); renderTrackerFull(); }; } else { nx.style.display = "none"; nx.onclick = null; } }
+  function tfDomMinsToday(dom) { var s = 0; (logs(todayK()) || []).forEach(function (l) { if (!dom || domainOf(l) === dom) s += (l.mins || 0); }); return s; } // minutes logged today (optionally for one domain) — the "accumulation" glance
+  function tfSwitchTargets(curTitle) { var ct = (curTitle || "").toLowerCase(), used = {}, res = []; used[ct] = 1; // upcoming planned blocks first (jump-ahead), then recent distinct logged activities (resume)
+    blocks(todayK()).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { if (res.length >= 3 || !b.title) return; if (blockStatus(todayK(), b) !== "plan" || hm(b.time) < nowMin() - 5) return; var k = b.title.toLowerCase(); if (used[k]) return; used[k] = 1; res.push({ title: b.title, dom: domainOf(b), block: b }); });
+    (logs(todayK()) || []).slice().reverse().forEach(function (l) { if (res.length >= 3 || !l.title) return; var k = l.title.toLowerCase(); if (used[k]) return; used[k] = 1; res.push({ title: l.title, dom: domainOf(l), act: l }); });
+    return res;
+  }
+  function tfSwitchTo(item) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); if (item.block) { startPlanned(item.block); } else { startTimer({ title: item.title, catK: (item.act && item.act.catK) || null, color: (DOM[item.dom] || DOM.focus).c }); var r = activeTimers(); if (r.length) maybeCelebrateTrack(r[r.length - 1]); renderLiveTracker(); renderToday(); } renderTrackerFull(); }
+  function renderSwitchChips(curTitle) { var w = el("tfSwitch"); if (!w) return; w.innerHTML = ""; var tg = tfSwitchTargets(curTitle); if (!tg.length) { w.style.display = "none"; return; } w.style.display = ""; add(w, "span", "tf-swlab", "SWITCH TO"); tg.forEach(function (o) { var D = DOM[o.dom] || DOM.focus, c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + (o.block ? tiClass(o.block) : (o.act ? tiClass(o.act) : D.ti)) + '" style="color:' + D.light + '"></i> ' + esc(o.title); c.onclick = (function (it) { return function () { tfSwitchTo(it); }; })(o); }); }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
@@ -1020,8 +1028,9 @@
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '🔥 streak <b>×' + streak + '</b>';
+      el("tfToday").innerHTML = '<i class="ti ti-clock-hour-4"></i> <b>' + dur(tfDomMinsToday(null)) + '</b> tracked today';
       if (tile) { tile.style.background = tfStripe(ND.c); tile.style.filter = "saturate(.5) brightness(.78)"; tile.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
-      setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderTFControls("idle");
+      setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
       return;
     }
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
@@ -1035,8 +1044,11 @@
     else el("tfCtx").textContent = drift ? "off your plan" : "no plan — free tracking";
     el("tfSpark").innerHTML = onplan ? ('⚡ <b>+3</b>/min · 🔥 streak <b>×' + streak + '</b>') : ('🔥 streak <b>×' + streak + '</b>');
     var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
+    var onAct = tfDomMinsToday(S0.dom) + Math.round(elMin), allToday = tfDomMinsToday(null) + Math.round(elMin);
+    el("tfToday").innerHTML = '<i class="ti ti-clock-hour-4"></i> <b>' + dur(onAct) + '</b> on this today · <b>' + dur(allToday) + '</b> all';
     setRing(p, onplan ? "#28cf86" : "#6a5870");
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
+    renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
   }
   function setRing(p, col) { var ring = el("tfRing"); if (!ring) return; var pct = Math.max(0, Math.min(100, Math.round(p * 100))); ring.style.background = "conic-gradient(" + (col || "#28cf86") + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; } // flat green/grey conic band — no glow (David's no-neon rule); fills clockwise with elapsed
