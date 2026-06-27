@@ -1,0 +1,186 @@
+{
+  "summary": "Mine David's Field Guide KB (Johnson/Stutz/Withers/self-help-stack + his own techniques) into wisdom→mechanic mappings + the in-app TOOLBOX catalog + build-ready specs",
+  "agentCount": 8,
+  "logs": [
+    "7/7 lenses mined — synthesizing the wisdom layer + toolbox"
+  ],
+  "result": {
+    "lensCount": 7,
+    "synth": {
+      "vision": "ALTER's north star is \"democratize wisdom — fuse ancient knowledge with modern science and walk you from theory -> practice -> mastery.\" The Toolbox is how that promise becomes a tap. Today ALTER already SHIPS six guided micro-experiences — breathwork(), relaxMoment(), meditation() (David's 4 teachers), tapping() (exact EFT 9-point), mantraPlayer() (David's own affirmation), and gratefulFlow() (Stutz Tool 4, already logs+earns) — but they are scattered as MICRO quick-add chips with no sourcing and no in-the-moment routing. They are wisdom with the labels filed off. The Toolbox is the missing SOURCING + ROUTING layer, not a new app: it adopts those six functions under David's own 8-Layer Self-Help Stack (david-framework.md L58-71), adds the Stutz arsenal as clones of the same #breatheOv idiom, and wires the guardian to HAND you the right tool in the moment.\n\nThe discipline that makes it magic, not generic: every tool carries a KB-EXACT \"when to use me\" lifted verbatim from David's curated KB, and the angel's trigger->tool map is Stutz's own Part-X-attack-mode table rendered as data (avoidance->Reversal of Desire; grievance->Active Love; post-win stall->Jeopardy; lethargy at a transition->Vortex; the pull to numb->Black Sun). The single non-negotiable wiring rule is Stutz's ordering constraint (phil-stutz-master-guide.md L130): Body first -> Observer -> Label \"That's Part X\" -> Tool -> Higher force. The angel never offers a cognitive/identity tool on a dysregulated nervous system; an acute spike routes to a sub-60s physiological reset FIRST (breath/Vortex/Black Sun), then labeling, then the matched tool — and Grateful Flow is hard-blocked while a grievance is live (Active Love must discharge it first, L119). Skip this and the tool \"bounces\" and David concludes the tools don't work.\n\nIt rides only existing rails: ONE toolboxSheet() on the existing #sheet (openSheet@3241), entered from dayToolsMenu@803 plus one proactive() hand-off — no third menu, zero timeline-render risk. Tools unlock progressively via the journey's readiness()/journeyNode() so a new user isn't handed 14 overlays at once, and each tool's quiet use-count is Stutz's Willingness->Habit->Grace ladder (the per-skill Duolingo rung inside the Fallout life-tree David specced). Every finish logs a tracked Restore entry + earns Spark via the safe earn() path and fires celebrate() at the GENTLE tier — reward-never-shame as math: using a tool on a hard day IS the win. The optional BYO-key brain (askBrain) is L8 \"Meta Support\" only — it personalizes one line per tool and degrades silently to the hardcoded KB script. Offline core, $0, single-file, locked berry palette. This is David's wisdom made executable: the guardian reaching into his own Field Guide and putting the exact right procedure in his hand at the exact moment Part X strikes.",
+      "toolbox": [
+        "BREATHE / Physiological Sigh — david-framework L2 + Johnson/McGonigal/Huberman — trigger: acute stress, spike, before something hard, any transition crash — ALREADY BUILT breathwork()@2193; steps: paced orb inhale/hold/exhale (default 6-in/1-hold/8-out = 4 bpm, Johnson) for 4 cycles + synced tone, logs+Spark. ADD a one-breath Physiological-Sigh variant (double inhale, long exhale — fastest acute regulator) as the panic button. This is the body-first DEFAULT the angel offers before any cognitive tool.",
+        "RELAX ALL MUSCLES — david-framework L1/L2 + Maltz Psycho-Cybernetics — trigger: tension, pre-sleep, pre-focus — ALREADY BUILT relaxMoment()@2232; steps: progressive release (jaw/eyes/neck/shoulders/spine/chest) + one mindful moment. Pure adopt into the kit under 'Steady the body'.",
+        "MEDITATE — david-framework L3 Awareness — trigger: scattered, racing mind, can't detect misalignment, scheduled AM/PM — ALREADY BUILT meditation()@2255 (David's 4 teachers, adaptive re-anchor). L3 = the spiral's interruption point (early detection of misalignment). Pure adopt under 'Clear the mind'.",
+        "TAPPING / EFT — david-framework L4 Emotional Regulation — trigger: a named feeling (anxious/stuck/frustrated/sad) you want to move through — ALREADY BUILT tapping()@2302 (exact 9-point order, setup 'Even though I feel X, I deeply and completely accept myself', tap-only). Already nails reward-never-shame ('No need to believe it — just tap'). Adopt + file under L4. NEEDS DAVID: confirm he keeps the generic setup line or wants his own wording.",
+        "MANTRA / IDENTITY — david-framework L5 Identity Reprogramming + Murphy/Goddard — trigger: AM identity step, low self-trust, pre-performance, drowsy pre-sleep window (Theta = the install room) — ALREADY BUILT mantraPlayer()@2355 (David's own 24-line first-person affirmation, 'the keystone willpower-free step'). Adopt under 'Become who you're being'; AM bookend offers it as the seed; optional askBrain personalizes a line.",
+        "GRATEFUL FLOW — Stutz Tool 4, david-framework L6 Perception — trigger: negative-thought loop / Black Cloud, mind undirected, scheduled AM/meals/PM — ALREADY BUILT gratefulFlow()@3143 (name specifics -> stop & feel the chest -> the Source). Adopt + becomes the PM-bookend gratitude beat. HARD CONSTRAINT (L119/L252): blocked while a grievance is live -> route Active Love first.",
+        "REVERSAL OF DESIRE — Stutz Tool 1 (master-guide L172-190), L4/Force of Forward Motion — when-to-use (verbatim): 'right before something you've been avoiding' (the Comfort Zone). NEW <15s #breatheOv clone: see the pain as a cloud ahead -> move toward it 'Bring it on!' -> enter 'I love pain!' -> through & out 'Pain sets me free!' -> feel forward motion -> 'start the thing' button. Mechanism shown: self-initiated approach buffers cortisol (Sapolsky perceived-control). FLAGSHIP — the drift-recovery tool the journey rewards.",
+        "ACTIVE LOVE — Stutz Tool 2 (master-guide L194-211), L4/Outflow — when-to-use: 'when someone's taken up residence in your head / you can't stop rehearsing the argument' (the Maze). NEW 30-60s clone: Concentration (feel love fill the body from the chest) -> Transmission (send it to the person, see them bathed) -> Penetration (feel it land, Outflow returns greater). Framed as self-interest, NOT virtue ('this frees YOU'). Must precede Grateful Flow when a grievance is live.",
+        "INNER AUTHORITY — Stutz Tool 3 (master-guide L215-232), L5/Force of Self-Expression — when-to-use: 'before a hard conversation or performance, or when you freeze'. NEW 3-5s clone WITH a breath pre-roll (regulate first): project your Shadow self -> feel the bond ('this is you, your other half — not your enemy') -> together command 'LISTEN!'. Partners the Shadow, never shames it. Gated to journey N4+ (identity).",
+        "JEOPARDY — Stutz Tool 5 (master-guide L257-273), the META-TOOL — when-to-use: 'demoralized and can't use any other tool, OR right after a success' (the Exoneration Fantasy — Stutz's documented #1 relapse, L121). NEW <10s clone, ANGEL-OFFERED after a celebrate()/big win: visualize your deathbed self out of present moments, looking back at THIS one -> feel him scream the urgency -> use the spark to launch whichever other tool/block is needed. Surfaces the Creator-vs-Consumer = Player/NPC line.",
+        "BLACK SUN — Stutz Tool 6 / Coming Alive (master-guide L277-291), counters self-gratification mode — when-to-use: the pull to scroll/snack/numb, the 'I deserve this / one break won't hurt' voice. NEW <10s clone: feel the impulse as emptiness/void -> a Black Sun (orb of dark light = compressed Life Force) rises -> it fills you from inside -> give that energy outward. The anti-doomscroll reset; a body-first tool that can precede labeling.",
+        "VORTEX — Stutz Tool 7 / Coming Alive (master-guide L295-311), counters lethargy mode — when-to-use: lethargy/flatness, mid-day energy crash, and above all TRANSITIONS between tasks (the unguarded window, L311). NEW <30s clone: twelve suns in a circle around you -> they rise -> they grow and expand, non-physical energy fills you. The transition-gap regulator that restores the observer so labeling becomes possible.",
+        "THE MOTHER — Stutz Tool 8 / Coming Alive (master-guide L315-330), counters false-hope/demoralization — when-to-use: 'I was counting on X to save me and it didn't', world feels hostile/random. NEW <60s clone: see the negative thoughts as a toxic mass ahead -> the archetypal cosmic Mother appears -> she lifts the mass away (you don't fight it) -> her unconditional love fills the space (not contingent on performance). Restores predictability (Sapolsky). Fast-follow tier.",
+        "THE TOWER — Stutz Tool 9 / Coming Alive (master-guide L334-350), counters hurt-feelings/victim mode — when-to-use: hurt hardened into identity ('I am the one who was wronged'), a wound deeper than the Maze. NEW 30-60s clone: let the hurt enter your heart, you die to it (full acceptance) -> 'Only the dead survive' -> float up through a hollow tower -> exit the top into open blue sky (transcendence above the wound). Liberation through surrender. Fast-follow; gate to later nodes.",
+        "LABEL PART X — the meta-practice (master-guide L354-364), NOT an overlay — opens EVERY tool runner and is its own one-tap affordance ('What's loud right now?'). Four chips = the four attack modes: pulling me to numb out (self-gratification) / draining my drive (lethargy) / crushed a hope (false-hope) / stuck on a hurt (hurt-feelings) -> 'That's Part X — [mode]. Not you.' -> routes to the dedicated tool (Black Sun / Vortex / Mother / Tower-or-Active-Love). The metacognitive gap that makes every other tool accessible; reward-never-shame at the mechanism level (the adversary is never you).",
+        "SELF-HYPNOSIS (Blair eyes-open) — david-framework L5 + Forbes Robbins Blair (master-guide) — when-to-use: install a new self-image / reprogram a default, PM wind-down. NEW clone reusing #breatheOv but READS a script (the reading IS the induction): body-scan -> beach -> descent 10->1 -> reading-room -> the suggestion (Blair 5-section template) -> emergence 1->5. BLOCKED until David supplies content. NEEDS DAVID: the exact induction + 2-3 per-goal suggestion scripts (confidence/calm/sleep). Do NOT auto-generate inductions; a bad hypnotic script is worse than none."
+      ],
+      "wisdomMap": [
+        "TRIGGER: a starred/high-prio block keeps getting pushed past the now-line, or user taps 'I'm dreading this' -> PRINCIPLE: the Comfort Zone / move toward the pain (Stutz Tool 1, Force of Forward Motion) -> ACTION: drift verdict gains a tool chip. COPY: 'That pull away from this is Part X. Want the 10-second move toward it?' -> opens Reversal of Desire -> on close 'start the thing'.",
+        "TRIGGER: a block named 'Drift' carries an anger tag, or a PM reflection trips the grievance signal ('they shouldn't have', someone living rent-free) -> PRINCIPLE: the Maze is a cortisol loop; discharge it through Outflow, as self-interest not virtue (Stutz Tool 2) -> ACTION: angel offers Active Love. COPY: 'Someone living rent-free in your head? Active Love gets them out — for YOUR liberation, not theirs. 60s.' GUARD: suppress Grateful Flow from the offer set while the grievance is live.",
+        "TRIGGER: a goal/big win just fired celebrate(), then tracking drops the same day -> PRINCIPLE: Exoneration after success is the #1 failure mode — Jeopardy is the counter (Stutz Tool 5, L121) -> ACTION: angel offers Jeopardy. COPY: 'You won — and that's exactly when the work quietly stops. 10 seconds with your deathbed self?'",
+        "TRIGGER: lethargy/flat phase or an idle transition between blocks (the unguarded window) -> PRINCIPLE: Part X enters at transitions via lethargy; access spiritual energy (Stutz Tool 7, L311) -> ACTION: soft one-line Vortex offer, at most once per gap. COPY: 'Flat between tasks? Twelve suns. 20 seconds.'",
+        "TRIGGER: the pull to scroll/snack/numb, or the 'I deserve this' rationalization -> PRINCIPLE: self-gratification is a dopamine hijack; redirect before it discharges low-value (Stutz Tool 6) -> ACTION: Black Sun offer. COPY: 'That craving is Part X. Fill the void from the inside instead — 10s.'",
+        "TRIGGER: any acute spike / hot state (rage, panic, crash) before a cognitive tool is offered -> PRINCIPLE: Body first -> Observer -> Label -> Tool (Stutz L130; you can't reframe a dysregulated nervous system, david-framework L94-98) -> ACTION: runner forces Breath/Black Sun/Vortex FIRST, shows 'let's get the body back online', THEN unlocks labeling + the matched tool.",
+        "TRIGGER: negativity/rumination loop with NO live grievance, or scheduled AM/meal/PM -> PRINCIPLE: don't argue with negative thoughts, light a different room (Stutz Tool 4, Perception L6) -> ACTION: Grateful Flow (the PM-bookend gratitude beat). COPY: 'Mind stuck in the negative? Grateful Flow lights a different room.'",
+        "TRIGGER: AM bookend identity step / 'who am I being' / pre-performance -> PRINCIPLE: identity before behavior; install WHO before WHAT (Clear's votes + david-framework L5 + Johnson Sacred Vow) -> ACTION: amBookend offers Mantra (David's affirmation) as the willpower-free seed; optional 'install it' Self-Hypnosis when David's script lands. COPY: '+1 vote: focused creator. Read it as you wake into it.'",
+        "TRIGGER: a tool finished (overlay completed, not skipped) -> PRINCIPLE: tools are practiced not understood; Willingness->Habit->Grace (Stutz L48-51 / Conway-Smith proceduralization) -> ACTION: S.tools.use[id]++, render a 3-pip ladder on the tile + a quiet world-bloom; never a breakable streak, counts up only. COPY at Habit: 'this one's becoming automatic — Stage 2 of 3.'",
+        "TRIGGER: any miss/drift/skipped tool -> PRINCIPLE: reward-never-shame = Investment over Force; a miss is neutral data (david-framework 'Force collapses; investment compounds' + Withers no-shame) -> ACTION: drift renders DOM.drift (cool-gray, never red), GENTLE celebrate tier only, copy lint bans should/must/wasted/failed/missed; the guardian never looks disappointed when a tool is skipped."
+      ],
+      "principles": [
+        "Body first -> Observer -> Label -> Tool -> Higher force (Stutz L130). The angel NEVER offers a cognitive/identity tool while the user is dysregulated; an acute spike routes to a sub-60s physiological reset (Breath/Vortex/Black Sun) FIRST, then labeling, then the matched tool. This ordering is the toolbox's spine encoded as flow control, not advice — skip it and the tool bounces.",
+        "Trigger -> tool, not menu -> tool. The 1000x move is the guardian HANDING you the right tool in the moment via proactive(); the toolbox menu is the always-available backup. One tool per moment, never a pile.",
+        "Organize by David's 8-Layer Self-Help Stack (verbatim from david-framework.md) so the kit reads as his curated system, not a random pile. Lower layers gate higher ones (can't reframe on a dysregulated body).",
+        "Every tool carries a KB-EXACT 'when to use me' and verbatim steps. The cues 'Bring it on! / I love pain! / Pain sets me free!' and the 9-point EFT order are load-bearing — paraphrasing dilutes the proven procedure. Sourced, never invented.",
+        "Part X is NOT you. Every runner names the adversary ('That's Part X — lethargy mode. Not you.') — this IS reward-never-shame at the mechanism level (Johnson 'design flaw, not character flaw'); the user is never the problem.",
+        "Tools are practiced, not understood. Each completed rep ticks Willingness->Habit->Grace (Stutz / Conway-Smith proceduralization) — a 3-pip per-tool ladder that counts up only, never a breakable streak. Count only COMPLETED reps, never opens.",
+        "Offered, never commanded; skippable at every step. Stutz prescribes tools as self-interest, not virtue. Copy lint bans should/must/wasted/failed/missed; drift renders DOM.drift (cool-gray), never red; finishes use the GENTLE celebrate tier, never EPIC.",
+        "Two hard guards beyond ordering: Grateful Flow is suppressed while a grievance is live (Active Love first, L119); Jeopardy is the specific counter to the post-win stall (L121). Both are KB constraints, not nice-to-haves.",
+        "Don't rebuild — adopt. Six guided runners already ship; the work is taxonomy + sourcing + routing. New tools are small clones of the #breatheOv idiom (orb + TTS + WebAudio + log+earn). Building parallel tools is the documented 'two clashing menus' landmine.",
+        "Extend existing surfaces only: ONE toolboxSheet() on the #sheet, entered from dayToolsMenu + one proactive() hand-off. Writes only via the safe log/earn/additive-innerHTML paths. No third menu, no calendarView/buildPull touch, no rAF loop.",
+        "Offline core; brain is a thin L8 lubricant. Every tool runs from a hardcoded KB script with no key. askBrain personalizes one line and degrades silently. Identity/hypnosis brain calls are the most intimate — gate behind explicit per-use opt-in.",
+        "Wire into the journey + bookend spines, don't parallel them. Tools unlock via readiness()/journeyNode() (progressive disclosure prevents overwhelm; Off reveals all); tool use feeds readiness as a drift-recovery signal and blooms the world; AM bookend offers Mantra/Self-Hypnosis, PM offers Active Love/Tower for a grievance drift + Grateful Flow as the close. Shared S.bk + S.guide, never parallel state.",
+        "Honesty: tool overlays are non-timeline DOM so preview proves boot + sheet opens + taps advance + Spark earns. TTS/haptics/audio-unlock and animation feel (12 suns, cloud-enter, tower-float) behave differently on the iPhone — label DEVICE-UNTESTED until David confirms on his phone."
+      ],
+      "specs": [
+        {
+          "id": "TB-STATE",
+          "title": "S.tools state object + lazy load() default (NO SCHEMA bump)",
+          "what": "Add additive top-level S.tools = { use:{}, last:{}, fav:[], recents:[] } keyed by toolId. Lazy default in load() (~app.js:1451, beside S.mood/S.acts/S.bk/microState) with per-field guards: S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; etc. use[id] counts COMPLETED reps only (drives the Willingness<3 / Habit<12 / Grace 3-pip ladder). Add a TOOLS data array (modeled on MICRO@2155) of {id,layer,name,emoji,thinker,source,when:'verbatim KB when-to-use',fn,gateNode} as the single source of truth feeding the grid, the journey unlocks, and the trigger router. NO SCHEMA bump — matches S.mood/S.acts/S.bk precedent; every read guards (S.tools||{}); rides export/import + pushUndo for free.",
+          "why": "One additive store + one data array is the spine all other specs read; the no-SCHEMA-bump additive pattern is the documented safe path that avoids wiping David's real data.",
+          "region": "app.js load() ~1451 (beside S.microState default); new TOOLS const + helper near MICRO@2155",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "Additive top-level S.tools; NO SCHEMA bump; all reads guard (S.tools||{})."
+        },
+        {
+          "id": "TB-SHEET",
+          "title": "toolboxSheet() — the kit surface on the existing #sheet",
+          "what": "Build toolboxSheet() via openSheet()@3241 + el('sheetBody'), entered from a new '🧰 My toolbox' row in dayToolsMenu@803 (and later a calm hero chip). Render the TOOLS array grouped by David's 8 Stack layers as warm sections ('Steady the body' L1/L2, 'Clear the mind' L3, 'Feel it through' L4, 'Become who you're being' L5, 'Lift the lens' L6). Each tile = emoji + name + thinker tag + the one-line verbatim 'when to use me' + a 3-pip Willingness/Habit/Grace ladder from S.tools.use[id]. Tap fires that tool's fn (existing or new). Locked-by-journeyNode tools show a soft 'soon' dot, never a disabled nag. Pinned Favorites/Recents rows on top. Reuses add()/openSheet/closeSheet chrome — NOT a new menu system, NO timeline touch.",
+          "why": "Surfaces the six already-built runners as ONE sourced, coherent kit — makes 'democratize wisdom' literal (the user sees David's actual stack) with zero new tool code.",
+          "region": "new toolboxSheet() near recommitSheet@3175; entry row in dayToolsMenu@803",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none (reads S.tools + TOOLS array)"
+        },
+        {
+          "id": "TB-ADOPT",
+          "title": "Adopt the six existing runners + tick the skill ladder",
+          "what": "Wire the six live functions (breathwork@2193, relaxMoment@2232, meditation@2255, tapping@2302, mantraPlayer@2355, gratefulFlow@3143) into the TOOLS array with their KB layer + sourced when-to-use line. In each runner's finish() handler (where it already does logs()+earn()), add one line: S.tools.use[id] = (S.tools.use[id]||0)+1; S.tools.last[id]=todayK(); S.tools.recents.unshift(id). Reuse the microState de-dupe pattern@2172 so re-running twice/day doesn't double-count. Zero new overlay code — pure adoption + counter.",
+          "why": "Delivers the whole kit instantly on proven, device-tested runners; the skill-ladder counter is the only code touch and it reuses an existing guard.",
+          "region": "finish handlers inside the six runner fns (~2193-3174)",
+          "effort": "S",
+          "conflictRisk": "med",
+          "schema": "none (writes S.tools)"
+        },
+        {
+          "id": "TB-REVERSAL",
+          "title": "Reversal of Desire runner — first new Stutz tool (flagship)",
+          "what": "Build reversalOfDesire() as a #breatheOv/sheetBody clone of the breathwork/gratefulFlow idiom: TTS.unlock() in the same synchronous tap tick, then verbatim Stutz Tool 1 beats (one tap advances each, breathorb per beat): see the pain as a cloud ahead -> 'Bring it on!' -> enter 'I love pain!' -> through & out 'Pain sets me free!' -> feel forward motion. Close: log a tracked Restore 'Reversal of Desire' (catK energy) + earn() ~6 Spark + GENTLE celebrate@317 + tick S.tools.use, then a 'start the thing' button that jumps to the avoided block. Verbatim cues locked from master-guide L172-190.",
+          "why": "Proves the new-tool clone pattern AND the trigger->tool magic end-to-end (it is the drift-nudge counterpart); the highest-leverage single Stutz tool because avoidance is the most common daily Part X mode.",
+          "region": "new reversalOfDesire() near gratefulFlow@3143",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none (logs + earns + S.tools)"
+        },
+        {
+          "id": "TB-DRIFT-HANDOFF",
+          "title": "Drift nudge hands Reversal of Desire (the in-the-moment angel move)",
+          "what": "In the drift verdict surface (the bookend INTENTION-LIVE 'you aimed for Focused — one small rep back?' line, proactive()@1553 / drift handler) add ONE tool CTA when a starred/high-prio block crosses the now-line undone: a chip 'Avoiding it? -> Reverse the desire' opening reversalOfDesire(). Copy: 'That pull away from this is Part X. Want the 10-second move toward it?' Gate: guide==='guided' OR toolbox-aware, once-per-day flag (respect 4am DAYSTART rollover + the bookend anti-nag ceiling), declined doesn't re-fire. Verdict TEXT only — no timeline geometry.",
+          "why": "This is the thesis in miniature: the guardian reaches into David's KB and hands the exact right procedure at the moment Part X strikes. One trigger proves the loop.",
+          "region": "proactive()@1553 + drift verdict copy",
+          "effort": "S",
+          "conflictRisk": "med",
+          "schema": "none (reads S.tools.last for the once/day gate)"
+        },
+        {
+          "id": "TB-PARTX-TRIAGE",
+          "title": "Label-Part-X front door + body-first acute-spike gate",
+          "what": "Add a '🆘 What's loud right now?' button in the toolbox header AND as a proactive() hand-off on drift+low-mood. Flow enforces Stutz ordering: Beat-0 if hot -> 60s Breath/Black Sun/Vortex ('let's get the body back online'); Beat-1 label -> 4 chips (pulling me to numb out / draining my drive / crushed a hope / stuck on a hurt) -> 'That's Part X — [mode]. Not you.' -> auto-route to Black Sun / Vortex / Mother / Tower(or Active Love); GENTLE close 'you labeled it and used the tool — that's the whole skill'. Hardcode the guards: Grateful Flow suppressed while a grievance is live; cognitive tools blocked until regulated.",
+          "why": "Renders Stutz's non-negotiable ordering constraint as actual UI flow control (the silent killer if skipped), and is the deepest in-the-moment guardian experience. Depends on the 4 Coming-Alive runners existing.",
+          "region": "toolboxSheet header + proactive()@1553; routes to the new runner fns",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "TB-STUTZ-FANOUT",
+          "title": "Remaining Stutz runners: Active Love, Inner Authority, Jeopardy, Black Sun, Vortex, Mother, Tower",
+          "what": "Build each as a small #breatheOv clone of TB-REVERSAL with verbatim KB beats (Active Love L194-211 Concentration/Transmission/Penetration; Inner Authority L215-232 Shadow/bond/'LISTEN!' WITH a breath pre-roll; Jeopardy L257-273 deathbed/scream/use-the-spark; Black Sun L277-291; Vortex L295-311 twelve suns; Mother L315-330; Tower L334-350). Each: TTS.unlock in-tick, orb/animation per beat, log Restore + earn + GENTLE celebrate + tick S.tools. Ideal as parallel worktree agents (one disjoint runner each) per the batch-agent workflow — they share only the #breatheOv idiom and TOOLS array. Confirm only one overlay open at a time (existing fns remove on finish — preserve that invariant).",
+          "why": "Completes the arsenal so the Part-X triage and the journey unlocks have their full tool set; each is a self-contained low-conflict clone, perfect for the proven parallel-agent fan-out.",
+          "region": "new fns near gratefulFlow@3143; registered in the TOOLS array",
+          "effort": "L",
+          "conflictRisk": "med",
+          "schema": "none (each logs + earns + S.tools)"
+        },
+        {
+          "id": "TB-JOURNEY-UNLOCK",
+          "title": "Journey-gated tool reveal via readiness()/journeyNode()",
+          "what": "Map TOOLS gateNode onto the 6-node spine so a new user isn't handed 14 overlays: N0 show-up -> Breath + Relax (L1/L2); N1 plan-small -> Tapping + Mantra; N3 reflect -> Grateful Flow + Active Love + Label-Part-X (L3); N4 identity -> Inner Authority + Self-Hypnosis + Sacred Vow (L5); N5 mastery -> Jeopardy + the 4 Coming-Alive triage. Each unlock = GENTLE celebrate() + one garden tile (reuse JX-WORLD-BLOOM). Locked = soft 'soon' dot in toolboxSheet (never hidden — the kit feels complete from day one). The journey 'Off' switch reveals the full kit immediately. Tool use feeds readiness() as a drift-recovery/ritual-consistency signal.",
+          "why": "Solves the overwhelm the journey spec exists to kill and makes theory->practice->mastery literal (the kit grows as you climb = Conway-Smith proceduralization visible). Depends on the journey spec landing.",
+          "region": "TOOLS gateNode reads journeyNode(); toolboxSheet lock rendering; readiness() signal hook",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none (reads S.guide)"
+        },
+        {
+          "id": "TB-BOOKEND-WIRE",
+          "title": "Bookend tie-in: AM offers Mantra/Self-Hypnosis, PM offers Active Love/Tower + Grateful Flow",
+          "what": "In amBookend (recommitSheet@3175) after the identity/virtue step, offer Mantra (David's affirmation) as the willpower-free seed + later '🌀 install it' Self-Hypnosis. In pmBookend Step-2/PM-RESTORY: if a drift carries a grievance, the [carry/let-go] row gains [release it -> Active Love] (or Tower for a deep wound); route Grateful Flow as the gratitude close. Tools become the ACTION verbs of the bookend, sharing S.bk — not a parallel feature.",
+          "why": "Fuses the toolbox with the ritual spine so tools are deployed in-context at the two highest-intent moments; reuses S.bk so no state diverges.",
+          "region": "recommitSheet@3175 (AM) + pmBookend Step 2/RESTORY (per GRAND-VISION spec)",
+          "effort": "M",
+          "conflictRisk": "high",
+          "schema": "none (reads/writes S.bk)"
+        },
+        {
+          "id": "TB-SELFHYPNOSIS",
+          "title": "Self-Hypnosis (Blair eyes-open) runner — BLOCKED on David's scripts",
+          "what": "Build a #breatheOv clone that READS a script (the reading is the induction): body-scan -> beach -> descent 10->1 -> reading-room -> suggestion (Blair 5-section template) -> emergence 1->5. Ship 2-3 David-AUTHORED fixed scripts (confidence/calm/sleep) before exposing the card. Optional askBrain drafts a custom suggestion in Blair's template behind explicit per-use opt-in (most intimate brain call). DO NOT auto-generate inductions without David's sign-off — a bad hypnotic script is worse than none.",
+          "why": "Completes David's L5 stack (the one tool with no shippable content), but is the only spec gated on him supplying content — keep it last and behind his sign-off.",
+          "region": "new fn near mantraPlayer@2355; content awaits David",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "TB-BRAIN-DEEPEN",
+          "title": "Optional 'go deeper ✨' brain lubricant (L8)",
+          "what": "When brainCfg().engine!=='off', add a dim 'go deeper ✨' under any runner that personalizes ONE thing via askBrain@3238 with the existing journalBrainContext shape: the Part X voice ('what would Part X say to YOU right now?') or the gratitude/mantra prompt. Degrades silently to the scripted tool with no key. Gate identity/hypnosis brain calls behind explicit per-use opt-in (personal reflections + identity goals go to a third-party API).",
+          "why": "Honors 'AI is a thin lubricant' — adds warmth without making any tool depend on a key; the offline KB script always stands.",
+          "region": "optional button in each runner; askBrain@3238",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "none (reads S.brain)"
+        }
+      ],
+      "firstWave": [
+        "TB-STATE — add S.tools + the TOOLS data array (additive, no SCHEMA bump). The spine every other spec reads; tiny and isolated.",
+        "TB-SHEET — build toolboxSheet() on the existing #sheet from a 🧰 dayToolsMenu row, grouped by David's 8-Layer Stack with the verbatim 'when to use me' lines. The kit surface; reuses openSheet chrome, no timeline touch.",
+        "TB-ADOPT — wire the six already-built runners into the grid + tick S.tools.use in their existing finish handlers (reuse the microState de-dupe). Instant full kit on device-tested code, one-line touch each.",
+        "TB-REVERSAL — build Reversal of Desire as the first new Stutz runner (clone of breathwork/gratefulFlow, verbatim cues). Proves the new-tool pattern; the flagship trigger->tool tool.",
+        "TB-DRIFT-HANDOFF — wire ONE in-the-moment trigger: the drift verdict offers Reversal of Desire ('Avoiding it? -> reverse the desire'), gated once/day, guided-only. Lands the whole thesis — the angel hands you the right KB tool at the right moment — in one shippable slice."
+      ],
+      "openQuestions": [
+        "SELF-HYPNOSIS SCRIPTS (TB-SELFHYPNOSIS, blocker): David must AUTHOR the Blair induction (body-scan -> beach -> descent 10->1 -> reading-room -> emergence 1->5) AND 2-3 per-goal suggestion scripts in Blair's 5-section template (confidence / calm / sleep). The card stays hidden until these land; do NOT auto-generate inductions without his sign-off.",
+        "EFT SETUP LINE (TB-ADOPT): tapping()@2326 currently uses the generic Stutz/Craig 'Even though I feel X, I deeply and completely accept myself.' Confirm David keeps it or wants his own wording.",
+        "STUTZ TOOL COPY TONE (design choice, options-first): Stutz language is intense/esoteric ('I love pain!', 'you die', deathbed self, 12 suns). Show David 2-3 copy options per new tool (verbatim-potent vs softened-entry) before building TB-REVERSAL and TB-STUTZ-FANOUT — his options-first rule for design.",
+        "MANTRA / SACRED VOW CONTENT: TB-BOOKEND-WIRE offers Johnson's 8 Virtue Declarations as a 'say your vow' beat — confirm David wants the existing mantraPlayer affirmation reused or a distinct vow script (the VIRTUES array@1424 already exists).",
+        "DRIFT PALETTE NOTE: several lens reports said 'drift = mauve'; the ACTUAL current palette (app.js:258) is cool-gray #565b66 ('colorless void', David 2026-06-27). The copy lint should say 'drift renders DOM.drift, never red' — confirm no tool copy reintroduces mauve.",
+        "JOURNEY/BOOKEND DEPENDENCY ORDER: TB-JOURNEY-UNLOCK and TB-BOOKEND-WIRE depend on the GRAND-VISION + JOURNEY-LEVEL specs actually landing in code (currently _specs JSON). Confirm those ship first, or build the toolbox with all tools unlocked (Off behavior) until the journey engine exists.",
+        "BRAIN PRIVACY DEFAULT (TB-BRAIN-DEEPEN): confirm identity/self-hypnosis 'go deeper' brain calls require explicit per-use opt-in (they send personal reflections + identity goals to a third-party API), distinct from the general brain toggle."
+      ]
+    }
+  }
+}

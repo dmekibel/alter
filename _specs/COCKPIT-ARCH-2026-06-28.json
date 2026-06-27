@@ -1,0 +1,142 @@
+{
+  "summary": "Design the ALTER cockpit (expanded tracker as default home + all guided flows in its stage); fold bookend + journey specs in; output the master build plan + first build wave",
+  "agentCount": 8,
+  "logs": [
+    "7/7 cockpit lenses returned — synthesizing the keystone architecture"
+  ],
+  "result": {
+    "lensCount": 7,
+    "synth": {
+      "vision": "The cockpit is the one place ALTER speaks. Today #trackerFull is already a full-height bottom sheet with a working FLIP morph (dock-mini flies into the big ring), a single shared control matrix (trackerControls -> renderTFControls + renderDockSeg, so folded == expanded), and a centered .tf-stage. We promote that surface into the home: the ring is always the tracking truth, and the space below it becomes whatever the moment needs — AM bookend, PM reflection, journaling Q&A, the journey's one next step, or (reserved) a Stutz tool. When a guided flow opens, the ring slides to a top-left corner puck and keeps ticking; the freed area fills with the flow. Because every guided flow first starts a real tracked timer, guidance and tracking are literally the same act: pick \"Journal\" -> the Reflection ring lights and slides aside -> the questions fill the stage -> you answer while it tracks -> Done logs it and earns Spark. This resolves the two-clashing-menu-systems debt by making #trackerFull the single conversational surface and demoting #sheet to what it should be: transient pickers (bentoPicker, durationSheet) the cockpit summons, never a parallel home.\n\nThe keystone abstraction is ONE new transient axis — a stage mode — layered ON TOP of the existing trackerState(). renderTrackerFull keeps its 6 tracking branches byte-for-byte; we add a single guarded pre-branch: if a guided mode is active, render the corner-posed ring + delegate the freed area to a leaf container, otherwise run today's code unchanged. No new morph engine, no new control plumbing, no SCHEMA bump, and ZERO contact with calendarView/buildPull. The timeline (Today) stays exactly one tap away via the existing nav + pull-down it already has.\n\nLanding becomes cockpit-first behind a reversible guidance dial: opening the app greets you and shows your one next step in the stage; turning guidance to Off restores today's behavior (lands on the timeline, every flow still reachable). We ship the shell with zero behavior change first, then ONE real flow (PM reflection — pure-read on existing data), then make it the default home last. Reward-never-shame is a hard copy lint on every new stage word; drift is mauve, celebrations are GENTLE-tier, the corner puck keeps its conic reward band so status reads as color even at 64px.",
+      "architecture": [
+        "TWO ZONES inside the EXISTING .tf-inner. Today the only flex child of .tf-inner is .tf-stage (which holds the ring group) plus #tfCtrls. We add ONE new leaf sibling: <div id='tfStageBody'></div> placed in .tf-inner AFTER .tf-stage and BEFORE #tfCtrls. Zone A = the ring group (the existing #tfRing/#tfTile/#tfTitle/#tfVerdict/#tfTime/#tfElabel/#tfCtx/#tfSwitch/#tfSpark/#tfClock — UNCHANGED ids so the morph pairs keep resolving). Zone B = #tfStageBody, the guided-flow workspace. #tfCtrls stays the bottom action bar for both zones.",
+        "ONE BODY/SHELL CLASS DRIVES THE MORPH: toggle `.tf-staged` on #trackerFull. Without it (default = just tracking) the layout is exactly today's: ring centered big, #tfStageBody display:none. With it, the ring shrinks+pins to the top-LEFT corner (CSS: `#trackerFull.tf-staged .tf-ring{width:64px}`, the .tf-stage row becomes flex-direction:row justify-content:flex-start) and #tfStageBody expands to flex:1 and fills. Pure CSS class toggle on already-laid-out elements — no JS geometry math, animates for free, never re-measures the FLIP pairs.",
+        "CORNER CLUSTER stays a LIVE mini-tracker, never a dead badge: at 64px the conic reward band + striped #tfTile survive (proven by the existing 40px folded dock mini). In .tf-staged: #tfTitle shrinks to ~14px/700 truncated, #tfTime to ~15px mono, #tfVerdict collapses to a 6px colored dot before the time; #tfElabel/#tfCtx/#tfSwitch/#tfSpark are display:none (full-mode-only). So WHAT + running mm:ss + on/off verdict stay visible while the stage owns focus.",
+        "#tfStageBody CSS: `display:none` by default; `#trackerFull.tf-staged #tfStageBody{display:flex;flex:1;flex-direction:column;width:100%;gap:14px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}`. overscroll-behavior:contain is MANDATORY so stage scroll never bubbles to the timeline's infinite-recenter watcher. Stage cards reuse the EXACT existing chrome: .tf-chip / .tf-b material (#241328/#2a1226 bg, #160510 2px border, 0 3px 0 #160510 shadow, #e6cfe0 text, DOM[domain] accents). No new colors, no neon/glow/white.",
+        "STATE — NO SCHEMA bump. Cockpit-mode is transient UI: add module vars `TF_MODE=null` and `TF_MODE_USERSET=false` beside TF_OPEN/TF_ANIM (~app.js:1076), reset in closeTrackerFull AND at the top of load() so a crash never strands a half-built flow with a dangling timer. Persisted flow DATA rides additive top-level objects defaulted lazily in load() beside S.mood/S.acts (~app.js:1451): `S.bk = S.bk || {}` (bookend baton) and `S.guide = S.guide || {mode:'off',seedTier:0,unlocked:[],cache:{}}` (journey/dial). Every read guards `(S.bk[k]||{})` / `(S.guide||{})`. Helper `bk(k){return S.bk[k]=S.bk[k]||{am:{},pm:{}};}`.",
+        "RENDER CONTRACT: renderTrackerFull() gains ONE guarded pre-branch at the top — `var mode = TF_MODE; tf.classList.toggle('tf-staged', !!mode);`. If mode set: still write the corner-sized title/time (CSS shrinks them), call setRing on the live timer, then `renderStage(mode)` (fills #tfStageBody) + `renderTFControls(mode)` (the flow's buttons). If not: the existing 6-state body runs UNTOUCHED. renderStage is IDEMPOTENT (guarded by `#tfStageBody.dataset.mode===TF_MODE && hasContent` -> skip rebuild) so the 1s live-tick never wipes a textarea mid-journal."
+      ],
+      "modeRouter": [
+        "MODES (TF_MODE values): null/'track' = today's centered ring (the 6 trackerState branches, default). 'am' = AM bookend. 'pm' = PM reflection. 'journal' = adaptive single-question journal. 'journey' = the current node's one next-step card. 'tool' = RESERVED slot (renders a soft 'coming soon' placeholder) for the future wisdom/toolbox package. Each non-null mode is a pure render-into-#tfStageBody function + a trackerControls case — never a new modal.",
+        "ENTRY FUNNEL — enterStage(mode, opts): the single door every flow uses. (1) if the mode maps to a tracked activity, startTimer({title:opts.trackTitle, catK:'restore', color:DOM.restore.c}) so the ring lights + will slide aside in the SAME gesture (the guidance+tracking fusion); record its id on TF_BLOCKID so finish can stop it. (2) set TF_MODE=mode, TF_MODE_USERSET=(opts.byTap). (3) openTrackerFull() if closed (reuse the morph), else renderTrackerFull(). proactive()'s journey branch, the AM/PM stage chips, the journey CTA, and the future toolbox ALL call enterStage — none open their own #sheet.",
+        "EXIT FUNNEL — exitStage(commit): on a flow's primary/Done: write its data (S.bk for am/pm/journal), stopTimer(TF_BLOCKID) (which already logs + earns Spark + fires GENTLE celebrate), clear TF_MODE=null, renderTrackerFull() (ring un-corners back to center showing the just-finished verdict). closeTrackerFull/drag-down ALSO clears TF_MODE BEFORE tfMorph(false) runs — otherwise the FLIP would measure a corner-posed ring and fly to the wrong spot (the single highest-value regression check).",
+        "DISPATCHER — stageModeFor() is a pure ORDERED early-return ladder (never OR'd conditions, or the stage flaps across 1s ticks): (1) if TF_MODE_USERSET this open-session -> honor TF_MODE (explicit tap wins). (2) else if a guided timer is actively tracking (the active timer carries t.flow) -> that flow's mode (the running timer's tag drives the stage, so a redraw re-derives the right panel). (3) else if S.guide.mode==='guided' && the journey node's daily action isn't done -> 'journey'. (4) else proactive phase morning/evening -> offer 'am'/'pm' as a stage CHIP in track mode (greet, never auto-trap). (5) else null (track). Modes 2-3 auto-mount; AM/PM in mode 4 are one-tap chips, not auto-stage.",
+        "CONTROL MATRIX REUSE: extend trackerControls(state) with cases 'am'|'pm'|'journal'|'journey'|'tool'|plus per-step keys ('pm-mirror','pm-ask','am-greet',...) returning the same {icon,label,fn,primary} shape. renderTFControls + renderDockSeg already render from it, so a guided mode's actions automatically mirror into the folded dock seg and the .ld-seg<->#tfCtrls morph pairs them 1:1. ZERO new control plumbing."
+      ],
+      "retargetMap": [
+        "BK-STATE / JX-STATE / readiness() / journeyNode() / pickPrompt() / JPROMPTS (the prior specs' engine layer) are SURFACE-AGNOSTIC — fold in VERBATIM, unchanged. They write S.bk/S.guide and read existing S. The retarget only changes WHERE their output renders (the cockpit stage, not a #sheet).",
+        "pmBookend (#sheet, GRAND-VISION PM-MIRROR/PM-ASK/PM-RESTORY/PM-PLAN) -> stage mode 'pm'. Step MIRROR computes kept/drift/missed from blockStatus over blocks(todayK()) + tfDomMinsToday + curStreak (reused verbatim, pure read) -> renders a calm card in #tfStageBody. Step ASK = pickPrompt('pm') + textarea + MOODS face, debounced save to S.bk (NEVER commit/renderTrackerFull per keystroke). enterStage('pm') starts a flow:'pm' 'Reflection' timer -> the ring corners and tracks while you reflect = PM-WIRE's 'reflecting is a rewarded tracked block', for free via stopTimer. proactive() evening branch stops calling ritualSheet(EVENING_RITUAL); instead drops a 'Close the day' chip -> enterStage('pm'). RESTORY/PLAN are a fast-follow (PLAN writes tomK() via the existing safe skeletonDay/blocks.push/reflow path — NEVER touch buildPull).",
+        "amBookend / recommitSheet (#sheet, AM-GREET/AM-INTRINSIC/AM-GOAL/AM-FLOWDOWN) -> stage mode 'am'. recommitSheet's multi-step draw()/finalize() (step bar + chips + writes S.profile.todayIdentity/todayVirtues) is the reference; its steps render into #tfStageBody. AM reads S.bk[todayK()] which PM wrote last night under tomK() -> the cockpit greets 'last night you chose to wake Disciplined — still true?' [Lock it]/[Adjust]. proactive() morning primary fn becomes enterStage('am'). recommitSheet stays one ship as a fallback, pruned after device-confirm.",
+        "JOURNEY one-obvious-next-step (JX-PROACTIVE-GATE) -> the LANDING decision, NOT a screen. journeyTick() (once/logical-day, computedK guard) -> readiness() -> journeyNode(). If S.guide.mode==='guided' and the node's daily action isn't done, the cockpit auto-lands in 'journey' (mode shows that ONE node card; the node's CTA just picks which stage the cockpit wears: N0->track nudge, N2->'am', N3->'pm'). Progressive disclosure = the stage shows only that card; the chip-pile suppression becomes 'the cockpit wears one mode'.",
+        "JX-GUIDANCE-TOGGLE (Guided/Light/Off) stays in dayToolsMenu/settings AND now governs landing: Guided -> cockpit lands in the node/bookend stage; Light -> lands on the full ring + a small stage chip hint; Off -> lands on the timeline (today's behavior), no auto-stage, every flow still reachable via chips. Off is the reversible escape hatch shipped BEFORE the default-home flip so no one is trapped.",
+        "JX-WORLD-BLOOM / the game world STAYS in the game layer (openGame/treeFit/guardianFit), reached via the You tab — NOT the cockpit stage. The cockpit is the daily speak-to-you surface; the world is the trophy room. Link: finishing a stage flow ticks readiness()/S.bkStreak which blooms the world on its own surface. Keep them separate so the cockpit stays a focused workspace.",
+        "DAY-ARC home-hero is SUPERSEDED by cockpit-as-home (the greeting + corner ring do its job) — DROP it from the build to avoid two presence surfaces. INTENTION-LIVE retargets trivially: it already targeted renderTrackerFull's verdict text, which now IS the home, so it lands in 'track' mode verbatim. The future TOOLBOX package fills renderStage's 'tool' case + a toolStageStep() against #tfStageBody using .tf-b/.tf-chip — the two-zone shell already reserves the slot, no layout change later.",
+        "RETIRE onto the stage (redirect first, prune after device-confirm): recommitSheet, EVENING_RITUAL/ritualSheet, the journal daily-entry path. KEEP as #sheet the transient PICKERS the cockpit summons (bentoPicker, durationSheet, blockEdit/logEdit) — they z-index above #trackerFull and are momentary inputs, not a parallel home, so they are NOT the debt being resolved."
+      ],
+      "specs": [
+        {
+          "id": "CKPT-1-shell-dom",
+          "title": "Two-zone DOM + .tf-staged CSS (cockpit shell)",
+          "what": "In index.html inside #trackerFull>.tf-inner, add ONE leaf sibling <div id='tfStageBody'></div> after .tf-stage, before #tfCtrls. Add CSS beside the existing .tf-stage/.tf-ring block (~715-744): default #tfStageBody{display:none}; and .tf-staged variants — `#trackerFull.tf-staged .tf-stage{flex-direction:row;align-items:center;gap:12px;justify-content:flex-start}`, `.tf-staged .tf-ring{width:64px}`, `.tf-staged .tf-title{margin:0;font-size:14px;text-align:left;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}`, `.tf-staged .tf-time{margin:0;font-size:15px}`, display:none for .tf-elabel/.tf-ctx/.tf-switch/.tf-spark under .tf-staged, and `.tf-staged #tfStageBody{display:flex;flex:1;flex-direction:column;width:100%;gap:14px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}`. Add `transition` on .tf-ring/.tf-stage width+flex using the existing cubic-bezier(.2,.82,.3,1). NO ID renames.",
+          "why": "The two-zone foundation. Pure additive markup + CSS; ring center<->corner is a class toggle, animates free, never re-measures the FLIP pairs. overscroll-behavior:contain prevents the documented timeline-scroll-bubble fight.",
+          "region": "index.html (#trackerFull markup + .tf-staged/.tf-ring/#tfStageBody CSS only)",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-2-mode-router",
+          "title": "TF_MODE state + renderTrackerFull pre-branch + enterStage/exitStage + stageModeFor",
+          "what": "In app.js near 1076 add `var TF_MODE=null, TF_MODE_USERSET=false, TF_BLOCKID=null`. In renderTrackerFull() (~1205) add a guarded pre-branch at the top: `tf.classList.toggle('tf-staged',!!TF_MODE); if(TF_MODE){ ...write corner title/time, setRing(live%), renderStage(TF_MODE); renderTFControls(TF_MODE); return; }` — leaving the existing 6-state body untouched below. Add enterStage(mode,opts) (starts the tracked timer if opts.trackTitle, sets TF_MODE/USERSET, opens-or-renders), exitStage(commit) (writes data, stopTimer(TF_BLOCKID), clears TF_MODE, renders), stageModeFor() (the ordered early-return dispatcher), and renderStage(mode) as a dispatcher with cases am/pm/journal/journey/tool (tool = 'coming soon' stub) writing ONLY #tfStageBody.innerHTML, IDEMPOTENT via dataset.mode guard. In closeTrackerFull(): set TF_MODE=null + TF_MODE_USERSET=false BEFORE tfMorph(false). In load(): reset TF_MODE=null.",
+          "why": "The keystone abstraction. One guarded fork keeps the regression-fragile tracking render intact; one funnel in / one funnel out; resetting mode before the close morph protects the FLIP pairs (the highest-value regression seam).",
+          "region": "app.js cockpit shell ~1064-1272 (TF_MODE vars, renderTrackerFull pre-branch, enterStage/exitStage/stageModeFor/renderStage, closeTrackerFull reset) + load() reset ~1451",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-3-controls",
+          "title": "trackerControls guided cases + textarea drag-close guard",
+          "what": "Extend trackerControls(state) (~1304) with cases 'journal' ([Save primary, Skip]), 'pm'/'pm-mirror'/'pm-ask', 'am'/'am-greet', 'journey', 'tool' — each returning the {icon,label,fn,primary} shape so renderTFControls AND renderDockSeg render them and the morph pairs them. Extend the .tf-stage drag-close handler (app.js:1041) bail list from `closest('button,.tf-chip,.tf-title.switchable')` to ALSO include `textarea,input,[contenteditable],#tfStageBody` so a textarea tap / scroll inside the stage isn't eaten by tfDrag(down).",
+          "why": "Reuses the single shared control matrix (zero new button plumbing, folded==expanded for free). The drag-close guard is required or journaling/stage scroll is unusable — DEVICE-UNTESTED keyboard class.",
+          "region": "app.js trackerControls ~1304-1338 + the .tf-stage pointerdown guard ~1041",
+          "effort": "S",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-4-bk-guide-state",
+          "title": "S.bk + S.guide lazy defaults + bk() helper + readiness()/journeyNode() (pure, off by default)",
+          "what": "In load() (~1451) beside S.mood/S.acts add `S.bk=S.bk||{}; S.guide=S.guide||{mode:'off',seedTier:0,unlocked:[],cache:{},offeredK:null};` plus a cold-infer migration: if S.profile.set and S.guide just created, infer David's node and set S.guide.unlocked so he never lands at 'track your first block'. Add helper `bk(k){return S.bk[k]=S.bk[k]||{am:{},pm:{}};}` beside blocks()/logs(). Add pure readiness() and journeyNode() beside curStreak() (~314): readiness reads only S (blockStatus over lastDays(14), (S.bk[k]||{}).am/pm.done, normalized curStreak), cached in S.guide.cache keyed by computedK===todayK(); journeyNode()=max(first failing gate, max(S.guide.unlocked)) — monotonic sticky floor (never removes from unlocked = reward-never-shame as math). Default S.guide.mode='off' so this is INERT until the dial is flipped.",
+          "why": "Additive top-level objects matching the S.mood/S.acts precedent — no SCHEMA bump, rides export/import/undo. Pure engines that decide (don't render). Default off = zero behavior change until CKPT-7.",
+          "region": "app.js load() ~1451 (defaults+migration) + scoring helpers ~314 (readiness/journeyNode) + bk() helper near blocks()/logs()",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-5-journal-mode",
+          "title": "First guided flow: stage='journal' (the fusion proof, pure-ish)",
+          "what": "Add journalStageStep() rendering into #tfStageBody: one computed prompt (pickPrompt('pm') or a fixed seed line) + a stable textarea (debounced save to S.bk[todayK()].pm.reflect, NEVER renderTrackerFull on input) + the Save/Skip controls via trackerControls('journal'). Wire a 'Journal' chip in 'track' mode that calls enterStage('journal',{trackTitle:'Reflection'}) -> ring lights + slides to corner, stage shows the question, you answer while it tracks; Save -> exitStage(true) (stopTimer logs a Restore block + Spark, ring un-corners). renderStage idempotency guard keeps the textarea alive across 1s ticks.",
+          "why": "Smallest end-to-end proof of guidance+tracking fused: exercises state fork, renderStage dispatch, stage controls, the corner slide, the close-returns-to-full, AND the iOS-keyboard rule — on one mode, before the heavier bookends.",
+          "region": "app.js PM/journal builders (new functions near recommitSheet ~3175) + one chip wired into renderStage('track')/proactive",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-6-pm-mode",
+          "title": "PM reflection mode (mirror + adaptive ask), wired to the evening proactive chip",
+          "what": "Add pmMirrorStep() (computes kept/drift/missed from blockStatus over blocks(todayK()) + tfDomMinsToday + curStreak — pure read) and pmAskStep() (pickPrompt('pm') + textarea + optional MOODS face), rendered as two beats in #tfStageBody with an in-place crossfade between beats (fade #tfStageBody opacity, swap innerHTML, fade back — corner ring + #tfCtrls stay). Repoint proactive() evening branch: drop ritualSheet(EVENING_RITUAL) primary; add a 'Close the day' chip -> enterStage('pm',{trackTitle:'Reflection'}). Beat controls via trackerControls('pm-mirror'/'pm-ask'). RESTORY/PLAN deferred (PLAN's tomK() writes are a separate fast-follow).",
+          "why": "First full cockpit ritual; PM is pure-read on existing data (can't corrupt anything, no timeline writes) and retires the dumbest #sheet (the EVENING_RITUAL checklist), proving the retire-#sheets thesis on the lowest-risk surface.",
+          "region": "app.js PM builders (near recommitSheet ~3175) + proactive() evening line ~1558",
+          "effort": "M",
+          "conflictRisk": "low",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-7-landing-home",
+          "title": "Cockpit-as-default-home behind the guidance dial + journey mode",
+          "what": "Add the Guided/Light/Off dial to dayToolsMenu/settings writing S.guide.mode. Add journeyTick() (once/logical-day via computedK) and in init()/renderAll after load(): if S.profile.set && S.guide.mode!=='off' && a node action pending -> openTrackerFull() into the chosen mode (enterStage) on cold-open ONLY (never on tab switches / mid-scroll). Add journeyCardStep() rendering the current node's one CTA into #tfStageBody. Keep the timeline one tap via the existing nav + pull-down. Default stays mode='off' (today's behavior) until David flips it.",
+          "why": "The riskiest slice (touches landing/proactive + muscle memory) ships LAST, gated + reversible in one toggle, after the shell + two flows are device-proven. Strict cold-open-only gating avoids hijacking a mid-scroll timeline.",
+          "region": "app.js init()/renderAll cold-open routing ~3405-3453 + journeyTick/journeyCardStep + dayToolsMenu dial",
+          "effort": "L",
+          "conflictRisk": "high",
+          "schema": "none"
+        },
+        {
+          "id": "CKPT-8-am-mode",
+          "title": "AM bookend mode (greet + receive-last-night + intrinsic), recommitSheet redirect",
+          "what": "Add am-mode beats into #tfStageBody (greet + 'last night you chose...still true?' receive panel reading S.bk[todayK()] written by PM under tomK(); then identity/virtue/intrinsic-why steps; 'Lock it' reuses recommitSheet's finalize to place blocks + write S.profile.todayIdentity/todayVirtues, bookend-extras to S.bk). Redirect proactive() morning primary + recommitSheet entry to enterStage('am'). Keep recommitSheet one ship as fallback, prune after device-confirm.",
+          "why": "Completes the bookend spine and the cross-day guardian continuity (PM seeds tomorrow, AM receives it). Lands after PM so the data baton has a writer before AM reads it.",
+          "region": "app.js AM builders (near recommitSheet ~3175) + proactive() morning line ~1557",
+          "effort": "M",
+          "conflictRisk": "med",
+          "schema": "none"
+        }
+      ],
+      "buildOrder": [
+        "WAVE 1 (shell, zero behavior change): CKPT-1 (DOM+CSS) + CKPT-2 (TF_MODE router/branch/funnels) + CKPT-3 (control cases + drag guard) + CKPT-4 (S.bk/S.guide engines, default OFF). With no modes wired and guidance off, stageModeFor returns null -> the cockpit is byte-identical to today. A temporary dev toggle (the existing 🧪 test-day button) flips .tf-staged so David can SEE the ring slide to the corner + an empty stage. Proves the two-zone morph in isolation. Ship.",
+        "WAVE 2 (first guided flow): CKPT-5 (journal mode) — the smallest fusion proof: tap Journal -> ring corners + ticks -> answer one question -> Save logs a Restore block + Spark. Exercises every part of the shell on one mode. Ship + device-confirm corner-slide feel + keyboard hold.",
+        "WAVE 3 (first full ritual): CKPT-6 (PM mirror+ask) wired to the evening proactive chip. Pure-read, retires the EVENING_RITUAL #sheet. Ship.",
+        "WAVE 4 (landing): CKPT-7 (cockpit-as-home behind the dial + journey mode). Riskiest, reversible, cold-open-gated. Ship guidance default Off; flip to Guided only after David confirms it feels like home.",
+        "WAVE 5 (complete the spine): CKPT-8 (AM bookend) + PM RESTORY/PLAN fast-follow + retire/prune the redirected #sheets after device-confirm. Tool/practice stage slots stay stubbed until the wisdom package lands."
+      ],
+      "firstWave": [
+        "CKPT-1-shell-dom",
+        "CKPT-2-mode-router",
+        "CKPT-3-controls",
+        "CKPT-4-bk-guide-state",
+        "CKPT-5-journal-mode"
+      ],
+      "openQuestions": [
+        "LANDING DEFAULT: ship guidance default 'off' (cockpit-as-home opt-in, today's timeline-landing stays default) until you confirm on your phone it feels like home not a wall? Recommended yes — reversible in one toggle.",
+        "CORNER POSITION: ring slides to top-LEFT (out of the thumb zone, stage content + Done in the lower two-thirds). Confirm left vs right on your iPhone — purely a CSS constant.",
+        "FIRST FLOW: I picked PM reflection / journal as flow #1 because it's pure-read on existing data (can't corrupt) and retires the dumbest #sheet. AM bookend (which writes blocks) waits. Agree?",
+        "JOURNEY VISIBILITY: when guidance is Guided, the cockpit auto-lands in the node's mode showing ONE card and suppresses the chip pile. Is full progressive-disclosure right for YOU (an existing power user), or should your account cold-infer to mastery and skip the early nodes entirely?",
+        "TOOL/PRACTICE SLOT: confirmed I should leave stage='tool' as a stubbed 'coming soon' card now and let the wisdom/toolbox package fill it later with no layout change — yes?",
+        "CELEBRATION CADENCE: closing journal+PM+AM in one evening could fire three GENTLE celebrations. Gate to once-per-logical-day (computedK) so it stays warm not loud?"
+      ]
+    }
+  }
+}
