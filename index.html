@@ -164,7 +164,19 @@
   .jp-ckmatrix{display:flex;gap:9px;}
   .jp-ckbtn{border:2.5px solid var(--ink);border-radius:12px;padding:10px 20px;font-family:var(--bub);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;gap:6px;}
   .jp-ckbtn.done{background:#34d39a;color:#06351f;}
+  .jp-ckbtn.follow{background:#7cc8ff;color:#0b2740;}
+  .jp-ckbtn.replan{background:#ffd54a;color:#4a3500;}
+  .jp-ckbtn.drift{background:#caa6e6;color:#321a48;}
+  .jp-ckbtn.small{padding:9px 14px;font-size:13px;}
+  .jp-ckmatrix{flex-wrap:wrap;justify-content:center;}
   .jp-ckbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
+  /* HABIT 3-way inline menu — render in the cockpit slot, the habit's color (David 2026-06-28) */
+  .jp-habmenu{display:flex;flex-direction:column;align-items:stretch;gap:9px;margin:8px 0 4px;width:208px;}
+  .jp-habmenu .jp-hmtitle{font-family:var(--bub);font-size:15px;font-weight:800;color:#fff2f9;text-align:center;margin-bottom:2px;}
+  .jp-hmbtn{border:2.5px solid var(--ink);border-radius:13px;padding:12px 16px;font-family:var(--bub);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;gap:8px;justify-content:center;color:#160510;}
+  .jp-hmbtn.skip{background:#3a1226;color:#ffb0cf;border-color:#6a3050;box-shadow:0 4px 0 #2a0d1c;}
+  .jp-hmbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
+  .jp-hmbtn.skip:active{box-shadow:0 1px 0 #2a0d1c;}
   /* REDESIGNED activity editor — merged hero + draggable scrubber + auto-save (David 2026-06-25) */
   .ed-hero{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; border:2px solid #160510; border-radius:16px; padding:14px 16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; margin-bottom:14px; box-shadow:none; }
   .ed-hero.ed-hero-empty{ background:#3a1226 !important; color:#ffb0cf !important; border:2px dashed #ff5fa0 !important; }

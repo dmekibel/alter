@@ -431,8 +431,10 @@
     drawJourney(true);
   }
   function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
-  function jpStart(n) { // START a circle: a DOING circle starts a live timer + expands in place; anything else runs its own flow (plan→planner, habit→toggle, ritual→stage)
+  var jpHabMenuKey = null; // which habit circle has its 3-way inline menu open (Mark done / Track it / Skip) — David 2026-06-28
+  function jpStart(n) { // START a circle: a DOING circle starts a live timer + expands in place; a HABIT opens its 3-way menu; anything else runs its own flow (plan→planner, ritual→stage)
     if (n.key === "onething" || (n.key && n.key.indexOf("blk:") === 0)) { startTimer({ title: n.title, catK: n.catK || null, color: n.color }); drawJourney(true); }
+    else if (n.key && n.key.indexOf("hab:") === 0) { jpHabMenuKey = n.key; drawJourney(true); } // habit → don't silently toggle; surface the menu
     else if (n.act) { n.act(); }
   }
   var JP_CHAPTERS = [ // the long-term GROWTH ARC = chapters. Active chapter = today's lessons; past = done milestones; future = locked aspiration. Driven by journeyNode() (which is goal/onboarding-shaped via readiness). (David 2026-06-28)
@@ -473,11 +475,23 @@
           var tmw = add(ckp, "div", "jp-cktimer"); tmw.innerHTML = '<span class="live-elapsed" data-tid="' + runT.id + '">' + elapsedStr(runT) + '</span>';
           var mx = add(ckp, "div", "jp-ckmatrix");
           var dn = add(mx, "button", "jp-ckbtn done"); dn.innerHTML = '<i class="ti ti-check"></i> Done'; dn.onclick = function () { stopTimer(runT.id); if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4); (blocks(todayK()) || []).forEach(function (b) { if (b.id === bid) b.done = true; }); save(); } drawJourney(true); };
+          // FOLLOW / REPLAN / DRIFT matrix — the live triad next to Done (reward-never-shame; David 2026-06-28)
+          var fl = add(mx, "button", "jp-ckbtn follow small"); fl.innerHTML = '<i class="ti ti-player-play"></i> Follow'; fl.onclick = function () { try { toast("✦ on plan — keep going"); } catch (e) {} };
+          var rp = add(mx, "button", "jp-ckbtn replan small"); rp.innerHTML = '<i class="ti ti-calendar-event"></i> Replan'; rp.onclick = function () { if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4), bb = (blocks(todayK()) || []).filter(function (b) { return b.id === bid; })[0]; if (bb) { closeJourney(); blockEdit(bb, todayK()); return; } } planBreak("Replan — what, for how long?"); };
+          var dr = add(mx, "button", "jp-ckbtn drift small"); dr.innerHTML = '<i class="ti ti-wind"></i> Drift'; dr.onclick = function () { stopTimer(runT.id); coolStreak(); try { toast("you stepped away — no shame"); } catch (e) {} drawJourney(true); };
+        } else if (n.key && n.key.indexOf("hab:") === 0 && jpHabMenuKey === n.key) {
+          // HABIT 3-way inline menu — opened by tapping START on a habit circle (David 2026-06-28)
+          bub.style.display = "none";
+          var hm2 = add(node, "div", "jp-habmenu"); add(hm2, "div", "jp-hmtitle", n.title);
+          var b1 = add(hm2, "button", "jp-hmbtn"); b1.style.background = n.color; b1.innerHTML = '<i class="ti ti-circle-check"></i> Mark done';
+          b1.onclick = function () { jpHabMenuKey = null; var was = !!doneMap(todayK())[n.key.slice(4)]; toggleHabit(n.key.slice(4)); if (!was && doneMap(todayK())[n.key.slice(4)]) { try { celebrateGated(n.color, bumpStreak()); } catch (e) {} } drawJourney(true); };
+          var b2 = add(hm2, "button", "jp-hmbtn"); b2.style.background = mixHex(n.color, "#fff", 0.18); b2.innerHTML = '<i class="ti ti-stopwatch"></i> Track it'; b2.onclick = function () { jpHabMenuKey = null; startTimer({ title: n.title, color: n.color, habitId: n.key.slice(4) }); drawJourney(true); };
+          var b3 = add(hm2, "button", "jp-hmbtn skip"); b3.innerHTML = '<i class="ti ti-player-skip-forward"></i> Skip for now'; b3.onclick = function () { jpHabMenuKey = null; try { toast("set aside — come back any time"); } catch (e) {} drawJourney(true); };
         } else {
           var card = add(node, "div", "jp-card");
           add(card, "div", "jc-t", n.title);
           if (n.line) add(card, "div", "jc-l", n.line);
-          var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : (n.key && n.key.indexOf("hab:") === 0 ? "MARK DONE" : "START"); cta.style.background = n.color; cta.onclick = function () { jpStart(n); };
+          var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : "START"; cta.style.background = n.color; cta.onclick = function () { jpStart(n); };
         }
       } else if (n.title) { add(node, "div", "jp-cap" + (state === "locked" ? " locked" : ""), n.title); }
     }
