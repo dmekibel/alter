@@ -324,6 +324,22 @@
     if (S.guide) { S.guide.cache = { computedK: todayK(), r: r }; } // cache only (no save() — pure read path; persisted lazily by the next save())
     return r;
   }
+  // ===== WAVE 1 — the VECTOR read (David 2026-06-28): extends the scalar readiness() into a profile with ENERGY (the gate) + RECOVERY (the equanimity signal). Pure; reads only data already in S; surfaced ONLY as warm voice, never a number. The energy-first gate (Johnson Step 1 + david-framework "regulate first, then think" + Principle 7) is the law that makes ALTER a guardian, not a menu.
+  function profile() {
+    var energy = currentMood(); // 0..4, reuse the shipped mood read — no quiz (refine later: capture in the AM / infer from sleep)
+    var lowEnergy = energy <= 1;
+    var days = lastDays(14), chron = days.slice().reverse(); // oldest → newest
+    function keptOn(dk) { return ((S.blocks || {})[dk] || []).some(function (b) { return b.title && blockStatus(dk, b) === "ok"; }); }
+    function missOn(dk) { return ((S.blocks || {})[dk] || []).some(function (b) { return b.title && blockStatus(dk, b) === "miss"; }); }
+    function activeOn(dk) { return (logs(dk) || []).length > 0 || keptOn(dk) || missOn(dk); }
+    var missDays = 0, bounced = 0;
+    for (var i = 0; i < chron.length - 1; i++) { if (missOn(chron[i])) { missDays++; for (var j = i + 1; j < chron.length; j++) { if (activeOn(chron[j])) { if (keptOn(chron[j])) bounced++; break; } } } }
+    var recovery = missDays ? bounced / missDays : 0;
+    var y = days[1], t = days[0];
+    var roughY = missOn(y) || (!keptOn(y) && !(logs(y) || []).length);
+    var goodT = keptOn(t) || (logs(t) || []).length > 0;
+    return { r: readiness(), energy: energy, lowEnergy: lowEnergy, recovery: recovery, missDays: missDays, bouncedBack: roughY && goodT };
+  }
   function journeyNode() { // monotonic sticky floor: max(first failing gate, max(S.guide.unlocked)) — never removes from unlocked = reward-never-shame as math
     var g = (S.guide || {}), r = readiness();
     var gate = r >= 0.75 ? 4 : r >= 0.55 ? 3 : r >= 0.35 ? 2 : r >= 0.15 ? 1 : 0; // first failing gate → the node readiness alone would suggest
@@ -1452,6 +1468,7 @@
   function openJournal() { enterStage("journal", { trackTitle: "Reflection", byTap: true }); } // the Journal chip's door: lights the ring + slides it aside + fills the stage in one gesture
   function renderStageChips() { // the BASE (track-mode) entry doors into guided flows — visible + tappable (not gesture-only). Built fresh each track render (cheap, no inputs to preserve). (CKPT-5)
     var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";
+    if (profile().lowEnergy) { var st = add(w, "button", "tf-chip"); st.innerHTML = '<i class="ti ti-wind" style="color:' + DOM.restore.light + '"></i> Settle'; st.onclick = function () { try { breathwork(4); } catch (e) {} }; } // ENERGY-FIRST GATE: low fuel → lead with one body reset before the cognitive doors (suggest, never wall)
     var c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ti-feather" style="color:' + DOM.restore.light + '"></i> Journal'; c.onclick = openJournal;
     // AM / PM bookend doors (David 2026-06-28) — greet, never auto-trap; a one-tap chip opens the stage
     var am = add(w, "button", "tf-chip"); am.innerHTML = '<i class="ti ti-sun-high" style="color:#ffc83d"></i> Morning'; am.onclick = function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); };
@@ -1755,6 +1772,9 @@
   function bkContinuity() {
     try {
       var k = todayK(), rec = (S.bk || {})[k] || {}, am = rec.am || {}, ph = phase(), streak = curStreak();
+      var pf = profile();
+      if (pf.lowEnergy) return "Low on fuel today — let's settle the body first. Everything else can wait."; // ENERGY-FIRST GATE: regulate before think (the guardian noticing, not pushing)
+      if (pf.bouncedBack) return "You came back. That bounce — not the streak — is the skill."; // RECOVERY named (the Equanimity Game): the most churn-prone moment becomes the most rewarded
       if (ph === "morning") {
         if (am.done) { var v = vlabel(am.virtue); return "Good morning. Today you're being " + (v ? v.l : "yourself") + (am.oneThing ? " — your one thing: " + esc(am.oneThing) : "") + "."; }
         if (am.oneThing) return "Last night you set: “" + esc(am.oneThing) + "”. Still your one thing?";
