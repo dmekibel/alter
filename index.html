@@ -154,6 +154,17 @@
   .jp-trophy .jt-b{width:64px;height:64px;border-radius:15px;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:30px;color:#160510;box-shadow:0 5px 0 var(--ink);}
   .jp-trophy.done .jt-b{background:#ffcf4a;}
   .jp-trophy.locked .jt-b{background:#2a1320;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
+  /* IN-JOURNEY COCKPIT — the now-circle, once STARTED, expands into the live ring + timer right on the path (David 2026-06-28) */
+  .jp-cockpit{display:flex;flex-direction:column;align-items:center;gap:11px;margin:8px 0 4px;}
+  .jp-ring{width:128px;height:128px;border-radius:50%;border:12px solid #34d39a;background:#160510;display:flex;align-items:center;justify-content:center;}
+  .jp-rdisc{width:80px;height:80px;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;}
+  .jp-rdisc i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
+  .jp-cktitle{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;}
+  .jp-cktimer{font-family:var(--bub);font-size:27px;font-weight:800;color:#ffd9ea;letter-spacing:1px;margin-top:-4px;}
+  .jp-ckmatrix{display:flex;gap:9px;}
+  .jp-ckbtn{border:2.5px solid var(--ink);border-radius:12px;padding:10px 20px;font-family:var(--bub);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;gap:6px;}
+  .jp-ckbtn.done{background:#34d39a;color:#06351f;}
+  .jp-ckbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
   /* REDESIGNED activity editor — merged hero + draggable scrubber + auto-save (David 2026-06-25) */
   .ed-hero{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; border:2px solid #160510; border-radius:16px; padding:14px 16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; margin-bottom:14px; box-shadow:none; }
   .ed-hero.ed-hero-empty{ background:#3a1226 !important; color:#ffb0cf !important; border:2px dashed #ff5fa0 !important; }
@@ -1463,6 +1474,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div></div>
-  <script src="app.js?v=618"></script>
+  <script src="app.js?v=619"></script>
 </body>
 </html>

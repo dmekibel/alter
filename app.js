@@ -395,7 +395,7 @@
 
     // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
-      nodes.push({ key: "onething", emoji: "⭐", title: oneThing, line: "Your one thing today — the vote that matters most.",
+      nodes.push({ key: "onething", emoji: "⭐", title: oneThing, catK: null, line: "Your one thing today — the vote that matters most.",
         color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + oneThing); } });
     }
 
@@ -411,7 +411,7 @@
     // Planned blocks — GOAL ADAPT: blocks that serve today's chosen virtue sort to the front, then time order. (each = do it: start a timer; done when its block is done.)
     planned.slice().sort(function (a, b) { var ga = matchesGoal(a) ? 0 : 1, gb = matchesGoal(b) ? 0 : 1; return ga !== gb ? ga - gb : hm(a.time) - hm(b.time); }).forEach(function (b) {
       var dom = domainOf(b), st = blockStatus(k, b), isDone = st === "ok";
-      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, icon: tiClass(b), title: b.title, line: (matchesGoal(b) && gvName ? "Toward " + gvName + " · " : "") + b.time + " · tap to start it now.",
+      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, icon: tiClass(b), title: b.title, catK: b.catK, line: (matchesGoal(b) && gvName ? "Toward " + gvName + " · " : "") + b.time + " · tap to start it now.",
         color: b.color || (DOM[dom] || DOM.focus).c, done: isDone, act: function () {
           if (isDone) { closeJourney(); blockEdit(b, k); return; } // already done → open it to review/edit
           startTimer({ title: b.title, catK: b.catK, emoji: (DOM[dom] || DOM.focus).e, color: b.color || (DOM[dom] || DOM.focus).c });
@@ -431,6 +431,10 @@
     drawJourney(true);
   }
   function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
+  function jpStart(n) { // START a circle: a DOING circle starts a live timer + expands in place; anything else runs its own flow (plan→planner, habit→toggle, ritual→stage)
+    if (n.key === "onething" || (n.key && n.key.indexOf("blk:") === 0)) { startTimer({ title: n.title, catK: n.catK || null, color: n.color }); drawJourney(true); }
+    else if (n.act) { n.act(); }
+  }
   var JP_CHAPTERS = [ // the long-term GROWTH ARC = chapters. Active chapter = today's lessons; past = done milestones; future = locked aspiration. Driven by journeyNode() (which is goal/onboarding-shaped via readiness). (David 2026-06-28)
     { t: "Show up", ic: "ti-seedling" }, { t: "Plan your days", ic: "ti-map-2" }, { t: "Morning rituals", ic: "ti-sunrise" },
     { t: "Evening reflection", ic: "ti-moon" }, { t: "Become who you are", ic: "ti-star" }, { t: "Mastery", ic: "ti-crown" }
@@ -456,13 +460,25 @@
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
       if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
       if (state === "done") { var ck = add(node, "div", "jp-check"); ck.innerHTML = '<i class="ti ti-check"></i>'; }
-      if (n.act && state !== "locked") bub.onclick = n.act;
+      if (n.act && state !== "locked" && state !== "cur") bub.onclick = n.act;
       if (state === "cur") {
         curEl = node;
-        var card = add(node, "div", "jp-card");
-        add(card, "div", "jc-t", n.title);
-        if (n.line) add(card, "div", "jc-l", n.line);
-        var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : (n.key && n.key.indexOf("hab:") === 0 ? "MARK DONE" : "START"); cta.style.background = n.color; cta.onclick = n.act;
+        var runT = (S.timers || []).filter(function (x) { return x.dayK === todayK() && x.title === n.title; })[0]; // a live timer for THIS activity?
+        bub.onclick = function () { jpStart(n); };
+        if (runT) { // the now IS the cockpit — expand the circle into the live ring + timer, in place
+          bub.style.display = "none";
+          var ckp = add(node, "div", "jp-cockpit");
+          var rg = add(ckp, "div", "jp-ring"); var ds = add(rg, "div", "jp-rdisc"); ds.style.background = tfStripe(n.color); ds.innerHTML = '<i class="ti ' + icon + '"></i>';
+          add(ckp, "div", "jp-cktitle", n.title);
+          var tmw = add(ckp, "div", "jp-cktimer"); tmw.innerHTML = '<span class="live-elapsed" data-tid="' + runT.id + '">' + elapsedStr(runT) + '</span>';
+          var mx = add(ckp, "div", "jp-ckmatrix");
+          var dn = add(mx, "button", "jp-ckbtn done"); dn.innerHTML = '<i class="ti ti-check"></i> Done'; dn.onclick = function () { stopTimer(runT.id); if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4); (blocks(todayK()) || []).forEach(function (b) { if (b.id === bid) b.done = true; }); save(); } drawJourney(true); };
+        } else {
+          var card = add(node, "div", "jp-card");
+          add(card, "div", "jc-t", n.title);
+          if (n.line) add(card, "div", "jc-l", n.line);
+          var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : (n.key && n.key.indexOf("hab:") === 0 ? "MARK DONE" : "START"); cta.style.background = n.color; cta.onclick = function () { jpStart(n); };
+        }
       } else if (n.title) { add(node, "div", "jp-cap" + (state === "locked" ? " locked" : ""), n.title); }
     }
 
