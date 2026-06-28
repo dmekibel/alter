@@ -4176,20 +4176,25 @@
       });
     }
     var dragging = null;
-    function startDrag(ev, idx, row) {
-      ev.preventDefault();
-      dragging = { idx: idx };
-      row.classList.add("drag");
-      var rows = Array.prototype.slice.call(list.querySelectorAll(".bento-orow"));
+    function startDrag(ev, idx, dragEl) {
+      ev.preventDefault(); dragging = true;
+      dragEl.classList.add("drag"); dragEl.style.zIndex = "6";
+      var grabOff = ev.clientY - dragEl.getBoundingClientRect().top; // pointer offset inside the row
+      function place(clientY) { dragEl.style.transition = "none"; dragEl.style.transform = ""; var nat = dragEl.getBoundingClientRect().top; dragEl.style.transform = "translateY(" + ((clientY - grabOff) - nat) + "px) scale(1.03)"; } // finger-follow (transform-independent natural top)
+      function flip(fn) { var sibs = Array.prototype.slice.call(list.children).filter(function (r) { return r !== dragEl; }), b = sibs.map(function (r) { return r.getBoundingClientRect().top; }); fn(); sibs.forEach(function (r, i) { var d = b[i] - r.getBoundingClientRect().top; if (d) { r.style.transition = "none"; r.style.transform = "translateY(" + d + "px)"; requestAnimationFrame(function () { r.style.transition = "transform .2s cubic-bezier(.2,.8,.3,1)"; r.style.transform = ""; }); } }); } // siblings slide smoothly into place
       function move(e) {
-        var y = e.clientY, over = null;
-        rows.forEach(function (r) { var rc = r.getBoundingClientRect(); if (y > rc.top && y < rc.bottom) over = +r.dataset.i; });
-        if (over != null && over !== dragging.idx) {
-          var item = sel.splice(dragging.idx, 1)[0]; sel.splice(over, 0, item); dragging.idx = over; paint();
-          rows = Array.prototype.slice.call(list.querySelectorAll(".bento-orow")); rows[over] && rows[over].classList.add("drag");
+        e.preventDefault(); place(e.clientY);
+        var dmid = dragEl.getBoundingClientRect().top + dragEl.offsetHeight / 2, sibs = Array.prototype.slice.call(list.children).filter(function (r) { return r !== dragEl; });
+        for (var s = 0; s < sibs.length; s++) { var rc = sibs[s].getBoundingClientRect(), mid = rc.top + rc.height / 2, pos = dragEl.compareDocumentPosition(sibs[s]);
+          if (dmid > mid && (pos & 4)) { (function (n) { flip(function () { list.insertBefore(dragEl, n.nextSibling); }); })(sibs[s]); place(e.clientY); break; } // drag center dropped below a row that's after it → move past it
+          if (dmid < mid && (pos & 2)) { (function (n) { flip(function () { list.insertBefore(dragEl, n); }); })(sibs[s]); place(e.clientY); break; } // drag center rose above a row that's before it → move before it
         }
       }
-      function up() { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); dragging = null; paint(); }
+      function up() { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
+        var order = Array.prototype.slice.call(list.children).map(function (r) { return +r.dataset.i; }), ns = order.map(function (oi) { return sel[oi]; });
+        sel.length = 0; for (var z = 0; z < ns.length; z++) sel.push(ns[z]); // commit the new DOM order back to sel
+        dragging = null; dragEl.style.zIndex = ""; paint();
+      }
       document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
     }
     paint();

@@ -669,9 +669,9 @@
   /* ORDER STEP — drag-reorder the chosen activities (David 2026-06-28) */
   .bento-orderhint{ color:#e6cfe0; font-size:12.5px; line-height:1.4; padding:4px 2px 12px; }
   .bento-orderlist{ display:flex; flex-direction:column; gap:8px; }
-  .bento-orow{ display:flex; align-items:center; gap:10px; background:#48122f; border:2px solid #160510; border-radius:13px; padding:11px 12px; touch-action:none; }
-  .bento-orow.drag{ box-shadow:0 0 0 3px #ffe3a0; transform:scale(1.02); }
-  .bento-ohandle{ flex:none; color:#c98aa8; font-size:18px; display:flex; cursor:grab; }
+  .bento-orow{ display:flex; align-items:center; gap:10px; background:#48122f; border:2px solid #160510; border-radius:13px; padding:11px 12px; transition:transform .2s cubic-bezier(.2,.8,.3,1); } /* touch-action:none REMOVED so the list scrolls; only the handle grabs (David 2026-06-28) */
+  .bento-orow.drag{ box-shadow:0 0 0 3px #ffe3a0, 0 12px 28px rgba(0,0,0,.5); opacity:.98; }
+  .bento-ohandle{ flex:none; color:#c98aa8; font-size:20px; display:flex; cursor:grab; touch-action:none; padding:4px 3px; } /* the handle grabs (no scroll); the rest of the row scrolls */
   .bento-osw{ flex:none; width:12px; height:12px; border-radius:50%; border:1.5px solid #160510; }
   .bento-on{ flex:1 1 auto; min-width:0; color:#ffe3f1; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .bento-onum{ flex:none; background:#160510; color:#ffb3d9; font-size:12px; font-weight:800; border-radius:8px; padding:2px 8px; }
@@ -1410,6 +1410,6 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=609"></script>
+  <script src="app.js?v=610"></script>
 </body>
 </html>
