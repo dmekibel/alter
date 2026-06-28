@@ -867,9 +867,9 @@
     var r = anchor.getBoundingClientRect(), hr = head.getBoundingClientRect();
     menu.style.top = (r.bottom - hr.top + 5) + "px"; menu.style.right = Math.max(4, hr.right - r.right) + "px";
     function item(cls, ic, label, fn) { var b = add(menu, "button", "ptm-item" + (cls ? " " + cls : "")); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.onclick = function (e) { e.stopPropagation(); menu.remove(); fn(); }; }
-    item("plan", "ti-sun-high", "Shape today", function () { shapeToday(); }); // THE DAILY ELICITOR — always-available door (also auto-pushes once/day on a no-plan open) (David 2026-06-28)
+    item("plan", "ti-sun-high", (k === todayK() ? "Plan / shape today" : "Plan / shape day"), function () { shapeFlow(k); }); // THE ONE PLANNING FLOW — merged Shape+Plan, bento multi-select → order step (David 2026-06-28). Also the timeline meta-button + the once/day no-plan auto-push.
     item("", "ti-briefcase", "My toolbox", function () { openToolbox(); }); // WISDOM TOOLBOX entry (TB-SHEET) — opens the cockpit 'tool' stage
-    item("plan", "ti-calendar-plus", "Plan day", function () { planDay(k); });
+    item("", "ti-stack-2", "Habit stacks", function () { presetsSheet(k); }); // habit-stack drop-in (was inside the old Plan day sheet)
     item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
@@ -920,17 +920,7 @@
     }
     draw();
     if (S.profile && S.profile.fundamentals) { var rs = add(B, "button", "add2"); rs.innerHTML = '<i class="ti ti-rotate"></i> reset to defaults'; rs.style.margin = "8px 0 0"; rs.onclick = function () { delete S.profile.fundamentals; save(); fundamentalsMenu(); }; }
-    add(B, "button", "done2", "Done").onclick = function () { planDay(todayK()); };
-  }
-  function planDay(k) {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "Plan " + relLabel(k).toLowerCase());
-    add(B, "div", "lbl", "Pick activities or drop in a stack — they land on your timeline to arrange.");
-    var f = add(B, "button", "add2"); f.innerHTML = '<i class="ti ti-stars"></i> Daily fundamentals'; f.style.margin = "4px 0 0"; f.onclick = function () { closeSheet(); enhancePlan(k); };
-    var fe = add(B, "button", "add2"); fe.innerHTML = '<i class="ti ti-settings"></i> edit fundamentals'; fe.style.cssText = "margin:0 0 8px;font-size:11.5px;padding:7px;opacity:.85;"; fe.onclick = function () { fundamentalsMenu(); };
-    var p = add(B, "button", "add2"); p.innerHTML = '<i class="ti ti-checkbox"></i> Pick activities'; p.style.margin = "4px 0"; p.onclick = function () { bentoPicker({ title: "Pick everything for " + relLabel(k).toLowerCase(), multi: true, onPickMulti: function (sel) { distributePlan(k, sel); }, onPick: function (x) { if (x) distributePlan(k, [x]); } }); };
-    var s = add(B, "button", "add2"); s.innerHTML = '<i class="ti ti-stack-2"></i> Use a habit stack'; s.style.margin = "4px 0"; s.onclick = function () { presetsSheet(k); };
-    add(B, "button", "done2", "Done").onclick = function () { closeSheet(); };
+    add(B, "button", "done2", "Done").onclick = function () { closeSheet(); shapeFlow(todayK()); }; // → the one planning flow (was the old planDay sheet)
   }
   function buildPull() {
     var head = el("pullHead"), pb = el("pullBody"); if (!pb) return;
@@ -2377,7 +2367,9 @@
     if (p === "night") { out.kicker = "tonight"; out.line = "It's late — let's wind down."; out.sub = "tidy the surfaces, phone away, head toward bed."; out.primary = { label: "Wind down 😴", fn: function () { ritualSheet(WINDDOWN); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — let's recommit."; out.sub = "60 seconds: who you're being, your one thing, gratitude — then I frame your day."; out.primary = { label: "Morning recommit ☀️", fn: recommitSheet }; out.chips.push({ label: "Morning bookend 🌅", fn: function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); } }); out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // AM bookend door (David 2026-06-28): one-tap into the cockpit morning stage — greet, never auto-trap
     else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Reflection 🌙", fn: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // PM bookend (David 2026-06-28): replaces the dumb EVENING_RITUAL #sheet with the cockpit Reflection stage
-    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — what's today at its best?"; out.sub = "let's get it out of you — the things you want (and keep avoiding)."; out.primary = { label: "Shape today ☀️", fn: shapeToday }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — what's today at its best?"; out.sub = "let's get it out of you — the things you want (and keep avoiding)."; out.primary = { label: "Plan today ☀️", fn: function () { shapeFlow(todayK()); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    // PLAN-THE-REST meta-button (David 2026-06-28): when today HAS a plan but little ahead of the now-line (≤2 future blocks), offer one-tap into the same beautiful flow to fill the rest of the day. Skipped at night (winding down). Front of the chip row.
+    if (p !== "night" && blocks(todayK()).some(function (b) { return b.title; })) { var _now = logicalNowMin(), ahead = blocks(todayK()).filter(function (b) { return b.title && hm(b.time) + (b.mins || 30) > _now; }).length; if (ahead <= 2) out.chips.unshift({ label: "Plan the rest of my day ☀️", fn: function () { shapeFlow(todayK()); } }); }
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
     // WISDOM TOOLBOX — drift handoff (TB-DRIFT-HANDOFF): when a starred/high-prio block has slid past the now-line undone, the angel offers Reversal of Desire — the in-the-moment 'move toward the avoided thing' move. Gated ONCE per logical-day (S.tools.last.reversal), and only when the toolbox is reachable. Verdict copy only — no timeline geometry.
     var _av = avoidedBlock(); if (_av && (S.tools && S.tools.last && S.tools.last.reversal) !== todayK()) { out.chips.push({ label: "Avoiding it? → reverse the desire", fn: function () { reversalOfDesire(_av); } }); }
@@ -3886,6 +3878,8 @@
       var pinned = add(body, "div", "bento-pinned");
       if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
       else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
+      // "you've been meaning to…" — the inferred procrastination list, surfaced prominently right under the pins (David 2026-06-28). actOf() maps each to a real activity obj so chips colour by domain + toggle-select like any other.
+      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); add(pr, "span", "bento-qlbl", '🕓 been meaning to'); opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
       var results = add(body, "div", "bento-results"); results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
       DOM_ORDER.forEach(function (d) {
@@ -3959,7 +3953,7 @@
       if (!multi) return;
       if (!foot) foot = add(card, "div", "bento-foot");
       foot.innerHTML = "";
-      var b = add(foot, "button", "bento-go"); b.innerHTML = '<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : ""); b.disabled = !sel.length;
+      var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length;
       b.onclick = function () { if (!sel.length) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
     }
     function render() { body.innerHTML = ""; if (view.cat) renderExpanded(view.cat); else renderOverview(); }
@@ -4017,15 +4011,63 @@
     });
     return out.slice(0, 6);
   }
-  function addActToPlan(meta, k) { var t = nextFreeMin(k); blocks(k).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: meta.title, prio: 2, color: meta.color || "#8a5cf0", catK: meta.catK || null, habitId: meta.habitId || null, done: false }); reflow(k); }
-  function shapeToday() {
-    S.shapeK = todayK(); var k = todayK();
-    pickerSheet({
-      title: function (n) { return n ? "Add " + n + " to today ▸" : "What's today, at its best? ☀️"; },
-      head: function (B) { add(B, "div", "lbl", "Tap what you want today — activities, not times. I'll keep them ready to start anytime, and you can rearrange whenever."); },
-      priority: avoidedActs(), frequent: true, custom: true, multi: true,
-      foot: function (B, picked, n) { if (n) { add(B, "button", "done2", "Add " + n + " to today ▸").onclick = function () { Object.keys(picked).forEach(function (key) { addActToPlan(picked[key], k); }); save(); closeSheet(); renderToday(); }; } else { var sk = add(B, "button", "done2", "Not yet — maybe later"); sk.style.opacity = ".7"; sk.onclick = closeSheet; } }
+  // THE ONE PLANNING FLOW (David 2026-06-28): "Shape today" and "Plan day" are the same thing — merged into one beautiful bento flow. Multi-select on the bento (with "been meaning to…" surfaced prominently), then an ORDER step (drag-reorder the chosen activities), then commit → blocks push + reflow at sequential free slots. No ugly white pickerSheet, no instant drop.
+  function shapeFlow(k) {
+    k = k || todayK(); S.shapeK = todayK();
+    bentoPicker({
+      title: (k === todayK()) ? "What's today, at its best?" : "Shape " + relLabel(k).toLowerCase(),
+      multi: true, priority: avoidedActs(), goLabel: "Order them", goIcon: '<i class="ti ti-arrow-right"></i>',
+      onPickMulti: function (sel) { orderStep(k, sel); }
     });
+  }
+  // ORDER STEP: a bento-styled overlay listing the chosen activities; drag the ⠿ handle to reorder. Timing stays auto (sequential free slots via distributePlan/nextFreeMin) — fine timing is adjusted later on the timeline. Then commit. (David 2026-06-28)
+  function orderStep(k, sel) {
+    sel = (sel || []).filter(Boolean); if (!sel.length) return;
+    var ov = add(document.body, "div", "bento-ov");
+    var card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head");
+    add(head, "div", "bento-q", "What order? ↕");
+    var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
+    var body = add(card, "div", "bento-body");
+    add(body, "div", "bento-orderhint", "Drag to reorder — they'll land back-to-back from your next free slot. Fine-tune the times on the timeline.");
+    var list = add(body, "div", "bento-orderlist");
+    function dragHandle() { var h = document.createElement("span"); h.className = "bento-ohandle"; h.innerHTML = '<i class="ti ti-grip-vertical"></i>'; return h; }
+    function paint() {
+      list.innerHTML = "";
+      sel.forEach(function (a, i) {
+        var dom = a.domain || domainOf(a), D = DOM[dom] || DOM.focus;
+        var row = add(list, "div", "bento-orow"); row.dataset.i = i; row.draggable = true;
+        var hd = dragHandle(); row.appendChild(hd);
+        var sw = add(row, "span", "bento-osw"); sw.style.background = (dom === "drift") ? "#5a2a3c" : D.c;
+        add(row, "span", "bento-on", a.title);
+        var num = add(row, "span", "bento-onum", String(i + 1));
+        // pointer-drag reorder (works on touch + mouse) — David 2026-06-28
+        hd.addEventListener("pointerdown", function (ev) { startDrag(ev, i, row); });
+      });
+    }
+    var dragging = null;
+    function startDrag(ev, idx, row) {
+      ev.preventDefault();
+      dragging = { idx: idx, row: row, startY: ev.clientY };
+      row.classList.add("drag");
+      var rows = Array.prototype.slice.call(list.querySelectorAll(".bento-orow"));
+      function move(e) {
+        var y = e.clientY, over = null;
+        rows.forEach(function (r) { var rc = r.getBoundingClientRect(); if (y > rc.top && y < rc.bottom) over = +r.dataset.i; });
+        if (over != null && over !== dragging.idx) {
+          var item = sel.splice(dragging.idx, 1)[0]; sel.splice(over, 0, item); dragging.idx = over; paint();
+          rows = Array.prototype.slice.call(list.querySelectorAll(".bento-orow")); rows[over] && rows[over].classList.add("drag");
+        }
+      }
+      function up() { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); dragging = null; paint(); }
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+    }
+    paint();
+    var foot = add(card, "div", "bento-foot");
+    var go = add(foot, "button", "bento-go"); go.innerHTML = '<i class="ti ti-check"></i> Add ' + sel.length + ' to ' + (k === todayK() ? "today" : relLabel(k).toLowerCase());
+    go.onclick = function () { ov.remove(); distributePlan(k, sel); };
+    xb.onclick = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
   }
   function suggestDay(k) {
     var T = [
@@ -4768,7 +4810,7 @@
     if (S.profile && S.profile.set && (S.guide || {}).mode === "guided") { try { journeyTick(); if (!journeyActionDoneToday()) setTimeout(function () { enterStage("journey", { byTap: false }); }, 360); } catch (e) {} }
     if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); // first-run onboarding (mockups 041/043)
     // THE DAILY ELICITOR PUSH (David 2026-06-28): on open, once per logical day, if you're onboarded and today has no plan yet → push to get your day's activities out of you. Every day there's always a plan, ready to start/edit. Dismissible (procrastinate-friendly); re-pushes next day.
-    else if (S.shapeK !== todayK() && !blocks(todayK()).some(function (b) { return b.title; })) setTimeout(shapeToday, 750);
+    else if (S.shapeK !== todayK() && !blocks(todayK()).some(function (b) { return b.title; })) setTimeout(function () { shapeFlow(todayK()); }, 750);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

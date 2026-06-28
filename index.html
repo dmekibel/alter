@@ -658,6 +658,15 @@
   .bento-foot{ padding:10px 14px max(14px,calc(env(safe-area-inset-bottom) + 4px)); border-top:2px solid #160510; flex:none; }
   .bento-go{ width:100%; background:#34d39a; color:#0c3d29; border:3px solid #160510; border-radius:13px; box-shadow:0 4px 0 #160510; padding:12px; font-family:"Jost",sans-serif; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
   .bento-go:disabled{ opacity:.45; box-shadow:none; }
+  /* ORDER STEP — drag-reorder the chosen activities (David 2026-06-28) */
+  .bento-orderhint{ color:#e6cfe0; font-size:12.5px; line-height:1.4; padding:4px 2px 12px; }
+  .bento-orderlist{ display:flex; flex-direction:column; gap:8px; }
+  .bento-orow{ display:flex; align-items:center; gap:10px; background:#48122f; border:2px solid #160510; border-radius:13px; padding:11px 12px; touch-action:none; }
+  .bento-orow.drag{ box-shadow:0 0 0 3px #ffe3a0; transform:scale(1.02); }
+  .bento-ohandle{ flex:none; color:#c98aa8; font-size:18px; display:flex; cursor:grab; }
+  .bento-osw{ flex:none; width:12px; height:12px; border-radius:50%; border:1.5px solid #160510; }
+  .bento-on{ flex:1 1 auto; min-width:0; color:#ffe3f1; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bento-onum{ flex:none; background:#160510; color:#ffb3d9; font-size:12px; font-weight:800; border-radius:8px; padding:2px 8px; }
   .bento-newh{ color:#ffe3f1; font-size:16px; font-weight:700; margin:4px 0 12px; }
   .bento-input{ width:100%; background:#48122f !important; border:2px solid #ff7ab8 !important; border-radius:11px; padding:12px; color:#ffe3f1 !important; font-size:15px; font-family:"Jost",sans-serif; font-weight:600; margin-bottom:6px; }
   .bento-hint2{ color:#9a6a86; font-size:10.5px; margin-bottom:14px; }
