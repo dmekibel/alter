@@ -116,6 +116,14 @@
   .jp-prog{margin-top:11px;height:13px;border-radius:8px;background:#1c0612;border:2px solid #5a2942;overflow:hidden;position:relative;}
   .jp-progfill{height:100%;border-radius:5px 0 0 5px;background:linear-gradient(90deg,#ff5fa0,#b07aff);transition:width .5s cubic-bezier(.2,.9,.3,1.3);}
   .jp-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative;}
+  /* JOURNEY IS HOME (David 2026-06-28): a bottom triple menu inside the journey. No top X — home doesn't close. */
+  .jp-nav{flex:none;display:flex;align-items:center;justify-content:space-around;border-top:2px solid #160510;background:#1c0612;padding:8px 6px max(11px,env(safe-area-inset-bottom));z-index:4;}
+  .jpn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:#9a6a86;font-family:"Jost",sans-serif;font-size:10.5px;font-weight:700;cursor:pointer;padding:4px 0;}
+  .jpn i{font-size:22px;line-height:1;}
+  .jpn.on{color:#ff5fa0;}
+  .jpn.on i{filter:drop-shadow(0 0 7px rgba(255,95,160,.45));}
+  .jpn:active{transform:scale(.92);}
+  #journeyPath .jp-x{display:none;}
   /* the journey CLIMBS UP: foundation at the bottom, mastery toward the top — assembled future→today→past in JS (David 2026-06-28) */
   .jp-trail{position:relative;width:100%;max-width:560px;margin:0 auto;padding:40px 0 30px;}
   /* CHAPTER banner — FLAT, ink-bordered, app palette + Tabler symbols (matches the day-viewer language, no gloss) */
@@ -1485,7 +1493,7 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div></div>
-  <script src="app.js?v=620"></script>
+  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
+  <script src="app.js?v=621"></script>
 </body>
 </html>
