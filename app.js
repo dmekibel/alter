@@ -367,6 +367,77 @@
     var n = journeyNode(); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
     save();
   }
+  // ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28): the VISIBLE daily journey. A full-screen winding node-trail of today's real sequence — Plan → fundamentals/undone habits → planned blocks (time order) → bookend. PURE-derives node states from today's real signals (block.done / habit done / matching log). Reward-never-shame: upcoming = calm-dim, never red/locked. Auto-scrolls the CURRENT node into view so the next thing is literally in front of you. =====
+  function jpNodes() { // returns the ordered node list for today, each {key,emoji,title,line,color,done,act}
+    var k = todayK(), nodes = [], dm = doneMap(k), planned = (blocks(k) || []).filter(function (b) { return b.title; });
+    // Node 1 — Plan your day. Done once today has a real plan (blocks with titles).
+    nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day", line: planned.length ? "Your day's mapped — tap to reshape it." : "Map out today — pick a few things and let them wait for you.",
+      color: DOM.focus.c, done: planned.length > 0, act: function () { closeJourney(); shapeFlow(k); } });
+    // Fundamentals / habits (make bed, tidy, brush, etc.) — ALL of them, done stays visible with a check so the trail fills behind you (not undone() which would make a done node vanish)
+    (S.habits || []).forEach(function (h) { if (h.type === "quit") return; // a quit-habit isn't a "do this" step
+      nodes.push({ key: "hab:" + h.id, emoji: h.e || "✨", title: h.l, line: "A small basic — tap when it's done.",
+        color: h.color || DOM.upkeep.c, done: !!dm[h.id], act: function () { var was = !!doneMap(k)[h.id]; toggleHabit(h.id); var c = h.color || DOM.upkeep.c; if (!was && doneMap(k)[h.id]) { try { celebrateGated(c, bumpStreak()); } catch (e) {} } drawJourney(); } });
+    });
+    // Then the planned blocks in time order (each = do it: start a timer; done when its block is done / a matching log exists)
+    planned.slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
+      var dom = domainOf(b), st = blockStatus(k, b), isDone = st === "ok";
+      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, title: b.title, line: b.time + " · tap to start it now.",
+        color: b.color || (DOM[dom] || DOM.focus).c, done: isDone, act: function () {
+          if (isDone) { closeJourney(); blockEdit(b, k); return; } // already done → open it to review/edit
+          startTimer({ title: b.title, catK: b.catK, emoji: (DOM[dom] || DOM.focus).e, color: b.color || (DOM[dom] || DOM.focus).c });
+          closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + b.title);
+        } });
+    });
+    return nodes;
+  }
+  function openJourney() {
+    var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open");
+    try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
+    drawJourney(true);
+  }
+  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
+  function drawJourney(autoScroll) {
+    var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
+    var nodes = jpNodes(), real = nodes.filter(function (n) { return !!n.title; });
+    var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
+    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // first undone = CURRENT
+    var allDone = curIdx < 0;
+    // header
+    var sub = el("jpSub"); if (sub) sub.textContent = allDone ? "All done — beautiful day ✨" : doneN + " of " + total + " today";
+    var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
+    // trail nodes
+    var curEl = null;
+    real.forEach(function (n, idx) {
+      var state = n.done ? "done" : (idx === curIdx ? "cur" : "up");
+      var node = add(trail, "div", "jp-node " + state);
+      // alternating left/right offset, Duolingo-style winding
+      var off = Math.sin(idx * 0.9) * 64; node.style.transform = "translateX(" + off.toFixed(0) + "px)";
+      // connector line up to the previous node (lit when the previous node is done = the trail visibly fills behind you)
+      if (idx > 0) { var line = add(node, "div", "jp-line" + (real[idx - 1].done ? " lit" : "")); line.style.height = "46px"; line.style.top = "-46px"; }
+      var bub = add(node, "div", "jp-bub"); bub.textContent = n.emoji;
+      if (n.done) { bub.style.background = n.color; var ck = add(node, "div", "jp-check"); ck.textContent = "✓"; }
+      else if (state === "cur") { bub.style.background = "#fff3fb"; bub.style.borderColor = n.color; }
+      bub.onclick = n.act;
+      if (state === "cur") { // raised card with title + Start CTA
+        curEl = node;
+        var card = add(node, "div", "jp-card");
+        add(card, "div", "jc-t", n.title);
+        add(card, "div", "jc-l", n.line);
+        var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "Plan it" : (n.key.indexOf("hab:") === 0 ? "Mark done" : "Start"); cta.style.background = n.color; cta.onclick = n.act;
+      } else {
+        add(node, "div", "jp-cap", n.title);
+      }
+    });
+    // final bookend
+    var end = add(trail, "div", "jp-node" + (allDone ? " done" : " up"));
+    var eline = add(end, "div", "jp-line" + (allDone ? " lit" : "")); eline.style.height = "46px"; eline.style.top = "-46px";
+    var ebub = add(end, "div", "jp-bub"); ebub.style.background = allDone ? DOM.create.c : ""; ebub.textContent = "✨";
+    if (allDone) { var eck = add(end, "div", "jp-check"); eck.textContent = "✓"; }
+    var ec = add(end, allDone ? "div" : "div", "jp-cap", allDone ? "Day complete ✨" : "Day complete");
+    if (allDone) { ec.style.color = "#ffd9ea"; }
+    // auto-scroll the current (or end) node into view so the next task is in front of you
+    if (autoScroll) { var target = curEl || end; setTimeout(function () { try { var sc = el("jpScroll"); if (sc && target) sc.scrollTo({ top: Math.max(0, target.offsetTop - sc.clientHeight * 0.34), behavior: "smooth" }); } catch (e) {} }, 90); }
+  }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
   function celebrate(color, streak) {
@@ -867,6 +938,7 @@
     var r = anchor.getBoundingClientRect(), hr = head.getBoundingClientRect();
     menu.style.top = (r.bottom - hr.top + 5) + "px"; menu.style.right = Math.max(4, hr.right - r.right) + "px";
     function item(cls, ic, label, fn) { var b = add(menu, "button", "ptm-item" + (cls ? " " + cls : "")); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.onclick = function (e) { e.stopPropagation(); menu.remove(); fn(); }; }
+    item("plan", "ti-route", "Today's journey", function () { openJourney(); }); // JOURNEY PATH — the Duolingo-style daily trail; the prominent door (David 2026-06-28)
     item("plan", "ti-sun-high", (k === todayK() ? "Plan / shape today" : "Plan / shape day"), function () { shapeFlow(k); }); // THE ONE PLANNING FLOW — merged Shape+Plan, bento multi-select → order step (David 2026-06-28). Also the timeline meta-button + the once/day no-plan auto-push.
     item("", "ti-briefcase", "My toolbox", function () { openToolbox(); }); // WISDOM TOOLBOX entry (TB-SHEET) — opens the cockpit 'tool' stage
     item("", "ti-stack-2", "Habit stacks", function () { presetsSheet(k); }); // habit-stack drop-in (was inside the old Plan day sheet)
@@ -2373,6 +2445,7 @@
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
     // WISDOM TOOLBOX — drift handoff (TB-DRIFT-HANDOFF): when a starred/high-prio block has slid past the now-line undone, the angel offers Reversal of Desire — the in-the-moment 'move toward the avoided thing' move. Gated ONCE per logical-day (S.tools.last.reversal), and only when the toolbox is reachable. Verdict copy only — no timeline geometry.
     var _av = avoidedBlock(); if (_av && (S.tools && S.tools.last && S.tools.last.reversal) !== todayK()) { out.chips.push({ label: "Avoiding it? → reverse the desire", fn: function () { reversalOfDesire(_av); } }); }
+    out.chips.unshift({ label: "🗺️ Today's journey", fn: openJourney }); // JOURNEY PATH meta-door — the Duolingo-style daily trail, front of the chip row (David 2026-06-28)
     return out;
   }
 
@@ -4928,6 +5001,7 @@
     document.querySelectorAll("#growTabs .zt").forEach(function (z) { z.onclick = function () { var g = z.dataset.g; document.querySelectorAll("#growTabs .zt").forEach(function (x) { x.classList.toggle("on", x === z); }); el("habitsPane").style.display = g === "habits" ? "" : "none"; el("statsPane").style.display = g === "stats" ? "" : "none"; }; });
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); }; // tap above the card = exit
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
+    var jx = el("jpX"); if (jx) jx.onclick = closeJourney; // JOURNEY PATH close (David 2026-06-28)
     (function () { // swipe the card DOWN to dismiss — armed only when the card is scrolled to its top, so it never fights inner scrolling (David 2026-06-26)
       var scard = document.querySelector("#sheet .scard"); if (!scard) return; var sdOn = false, sdY = 0;
       scard.addEventListener("pointerdown", function (e) { sdOn = scard.scrollTop <= 1; sdY = e.clientY; if (sdOn) scard.style.transition = "none"; });
