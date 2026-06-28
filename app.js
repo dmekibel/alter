@@ -368,26 +368,60 @@
     save();
   }
   // ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28): the VISIBLE daily journey. A full-screen winding node-trail of today's real sequence — Plan → fundamentals/undone habits → planned blocks (time order) → bookend. PURE-derives node states from today's real signals (block.done / habit done / matching log). Reward-never-shame: upcoming = calm-dim, never red/locked. Auto-scrolls the CURRENT node into view so the next thing is literally in front of you. =====
-  function jpNodes() { // returns the ordered node list for today, each {key,emoji,title,line,color,done,act}
+  function jpNodes() { // returns the ADAPTIVE ordered node list for today — shaped by your self-help stage (profile/journeyNode) AND your goals (today's AM virtue + one-thing). Each {key,emoji,title,line,color,done,act}.
     var k = todayK(), nodes = [], dm = doneMap(k), planned = (blocks(k) || []).filter(function (b) { return b.title; });
-    // Node 1 — Plan your day. Done once today has a real plan (blocks with titles).
-    nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day", line: planned.length ? "Your day's mapped — tap to reshape it." : "Map out today — pick a few things and let them wait for you.",
+    var pf = profile(), jn = journeyNode(); // pf.lowEnergy = body-first gate · jn = curriculum stage (which guided nodes have unlocked)
+    var am = ((S.bk || {})[k] || {}).am || {}, goalV = am.virtue || "", gv = goalV ? vlabel(goalV) : null, gvName = gv ? gv.l : ""; // today's GOAL signal
+    var oneThing = (am.oneThing || "").trim();
+    function matchesGoal(b) { return goalV && virtueOf(b) === goalV; } // does this block serve today's chosen virtue?
+    function isOneThing(title) { var x = (title || "").toLowerCase().trim(), y = oneThing.toLowerCase(); return !!y && (x === y || (x.length > 3 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0))); }
+
+    // SELF-HELP ADAPT 1 — BODY-FIRST GATE (the law): low energy → a settle node LEADS, so the body comes back online before anything cognitive. Checks off once you breathe / restore today, then the trail advances.
+    if (pf.lowEnergy) {
+      var settled = !!dm.breathe || (logs(k) || []).some(function (l) { return domainOf(l) === "restore"; });
+      nodes.push({ key: "settle", emoji: "🫧", title: "Settle first", line: "Low fuel today — let's get the body back online before anything else. The rest can wait.",
+        color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } });
+    }
+
+    // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
+    if (jn >= 2) nodes.push({ key: "am", emoji: "🌅", title: "Open the morning", line: gvName ? "Who you're being today: " + gvName + ". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
+      color: DOM.create.c, done: !!am.done, act: function () { closeJourney(); try { enterStage("am", { byTap: true }); } catch (e) {} } });
+
+    // Plan your day — copy ADAPTS to the goal + to your recovery (reward-never-shame).
+    nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day",
+      line: planned.length ? (gvName ? "Mapped toward being " + gvName + " — tap to reshape it." : "Your day's mapped — tap to reshape it.")
+        : (pf.bouncedBack ? "You came back yesterday — that bounce is the skill. Let's map today." : gvName ? "Map today around being " + gvName + " — pick a few things." : "Map out today — pick a few things and let them wait for you."),
       color: DOM.focus.c, done: planned.length > 0, act: function () { closeJourney(); shapeFlow(k); } });
-    // Fundamentals / habits (make bed, tidy, brush, etc.) — ALL of them, done stays visible with a check so the trail fills behind you (not undone() which would make a done node vanish)
-    (S.habits || []).forEach(function (h) { if (h.type === "quit") return; // a quit-habit isn't a "do this" step
+
+    // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
+    if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
+      nodes.push({ key: "onething", emoji: "⭐", title: oneThing, line: "Your one thing today — the vote that matters most.",
+        color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + oneThing); } });
+    }
+
+    // Fundamentals / habits — done stays visible with a check so the trail fills behind you. BODY-FIRST: when energy is low, body/restore habits sort to the front.
+    var habs = (S.habits || []).filter(function (h) { return h.type !== "quit"; });
+    if (pf.lowEnergy) { var BODY = /move|breath|walk|run|stretch|water|drink|sleep|rest|medit|sun|cold|shower|wash|tidy/i; habs = habs.slice().sort(function (a, b) { return (BODY.test(b.l) ? 1 : 0) - (BODY.test(a.l) ? 1 : 0); }); }
+    habs.forEach(function (h) {
       nodes.push({ key: "hab:" + h.id, emoji: h.e || "✨", title: h.l, line: "A small basic — tap when it's done.",
         color: h.color || DOM.upkeep.c, done: !!dm[h.id], act: function () { var was = !!doneMap(k)[h.id]; toggleHabit(h.id); var c = h.color || DOM.upkeep.c; if (!was && doneMap(k)[h.id]) { try { celebrateGated(c, bumpStreak()); } catch (e) {} } drawJourney(); } });
     });
-    // Then the planned blocks in time order (each = do it: start a timer; done when its block is done / a matching log exists)
-    planned.slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) {
+
+    // Planned blocks — GOAL ADAPT: blocks that serve today's chosen virtue sort to the front, then time order. (each = do it: start a timer; done when its block is done.)
+    planned.slice().sort(function (a, b) { var ga = matchesGoal(a) ? 0 : 1, gb = matchesGoal(b) ? 0 : 1; return ga !== gb ? ga - gb : hm(a.time) - hm(b.time); }).forEach(function (b) {
       var dom = domainOf(b), st = blockStatus(k, b), isDone = st === "ok";
-      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, title: b.title, line: b.time + " · tap to start it now.",
+      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, title: b.title, line: (matchesGoal(b) && gvName ? "Toward " + gvName + " · " : "") + b.time + " · tap to start it now.",
         color: b.color || (DOM[dom] || DOM.focus).c, done: isDone, act: function () {
           if (isDone) { closeJourney(); blockEdit(b, k); return; } // already done → open it to review/edit
           startTimer({ title: b.title, catK: b.catK, emoji: (DOM[dom] || DOM.focus).e, color: b.color || (DOM[dom] || DOM.focus).c });
           closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + b.title);
         } });
     });
+
+    // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3).
+    if (jn >= 3) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
+      nodes.push({ key: "pm", emoji: "🌙", title: "Close the day", line: "One honest line. A line is enough.", color: DOM.restore.c, done: pmDone, act: function () { closeJourney(); try { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } catch (e) {} } }); }
+
     return nodes;
   }
   function openJourney() {
