@@ -655,9 +655,17 @@
   .bento-pane{ border:2px solid; border-radius:15px; padding:11px; }
   .bento-paneh{ font-size:15px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
   .bento-tiles{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
-  .bento-foot{ padding:10px 14px max(14px,calc(env(safe-area-inset-bottom) + 4px)); border-top:2px solid #160510; flex:none; }
-  .bento-go{ width:100%; background:#34d39a; color:#0c3d29; border:3px solid #160510; border-radius:13px; box-shadow:0 4px 0 #160510; padding:12px; font-family:"Jost",sans-serif; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .bento-foot{ padding:10px 14px max(14px,calc(env(safe-area-inset-bottom) + 4px)); border-top:2px solid #160510; flex:none; display:flex; align-items:center; gap:9px; }
+  .bento-go{ flex:1 1 auto; background:#34d39a; color:#0c3d29; border:3px solid #160510; border-radius:13px; box-shadow:0 4px 0 #160510; padding:12px; font-family:"Jost",sans-serif; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
   .bento-go:disabled{ opacity:.45; box-shadow:none; }
+  /* BIG-3 staged flow: skip btn + the light reminder card (David 2026-06-28) */
+  .bento-skip{ flex:none; background:#48122f; color:#e8b8d2; border:2px solid #160510; border-radius:13px; padding:12px 13px; font-family:"Jost",sans-serif; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; }
+  .big3-remind{ background:#3a0f24; border:2px solid #160510; border-radius:13px; padding:11px 13px; margin:2px 0 11px; }
+  .big3-rtop{ display:flex; align-items:center; gap:7px; }
+  .big3-remoji{ font-size:18px; }
+  .big3-rlbl{ color:#ff8fc0; font-weight:800; font-size:11px; letter-spacing:1.2px; }
+  .big3-rwho{ color:#ffe3f1; font-size:14px; font-weight:700; margin-top:5px; }
+  .big3-rline{ font-size:12.5px; font-weight:600; margin-top:3px; line-height:1.35; }
   /* ORDER STEP — drag-reorder the chosen activities (David 2026-06-28) */
   .bento-orderhint{ color:#e6cfe0; font-size:12.5px; line-height:1.4; padding:4px 2px 12px; }
   .bento-orderlist{ display:flex; flex-direction:column; gap:8px; }
@@ -667,6 +675,17 @@
   .bento-osw{ flex:none; width:12px; height:12px; border-radius:50%; border:1.5px solid #160510; }
   .bento-on{ flex:1 1 auto; min-width:0; color:#ffe3f1; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .bento-onum{ flex:none; background:#160510; color:#ffb3d9; font-size:12px; font-weight:800; border-radius:8px; padding:2px 8px; }
+  /* ORDER/LENGTH/IMPORTANCE editor — scrollable mini-timeline (David 2026-06-28) */
+  .bento-orderlist.editor{ max-height:52vh; max-height:52dvh; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:2px; }
+  .bento-orow.editrow{ flex-direction:column; align-items:stretch; gap:8px; padding:10px 11px; }
+  .editrow .edit-top{ display:flex; align-items:center; gap:9px; }
+  .editrow .bento-on{ flex:1 1 auto; }
+  .edit-pips{ flex:none; display:flex; gap:4px; align-items:center; }
+  .edit-pip{ width:11px; height:11px; border-radius:50%; border:1.5px solid #160510; background:#2a0d1c; cursor:pointer; display:block; }
+  .edit-pip.on{ background:#ff9a3a; }
+  .edit-len{ display:flex; gap:5px; flex-wrap:wrap; }
+  .edit-lchip{ flex:1 1 0; min-width:38px; text-align:center; background:#2a0d1c; color:#e8b8d2; border:1.5px solid #160510; border-radius:9px; padding:6px 0; font-size:12px; font-weight:700; cursor:pointer; }
+  .edit-lchip.on{ font-weight:800; }
   .bento-newh{ color:#ffe3f1; font-size:16px; font-weight:700; margin:4px 0 12px; }
   .bento-input{ width:100%; background:#48122f !important; border:2px solid #ff7ab8 !important; border-radius:11px; padding:12px; color:#ffe3f1 !important; font-size:15px; font-family:"Jost",sans-serif; font-weight:600; margin-bottom:6px; }
   .bento-hint2{ color:#9a6a86; font-size:10.5px; margin-bottom:14px; }

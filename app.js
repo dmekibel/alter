@@ -904,7 +904,7 @@
     var arr = blocks(k), start = 8 * 60;
     arr.forEach(function (b) { start = Math.max(start, hm(b.time) + (b.mins || 30)); });
     if (k === todayK()) start = Math.max(start, logicalNowMin());
-    sel.forEach(function (x) { if (!x) return; var dom = domainOf(x); arr.push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: 30, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: 2 }); start += 30; });
+    sel.forEach(function (x) { if (!x) return; var dom = domainOf(x), mins = x.mins || 30, prio = x.prio || 2; arr.push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: mins, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: prio }); start += mins; }); // honour the editor's chosen length + importance (David 2026-06-28)
     reflow(k); save(); renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
   }
   // EDIT-FUNDAMENTALS menu (David 2026-06-25): customise the recurring basics that "Daily fundamentals" drops in (saved per-profile, falls back to the default set)
@@ -3899,10 +3899,15 @@
   function bentoPicker(opts) {
     opts = opts || {};
     var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null, grp: null }, foot = null, searchQ = "";
+    // DOM scope: when opts.domains is set (Big-3 staged flow), only show those domains' categories (David 2026-06-28)
+    var ORDER = (opts.domains && opts.domains.length) ? DOM_ORDER.filter(function (d) { return opts.domains.indexOf(d) >= 0; }) : DOM_ORDER;
+    // preselect: titles already picked (e.g. stepping Back into a beat) → seed sel from the matching activity objects so chips show as on (David 2026-06-28)
+    if (multi && opts.preselect && opts.preselect.length) { var pset = {}; opts.preselect.forEach(function (t) { pset[(t || "").toLowerCase()] = 1; }); ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (pset[(a.title || "").toLowerCase()] && sel.indexOf(a) < 0) sel.push(a); }); }); }
     var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
     var ov = add(document.body, "div", "bento-ov");
     var card = add(ov, "div", "bento-card");
     var head = add(card, "div", "bento-head");
+    if (opts.onBack) { var bb0 = add(head, "button", "bento-x"); bb0.innerHTML = '<i class="ti ti-chevron-left"></i>'; bb0.style.marginRight = "8px"; bb0.onclick = function () { close(); opts.onBack(); }; }
     add(head, "div", "bento-q", opts.title || "What are you doing?");
     var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
     var body = add(card, "div", "bento-body");
@@ -3924,10 +3929,12 @@
     }
     function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
     function renderOverview() {
+      // BIG-3 staged reminder card (light, one line) — only on the overview, above search (David 2026-06-28)
+      if (opts.headNode) body.appendChild(opts.headNode);
       // SEARCH (scrolls away with the content now) + PINNED row (your most-important — pin anything to bring it here & to the front) — David 2026-06-24
       var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
       var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
-      var pinList = []; DOM_ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); }); // grouped by domain so the colours cluster
+      var pinList = []; ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); }); // grouped by domain so the colours cluster
       var pinned = add(body, "div", "bento-pinned");
       if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
       else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
@@ -3935,7 +3942,7 @@
       if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); add(pr, "span", "bento-qlbl", '🕓 been meaning to'); opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
       var results = add(body, "div", "bento-results"); results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
-      DOM_ORDER.forEach(function (d) {
+      ORDER.forEach(function (d) {
         var acts = (by[d] || []).slice(); if (!acts.length) return;
         acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the front (David 2026-06-24)
         var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
@@ -3951,7 +3958,7 @@
         if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; pinned.style.display = ""; addb.style.display = ""; return; }
         gridWrap.style.display = "none"; pinned.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
         var ql = q.toLowerCase(), hits = [], seen2 = {};
-        DOM_ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
+        ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
         hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });
         hits.slice(0, 60).forEach(function (a) { actChip(a, results, false); });
         var ab = add(results, "span", "bchip addc"); ab.innerHTML = '<i class="ti ti-plus"></i> "' + esc(q) + '"'; ab.onclick = function () { S.acts = S.acts || []; S.acts.push({ title: q, catK: null, domain: "focus" }); save(); by = bentoByDomain(); commit({ title: q, catK: null, habitId: null, domain: "focus", color: DOM.focus.c }); };
@@ -3969,7 +3976,7 @@
       var crumb = add(strip, "span", "bento-crumb"); crumb.style.color = D.light;
       crumb.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l) + (view.grp ? ' <i class="ti ti-chevron-right" style="opacity:.55;font-size:.85em"></i> ' + esc(view.grp) : '');
       if (view.grp) { crumb.style.cursor = "pointer"; crumb.onclick = function () { view.grp = null; render(); }; } // tap the breadcrumb domain → back to its sub-groups
-      DOM_ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; view.grp = null; render(); }; });
+      ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; view.grp = null; render(); }; });
       var pane = add(body, "div", "bento-pane"); pane.style.borderColor = D.c;
       // LEVEL 2: more than one sub-group AND none chosen yet → show the sub-category list (drill down one more) — David 2026-06-27
       if (gd.order.length > 1 && !view.grp) {
@@ -3996,8 +4003,8 @@
       var inp = document.createElement("input"); inp.type = "text"; inp.className = "bento-input"; inp.placeholder = "name it once…"; body.appendChild(inp);
       add(body, "div", "bento-hint2", "type the name (once) → it becomes a bubble you tap forever");
       add(body, "div", "bento-lbl", "category");
-      var crow = add(body, "div", "bento-cats"), chosen = { d: "focus" };
-      DOM_ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
+      var crow = add(body, "div", "bento-cats"), chosen = { d: (ORDER.indexOf("focus") >= 0 ? "focus" : ORDER[0]) };
+      ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
       var go = add(body, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>';
       go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: chosen.d, color: DOM[chosen.d].c }; if (multi) { sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } };
       setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
@@ -4006,8 +4013,9 @@
       if (!multi) return;
       if (!foot) foot = add(card, "div", "bento-foot");
       foot.innerHTML = "";
-      var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length;
-      b.onclick = function () { if (!sel.length) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
+      if (opts.onSkip) { var sk = add(foot, "button", "bento-skip"); sk.innerHTML = 'Skip <i class="ti ti-player-skip-forward"></i>'; sk.onclick = function () { close(); opts.onSkip(); }; }
+      var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length && !opts.allowEmptyGo;
+      b.onclick = function () { if (!sel.length && !opts.allowEmptyGo) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
     }
     function render() { body.innerHTML = ""; if (view.cat) renderExpanded(view.cat); else renderOverview(); }
     render(); renderFoot();
@@ -4064,44 +4072,113 @@
     });
     return out.slice(0, 6);
   }
-  // THE ONE PLANNING FLOW (David 2026-06-28): "Shape today" and "Plan day" are the same thing — merged into one beautiful bento flow. Multi-select on the bento (with "been meaning to…" surfaced prominently), then an ORDER step (drag-reorder the chosen activities), then commit → blocks push + reflow at sequential free slots. No ugly white pickerSheet, no instant drop.
+  // THE ONE PLANNING FLOW (David 2026-06-28, Brian-Johnson BIG-3 STAGED): instead of one overwhelming bento, a guided four-beat sequence —
+  // ⚡ ENERGY (move+nourish+restore) · 💼 WORK (focus+create) · ❤️ LOVE (connect) · ✨ Everything else (play+upkeep+the rest) — each beat opening with a LIGHT
+  // one-line identity+virtue reminder (Johnson "who am I being") then a domain-scoped bento. Picks accumulate across beats → the order/length/importance editor (orderStep).
+  // Back/skip per beat, never forced. No ugly white pickerSheet, no instant drop.
+  var BIG3 = [
+    { id: "energy", emoji: "⚡", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
+    { id: "work", emoji: "💼", label: "Work", domains: ["focus", "create"], virtue: "disc" },
+    { id: "love", emoji: "❤️", label: "Love", domains: ["connect"], virtue: "love" }
+  ];
+  // a LIGHT reminder line for a beat — pulls today's identity + virtue if set, else a gentle prompt. Never a form. (Johnson: who am I being + the virtue)
+  function big3Reminder(beat) {
+    var am = ((S.bk || {})[todayK()] || {}).am || {};
+    var vk = (am.virtue) || (S.profile && S.profile.todayVirtues && S.profile.todayVirtues[0]) || beat.virtue;
+    var v = VIRTUES.filter(function (x) { return x.k === vk; })[0] || VIRTUES.filter(function (x) { return x.k === beat.virtue; })[0];
+    var idents = (am.identity && am.identity.length) ? am.identity : ((S.profile && S.profile.todayIdentity) || []);
+    var who = idents.length ? ("You're being " + esc(idents.slice(0, 2).join(" & "))) : null;
+    var line = v ? (v.e + " " + v.l + " — " + v.grow) : null;
+    return { who: who, line: line, vc: v ? v.c : "#ffb3d9" };
+  }
+  // a beat's title card pushed into the bento body — light, one line. (rendered via opts.headNode)
+  function big3HeadNode(beat) {
+    var wrap = document.createElement("div"); wrap.className = "big3-remind";
+    var r = big3Reminder(beat);
+    var top = add(wrap, "div", "big3-rtop"); top.innerHTML = '<span class="big3-remoji">' + beat.emoji + '</span> <span class="big3-rlbl">' + esc(beat.label.toUpperCase()) + '</span>';
+    if (r.who) { var w = add(wrap, "div", "big3-rwho"); w.textContent = r.who; }
+    if (r.line) { var l = add(wrap, "div", "big3-rline"); l.style.color = r.vc; l.textContent = r.line; }
+    return wrap;
+  }
   function shapeFlow(k) {
     k = k || todayK(); S.shapeK = todayK();
-    bentoPicker({
-      title: (k === todayK()) ? "What's today, at its best?" : "Shape " + relLabel(k).toLowerCase(),
-      multi: true, priority: avoidedActs(), goLabel: "Order them", goIcon: '<i class="ti ti-arrow-right"></i>',
-      onPickMulti: function (sel) { orderStep(k, sel); }
-    });
+    var acc = []; // accumulated picks across all beats (preserves chosen order; deduped by title)
+    var avoided = avoidedActs();
+    var ELSE_DOMAINS = ["play", "upkeep"]; // "everything else" = the remaining DOM domains (and anything uncategorized lands in focus, already shown in WORK)
+    // titles already in acc that belong to a set of domains — for Back preselect
+    function accTitlesFor(domains) { return acc.filter(function (a) { return domains.indexOf(domainOf(a)) >= 0; }).map(function (a) { return a.title; }); }
+    // commit a beat: drop this beat's old domain contributions, then append the fresh picks (so removing-on-Back actually removes; order preserved)
+    function commitBeat(domains, picks) { acc = acc.filter(function (a) { return domains.indexOf(domainOf(a)) < 0; }); (picks || []).forEach(function (p) { if (p && !acc.some(function (a) { return (a.title || "").toLowerCase() === (p.title || "").toLowerCase(); })) acc.push(p); }); }
+    function runBeat(i) {
+      if (i >= BIG3.length) { runElse(); return; }
+      var beat = BIG3[i];
+      bentoPicker({
+        title: beat.emoji + " " + beat.label,
+        multi: true, domains: beat.domains, headNode: big3HeadNode(beat), preselect: accTitlesFor(beat.domains),
+        // surface the "been meaning to…" items that belong to THIS beat's domains
+        priority: avoided.filter(function (m) { return beat.domains.indexOf(domainOf(m)) >= 0; }),
+        goLabel: (i < BIG3.length - 1 ? "Next: " + BIG3[i + 1].label : "Next: everything else"), goIcon: '<i class="ti ti-arrow-right"></i>',
+        allowEmptyGo: true, // can step forward with nothing picked (never force)
+        onBack: i > 0 ? function () { runBeat(i - 1); } : null,
+        onPickMulti: function (sel) { commitBeat(beat.domains, sel); runBeat(i + 1); },
+        onSkip: function () { runBeat(i + 1); }
+      });
+    }
+    function runElse() {
+      bentoPicker({
+        title: "✨ Everything else",
+        multi: true, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: (function () { var w = document.createElement("div"); w.className = "big3-remind"; var t = add(w, "div", "big3-rtop"); t.innerHTML = '<span class="big3-remoji">✨</span> <span class="big3-rlbl">EVERYTHING ELSE</span>'; add(w, "div", "big3-rline").textContent = "anything that doesn't fit the Big 3."; return w; })(),
+        priority: avoided.filter(function (m) { var d = domainOf(m); return BIG3.every(function (b) { return b.domains.indexOf(d) < 0; }); }),
+        goLabel: "Arrange them", goIcon: '<i class="ti ti-adjustments-horizontal"></i>',
+        allowEmptyGo: true,
+        onBack: function () { runBeat(BIG3.length - 1); },
+        onPickMulti: function (sel) { commitBeat(ELSE_DOMAINS, sel); if (!acc.length) { toast("Nothing picked — plan whenever you're ready."); return; } orderStep(k, acc); },
+        onSkip: function () { if (!acc.length) { toast("Nothing picked — plan whenever you're ready."); return; } orderStep(k, acc); }
+      });
+    }
+    runBeat(0);
   }
-  // ORDER STEP: a bento-styled overlay listing the chosen activities; drag the ⠿ handle to reorder. Timing stays auto (sequential free slots via distributePlan/nextFreeMin) — fine timing is adjusted later on the timeline. Then commit. (David 2026-06-28)
+  // ORDER / LENGTH / IMPORTANCE EDITOR (David 2026-06-28): a minimalist mini-timeline of the chosen activities. Per row, three convenient controls —
+  //   • REORDER: drag the ⠿ handle (pointer-drag, touch + mouse).
+  //   • LENGTH: quick chips 15/30/45/60/90 (default 30); row height hints at length (mini-timeline feel).
+  //   • IMPORTANCE: 1–3 pips → block.prio 1/2/3 (default 2). reward-never-shame: warm amber pips, never red.
+  // Scrollable (max-height + overflow-y:auto + overscroll-behavior:contain). Commit → distributePlan honours order + mins + prio via the safe path (blocks push + reflow).
+  var LEN_CHIPS = [15, 30, 45, 60, 90];
   function orderStep(k, sel) {
     sel = (sel || []).filter(Boolean); if (!sel.length) return;
+    sel.forEach(function (a) { if (a.mins == null) a.mins = 30; if (a.prio == null) a.prio = 2; }); // seed defaults on the chosen items
     var ov = add(document.body, "div", "bento-ov");
     var card = add(ov, "div", "bento-card");
     var head = add(card, "div", "bento-head");
-    add(head, "div", "bento-q", "What order? ↕");
+    add(head, "div", "bento-q", "Arrange your day");
     var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
     var body = add(card, "div", "bento-body");
-    add(body, "div", "bento-orderhint", "Drag to reorder — they'll land back-to-back from your next free slot. Fine-tune the times on the timeline.");
-    var list = add(body, "div", "bento-orderlist");
-    function dragHandle() { var h = document.createElement("span"); h.className = "bento-ohandle"; h.innerHTML = '<i class="ti ti-grip-vertical"></i>'; return h; }
+    add(body, "div", "bento-orderhint", "Drag ⠿ to reorder · tap a length · set what matters most. They land back-to-back from your next free slot — fine-tune times on the timeline.");
+    var list = add(body, "div", "bento-orderlist editor");
     function paint() {
       list.innerHTML = "";
       sel.forEach(function (a, i) {
-        var dom = a.domain || domainOf(a), D = DOM[dom] || DOM.focus;
-        var row = add(list, "div", "bento-orow"); row.dataset.i = i; row.draggable = true;
-        var hd = dragHandle(); row.appendChild(hd);
-        var sw = add(row, "span", "bento-osw"); sw.style.background = (dom === "drift") ? "#5a2a3c" : D.c;
-        add(row, "span", "bento-on", a.title);
-        var num = add(row, "span", "bento-onum", String(i + 1));
-        // pointer-drag reorder (works on touch + mouse) — David 2026-06-28
+        var dom = a.domain || domainOf(a), D = DOM[dom] || DOM.focus, accent = (dom === "drift") ? "#7a808c" : D.c;
+        var row = add(list, "div", "bento-orow editrow"); row.dataset.i = i;
+        row.style.minHeight = Math.round(44 + (a.mins / 90) * 26) + "px"; // height hints at length
+        // top line: handle · color swatch · title · importance pips
+        var topL = add(row, "div", "edit-top");
+        var hd = add(topL, "span", "bento-ohandle"); hd.innerHTML = '<i class="ti ti-grip-vertical"></i>';
+        var sw = add(topL, "span", "bento-osw"); sw.style.background = accent;
+        add(topL, "span", "bento-on", a.title);
+        // importance pips (low/med/high → prio 1/2/3) — tap to cycle; pips render filled up to prio
+        var pips = add(topL, "span", "edit-pips"); pips.title = "importance";
+        for (var p = 1; p <= 3; p++) { (function (pv) { var dt = add(pips, "i", "edit-pip" + (a.prio >= pv ? " on" : "")); dt.onclick = function (e) { e.stopPropagation(); a.prio = pv; paint(); }; })(p); }
+        // bottom line: length chips
+        var lenRow = add(row, "div", "edit-len");
+        LEN_CHIPS.forEach(function (m) { var c = add(lenRow, "span", "edit-lchip" + (a.mins === m ? " on" : "")); c.textContent = m + "m"; if (a.mins === m) { c.style.background = accent; c.style.color = D.ink || "#160510"; } c.onclick = function (e) { e.stopPropagation(); a.mins = m; paint(); }; });
         hd.addEventListener("pointerdown", function (ev) { startDrag(ev, i, row); });
       });
     }
     var dragging = null;
     function startDrag(ev, idx, row) {
       ev.preventDefault();
-      dragging = { idx: idx, row: row, startY: ev.clientY };
+      dragging = { idx: idx };
       row.classList.add("drag");
       var rows = Array.prototype.slice.call(list.querySelectorAll(".bento-orow"));
       function move(e) {
