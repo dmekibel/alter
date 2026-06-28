@@ -874,6 +874,8 @@
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
     item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
     item("", "ti-compass", "Guidance", function () { guidanceSheet(); });
+    item("", "ti-brain", "Brain", function () { brainSheet(); });        // AI tailoring — relocated out of the game/You surface (David 2026-06-28)
+    item("", "ti-sparkles", "Redo setup", function () { onboard(); });   // re-run onboarding — relocated from the old You-tab menu
     item("dev", "ti-flask", "Test day", function () { fillTestDay(); });
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
   }
@@ -2799,8 +2801,7 @@
     if (shake > 0.3) shake *= 0.82; else shake = 0;
     var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
-    // moody night tint — grass & water shift purple (David 2026-06-24)
-    wctx.save(); wctx.globalCompositeOperation = "multiply"; wctx.globalAlpha = 0.6; wctx.fillStyle = "#4a3a85"; wctx.fillRect(0, 0, WGW, WGH); wctx.globalCompositeOperation = "soft-light"; wctx.globalAlpha = 0.5; wctx.fillStyle = "#7a4fd0"; wctx.fillRect(0, 0, WGW, WGH); wctx.restore();
+    // (purple night tint removed — David 2026-06-28: island shows in its natural warm pixel colors)
     if (ghudT++ % 30 === 0) updGameHud();
     requestAnimationFrame(drawWorld);
   }
@@ -2832,7 +2833,7 @@
   var WORLD_SPOTS = [
     { x: -58, y: 2, r: 62, fn: function () { closeGame(); brainSheet(); } },  // cabin → brain / settings / profile
     { x: 14, y: 44, r: 48, fn: function () { goTab("day"); } },               // notice board → plan your day
-    { x: 150, y: 74, r: 66, fn: function () { goTab("self"); } },             // tree → skills / character
+    { x: 150, y: 74, r: 66, fn: function () { characterCard(); } },           // tree → character card (the self tab is now the game itself, David 2026-06-28)
     { x: -130, y: 28, r: 46, fn: function () { goTab("grow"); } }             // chest → habits
   ];
   function wireWorldTap() { // drag the world to PAN the camera around the island (free-look, doesn't move the guy) — David 2026-06-24
@@ -4736,7 +4737,7 @@
       scard.addEventListener("pointerup", sdEnd); scard.addEventListener("pointercancel", sdEnd);
     })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "self") { treeFit(); guardianFit(); } if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home
     renderAll();
