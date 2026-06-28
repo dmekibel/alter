@@ -2681,6 +2681,13 @@
     }
   }
   // ---- one shared world renderer: drives BOTH the You-tab preview and full-screen game ----
+  function nightAmt() { // 0 = full day, ~0.58 = deep night — smooth dusk/dawn ramps (drives the island's dynamic lighting)
+    var h = new Date().getHours() + new Date().getMinutes() / 60, MAX = 0.64;
+    if (h >= 7 && h < 18) return 0;                          // day
+    if (h >= 18 && h < 21) return MAX * (h - 18) / 3;        // dusk ramp up
+    if (h >= 5 && h < 7) return MAX * (7 - h) / 2;           // dawn ramp down
+    return MAX;                                              // night (21→5)
+  }
   function renderWorld(ctx, W, H, vz, moving, t) {
     ensureHero();
     var col = (vState && vState.top) ? vState.top.c : "#8a5cf0";
@@ -2737,6 +2744,19 @@
     ctx.restore();
     if (trickMsgT > 0) { trickMsgT--; ctx.save(); ctx.globalAlpha = Math.min(1, trickMsgT / 18); ctx.font = "800 30px 'Baloo 2',sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 5; ctx.strokeStyle = "#3a2540"; ctx.fillStyle = trickMsg === "BAIL!" ? "#ff6b6b" : "#ffd24a"; ctx.strokeText(trickMsg, W / 2, H * 0.3); ctx.fillText(trickMsg, W / 2, H * 0.3); ctx.restore(); }
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
+    // ===== DYNAMIC LIGHTING (David 2026-06-28): a time-of-day darkness with warm light POOLS punched out at the guardian + cabin — the candle-in-the-dark, NPC→Player made literal. NOT the flat purple wash (killed v601); this is light WHERE your life is, dark elsewhere. =====
+    var _night = nightAmt();
+    if (_night > 0.03) {
+      function w2s(wx, wy) { return [W / 2 + (wx - (px + camX)) * vz, H * 0.6 + (wy - (py + camY)) * vz]; }
+      var _flick = 0.95 + Math.sin(t * 3.1) * 0.05;
+      var lights = [{ x: px, y: py - 12, r: 165, i: 1.0, fl: _flick }, { x: -58, y: 2, r: 95, i: 0.9, fl: 0.97 + Math.sin(t * 5.2) * 0.03 }]; // guardian (you = the candle) + cabin window (home)
+      ctx.save(); ctx.fillStyle = "rgba(13,11,32," + _night + ")"; ctx.fillRect(0, 0, W, H); // navy darkness (not a tint — a night)
+      ctx.globalCompositeOperation = "destination-out";
+      lights.forEach(function (L) { var s = w2s(L.x, L.y), r = L.r * vz * L.fl, g = ctx.createRadialGradient(s[0], s[1], 0, s[0], s[1], r); g.addColorStop(0, "rgba(0,0,0," + L.i + ")"); g.addColorStop(0.62, "rgba(0,0,0," + (L.i * 0.45) + ")"); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 7); ctx.fill(); });
+      ctx.globalCompositeOperation = "lighter"; // warm cozy glow at each light
+      lights.forEach(function (L) { var s = w2s(L.x, L.y), r = L.r * vz * 0.66 * L.fl, g = ctx.createRadialGradient(s[0], s[1], 0, s[0], s[1], r); g.addColorStop(0, "rgba(255,178,92," + (0.18 * (_night / 0.64)) + ")"); g.addColorStop(1, "rgba(255,178,92,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 7); ctx.fill(); });
+      ctx.restore();
+    }
     if (gameOn) {
       var mmR = 42, mcx = 16 + mmR, mcy = 18 + mmR, msc = mmR / RS;
       ctx.save();
