@@ -430,47 +430,55 @@
     drawJourney(true);
   }
   function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
+  var JP_CHAPTERS = [ // the long-term GROWTH ARC = chapters. Active chapter = today's lessons; past = done milestones; future = locked aspiration. Driven by journeyNode() (which is goal/onboarding-shaped via readiness). (David 2026-06-28)
+    { t: "Show up", ic: "🌱" }, { t: "Plan your days", ic: "🗺️" }, { t: "Morning rituals", ic: "🌅" },
+    { t: "Evening reflection", ic: "🌙" }, { t: "Become who you are", ic: "⭐" }, { t: "Mastery", ic: "👑" }
+  ];
   function drawJourney(autoScroll) {
     var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
+    var jn = Math.max(0, Math.min(JP_CHAPTERS.length - 1, journeyNode()));
     var nodes = jpNodes(), real = nodes.filter(function (n) { return !!n.title; });
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
-    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // first undone = CURRENT
+    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // first undone today = CURRENT
     var allDone = curIdx < 0;
-    // header
-    var sub = el("jpSub"); if (sub) sub.textContent = allDone ? "All done — beautiful day ✨" : doneN + " of " + total + " today";
+    var sub = el("jpSub"); if (sub) sub.textContent = allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today";
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
-    // trail nodes
-    var curEl = null;
-    real.forEach(function (n, idx) {
-      var state = n.done ? "done" : (idx === curIdx ? "cur" : "up");
+    var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
+    function banner(state, klabel, title, ic) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.textContent = ic; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); }
+    function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.textContent = glyph; return t; }
+    function coin(state, n, idx) {
       var node = add(trail, "div", "jp-node " + state);
-      // alternating left/right offset, Duolingo-style winding
-      var off = Math.sin(idx * 0.9) * 64; node.style.transform = "translateX(" + off.toFixed(0) + "px)";
-      // connector line up to the previous node (lit when the previous node is done = the trail visibly fills behind you)
-      if (idx > 0) { var line = add(node, "div", "jp-line" + (real[idx - 1].done ? " lit" : "")); line.style.height = "46px"; line.style.top = "-46px"; }
+      node.style.transform = "translateX(" + (Math.sin(idx * 0.72) * 74).toFixed(0) + "px)"; // winding path, no connector lines (Duolingo-style)
       var bub = add(node, "div", "jp-bub"); bub.textContent = n.emoji;
-      if (n.done) { bub.style.background = n.color; var ck = add(node, "div", "jp-check"); ck.textContent = "✓"; }
-      else if (state === "cur") { bub.style.background = "#fff3fb"; bub.style.borderColor = n.color; }
-      bub.onclick = n.act;
-      if (state === "cur") { // raised card with title + Start CTA
+      if (state !== "locked") bub.style.background = n.color; // ACTIVE chapter coins are all vibrant
+      if (state === "done") { var ck = add(node, "div", "jp-check"); ck.textContent = "✓"; }
+      if (n.act && state !== "locked") bub.onclick = n.act;
+      if (state === "cur") {
         curEl = node;
+        var m = add(node, "div", "jp-mascot"); add(m, "div", "jm-face", "👼"); add(m, "div", "jm-base"); // the guardian, beside the live step
         var card = add(node, "div", "jp-card");
         add(card, "div", "jc-t", n.title);
-        add(card, "div", "jc-l", n.line);
-        var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "Plan it" : (n.key.indexOf("hab:") === 0 ? "Mark done" : "Start"); cta.style.background = n.color; cta.onclick = n.act;
-      } else {
-        add(node, "div", "jp-cap", n.title);
-      }
-    });
-    // final bookend
-    var end = add(trail, "div", "jp-node" + (allDone ? " done" : " up"));
-    var eline = add(end, "div", "jp-line" + (allDone ? " lit" : "")); eline.style.height = "46px"; eline.style.top = "-46px";
-    var ebub = add(end, "div", "jp-bub"); ebub.style.background = allDone ? DOM.create.c : ""; ebub.textContent = "✨";
-    if (allDone) { var eck = add(end, "div", "jp-check"); eck.textContent = "✓"; }
-    var ec = add(end, allDone ? "div" : "div", "jp-cap", allDone ? "Day complete ✨" : "Day complete");
-    if (allDone) { ec.style.color = "#ffd9ea"; }
-    // auto-scroll the current (or end) node into view so the next task is in front of you
-    if (autoScroll) { var target = curEl || end; setTimeout(function () { try { var sc = el("jpScroll"); if (sc && target) sc.scrollTo({ top: Math.max(0, target.offsetTop - sc.clientHeight * 0.34), behavior: "smooth" }); } catch (e) {} }, 90); }
+        if (n.line) add(card, "div", "jc-l", n.line);
+        var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : (n.key && n.key.indexOf("hab:") === 0 ? "MARK DONE" : "START"); cta.style.background = n.color; cta.onclick = n.act;
+      } else if (n.title) { add(node, "div", "jp-cap" + (state === "locked" ? " locked" : ""), n.title); }
+    }
+
+    // PAST chapters — completed milestones
+    for (var c = 0; c < jn; c++) { banner("done", "Unit " + (c + 1) + " · complete", JP_CHAPTERS[c].t, JP_CHAPTERS[c].ic); trophy("done", "🏆"); }
+
+    // ACTIVE chapter = TODAY (its lessons are today's adaptive tasks)
+    banner("active", "Today · Unit " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic);
+    real.forEach(function (n, idx) { coin(n.done ? "done" : (idx === curIdx ? "cur" : "up"), n, gi++); });
+    var endT = trophy(allDone ? "done" : "locked", allDone ? "🏆" : "🎁"); if (!curEl) curEl = endT; // today's reward chest
+
+    // FUTURE chapters — the long-term arc ahead, locked (aspiration)
+    for (var f = jn + 1; f < JP_CHAPTERS.length; f++) {
+      banner("locked", "Unit " + (f + 1), JP_CHAPTERS[f].t, "🔒");
+      for (var z = 0; z < 3; z++) coin("locked", { emoji: "★", title: "" }, gi++);
+      trophy("locked", "🔒");
+    }
+
+    if (autoScroll) { setTimeout(function () { try { var sc = el("jpScroll"); if (sc && curEl) sc.scrollTo({ top: Math.max(0, curEl.offsetTop - sc.clientHeight * 0.30), behavior: "smooth" }); } catch (e) {} }, 110); }
   }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
@@ -5045,6 +5053,7 @@
     })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
     document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); window.scrollTo(0, 0); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
+    (function () { var njb = el("navJourney"); if (njb) njb.onclick = function () { openJourney(); }; })(); // Journey = a primary nav tab now, not buried in the ⋯ menu (David 2026-06-28)
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home
     renderAll();

@@ -116,30 +116,50 @@
   .jp-prog{margin-top:11px;height:13px;border-radius:8px;background:#1c0612;border:2px solid #5a2942;overflow:hidden;position:relative;}
   .jp-progfill{height:100%;border-radius:5px 0 0 5px;background:linear-gradient(90deg,#ff5fa0,#b07aff);transition:width .5s cubic-bezier(.2,.9,.3,1.3);}
   .jp-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative;}
-  .jp-trail{position:relative;width:100%;max-width:520px;margin:0 auto;padding:30px 0 120px;}
-  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:118px;}
-  .jp-line{position:absolute;left:50%;width:7px;background:#3a1226;border-radius:4px;z-index:0;transform:translateX(-50%);}
-  .jp-line.lit{background:linear-gradient(180deg,#ff5fa0,#b07aff);}
-  .jp-bub{position:relative;z-index:2;width:74px;height:74px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;transition:transform .14s;box-shadow:0 6px 0 var(--ink);}
-  .jp-bub:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .jp-trail{position:relative;width:100%;max-width:560px;margin:0 auto;padding:6px 0 150px;}
+  /* CHAPTER banner (Duolingo SECTION/UNIT) — colored, friendly (David 2026-06-28 redesign) */
+  .jp-unit{position:relative;z-index:3;margin:26px 14px 6px;border-radius:18px;border:3px solid var(--ink);padding:13px 16px;display:flex;align-items:center;gap:13px;box-shadow:0 5px 0 var(--ink);}
+  .jp-unit .ju-txt{flex:1;min-width:0;}
+  .jp-unit .ju-k{font-family:"Jost",sans-serif;font-size:11px;font-weight:800;letter-spacing:1.4px;opacity:.9;text-transform:uppercase;}
+  .jp-unit .ju-t{font-family:var(--bub);font-size:18px;font-weight:800;line-height:1.12;margin-top:1px;}
+  .jp-unit .ju-ic{flex:none;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .jp-unit.active{background:linear-gradient(180deg,#ff6fb0,#b07aff);color:#fff;}
+  .jp-unit.active .ju-ic{background:rgba(255,255,255,.24);}
+  .jp-unit.done{background:linear-gradient(180deg,#3fd07e,#26ad66);color:#06351f;border-color:#0c3d29;box-shadow:0 5px 0 #0c3d29;}
+  .jp-unit.done .ju-ic{background:rgba(0,0,0,.16);}
+  .jp-unit.locked{background:#2a1320;color:#9a6a7c;border-color:#4a2238;box-shadow:0 5px 0 #2a0d1c;}
+  .jp-unit.locked .ju-ic{background:#1c0612;}
+  /* NODE + coin */
+  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:170px;padding:11px 0;}
+  .jp-bub{position:relative;z-index:2;width:86px;height:86px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:37px;cursor:pointer;transition:transform .12s;box-shadow:0 9px 0 var(--ink),inset 0 6px 10px rgba(255,255,255,.5),inset 0 -10px 13px rgba(0,0,0,.22);}
+  .jp-bub:before{content:"";position:absolute;top:9px;left:20%;width:44%;height:28%;border-radius:50%;background:rgba(255,255,255,.45);filter:blur(1.5px);pointer-events:none;}
+  .jp-bub:active{transform:translateY(5px);box-shadow:0 3px 0 var(--ink),inset 0 6px 10px rgba(255,255,255,.45),inset 0 -8px 11px rgba(0,0,0,.22);}
   .jp-node.done .jp-bub{color:#fff;}
-  .jp-node.done .jp-check{position:absolute;right:-3px;bottom:-3px;width:26px;height:26px;border-radius:50%;background:#28cf86;border:2.5px solid var(--ink);color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:3;}
-  .jp-node.up .jp-bub{width:60px;height:60px;font-size:24px;background:#2a1320;border-color:#5a2942;color:#8a6a7c;box-shadow:0 4px 0 #2a0d1c;opacity:.78;}
-  .jp-node.cur{margin-top:10px;margin-bottom:10px;}
-  .jp-node.cur .jp-bub{width:90px;height:90px;font-size:38px;animation:jpPulse 1.7s ease-in-out infinite;box-shadow:0 7px 0 var(--ink),0 0 0 6px rgba(255,95,160,.18);}
-  @keyframes jpPulse{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
-  .jp-card{margin-top:12px;width:230px;max-width:84vw;background:#fff3fb;border:3px solid var(--ink);border-radius:18px;padding:12px 14px;box-shadow:0 6px 0 var(--ink);text-align:center;position:relative;z-index:2;}
+  .jp-node.done .jp-check{position:absolute;right:6px;bottom:9px;width:30px;height:30px;border-radius:50%;background:#28cf86;border:3px solid var(--ink);color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:3;}
+  .jp-node.up .jp-bub{width:80px;height:80px;font-size:33px;}          /* upcoming in the ACTIVE chapter = STILL vibrant (color set inline), just no check */
+  .jp-node.locked .jp-bub{width:64px;height:64px;font-size:25px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 5px 0 #2a0d1c,inset 0 -7px 10px rgba(0,0,0,.3);}
+  .jp-node.locked .jp-bub:before{display:none;}
+  .jp-node.cur{margin:16px auto 18px;}
+  .jp-node.cur .jp-bub{width:100px;height:100px;font-size:44px;animation:jpPulse 1.7s ease-in-out infinite;box-shadow:0 11px 0 var(--ink),inset 0 7px 11px rgba(255,255,255,.55),inset 0 -11px 15px rgba(0,0,0,.22),0 0 0 9px rgba(255,255,255,.14);}
+  @keyframes jpPulse{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+  /* MASCOT — the guardian, beside the current node */
+  .jp-mascot{position:absolute;z-index:5;left:-58px;top:-6px;width:78px;display:flex;flex-direction:column;align-items:center;pointer-events:none;animation:jmBob 3.4s ease-in-out infinite;}
+  .jp-mascot .jm-face{font-size:50px;filter:drop-shadow(0 7px 7px rgba(0,0,0,.4));line-height:1;}
+  .jp-mascot .jm-base{width:50px;height:13px;border-radius:50%;background:rgba(0,0,0,.34);margin-top:-4px;filter:blur(2.5px);}
+  @keyframes jmBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  .jp-card{margin-top:13px;width:236px;max-width:84vw;background:#fff3fb;border:3px solid var(--ink);border-radius:18px;padding:13px 15px;box-shadow:0 6px 0 var(--ink);text-align:center;position:relative;z-index:4;}
   .jp-card:before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff3fb;border-left:3px solid var(--ink);border-top:3px solid var(--ink);}
   .jp-card .jc-t{font-family:var(--bub);font-size:16px;font-weight:800;color:var(--ink);line-height:1.15;}
   .jp-card .jc-l{font-family:"Jost",sans-serif;font-size:12.5px;font-weight:600;color:#7a4a64;margin-top:4px;line-height:1.3;}
-  .jp-card .jc-cta{margin-top:10px;width:100%;background:var(--pink);color:#fff;border:2.5px solid var(--ink);border-radius:13px;padding:11px;font-family:var(--bub);font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);transition:.08s;}
+  .jp-card .jc-cta{margin-top:11px;width:100%;color:#fff;border:2.5px solid var(--ink);border-radius:13px;padding:12px;font-family:var(--bub);font-size:15px;font-weight:800;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 0 var(--ink);transition:.08s;}
   .jp-card .jc-cta:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
-  .jp-cap{font-family:"Jost",sans-serif;font-size:11px;font-weight:700;color:#c98ca6;margin-top:7px;max-width:118px;text-align:center;line-height:1.2;}
+  .jp-cap{font-family:"Jost",sans-serif;font-size:12px;font-weight:700;color:#e8b8d2;margin-top:9px;max-width:150px;text-align:center;line-height:1.22;}
+  .jp-node.locked .jp-cap{color:#7a5a6c;}
   .jp-node.cur .jp-cap{display:none;}
-  .jp-end{text-align:center;padding:24px 18px 0;}
-  .jp-end .jpe-e{font-size:46px;}
-  .jp-end .jpe-t{font-family:var(--bub);font-size:18px;font-weight:800;color:#fff2f9;margin-top:6px;}
-  .jp-end .jpe-l{font-family:"Jost",sans-serif;font-size:12.5px;color:#c98ca6;margin-top:4px;}
+  .jp-trophy{position:relative;display:flex;flex-direction:column;align-items:center;margin:6px auto 2px;width:170px;}
+  .jp-trophy .jt-b{width:72px;height:72px;border-radius:18px;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 7px 0 var(--ink);}
+  .jp-trophy.done .jt-b{background:linear-gradient(180deg,#ffd75e,#f0b820);}
+  .jp-trophy.locked .jt-b{background:#2a1320;border-color:#4a2238;box-shadow:0 5px 0 #2a0d1c;filter:grayscale(.4);opacity:.85;}
   /* REDESIGNED activity editor — merged hero + draggable scrubber + auto-save (David 2026-06-25) */
   .ed-hero{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; border:2px solid #160510; border-radius:16px; padding:14px 16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; margin-bottom:14px; box-shadow:none; }
   .ed-hero.ed-hero-empty{ background:#3a1226 !important; color:#ffb0cf !important; border:2px dashed #ff5fa0 !important; }
@@ -1104,8 +1124,8 @@
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
-  #nav .nb[data-tab="goals"], #nav .nb[data-tab="self"]{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="goals"], body.nav-collapsed.tab-day #nav .nb[data-tab="self"]{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
+  #nav .nb[data-tab="goals"], #nav .nb[data-tab="self"], #nav #navJourney{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="goals"], body.nav-collapsed.tab-day #nav .nb[data-tab="self"], body.nav-collapsed.tab-day #nav #navJourney{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"]{ flex:none !important; width:62px !important; height:62px !important; border-radius:13px !important; padding:0 !important; position:relative; } /* match the dock's height so the corner button + dock sit at the same height (David 2026-06-27) */
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
@@ -1408,6 +1428,7 @@
     <button class="nb" data-tab="goals"><i class="ti ti-target ne"></i><span class="nl2">Goals</span></button>
     <button class="nb on" data-tab="day"><i class="ti ti-layout-list ne"></i><span class="nl2">Today</span></button>
     <button class="nb" data-tab="self"><i class="ti ti-plant-2 ne"></i><span class="nl2">You</span></button>
+    <button class="nb" id="navJourney"><i class="ti ti-route ne"></i><span class="nl2">Journey</span></button>
   </nav>
   <div id="gameMode">
     <canvas id="world"></canvas>
@@ -1447,7 +1468,7 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your day</div><div class="jp-sub" id="jpSub"></div></div></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div></div>
-  <script src="app.js?v=612"></script>
+  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div></div>
+  <script src="app.js?v=614"></script>
 </body>
 </html>
