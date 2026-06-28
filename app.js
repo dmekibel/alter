@@ -2421,7 +2421,7 @@
   function copyFallback(json) { var ta = document.createElement("textarea"); ta.value = json; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("📋 backup copied"); } catch (e) { toast("⚠️ couldn't copy — use Download"); } ta.remove(); }
   function exportData(mode) {
     var json = JSON.stringify({ app: "ALTER", schema: SCHEMA, exportedAt: new Date().toISOString(), data: JSON.parse(localStorage.getItem(KEY) || JSON.stringify(S)) }); // versioned envelope = future-proof (a later app reads schema + migrates); import accepts this OR a raw old backup (David 2026-06-27)
-    if (mode === "download") { var blob = new Blob([json], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = "alter-backup-" + key(new Date()) + ".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); toast("⬇ backup downloaded"); }
+    if (mode === "download") { var blob = new Blob([json], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = "alter-backup-" + key(new Date()) + "-v" + SCHEMA + ".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); toast("⬇ backup downloaded"); }
     else if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(json).then(function () { toast("📋 backup copied — keep it safe"); }, function () { copyFallback(json); }); }
     else copyFallback(json);
   }
@@ -2435,7 +2435,10 @@
     S.habitDone = S.habitDone || {}; var sd = d.habitDone || {}; Object.keys(sd).forEach(function (day) { var tgt = S.habitDone[day] = S.habitDone[day] || {}, src = sd[day] || {}; Object.keys(src).forEach(function (id) { var nid = remap[id] || id; if (tgt[nid] == null) tgt[nid] = src[id]; }); }); // remap done-history onto the deduped habit ids
     ["mood", "microState"].forEach(function (m) { S[m] = S[m] || {}; var src = d[m] || {}; Object.keys(src).forEach(function (day) { if (S[m][day] == null) S[m][day] = src[day]; }); });
     if (d.game) { S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark = Math.max(S.game.spark || 0, d.game.spark || 0); S.game.total = Math.max(S.game.total || 0, d.game.total || 0); S.game.ups = S.game.ups || {}; var du = d.game.ups || {}; Object.keys(du).forEach(function (k) { S.game.ups[k] = Math.max(S.game.ups[k] || 0, du[k] || 0); }); if (d.game.garden && (!S.game.garden || !S.game.garden.length)) S.game.garden = d.game.garden; }
-    var handled = { habits: 1, blocks: 1, log: 1, habitDone: 1, mood: 1, microState: 1, game: 1, timers: 1, v: 1 };
+    // NEWER FEATURES (journey/guide, bookends, tools, custom activities, profile/goals): load() defaults these to non-null empties, so the generic S[k]==null carry below would silently DROP a backup's values. Take the backup's copy whenever ours is still empty/default, so these round-trip on Merge too (David 2026-06-28).
+    var emptyish = function (v) { if (v == null) return true; if (Array.isArray(v)) return v.length === 0; if (typeof v === "object") return Object.keys(v).length === 0; return false; };
+    ["bk", "guide", "tools", "acts", "profile", "presets"].forEach(function (m) { if (d[m] != null && emptyish(S[m])) S[m] = d[m]; });
+    var handled = { habits: 1, blocks: 1, log: 1, habitDone: 1, mood: 1, microState: 1, game: 1, timers: 1, v: 1, bk: 1, guide: 1, tools: 1, acts: 1, profile: 1, presets: 1 };
     Object.keys(d).forEach(function (k) { if (!handled[k] && S[k] == null) S[k] = d[k]; }); // carry any unknown future field
     save(); load(); renderAll(); buildPull(); toast("⧉ merged in — nothing overwritten");
   }
@@ -2445,7 +2448,7 @@
     var fi = document.createElement("input"); fi.type = "file"; fi.accept = "application/json,.json"; fi.style.cssText = "margin:8px 0;font-size:12px;color:#caa0bd;"; w.appendChild(fi); fi.onchange = function () { var f = fi.files && fi.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { ta.value = r.result; toast("📄 loaded — now Merge or Restore"); }; r.readAsText(f); };
     var row = add(w, "div"); row.style.cssText = "display:flex;gap:8px;";
     var mg = add(row, "button", "done2", "⧉ Merge in"); mg.style.flex = "1"; mg.onclick = function () { var d = parseBackup(ta.value.trim()); if (d) mergeImport(d); };
-    var rs = add(row, "button", "done2", "♻ Replace"); rs.style.cssText = "flex:1;background:#3a2147;"; rs.onclick = function () { var d = parseBackup(ta.value.trim()); if (!d) return; if (!window.confirm("Replace ALL current data with this backup?")) return; localStorage.setItem(KEY, JSON.stringify(d)); location.reload(); };
+    var rs = add(row, "button", "done2", "♻ Replace"); rs.style.cssText = "flex:1;background:#3a2147;"; rs.onclick = function () { var d = parseBackup(ta.value.trim()); if (!d) return; if (!window.confirm("This REPLACES all your current data with this backup — continue?")) return; var prev = localStorage.getItem(KEY); try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { try { if (prev != null) localStorage.setItem(KEY, prev); } catch (e2) {} toast("⚠️ couldn't restore — storage may be full; your data is unchanged"); return; } location.reload(); }; // atomic: snapshot → write → on failure roll back so a bad write never strands David with empty/partial data. reload re-runs load() which migrates the backup up to SCHEMA.
   }
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
