@@ -108,6 +108,8 @@
   #journeyPath.on{opacity:1;pointer-events:auto;}
   .jp-head{position:relative;z-index:3;flex:none;padding:max(14px,env(safe-area-inset-top)) 18px 12px;background:linear-gradient(180deg,rgba(42,13,28,.96),rgba(42,13,28,.0));}
   .jp-headrow{display:flex;align-items:center;gap:12px;}
+  .jp-goals{margin-left:auto;flex:none;width:38px;height:38px;border-radius:12px;border:2px solid #6a3050;background:#3a1226;color:#ffd9ea;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .jp-goals:active{transform:translateY(2px);}
   .jp-x{width:38px;height:38px;flex:none;border-radius:12px;border:2px solid #6a3050;background:#3a1226;color:#ffd9ea;font-size:20px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Jost",sans-serif;}
   .jp-x:active{transform:translateY(2px);}
   .jp-titles{flex:1;min-width:0;}
@@ -1149,8 +1151,8 @@
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
-  #nav .nb[data-tab="goals"], #nav .nb[data-tab="self"], #nav #navJourney{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="goals"], body.nav-collapsed.tab-day #nav .nb[data-tab="self"], body.nav-collapsed.tab-day #nav #navJourney{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
+  #nav .nb[data-tab="self"], #nav #navJourney{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
+  body.nav-collapsed.tab-day #nav .nb[data-tab="self"], body.nav-collapsed.tab-day #nav #navJourney{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"]{ flex:none !important; width:62px !important; height:62px !important; border-radius:13px !important; padding:0 !important; position:relative; } /* match the dock's height so the corner button + dock sit at the same height (David 2026-06-27) */
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
@@ -1450,10 +1452,9 @@
     <div class="ld-seg"><!-- secondary controls rendered per-state from the shared trackerControls() matrix (David 2026-06-28) --></div>
   </div>
   <nav id="nav">
-    <button class="nb" data-tab="goals"><i class="ti ti-target ne"></i><span class="nl2">Goals</span></button>
-    <button class="nb on" data-tab="day"><i class="ti ti-layout-list ne"></i><span class="nl2">Today</span></button>
-    <button class="nb" data-tab="self"><i class="ti ti-plant-2 ne"></i><span class="nl2">You</span></button>
-    <button class="nb" id="navJourney"><i class="ti ti-route ne"></i><span class="nl2">Journey</span></button>
+    <button class="nb" data-tab="day"><i class="ti ti-calendar-month ne"></i><span class="nl2">Planner</span></button>
+    <button class="nb on" id="navJourney"><i class="ti ti-route ne"></i><span class="nl2">Journey</span></button>
+    <button class="nb" data-tab="self"><i class="ti ti-device-gamepad-2 ne"></i><span class="nl2">Game</span></button>
   </nav>
   <div id="gameMode">
     <canvas id="world"></canvas>
@@ -1493,7 +1494,7 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=622"></script>
+  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
+  <script src="app.js?v=623"></script>
 </body>
 </html>

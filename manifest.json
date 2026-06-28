@@ -1,7 +1,7 @@
 {
   "name": "ALTER — your life, mirrored",
   "short_name": "ALTER",
-  "start_url": "./index.html",
+  "start_url": "./fresh.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
