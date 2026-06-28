@@ -2376,7 +2376,7 @@
     if (p === "night") { out.kicker = "tonight"; out.line = "It's late — let's wind down."; out.sub = "tidy the surfaces, phone away, head toward bed."; out.primary = { label: "Wind down 😴", fn: function () { ritualSheet(WINDDOWN); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     else if (p === "morning") { out.kicker = "this morning"; out.line = "Good morning — let's recommit."; out.sub = "60 seconds: who you're being, your one thing, gratitude — then I frame your day."; out.primary = { label: "Morning recommit ☀️", fn: recommitSheet }; out.chips.push({ label: "Morning bookend 🌅", fn: function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); } }); out.chips.push({ label: "Plan your day", fn: function () { planSheet(todayK(), "today"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // AM bookend door (David 2026-06-28): one-tap into the cockpit morning stage — greet, never auto-trap
     else if (p === "evening") { out.kicker = "this evening"; out.line = "Evening — close the day well."; out.sub = "reflect on today, tidy up, set tomorrow's one thing."; out.primary = { label: "Reflection 🌙", fn: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }; out.chips.push({ label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }); if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); } // PM bookend (David 2026-06-28): replaces the dumb EVENING_RITUAL #sheet with the cockpit Reflection stage
-    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — shape the day."; out.sub = "block your next few hours."; out.primary = { label: "What should I do next? ✨", fn: function () { suggestSheet(todayK()); } }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
+    else { if (!blocks(todayK()).length) { out.kicker = p; out.line = "No plan yet — what's today at its best?"; out.sub = "let's get it out of you — the things you want (and keep avoiding)."; out.primary = { label: "Shape today ☀️", fn: shapeToday }; } else if (und.length) { out.kicker = p; out.line = und.length + (und.length === 1 ? " habit left." : " habits left."); out.sub = "knock one out while you've got momentum."; out.primary = { label: "What are you doing?", fn: nowSheet }; } else { out.kicker = p; out.line = "On track. Nice."; out.sub = "get ahead on tomorrow?"; out.primary = { label: "Plan tomorrow", fn: function () { planSheet(tomK(), "tomorrow"); } }; } if (messy()) out.chips.push({ label: "Tidy up 🧹", fn: tidySheet }); }
     if (S.profile && S.profile.exWant && p !== "night") { var ww = weeklyWorkouts(); if (ww < S.profile.exWant) out.chips.push({ label: "🏃 workout (" + ww + "/" + S.profile.exWant + " this wk)", fn: nowSheet }); }
     // WISDOM TOOLBOX — drift handoff (TB-DRIFT-HANDOFF): when a starred/high-prio block has slid past the now-line undone, the angel offers Reversal of Desire — the in-the-moment 'move toward the avoided thing' move. Gated ONCE per logical-day (S.tools.last.reversal), and only when the toolbox is reachable. Verdict copy only — no timeline geometry.
     var _av = avoidedBlock(); if (_av && (S.tools && S.tools.last && S.tools.last.reversal) !== todayK()) { out.chips.push({ label: "Avoiding it? → reverse the desire", fn: function () { reversalOfDesire(_av); } }); }
@@ -3992,6 +3992,7 @@
       if (view.cat == null) {
         var ph2 = phase(), ctx = (CONTEXT[ph2] || []).map(function (t) { return TITLE2META[t.toLowerCase()]; }).filter(Boolean);
         if (ctx.length) { add(B, "div", "lbl", (ph2 === "morning" ? "🌅" : ph2 === "evening" ? "🌆" : ph2 === "night" ? "🌙" : "☀️") + " good right now"); var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { mkTile(xg, t); }); }
+        if (opts.priority && opts.priority.length) { add(B, "div", "lbl", "🕓 you've been meaning to…"); var pg2 = add(B, "div", "tilegrid"); opts.priority.forEach(function (t) { mkTile(pg2, t); }); } // the inferred procrastination list, surfaced first (David 2026-06-28)
         if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { mkTile(fg, t); }); } }
         add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; draw(); }; cg.appendChild(card); });
         if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (!v) return; var m = { title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }; if (opts.multi) { picked[m.catK + "|" + m.title] = m; ct.value = ""; syncFoot(); } else if (opts.onTask) opts.onTask(m, picked, draw); }; }
@@ -4005,6 +4006,26 @@
     draw();
   }
   function nowSheet() { pickerSheet({ title: function (n) { return n ? "Start " + n + (n === 1 ? " timer" : " timers") + " ⏱️" : "What are you doing? ⏱️"; }, frequent: true, custom: true, multi: true, foot: function (B, picked, n) { if (n) add(B, "button", "done2", "Start " + n + " ▶").onclick = function () { Object.keys(picked).forEach(function (k) { startTimer(picked[k]); }); closeSheet(); renderNow(); }; } }); }
+  // ===== THE DAILY ELICITOR (David 2026-06-28): the app's first move on open is to get today's activities OUT of you — especially the ones you keep avoiding — and keep an always-ready, startable, editable plan. Not "type a list" you maintain; it DERIVES what you're procrastinating from your last few days + asks, one-tap. =====
+  function avoidedActs() { // inferred procrastination: activities planned in the last 3 days that didn't get done + aren't already in/done today
+    var out = [], seen = {}, tk = todayK(), have = {}, dm = {};
+    blocks(tk).forEach(function (b) { if (b.title) have[b.title.toLowerCase()] = 1; });
+    (logs(tk) || []).forEach(function (l) { if (l.title) dm[l.title.toLowerCase()] = 1; });
+    lastDays(4).slice(1).forEach(function (dk) {
+      blocks(dk).forEach(function (b) { if (!b.title) return; var key = b.title.toLowerCase(); if (blockStatus(dk, b) === "ok" || seen[key] || have[key] || dm[key]) return; seen[key] = 1; out.push({ title: b.title, catK: b.catK || null, emoji: "", color: b.color || (DOM[domainOf(b)] || DOM.focus).c, habitId: b.habitId || null }); });
+    });
+    return out.slice(0, 6);
+  }
+  function addActToPlan(meta, k) { var t = nextFreeMin(k); blocks(k).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: meta.title, prio: 2, color: meta.color || "#8a5cf0", catK: meta.catK || null, habitId: meta.habitId || null, done: false }); reflow(k); }
+  function shapeToday() {
+    S.shapeK = todayK(); var k = todayK();
+    pickerSheet({
+      title: function (n) { return n ? "Add " + n + " to today ▸" : "What's today, at its best? ☀️"; },
+      head: function (B) { add(B, "div", "lbl", "Tap what you want today — activities, not times. I'll keep them ready to start anytime, and you can rearrange whenever."); },
+      priority: avoidedActs(), frequent: true, custom: true, multi: true,
+      foot: function (B, picked, n) { if (n) { add(B, "button", "done2", "Add " + n + " to today ▸").onclick = function () { Object.keys(picked).forEach(function (key) { addActToPlan(picked[key], k); }); save(); closeSheet(); renderToday(); }; } else { var sk = add(B, "button", "done2", "Not yet — maybe later"); sk.style.opacity = ".7"; sk.onclick = closeSheet; } }
+    });
+  }
   function suggestDay(k) {
     var T = [
       { h: "07:30", m: 15, t: "Make the bed", c: "#ff8a1e", p: 2 }, { h: "08:00", m: 30, t: "Breakfast", c: "#ff8a1e", p: 2 },
@@ -4745,6 +4766,8 @@
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
     if (S.profile && S.profile.set && (S.guide || {}).mode === "guided") { try { journeyTick(); if (!journeyActionDoneToday()) setTimeout(function () { enterStage("journey", { byTap: false }); }, 360); } catch (e) {} }
     if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); // first-run onboarding (mockups 041/043)
+    // THE DAILY ELICITOR PUSH (David 2026-06-28): on open, once per logical day, if you're onboarded and today has no plan yet → push to get your day's activities out of you. Every day there's always a plan, ready to start/edit. Dismissible (procrastinate-friendly); re-pushes next day.
+    else if (S.shapeK !== todayK() && !blocks(todayK()).some(function (b) { return b.title; })) setTimeout(shapeToday, 750);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
