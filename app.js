@@ -1367,10 +1367,13 @@
   }
   function exitStage(commit) { // the single exit door: write the flow's data (if commit), stop the flow timer (logs a Restore block + earns Spark), GENTLE+gated celebrate, un-corner the ring
     var mode = TF_MODE;
-    if (commit && mode === "journal") { // persist the journal entry onto the bookend baton (CKPT-5): additive, no SCHEMA bump, rides export/import/undo
-      var sb = el("tfStageBody"), ta = sb && sb.querySelector("textarea"), text = ta ? ta.value.trim() : "";
-      var q = (sb && sb.dataset.q) || "", mood = (sb && sb.dataset.mood != null && sb.dataset.mood !== "") ? +sb.dataset.mood : null;
-      if (text || mood != null) { var rec = bk(todayK()); rec.journal = (rec.journal || []).concat([{ q: q, text: text, mood: mood, ts: Date.now() }]); rec.pm = rec.pm || {}; if (text) rec.pm.reflect = text; if (mood != null) rec.pm.mood = mood; save(); }
+    if (commit && mode === "journal") { // persist the journal entry onto the bookend baton: additive, no SCHEMA bump, rides export/import/undo
+      // JOURNALING 101 (David 2026-06-28): build the RICH typed record {type,label,entries[],summary,mood,ts}. Back-compat: also write q/text so the
+      // existing feed (journalEntries/journalSheet) keeps rendering; q=type label, text=summary. Empty flow (no entries, no mood) writes nothing.
+      var sb = el("tfStageBody");
+      var rec0 = sb ? jtBuildRecord(sb) : null;
+      if (rec0) { var rec = bk(todayK()); rec.journal = (rec.journal || []).concat([{ type: rec0.type, label: rec0.label, entries: rec0.entries, summary: rec0.summary, q: rec0.label, text: rec0.summary, mood: rec0.mood, ts: rec0.ts }]);
+        rec.pm = rec.pm || {}; if (rec0.summary) rec.pm.reflect = rec0.summary; if (rec0.mood != null) rec.pm.mood = rec0.mood; save(); }
     }
     if (commit && mode === "pm") { // PM bookend (multi-beat) → bk(todayK()).pm = {reflect, mood, q, ts, done}. Marks done so the evening hero never nags twice/day.
       var sbp = el("tfStageBody"), tap = sbp && sbp.querySelector("textarea");
@@ -1405,6 +1408,7 @@
       // FLOW-DOWN (c) the chosen-virtue glyph is rendered additively at the bubble label via amVirtueGlyph() (no write here).
       try { renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull(); } catch (e) {} // repaint so the new blocks + glyph show
     }
+    if (mode === "journal") { var sbj = el("tfStageBody"); if (sbj) { ["jpicked", "jtype", "jstep", "jdata", "q", "mood", "vfive", "v_energy", "v_family", "v_service", "freeSeeded"].forEach(function (kk) { delete sbj.dataset[kk]; }); } } // reset journal flow so a re-open starts at the picker, not mid-stale-template
     if (TF_BLOCKID) { try { stopTimer(TF_BLOCKID); } catch (e) {} TF_BLOCKID = null; } // logs a Restore "Reflection" block + earns Spark (no covered-plan, so its own celebrate won't fire)
     if (commit && mode) { try { celebrateGated(DOM.restore.c, curStreak() || 1); } catch (e) {} } // GENTLE reward for showing up, gated once/logical-day across am/pm/journal
     TF_MODE = null; TF_MODE_USERSET = false;
@@ -1452,42 +1456,271 @@
     var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
     var tb = add(w, "button", "tf-chip"); tb.innerHTML = '<i class="ti ti-briefcase" style="color:' + DOM.restore.light + '"></i> Toolbox'; tb.onclick = openToolbox; // WISDOM TOOLBOX entry door (TB-SHEET)
   }
-  function journalStageStep(sb) {
-    var q = pickPrompt("journal"); // computed from today's real signals (drift/streak/kept/last intention)
-    sb.dataset.q = q; if (sb.dataset.mood == null) sb.dataset.mood = "";
-    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
-    add(card, "div", "tfs-h", "Reflection");
-    // PATTERN-MIRROR: ONE gated, conservative longitudinal truth at the top — curious, never shaming. Silent below threshold.
-    var pat = pickPattern();
-    if (pat) { var mir = add(card, "div", "tfs-sub"); mir.innerHTML = '<i class="ti ti-sparkles" style="color:' + DOM.restore.light + ';margin-right:5px"></i>' + esc(pat.line);
-      mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-left:3px solid " + DOM.restore.light + ";border-radius:11px;padding:10px 12px;line-height:1.45;font-size:13px;color:#e6cfe0;"); }
-    add(card, "div", "tfs-sub").textContent = q;
-    var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough"; ta.rows = 4;
-    ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
-    var prev = ((S.bk || {})[todayK()] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect; // restore a draft if re-opened same day
-    // ADAPTIVE DEPTH: one OPTIONAL follow-up, surfaced after the first answer. Never forces — a dim chip that swaps in a deeper question computed from the answer's signals / the pattern.
-    var deeper = add(card, "div", "tfs-sub"); deeper.setAttribute("style", "display:none;background:#1c0f20;border:2px dashed #2a1830;border-radius:11px;padding:9px 12px;line-height:1.4;font-size:13px;color:#cbb3c6;");
-    var fuChip = add(card, "button", "tf-chip"); fuChip.innerHTML = '<i class="ti ti-arrow-down-right"></i> go a little deeper';
-    fuChip.setAttribute("style", "display:none;align-self:flex-start;opacity:.8;font-size:13px;");
-    ta.addEventListener("input", function () { if (ta.value.trim().length >= 6 && fuChip.style.display === "none" && deeper.style.display === "none") fuChip.style.display = ""; });
-    fuChip.onclick = function () { deeper.textContent = followupQ(ta.value, pat); deeper.style.display = ""; fuChip.style.display = "none"; ta.focus(); };
-    // BRAIN-DEEPEN: a dim 'go deeper ✨' that appears ONLY with a configured brain; rewrites the question warmer/sharper. Degrades silently with no key.
-    if (brainCfg().engine !== "off" && brainCfg().key) {
-      var bd = add(card, "button", "tf-chip"); bd.innerHTML = '<i class="ti ti-sparkles"></i> go deeper ✨';
-      bd.setAttribute("style", "align-self:flex-start;opacity:.7;font-size:13px;color:" + DOM.restore.light + ";");
-      bd.onclick = function () { bd.disabled = true; bd.innerHTML = '<i class="ti ti-loader"></i> thinking…';
-        askBrain(journalBrainContext(q, ta.value, pat), function (t, err) { bd.disabled = false; bd.innerHTML = '<i class="ti ti-sparkles"></i> go deeper ✨';
-          if (t) { var nq = t.split("\n")[0].replace(/^["']|["']$/g, "").trim(); if (nq) { sb.dataset.q = nq; var qn = card.querySelectorAll(".tfs-sub")[pat ? 1 : 0]; if (qn) qn.textContent = nq; ta.focus(); } }
-        }); };
-    }
-    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
-    add(moodWrap, "div", "tfs-sub", "How'd it feel?").setAttribute("style", "display:none"); // label kept terse via faces alone
+  // ===== JOURNALING 101 — shared style + small builders (David 2026-06-28) =====
+  var JR_TA = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;";
+  var JR_CARD = "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.45;";
+  function jrTA(card, ph, rows, val) { var ta = add(card, "textarea", "jr-ta"); ta.placeholder = ph || ""; ta.rows = rows || 3; ta.setAttribute("style", JR_TA); if (val) ta.value = val; return ta; }
+  function jrPips(card, step, total) { var pips = add(card, "div"); pips.style.cssText = "display:flex;gap:6px;align-self:center;margin-bottom:2px;"; for (var i = 0; i < total; i++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;display:block;background:" + (i <= step ? DOM.restore.light : "#3a2230") + ";"; } }
+  function jrData(sb) { try { return JSON.parse(sb.dataset.jdata || "{}"); } catch (e) { return {}; } } // structured-entry accumulator (list/keyed templates)
+  function jrSetData(sb, d) { sb.dataset.jdata = JSON.stringify(d || {}); }
+  // VIRTUE-PICK row — present-tense Declaration (SN-232) surfaces under the chosen virtue. Returns nothing; writes sb.dataset[key].
+  function jrVirtueRow(card, sb, key, declEl) {
+    var vg = add(card, "div"); vg.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
+    VIRTUES.forEach(function (v) {
+      var on = sb.dataset[key] === v.k, b = add(vg, "button", "tf-chip");
+      b.innerHTML = '<span style="font-size:1.05em">' + v.e + '</span> ' + v.l;
+      if (on) { b.style.borderColor = v.c; b.style.color = v.c; }
+      b.onclick = (function (vk) { return function () {
+        sb.dataset[key] = (sb.dataset[key] === vk) ? "" : vk;
+        Array.prototype.forEach.call(vg.querySelectorAll(".tf-chip"), function (x) { x.style.borderColor = ""; x.style.color = ""; });
+        if (sb.dataset[key]) { var vv = VIRTUES.filter(function (z) { return z.k === sb.dataset[key]; })[0]; b.style.borderColor = vv ? vv.c : ""; b.style.color = vv ? vv.c : ""; }
+        if (declEl) declEl.textContent = sb.dataset[key] ? "“" + (VIRTUE_DECLARATIONS[sb.dataset[key]] || "") + "”" : ""; // the present-tense Declaration (Johnson: declaration, not affirmation)
+      }; })(v.k);
+    });
+  }
+  function jrMoodRow(card, sb) { // optional mood faces — same as the original journal
+    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;margin-top:2px;");
     MOODS.forEach(function (m, i) {
-      var f = add(moodWrap, "button", "jr-mood");
-      f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
+      var f = add(moodWrap, "button", "jr-mood"); f.setAttribute("style", "flex:1;background:#241328;border:2px solid " + (sb.dataset.mood === String(i) ? DOM.restore.light : "#160510") + ";border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
       f.textContent = m.e; f.title = m.l;
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
+  }
+  // ENTRY POINT: picker on first mount, then the chosen type's flow. Idempotent across the 1s tick via renderStage's dataset.mode guard;
+  // multi-beat flows rebuild sb explicitly on advance (jtGoStep), like the AM/PM bookends.
+  function journalStageStep(sb) {
+    if (sb.dataset.mood == null) sb.dataset.mood = "";
+    if (sb.dataset.jpicked !== "1") { // seed adaptive pre-select ONCE, then show the picker
+      if (!sb.dataset.jtype) sb.dataset.jtype = pickJournalType();
+      jrRenderPicker(sb); return;
+    }
+    jtGoStep(sb, +(sb.dataset.jstep || 0));
+  }
+  // THE TYPE PICKER (Johnson's palette). The adaptive pre-select is highlighted + labelled "suggested now"; the user's favorite floats to the top.
+  // "there is no THE way — what is YOUR way" (Nietzsche, big idea #11): nothing is forced, every type is one tap, any can be favorited.
+  function jrRenderPicker(sb) {
+    sb.innerHTML = "";
+    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "10px";
+    add(card, "div", "tfs-h", "How do you want to journal?");
+    var sub = add(card, "div", "tfs-sub", "Pick a way in — or just write. There's no one right way; find yours."); sub.style.cssText = "font-size:13px;color:#cfa8c4;";
+    var suggested = sb.dataset.jtype || pickJournalType();
+    var fav = S.journalFav;
+    var order = JTYPES.slice().sort(function (a, b) { var af = (a.id === fav) ? 0 : 1, bf = (b.id === fav) ? 0 : 1; return af - bf; }); // favorite first
+    var grid = add(card, "div"); grid.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+    order.forEach(function (t) {
+      var row = add(grid, "button", "tf-chip"); var isSug = t.id === suggested, isFav = t.id === fav;
+      row.style.cssText = "display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:2px solid " + (isSug ? DOM.restore.light : "#160510") + ";background:#1c0f20;width:100%;box-sizing:border-box;";
+      var ic = add(row, "div"); ic.style.cssText = "font-size:20px;line-height:1.2;flex:0 0 auto;"; ic.textContent = t.e;
+      var txt = add(row, "div"); txt.style.cssText = "flex:1;min-width:0;";
+      var h = add(txt, "div"); h.style.cssText = "font-size:14px;color:#ffe3f1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
+      h.appendChild(document.createTextNode(t.label));
+      if (isSug) { var pill = add(h, "span"); pill.textContent = "suggested now"; pill.style.cssText = "font-size:10px;color:" + DOM.restore.light + ";border:1px solid " + DOM.restore.light + ";border-radius:8px;padding:1px 6px;opacity:.9;"; }
+      if (isFav) { var fp = add(h, "span"); fp.textContent = "★"; fp.style.cssText = "color:#ffc83d;font-size:12px;"; }
+      add(txt, "div", null, t.blurb).style.cssText = "font-size:12px;color:#b89bb4;line-height:1.35;margin-top:2px;";
+      // favorite toggle (the user's way surfaces first next time)
+      var star = add(row, "button"); star.innerHTML = isFav ? "★" : "☆"; star.style.cssText = "flex:0 0 auto;background:none;border:none;color:" + (isFav ? "#ffc83d" : "#6a5566") + ";font-size:17px;cursor:pointer;padding:0 2px;line-height:1;";
+      star.onclick = function (ev) { ev.stopPropagation(); S.journalFav = (S.journalFav === t.id) ? null : t.id; save(); jrRenderPicker(sb); };
+      row.onclick = function () { sb.dataset.jtype = t.id; sb.dataset.jpicked = "1"; sb.dataset.jstep = "0"; jrSetData(sb, {}); jtGoStep(sb, 0); };
+    });
+  }
+  function jtGoStep(sb, n) { sb.dataset.jstep = String(Math.max(0, n)); jtRenderBeat(sb); }
+  // THE FLOW RENDERER — dispatches by type. Each renderer paints sb fresh (so beats can rebuild on advance) and uses jtFrame for the shared chrome (title, switch-type chip, back link).
+  function jtRenderBeat(sb) {
+    sb.innerHTML = "";
+    var t = jtype(sb.dataset.jtype), step = +(sb.dataset.jstep || 0);
+    var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
+    // header row: type label + a quiet "switch" chip (always escapable — never trapped in one template)
+    var hrow = add(card, "div"); hrow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;";
+    add(hrow, "div", "tfs-h", t.e + " " + t.label).style.margin = "0";
+    var sw = add(hrow, "button", "tf-chip"); sw.innerHTML = '<i class="ti ti-switch-horizontal"></i> switch'; sw.style.cssText = "opacity:.7;font-size:12px;flex:0 0 auto;";
+    sw.onclick = function () { sb.dataset.jpicked = ""; jrRenderPicker(sb); };
+    var src = add(card, "div", "tfs-sub", t.src); src.style.cssText = "font-size:11px;color:#7e6378;margin-top:-6px;"; // cite Johnson, quietly
+    var R = JT_RENDERERS[t.id] || JT_RENDERERS.free;
+    R(card, sb, step);
+  }
+  function jtNext(card, label, onTap) { var b = add(card, "button", "tf-b tf-done"); b.style.marginTop = "4px"; b.innerHTML = '<i class="ti ti-arrow-right"></i>' + esc(label); b.onclick = onTap; return b; }
+  function jtBack(card, sb, step) { if (step <= 0) return; var b = add(card, "button", "tf-chip"); b.style.cssText = "align-self:flex-start;opacity:.7;"; b.innerHTML = '<i class="ti ti-arrow-left"></i> back'; b.onclick = function () { jtGoStep(sb, step - 1); }; }
+  function jtSave(card, label) { var b = add(card, "button", "tf-b tf-done"); b.style.marginTop = "4px"; b.innerHTML = '<i class="ti ti-circle-check"></i> ' + esc(label || "Save"); b.onclick = function () { exitStage(true); }; return b; }
+  // flush a textarea into jdata under a key on every input (so a beat advance / final commit always has the latest)
+  function jtBind(ta, sb, key) { ta.addEventListener("input", function () { var d = jrData(sb); d[key] = ta.value.trim(); jrSetData(sb, d); }); }
+
+  // ===== THE TEMPLATE RENDERERS (each cites Johnson; reward-never-shame copy) =====
+  var JT_RENDERERS = {
+    // 1) FIVE-MINUTE FOUNDATION (big idea #1): best-self visioning — gratitude · #1 thing · who-I'm-being(+Declaration). Short, 3 beats.
+    five: function (card, sb, step) {
+      var d = jrData(sb); jrPips(card, step, 3);
+      if (step === 0) {
+        add(card, "div", "tfs-sub", "See your best self today — and the small steps from here to there. (Science: imagining your best self reliably lifts optimism & hope.)").style.cssText = "font-size:13px;color:#cfa8c4;";
+        add(card, "div", "tfs-sub", "First — one thing you're grateful for, right now.").style.fontSize = "13px";
+        var ta = jrTA(card, "I'm grateful for…", 2, d.grat); jtBind(ta, sb, "grat");
+        jtNext(card, "Next", function () { d.grat = ta.value.trim(); jrSetData(sb, d); jtGoStep(sb, 1); });
+      } else if (step === 1) {
+        add(card, "div", "tfs-sub", "Your #1 thing today — the one move future-you would thank you for.").style.fontSize = "13px";
+        var ta1 = jrTA(card, "today, the one thing is…", 2, d.one); jtBind(ta1, sb, "one");
+        jtNext(card, "Next", function () { d.one = ta1.value.trim(); jrSetData(sb, d); jtGoStep(sb, 2); }); jtBack(card, sb, 1);
+      } else {
+        add(card, "div", "tfs-sub", "Who are you being today?").style.fontSize = "13px";
+        var decl = add(card, "div", "tfs-sub"); decl.style.cssText = "font-size:13px;color:" + DOM.restore.light + ";line-height:1.5;min-height:1.2em;"; decl.textContent = sb.dataset.vfive ? "“" + (VIRTUE_DECLARATIONS[sb.dataset.vfive] || "") + "”" : "";
+        jrVirtueRow(card, sb, "vfive", decl);
+        jrMoodRow(card, sb);
+        jtSave(card, "Save the foundation 🌅"); jtBack(card, sb, 2);
+      }
+    },
+    // 2) THE BIG 3 (big idea #4): Energy · Family · Service. For each role: who I'm BEING (+virtue), why, what I'll do.
+    big3: function (card, sb, step) {
+      var roles = [ { k: "energy", e: "⚡", l: "Energy", q: "your own body, mind, vitality" }, { k: "family", e: "❤️", l: "Family", q: "the people closest to you" }, { k: "service", e: "🌍", l: "Service", q: "your work, your contribution to the world" } ];
+      var d = jrData(sb); jrPips(card, step, 3); var r = roles[Math.min(step, 2)], rd = d[r.k] || (d[r.k] = {});
+      add(card, "div", "tfs-sub", r.e + " " + r.l + " — " + r.q).style.cssText = "font-size:13px;color:#cfa8c4;";
+      add(card, "div", "tfs-sub", "Who are you committed to BEING here?").style.fontSize = "13px";
+      var decl = add(card, "div", "tfs-sub"); decl.style.cssText = "font-size:13px;color:" + DOM.restore.light + ";line-height:1.5;min-height:1.2em;"; var vkey = "v_" + r.k; if (sb.dataset[vkey]) decl.textContent = "“" + (VIRTUE_DECLARATIONS[sb.dataset[vkey]] || "") + "”";
+      jrVirtueRow(card, sb, vkey, decl);
+      add(card, "div", "tfs-sub", "Why does it matter?").style.fontSize = "13px";
+      var taW = jrTA(card, "because…", 2, rd.why); taW.oninput = function () { rd.why = taW.value.trim(); d[r.k] = rd; jrSetData(sb, d); };
+      add(card, "div", "tfs-sub", "What will you DO today?").style.fontSize = "13px";
+      var taD = jrTA(card, "today I'll…", 2, rd.what); taD.oninput = function () { rd.what = taD.value.trim(); d[r.k] = rd; jrSetData(sb, d); };
+      function commitRole() { rd.virtue = sb.dataset[vkey] || ""; rd.why = taW.value.trim(); rd.what = taD.value.trim(); d[r.k] = rd; jrSetData(sb, d); }
+      if (step < 2) jtNext(card, "Next role →", function () { commitRole(); jtGoStep(sb, step + 1); });
+      else { jrMoodRow(card, sb); jtSave(card, "Save the Big 3 🎯"); }
+      jtBack(card, sb, step);
+    },
+    // 3) GRATITUDE (big idea #1 / PERMA): five SPECIFIC things, one at a time, savored. Johnson: regular gratitude ≈ 25% happier.
+    grat: function (card, sb, step) {
+      var d = jrData(sb); var list = d.items || (d.items = []); var idx = Math.min(step, 4); jrPips(card, idx, 5);
+      add(card, "div", "tfs-sub", "Five specific things — one at a time. Don't list; FEEL each one for a breath before the next.").style.cssText = "font-size:13px;color:#cfa8c4;";
+      // show what's banked so far (savor)
+      if (list.filter(Boolean).length) { var done = add(card, "div"); done.style.cssText = JR_CARD; list.forEach(function (it, i) { if (it) add(done, "div", "tfs-sub", (i + 1) + ". " + it).style.cssText = "font-size:13px;color:#e6cfe0;line-height:1.6;"; }); }
+      add(card, "div", "tfs-sub", "#" + (idx + 1) + " — I'm grateful for…").style.fontSize = "13px";
+      var ta = jrTA(card, "be specific — a moment, a person, a detail", 2, list[idx] || "");
+      ta.oninput = function () { list[idx] = ta.value.trim(); d.items = list; jrSetData(sb, d); };
+      if (idx < 4) jtNext(card, "Next — savor it 🙏", function () { list[idx] = ta.value.trim(); d.items = list; jrSetData(sb, d); jtGoStep(sb, step + 1); });
+      else { jrMoodRow(card, sb); jtSave(card, "Save — let it land 🙏"); }
+      jtBack(card, sb, step);
+    },
+    // 4) EVENING REFLECTION (big idea #2, Masterpiece PM): went well · I'd improve (curious, NEVER guilt) · carry forward.
+    evening: function (card, sb, step) {
+      var d = jrData(sb); jrPips(card, step, 3);
+      // a warm mirror of the day at the top (reuses bookendMirror — neutral, never a deficit)
+      if (step === 0) { var mr = bookendMirror(todayK()); var m = add(card, "div"); m.style.cssText = JR_CARD + "color:#e6cfe0;font-size:13px;"; m.textContent = bookendMirrorLine(mr); }
+      if (step === 0) {
+        add(card, "div", "tfs-sub", "What went WELL today? (Even one small thing — wins count.)").style.fontSize = "13px";
+        var ta = jrTA(card, "what went well…", 3, d.well); jtBind(ta, sb, "well");
+        jtNext(card, "Next", function () { d.well = ta.value.trim(); jrSetData(sb, d); jtGoStep(sb, 1); });
+      } else if (step === 1) {
+        add(card, "div", "tfs-sub", "What would you do a little better next time? Curious, not critical — win or learn, never lose.").style.cssText = "font-size:13px;color:#cfa8c4;";
+        var ta1 = jrTA(card, "one thing I'd refine — gently…", 3, d.improve); jtBind(ta1, sb, "improve");
+        jtNext(card, "Next", function () { d.improve = ta1.value.trim(); jrSetData(sb, d); jtGoStep(sb, 2); }); jtBack(card, sb, 1);
+      } else {
+        add(card, "div", "tfs-sub", "Anything left undone to carry into tomorrow? (Set it down here so you can rest.)").style.fontSize = "13px";
+        var ta2 = jrTA(card, "carry forward…", 3, d.carry); jtBind(ta2, sb, "carry");
+        jrMoodRow(card, sb);
+        jtSave(card, "Close the day 🌙"); jtBack(card, sb, 2);
+      }
+    },
+    // 5) WOOP (big idea #6, Oettingen): Wish · Outcome (visualize) · Obstacle (INNER) · Plan (if-then) for the #1 goal.
+    woop: function (card, sb, step) {
+      var d = jrData(sb); jrPips(card, step, 4);
+      var beats = [
+        { k: "wish",     h: "WISH — your #1 most important thing right now.", p: "what I most want is…", help: "Pick one meaningful, challenging-but-doable goal." },
+        { k: "outcome",  h: "OUTCOME — picture it done. How does it look & feel?", p: "the best outcome is…", help: "Really visualize the best result of achieving it." },
+        { k: "obstacle", h: "OBSTACLE — what INSIDE you gets in the way?", p: "my main inner obstacle is…", help: "Not the world — the inner block: the habit, fear, story." },
+        { k: "plan",     h: "PLAN — an if-then: when the obstacle hits, I will…", p: "if [obstacle], then I will…", help: "If-then plans are how intentions become action." }
+      ];
+      var b = beats[Math.min(step, 3)];
+      add(card, "div", "tfs-h2", b.h).style.cssText = "font-size:14px;color:#ffe3f1;";
+      add(card, "div", "tfs-sub", b.help).style.cssText = "font-size:12px;color:#b89bb4;";
+      var ta = jrTA(card, b.p, 2, d[b.k]); ta.oninput = function () { d[b.k] = ta.value.trim(); jrSetData(sb, d); };
+      if (step < 3) jtNext(card, "Next", function () { d[b.k] = ta.value.trim(); jrSetData(sb, d); jtGoStep(sb, step + 1); });
+      else { jrMoodRow(card, sb); jtSave(card, "Save your WOOP 🎈"); }
+      jtBack(card, sb, step);
+    },
+    // 6) KEYSTONE HABITS (big idea #5): name the 3 habits you do on your BEST days → make your best your baseline.
+    keystone: function (card, sb, step) {
+      var d = jrData(sb); var list = d.items || (d.items = []); jrPips(card, Math.min(step, 2), 3);
+      add(card, "div", "tfs-sub", "Think of a day you were genuinely at your best. What did you DO that day? Name the habit that, if you'd guess, was behind it.").style.cssText = "font-size:13px;color:#cfa8c4;";
+      if (list.filter(Boolean).length) { var done = add(card, "div"); done.style.cssText = JR_CARD; list.forEach(function (it, i) { if (it) add(done, "div", "tfs-sub", "🗝️ " + it).style.cssText = "font-size:13px;color:#e6cfe0;line-height:1.6;"; }); }
+      var idx = Math.min(step, 2);
+      add(card, "div", "tfs-sub", "Keystone #" + (idx + 1)).style.fontSize = "13px";
+      var ta = jrTA(card, "on my best days I…", 2, list[idx] || ""); ta.oninput = function () { list[idx] = ta.value.trim(); d.items = list; jrSetData(sb, d); };
+      if (idx < 2) jtNext(card, "Next", function () { list[idx] = ta.value.trim(); d.items = list; jrSetData(sb, d); jtGoStep(sb, step + 1); });
+      else { add(card, "div", "tfs-sub", "Make your best your new baseline — these are the three to protect.").style.cssText = "font-size:12px;color:#cfa8c4;"; jtSave(card, "Lock my keystones 🗝️"); }
+      jtBack(card, sb, step);
+    },
+    // 7) FREE / ADAPTIVE — the original engine: pattern-mirror + the adaptive prompt + optional depth + brain-deepen.
+    free: function (card, sb, step) {
+      var q = sb.dataset.q || pickPrompt("journal"); sb.dataset.q = q;
+      var pat = pickPattern();
+      if (pat) { var mir = add(card, "div", "tfs-sub"); mir.innerHTML = '<i class="ti ti-sparkles" style="color:' + DOM.restore.light + ';margin-right:5px"></i>' + esc(pat.line); mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-left:3px solid " + DOM.restore.light + ";border-radius:11px;padding:10px 12px;line-height:1.45;font-size:13px;color:#e6cfe0;"); }
+      var qel = add(card, "div", "tfs-sub"); qel.textContent = q;
+      var ta = jrTA(card, "a line is enough", 4, "");
+      var prev = ((S.bk || {})[todayK()] || {}).pm; if (prev && prev.reflect && !sb.dataset.freeSeeded) { ta.value = prev.reflect; sb.dataset.freeSeeded = "1"; }
+      jtBind(ta, sb, "free");
+      var deeper = add(card, "div", "tfs-sub"); deeper.setAttribute("style", "display:none;background:#1c0f20;border:2px dashed #2a1830;border-radius:11px;padding:9px 12px;line-height:1.4;font-size:13px;color:#cbb3c6;");
+      var fuChip = add(card, "button", "tf-chip"); fuChip.innerHTML = '<i class="ti ti-arrow-down-right"></i> go a little deeper'; fuChip.setAttribute("style", "display:none;align-self:flex-start;opacity:.8;font-size:13px;");
+      ta.addEventListener("input", function () { if (ta.value.trim().length >= 6 && fuChip.style.display === "none" && deeper.style.display === "none") fuChip.style.display = ""; });
+      fuChip.onclick = function () { deeper.textContent = followupQ(ta.value, pat); deeper.style.display = ""; fuChip.style.display = "none"; ta.focus(); };
+      if (brainCfg().engine !== "off" && brainCfg().key) {
+        var bd = add(card, "button", "tf-chip"); bd.innerHTML = '<i class="ti ti-sparkles"></i> go deeper ✨'; bd.setAttribute("style", "align-self:flex-start;opacity:.7;font-size:13px;color:" + DOM.restore.light + ";");
+        bd.onclick = function () { bd.disabled = true; bd.innerHTML = '<i class="ti ti-loader"></i> thinking…';
+          askBrain(journalBrainContext(q, ta.value, pat), function (t, err) { bd.disabled = false; bd.innerHTML = '<i class="ti ti-sparkles"></i> go deeper ✨'; if (t) { var nq = t.split("\n")[0].replace(/^["']|["']$/g, "").trim(); if (nq) { sb.dataset.q = nq; qel.textContent = nq; ta.focus(); } } }); };
+      }
+      jrMoodRow(card, sb);
+      jtSave(card, "Save");
+    },
+    // lighter modes — single beat:
+    // 8) FUN-DO (big idea #9): micro-wins, not a to-do list. Each line = a small win to cross off (the progress principle).
+    fundo: function (card, sb, step) {
+      var d = jrData(sb); var list = d.items || (d.items = [""]);
+      add(card, "div", "tfs-sub", "Not a to-do list — a FUN-do list. Small wins you'll enjoy crossing off today.").style.cssText = "font-size:13px;color:#cfa8c4;";
+      var wrap = add(card, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:7px;";
+      function rebuild() { wrap.innerHTML = ""; list.forEach(function (it, i) { var ta = add(wrap, "input"); ta.value = it || ""; ta.placeholder = "a little win…"; ta.setAttribute("style", JR_TA + "font-size:14px;"); ta.oninput = function () { list[i] = ta.value.trim(); d.items = list; jrSetData(sb, d); }; });
+        var addb = add(wrap, "button", "tf-chip"); addb.innerHTML = '<i class="ti ti-plus"></i> add another'; addb.style.cssText = "align-self:flex-start;opacity:.8;"; addb.onclick = function () { list.push(""); d.items = list; jrSetData(sb, d); rebuild(); }; }
+      rebuild();
+      jtSave(card, "Save my fun-do 🎉");
+    },
+    // 9) CAPTURE (big idea #9, GTD): get one idea out of your head onto the page so the mind is clear.
+    capture: function (card, sb, step) {
+      var d = jrData(sb);
+      add(card, "div", "tfs-sub", "Get it out of your head and onto the page. Capture the idea — clear the RAM.").style.cssText = "font-size:13px;color:#cfa8c4;";
+      var ta = jrTA(card, "the idea is…", 5, d.text); jtBind(ta, sb, "text");
+      jtSave(card, "Capture it 💡");
+    },
+    // 10) PURPOSE / Hedgehog (big idea #10): love × great-at × world-needs → your one thing.
+    purpose: function (card, sb, step) {
+      var d = jrData(sb); jrPips(card, Math.min(step, 3), 4);
+      var beats = [
+        { k: "love",  h: "What do you LOVE to do?", p: "I come alive when…" },
+        { k: "great", h: "What could you be GREAT at?", p: "my real strengths are…" },
+        { k: "world", h: "What does the WORLD need (and pay for)?", p: "the world needs…" },
+        { k: "one",   h: "Where they overlap — your ONE thing.", p: "my one thing is…" }
+      ];
+      var b = beats[Math.min(step, 3)];
+      add(card, "div", "tfs-h2", b.h).style.cssText = "font-size:14px;color:#ffe3f1;";
+      if (step === 3 && (d.love || d.great || d.world)) { var ov = add(card, "div"); ov.style.cssText = JR_CARD + "font-size:12px;color:#b89bb4;line-height:1.6;"; ["love", "great", "world"].forEach(function (kk) { if (d[kk]) add(ov, "div", null, kk + ": " + d[kk]); }); }
+      var ta = jrTA(card, b.p, 2, d[b.k]); ta.oninput = function () { d[b.k] = ta.value.trim(); jrSetData(sb, d); };
+      if (step < 3) jtNext(card, "Next", function () { d[b.k] = ta.value.trim(); jrSetData(sb, d); jtGoStep(sb, step + 1); });
+      else jtSave(card, "Save my purpose 🧭");
+      jtBack(card, sb, step);
+    }
+  };
+  // BUILD the rich entry record for the active type from sb.dataset/jdata. Returns {type, label, entries:[{label,text}], summary, mood, ts} or null if empty.
+  function jtBuildRecord(sb) {
+    var t = jtype(sb.dataset.jtype), d = jrData(sb), mood = (sb.dataset.mood != null && sb.dataset.mood !== "") ? +sb.dataset.mood : null;
+    var entries = [], vlab = function (vk) { return vk ? (VIRTUES.filter(function (v) { return v.k === vk; })[0] || {}).l : ""; };
+    var declFor = function (vk) { return vk ? (vlab(vk) + " — “" + (VIRTUE_DECLARATIONS[vk] || "") + "”") : ""; };
+    function push(l, txt) { if (txt && String(txt).trim()) entries.push({ label: l, text: String(txt).trim() }); }
+    if (t.id === "five") { push("Grateful for", d.grat); push("My #1 thing", d.one); push("Who I'm being", declFor(sb.dataset.vfive)); }
+    else if (t.id === "big3") { [["energy", "⚡ Energy"], ["family", "❤️ Family"], ["service", "🌍 Service"]].forEach(function (r) { var rd = d[r[0]] || {}; var vk = rd.virtue || sb.dataset["v_" + r[0]] || ""; var parts = []; if (vk) parts.push("Being: " + declFor(vk)); if (rd.why) parts.push("Why: " + rd.why); if (rd.what) parts.push("Do: " + rd.what); if (parts.length) push(r[1], parts.join("  ·  ")); }); }
+    else if (t.id === "grat") { (d.items || []).forEach(function (it, i) { push("Grateful #" + (i + 1), it); }); }
+    else if (t.id === "evening") { push("Went well", d.well); push("I'd improve (kindly)", d.improve); push("Carry forward", d.carry); }
+    else if (t.id === "woop") { push("Wish", d.wish); push("Outcome", d.outcome); push("Obstacle (inner)", d.obstacle); push("Plan (if-then)", d.plan); }
+    else if (t.id === "keystone") { (d.items || []).forEach(function (it, i) { push("Keystone #" + (i + 1), it); }); }
+    else if (t.id === "fundo") { (d.items || []).forEach(function (it, i) { push("Fun-do", it); }); }
+    else if (t.id === "capture") { push("Captured", d.text); }
+    else if (t.id === "purpose") { push("I love", d.love); push("Great at", d.great); push("World needs", d.world); push("My one thing", d.one); }
+    else { push("Reflection", d.free); } // free
+    if (!entries.length && mood == null) return null;
+    var summary = entries.map(function (e) { return e.text; }).join(" · ");
+    return { type: t.id, label: t.label, entries: entries, summary: summary, mood: mood, ts: Date.now() };
   }
   // ADAPTIVE-DEPTH follow-up: a deeper, optional second question computed from the answer's signals + the surfaced pattern. Offline, warm, never forced.
   function followupQ(answer, pat) {
@@ -2712,6 +2945,47 @@
     { e: "🗣️", l: "Mantra", catK: "love", mins: 3, sp: 7, mantra: true }
   ];
   var MICROPHASE = { morning: [2, 11, 13, 7], afternoon: [10, 1, 11, 12], evening: [11, 12, 6, 8], night: [2, 13, 11, 9] };
+  // ===== JOURNALING 101 (David 2026-06-28): a PALETTE of Brian Johnson journal TYPES, not one forced template.
+  // Sourced from the actual Journaling 101 transcript (_specs/JOURNALING-101-brian-johnson-transcript.md) + KB SN-232/SN-239 (brian-johnson.md).
+  // Johnson's meta-principle (Nietzsche, 11th big idea): "there is no THE way — what is YOUR way." So types are SWITCHABLE + FAVORITABLE;
+  // the angel only PRE-SELECTS a sensible default by time-of-day + state — it never traps you in one template. Reward-never-shame throughout:
+  // the evening "what I'd improve" beat is curious & kind (Johnson: "win or learn, never lose"); quiet days read warm.
+  // The 8 Virtue Declarations — SN-232, Johnson's final distillation of Areté. PRESENT-TENSE DECLARATIONS (not future-tense affirmations). Keyed to VIRTUES.
+  var VIRTUE_DECLARATIONS = {
+    wisdom:    "I know the ultimate game and how to play it well.",
+    disc:      "I forge antifragile confidence with every action I take.",
+    love:      "I am joyful, connected, and encouraging.",
+    courage:   "I am willing to act in the presence of fear.",
+    gratitude: "I appreciate all the blessings and gifts in my life.",
+    hope:      "I have inspiring goals, agency, and pathways.",
+    curiosity: "I pay attention to what's working and what needs work.",
+    zest:      "I dominate my fundamentals so I have Heroic energy."
+  };
+  // The journal-type registry. Each type is a guided flow keyed by id; jtRenderBeat drives the multi-beat ones.
+  // icon = tabler glyph, e = emoji, label, blurb = one-line "what this is". `src` cites the Johnson idea it's modeled on (transcript big-idea #).
+  var JTYPES = [
+    { id: "five",     icon: "ti-sunrise",        e: "🌅", label: "Five-Minute Foundation", blurb: "See your best self today — gratitude, your #1 thing, who you're being.", src: "Johnson big idea #1" },
+    { id: "big3",     icon: "ti-versions",       e: "🎯", label: "The Big 3",              blurb: "Energy · Family · Service — who you're BEING, why, what you'll do.",   src: "Johnson big idea #4" },
+    { id: "grat",     icon: "ti-heart-handshake",e: "🙏", label: "Gratitude",              blurb: "Five specific things — one at a time, felt, not a dry list.",          src: "Johnson big idea #1 / PERMA" },
+    { id: "evening",  icon: "ti-moon-stars",     e: "🌙", label: "Evening Reflection",     blurb: "What went well · what you'd improve · what to carry. No guilt.",        src: "Johnson big idea #2 (Masterpiece PM)" },
+    { id: "woop",     icon: "ti-target-arrow",   e: "🎈", label: "WOOP",                   blurb: "Wish · Outcome · Obstacle · Plan — for your #1 goal.",                 src: "Johnson big idea #6 (Oettingen)" },
+    { id: "keystone", icon: "ti-key",            e: "🗝️", label: "Keystone Habits",        blurb: "The 3 habits you do on your BEST days. Make your best your baseline.", src: "Johnson big idea #5" },
+    { id: "free",     icon: "ti-feather",        e: "🪶", label: "Free / Adaptive",        blurb: "Open reflection — the angel mirrors your patterns and asks.",          src: "the original adaptive mode" },
+    // lighter modes (single-beat capture)
+    { id: "fundo",    icon: "ti-confetti",       e: "🎉", label: "Fun-Do List",           blurb: "Micro-wins to do today — not a to-do list. Cross them off.",           src: "Johnson big idea #9" },
+    { id: "capture",  icon: "ti-bulb",           e: "💡", label: "Capture",                blurb: "Get an idea out of your head and onto the page.",                      src: "Johnson big idea #9 (GTD)" },
+    { id: "purpose",  icon: "ti-compass",        e: "🧭", label: "Purpose",                blurb: "Love × great-at × world-needs → your one thing.",                      src: "Johnson big idea #10 (Hedgehog)" }
+  ];
+  function jtype(id) { for (var i = 0; i < JTYPES.length; i++) if (JTYPES[i].id === id) return JTYPES[i]; return JTYPES[6]; } // default → free
+  // ADAPTIVE PRE-SELECT (the angel picks the right template by phase + state; the user is always free to switch). Reward-never-shame: low/drift state → gentle Free, never a "fix yourself" type.
+  function pickJournalType() {
+    var ph = phase(), ctx = journalCtx();
+    if (ctx.drift || (ctx.streak === 0 && ctx.kept === 0 && ctx.missCount === 0)) return "free"; // low-motivation / nothing-happened → open, never a demanding template
+    if (ph === "morning") return ctx.lastInt ? "big3" : "five"; // already recommitted today → go deeper with Big 3; else the Five-Minute Foundation
+    if (ph === "evening" || ph === "night") return "evening";
+    if (ph === "afternoon") return ctx.mins >= 120 ? "evening" : "free";
+    return "free";
+  }
   // ===== ADAPTIVE JOURNAL PROMPTS (CKPT-5/PM-ASK, David 2026-06-28): scored rule bank modeled on WISDOM/MICRO. Each {q, when:fn(ctx)->bool, weight}. pickPrompt fires the single highest-weight match over real signals (drift>miss>streak>big-win>quiet>generic). Reward-never-shame: drift/miss are NEUTRAL data, never guilt. =====
   // phase tags: a rule fires for a requested phase if its `ph` array includes that phase (or `ph` is absent = shared by journal+pm).
   // The PM rules (ph:["pm"]) are the evening-reflection question bank (PM-ASK); they never surface in the freeform Journal door.
@@ -4264,7 +4538,7 @@
     Object.keys(S.bk || {}).forEach(function (k) {
       var rec = S.bk[k] || {};
       if (rec.pm && (rec.pm.reflect || rec.pm.mood != null)) out.push({ k: k, ts: rec.pm.ts || kd(k).getTime(), q: rec.pm.q || "", text: rec.pm.reflect || "", mood: (rec.pm.mood != null ? rec.pm.mood : null), kind: "pm" });
-      (rec.journal || []).forEach(function (j) { out.push({ k: k, ts: j.ts || kd(k).getTime(), q: j.q || "", text: j.text || "", mood: (j.mood != null ? j.mood : null), kind: "journal" }); });
+      (rec.journal || []).forEach(function (j) { out.push({ k: k, ts: j.ts || kd(k).getTime(), q: j.q || j.label || "", text: j.text || j.summary || "", mood: (j.mood != null ? j.mood : null), kind: "journal", jtype: j.type || null, jlabel: j.label || "", entries: j.entries || null }); });
     });
     Object.keys(S.log || {}).forEach(function (k) { (S.log[k] || []).forEach(function (l) { if (l.note && String(l.note).trim()) out.push({ k: k, ts: kd(k).getTime() + hm(l.time || "0:0") * 60000, q: l.title || "", text: l.note, mood: null, kind: "note" }); }); });
     out.sort(function (a, b) { return b.ts - a.ts; });
@@ -4301,7 +4575,8 @@
       if (!shown.length) { add(feed, "div", "empty", "Nothing matches that."); return; }
       shown.slice(0, 120).forEach(function (e) {
         var row = add(feed, "div", "logi"); row.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;cursor:pointer;";
-        var meta = relLabel(e.k) + (e.q ? " · " + e.q : "");
+        var tBadge = e.jtype ? (jtype(e.jtype).e + " " + (e.jlabel || jtype(e.jtype).label) + " · ") : ""; // JOURNALING 101: show the type up front
+        var meta = tBadge + relLabel(e.k) + (!e.jtype && e.q ? " · " + e.q : "");
         add(row, "div", "lt", meta).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
         add(row, "div", "ln", (e.mood != null && MOODS[e.mood] ? MOODS[e.mood].e + "  " : "") + (e.text || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
         row.onclick = function () { journalDaySheet(e.k); };
@@ -4320,12 +4595,16 @@
       add(B, "div", "logi", line || "set").style.cssText = "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;line-height:1.4;";
     }
     var refs = [];
-    if (rec.pm && (rec.pm.reflect || rec.pm.mood != null)) refs.push({ q: rec.pm.q, text: rec.pm.reflect, mood: rec.pm.mood });
-    (rec.journal || []).forEach(function (j) { refs.push({ q: j.q, text: j.text, mood: j.mood }); });
+    if (rec.pm && (rec.pm.reflect || rec.pm.mood != null) && !(rec.journal || []).some(function (j) { return j.text === rec.pm.reflect; })) refs.push({ q: rec.pm.q, text: rec.pm.reflect, mood: rec.pm.mood }); // skip a pm dup of a journal entry
+    (rec.journal || []).forEach(function (j) { refs.push(j); });
     if (refs.length) { any = true; add(B, "div", "lbl", "🌙 reflections");
-      refs.forEach(function (r) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;";
-        if (r.q) add(card, "div", "lt", r.q).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
-        add(card, "div", "ln", (r.mood != null && MOODS[r.mood] ? MOODS[r.mood].e + "  " : "") + (r.text || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; });
+      refs.forEach(function (r) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:4px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;";
+        if (r.type) { var th = add(card, "div", "lt"); th.innerHTML = jtype(r.type).e + " " + esc(r.label || jtype(r.type).label); th.style.cssText = "color:" + DOM.restore.light + ";font-size:11px;font-weight:600;line-height:1.3;"; }
+        else if (r.q) add(card, "div", "lt", r.q).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
+        if (r.entries && r.entries.length) { // JOURNALING 101: render the structured beats (label: text)
+          r.entries.forEach(function (en) { var ln = add(card, "div"); ln.style.cssText = "font-size:14px;line-height:1.45;color:#ffe3f1;"; ln.innerHTML = '<span style="color:#b89bb4;font-size:12px;">' + esc(en.label) + ':</span> ' + esc(en.text); });
+          if (r.mood != null && MOODS[r.mood]) add(card, "div", null, MOODS[r.mood].e).style.cssText = "font-size:16px;";
+        } else add(card, "div", "ln", (r.mood != null && MOODS[r.mood] ? MOODS[r.mood].e + "  " : "") + (r.text || r.summary || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; });
     }
     var notes = (logs(k) || []).filter(function (l) { return l.note && String(l.note).trim(); });
     if (notes.length) { any = true; add(B, "div", "lbl", "📝 notes"); notes.forEach(function (l) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;"; add(card, "div", "lt", (l.time || "") + " · " + (l.title || "")).style.cssText = "color:#b89bb4;font-size:11px;"; add(card, "div", "ln", l.note).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; }); }
