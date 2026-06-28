@@ -725,7 +725,7 @@
   #trackerFull.tf-staged .tf-title{ margin:0; font-size:14px; font-weight:700; text-align:left; max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #trackerFull.tf-staged .tf-title.switchable{ margin:0; padding:5px 12px; font-size:13px; }
   #trackerFull.tf-staged .tf-time{ margin:0; font-size:15px; }
-  #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark{ display:none; }
+  #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark, #trackerFull.tf-staged .tf-say{ display:none; }
   #trackerFull.tf-staged #tfStageBody{ display:flex; flex:1; flex-direction:column; width:100%; gap:14px; margin-top:16px; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; } /* overscroll-behavior:contain is MANDATORY — stage scroll must never bubble to the timeline's infinite-recenter watcher */
   .tf-stagecard{ background:#241328; border:2px solid #160510; border-radius:14px; box-shadow:0 3px 0 #160510; color:#e6cfe0; padding:16px; font-family:"Jost",sans-serif; } /* reuses the .tf-chip/.tf-b material — no new colors */
   .tf-stagecard .tfs-h{ font-weight:800; font-size:15px; color:#ffe3f1; margin-bottom:6px; }
@@ -745,6 +745,7 @@
   .tf-ctx{ margin-top:10px; font-size:13px; font-weight:600; color:#b596ad; }
   /* streak + today live in the TOP-RIGHT status bar (beside the clock) so they never bunch up the center */
   .tf-spark{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 13px); right:20px; display:flex; align-items:center; gap:9px; font-size:12.5px; font-weight:700; color:#9a8fb5; }
+  .tf-say{ margin:30px auto 0; max-width:300px; padding:0 8px; text-align:center; font-family:"Jost",sans-serif; font-size:14px; line-height:1.45; color:#ffd9ec; opacity:.9; min-height:20px; } /* the guardian's continuity voice — soul-layer heartbeat (David 2026-06-28) */
   .tf-spark b{ color:#ffd98a; }
   .tf-switch{ margin-top:28px; max-width:420px; width:100%; display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:center; }
   .tf-swlab{ font-size:9.5px; font-weight:800; letter-spacing:1.6px; color:#6f6080; text-transform:uppercase; }
@@ -1355,6 +1356,7 @@
     <button id="tfClose" class="tf-close" aria-label="Close"><i class="ti ti-chevron-down"></i></button>
     <div class="tf-clock" id="tfClock"></div><!-- current wall-clock time (status-bar style, am/pm) — distinct from the mm:ss elapsed -->
     <div class="tf-spark" id="tfSpark"></div><!-- streak + today, top-right status (kept OUT of the center so it doesn't bunch up) -->
+    <div class="tf-say" id="tfSay"></div><!-- the guardian's continuity heartbeat: one line proving it remembers you, on every open (soul-layer seam #1) -->
     <div class="tf-stage">
       <div class="tf-ring" id="tfRing"><!-- conic green reward band (set in JS) hugging a STRIPED activity tile = #14 album-in-reward-ring -->
         <div class="tf-tile" id="tfTile"><i class="ti ti-brain"></i></div>
@@ -1373,6 +1375,6 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <script src="app.js?v=598"></script>
+  <script src="app.js?v=599"></script>
 </body>
 </html>

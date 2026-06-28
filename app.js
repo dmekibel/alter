@@ -1281,6 +1281,7 @@
     tf.classList.toggle("tf-staged", !!TF_MODE);
     if (TF_MODE) {
       var _ck2 = el("tfClock"); if (_ck2) _ck2.textContent = fmt(nowMin()).toUpperCase();
+      var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
       var _S0 = trackerState(), _t = _S0.t; // keep the corner puck a LIVE mini-tracker: show WHAT + running mm:ss off the live timer
       var _tt2 = el("tfTitle"); if (_tt2) { _tt2.classList.remove("switchable"); _tt2.style.background = ""; _tt2.style.color = ""; _tt2.style.borderColor = ""; _tt2.onclick = null; _tt2.textContent = _t ? (_t.title || "Tracking") : (stageLabel(TF_MODE) || ""); }
       var _ti2 = el("tfTile"); if (_ti2) { var _D2 = _t ? (DOM[domainOf(_t)] || DOM.restore) : DOM.restore; _ti2.style.background = tfStripe(_D2.c); _ti2.style.filter = ""; _ti2.innerHTML = _t ? tiIcon(_t) : '<i class="ti ' + (_D2.ti || "ti-moon") + '"></i>'; }
@@ -1291,6 +1292,7 @@
       return;
     }
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
+    var _say = el("tfSay"); if (_say) _say.textContent = bkContinuity(); // soul-layer heartbeat: the guardian speaks what it remembers, on every open
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night");
@@ -1748,6 +1750,28 @@
   var AM_WHYS = [ // INTRINSIC only (SDT): autonomy/identity reasons. NO extrinsic option exists by design.
     "because it's who I am", "because it feels alive", "because I'd respect myself", "because I love the craft"
   ];
+  function vlabel(kk) { for (var i = 0; i < VIRTUES.length; i++) if (VIRTUES[i].k === kk) return VIRTUES[i]; return null; }
+  // THE CONTINUITY HEARTBEAT (soul-layer seam #1, David 2026-06-28 soul-first spine): ONE line the guardian speaks on open that proves it REMEMBERS you — drawn from the bk baton + recent data. Pure-read, reward-never-shame, never throws. This is the thing the swarm-built legs lacked: the felt sense of being known across days.
+  function bkContinuity() {
+    try {
+      var k = todayK(), rec = (S.bk || {})[k] || {}, am = rec.am || {}, ph = phase(), streak = curStreak();
+      if (ph === "morning") {
+        if (am.done) { var v = vlabel(am.virtue); return "Good morning. Today you're being " + (v ? v.l : "yourself") + (am.oneThing ? " — your one thing: " + esc(am.oneThing) : "") + "."; }
+        if (am.oneThing) return "Last night you set: “" + esc(am.oneThing) + "”. Still your one thing?";
+        var ym = bookendMirror(lastDays(2)[1]); if (ym.planned > 0) return "Good morning. Yesterday you showed up for " + ym.kept + " of " + ym.planned + ". A fresh page — who are you today?";
+        return "Good morning. A fresh page — who are you today?";
+      }
+      if (ph === "evening" || ph === "night") {
+        var mr = bookendMirror(k);
+        if (mr.planned > 0) return "Let's close the day — you showed up for " + mr.kept + " of " + mr.planned + (mr.streakSafe ? ". Streak safe." : ".");
+        if (mr.totMin > 0) return "Let's close the day — " + dur(mr.totMin) + " lived on purpose.";
+        return "Let's close the day. Rest is part of the work.";
+      }
+      if (am.done) { var v2 = vlabel(am.virtue); return "You're being " + (v2 ? v2.l : "yourself") + " today" + (am.oneThing ? " — " + esc(am.oneThing) : "") + "."; }
+      if (streak > 0) return "Day ×" + streak + ". I'm with you — what matters now?";
+      return "I'm here. What matters now?";
+    } catch (e) { return ""; }
+  }
   function bookendMirror(k) { // PM-MIRROR: read the day back from data already in S — pure read, touches no timeline render
     k = k || todayK(); var bl = blocks(k) || [], kept = 0, drift = 0, missed = 0, domMin = {}, missBlocks = [];
     bl.forEach(function (b) { if (!b.title) return; var st = blockStatus(k, b); if (st === "ok") kept++; else if (st === "miss") { missed++; missBlocks.push(b); } });
