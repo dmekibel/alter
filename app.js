@@ -867,6 +867,7 @@
     var r = anchor.getBoundingClientRect(), hr = head.getBoundingClientRect();
     menu.style.top = (r.bottom - hr.top + 5) + "px"; menu.style.right = Math.max(4, hr.right - r.right) + "px";
     function item(cls, ic, label, fn) { var b = add(menu, "button", "ptm-item" + (cls ? " " + cls : "")); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.onclick = function (e) { e.stopPropagation(); menu.remove(); fn(); }; }
+    item("plan", "ti-sun-high", "Shape today", function () { shapeToday(); }); // THE DAILY ELICITOR — always-available door (also auto-pushes once/day on a no-plan open) (David 2026-06-28)
     item("", "ti-briefcase", "My toolbox", function () { openToolbox(); }); // WISDOM TOOLBOX entry (TB-SHEET) — opens the cockpit 'tool' stage
     item("plan", "ti-calendar-plus", "Plan day", function () { planDay(k); });
     item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
