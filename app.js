@@ -2744,17 +2744,23 @@
     ctx.restore();
     if (trickMsgT > 0) { trickMsgT--; ctx.save(); ctx.globalAlpha = Math.min(1, trickMsgT / 18); ctx.font = "800 30px 'Baloo 2',sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 5; ctx.strokeStyle = "#3a2540"; ctx.fillStyle = trickMsg === "BAIL!" ? "#ff6b6b" : "#ffd24a"; ctx.strokeText(trickMsg, W / 2, H * 0.3); ctx.fillText(trickMsg, W / 2, H * 0.3); ctx.restore(); }
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
-    // ===== DYNAMIC LIGHTING (David 2026-06-28): a time-of-day darkness with warm light POOLS punched out at the guardian + cabin — the candle-in-the-dark, NPC→Player made literal. NOT the flat purple wash (killed v601); this is light WHERE your life is, dark elsewhere. =====
+    // ===== DYNAMIC / VOLUMETRIC LIGHTING (David 2026-06-28, redo): a POOL of light around you that falls into real darkness at the edges (line-of-sight feel), warm ADDITIVE glow so lit areas stay rich-not-grey, soft shadows cast off the big objects, and dust motes drifting in the light for actual volume. =====
     var _night = nightAmt();
     if (_night > 0.03) {
       function w2s(wx, wy) { return [W / 2 + (wx - (px + camX)) * vz, H * 0.6 + (wy - (py + camY)) * vz]; }
-      var _flick = 0.95 + Math.sin(t * 3.1) * 0.05;
-      var lights = [{ x: px, y: py - 12, r: 165, i: 1.0, fl: _flick }, { x: -58, y: 2, r: 95, i: 0.9, fl: 0.97 + Math.sin(t * 5.2) * 0.03 }]; // guardian (you = the candle) + cabin window (home)
-      ctx.save(); ctx.fillStyle = "rgba(13,11,32," + _night + ")"; ctx.fillRect(0, 0, W, H); // navy darkness (not a tint — a night)
-      ctx.globalCompositeOperation = "destination-out";
-      lights.forEach(function (L) { var s = w2s(L.x, L.y), r = L.r * vz * L.fl, g = ctx.createRadialGradient(s[0], s[1], 0, s[0], s[1], r); g.addColorStop(0, "rgba(0,0,0," + L.i + ")"); g.addColorStop(0.62, "rgba(0,0,0," + (L.i * 0.45) + ")"); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 7); ctx.fill(); });
-      ctx.globalCompositeOperation = "lighter"; // warm cozy glow at each light
-      lights.forEach(function (L) { var s = w2s(L.x, L.y), r = L.r * vz * 0.66 * L.fl, g = ctx.createRadialGradient(s[0], s[1], 0, s[0], s[1], r); g.addColorStop(0, "rgba(255,178,92," + (0.18 * (_night / 0.64)) + ")"); g.addColorStop(1, "rgba(255,178,92,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 7); ctx.fill(); });
+      var GL = w2s(px, py - 12), maxR = Math.max(W, H), fl = 0.93 + Math.sin(t * 3.2) * 0.07; // guardian light + flicker
+      ctx.save();
+      // 1) VIGNETTE DARKNESS centered on you: clear at your feet → deep dark at the edges (you see around you, black beyond)
+      var dg = ctx.createRadialGradient(GL[0], GL[1], 36 * vz * fl, GL[0], GL[1], maxR * 0.66);
+      dg.addColorStop(0, "rgba(7,6,20,0)"); dg.addColorStop(0.5, "rgba(7,6,20," + (_night * 0.72) + ")"); dg.addColorStop(1, "rgba(4,3,12," + Math.min(0.96, _night + 0.36) + ")");
+      ctx.fillStyle = dg; ctx.fillRect(0, 0, W, H);
+      // 2) SOFT SHADOWS: the cabin + big trees throw a dark blob away from your light (cheap volumetric depth)
+      [[-58, 2, 46], [-152, -84, 40], [190, -30, 40], [150, 74, 40]].forEach(function (o) { var s = w2s(o[0], o[1]), dx = s[0] - GL[0], dy = s[1] - GL[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, len = (o[2] * vz) + d * 0.5, mx = s[0] + ux * len * 0.5, my = s[1] + uy * len * 0.5; ctx.save(); ctx.translate(mx, my); ctx.rotate(Math.atan2(uy, ux)); var sg = ctx.createLinearGradient(-len / 2, 0, len / 2, 0); sg.addColorStop(0, "rgba(3,2,10," + (_night * 0.5) + ")"); sg.addColorStop(1, "rgba(3,2,10,0)"); ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(0, 0, len / 2, o[2] * vz * 0.55, 0, 0, 7); ctx.fill(); ctx.restore(); });
+      // 3) WARM ADDITIVE GLOW — lit areas read rich amber, not dim grey
+      ctx.globalCompositeOperation = "lighter";
+      [[px, py - 12, 160, 1], [-58, 2, 96, 0.75]].forEach(function (L) { var s = w2s(L[0], L[1]), f = 0.92 + Math.sin(t * 3.5 + L[0]) * 0.08, r = L[2] * vz * f, g = ctx.createRadialGradient(s[0], s[1], 0, s[0], s[1], r); var a = _night / 0.64 * L[3]; g.addColorStop(0, "rgba(255,190,108," + (0.30 * a) + ")"); g.addColorStop(0.45, "rgba(255,148,66," + (0.12 * a) + ")"); g.addColorStop(1, "rgba(255,140,60,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 7); ctx.fill(); });
+      // 4) DUST MOTES drifting in the beam — the volumetric tell
+      for (var mi = 0; mi < 10; mi++) { var ph = mi * 2.4, mr = (40 + (mi % 5) * 22) * vz, ma = ph + t * (0.25 + (mi % 3) * 0.06), mx2 = GL[0] + Math.cos(ma) * mr, my2 = GL[1] + Math.sin(ma) * mr * 0.7, tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 1.7 + mi)); ctx.fillStyle = "rgba(255,210,150," + (0.5 * tw * _night / 0.64) + ")"; ctx.beginPath(); ctx.arc(mx2, my2, 1.6 * vz * tw, 0, 7); ctx.fill(); }
       ctx.restore();
     }
     if (gameOn) {
