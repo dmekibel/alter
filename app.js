@@ -402,15 +402,16 @@
     // Fundamentals / habits — done stays visible with a check so the trail fills behind you. BODY-FIRST: when energy is low, body/restore habits sort to the front.
     var habs = (S.habits || []).filter(function (h) { return h.type !== "quit"; });
     if (pf.lowEnergy) { var BODY = /move|breath|walk|run|stretch|water|drink|sleep|rest|medit|sun|cold|shower|wash|tidy/i; habs = habs.slice().sort(function (a, b) { return (BODY.test(b.l) ? 1 : 0) - (BODY.test(a.l) ? 1 : 0); }); }
+    var HAB_ICON = { move: "ti-run", deep: "ti-brain", tidy: "ti-sparkles", teeth: "ti-dental", read: "ti-book", breathe: "ti-wind" }; // explicit Tabler symbols for the default habits (title-only inference mislabels them)
     habs.forEach(function (h) {
-      nodes.push({ key: "hab:" + h.id, emoji: h.e || "✨", title: h.l, line: "A small basic — tap when it's done.",
+      nodes.push({ key: "hab:" + h.id, emoji: h.e || "✨", icon: HAB_ICON[h.id] || tiClass({ title: h.l }), title: h.l, line: "A small basic — tap when it's done.",
         color: h.color || DOM.upkeep.c, done: !!dm[h.id], act: function () { var was = !!doneMap(k)[h.id]; toggleHabit(h.id); var c = h.color || DOM.upkeep.c; if (!was && doneMap(k)[h.id]) { try { celebrateGated(c, bumpStreak()); } catch (e) {} } drawJourney(); } });
     });
 
     // Planned blocks — GOAL ADAPT: blocks that serve today's chosen virtue sort to the front, then time order. (each = do it: start a timer; done when its block is done.)
     planned.slice().sort(function (a, b) { var ga = matchesGoal(a) ? 0 : 1, gb = matchesGoal(b) ? 0 : 1; return ga !== gb ? ga - gb : hm(a.time) - hm(b.time); }).forEach(function (b) {
       var dom = domainOf(b), st = blockStatus(k, b), isDone = st === "ok";
-      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, title: b.title, line: (matchesGoal(b) && gvName ? "Toward " + gvName + " · " : "") + b.time + " · tap to start it now.",
+      nodes.push({ key: "blk:" + b.id, emoji: (DOM[dom] || DOM.focus).e, icon: tiClass(b), title: b.title, line: (matchesGoal(b) && gvName ? "Toward " + gvName + " · " : "") + b.time + " · tap to start it now.",
         color: b.color || (DOM[dom] || DOM.focus).c, done: isDone, act: function () {
           if (isDone) { closeJourney(); blockEdit(b, k); return; } // already done → open it to review/edit
           startTimer({ title: b.title, catK: b.catK, emoji: (DOM[dom] || DOM.focus).e, color: b.color || (DOM[dom] || DOM.focus).c });
@@ -431,9 +432,10 @@
   }
   function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
   var JP_CHAPTERS = [ // the long-term GROWTH ARC = chapters. Active chapter = today's lessons; past = done milestones; future = locked aspiration. Driven by journeyNode() (which is goal/onboarding-shaped via readiness). (David 2026-06-28)
-    { t: "Show up", ic: "🌱" }, { t: "Plan your days", ic: "🗺️" }, { t: "Morning rituals", ic: "🌅" },
-    { t: "Evening reflection", ic: "🌙" }, { t: "Become who you are", ic: "⭐" }, { t: "Mastery", ic: "👑" }
+    { t: "Show up", ic: "ti-seedling" }, { t: "Plan your days", ic: "ti-map-2" }, { t: "Morning rituals", ic: "ti-sunrise" },
+    { t: "Evening reflection", ic: "ti-moon" }, { t: "Become who you are", ic: "ti-star" }, { t: "Mastery", ic: "ti-crown" }
   ];
+  var JP_ICON = { plan: "ti-map-2", settle: "ti-wind", am: "ti-sunrise", pm: "ti-moon", onething: "ti-star" }; // node-key → Tabler symbol (no emojis — match the day-viewer language)
   function drawJourney(autoScroll) {
     var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
     var jn = Math.max(0, Math.min(JP_CHAPTERS.length - 1, journeyNode()));
@@ -444,18 +446,19 @@
     var sub = el("jpSub"); if (sub) sub.textContent = allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today";
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
-    function banner(state, klabel, title, ic) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.textContent = ic; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); }
-    function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.textContent = glyph; return t; }
+    function banner(state, klabel, title, ic) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); }
+    function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.innerHTML = '<i class="ti ' + glyph + '"></i>'; return t; }
     function coin(state, n, idx) {
       var node = add(trail, "div", "jp-node " + state);
-      node.style.transform = "translateX(" + (Math.sin(idx * 0.72) * 74).toFixed(0) + "px)"; // winding path, no connector lines (Duolingo-style)
-      var bub = add(node, "div", "jp-bub"); bub.textContent = n.emoji;
-      if (state !== "locked") bub.style.background = n.color; // ACTIVE chapter coins are all vibrant
-      if (state === "done") { var ck = add(node, "div", "jp-check"); ck.textContent = "✓"; }
+      node.style.transform = "translateX(" + (Math.sin(idx * 0.72) * 72).toFixed(0) + "px)"; // winding path, no connector lines
+      var bub = add(node, "div", "jp-bub");
+      var icon = state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
+      bub.innerHTML = '<i class="ti ' + icon + '"></i>';
+      if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
+      if (state === "done") { var ck = add(node, "div", "jp-check"); ck.innerHTML = '<i class="ti ti-check"></i>'; }
       if (n.act && state !== "locked") bub.onclick = n.act;
       if (state === "cur") {
         curEl = node;
-        var m = add(node, "div", "jp-mascot"); add(m, "div", "jm-face", "👼"); add(m, "div", "jm-base"); // the guardian, beside the live step
         var card = add(node, "div", "jp-card");
         add(card, "div", "jc-t", n.title);
         if (n.line) add(card, "div", "jc-l", n.line);
@@ -463,22 +466,22 @@
       } else if (n.title) { add(node, "div", "jp-cap" + (state === "locked" ? " locked" : ""), n.title); }
     }
 
-    // PAST chapters — completed milestones
-    for (var c = 0; c < jn; c++) { banner("done", "Unit " + (c + 1) + " · complete", JP_CHAPTERS[c].t, JP_CHAPTERS[c].ic); trophy("done", "🏆"); }
-
-    // ACTIVE chapter = TODAY (its lessons are today's adaptive tasks)
-    banner("active", "Today · Unit " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic);
-    real.forEach(function (n, idx) { coin(n.done ? "done" : (idx === curIdx ? "cur" : "up"), n, gi++); });
-    var endT = trophy(allDone ? "done" : "locked", allDone ? "🏆" : "🎁"); if (!curEl) curEl = endT; // today's reward chest
-
-    // FUTURE chapters — the long-term arc ahead, locked (aspiration)
-    for (var f = jn + 1; f < JP_CHAPTERS.length; f++) {
-      banner("locked", "Unit " + (f + 1), JP_CHAPTERS[f].t, "🔒");
+    // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.
+    // FUTURE chapters — locked, Mastery highest, descending toward today
+    for (var f = JP_CHAPTERS.length - 1; f > jn; f--) {
+      banner("locked", "Unit " + (f + 1), JP_CHAPTERS[f].t, "ti-lock");
       for (var z = 0; z < 3; z++) coin("locked", { emoji: "★", title: "" }, gi++);
-      trophy("locked", "🔒");
+      trophy("locked", "ti-lock");
     }
+    // ACTIVE chapter = TODAY. Banner on top, then today's reward summit, then today's steps ASCENDING (latest up high; current/done lower, so you climb toward them)
+    banner("active", "Today · Unit " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic);
+    var endT = trophy(allDone ? "done" : "locked", allDone ? "ti-trophy" : "ti-gift"); // today's reward summit
+    for (var r = real.length - 1; r >= 0; r--) { var rn = real[r]; coin(rn.done ? "done" : (r === curIdx ? "cur" : "up"), rn, gi++); }
+    if (!curEl) curEl = endT;
+    // PAST chapters — completed milestones, foundation at the very bottom
+    for (var c = jn - 1; c >= 0; c--) { banner("done", "Unit " + (c + 1) + " · complete", JP_CHAPTERS[c].t, JP_CHAPTERS[c].ic); trophy("done", "ti-trophy"); }
 
-    if (autoScroll) { setTimeout(function () { try { var sc = el("jpScroll"); if (sc && curEl) sc.scrollTo({ top: Math.max(0, curEl.offsetTop - sc.clientHeight * 0.30), behavior: "smooth" }); } catch (e) {} }, 110); }
+    if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
   }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
