@@ -3070,6 +3070,17 @@
     gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
     document.body.classList.add("gaming"); document.body.style.overflow = "hidden";
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
+    gameNavSetup(); var _gn = el("gameNav"); if (_gn) _gn.classList.remove("away"); // show the bottom menu on enter
+  }
+  function gameNavSetup() { // a bottom menu in the game that slides AWAY while you play (pan/zoom/joystick) and returns when idle — same spirit as the planner's collapsing nav (David 2026-07-02)
+    var gm = el("gameMode"), gn = el("gameNav"); if (!gm || !gn || gm._navWired) return; gm._navWired = true;
+    var idleT = null;
+    function showG() { gn.classList.remove("away"); }
+    function hideG() { gn.classList.add("away"); if (idleT) clearTimeout(idleT); idleT = setTimeout(showG, 1500); } // returns ~1.5s after you stop
+    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gameExit")) return; hideG(); }, true); // any play touch (canvas/joystick/zoom) tucks it away
+    var p = el("gnPlanner"); if (p) p.onclick = function () { closeGame(); closeJourney(); };
+    var j = el("gnJourney"); if (j) j.onclick = function () { closeGame(); openJourney(); };
+    var g = el("gnGame"); if (g) g.onclick = showG;
   }
   function closeGame() {
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
