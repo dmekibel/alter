@@ -830,6 +830,36 @@
   function decomposeGoal(g) { var t = (g.title || "").toLowerCase(); for (var i = 0; i < DECOMP_TEMPLATES.length; i++) { if (DECOMP_TEMPLATES[i].kw.some(function (k) { return t.indexOf(k) !== -1; })) return DECOMP_TEMPLATES[i].steps.slice(); } return ["Define what “done” looks like", "Pick the next concrete step", "Schedule it into this week", "Set a finish line", "Review progress monthly"]; }
   function activeGoals() { return (S.goals || []).filter(function (g) { return g.active; }); }
   function ensureGoalDefaults() { if (!S.goals || !S.goals.length) return; if (!S.goals.some(function (g) { return ("active" in g); })) { S.goals.forEach(function (g, i) { g.active = i < 3; }); save(); } } // first run: top few active (Newport cap, §17)
+  // ===== TINY-STEP GUARDIAN (David 2026-06-29 Wave B): the "Feels too big? / I'm scared to start" move. Shrinks a fear-gated goal to ONE 2-min impossible-to-fail step + offers the body-first Reversal of Desire. Routes via state, hands ONE tool — no menu. Anti-shame copy. Serves Mom (fear-gated sports), Sister (overwhelm), Brother (avoidance). =====
+  function tinyStep(g) {
+    var t = (g.title || "").toLowerCase();
+    var M = [
+      [/sport|gym|fit|run|exercise|workout|move|weight|yoga|buff|train/, "Put on workout clothes", "Just put on your workout clothes. That's the whole job — no gym, no trainer, your own floor."],
+      [/clean|tidy|house|home|room|mess|kitchen|floor|dish|laundry|declutter|organ/, "Clear one small spot · 2 min", "Set a 2-minute timer and clear ONE small spot. Stop when it rings."],
+      [/footage|edit|film|movie|reel|video/, "Open the file · look 2 min", "Just open the file and look for 2 minutes. You can close it right after."],
+      [/music|song|track|record|mix|beat/, "Open project · play once", "Open the project and play it through once. That's all."],
+      [/script|writ|book|story|chapter|portfolio|essay|proposal|blog/, "Write one ugly sentence", "Open the doc and write one ugly sentence. Bad on purpose."],
+      [/paint|draw|art|sketch|illustrat/, "Make one mark", "Put one mark on the page. Just one."],
+      [/english|learn|study|language|duolingo|read/, "One 2-min lesson", "One tiny lesson — 2 minutes. Then you're done."],
+      [/post|youtube|audience|brand|social|linkedin|outreach/, "Draft one line", "Write just the first line. You can delete it later."]
+    ];
+    for (var i = 0; i < M.length; i++) if (M[i][0].test(t)) return { short: M[i][1], line: M[i][2] };
+    return { short: "Smallest piece · 2 min", line: "Do the smallest possible piece for 2 minutes. Badly is completely fine." };
+  }
+  function tooBigSheet(g) {
+    g.blocker = "big"; save(); // remember it felt big — future flows can stay gentle
+    var ts = tinyStep(g);
+    var ov = add(document.body, "div", "dur-ov"), card = add(ov, "div", "dur-card tb-shrink");
+    add(card, "div", "tb-shrink-h", "Let's make it impossible to fail.");
+    add(card, "div", "tb-shrink-step", ts.line);
+    add(card, "div", "tb-shrink-sub", "No pressure. You can stop right after.");
+    var row = add(card, "div", "dur-row");
+    var go = add(row, "button", "dur-chip tb-go", "I'll try this →");
+    go.onclick = function () { ov.remove(); var dom = g.domain || "focus", k = todayK(); blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 10, title: ts.short, prio: 3, star: true, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); save(); renderToday(); toast("✨ tiniest step is on today — you've got this"); };
+    var rev = add(row, "button", "dur-chip", "reverse the desire →"); rev.onclick = function () { ov.remove(); try { reversalOfDesire(null); } catch (e) {} };
+    var x = add(card, "button", "dur-x", "not now"); x.onclick = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+  }
   function typeAdd(parent, ph, cb) { var w = add(parent, "div", "goal-add"); var inp = document.createElement("input"); inp.type = "text"; inp.placeholder = ph; inp.className = "goal-input"; w.appendChild(inp); var b = add(w, "button", "goal-addb"); b.innerHTML = '<i class="ti ti-plus"></i>'; function go() { var v = inp.value.trim(); if (v) { cb(v); inp.value = ""; } } b.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } }); }
   function pickSheet(q, opts, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var row = add(card, "div", "dur-row"); opts.forEach(function (o) { var c = add(row, "button", "dur-chip", o.label); c.onclick = function () { ov.remove(); cb(o.val); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
   function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule “' + esc(st.title) + '” — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); st.schedK = k; save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
@@ -863,7 +893,9 @@
       var body = add(card, "div", "goal-body");
       var ab = add(body, "button", "goal-active-btn" + (g.active ? " on" : "")); ab.innerHTML = g.active ? '<i class="ti ti-star-filled"></i> Active — pulls into your days' : '<i class="ti ti-star"></i> On hold — tap to activate'; ab.onclick = function () { g.active = !g.active; save(); draw(); renderSuggest(todayK()); };
       var hint = add(body, "div", "goal-hint"); hint.innerHTML = '<i class="ti ti-subtask"></i> break it into steps → schedule them into your days';
-      var bd = add(body, "button", "goal-breakdown"); bd.innerHTML = '<i class="ti ti-wand"></i> Break it down for me'; bd.onclick = function () { var have = {}; (g.subtasks || []).forEach(function (s) { have[s.title.toLowerCase()] = 1; }); decomposeGoal(g).forEach(function (st) { if (!have[st.toLowerCase()]) (g.subtasks = g.subtasks || []).push({ title: st, done: false }); }); save(); draw(); };
+      var brow = add(body, "div", "goal-brow");
+      var bd = add(brow, "button", "goal-breakdown"); bd.innerHTML = '<i class="ti ti-wand"></i> Break it down for me'; bd.onclick = function () { var have = {}; (g.subtasks || []).forEach(function (s) { have[s.title.toLowerCase()] = 1; }); decomposeGoal(g).forEach(function (st) { if (!have[st.toLowerCase()]) (g.subtasks = g.subtasks || []).push({ title: st, done: false }); }); save(); draw(); };
+      var tb = add(brow, "button", "goal-toobig"); tb.innerHTML = '😰 Feels too big?'; tb.onclick = function () { tooBigSheet(g); };
       add(body, "div", "goal-tier", "free: first-principles starter · 🧠 brain tailors it to you");
       var sl = add(body, "div", "goal-steps");
       (g.subtasks || []).forEach(function (st, i) {
