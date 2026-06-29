@@ -427,10 +427,11 @@
   }
   function openJourney() {
     var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open");
+    document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
     drawJourney(true);
   }
-  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
+  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); } // back to the Planner → highlight Planner
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
     var tut = !(S.guide && S.guide.tutCommit);
     var ov = add(document.body, "div", "bento-ov");
@@ -3941,7 +3942,7 @@
       var moved = false, done = false, holdT = null;
       function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 30, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); bentoPicker({ title: "What's the plan?", onPick: function (x) { var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (!nb) return; nb.title = x.title; nb.color = x.color || (DOM[x.domain] || DOM.focus).c; nb.catK = x.catK || null; nb.domain = x.domain || domainOf(x); reflow(k); save(); renderToday(); }, onCancel: function () { var a = blocks(k), i = a.map(function (b) { return b.id; }).indexOf(id); if (i >= 0) { a.splice(i, 1); reflow(k); save(); renderToday(); } } }); } // tap an empty slot → a 30-min bubble lands AT the tapped time, then the bento opens immediately (single-tap to pick) and the activity appears in place; tap the placed bubble AGAIN to open the full editor. Dismiss the bento with no pick → the empty stub is removed (no litter). (David 2026-06-27 — was: created the stub then jumped straight into the full editor)
       // PRESS-AND-HOLD-to-create REMOVED (David 2026-06-27, "I don't like it") — empty bubbles are made by a deliberate quick TAP only (in up()), never an accidental hold. holdT stays null; the done/holdT guards below are harmless no-ops.
-      function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 12 || Math.abs(e.clientX - dx) > 12)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // a drag means you're scrolling → cancel the create
+      function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 6 || Math.abs(e.clientX - dx) > 6)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // ANY slide (even a slow one >6px) = scrolling → cancel the create, so a slow scroll never pops the bento. Create is a STILL tap only. (David 2026-07-02; was 12px which let slow drifts create)
       function up(e) {
         if (holdT) { clearTimeout(holdT); holdT = null; }
         document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
@@ -5181,8 +5182,9 @@
     renderAll();
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
-    if (S.profile && S.profile.set) { try { if ((S.guide || {}).mode === "guided") journeyTick(); } catch (e) {} setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); } // JOURNEY IS HOME (David 2026-06-29): land on the journey path on every cold open. The "Plan your day" circle is the prompt — no auto planner pop over the home (the old elicitor is retired).
-    else setTimeout(onboard, 350); // first-run onboarding → its finish lands you on the journey
+    try { if ((S.guide || {}).mode === "guided") journeyTick(); } catch (e) {}
+    setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot, regardless of profile.set — fixes "nav says Journey but it opened the Planner". Onboarding (below) overlays on top for new users.
+    if (!(S.profile && S.profile.set)) setTimeout(onboard, 350);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
