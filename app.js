@@ -407,6 +407,30 @@
         color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + oneThing); } });
     }
 
+    // GOAL ⇄ JOURNEY (David 2026-06-29 — the spine): each active goal projects its NEXT move onto the trail, so the journey advances your goals, not just today's blocks. A metric goal → "log your number"; a step goal → its smallest undone step. Skips moves already on today's plan (the block node covers those). Capped so the trail never floods.
+    var gSeen = {};
+    (activeGoals() || []).slice(0, 3).forEach(function (g) {
+      var gc = (DOM[g.domain] || DOM.focus).c, gti = (DOM[g.domain] || DOM.focus).ti, m = g.metric;
+      if (m && m.target != null && m.current != null) {
+        var hit = m.dir === "down" ? m.current <= m.target : m.current >= m.target;
+        if (!hit) {
+          var loggedToday = (m.hist || []).some(function (h) { return h.k === k; });
+          nodes.push({ key: "goalm:" + g.title, emoji: "📈", icon: "ti-chart-line", title: g.title, catK: null,
+            line: fmtNum(m.current) + " → " + fmtNum(m.target) + " " + (m.unit || "") + " · " + metricPct(m) + "% there — tap to log today.",
+            color: gc, done: loggedToday, act: function () { try { logMetric(g, function () { drawJourney(); }); } catch (e) {} } });
+          return; // one node per goal — the number IS the move today
+        }
+      }
+      var st = (g.subtasks || []).filter(function (s) { return !s.done; })[0];
+      if (st && !gSeen[st.title.toLowerCase()] && !planned.some(function (b) { return (b.title || "").toLowerCase() === st.title.toLowerCase(); })) {
+        gSeen[st.title.toLowerCase()] = 1;
+        nodes.push({ key: "goalst:" + g.title, emoji: "🎯", icon: gti, title: st.title, catK: null,
+          line: "Next on " + g.title + " — tap to start it now.",
+          color: gc, done: (logs(k) || []).some(function (l) { return (l.title || "").toLowerCase() === st.title.toLowerCase(); }),
+          act: function () { startTimer({ title: st.title, color: gc }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ " + st.title); } });
+      }
+    });
+
     // Fundamentals / habits — done stays visible with a check so the trail fills behind you. BODY-FIRST: when energy is low, body/restore habits sort to the front.
     var habs = (S.habits || []).filter(function (h) { return h.type !== "quit"; });
     if (pf.lowEnergy) { var BODY = /move|breath|walk|run|stretch|water|drink|sleep|rest|medit|sun|cold|shower|wash|tidy/i; habs = habs.slice().sort(function (a, b) { return (BODY.test(b.l) ? 1 : 0) - (BODY.test(a.l) ? 1 : 0); }); }
@@ -2660,7 +2684,7 @@
       P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck"); P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other"; // wire the once-dead vibe: an overwhelmed/stuck onboarder gets the body-first low-energy gate until real mood data arrives (David 2026-06-29 readiness test)
       P.goals = keys(data.goals).join(", "); P.wake = data.wake; P.sleep = data.bed; P.peak = data.peak; P.lark = (data.peak !== "owl"); P.set = true;
       S.acts = S.acts || []; keys(data.kept).forEach(function (t) { if (!TITLE2CAT[t.toLowerCase()] && !S.acts.filter(function (a) { return a.title === t; })[0]) S.acts.push({ title: t, catK: null, domain: domainOf({ title: t }) }); });
-      S.goals = keys(data.goals).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : domainOf({ title: g }), subtasks: [] }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); return go; }); // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
+      S.goals = keys(data.goals).map(function (g, _gi) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : domainOf({ title: g }), subtasks: [], active: _gi < 3 }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); return go; }); // mark the first few active so they immediately pull onto the journey + daily suggestions (David 2026-06-29 spine) // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
       // ===== ONBOARDING → JOURNEY SEED (David 2026-06-28): write what the journey path reads so a new user's trail is THEIRS, not generic demo circles. All additive, guarded. =====
       // 1) HABITS the user chose → S.habits (so the journey's habit circles are theirs). Fall back to defaults if they cleared everything.
       var allHabDefs = DEFAULT_HABITS.concat(EXTRA_HABITS).concat(data.customHabits);
@@ -4217,7 +4241,7 @@
       var rightTrack = !isFuture && showNow && lx0 > rect0.width * 0.5; // present/past REAL lane → tap-to-track, not create
       var planSide = isFuture || lx0 <= rect0.width * 0.5;
       var moved = false, done = false, holdT = null;
-      function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 30, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); bentoPicker({ title: "What's the plan?", onPick: function (x) { var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (!nb) return; nb.title = x.title; nb.color = x.color || (DOM[x.domain] || DOM.focus).c; nb.catK = x.catK || null; nb.domain = x.domain || domainOf(x); reflow(k); save(); renderToday(); }, onCancel: function () { var a = blocks(k), i = a.map(function (b) { return b.id; }).indexOf(id); if (i >= 0) { a.splice(i, 1); reflow(k); save(); renderToday(); } } }); } // tap an empty slot → a 30-min bubble lands AT the tapped time, then the bento opens immediately (single-tap to pick) and the activity appears in place; tap the placed bubble AGAIN to open the full editor. Dismiss the bento with no pick → the empty stub is removed (no litter). (David 2026-06-27 — was: created the stub then jumped straight into the full editor)
+      function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 60, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); bentoPicker({ title: "What's the plan?", onPick: function (x) { var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (!nb) return; nb.title = x.title; nb.color = x.color || (DOM[x.domain] || DOM.focus).c; nb.catK = x.catK || null; nb.domain = x.domain || domainOf(x); reflow(k); save(); renderToday(); }, onCancel: function () { var a = blocks(k), i = a.map(function (b) { return b.id; }).indexOf(id); if (i >= 0) { a.splice(i, 1); reflow(k); save(); renderToday(); } } }); } // tap an empty slot → a 30-min bubble lands AT the tapped time, then the bento opens immediately (single-tap to pick) and the activity appears in place; tap the placed bubble AGAIN to open the full editor. Dismiss the bento with no pick → the empty stub is removed (no litter). (David 2026-06-27 — was: created the stub then jumped straight into the full editor)
       function fireCreate() { if (rightTrack) bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); else makeBlock(); }
       // ADD an activity = a deliberate LONG-PRESS now (a quick tap is reserved for DOUBLE-TAP-to-zoom) — David 2026-07-02
       holdT = setTimeout(function () { if (moved || _pinching) return; holdT = null; done = true; try { if (navigator.vibrate) navigator.vibrate(11); } catch (e) {} fireCreate(); }, 360);
