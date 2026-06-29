@@ -648,6 +648,29 @@
     if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); }
     else if (!gaming) revealTimeline();
   }
+  // ===== 3-PANE SPINE (David 2026-06-30): horizontal swipe switches Planner ↔ Journey ↔ Game. One axis for the whole app; vertical scroll stays "within the pane". paneSwipe attaches a 1-finger horizontal detector that fires left()/right() ONLY on a committed horizontal gesture, and bails the instant a 2nd finger lands (pinch) or the gesture starts on an interactive drag target (bubble/grip/node/button/slider) so it never hijacks a tap, a bubble drag, or a pinch-zoom. =====
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b";
+  function paneSwipe(host, opts) {
+    if (!host || host._paneSw) return; host._paneSw = 1;
+    var sx = 0, sy = 0, on = false, armed = false, multi = false;
+    host.addEventListener("pointerdown", function (e) {
+      if (!e.isPrimary) { multi = true; armed = false; return; }
+      multi = false; on = false; armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
+      sx = e.clientX; sy = e.clientY;
+    }, true);
+    host.addEventListener("pointermove", function (e) {
+      if (!armed || multi) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!on) { if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { armed = false; return; } // vertical intent → it's a scroll, let it go
+        if (Math.abs(dx) > 22 && Math.abs(dx) > Math.abs(dy) * 1.5) { on = true; e.preventDefault(); } }
+      else { e.preventDefault(); }
+    }, { passive: false });
+    function end(e) {
+      if (armed && on && !multi) { var dx = e.clientX - sx; if (dx <= -48 && opts.left) opts.left(); else if (dx >= 48 && opts.right) opts.right(); }
+      on = false; armed = false;
+    }
+    host.addEventListener("pointerup", end); host.addEventListener("pointercancel", function () { on = false; armed = false; });
+  }
   // ===== WELCOME-BACK RE-ASSESSMENT (David 2026-06-29): David drifts off-path for weeks then returns — the journey must NOT resume stale. Detect a lapse (≥14d since last activity) → a gentle, anti-shame re-gauge: energy now? · which goals still matter? · ease back gentle. Recalibrate (lowStart gate, prune paused goals) without demoting progress. =====
   function daysSinceK(k) { try { var a = (k || "").split("-"), d = new Date(+a[0], +a[1] - 1, +a[2]); var t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - d) / 86400000)); } catch (e) { return 0; } }
   function lastActiveK() { var tk = todayK(), ks = {}; Object.keys(S.log || {}).forEach(function (k) { if ((S.log[k] || []).length) ks[k] = 1; }); Object.keys(S.bk || {}).forEach(function (k) { var e = S.bk[k] || {}; if ((e.am && e.am.done) || (e.pm && e.pm.done) || ((e.journal || []).length)) ks[k] = 1; }); Object.keys(S.blocks || {}).forEach(function (k) { if ((S.blocks[k] || []).some(function (b) { return b.done; })) ks[k] = 1; }); return Object.keys(ks).filter(function (k) { return k < tk; }).sort().pop() || null; }
@@ -1512,7 +1535,7 @@
       pb.addEventListener("pointerdown", function (e) {
         if (e.isPrimary) { ptrs = {}; pVD0 = 0; single = false; swOn = false; swPgr = null; _pinching = 0; if (_zoomRaf) { cancelAnimationFrame(_zoomRaf); _zoomRaf = 0; } pb.classList.remove("zooming"); var _frs = pb.querySelector(".day-card.cur .day-cardscroll"); if (_frs && _frs.style.overflowY) _frs.style.overflowY = ""; } // also un-freeze the scroll if a prior pinch ended without a clean commit // a fresh gesture clears any stale/stuck pointers + zoom-suppress class (David 2026-06-25)
         ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; var n = Object.keys(ptrs).length;
-        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = (pullZoom === "day" && !(e.target.closest && e.target.closest(".grip,.gript,.calx,.live-stop,button"))) ? pb.querySelector(".day-pager") : null; } // a quick HORIZONTAL swipe pages the day even starting on a bubble (the bubble only edits on a near-stationary tap); VERTICAL drags fall through to the continuous scroll which changes days on its own (David 2026-06-26)
+        if (n === 1) { single = true; sX = e.clientX; sY = e.clientY; swOn = false; swW = pb.clientWidth || 1; swPgr = null; } // HORIZONTAL day-slide RETIRED (David 2026-06-30): the horizontal axis now switches the 3 panes (Planner/Journey/Game) via paneSwipe; day nav = vertical continuous-scroll + week strip. Vertical drags still fall through to the continuous scroll which changes days.
         else if (n === 2) { single = false; swOn = false; _pinching = 1; if (swPgr) { swPgr.style.transition = "transform .15s"; swPgr.style.transform = "translateX(-33.3333%)"; } swPgr = null; var _ct = pb.querySelectorAll(".day-card.cur .nowline, .day-card.cur .nowcirc, .day-card.cur .nowread, .day-card.cur .nowtime"); for (var _cti = 0; _cti < _ct.length; _cti++) _ct[_cti].style.transform = ""; /* clear the per-second-creep transform before zooming — else its leftover translateY offsets the now-line during the pinch and snaps on commit (the fast-zoom "jump") — David 2026-06-27 */ var _sc = pb.querySelector(".day-card.cur .day-cardscroll"); pb.classList.add("zooming"); if (_sc) { _sc.scrollTop = _sc.scrollTop; _sc.style.overflowY = "hidden"; } /* CUT any in-flight momentum scroll the instant 2 fingers land (overflow:hidden halts iOS momentum; reading+writing scrollTop snaps it) so a pinch always wins over a coasting flick — zoomLive drives scrollTop programmatically during the pinch anyway, and overflow is restored on commit. Also flag .zooming NOW so a finger resting on a bubble can't select/scale it before the first zoom frame (David 2026-06-27) */ pVD0 = Math.max(8, pvdist()); pHP0 = pHPLast = pullHourPx; pMid0 = pmidY(); pScroll0 = _sc ? _sc.scrollTop : 0; pContTop = _sc ? _sc.getBoundingClientRect().top : 0; pAnchorContent = pScroll0 + (pMid0 - pContTop); var _asec = null, _ass = _sc ? _sc.querySelectorAll(".day-sec") : []; for (var _ai = 0; _ai < _ass.length; _ai++) { if (_ass[_ai].offsetTop <= pAnchorContent) _asec = _ass[_ai]; } if (!_asec && _ass.length) _asec = _ass[0]; pAnchorSecDk = _asec ? _asec.dataset.dk : null; var _acal = _asec ? _asec.querySelector(".cal") : null; pAnchorStartH = _acal ? (+_acal.dataset.startH || 6) : 6; pAnchorCalOff = (_acal && _asec) ? (_acal.getBoundingClientRect().top - _asec.getBoundingClientRect().top) : 0; var _contentInCal = (pAnchorContent - (_asec ? _asec.offsetTop : 0)) - pAnchorCalOff; pAnchorMin = pAnchorStartH * 60 + (_contentInCal / pHP0) * 60; } // 2 fingers → PINCH+PAN, both live (iPhone Photos). Anchor by the exact MINUTE under the finger midpoint + which day-section, then re-place it via the same linear (min→px) formula the bubbles use. (Anchoring by FRACTION-of-section-height drifts because the section height carries a constant +10px margin that doesn't scale → worst at the zoom extremes; minute-anchoring is exact at every zoom — David 2026-06-26)
       });
       pb.addEventListener("pointermove", function (e) {
@@ -5613,6 +5636,10 @@
       var p = el("jpnPlanner"); if (p) p.onclick = function () { closeJourney(); }; // Planner = the timeline underneath the journey
       var j = el("jpnJourney"); if (j) j.onclick = function () { drawJourney(true); }; // scroll back to now
       var g = el("jpnGame"); if (g) g.onclick = function () { closeJourney(); try { openGame(); } catch (e) {} }; // Game = the island/world
+    })();
+    (function () { // 3-PANE SPINE wiring (David 2026-06-30): swipe the whole app between Planner ↔ Journey. (Game-swipe is next ship — it needs the world-pan conflict solved.)
+      var ps = el("pullSheet"); if (ps) paneSwipe(ps, { left: function () { if (!document.body.classList.contains("journey-open")) openJourney(); } }); // planner → swipe left → journey (the pane to its right)
+      var jp = el("journeyPath"); if (jp) paneSwipe(jp, { right: function () { closeJourney(); } }); // journey → swipe right → planner (the pane to its left)
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
