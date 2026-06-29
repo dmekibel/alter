@@ -107,7 +107,12 @@
   #journeyPath{position:fixed;top:0;left:0;right:0;bottom:0;z-index:75;background:linear-gradient(180deg,#2a0d1c 0%,#1c0814 45%,#160510 100%);opacity:0;pointer-events:none;transition:opacity .22s;overflow:hidden;display:flex;flex-direction:column;} /* top+bottom:0 anchors to BOTH real edges (NO height — height would override bottom:0 and stop short of the home indicator, leaving the gap) — David 2026-07-02 */
   #journeyPath.on{opacity:1;pointer-events:auto;}
   .jp-head{position:relative;z-index:3;flex:none;padding:max(14px,env(safe-area-inset-top)) 18px 12px;background:linear-gradient(180deg,rgba(42,13,28,.96),rgba(42,13,28,.0));}
-  .jp-headrow{display:flex;align-items:center;gap:12px;}
+  .jp-headrow{display:flex;align-items:center;gap:10px;}
+  /* persistent SPARK counter (Duolingo-style) — always visible, pulses when you earn (David 2026-07-02) */
+  .spark-pill{display:flex;align-items:center;gap:5px;flex:none;background:#160510;border:2px solid #6a3050;border-radius:12px;padding:6px 11px;color:#ffd24a;font-family:var(--bub);font-weight:800;font-size:14px;line-height:1;}
+  .spark-pill i{font-size:16px;color:#ffd24a;}
+  .spark-pill.bump{animation:sparkBump .42s cubic-bezier(.2,.9,.3,1.45);}
+  @keyframes sparkBump{0%{transform:scale(1);}38%{transform:scale(1.24);}100%{transform:scale(1);}}
   .jp-goals{margin-left:auto;flex:none;width:38px;height:38px;border-radius:12px;border:2px solid #6a3050;background:#3a1226;color:#ffd9ea;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .jp-goals:active{transform:translateY(2px);}
   .jp-x{width:38px;height:38px;flex:none;border-radius:12px;border:2px solid #6a3050;background:#3a1226;color:#ffd9ea;font-size:20px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Jost",sans-serif;}
@@ -1524,7 +1529,7 @@
   </div>
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=634"></script>
+  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
+  <script src="app.js?v=635"></script>
 </body>
 </html>
