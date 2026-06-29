@@ -29,7 +29,7 @@
   .casc-blk{ animation:cascBlk var(--dur-enter) var(--ease-spring) both; }
   @media (prefers-reduced-motion: reduce){ .sfc-reveal, .casc-item, .casc-blk{ animation:none !important; } }
   /* UNIVERSAL menu entrance (v650): EVERY overlay card springs in + its backdrop fades — one rule animates the whole app's menus on appear, not feature-by-feature */
-  @keyframes popIn{ from{ opacity:0; transform:translateY(15px) scale(.96); } to{ opacity:1; transform:none; } }
+  @keyframes popIn{ from{ opacity:0; transform:translateY(22px) scale(.8); } to{ opacity:1; transform:none; } }
   @keyframes ovFade{ from{ opacity:0; } to{ opacity:1; } }
   .dur-card, .goal-card, .mind-card, .nb-card, .ob-card, .sheetcard{ animation:popIn var(--dur-enter) var(--ease-spring) both; }
   .dur-ov, .goal-ov, .mind-ov, .nb-ov, .cele-ov{ animation:ovFade var(--dur-micro) var(--ease-settle) both; }
@@ -45,10 +45,19 @@
   .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.08); border:2px solid #3a1730; color:#ffd9ec; border-radius:14px; padding:8px 13px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; cursor:pointer; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
   .ss-hero{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
   .ss-sparkles{ color:#ffd24a; font-size:30px; line-height:1; opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .15s both; }
-  .ss-guardian-wrap{ margin:2px 0 8px; animation:ssFloatIn .7s var(--ease-spring) both, ssBob 3.2s ease-in-out 1s infinite; }
-  .ss-guardian{ width:156px; height:156px; background:url(icon-512.png?v=1) center/contain no-repeat; border-radius:36px; } /* the app mark (halo + spark) — placeholder character TBD (David 2026-07-02) */
-  @keyframes ssBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-12px); } }
-  @keyframes ssFloatIn{ from{ opacity:0; transform:translateY(42px); } to{ opacity:1; transform:none; } }
+  .ss-guardian-wrap{ margin:2px 0 8px; animation:ssSpawn .74s var(--ease-spring) both, ssBob 3.2s ease-in-out 1.1s infinite; }
+  .ss-guardian{ width:156px; height:156px; border-radius:36px; background:radial-gradient(circle at 50% 46%, rgba(255,95,160,.32), transparent 62%), linear-gradient(160deg,#300d20,#160510); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; animation:ssGlow 2.6s ease-in-out infinite; } /* the app mark as a tile — placeholder character TBD (David 2026-07-02) */
+  .ss-mark{ width:80%; height:80%; overflow:visible; }
+  .ss-halo{ transform-box:fill-box; transform-origin:center; animation:ssHalo 4s ease-in-out infinite; }
+  .ss-spark{ transform-box:fill-box; transform-origin:center; animation:ssSparkLive 2.6s ease-in-out infinite; }
+  .ss-spk2{ transform-box:fill-box; transform-origin:center; animation:ssTwinkle 2s ease-in-out infinite; }
+  .ss-spk3{ transform-box:fill-box; transform-origin:center; animation:ssTwinkle 2.2s ease-in-out 1s infinite; }
+  @keyframes ssHalo{ 0%,100%{ transform:rotate(-15deg) scaleX(1); } 50%{ transform:rotate(-6deg) scaleX(1.05); } }
+  @keyframes ssSparkLive{ 0%{ transform:rotate(0deg) scale(.95); } 50%{ transform:rotate(10deg) scale(1.13); } 100%{ transform:rotate(0deg) scale(.95); } }
+  @keyframes ssTwinkle{ 0%,100%{ opacity:.4; transform:scale(.6); } 50%{ opacity:1; transform:scale(1.2); } }
+  @keyframes ssBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-13px); } }
+  @keyframes ssSpawn{ from{ opacity:0; transform:scale(.25) rotate(-25deg); } to{ opacity:1; transform:none; } }
+  @keyframes ssGlow{ 0%,100%{ filter:drop-shadow(0 6px 16px rgba(255,95,160,.22)); } 50%{ filter:drop-shadow(0 6px 32px rgba(255,95,160,.55)); } }
   .ss-title{ font-family:"Baloo 2","Jost",sans-serif; font-weight:800; font-size:54px; letter-spacing:4px; color:#fff; text-shadow:0 4px 0 #160510, 0 0 30px rgba(255,95,160,.45); opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .3s both; }
   .ss-tag{ color:#c79ab4; font-size:14px; font-weight:600; margin-top:2px; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .45s both; }
   @keyframes ssPop{ from{ opacity:0; transform:scale(.7); } to{ opacity:1; transform:none; } }
@@ -60,7 +69,7 @@
   .ss-new{ background:rgba(255,255,255,.05); color:#ff9a9a; border-color:#5a2233; animation:ssRise var(--dur-enter) var(--ease-spring) .66s both; }
   .ss-new:active{ transform:scale(.97); }
   @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
-  @media (prefers-reduced-motion: reduce){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
+  @media (prefers-reduced-motion: reduce){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
   html,body{height:100%;color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-weight:500;
     background:linear-gradient(170deg,#92e2ff 0%,#c7b2ff 50%,#ffc0e2 100%);}
@@ -738,8 +747,8 @@
   .timemark-lab{ position:absolute; left:0; top:-8px; background:#1c0512; font-family:"Jost",sans-serif; font-weight:700; font-size:9.5px; padding:1px 6px; border-radius:6px; display:flex; align-items:center; gap:3px; white-space:nowrap; }
   /* ============ BENTO picker (1:1 from mockup 019) ============ */
   .bento-ov{ position:fixed; inset:0; z-index:95; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; } /* above #trackerFull (z90) so pickers opened FROM the tracker are visible (David 2026-06-27) */
-  .bento-card{ width:min(460px,96vw); max-height:90vh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
-  @keyframes bentoIn{ from{ transform:translateY(-14px) scale(.96); opacity:0; } to{ transform:none; opacity:1; } }
+  .bento-card{ width:min(460px,96vw); max-height:90vh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
+  @keyframes bentoIn{ from{ transform:translateY(8px) scale(.84); opacity:0; } to{ transform:none; opacity:1; } } /* bouncier pop (v654) — every menu using bentoIn springs in */
   /* zoom transitions between day/week/month (David 2026-06-24; rebuilt as a crossfade+scale 2026-06-27) */
   #pullBody{ transform-origin:50% 24%; }
   @keyframes zoomBroad{ from{ opacity:.4; transform:scale(1.14); } to{ opacity:1; transform:scale(1); } }
@@ -1078,7 +1087,7 @@
   .dur-x{ display:block; margin:13px auto 0; background:transparent; border:none; color:#c79ab4; font-family:"Jost",sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
   /* ============ GOALS pillar (§16, mockups 009/010) ============ */
   .goal-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
-  .goal-card{ width:min(460px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
+  .goal-card{ width:min(460px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
   .goal-head{ display:flex; align-items:center; gap:8px; padding:13px 14px 10px; flex:none; border-bottom:2px solid #160510; background:#1c0512; }
   .goal-q{ color:#ffe3f1; font-size:17px; font-weight:700; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:7px; }
   .goal-audit{ flex:none; background:#34d39a; color:#0a3326; border:2px solid #160510; border-radius:9px; padding:3px 9px; font-size:11.5px; font-weight:700; display:flex; align-items:center; gap:4px; }
@@ -1126,7 +1135,7 @@
   .preset-del{ flex:none; width:28px; height:28px; border-radius:8px; background:#48122f; border:2px solid #160510; color:#ffd0e6; display:flex; align-items:center; justify-content:center; font-size:12px; }
   /* ============ IDENTITY MINDMAP (§21, mockups 017/018) ============ */
   .mind-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.66); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
-  .mind-card{ width:min(420px,96vw); max-height:90vh; max-height:90dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
+  .mind-card{ width:min(420px,96vw); max-height:90vh; max-height:90dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
   .mind-body{ overflow:auto; padding:10px 14px 16px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; }
   .mind-sub{ color:#c79ab4; font-size:12px; font-weight:600; text-align:center; margin:2px 0 4px; }
   .mind-stage{ position:relative; width:100%; max-width:330px; margin:14px auto 22px; aspect-ratio:1; overflow:visible; }
@@ -1160,7 +1169,7 @@
   #notebookBtn{ position:absolute; left:22px; bottom:116px; z-index:6; width:56px; height:56px; border-radius:16px; background:#ff5fa0; border:3px solid #160510; box-shadow:0 4px 0 #160510; color:#4a1126; font-size:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   #notebookBtn:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   .nb-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
-  .nb-card{ width:min(420px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .26s cubic-bezier(.2,.9,.3,1.25); }
+  .nb-card{ width:min(420px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
   .nb-body{ overflow:auto; padding:12px; display:flex; flex-direction:column; gap:9px; -webkit-overflow-scrolling:touch; }
   .nb-item{ display:flex; align-items:center; gap:12px; width:100%; background:#3a1226; border:2px solid #160510; border-radius:15px; padding:12px; cursor:pointer; box-shadow:0 3px 0 #160510; text-align:left; font-family:"Jost",sans-serif; transition:transform .1s; }
   .nb-item:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
@@ -1604,7 +1613,14 @@
     <button class="ss-lang" id="ssLang"><i class="ti ti-world"></i> <span id="ssLangName">English</span></button>
     <div class="ss-hero">
       <div class="ss-sparkles"><i class="ti ti-sparkles"></i></div>
-      <div class="ss-guardian-wrap"><div class="ss-guardian"></div></div>
+      <div class="ss-guardian-wrap"><div class="ss-guardian">
+        <svg class="ss-mark" viewBox="0 0 120 120" aria-hidden="true">
+          <ellipse class="ss-halo" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#ffd24a" stroke-width="7" stroke-linecap="round"/>
+          <path class="ss-spark" fill="#ff5fa0" d="M60 22 L66 54 L98 60 L66 66 L60 98 L54 66 L22 60 L54 54 Z"/>
+          <path class="ss-spk2" fill="#ffd24a" d="M88 27 L91 33 L97 36 L91 39 L88 45 L85 39 L79 36 L85 33 Z"/>
+          <path class="ss-spk3" fill="#36b3f0" d="M34 74 L37 81 L44 84 L37 87 L34 94 L31 87 L24 84 L31 81 Z"/>
+        </svg>
+      </div></div>
       <div class="ss-title">ALTER</div>
       <div class="ss-tag">your guardian-angel life sim</div>
     </div>
@@ -1613,6 +1629,6 @@
       <button class="ss-btn ss-new" id="ssNew"><i class="ti ti-rotate-2"></i> New game</button>
     </div>
   </div>
-  <script src="app.js?v=653"></script>
+  <script src="app.js?v=654"></script>
 </body>
 </html>

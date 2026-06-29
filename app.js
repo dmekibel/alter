@@ -473,8 +473,8 @@
     _ssShown = true;
     var has = !!(S.profile && S.profile.set);
     var prim = el("ssPrimary"), nb = el("ssNew"), ln = el("ssLangName"), lb = el("ssLang");
-    if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-sparkles"></i> Begin';
-    if (nb) nb.style.display = has ? "" : "none";
+    if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-player-play-filled"></i> Start'; // primary always present: Continue a save, or Start a fresh one (→ onboarding)
+    if (nb) { nb.style.display = ""; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; } // ALWAYS show New game so both options are visible (David 2026-07-02)
     if (ln) ln.textContent = S.lang || "English";
     ss.classList.add("on");
     if (prim) prim.onclick = function () { ssEnter(has); };
