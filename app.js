@@ -335,7 +335,7 @@
   // ===== WAVE 1 — the VECTOR read (David 2026-06-28): extends the scalar readiness() into a profile with ENERGY (the gate) + RECOVERY (the equanimity signal). Pure; reads only data already in S; surfaced ONLY as warm voice, never a number. The energy-first gate (Johnson Step 1 + david-framework "regulate first, then think" + Principle 7) is the law that makes ALTER a guardian, not a menu.
   function profile() {
     var energy = currentMood(); // 0..4, reuse the shipped mood read — no quiz (refine later: capture in the AM / infer from sleep)
-    var lowEnergy = energy <= 1;
+    var lowEnergy = energy <= 1 || (S.profile && S.profile.lowStart && energy <= 2); // honor an "Overwhelmed/Stuck" onboarding answer at neutral mood too, until they log clearly higher energy (David 2026-06-29)
     var days = lastDays(14), chron = days.slice().reverse(); // oldest → newest
     function keptOn(dk) { return ((S.blocks || {})[dk] || []).some(function (b) { return b.title && blockStatus(dk, b) === "ok"; }); }
     function missOn(dk) { return ((S.blocks || {})[dk] || []).some(function (b) { return b.title && blockStatus(dk, b) === "miss"; }); }
@@ -820,6 +820,7 @@
   var DECOMP_TEMPLATES = [
     { kw: ["learn", "skill", "piano", "guitar", "language", "study", "course", "draw", "paint", "practice"], steps: ["Pick the tiniest 2-min daily rep", "Choose ONE resource to follow", "Block one real session this week", "Do the tiny rep daily", "Review what stuck — monthly"] },
     { kw: ["fit", "gym", "run", "lean", "weight", "strong", "health", "exercise", "move", "yoga"], steps: ["Pick a movement you enjoy", "Schedule 3 short sessions this week", "Set a 5-min daily move (never zero)", "Prep the night before", "Check energy weekly"] },
+    { kw: ["clean", "tidy", "mess", "declutter", "house", "home", "room", "kitchen", "floor", "dishes", "laundry", "chore", "organize", "organise"], steps: ["Set a 5-min timer — just start", "Clear ONE surface (the kitchen counter)", "Just the dishes in the sink", "Put one load of laundry in", "Pick up 10 things off the floor", "Tomorrow: one more small zone"] },
     { kw: ["portfolio", "finish", "ship", "launch", "project", "build", "website", "reel", "app", "write", "book"], steps: ["List exactly what's left", "Pick the next concrete piece", "Block weekly deep-work", "Set a finish line (done > perfect)", "Share / send it out"] },
     { kw: ["save", "money", "budget", "spend", "debt", "finance"], steps: ["Set a monthly spending cap", "List your fixed costs", "Pick ONE thing to cut", "5-min weekly money check", "Move a little to savings monthly"] },
     { kw: ["business", "linkedin", "audience", "grow", "brand", "client", "sell", "post", "youtube", "channel"], steps: ["Define the one offer / message", "Pick a daily posting slot", "Batch a week of content at once", "Engage 10 min/day", "Review reach monthly"] },
@@ -2519,12 +2520,12 @@
     { k: "teacher", l: "Teacher", ti: "ti-school", c: "#34d39a", occ: "office" }, { k: "healthcare", l: "Healthcare", ti: "ti-stethoscope", c: "#ff5fa0", occ: "office" },
     { k: "sales", l: "Sales / Biz", ti: "ti-trending-up", c: "#ff8a3a", occ: "founder" }, { k: "service", l: "Service / Hospitality", ti: "ti-coffee", c: "#ff8a3a", occ: "office" },
     { k: "trades", l: "Trades / Hands-on", ti: "ti-tools", c: "#7f9bc4", occ: "office" }, { k: "athlete", l: "Athlete", ti: "ti-run", c: "#ff8a3a", occ: "other" },
-    { k: "musician", l: "Musician", ti: "ti-music", c: "#b07aff", occ: "artist" }, { k: "jobseeker", l: "Job-seeking", ti: "ti-search", c: "#ffc83d", occ: "other" },
+    { k: "musician", l: "Musician", ti: "ti-music", c: "#b07aff", occ: "artist" }, { k: "filmmaker", l: "Filmmaker", ti: "ti-movie", c: "#b07aff", occ: "artist" }, { k: "jobseeker", l: "Job-seeking", ti: "ti-search", c: "#ffc83d", occ: "other" },
     { k: "remote", l: "Remote worker", ti: "ti-home", c: "#34d39a", occ: "dev" }, { k: "retired", l: "Retired", ti: "ti-umbrella", c: "#2ab8c4", occ: "other" },
     { k: "homemaker", l: "Homemaker", ti: "ti-home-cog", c: "#ff5fa0", occ: "other" }, { k: "figuring", l: "Figuring it out", ti: "ti-compass", c: "#ff8a3a", occ: "other" }
   ];
   var VIBES2 = [ { k: "thriving", l: "Thriving", ti: "ti-flame", c: "#34d39a" }, { k: "coasting", l: "Coasting", ti: "ti-windmill", c: "#ffc83d" }, { k: "stuck", l: "Stuck", ti: "ti-anchor", c: "#7f9bc4" }, { k: "overwhelmed", l: "Overwhelmed", ti: "ti-urgent", c: "#c4607f" } ];
-  var GOAL_SEED = [ { l: "Make art", d: "create", ti: "ti-palette" }, { l: "Grow my business", d: "focus", ti: "ti-briefcase" }, { l: "Get fit", d: "move", ti: "ti-barbell" }, { l: "Learn a skill", d: "create", ti: "ti-bulb" }, { l: "Read more", d: "play", ti: "ti-book" }, { l: "Save money", d: "focus", ti: "ti-coin" }, { l: "Sleep better", d: "restore", ti: "ti-moon" }, { l: "Find love", d: "connect", ti: "ti-heart" }, { l: "Eat healthier", d: "nourish", ti: "ti-apple" }, { l: "Quit a bad habit", d: "drift", ti: "ti-ban" }, { l: "Grow my audience", d: "create", ti: "ti-users" }, { l: "Feel calmer", d: "restore", ti: "ti-wind" } ];
+  var GOAL_SEED = [ { l: "Make art", d: "create", ti: "ti-palette" }, { l: "Grow my business", d: "focus", ti: "ti-briefcase" }, { l: "Get fit", d: "move", ti: "ti-barbell" }, { l: "Learn a skill", d: "create", ti: "ti-bulb" }, { l: "Read more", d: "play", ti: "ti-book" }, { l: "Save money", d: "focus", ti: "ti-coin" }, { l: "Sleep better", d: "restore", ti: "ti-moon" }, { l: "Find love", d: "connect", ti: "ti-heart" }, { l: "Eat healthier", d: "nourish", ti: "ti-apple" }, { l: "Quit a bad habit", d: "drift", ti: "ti-ban" }, { l: "Grow my audience", d: "create", ti: "ti-users" }, { l: "Feel calmer", d: "restore", ti: "ti-wind" }, { l: "Clean my home", d: "upkeep", ti: "ti-home" }, { l: "Lose weight", d: "move", ti: "ti-scale" }, { l: "Make music", d: "create", ti: "ti-music" }, { l: "Make videos", d: "create", ti: "ti-video" }, { l: "Write a book", d: "create", ti: "ti-book" }, { l: "Make money", d: "focus", ti: "ti-cash" } ];
   var EXTRAS2 = ["Get coffee", "Snack", "Water", "Stretch", "Text back", "Tidy 5m", "Vitamins", "Skincare"];
   function stageSuggest(age) { return (age === "teens" || age === "20s") ? "student" : age === "30s" ? "founder" : (age === "40s" || age === "50s") ? "employee" : "figuring"; }
   var STAGE_BASE = { move: ["Walk", "Gym"], nourish: ["Breakfast", "Lunch", "Cook"], connect: ["Call", "Friends"], play: ["Read"], restore: ["Sleep", "Meditate"], upkeep: ["Shower", "Tidy"] };
@@ -2546,6 +2547,7 @@
     trades: [["Job site", "focus"], ["Build", "create"], ["Tools", "upkeep"]],
     athlete: [["Train", "move"], ["Gym", "move"], ["Recovery", "restore"], ["Stretch", "move"]],
     musician: [["Practice", "create"], ["Make music", "create"], ["Perform", "create"]],
+    filmmaker: [["Edit footage", "create"], ["Write script", "create"], ["Film", "create"], ["Post a video", "create"]],
     jobseeker: [["Apply", "focus"], ["Network", "connect"], ["Study", "focus"]],
     remote: [["Deep work", "focus"], ["Meetings", "focus"], ["Email", "focus"]],
     retired: [["Walk", "move"], ["Garden", "play"], ["Hobby", "play"]],
@@ -2556,7 +2558,7 @@
     var data = { gender: "", age: "", vibe: "", stages: {}, customStages: [], kept: {}, _pref: "", goals: {}, wake: "7–8", bed: "11–12", peak: "lark", identity: [], customIdent: [], virtue: "", oneThing: "", habitsSel: {}, customHabits: [], level: "" };
     var step = 0, STEPS = 11;
     var IDENT_SEED = ["an artist", "a builder", "a calm person", "someone fit", "a present partner", "a learner", "disciplined", "generous", "an early riser", "a maker"];
-    var EXTRA_HABITS = [{ id: "water", e: "💧", l: "Drink water", type: "build", per: 0, color: "#48d0e0" }, { id: "walk", e: "🚶", l: "Walk", type: "build", per: 0, color: "#ff8a1e" }, { id: "journal", e: "📓", l: "Journal", type: "build", per: 0, color: "#9a5cf0" }, { id: "stretch", e: "🤸", l: "Stretch", type: "build", per: 0, color: "#ff8a1e" }, { id: "meditate", e: "🧘", l: "Meditate", type: "build", per: 0, color: "#6a5cf0" }, { id: "noscroll", e: "📵", l: "No doomscroll", type: "quit", per: 0, color: "#7f9bc4" }];
+    var EXTRA_HABITS = [{ id: "water", e: "💧", l: "Drink water", type: "build", per: 0, color: "#48d0e0" }, { id: "walk", e: "🚶", l: "Walk", type: "build", per: 0, color: "#ff8a1e" }, { id: "journal", e: "📓", l: "Journal", type: "build", per: 0, color: "#9a5cf0" }, { id: "stretch", e: "🤸", l: "Stretch", type: "build", per: 0, color: "#ff8a1e" }, { id: "meditate", e: "🧘", l: "Meditate", type: "build", per: 0, color: "#6a5cf0" }, { id: "noscroll", e: "📵", l: "No doomscroll", type: "quit", per: 0, color: "#7f9bc4" }, { id: "noweed", e: "🌿", l: "Less weed", type: "quit", per: 0, color: "#7f9bc4" }, { id: "nogame", e: "🎮", l: "Less gaming", type: "quit", per: 0, color: "#7f9bc4" }];
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     var bar = add(card, "div", "ob-bar"), barF = add(bar, "i");
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
@@ -2568,7 +2570,7 @@
     function finish() {
       S.profile = S.profile || {}; var P = S.profile;
       var sel = keys(data.stages).map(function (k) { return LIFESTAGES.filter(function (x) { return x.k === k; })[0]; }).filter(Boolean);
-      P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other";
+      P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck"); P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other"; // wire the once-dead vibe: an overwhelmed/stuck onboarder gets the body-first low-energy gate until real mood data arrives (David 2026-06-29 readiness test)
       P.goals = keys(data.goals).join(", "); P.wake = data.wake; P.sleep = data.bed; P.peak = data.peak; P.lark = (data.peak !== "owl"); P.set = true;
       S.acts = S.acts || []; keys(data.kept).forEach(function (t) { if (!TITLE2CAT[t.toLowerCase()] && !S.acts.filter(function (a) { return a.title === t; })[0]) S.acts.push({ title: t, catK: null, domain: domainOf({ title: t }) }); });
       S.goals = keys(data.goals).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; return { title: g, domain: seed ? seed.d : "focus", subtasks: [] }; });
