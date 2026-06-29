@@ -426,12 +426,12 @@
     return nodes;
   }
   function openJourney() {
-    var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open"); document.body.style.overflow = "hidden"; // LOCK body scroll so the fixed bottom menu reaches the TRUE physical bottom in iOS standalone — the exact thing the game does that the journey didn't (the long-hunted gap fix, workflow-diagnosed 2026-07-02)
+    var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
     drawJourney(true);
   }
-  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); if (!document.body.classList.contains("gaming")) document.body.style.overflow = "hidden"; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); } // back to the Planner (also a fixed-pullSheet scroller) → keep body locked so its nav fills too; the game manages its own lock
+  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); } // back to the Planner (a fixed-pullSheet scroller); body scroll stays locked by CSS (v640)
   function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
     var tut = !(S.guide && S.guide.tutCommit);
@@ -3070,7 +3070,7 @@
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
     gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
-    document.body.classList.add("gaming"); document.body.style.overflow = "hidden";
+    document.body.classList.add("gaming"); // body scroll locked by CSS (v640)
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
     gameNavSetup(); gm.classList.remove("gn-open"); // start FOLDED — the corner button shows, thumbsticks above it
   }
@@ -3087,7 +3087,7 @@
   function closeGame() {
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
     document.body.classList.remove("gaming");
-    gameOn = false; moveX = 0; moveY = 0; document.body.style.overflow = "";
+    gameOn = false; moveX = 0; moveY = 0; // do NOT reset body.overflow here — it must stay locked (this reset was the thing that un-pinned the body and reintroduced the gap) (v640)
   }
   // ---- game-as-home: tap the character → diegetic action hub ----
   function goTab(t) { document.body.classList.add("overworld"); if (!gameOn) openGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } }
@@ -5140,13 +5140,7 @@
     load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
-    (function () { // iOS standalone has a STALE full-screen viewport on first paint → the bottom gap. David's repro: going INTO the game and back fixes it permanently. The game's distinguishing act = it TOGGLES body scroll-lock (open→hidden, exit→"") which forces iOS to re-establish the full-screen viewport. So: REPLICATE that toggle automatically at several delays + on every settle event (just SETTING overflow once at boot, before iOS settles, wasn't enough). (David 2026-07-02)
-      function settle() { try { var b = document.body; b.style.overflow = ""; void document.documentElement.offsetHeight; b.style.overflow = "hidden"; void document.documentElement.offsetHeight; } catch (e) {} } // the scroll-lock TOGGLE = the same reflow the game's open/close cycle triggers → re-establishes the real full-screen bottom
-      ["resize", "orientationchange", "pageshow", "focus"].forEach(function (ev) { window.addEventListener(ev, settle); });
-      if (window.visualViewport) { window.visualViewport.addEventListener("resize", settle); window.visualViewport.addEventListener("scroll", settle); }
-      document.addEventListener("visibilitychange", function () { if (!document.hidden) settle(); });
-      [60, 200, 500, 1000, 1800, 3000, 4500].forEach(function (d) { setTimeout(settle, d); });
-    })();
+    // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)
     var _lastMin = nowMin();
     setInterval(function () {
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
@@ -5189,7 +5183,7 @@
       scard.addEventListener("pointerup", sdEnd); scard.addEventListener("pointercancel", sdEnd);
     })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); document.body.style.overflow = "hidden"; window.scrollTo(0, 0); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
     (function () { var njb = el("navJourney"); if (njb) njb.onclick = function () { document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === njb); }); openJourney(); }; var jg = el("jpGoals"); if (jg) jg.onclick = function () { try { goalsSheet(); } catch (e) {} }; })(); // Journey = the home tab; its header target opens Goals (David 2026-06-29)
     (function () { // the journey's OWN bottom triple menu (Planner · Journey · Game) — the journey is home (David 2026-06-28)
       var p = el("jpnPlanner"); if (p) p.onclick = function () { closeJourney(); }; // Planner = the timeline underneath the journey
@@ -5198,7 +5192,7 @@
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
-    document.body.classList.add("tab-day"); document.body.style.overflow = "hidden"; pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home; lock body scroll so the planner's fixed bottom nav reaches the physical bottom on cold launch (the gap fix)
+    document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home; body scroll is locked by CSS (body{height:100vh;overflow:hidden}) so the fixed bottom nav reaches the physical bottom (v640)
     renderAll();
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
