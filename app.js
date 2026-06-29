@@ -458,8 +458,8 @@
       var blks = [].slice.call(cur.querySelectorAll(".calblk:not(.live)")).filter(function (b) { if (b.offsetParent === null) return false; var r = b.getBoundingClientRect(); return r.bottom > cr.top - 30 && r.top < cr.bottom + 30; });
       var nl = cur.querySelector(".nowline"); var nlr = nl ? nl.getBoundingClientRect() : null; var ny = nlr ? (nlr.top + nlr.height / 2) : (cr.top + cr.height * 0.42);
       blks.sort(function (a, b) { var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return Math.abs((ra.top + ra.height / 2) - ny) - Math.abs((rb.top + rb.height / 2) - ny); });
-      blks.forEach(function (b, i) { b.classList.remove("casc-blk"); void b.offsetWidth; b.style.animationDelay = Math.min(i * 28, 460) + "ms"; b.classList.add("casc-blk"); });
-      setTimeout(function () { blks.forEach(function (b) { b.classList.remove("casc-blk"); b.style.animationDelay = ""; }); }, 1200);
+      blks.forEach(function (b, i) { b.classList.remove("casc-blk"); void b.offsetWidth; b.style.animationDelay = (i * 60) + "ms"; b.classList.add("casc-blk"); }); // bigger stagger → blocks land ONE BY ONE radiating from the now-line (v661)
+      setTimeout(function () { blks.forEach(function (b) { b.classList.remove("casc-blk"); b.style.animationDelay = ""; }); }, blks.length * 60 + 700);
     } catch (e) {}
   }
   function revealTimeline() { try { setTimeout(function () { cascadeTimelineBlocks(); }, 40); } catch (e) {} } // the planner's blocks cascade in on open. (Dropped the clip-path "portal" — it read as a broken circular wipe on dark; the journey now crossfades out to reveal the planner instead. David 2026-07-02 v659)
@@ -468,9 +468,14 @@
     if (prefersReducedMotion()) return;
     try {
       var trail = el("jpTrail"); if (!trail) return;
-      var items = trail.querySelectorAll(".jp-bub, .jp-unit, .jt-b");
-      for (var i = 0; i < items.length; i++) { var it = items[i]; it.classList.remove("jp-pop"); void it.offsetWidth; it.style.animationDelay = Math.min(i * 55, 950) + "ms"; it.classList.add("jp-pop"); }
-      setTimeout(function () { for (var j = 0; j < items.length; j++) { items[j].classList.remove("jp-pop"); items[j].style.animationDelay = ""; } }, 1700);
+      var items = [].slice.call(trail.querySelectorAll(".jp-bub, .jp-unit, .jt-b"));
+      if (!items.length) return;
+      // Duolingo stepping-stones: pop in ONE BY ONE, rippling OUT from the node you're on (the current one lands first, then neighbours up & down).
+      var cur = trail.querySelector(".jp-node.cur .jp-bub") || items[0];
+      var cy = cur.getBoundingClientRect().top;
+      items.sort(function (a, b) { return Math.abs(a.getBoundingClientRect().top - cy) - Math.abs(b.getBoundingClientRect().top - cy); });
+      items.forEach(function (it, i) { it.classList.remove("jp-pop"); void it.offsetWidth; it.style.animationDelay = (i * 95) + "ms"; it.classList.add("jp-pop"); }); // 95ms gap → each stone clearly lands after the previous, not all at once
+      setTimeout(function () { items.forEach(function (it) { it.classList.remove("jp-pop"); it.style.animationDelay = ""; }); }, items.length * 95 + 800);
     } catch (e) {}
   }
   // STAGGERED CASCADE (v648): make a set of just-rendered nodes arrive one-by-one with a spring.
@@ -576,7 +581,7 @@
     var ss = el("startScreen");
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); }, 440); } // zoom-fade out → reveal the app underneath
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
-    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} }, 240); } // returning → as the start screen clears, the journey's stepping-stones cascade in (or the planner's blocks) — "especially when I open the app" (David v659)
+    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} }, 470); } // returning → AFTER the start screen has fully cleared (~440ms), the journey's stepping-stones cascade in one by one (David v659/661)
   }
   function openJourney() {
     var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving"); p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
@@ -2597,7 +2602,7 @@
           reflow(todayK());
         }
       } catch (e) {}
-      save(); ov.remove(); renderAll(); viewK = todayK(); zoomMode = "day"; var d = document.querySelector('#nav .nb[data-tab="day"]'); if (d) d.click(); toast("✨ Your world is ready — your journey's all set");
+      save(); ov.remove(); renderAll(); viewK = todayK(); zoomMode = "day"; try { openJourney(); } catch (e) {} toast("✨ Your world is ready — your journey's all set"); // land on the JOURNEY (cascaded stepping-stones), not the planner, after onboarding (David v661)
     }
     function draw() {
       barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
@@ -2617,7 +2622,7 @@
       if (step === 10) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
       var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : "")); b.textContent = step === 0 ? "Let's go ▸" : step === STEPS - 1 ? "Plan your first day ▸" : "Next ▸"; b.onclick = next;
       if (step > 0 && step < STEPS - 1) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; draw(); }; }
-      var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = function () { ov.remove(); };
+      var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = function () { ov.remove(); try { openJourney(); } catch (e) {} }; // skip → reveal the journey with the stepping-stones cascade too (David v661)
     }
     draw();
   }
