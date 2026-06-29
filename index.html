@@ -104,8 +104,8 @@
   .rngread{ background:#2a0d1c; border:1.5px solid #6a3050; border-radius:11px; padding:9px 11px; margin:0 2px 12px; color:#ffd9ea; font-weight:700; font-size:13px; font-family:"Jost",sans-serif; display:flex; align-items:center; gap:7px; }
   .rngread b{ color:#fff2f9; font-weight:800; }
   /* ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28) — full-screen berry overlay, winding node-trail, reward-never-shame ===== */
-  #journeyPath{position:fixed;top:0;left:0;right:0;bottom:0;z-index:75;background:linear-gradient(180deg,#2a0d1c 0%,#1c0814 45%,#160510 100%);opacity:0;pointer-events:none;transition:opacity .22s;overflow:hidden;display:flex;flex-direction:column;} /* top+bottom:0 anchors to BOTH real edges (NO height — height would override bottom:0 and stop short of the home indicator, leaving the gap) — David 2026-07-02 */
-  #journeyPath.on{opacity:1;pointer-events:auto;}
+  #journeyPath{position:fixed;top:0;left:0;right:0;bottom:0;z-index:75;background:linear-gradient(180deg,#2a0d1c 0%,#1c0814 45%,#160510 100%);overflow:hidden;display:none;flex-direction:column;} /* display:none→flex on open = the SAME render-tree entry the game's #gameMode does, which is what establishes the full-screen viewport (David's repro: opening the game fixes the gap) — 2026-07-02 */
+  #journeyPath.on{display:flex;}
   .jp-head{position:relative;z-index:3;flex:none;padding:max(14px,env(safe-area-inset-top)) 18px 12px;background:linear-gradient(180deg,rgba(42,13,28,.96),rgba(42,13,28,.0));}
   .jp-headrow{display:flex;align-items:center;gap:10px;}
   /* persistent SPARK counter (Duolingo-style) — always visible, pulses when you earn (David 2026-07-02) */
@@ -1535,6 +1535,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=638"></script>
+  <script src="app.js?v=639"></script>
 </body>
 </html>
