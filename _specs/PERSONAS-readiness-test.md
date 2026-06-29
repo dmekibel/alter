@@ -45,5 +45,8 @@ David: "Sometimes I'm doing everything correctly, then I drift off path for like
 - Anti-shame copy lint applies hard: never "you missed/failed/abandoned." Frame as a natural season + "that you came back is the whole skill."
 - Serves EVERYONE who lapses (extremely common), not just David. Slot as a new build wave.
 
+## NEW requirement — Trackable goal metrics (David 2026-06-29)
+"All goals should be trackable — like weight, or your bank account." A goal can carry an optional METRIC: a number moving toward a target (weight 90→75kg ↓, savings →target ↑, followers ↑, books read ↑). Auto-detect the metric from the goal title (weight→kg↓, money/save/bank→$↑, audience/followers→↑, read→books↑) and pre-fill; editable + manually addable on any goal. Goal detail shows a progress bar (start→current→target, direction-aware) + "log today's number" tap + small history. A goal keeps BOTH metric (the number) and subtasks (the actions). David chose auto-detect + manual. Build = feature #1 in queue.
+
 ## Open question the onboarding must answer
 Current onboarding (app.js `onboard()`, 11 steps) captures: vibe, gender/age, life-stage, activities, goals, identity/virtue/one-thing, habits, starting level, wake/sleep/peak. It does **NOT** currently capture the **blocker/fear behind a goal**, nor an explicit **energy/overwhelm** read — which is exactly what these three personas hinge on. Likely the #1 gap to close for "can it support a person like this."

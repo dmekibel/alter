@@ -1139,6 +1139,19 @@
   .goal-delete{ display:block; margin:16px auto 4px; background:transparent; border:none; color:#a06b86; font-family:"Jost",sans-serif; font-weight:600; font-size:12.5px; cursor:pointer; }
   .goal-breakdown{ width:100%; border:2px solid #160510; border-radius:12px; padding:10px; margin-top:2px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; cursor:pointer; background:#b07aff; color:#241548; box-shadow:0 3px 0 #160510; display:flex; align-items:center; justify-content:center; gap:6px; }
   .goal-breakdown:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
+  .goal-metric-add{ width:100%; border:2px dashed #b07aff; border-radius:12px; padding:11px; margin:10px 0 2px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; cursor:pointer; background:#241548; color:#cdb4ff; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .goal-metric-add:active{ transform:translateY(1px); }
+  .goal-metric{ background:#1f0612; border:2px solid #160510; border-radius:14px; padding:12px 13px; margin:10px 0 4px; }
+  .gm-top{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:9px; flex-wrap:wrap; }
+  .gm-label{ font-family:"Jost",sans-serif; font-weight:800; font-size:14px; color:#ffd98a; display:flex; align-items:center; gap:5px; }
+  .gm-vals{ font-family:"Jost",sans-serif; font-size:13px; color:#c79ab4; }
+  .gm-vals b{ color:#fff; }
+  .gm-bar{ height:12px; border-radius:7px; background:#3a1228; overflow:hidden; border:1px solid #160510; }
+  .gm-bar i{ display:block; height:100%; border-radius:7px; background:linear-gradient(90deg,#ff8a3a,#34d39a); transition:width .5s cubic-bezier(.22,.9,.3,1); }
+  .gm-row{ display:flex; justify-content:space-between; align-items:center; margin-top:9px; }
+  .gm-log{ border:2px solid #160510; border-radius:10px; padding:8px 14px; font-family:"Jost",sans-serif; font-weight:800; font-size:13px; cursor:pointer; background:#34d39a; color:#06321f; box-shadow:0 3px 0 #160510; display:flex; align-items:center; gap:5px; }
+  .gm-log:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
+  .gm-pct{ font-family:"Jost",sans-serif; font-weight:800; font-size:15px; color:#ffd98a; }
   .goal-brow{ display:flex; gap:8px; margin-top:2px; }
   .goal-brow .goal-breakdown{ margin-top:0; flex:1; }
   .goal-toobig{ flex:0 0 auto; border:2px solid #160510; border-radius:12px; padding:10px 12px; font-family:"Jost",sans-serif; font-weight:800; font-size:13px; cursor:pointer; background:#ffc83d; color:#5a3a00; box-shadow:0 3px 0 #160510; white-space:nowrap; }
@@ -1656,6 +1669,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=667"></script>
+  <script src="app.js?v=668"></script>
 </body>
 </html>

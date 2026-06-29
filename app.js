@@ -863,6 +863,32 @@
   function typeAdd(parent, ph, cb) { var w = add(parent, "div", "goal-add"); var inp = document.createElement("input"); inp.type = "text"; inp.placeholder = ph; inp.className = "goal-input"; w.appendChild(inp); var b = add(w, "button", "goal-addb"); b.innerHTML = '<i class="ti ti-plus"></i>'; function go() { var v = inp.value.trim(); if (v) { cb(v); inp.value = ""; } } b.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } }); }
   function pickSheet(q, opts, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var row = add(card, "div", "dur-row"); opts.forEach(function (o) { var c = add(row, "button", "dur-chip", o.label); c.onclick = function () { ov.remove(); cb(o.val); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
   function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule “' + esc(st.title) + '” — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); st.schedK = k; save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
+  // ===== TRACKABLE GOAL METRICS (David 2026-06-29): a goal can be a NUMBER moving toward a target (weight 90→75↓, savings→target↑, followers↑). Auto-detected from the title + manually addable. Lives alongside subtasks. =====
+  var METRIC_GUESS = [
+    { kw: /weight|lose.*(weight|kg|lb)|slim|leaner|body\s*fat|\bbmi\b/, unit: "kg", dir: "down", label: "Weight" },
+    { kw: /debt|pay\s*off|loan|owe/, unit: "$", dir: "down", label: "Debt" },
+    { kw: /money|save|saving|bank|income|revenue|cash|budget|earn|rich|profit/, unit: "$", dir: "up", label: "Balance" },
+    { kw: /audience|follower|subscriber|\bfans\b|reach|instagram|youtube|tiktok|grow.*(audience|brand|channel)/, unit: "followers", dir: "up", label: "Followers" },
+    { kw: /\bread\b|book/, unit: "books", dir: "up", label: "Books read" },
+    { kw: /run|marathon|distance|\bkm\b|miles|\b5k\b|10k/, unit: "km", dir: "up", label: "Distance" },
+    { kw: /\bsteps?\b/, unit: "steps", dir: "up", label: "Steps" }
+  ];
+  function guessMetric(title) { var t = (title || "").toLowerCase(); for (var i = 0; i < METRIC_GUESS.length; i++) { if (METRIC_GUESS[i].kw.test(t)) { var m = METRIC_GUESS[i]; return { label: m.label, unit: m.unit, dir: m.dir, start: null, current: null, target: null, hist: [] }; } } return null; }
+  function attachGuessedMetric(g) { if (g && !g.metric) { var m = guessMetric(g.title); if (m) g.metric = m; } return g; }
+  function fmtNum(n) { if (n == null) return "–"; return (Math.round(n * 10) / 10).toString(); }
+  function metricPct(m) { if (m.start == null || m.target == null || m.current == null) return 0; var span = m.target - m.start; if (span === 0) return 100; return Math.max(0, Math.min(100, Math.round((m.current - m.start) / span * 100))); }
+  function numSheet(q, initial, unit, cb) { var ov = add(document.body, "div", "dur-ov"), card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var arow = add(card, "div", "ob-addrow"); var inp = document.createElement("input"); inp.type = "number"; inp.inputMode = "decimal"; inp.className = "ob-input"; if (initial != null) inp.value = initial; if (unit) inp.placeholder = unit; arow.appendChild(inp); var sv = add(card, "button", "dur-chip", "Save"); function go() { var v = parseFloat(inp.value); if (isNaN(v)) { inp.focus(); return; } ov.remove(); cb(v); } sv.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60); }
+  function metricSetup(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-flag"></i> ' + esc(m.label) + ' — where are you NOW?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (now) { m.current = now; m.start = now; numSheet('<i class="ti ti-target"></i> Your target?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.target, m.unit, function (tg) { m.target = tg; m.dir = tg < now ? "down" : "up"; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: now }); save(); redraw(); toast("🎯 tracking " + esc(m.label).toLowerCase()); }); }); }
+  function logMetric(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-chart-line"></i> ' + esc(m.label) + ' now?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (v) { m.current = v; if (m.start == null) m.start = v; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: v }); if (m.hist.length > 60) m.hist.shift(); save(); redraw(); var hit = m.target != null && (m.dir === "down" ? v <= m.target : v >= m.target); toast(hit ? "🎉 you hit your target!" : "📈 logged · " + fmtNum(v) + " " + m.unit); }); }
+  function metricSection(g, body, redraw) {
+    if (!g.metric) { var addb = add(body, "button", "goal-metric-add"); addb.innerHTML = '<i class="ti ti-chart-line"></i> Track a number'; addb.onclick = function () { g.metric = guessMetric(g.title) || { label: "Progress", unit: "", dir: "up", start: null, current: null, target: null, hist: [] }; save(); metricSetup(g, redraw); }; return; }
+    var m = g.metric;
+    if (m.target == null) { var setb = add(body, "button", "goal-metric-add"); setb.innerHTML = '<i class="ti ti-chart-line"></i> Set up ' + esc(m.label.toLowerCase()) + ' tracking'; setb.onclick = function () { metricSetup(g, redraw); }; return; }
+    var box = add(body, "div", "goal-metric");
+    var top = add(box, "div", "gm-top"); top.innerHTML = '<span class="gm-label"><i class="ti ti-chart-line"></i> ' + esc(m.label) + '</span><span class="gm-vals">' + fmtNum(m.start) + ' → <b>' + fmtNum(m.current) + '</b> → ' + fmtNum(m.target) + ' ' + esc(m.unit) + '</span>';
+    var bar = add(box, "div", "gm-bar"); var fill = add(bar, "i"); fill.style.width = metricPct(m) + "%";
+    var row = add(box, "div", "gm-row"); var lg = add(row, "button", "gm-log"); lg.innerHTML = '<i class="ti ti-plus"></i> log today'; lg.onclick = function () { logMetric(g, redraw); }; add(row, "span", "gm-pct", metricPct(m) + "%");
+  }
   function goalsSheet() {
     ensureGoalDefaults();
     var ov = add(document.body, "div", "goal-ov"); var card = add(ov, "div", "goal-card"); var view = null;
@@ -884,7 +910,7 @@
         else add(gc, "div", "goal-tagnone", "tap to break it down →");
         gc.onclick = function () { view = g; draw(); };
       });
-      typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: activeGoals().length < 3 }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
+      typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: activeGoals().length < 3 }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
       add(body, "div", "goal-foot", "few active · do fewer, finish more — Slow Productivity");
     }
     function drawGoal(g) {
@@ -892,6 +918,7 @@
       header('<i class="ti ' + dom.ti + '"></i> ' + esc(g.title), true);
       var body = add(card, "div", "goal-body");
       var ab = add(body, "button", "goal-active-btn" + (g.active ? " on" : "")); ab.innerHTML = g.active ? '<i class="ti ti-star-filled"></i> Active — pulls into your days' : '<i class="ti ti-star"></i> On hold — tap to activate'; ab.onclick = function () { g.active = !g.active; save(); draw(); renderSuggest(todayK()); };
+      metricSection(g, body, draw); // trackable number (weight / bank / followers) — auto-detected, logged with a tap (David 2026-06-29)
       var hint = add(body, "div", "goal-hint"); hint.innerHTML = '<i class="ti ti-subtask"></i> break it into steps → schedule them into your days';
       var brow = add(body, "div", "goal-brow");
       var bd = add(brow, "button", "goal-breakdown"); bd.innerHTML = '<i class="ti ti-wand"></i> Break it down for me'; bd.onclick = function () { var have = {}; (g.subtasks || []).forEach(function (s) { have[s.title.toLowerCase()] = 1; }); decomposeGoal(g).forEach(function (st) { if (!have[st.toLowerCase()]) (g.subtasks = g.subtasks || []).push({ title: st, done: false }); }); save(); draw(); };
@@ -2633,7 +2660,7 @@
       P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck"); P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other"; // wire the once-dead vibe: an overwhelmed/stuck onboarder gets the body-first low-energy gate until real mood data arrives (David 2026-06-29 readiness test)
       P.goals = keys(data.goals).join(", "); P.wake = data.wake; P.sleep = data.bed; P.peak = data.peak; P.lark = (data.peak !== "owl"); P.set = true;
       S.acts = S.acts || []; keys(data.kept).forEach(function (t) { if (!TITLE2CAT[t.toLowerCase()] && !S.acts.filter(function (a) { return a.title === t; })[0]) S.acts.push({ title: t, catK: null, domain: domainOf({ title: t }) }); });
-      S.goals = keys(data.goals).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : domainOf({ title: g }), subtasks: [] }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} return go; }); // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
+      S.goals = keys(data.goals).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : domainOf({ title: g }), subtasks: [] }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); return go; }); // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
       // ===== ONBOARDING → JOURNEY SEED (David 2026-06-28): write what the journey path reads so a new user's trail is THEIRS, not generic demo circles. All additive, guarded. =====
       // 1) HABITS the user chose → S.habits (so the journey's habit circles are theirs). Fall back to defaults if they cleared everything.
       var allHabDefs = DEFAULT_HABITS.concat(EXTRA_HABITS).concat(data.customHabits);
