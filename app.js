@@ -648,28 +648,81 @@
     if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); }
     else if (!gaming) revealTimeline();
   }
-  // ===== 3-PANE SPINE (David 2026-06-30): horizontal swipe switches Planner ↔ Journey ↔ Game. One axis for the whole app; vertical scroll stays "within the pane". paneSwipe attaches a 1-finger horizontal detector that fires left()/right() ONLY on a committed horizontal gesture, and bails the instant a 2nd finger lands (pinch) or the gesture starts on an interactive drag target (bubble/grip/node/button/slider) so it never hijacks a tap, a bubble drag, or a pinch-zoom. =====
+  // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
   var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit";
-  function paneSwipe(host, opts) {
-    if (!host || host._paneSw) return; host._paneSw = 1;
-    var sx = 0, sy = 0, on = false, armed = false, multi = false;
-    host.addEventListener("pointerdown", function (e) {
-      if (!e.isPrimary) { multi = true; armed = false; return; }
-      multi = false; on = false; armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
-      sx = e.clientX; sy = e.clientY;
+  var PANE_ORDER = ["planner", "journey", "game"];
+  function curPaneName() { var b = document.body.classList; return b.contains("gaming") ? "game" : b.contains("journey-open") ? "journey" : "planner"; }
+  function paneGroup(n) { // the element(s) that move together for this pane
+    if (n === "planner") return [el("pullSheet"), el("nav"), el("liveDock")].filter(Boolean);
+    if (n === "journey") return [el("journeyPath")].filter(Boolean);
+    return [el("gameMode")].filter(Boolean);
+  }
+  function setGroupX(n, x, z) { paneGroup(n).forEach(function (e) { e.style.setProperty("transform", "translateX(" + x + "px)", "important"); if (z != null) e.style.zIndex = z; }); }
+  function clearGroup(n) { paneGroup(n).forEach(function (e) { e.style.transform = ""; e.style.removeProperty("transform"); e.style.zIndex = ""; e.style.transition = ""; e.style.willChange = ""; }); }
+  function panePrime(n, show) { // make a pane RENDERABLE beside the current one during a drag — WITHOUT its entrance animation (no portal, no cascade)
+    if (n === "journey") { var jp = el("journeyPath"); if (jp) jp.classList.add("on"); }
+    else if (n === "game") { var gm = el("gameMode"); if (gm) { gm.classList.add("on"); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} } }
+    // planner is always rendered (display:flex behind), nothing to prime
+  }
+  function setPaneRest(n) { // commit the canonical rest-state for pane n, NO entrance animation; clear all drag transforms
+    ["planner", "journey", "game"].forEach(clearGroup);
+    document.body.classList.remove("pane-dragging");
+    var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
+    if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
+    else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { drawJourney(false); } catch (e) {} }
+    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
+  }
+  var _paneAnim = false;
+  function initPaneCarousel() {
+    var sx = 0, sy = 0, on = false, armed = false, multi = false, cur = null, nbr = null, sign = 0, W = 1;
+    function reset() { on = false; armed = false; multi = false; cur = null; nbr = null; sign = 0; }
+    document.addEventListener("pointerdown", function (e) {
+      if (_paneAnim) { armed = false; return; }
+      if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
+      multi = false; on = false; cur = null;
+      armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
+      sx = e.clientX; sy = e.clientY; W = window.innerWidth || 390;
     }, true);
-    host.addEventListener("pointermove", function (e) {
+    function beginDrag(dir) { // dir -1 = swipe left (→ next pane) · +1 = swipe right (→ prev pane)
+      cur = curPaneName(); var idx = PANE_ORDER.indexOf(cur);
+      var tgtIdx = idx + (dir < 0 ? 1 : -1); sign = dir;
+      nbr = (tgtIdx >= 0 && tgtIdx < PANE_ORDER.length) ? PANE_ORDER[tgtIdx] : null;
+      document.body.classList.add("pane-dragging");
+      paneGroup(cur).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
+      if (nbr) { panePrime(nbr); paneGroup(nbr).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
+        setGroupX(nbr, (dir < 0 ? W : -W), 299); } // neighbour parked one screen over, just above the rest
+      setGroupX(cur, 0, 300);
+    }
+    document.addEventListener("pointermove", function (e) {
       if (!armed || multi) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
-      if (!on) { if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { armed = false; return; } // vertical intent → it's a scroll, let it go
-        if (Math.abs(dx) > 22 && Math.abs(dx) > Math.abs(dy) * 1.5) { on = true; e.preventDefault(); } }
-      else { e.preventDefault(); }
+      if (!on) {
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { armed = false; return; } // vertical → it's a scroll
+        if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy) * 1.4) { on = true; beginDrag(dx < 0 ? -1 : 1); }
+        else return;
+      }
+      e.preventDefault();
+      var d = e.clientX - sx;
+      if (!nbr) d = d * 0.32; // edge pane in that direction → rubber-band, no commit
+      setGroupX(cur, d);
+      if (nbr) setGroupX(nbr, d + (sign < 0 ? W : -W));
     }, { passive: false });
-    function end(e) {
-      if (armed && on && !multi) { var dx = e.clientX - sx; if (dx <= -48 && opts.left) opts.left(); else if (dx >= 48 && opts.right) opts.right(); }
-      on = false; armed = false;
+    function settle(toCommit) {
+      _paneAnim = true;
+      var EAS = "transform .26s cubic-bezier(.2,.85,.3,1)";
+      paneGroup(cur).forEach(function (el2) { el2.style.transition = EAS; });
+      if (nbr) paneGroup(nbr).forEach(function (el2) { el2.style.transition = EAS; });
+      if (toCommit && nbr) { setGroupX(cur, (sign < 0 ? -W : W)); setGroupX(nbr, 0); }
+      else { setGroupX(cur, 0); if (nbr) setGroupX(nbr, (sign < 0 ? W : -W)); }
+      var landed = toCommit && nbr ? nbr : cur;
+      setTimeout(function () { setPaneRest(landed); _paneAnim = false; }, 290);
     }
-    host.addEventListener("pointerup", end); host.addEventListener("pointercancel", function () { on = false; armed = false; });
+    function cancelDrag() { if (on) settle(false); reset(); }
+    document.addEventListener("pointerup", function (e) {
+      if (armed && on && cur) { var dx = e.clientX - sx; var commit = !!nbr && (Math.abs(dx) > W * 0.26); settle(commit); }
+      reset();
+    });
+    document.addEventListener("pointercancel", function () { cancelDrag(); });
   }
   // ===== WELCOME-BACK RE-ASSESSMENT (David 2026-06-29): David drifts off-path for weeks then returns — the journey must NOT resume stale. Detect a lapse (≥14d since last activity) → a gentle, anti-shame re-gauge: energy now? · which goals still matter? · ease back gentle. Recalibrate (lowStart gate, prune paused goals) without demoting progress. =====
   function daysSinceK(k) { try { var a = (k || "").split("-"), d = new Date(+a[0], +a[1] - 1, +a[2]); var t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - d) / 86400000)); } catch (e) { return 0; } }
@@ -5641,11 +5694,7 @@
       var j = el("jpnJourney"); if (j) j.onclick = function () { drawJourney(true); }; // scroll back to now
       var g = el("jpnGame"); if (g) g.onclick = function () { closeJourney(); try { openGame(); } catch (e) {} }; // Game = the island/world
     })();
-    (function () { // 3-PANE SPINE wiring (David 2026-06-30): swipe the whole app between Planner ↔ Journey. (Game-swipe is next ship — it needs the world-pan conflict solved.)
-      var ps = el("pullSheet"); if (ps) paneSwipe(ps, { left: function () { if (!document.body.classList.contains("journey-open")) openJourney(); } }); // planner → swipe left → journey (the pane to its right)
-      var jp = el("journeyPath"); if (jp) paneSwipe(jp, { right: function () { closeJourney(); }, left: function () { closeJourney(); try { openGame(); } catch (e) {} } }); // journey: swipe right → planner · swipe left → game
-      var gmEl = el("gameMode"); if (gmEl) paneSwipe(gmEl, { right: function () { try { closeGame(); } catch (e) {} openJourney(); } }); // game → swipe right → journey (game is the rightmost pane). Pan is two-finger now, so one-finger horizontal is free for this.
-    })();
+    initPaneCarousel(); // 3-PANE CAROUSEL (David 2026-06-30): one global finger-following slider across Planner | Journey | Game
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; revealTimeline(); // Today (the always-open rich timeline) is the home; body scroll locked by CSS (v640); portal-reveal it on cold launch (v648)
