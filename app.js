@@ -990,6 +990,8 @@
         var subs = g.subtasks || [];
         if (subs.length) { var tg = add(gc, "div", "goal-tags"); subs.slice(0, 6).forEach(function (st) { var s = add(tg, "span", "goal-tag" + (st.done ? " done" : "")); s.textContent = (st.done ? "✓ " : "") + st.title; }); }
         else add(gc, "div", "goal-tagnone", "tap to break it down →");
+        var pct = (g.metric && g.metric.target != null && g.metric.current != null) ? metricPct(g.metric) : (subs.length ? Math.round(subs.filter(function (s) { return s.done; }).length / subs.length * 100) : 0);
+        var pb = add(gc, "div", "goal-prog"); var pbf = add(pb, "i"); pbf.style.width = pct + "%"; pbf.style.background = dom.c; // the goal's growing arc — how far along (metric % or steps done)
         gc.onclick = function () { view = g; draw(); };
       });
       typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)

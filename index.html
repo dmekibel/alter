@@ -1139,6 +1139,8 @@
   .goal-delete{ display:block; margin:16px auto 4px; background:transparent; border:none; color:#a06b86; font-family:"Jost",sans-serif; font-weight:600; font-size:12.5px; cursor:pointer; }
   .goal-breakdown{ width:100%; border:2px solid #160510; border-radius:12px; padding:10px; margin-top:2px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; cursor:pointer; background:#b07aff; color:#241548; box-shadow:0 3px 0 #160510; display:flex; align-items:center; justify-content:center; gap:6px; }
   .goal-breakdown:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
+  .goal-prog{ height:6px; border-radius:4px; background:#2a0f1e; overflow:hidden; margin-top:9px; }
+  .goal-prog i{ display:block; height:100%; border-radius:4px; transition:width .45s cubic-bezier(.22,.9,.3,1); }
   .goal-metric-add{ width:100%; border:2px dashed #b07aff; border-radius:12px; padding:11px; margin:10px 0 2px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; cursor:pointer; background:#241548; color:#cdb4ff; display:flex; align-items:center; justify-content:center; gap:6px; }
   .goal-metric-add:active{ transform:translateY(1px); }
   .goal-metric{ background:#1f0612; border:2px solid #160510; border-radius:14px; padding:12px 13px; margin:10px 0 4px; }
@@ -1669,6 +1671,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=676"></script>
+  <script src="app.js?v=677"></script>
 </body>
 </html>
