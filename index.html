@@ -37,6 +37,31 @@
   .bchip, .tile, .pchip, .preset-row, .qopt, .subitem, .bigcat, .feat-row, .tool-row{ transition:transform var(--dur-micro) var(--ease-settle); }
   .bchip:active, .tile:active, .pchip:active, .preset-row:active, .qopt:active, .subitem:active, .feat-row:active, .tool-row:active{ transform:scale(.94); }
   @media (prefers-reduced-motion: reduce){ .dur-card, .goal-card, .mind-card, .nb-card, .ob-card, .sheetcard, .dur-ov, .goal-ov, .mind-ov, .nb-ov, .cele-ov{ animation:none !important; } }
+  /* ===== START SCREEN (v652): the animated launch screen — living guardian (13-frame idle sprite) + title + language + Continue/New, Duolingo/Tuber-sim feel ===== */
+  #startScreen{ position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:space-between; background:linear-gradient(170deg,#3a0f24 0%,#1c0814 52%,#140510 100%); padding:max(env(safe-area-inset-top,0px),26px) 22px calc(env(safe-area-inset-bottom,0px) + 30px); font-family:"Jost",sans-serif; overflow:hidden; }
+  #startScreen.on{ display:flex; }
+  #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
+  @keyframes ssLeave{ to{ opacity:0; transform:scale(1.08); } }
+  .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.08); border:2px solid #3a1730; color:#ffd9ec; border-radius:14px; padding:8px 13px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; cursor:pointer; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
+  .ss-hero{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+  .ss-sparkles{ color:#ffd24a; font-size:30px; line-height:1; opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .15s both; }
+  .ss-guardian-wrap{ margin:2px 0 8px; animation:ssFloatIn .7s var(--ease-spring) both, ssBob 3.2s ease-in-out 1s infinite; }
+  .ss-guardian{ width:201px; height:300px; background:url(assets/spr-idle.png?v=4) 0 0/2613px 300px no-repeat; transform:scale(.84); transform-origin:bottom center; animation:ssIdle 1.5s steps(13) infinite; }
+  @keyframes ssIdle{ from{ background-position-x:0; } to{ background-position-x:-2613px; } }
+  @keyframes ssBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-12px); } }
+  @keyframes ssFloatIn{ from{ opacity:0; transform:translateY(42px); } to{ opacity:1; transform:none; } }
+  .ss-title{ font-family:"Baloo 2","Jost",sans-serif; font-weight:800; font-size:54px; letter-spacing:4px; color:#fff; text-shadow:0 4px 0 #160510, 0 0 30px rgba(255,95,160,.45); opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .3s both; }
+  .ss-tag{ color:#c79ab4; font-size:14px; font-weight:600; margin-top:2px; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .45s both; }
+  @keyframes ssPop{ from{ opacity:0; transform:scale(.7); } to{ opacity:1; transform:none; } }
+  @keyframes ssFade{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  .ss-actions{ width:100%; display:flex; flex-direction:column; gap:11px; align-items:center; }
+  .ss-btn{ width:100%; max-width:380px; border-radius:18px; padding:16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; border:3px solid #160510; display:flex; align-items:center; justify-content:center; gap:9px; opacity:0; }
+  .ss-primary{ background:linear-gradient(180deg,#ffd24a,#f0b400); color:#4a3000; box-shadow:0 5px 0 #160510; animation:ssRise var(--dur-enter) var(--ease-spring) .55s both; }
+  .ss-primary:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .ss-new{ background:rgba(255,255,255,.05); color:#ff9a9a; border-color:#5a2233; animation:ssRise var(--dur-enter) var(--ease-spring) .66s both; }
+  .ss-new:active{ transform:scale(.97); }
+  @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
   html,body{height:100%;color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-weight:500;
     background:linear-gradient(170deg,#92e2ff 0%,#c7b2ff 50%,#ffc0e2 100%);}
@@ -1576,6 +1601,19 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=651"></script>
+  <div id="startScreen">
+    <button class="ss-lang" id="ssLang"><i class="ti ti-world"></i> <span id="ssLangName">English</span></button>
+    <div class="ss-hero">
+      <div class="ss-sparkles"><i class="ti ti-sparkles"></i></div>
+      <div class="ss-guardian-wrap"><div class="ss-guardian"></div></div>
+      <div class="ss-title">ALTER</div>
+      <div class="ss-tag">your guardian-angel life sim</div>
+    </div>
+    <div class="ss-actions">
+      <button class="ss-btn ss-primary" id="ssPrimary"><i class="ti ti-player-play-filled"></i> Continue</button>
+      <button class="ss-btn ss-new" id="ssNew"><i class="ti ti-rotate-2"></i> New game</button>
+    </div>
+  </div>
+  <script src="app.js?v=652"></script>
 </body>
 </html>

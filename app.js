@@ -465,6 +465,27 @@
   function revealTimeline() { try { setTimeout(function () { playReveal(el("pullSheet"), nowLineEl); cascadeTimelineBlocks(); }, 60); } catch (e) {} } // reveal the planner timeline from the now-line + cascade the day's blocks in on open (not on scroll/rebuild)
   // STAGGERED CASCADE (v648): make a set of just-rendered nodes arrive one-by-one with a spring.
   function cascadeIn(nodes) { if (prefersReducedMotion() || !nodes) return; for (var i = 0; i < nodes.length; i++) { var k = nodes[i]; if (!k || !k.style) continue; k.classList.add("casc-item"); k.style.animationDelay = (i * 38) + "ms"; } }
+  // ===== START SCREEN (v652): the animated launch screen — gates entry every cold open with Continue (load save) / New game (fresh) + a language pick. The living guardian sprite + entrance animations live in CSS. =====
+  var _ssShown = false;
+  var SS_LANGS = ["English", "Español", "Français", "Deutsch", "Italiano", "Português", "日本語"];
+  function showStartScreen() {
+    var ss = el("startScreen"); if (!ss) { _ssShown = false; return; }
+    _ssShown = true;
+    var has = !!(S.profile && S.profile.set);
+    var prim = el("ssPrimary"), nb = el("ssNew"), ln = el("ssLangName"), lb = el("ssLang");
+    if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-sparkles"></i> Begin';
+    if (nb) nb.style.display = has ? "" : "none";
+    if (ln) ln.textContent = S.lang || "English";
+    ss.classList.add("on");
+    if (prim) prim.onclick = function () { ssEnter(has); };
+    if (lb) lb.onclick = function () { var i = SS_LANGS.indexOf(S.lang || "English"); S.lang = SS_LANGS[(i + 1) % SS_LANGS.length]; try { save(); } catch (e) {} if (ln) ln.textContent = S.lang; }; // a selector for now (the choice is stored; full translation is a separate task)
+    if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = '<i class="ti ti-alert-triangle"></i> Erase save &amp; start fresh?'; if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: New game wipes everything → reload → start screen → Begin → onboarding
+  }
+  function ssEnter(has) {
+    var ss = el("startScreen");
+    if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); }, 440); } // zoom-fade out → reveal the app underneath
+    if (!has) { try { onboard(); } catch (e) {} } else { try { revealTimeline(); } catch (e) {} } // new user → onboarding; returning → re-play the portal reveal as you land
+  }
   function openJourney() {
     var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
@@ -5305,8 +5326,9 @@
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
     try { if ((S.guide || {}).mode === "guided") journeyTick(); } catch (e) {}
-    setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot, regardless of profile.set — fixes "nav says Journey but it opened the Planner". Onboarding (below) overlays on top for new users.
-    if (!(S.profile && S.profile.set)) setTimeout(onboard, 350);
+    setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot. The start screen (below) sits ON TOP of it until you tap Continue.
+    showStartScreen(); // v652: the animated launch screen gates the cold open; its primary button enters the app (or starts onboarding)
+    if (!_ssShown && !(S.profile && S.profile.set)) setTimeout(onboard, 350); // fallback ONLY if the start screen didn't show
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
