@@ -1044,7 +1044,7 @@
       var d = kd(dk), wd = d.getDay(), sel = (dk === focusK), isT = (dk === tk);
       var cell = add(host, "button", "pws-day" + (sel ? " sel" : "") + (isT ? " today" : "")); cell.dataset.dk = dk;
       add(cell, "span", "pws-l", L.charAt(wd)); add(cell, "span", "pws-n", String(d.getDate()));
-      cell.onclick = function () { if (dk === (pullFocusK || tk)) { if (dk === tk) scrollToNow(); return; } pullFocusK = dk; pendingScrollNow = (dk === tk); buildPull(); };
+      cell.onclick = function () { if (dk === (pullFocusK || tk)) { if (dk === tk) scrollToNow(); return; } pullFocusK = dk; if (dk === tk) pendingScrollNow = true; else _scrollToFocus = true; buildPull(); }; // jump the scroll ONTO the picked day (was missing → the buffer recentred but the view never moved) — David 2026-07-02
     })(keyAdd(sow, i)); }
   }
   function setStripSel(dk) { var cells = document.querySelectorAll(".pull-weekstrip .pws-day"), found = false; for (var i = 0; i < cells.length; i++) { var m = cells[i].dataset.dk === dk; cells[i].classList.toggle("sel", m); if (m) found = true; } if (!found) { var host = document.querySelector(".pull-weekstrip"); if (host) { host.innerHTML = ""; weekStrip(host, dk); } } var _dl = el("pullDayLabel"); if (_dl) _dl.textContent = relLabel(dk); } // the top day-label (Today/Yesterday/Tomorrow/date) tracks the centred day on every scroll + swipe (David 2026-06-27) // live-move the week-strip highlight to the day you're heading to; if that day crossed into a NEW week, rebuild the strip on that week so the highlight follows instead of vanishing/sticking on the old week (David 2026-06-27)
@@ -4045,12 +4045,7 @@
     layout();
     sld.addEventListener("input", function () { o.mins = posToMin(+sld.value); layout(); });
     sld.addEventListener("change", function () { o.mins = posToMin(+sld.value); commit(); });
-    // LENGTH STEPPERS — grow a too-tiny bubble without hunting for a grip (David 2026-06-27)
-    var lrow = add(B, "div", "ed-lrow");
-    [-15, -5, 5, 15].forEach(function (d) { var b = add(lrow, "button", "ed-lstep", (d > 0 ? "＋" : "−") + Math.abs(d)); b.onclick = function () { o.mins = Math.max(MINM, Math.min(MAXM, snapMin((o.mins || DEF) + d))); layout(); commit(); }; });
-    // LENGTH CHIPS — quick common durations (same pattern as durationSheet) (David 2026-06-27)
-    var crow = add(B, "div", "ed-lchips");
-    [15, 30, 45, 60, 90, 120].forEach(function (m) { var c = add(crow, "button", "ed-lchip" + ((o.mins || DEF) === m ? " on" : ""), m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { o.mins = m; layout(); commit(); }; });
+    // The slider IS the duration control — the steppers + chips were redundant clutter (David 2026-07-02 "the time slider is enough").
     // PRIORITY (segmented) + PIN (plan only)
     var prow = add(B, "div", "ed-prow");
     var seg3 = add(prow, "div", "ed-seg3"); PRIOS.forEach(function (p) { var c = add(seg3, "div", "ed-prio" + (p.v === (o.prio || 2) ? " on" : ""), p.l); c.onclick = function () { o.prio = p.v; Array.prototype.forEach.call(seg3.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); commit(); }; });
