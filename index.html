@@ -725,6 +725,13 @@
   .bst-n{ font-weight:700; font-size:11px; opacity:.66; position:relative; z-index:1; }
   .bento-domh{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:.4px; text-transform:uppercase; display:flex; align-items:center; gap:6px; margin:13px 0 7px; }
   .bento-tiles{ display:flex; flex-wrap:wrap; gap:6px; }
+  /* the 4 category TABS (David v647): one row of equal pills; only the active category's striped cards show below */
+  .bento-tabrow{ display:flex; gap:6px; margin:2px 0 12px; }
+  .bento-tabrow .bento-tab{ flex:1; text-align:center; text-transform:none; letter-spacing:0; font-size:13px; font-weight:800; padding:9px 4px; border:2px solid #341530; border-radius:12px; background:#220c1a; cursor:pointer; transition:transform .08s; }
+  .bento-tabrow .bento-tab:active{ transform:scale(.95); }
+  /* INSIDE EACH CARD SCROLLS (David v647): restore the original 2-row horizontal-scroll chip strip (the candy theme had forced flex-wrap → tall cards). Scoped to the picker sheet so the card stays compact and you swipe the row to see the rest. */
+  .bento-card.bento-sheet .bento-cat .bento-chips{ display:grid !important; grid-auto-flow:column !important; grid-template-rows:repeat(2,auto) !important; grid-auto-columns:max-content !important; overflow-x:auto !important; overflow-y:hidden !important; flex-wrap:nowrap !important; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .bento-card.bento-sheet .bento-cat .bento-chips::-webkit-scrollbar{ display:none; }
   .bento-grid{ display:flex; flex-direction:column; gap:9px; }
   /* bento quick-pick: search + frequent row (David 2026-06-24 night) */
   .bento-search{ position:sticky; top:0; z-index:4; display:flex; align-items:center; gap:7px; background:#2c081a; padding:3px 0 8px; }
@@ -1552,6 +1559,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=646"></script>
+  <script src="app.js?v=647"></script>
 </body>
 </html>

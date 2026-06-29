@@ -4279,7 +4279,7 @@
       var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length && !opts.allowEmptyGo;
       b.onclick = function () { if (!sel.length && !opts.allowEmptyGo) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
     }
-    // NEW compact overview (David v644): 4 SUPERCATEGORY tiles + a Recent row + search — no wall of options. Tap a tile → that category's activities (grouped by domain). Used for the normal picker; the domain-scoped plan beats still use renderScoped().
+    // OVERVIEW (David v647): the ORIGINAL beautiful striped bento cards — but SPLIT INTO 4 TABS (Energy/Work/Love/Other) so you only ever see one category's cards at a time (not overwhelming, still the bento box we designed). Each card's chips SCROLL. Recent + search on top. (Plan beats still use renderScoped.)
     function renderOverview() {
       if (opts.headNode) body.appendChild(opts.headNode);
       var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
@@ -4290,18 +4290,25 @@
       var recent = add(body, "div", "bento-pinned");
       try { var fr = frequent(8); if (fr.length) { add(recent, "span", "bento-qlbl", "Recent"); fr.forEach(function (m) { actChip(actOf(m), recent, true); }); } } catch (e) {}
       if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); add(pr, "span", "bento-qlbl", "Been meaning to"); opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
+      // THE 4 TABS — only the active supercategory's striped cards render
+      if (!view.tab) view.tab = "energy";
+      var tabsEl = add(body, "div", "bento-tabrow");
+      SUPERCAT.forEach(function (sc) { var t = add(tabsEl, "span", "bento-tab" + (sc.k === view.tab ? " on" : ""), sc.l); t.style.color = (sc.k === view.tab ? "#fff" : sc.c); if (sc.k === view.tab) { t.style.background = mixDark(sc.c); t.style.borderColor = mixHex(sc.c, "#160510", 0.25); } t.onclick = function () { view.tab = sc.k; render(); }; });
       var results = add(body, "div", "bento-results"); results.style.display = "none";
-      var grid = add(body, "div", "bento-supergrid");
-      SUPERCAT.forEach(function (sc) {
-        var n = 0; sc.domains.forEach(function (d) { n += (by[d] || []).length; });
-        var tile = add(grid, "button", "bento-supertile"); tile.style.background = mixHex(sc.c, "#16060f", 0.6); tile.style.borderColor = mixHex(sc.c, "#160510", 0.3);
-        tile.innerHTML = '<span class="bst-ic" style="background:' + mixHex(sc.c, "#160510", 0.42) + ';color:' + sc.c + '"><i class="ti ' + sc.ti + '"></i></span><span class="bst-l">' + esc(sc.l) + '</span><span class="bst-n">' + n + ' things</span>';
-        tile.onclick = function () { view.super = sc.k; render(); };
+      var gridWrap = add(body, "div", "bento-gridwrap");
+      var activeSc = SUPERCAT.filter(function (s) { return s.k === view.tab; })[0] || SUPERCAT[0];
+      activeSc.domains.forEach(function (d) {
+        var acts = (by[d] || []).slice(); if (!acts.length) return;
+        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
+        var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
+        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light;
+        var wrap = add(mc, "div", "bento-chips"); acts.forEach(function (a) { actChip(a, wrap, false); }); // ALL chips — the strip scrolls (David v647)
+        var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew;
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
       function drawResults(q) {
-        if (!q) { results.style.display = "none"; results.innerHTML = ""; grid.style.display = ""; pinned.style.display = ""; recent.style.display = ""; addb.style.display = ""; return; }
-        grid.style.display = "none"; pinned.style.display = "none"; recent.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
+        if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; tabsEl.style.display = ""; pinned.style.display = ""; recent.style.display = ""; addb.style.display = ""; return; }
+        gridWrap.style.display = "none"; tabsEl.style.display = "none"; pinned.style.display = "none"; recent.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
         var ql = q.toLowerCase(), hits = [], seen2 = {};
         ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
         hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });
@@ -4312,29 +4319,11 @@
       si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
       drawResults(searchQ.trim());
     }
-    function renderSuper(scKey) {
-      var sc = null; for (var i = 0; i < SUPERCAT.length; i++) if (SUPERCAT[i].k === scKey) sc = SUPERCAT[i];
-      if (!sc) { view.super = null; render(); return; }
-      var strip = add(body, "div", "bento-strip");
-      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { view.super = null; render(); };
-      SUPERCAT.forEach(function (s) { var t = add(strip, "span", "bento-tab" + (s.k === scKey ? " on" : ""), s.l); t.style.color = s.c; if (s.k === scKey) t.style.background = mixDark(s.c); t.onclick = function () { view.super = s.k; render(); }; });
-      var any = false;
-      sc.domains.forEach(function (d) {
-        var acts = (by[d] || []).slice(); if (!acts.length) return; any = true;
-        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
-        var D = DOM[d];
-        var hh = add(body, "div", "bento-domh"); hh.style.color = D.light; hh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l);
-        var wrap = add(body, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, wrap, true, true); });
-      });
-      if (!any) { add(body, "div", "bento-domh", "Nothing here yet — add one below"); }
-      var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
-    }
     function render() {
       body.innerHTML = "";
       if (view.cat) { renderExpanded(view.cat); return; }            // deep per-domain view (still reachable)
-      if (view.super) { renderSuper(view.super); return; }           // a supercategory's activities
       if (opts.domains && opts.domains.length) { renderScoped(); return; } // plan beats: scoped to specific domains → direct list
-      renderOverview();                                              // the 4-category compact overview
+      renderOverview();                                              // the tabbed striped bento box
     }
     render(); renderFoot();
   }
