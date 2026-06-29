@@ -473,14 +473,15 @@
   #stage{position:relative;width:100%;border-radius:26px;overflow:hidden;border:3px solid #5a4a8a;
     box-shadow:0 12px 34px rgba(0,0,0,.5);margin:2px 0 10px;background:#10122a;}
   #guardian{display:block;width:100%;image-rendering:pixelated;touch-action:none;}
-  #joy{position:absolute;left:16px;bottom:16px;width:88px;height:88px;border-radius:50%;
+  #joy{position:absolute;left:16px;bottom:84px;width:88px;height:88px;border-radius:50%;transition:bottom .26s cubic-bezier(.2,.85,.3,1);
     background:radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,.03));
     border:2px solid rgba(255,255,255,.22);touch-action:none;z-index:5;
     display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+  #gameMode.gn-open #joy,#gameMode.gn-open #joy2{bottom:106px;} /* thumbsticks rise ABOVE the menu when it's up (David 2026-07-02) */
   #joyStick{width:40px;height:40px;border-radius:50%;background:rgba(180,150,255,.45);
     border:2px solid rgba(255,255,255,.55);box-shadow:0 0 12px rgba(150,110,255,.6);
     transition:transform .04s linear;}
-  #joy2{position:absolute;right:16px;bottom:16px;width:88px;height:88px;border-radius:50%;
+  #joy2{position:absolute;right:16px;bottom:84px;width:88px;height:88px;border-radius:50%;transition:bottom .26s cubic-bezier(.2,.85,.3,1);
     background:radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,.03));
     border:2px solid rgba(255,255,255,.22);touch-action:none;z-index:5;
     display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
@@ -502,8 +503,11 @@
     touch-action:none;overscroll-behavior:none;}
   #gameMode.on{display:block;}
   /* GAME bottom menu (Planner·Journey·Game) — slides out of the way while you play, returns when idle (David 2026-07-02) */
-  #gameNav{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-around;background:rgba(8,4,12,.8);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);border-top:2px solid #160510;padding:8px 6px 16px;z-index:63;transition:transform .28s cubic-bezier(.2,.85,.3,1);}
-  #gameNav.away{transform:translateY(135%);}
+  #gameNav{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-around;background:rgba(8,4,12,.88);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);border-top:2px solid #160510;padding:8px 6px 16px;z-index:63;transform:translateY(130%);transition:transform .28s cubic-bezier(.2,.85,.3,1);}
+  #gameMode.gn-open #gameNav{transform:translateY(0);} /* the menu FOLDS to a corner button by default; tap the button to bring the bar up (David 2026-07-02) */
+  #gnToggle{position:absolute;bottom:16px;right:16px;width:54px;height:54px;border-radius:16px;background:rgba(8,4,12,.82);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);border:2.5px solid #160510;color:#ff5fa0;font-size:24px;display:flex;align-items:center;justify-content:center;z-index:64;box-shadow:0 4px 0 #160510;transition:opacity .2s,transform .2s;}
+  #gnToggle:active{transform:translateY(2px);}
+  #gameMode.gn-open #gnToggle{opacity:0;pointer-events:none;transform:scale(.7);}
   #world{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none;}
   #gameExit{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;z-index:62;
     width:44px;height:44px;border-radius:14px;border:2px solid rgba(255,255,255,.25);
@@ -1500,6 +1504,7 @@
     <button id="jumpBtn" type="button" aria-label="Jump">⤴</button>
     <button id="notebookBtn" type="button" aria-label="Notebook"><i class="ti ti-notebook"></i></button>
     <div id="gameNav"><button class="jpn" id="gnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn" id="gnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn on" id="gnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div>
+    <button id="gnToggle" type="button" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
   </div>
   <div id="pullBackdrop"></div>
   <div id="liveTracker"><span id="ltLabel">What are you doing now?</span><span id="ltHint">tap to track</span></div>
@@ -1530,6 +1535,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=635"></script>
+  <script src="app.js?v=636"></script>
 </body>
 </html>

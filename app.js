@@ -908,6 +908,7 @@
     draw();
   }
   var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
+  var _ttapT = 0, _ttapX = 0, _ttapY = 0; // double-tap-to-zoom tracking on the timeline (David 2026-07-02)
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
   // Smooth hour-zoom that rebuilds ONLY the day-card timelines — the header (and the zoom slider you're dragging) stay intact, so a slider/pinch never destroys itself mid-gesture (David 2026-06-25)
   function zoomTimeline(nv, curOnly) {
@@ -3071,17 +3072,17 @@
     gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
     document.body.classList.add("gaming"); document.body.style.overflow = "hidden";
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
-    gameNavSetup(); var _gn = el("gameNav"); if (_gn) _gn.classList.remove("away"); // show the bottom menu on enter
+    gameNavSetup(); gm.classList.remove("gn-open"); // start FOLDED — the corner button shows, thumbsticks above it
   }
-  function gameNavSetup() { // a bottom menu in the game that slides AWAY while you play (pan/zoom/joystick) and returns when idle — same spirit as the planner's collapsing nav (David 2026-07-02)
-    var gm = el("gameMode"), gn = el("gameNav"); if (!gm || !gn || gm._navWired) return; gm._navWired = true;
-    var idleT = null;
-    function showG() { gn.classList.remove("away"); }
-    function hideG() { gn.classList.add("away"); if (idleT) clearTimeout(idleT); idleT = setTimeout(showG, 1500); } // returns ~1.5s after you stop
-    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gameExit")) return; hideG(); }, true); // any play touch (canvas/joystick/zoom) tucks it away
+  function gameNavSetup() { // the game menu FOLDS to a single corner button; tap it to bring up the Planner·Journey·Game bar (thumbsticks rise above it); any play touch folds it back (David 2026-07-02)
+    var gm = el("gameMode"); if (!gm || gm._navWired) return; gm._navWired = true;
+    function openMenu() { gm.classList.add("gn-open"); }
+    function foldMenu() { gm.classList.remove("gn-open"); }
+    var tg = el("gnToggle"); if (tg) tg.onclick = openMenu;
+    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gnToggle, #gameExit")) return; foldMenu(); }, true); // pan/zoom/joystick → fold the menu back to the button
     var p = el("gnPlanner"); if (p) p.onclick = function () { closeGame(); closeJourney(); };
     var j = el("gnJourney"); if (j) j.onclick = function () { closeGame(); openJourney(); };
-    var g = el("gnGame"); if (g) g.onclick = showG;
+    var g = el("gnGame"); if (g) g.onclick = foldMenu; // already in the game → just fold the menu
   }
   function closeGame() {
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
@@ -3956,15 +3957,17 @@
       var planSide = isFuture || lx0 <= rect0.width * 0.5;
       var moved = false, done = false, holdT = null;
       function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 30, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); bentoPicker({ title: "What's the plan?", onPick: function (x) { var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (!nb) return; nb.title = x.title; nb.color = x.color || (DOM[x.domain] || DOM.focus).c; nb.catK = x.catK || null; nb.domain = x.domain || domainOf(x); reflow(k); save(); renderToday(); }, onCancel: function () { var a = blocks(k), i = a.map(function (b) { return b.id; }).indexOf(id); if (i >= 0) { a.splice(i, 1); reflow(k); save(); renderToday(); } } }); } // tap an empty slot → a 30-min bubble lands AT the tapped time, then the bento opens immediately (single-tap to pick) and the activity appears in place; tap the placed bubble AGAIN to open the full editor. Dismiss the bento with no pick → the empty stub is removed (no litter). (David 2026-06-27 — was: created the stub then jumped straight into the full editor)
-      // PRESS-AND-HOLD-to-create REMOVED (David 2026-06-27, "I don't like it") — empty bubbles are made by a deliberate quick TAP only (in up()), never an accidental hold. holdT stays null; the done/holdT guards below are harmless no-ops.
-      function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 6 || Math.abs(e.clientX - dx) > 6)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // ANY slide (even a slow one >6px) = scrolling → cancel the create, so a slow scroll never pops the bento. Create is a STILL tap only. (David 2026-07-02; was 12px which let slow drifts create)
+      function fireCreate() { if (rightTrack) bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); else makeBlock(); }
+      // ADD an activity = a deliberate LONG-PRESS now (a quick tap is reserved for DOUBLE-TAP-to-zoom) — David 2026-07-02
+      holdT = setTimeout(function () { if (moved || _pinching) return; holdT = null; done = true; try { if (navigator.vibrate) navigator.vibrate(11); } catch (e) {} fireCreate(); }, 360);
+      function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 6 || Math.abs(e.clientX - dx) > 6)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // any slide = scrolling → cancel the create-hold; scroll stays smooth
       function up(e) {
         if (holdT) { clearTimeout(holdT); holdT = null; }
         document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
-        if (done) return; // already created on the hold
-        if (moved || Date.now() - t0 > 500) return; // scrolled / lingering → not a deliberate tap
-        if (rightTrack) { bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); }
-        else makeBlock(); // quick tap on empty plan / future → new bubble + editor
+        if (done || moved) return; // created on the hold, or it was a scroll
+        var now = Date.now(); if (now - t0 > 360) { _ttapT = 0; return; } // a long hold that didn't fire → ignore
+        if (_ttapT && now - _ttapT < 320 && Math.abs(ev.clientX - _ttapX) < 44 && Math.abs(ev.clientY - _ttapY) < 44) { _ttapT = 0; if (pullZoom === "day") animateHourPx(pullHourPx < 110 ? 150 : 64, ev.clientY); } // DOUBLE-TAP → zoom in/out one-handed (replaces the two-finger pinch) — David 2026-07-02
+        else { _ttapT = now; _ttapX = ev.clientX; _ttapY = ev.clientY; }
       }
       document.addEventListener("pointermove", mv, { passive: true }); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
     });
