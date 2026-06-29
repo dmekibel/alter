@@ -43,6 +43,12 @@
   #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
   @keyframes ssLeave{ to{ opacity:0; transform:scale(1.08); } }
   .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.08); border:2px solid #3a1730; color:#ffd9ec; border-radius:14px; padding:8px 13px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; cursor:pointer; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
+  .ss-flag{ font-size:18px; line-height:1; }
+  .ss-langmenu{ position:absolute; top:62px; right:18px; z-index:6; background:#2c081a; border:2px solid #160510; border-radius:16px; box-shadow:0 16px 44px rgba(0,0,0,.6); padding:6px; display:flex; flex-direction:column; gap:2px; min-width:178px; animation:popIn .26s var(--ease-spring) both; }
+  .ss-langrow{ display:flex; align-items:center; gap:11px; background:none; border:none; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; padding:10px 12px; border-radius:11px; cursor:pointer; text-align:left; }
+  .ss-langrow.on{ background:rgba(255,95,160,.13); }
+  .ss-langrow .ti-check{ margin-left:auto; color:#ff5fa0; }
+  .ss-langrow:active{ transform:scale(.97); }
   .ss-hero{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
   .ss-sparkles{ color:#ffd24a; font-size:30px; line-height:1; opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .15s both; }
   .ss-guardian-wrap{ margin:2px 0 8px; animation:ssSpawn .74s var(--ease-spring) both, ssBob 3.2s ease-in-out 1.1s infinite; }
@@ -1612,7 +1618,7 @@
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
   <div id="startScreen">
-    <button class="ss-lang" id="ssLang"><i class="ti ti-world"></i> <span id="ssLangName">English</span></button>
+    <button class="ss-lang" id="ssLang"><span class="ss-flag" id="ssLangFlag">🇬🇧</span> <span id="ssLangName">English</span></button>
     <div class="ss-hero">
       <div class="ss-sparkles"><i class="ti ti-sparkles"></i></div>
       <div class="ss-guardian-wrap"><div class="ss-guardian">
@@ -1633,6 +1639,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=655"></script>
+  <script src="app.js?v=656"></script>
 </body>
 </html>

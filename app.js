@@ -467,7 +467,65 @@
   function cascadeIn(nodes) { if (prefersReducedMotion() || !nodes) return; for (var i = 0; i < nodes.length; i++) { var k = nodes[i]; if (!k || !k.style) continue; k.classList.add("casc-item"); k.style.animationDelay = (i * 38) + "ms"; } }
   // ===== START SCREEN (v652): the animated launch screen — gates entry every cold open with Continue (load save) / New game (fresh) + a language pick. The living guardian sprite + entrance animations live in CSS. =====
   var _ssShown = false;
-  var SS_LANGS = ["English", "Español", "Français", "Deutsch", "Italiano", "Português", "日本語"];
+  // ===== i18n (v656): DISPLAY-LAYER translator. Verified the app NEVER reads rendered text for logic (0 textContent reads) → swapping displayed text CAN'T break functionality; only UI length needs a visual check per surface. Unmatched strings fall back to English; the dictionary grows. =====
+  var LANGS = [
+    { code: "en", name: "English", flag: "🇬🇧" }, { code: "ru", name: "Русский", flag: "🇷🇺" },
+    { code: "es", name: "Español", flag: "🇪🇸" }, { code: "fr", name: "Français", flag: "🇫🇷" },
+    { code: "de", name: "Deutsch", flag: "🇩🇪" }, { code: "it", name: "Italiano", flag: "🇮🇹" }, { code: "pt", name: "Português", flag: "🇵🇹" }
+  ];
+  var I18N = { ru: {
+    "Continue": "Продолжить", "Load game": "Загрузить игру", "New game": "Новая игра", "Start": "Начать", "Begin": "Начать",
+    "your guardian-angel life sim": "твой ангел-хранитель — симулятор жизни",
+    "Tap again to erase EVERYTHING": "Нажми ещё раз, чтобы стереть ВСЁ", "Erase save & start fresh?": "Стереть сохранение и начать заново?",
+    "Planner": "Планер", "Journey": "Путь", "Game": "Игра", "Goals": "Цели", "Today": "Сегодня", "Now": "Сейчас", "You": "Ты", "Tomorrow": "Завтра", "Yesterday": "Вчера",
+    "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "Other": "Другое",
+    "Move": "Движение", "MOVE": "ДВИЖЕНИЕ", "Nourish": "Питание", "NOURISH": "ПИТАНИЕ", "Focus": "Фокус", "FOCUS": "ФОКУС", "Create": "Творчество", "CREATE": "ТВОРЧЕСТВО", "Connect": "Общение", "CONNECT": "ОБЩЕНИЕ", "Play": "Отдых", "PLAY": "ОТДЫХ", "Restore": "Восстановление", "RESTORE": "ВОССТАНОВЛЕНИЕ", "Upkeep": "Быт", "UPKEEP": "БЫТ", "Drift": "Дрейф", "DRIFT": "ДРЕЙФ",
+    "What are you doing?": "Чем ты занят?", "Plan what?": "Что планируем?", "Switch to?": "Переключиться на?", "search activities…": "поиск занятий…", "add activity": "добавить занятие", "Recent": "Недавние", "★ Pinned": "★ Закреплённые", "Been meaning to": "Давно собирался",
+    "Done": "Готово", "Save": "Сохранить", "Skip": "Пропустить", "skip": "пропустить", "Cancel": "Отмена", "Add": "Добавить", "Back": "Назад", "Plan": "План", "Track": "Трекинг", "Follow": "По плану", "Replan": "Перепланировать", "Stop": "Стоп",
+    "Let's go": "Поехали", "Hi, I'm Sage.": "Привет, я Сэйдж.", "your guardian. I'll help you become who you want to be — one day at a time.": "твой хранитель. Помогу стать тем, кем ты хочешь быть — день за днём.",
+    "PLAN": "ПЛАН", "REAL": "ФАКТ", "noon": "полдень", "Plan / shape today": "Спланировать день", "Clear day": "Очистить день", "Brain": "Мозг", "Start over": "Начать заново", "New activity": "Новое занятие", "category": "категория", "Goals & focus": "Цели и фокус"
+  } };
+  function curLang() { if (typeof S !== "undefined" && S) { if (S.langCode) return S.langCode; if (S.lang) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i].name === S.lang) return LANGS[i].code; } } return "en"; }
+  function langMeta(code) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === code) return LANGS[i]; return LANGS[0]; }
+  // more core strings + dynamic patterns (kept out of the big literal for readability)
+  Object.assign(I18N.ru, {
+    "Your journey": "Твой путь", "Plan your day": "Спланируй день", "PLAN IT": "СПЛАНИРОВАТЬ", "Plan it": "Спланировать", "Map out today — pick a few things and let them wait for you.": "Распланируй сегодня — выбери пару дел, и они подождут тебя.", "Today complete — beautiful ✨": "День завершён — красота ✨",
+    "Not tracking": "Не отслеживается", "Create plan": "Создать план", "Just track": "Просто трекать", "Review today": "Обзор дня", "Settle": "Передышка", "Settle first": "Сначала передышка",
+    "Brush teeth": "Почистить зубы", "Tidy space": "Прибраться", "Tidy": "Уборка", "Deep work": "Глубокая работа", "Make bed": "Заправить кровать", "Run": "Пробежка", "Walk": "Прогулка", "Read": "Чтение", "Workout": "Тренировка", "Breathe": "Дыхание", "Meditate": "Медитация", "Sleep": "Сон", "Lunch": "Обед", "Dinner": "Ужин", "Breakfast": "Завтрак",
+    "add a habit / activity": "добавить привычку / занятие", "add your own…": "добавь своё…", "name it once…": "назови один раз…", "name it (e.g. Climbing, Therapy)…": "назови (напр. Скалолазание, Терапия)…",
+    "Redo setup": "Перенастроить", "Back up your life": "Сохрани свою жизнь", "Copy": "Копировать", "Download": "Скачать", "Restore": "Восстановить", "Test the brain": "Проверить мозг",
+    "your mirror — it grows when you do": "твоё зеркало — оно растёт вместе с тобой", "Set up your world →": "Настрой свой мир →"
+  });
+  var I18N_PATTERNS = { ru: [ [/(\d+)\s+of\s+(\d+)\s+today/g, "$1 из $2 сегодня"], [/(\d+)\s+of\s+(\d+)/g, "$1 из $2"] ] };
+  function tr(s) { var L = curLang(); if (L === "en" || !I18N[L]) return s; var k = (s == null ? "" : ("" + s)).trim(); var v = I18N[L][k]; return v != null ? v : s; }
+  function translateTree(root) {
+    var L = curLang(); if (L === "en" || !I18N[L] || !root || !root.nodeType) return;
+    var dict = I18N[L], pats = I18N_PATTERNS[L] || [];
+    try {
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, jobs = [];
+      while ((n = w.nextNode())) { var raw = n.nodeValue; if (!raw) continue; var k = raw.trim(); if (!k) continue; var v = dict[k]; if (v != null && v !== k) { jobs.push([n, raw.replace(k, v)]); continue; } var nv = raw, hit = false; for (var pi = 0; pi < pats.length; pi++) { if (pats[pi][0].test(nv)) { nv = nv.replace(pats[pi][0], pats[pi][1]); hit = true; } } if (hit) jobs.push([n, nv]); }
+      for (var i = 0; i < jobs.length; i++) jobs[i][0].nodeValue = jobs[i][1];
+      if (root.querySelectorAll) { var ph = root.querySelectorAll("input[placeholder],textarea[placeholder]"); for (var p = 0; p < ph.length; p++) { var pk = (ph[p].getAttribute("placeholder") || "").trim(); if (dict[pk] != null) ph[p].setAttribute("placeholder", dict[pk]); } }
+    } catch (e) {}
+  }
+  var _i18nRaf = 0, _i18nQ = [];
+  function i18nObserve() { // re-translate freshly-rendered subtrees (the app rebuilds DOM constantly). Only walks when a non-English language is active → zero cost for English.
+    if (!window.MutationObserver) return;
+    var mo = new MutationObserver(function (muts) {
+      if (curLang() === "en") return;
+      for (var i = 0; i < muts.length; i++) { var a = muts[i].addedNodes; for (var j = 0; j < a.length; j++) { var node = a[j]; if (node.nodeType === 1) _i18nQ.push(node); else if (node.nodeType === 3 && node.parentNode) _i18nQ.push(node.parentNode); } }
+      if (!_i18nRaf && _i18nQ.length) _i18nRaf = requestAnimationFrame(function () { _i18nRaf = 0; var b = _i18nQ; _i18nQ = []; for (var k = 0; k < b.length; k++) translateTree(b[k]); });
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+  function setLang(code) { S.langCode = code; var m = langMeta(code); S.lang = m.name; try { save(); } catch (e) {} try { document.documentElement.lang = code; } catch (e) {} translateTree(document.body); }
+  function ssLangLabel() { var m = langMeta(curLang()); var ln = el("ssLangName"); if (ln) ln.textContent = m.name; var fl = el("ssLangFlag"); if (fl) fl.textContent = m.flag; }
+  function showLangMenu() {
+    var ss = el("startScreen"); if (!ss) return; var old = el("ssLangMenu"); if (old) { old.remove(); return; }
+    var ov = add(ss, "div", "ss-langmenu"); ov.id = "ssLangMenu";
+    LANGS.forEach(function (L) { var row = add(ov, "button", "ss-langrow" + (L.code === curLang() ? " on" : "")); row.innerHTML = '<span class="ss-flag">' + L.flag + '</span><span>' + L.name + '</span>' + (L.code === curLang() ? ' <i class="ti ti-check"></i>' : ''); row.onclick = function () { setLang(L.code); ssLangLabel(); ov.remove(); }; });
+    setTimeout(function () { var h = function (e) { if (ov && !ov.contains(e.target) && e.target.id !== "ssLang" && (!e.target.closest || !e.target.closest("#ssLang"))) { ov.remove(); document.removeEventListener("pointerdown", h, true); } }; document.addEventListener("pointerdown", h, true); }, 0);
+  }
   function showStartScreen() {
     var ss = el("startScreen"); if (!ss) { _ssShown = false; return; }
     _ssShown = true;
@@ -475,10 +533,11 @@
     var prim = el("ssPrimary"), nb = el("ssNew"), ln = el("ssLangName"), lb = el("ssLang");
     if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-player-play-filled"></i> Start'; // primary always present: Continue a save, or Start a fresh one (→ onboarding)
     if (nb) { nb.style.display = ""; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; } // ALWAYS show New game so both options are visible (David 2026-07-02)
-    if (ln) ln.textContent = S.lang || "English";
+    ssLangLabel();
     ss.classList.add("on");
     if (prim) prim.onclick = function () { ssEnter(has); };
-    if (lb) lb.onclick = function () { var i = SS_LANGS.indexOf(S.lang || "English"); S.lang = SS_LANGS[(i + 1) % SS_LANGS.length]; try { save(); } catch (e) {} if (ln) ln.textContent = S.lang; }; // a selector for now (the choice is stored; full translation is a separate task)
+    if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
+    if (curLang() !== "en") translateTree(ss); // translate the start screen into the chosen language
     if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = '<i class="ti ti-alert-triangle"></i> Erase save &amp; start fresh?'; if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: New game wipes everything → reload → start screen → Begin → onboarding
     var lf = el("ssLoad"), fi = el("ssFile");
     if (lf && fi) { // LOAD GAME = upload a backup file (the exported .json) → restore → reload into it
@@ -5340,6 +5399,7 @@
     setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot. The start screen (below) sits ON TOP of it until you tap Continue.
     showStartScreen(); // v652: the animated launch screen gates the cold open; its primary button enters the app (or starts onboarding)
     if (!_ssShown && !(S.profile && S.profile.set)) setTimeout(onboard, 350); // fallback ONLY if the start screen didn't show
+    try { i18nObserve(); if (curLang() !== "en") { translateTree(document.body); setTimeout(function () { translateTree(document.body); }, 400); } } catch (e) {} // v656: live translation (display-only; safe — app never reads rendered text)
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
