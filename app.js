@@ -449,7 +449,20 @@
       setTimeout(done, 520);
     } catch (e) {}
   }
-  function revealTimeline() { try { setTimeout(function () { playReveal(el("pullSheet"), nowLineEl); }, 40); } catch (e) {} } // reveal the planner timeline from the now-line on open (not on scroll/rebuild)
+  // TIMELINE BLOCK CASCADE (v649): the visible "your day arrives" moment — the day's blocks pop in, staggered, radiating OUT from the now-line. Fires only on OPEN (called from revealTimeline), never on scroll/minute-rebuild. Animates only the blocks in view; cleans the classes after.
+  function cascadeTimelineBlocks() {
+    if (prefersReducedMotion()) return;
+    try {
+      var pb = el("pullBody"); var cur = pb && pb.querySelector(".day-card.cur .day-cardscroll"); if (!cur) return;
+      var cr = cur.getBoundingClientRect();
+      var blks = [].slice.call(cur.querySelectorAll(".calblk:not(.live)")).filter(function (b) { if (b.offsetParent === null) return false; var r = b.getBoundingClientRect(); return r.bottom > cr.top - 30 && r.top < cr.bottom + 30; });
+      var nl = cur.querySelector(".nowline"); var nlr = nl ? nl.getBoundingClientRect() : null; var ny = nlr ? (nlr.top + nlr.height / 2) : (cr.top + cr.height * 0.42);
+      blks.sort(function (a, b) { var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return Math.abs((ra.top + ra.height / 2) - ny) - Math.abs((rb.top + rb.height / 2) - ny); });
+      blks.forEach(function (b, i) { b.classList.remove("casc-blk"); void b.offsetWidth; b.style.animationDelay = Math.min(i * 28, 460) + "ms"; b.classList.add("casc-blk"); });
+      setTimeout(function () { blks.forEach(function (b) { b.classList.remove("casc-blk"); b.style.animationDelay = ""; }); }, 1200);
+    } catch (e) {}
+  }
+  function revealTimeline() { try { setTimeout(function () { playReveal(el("pullSheet"), nowLineEl); cascadeTimelineBlocks(); }, 60); } catch (e) {} } // reveal the planner timeline from the now-line + cascade the day's blocks in on open (not on scroll/rebuild)
   // STAGGERED CASCADE (v648): make a set of just-rendered nodes arrive one-by-one with a spring.
   function cascadeIn(nodes) { if (prefersReducedMotion() || !nodes) return; for (var i = 0; i < nodes.length; i++) { var k = nodes[i]; if (!k || !k.style) continue; k.classList.add("casc-item"); k.style.animationDelay = (i * 38) + "ms"; } }
   function openJourney() {
