@@ -409,7 +409,7 @@
 
     // GOAL ⇄ JOURNEY (David 2026-06-29 — the spine): each active goal projects its NEXT move onto the trail, so the journey advances your goals, not just today's blocks. A metric goal → "log your number"; a step goal → its smallest undone step. Skips moves already on today's plan (the block node covers those). Capped so the trail never floods.
     var gSeen = {};
-    (activeGoals() || []).slice(0, 3).forEach(function (g) {
+    (staleGoals(3) || []).forEach(function (g) {
       var gc = (DOM[g.domain] || DOM.focus).c, gti = (DOM[g.domain] || DOM.focus).ti, m = g.metric;
       if (m && m.target != null && m.current != null) {
         var hit = m.dir === "down" ? m.current <= m.target : m.current >= m.target;
@@ -427,7 +427,7 @@
         nodes.push({ key: "goalst:" + g.title, emoji: "🎯", icon: gti, title: st.title, catK: null,
           line: "Next on " + g.title + " — tap to start it now.",
           color: gc, done: (logs(k) || []).some(function (l) { return (l.title || "").toLowerCase() === st.title.toLowerCase(); }),
-          act: function () { startTimer({ title: st.title, color: gc }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ " + st.title); } });
+          act: function () { goalTouch(g); save(); startTimer({ title: st.title, color: gc }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ " + st.title); } });
       }
     });
 
@@ -782,7 +782,7 @@
     var have = {}; blocks(k).forEach(function (b) { have[(b.title || "").toLowerCase()] = 1; });
     var out = [];
     // §16/mockup 010: today pulls from your ACTIVE goals — surface each active goal's next undone step
-    if (k === todayK()) { activeGoals().forEach(function (g) { var st = (g.subtasks || []).filter(function (s) { return !s.done; })[0]; if (st && !have[st.title.toLowerCase()]) out.push({ title: st.title, domain: g.domain || "focus", why: "from your " + g.title + " goal", mins: 30 }); }); }
+    if (k === todayK()) { staleGoals(3).forEach(function (g) { var st = (g.subtasks || []).filter(function (s) { return !s.done; })[0]; if (st && !have[st.title.toLowerCase()]) out.push({ title: st.title, domain: g.domain || "focus", why: "from your " + g.title + " goal", mins: 30 }); }); }
     if (k === todayK()) { var od = mostOverdueChore(); if (od && !have[od.l.toLowerCase()]) { var f = choreFresh(od); out.push({ title: od.l, domain: "upkeep", why: "your space needs it · " + (f.days >= 999 ? "never done" : f.days + "d"), mins: 15 }); } }
     (SUG_POOL[phase()] || SUG_POOL.afternoon).forEach(function (c) { if (!have[c[0].toLowerCase()]) out.push({ title: c[0], domain: c[1], why: c[2], mins: c[1] === "focus" ? 90 : 30 }); });
     return out.slice(0, 4);
@@ -853,7 +853,11 @@
   ];
   function decomposeGoal(g) { var t = (g.title || "").toLowerCase(); for (var i = 0; i < DECOMP_TEMPLATES.length; i++) { if (DECOMP_TEMPLATES[i].kw.some(function (k) { return t.indexOf(k) !== -1; })) return DECOMP_TEMPLATES[i].steps.slice(); } return ["Define what “done” looks like", "Pick the next concrete step", "Schedule it into this week", "Set a finish line", "Review progress monthly"]; }
   function activeGoals() { return (S.goals || []).filter(function (g) { return g.active; }); }
-  function ensureGoalDefaults() { if (!S.goals || !S.goals.length) return; if (!S.goals.some(function (g) { return ("active" in g); })) { S.goals.forEach(function (g, i) { g.active = i < 3; }); save(); } } // first run: top few active (Newport cap, §17)
+  // GOAL HEALTH + ROTATION (David 2026-06-29 spine): hold as MANY goals as you want; surface only the STALEST few each day so a big portfolio never floods and no goal is silently forgotten.
+  function goalLastK(g) { var ks = []; if (g.lastK) ks.push(g.lastK); if (g.metric && g.metric.hist) g.metric.hist.forEach(function (h) { ks.push(h.k); }); return ks.sort().pop() || ""; } // newest interaction day; "" = never touched → sorts first
+  function staleGoals(n) { var gs = (S.goals || []).filter(function (g) { return g.active; }); gs.sort(function (a, b) { var ka = goalLastK(a), kb = goalLastK(b); return ka < kb ? -1 : ka > kb ? 1 : 0; }); return n ? gs.slice(0, n) : gs; }
+  function goalTouch(g) { if (g) { g.lastK = todayK(); } } // stamp a goal as worked-on today (drives rotation)
+  function ensureGoalDefaults() { if (!S.goals || !S.goals.length) return; if (!S.goals.some(function (g) { return ("active" in g); })) { S.goals.forEach(function (g) { g.active = true; }); save(); } } // legacy data: activate all — rotation (staleGoals) handles the surfacing now, no hard cap (David 2026-06-29)
   // ===== TINY-STEP GUARDIAN (David 2026-06-29 Wave B): the "Feels too big? / I'm scared to start" move. Shrinks a fear-gated goal to ONE 2-min impossible-to-fail step + offers the body-first Reversal of Desire. Routes via state, hands ONE tool — no menu. Anti-shame copy. Serves Mom (fear-gated sports), Sister (overwhelm), Brother (avoidance). =====
   function tinyStep(g) {
     var t = (g.title || "").toLowerCase();
@@ -886,7 +890,7 @@
   }
   function typeAdd(parent, ph, cb) { var w = add(parent, "div", "goal-add"); var inp = document.createElement("input"); inp.type = "text"; inp.placeholder = ph; inp.className = "goal-input"; w.appendChild(inp); var b = add(w, "button", "goal-addb"); b.innerHTML = '<i class="ti ti-plus"></i>'; function go() { var v = inp.value.trim(); if (v) { cb(v); inp.value = ""; } } b.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } }); }
   function pickSheet(q, opts, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var row = add(card, "div", "dur-row"); opts.forEach(function (o) { var c = add(row, "button", "dur-chip", o.label); c.onclick = function () { ov.remove(); cb(o.val); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
-  function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule “' + esc(st.title) + '” — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); st.schedK = k; save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
+  function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule “' + esc(st.title) + '” — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); st.schedK = k; goalTouch(g); save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
   // ===== TRACKABLE GOAL METRICS (David 2026-06-29): a goal can be a NUMBER moving toward a target (weight 90→75↓, savings→target↑, followers↑). Auto-detected from the title + manually addable. Lives alongside subtasks. =====
   var METRIC_GUESS = [
     { kw: /weight|lose.*(weight|kg|lb)|slim|leaner|body\s*fat|\bbmi\b/, unit: "kg", dir: "down", label: "Weight" },
@@ -903,7 +907,7 @@
   function metricPct(m) { if (m.start == null || m.target == null || m.current == null) return 0; var span = m.target - m.start; if (span === 0) return 100; return Math.max(0, Math.min(100, Math.round((m.current - m.start) / span * 100))); }
   function numSheet(q, initial, unit, cb) { var ov = add(document.body, "div", "dur-ov"), card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var arow = add(card, "div", "ob-addrow"); var inp = document.createElement("input"); inp.type = "number"; inp.inputMode = "decimal"; inp.className = "ob-input"; if (initial != null) inp.value = initial; if (unit) inp.placeholder = unit; arow.appendChild(inp); var sv = add(card, "button", "dur-chip", "Save"); function go() { var v = parseFloat(inp.value); if (isNaN(v)) { inp.focus(); return; } ov.remove(); cb(v); } sv.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60); }
   function metricSetup(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-flag"></i> ' + esc(m.label) + ' — where are you NOW?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (now) { m.current = now; m.start = now; numSheet('<i class="ti ti-target"></i> Your target?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.target, m.unit, function (tg) { m.target = tg; m.dir = tg < now ? "down" : "up"; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: now }); save(); redraw(); toast("🎯 tracking " + esc(m.label).toLowerCase()); }); }); }
-  function logMetric(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-chart-line"></i> ' + esc(m.label) + ' now?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (v) { m.current = v; if (m.start == null) m.start = v; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: v }); if (m.hist.length > 60) m.hist.shift(); save(); redraw(); var hit = m.target != null && (m.dir === "down" ? v <= m.target : v >= m.target); toast(hit ? "🎉 you hit your target!" : "📈 logged · " + fmtNum(v) + " " + m.unit); }); }
+  function logMetric(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-chart-line"></i> ' + esc(m.label) + ' now?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (v) { m.current = v; if (m.start == null) m.start = v; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: v }); if (m.hist.length > 60) m.hist.shift(); goalTouch(g); save(); redraw(); var hit = m.target != null && (m.dir === "down" ? v <= m.target : v >= m.target); toast(hit ? "🎉 you hit your target!" : "📈 logged · " + fmtNum(v) + " " + m.unit); }); }
   function metricSection(g, body, redraw) {
     if (!g.metric) { var addb = add(body, "button", "goal-metric-add"); addb.innerHTML = '<i class="ti ti-chart-line"></i> Track a number'; addb.onclick = function () { g.metric = guessMetric(g.title) || { label: "Progress", unit: "", dir: "up", start: null, current: null, target: null, hist: [] }; save(); metricSetup(g, redraw); }; return; }
     var m = g.metric;
@@ -934,8 +938,8 @@
         else add(gc, "div", "goal-tagnone", "tap to break it down →");
         gc.onclick = function () { view = g; draw(); };
       });
-      typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: activeGoals().length < 3 }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
-      add(body, "div", "goal-foot", "few active · do fewer, finish more — Slow Productivity");
+      typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
+      add(body, "div", "goal-foot", "hold as many as you like — I rotate the stalest onto your journey so none gets forgotten");
     }
     function drawGoal(g) {
       var dom = DOM[g.domain || "focus"];
@@ -951,7 +955,7 @@
       var sl = add(body, "div", "goal-steps");
       (g.subtasks || []).forEach(function (st, i) {
         var row = add(sl, "div", "goal-step" + (st.done ? " done" : ""));
-        var ck = add(row, "button", "gs-check"); ck.innerHTML = st.done ? '<i class="ti ti-circle-check-filled"></i>' : '<i class="ti ti-circle"></i>'; ck.onclick = function () { st.done = !st.done; save(); draw(); };
+        var ck = add(row, "button", "gs-check"); ck.innerHTML = st.done ? '<i class="ti ti-circle-check-filled"></i>' : '<i class="ti ti-circle"></i>'; ck.onclick = function () { st.done = !st.done; if (st.done) goalTouch(g); save(); draw(); };
         add(row, "div", "gs-title", st.title);
         if (st.schedK) { var sd = add(row, "span", "gs-on"); sd.innerHTML = '<i class="ti ti-calendar-check"></i>'; }
         var sc = add(row, "button", "gs-sched"); sc.innerHTML = '<i class="ti ti-calendar-plus"></i>'; sc.onclick = function () { scheduleSubtask(g, st); };
@@ -2684,7 +2688,7 @@
       P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck"); P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other"; // wire the once-dead vibe: an overwhelmed/stuck onboarder gets the body-first low-energy gate until real mood data arrives (David 2026-06-29 readiness test)
       P.goals = keys(data.goals).join(", "); P.wake = data.wake; P.sleep = data.bed; P.peak = data.peak; P.lark = (data.peak !== "owl"); P.set = true;
       S.acts = S.acts || []; keys(data.kept).forEach(function (t) { if (!TITLE2CAT[t.toLowerCase()] && !S.acts.filter(function (a) { return a.title === t; })[0]) S.acts.push({ title: t, catK: null, domain: domainOf({ title: t }) }); });
-      S.goals = keys(data.goals).map(function (g, _gi) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : domainOf({ title: g }), subtasks: [], active: _gi < 3 }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); return go; }); // mark the first few active so they immediately pull onto the journey + daily suggestions (David 2026-06-29 spine) // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
+      S.goals = keys(data.goals).map(function (g, _gi) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : domainOf({ title: g }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); return go; }); // mark the first few active so they immediately pull onto the journey + daily suggestions (David 2026-06-29 spine) // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
       // ===== ONBOARDING → JOURNEY SEED (David 2026-06-28): write what the journey path reads so a new user's trail is THEIRS, not generic demo circles. All additive, guarded. =====
       // 1) HABITS the user chose → S.habits (so the journey's habit circles are theirs). Fall back to defaults if they cleared everything.
       var allHabDefs = DEFAULT_HABITS.concat(EXTRA_HABITS).concat(data.customHabits);
