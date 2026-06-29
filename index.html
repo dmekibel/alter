@@ -1314,7 +1314,7 @@
   body.nav-collapsed.tab-day #liveDock .ld-grab{ display:none !important; } /* no drag handle in the slim corner row (drag-to-expand still works on the body) */
   body.nav-collapsed.tab-day #liveDock .ld-main{ margin-bottom:0 !important; width:100% !important; }
   body.nav-collapsed.tab-day #liveDock .ld-stop{ width:40px !important; height:40px !important; } /* the mini ring stays a clean 40px circle, vertically centred in the 62px row */
-  body.nav-collapsed.tab-day:not(.gaming) #pullSheet{ bottom:calc(env(safe-area-inset-bottom,0px)) !important; transition:bottom .26s cubic-bezier(.2,.85,.3,1); } /* timeline EXTENDS to the screen bottom, BEHIND the floating dock — no ugly sheet edge above the tracker (David 2026-06-27) */
+  body.nav-collapsed.tab-day:not(.gaming) #pullSheet{ bottom:0 !important; transition:bottom .26s cubic-bezier(.2,.85,.3,1); } /* timeline bleeds to the VERY bottom (bottom:0, behind the floating dock) — was stopping at the safe-area line leaving a ~34px gap on device (David 2026-06-30) */
   body.nav-collapsed.tab-day:not(.gaming) .day-cardscroll{ padding-bottom:88px !important; } /* …but the last content can still scroll clear of the dock */
   #screen{ padding-bottom:98px !important; }
   /* header is replaced by the live-tracker strip + per-screen titles */
@@ -1671,6 +1671,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=681"></script>
+  <script src="app.js?v=682"></script>
 </body>
 </html>
