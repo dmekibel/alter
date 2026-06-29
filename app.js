@@ -413,13 +413,17 @@
       var gc = (DOM[g.domain] || DOM.focus).c, gti = (DOM[g.domain] || DOM.focus).ti, m = g.metric;
       if (m && m.target != null && m.current != null) {
         var hit = m.dir === "down" ? m.current <= m.target : m.current >= m.target;
-        if (!hit) {
-          var loggedToday = (m.hist || []).some(function (h) { return h.k === k; });
-          nodes.push({ key: "goalm:" + g.title, emoji: "📈", icon: "ti-chart-line", title: g.title, catK: null,
-            line: fmtNum(m.current) + " → " + fmtNum(m.target) + " " + (m.unit || "") + " · " + metricPct(m) + "% there — tap to log today.",
-            color: gc, done: loggedToday, act: function () { try { logMetric(g, function () { drawJourney(); }); } catch (e) {} } });
-          return; // one node per goal — the number IS the move today
+        if (hit) { // metric goal complete → a trophy node celebrates the win on the trail (still tappable to keep logging)
+          nodes.push({ key: "goalhit:" + g.title, emoji: "🏆", icon: "ti-trophy", title: g.title, catK: null,
+            line: "Target reached — " + fmtNum(m.target) + " " + (m.unit || "") + ". 🎉", color: gc, done: true,
+            act: function () { try { logMetric(g, function () { drawJourney(); }); } catch (e) {} } });
+          return;
         }
+        var loggedToday = (m.hist || []).some(function (h) { return h.k === k; });
+        nodes.push({ key: "goalm:" + g.title, emoji: "📈", icon: "ti-chart-line", title: g.title, catK: null,
+          line: fmtNum(m.current) + " → " + fmtNum(m.target) + " " + (m.unit || "") + " · " + metricPct(m) + "% there — tap to log today.",
+          color: gc, done: loggedToday, act: function () { try { logMetric(g, function () { drawJourney(); }); } catch (e) {} } });
+        return; // one node per goal — the number IS the move today
       }
       var st = (g.subtasks || []).filter(function (s) { return !s.done; })[0];
       if (st && !gSeen[st.title.toLowerCase()] && !planned.some(function (b) { return (b.title || "").toLowerCase() === st.title.toLowerCase(); })) {
@@ -933,7 +937,7 @@
   function metricPct(m) { if (m.start == null || m.target == null || m.current == null) return 0; var span = m.target - m.start; if (span === 0) return 100; return Math.max(0, Math.min(100, Math.round((m.current - m.start) / span * 100))); }
   function numSheet(q, initial, unit, cb) { var ov = add(document.body, "div", "dur-ov"), card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var arow = add(card, "div", "ob-addrow"); var inp = document.createElement("input"); inp.type = "number"; inp.inputMode = "decimal"; inp.className = "ob-input"; if (initial != null) inp.value = initial; if (unit) inp.placeholder = unit; arow.appendChild(inp); var sv = add(card, "button", "dur-chip", "Save"); function go() { var v = parseFloat(inp.value); if (isNaN(v)) { inp.focus(); return; } ov.remove(); cb(v); } sv.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60); }
   function metricSetup(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-flag"></i> ' + esc(m.label) + ' — where are you NOW?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (now) { m.current = now; m.start = now; numSheet('<i class="ti ti-target"></i> Your target?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.target, m.unit, function (tg) { m.target = tg; m.dir = tg < now ? "down" : "up"; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: now }); save(); redraw(); toast("🎯 tracking " + esc(m.label).toLowerCase()); }); }); }
-  function logMetric(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-chart-line"></i> ' + esc(m.label) + ' now?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (v) { m.current = v; if (m.start == null) m.start = v; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: v }); if (m.hist.length > 60) m.hist.shift(); goalTouch(g); save(); redraw(); var hit = m.target != null && (m.dir === "down" ? v <= m.target : v >= m.target); toast(hit ? "🎉 you hit your target!" : "📈 logged · " + fmtNum(v) + " " + m.unit); }); }
+  function logMetric(g, redraw) { var m = g.metric; numSheet('<i class="ti ti-chart-line"></i> ' + esc(m.label) + ' now?' + (m.unit ? ' (' + esc(m.unit) + ')' : ''), m.current, m.unit, function (v) { var prev = m.current; m.current = v; if (m.start == null) m.start = v; m.hist = m.hist || []; m.hist.push({ k: todayK(), v: v }); if (m.hist.length > 60) m.hist.shift(); goalTouch(g); save(); redraw(); var hit = m.target != null && (m.dir === "down" ? v <= m.target : v >= m.target); var wasHit = m.target != null && prev != null && (m.dir === "down" ? prev <= m.target : prev >= m.target); if (hit && !wasHit) { try { celebrateGated((DOM[g.domain] || DOM.focus).c, 6); } catch (e) {} toast("🏆 " + esc(g.title) + " — target reached!"); } else { toast(hit ? "🎉 at your target!" : "📈 logged · " + fmtNum(v) + " " + m.unit); } }); }
   function metricSection(g, body, redraw) {
     if (!g.metric) { var addb = add(body, "button", "goal-metric-add"); addb.innerHTML = '<i class="ti ti-chart-line"></i> Track a number'; addb.onclick = function () { g.metric = guessMetric(g.title) || { label: "Progress", unit: "", dir: "up", start: null, current: null, target: null, hist: [] }; save(); metricSetup(g, redraw); }; return; }
     var m = g.metric;
