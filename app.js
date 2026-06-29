@@ -258,6 +258,14 @@
     drift:   { l: "Drift",   e: "🌫️", c: "#565b66", light: "#b8bcc6", dark: "#2a2d34", ring: "#7a808c", ink: "#cdd2db", ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
+  // 4 SUPERCATEGORIES (David 2026-07-02 v644): Energy · Work · Love · Other — the compact, un-overwhelming layer ABOVE the 8 domains. Tabler icons, never emojis. Drives the bento picker overview (+ onboarding + plan flow). Each domain belongs to exactly one supercat.
+  var SUPERCAT = [
+    { k: "energy", l: "Energy", ti: "ti-bolt",      c: "#ff8a3a", domains: ["move", "nourish", "restore"] },
+    { k: "work",   l: "Work",   ti: "ti-briefcase", c: "#36b3f0", domains: ["focus", "create"] },
+    { k: "love",   l: "Love",   ti: "ti-heart",     c: "#ff5fa0", domains: ["connect"] },
+    { k: "other",  l: "Other",  ti: "ti-dots",      c: "#9a8cc4", domains: ["play", "upkeep", "drift"] }
+  ];
+  var DOM2SUPER = {}; SUPERCAT.forEach(function (sc) { sc.domains.forEach(function (d) { DOM2SUPER[d] = sc.k; }); });
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
   var DKW = [
     ["deep work","focus"],["make art","create"],["make music","create"],["music prod","create"],["cold shower","upkeep"],["wind down","restore"],["brush teeth","upkeep"],["board game","play"],["text back","connect"],["quality time","connect"],["meal prep","nourish"],["side hustle","focus"],["eat healthy","nourish"],["make the bed","upkeep"],
@@ -4153,8 +4161,8 @@
     // preselect: titles already picked (e.g. stepping Back into a beat) → seed sel from the matching activity objects so chips show as on (David 2026-06-28)
     if (multi && opts.preselect && opts.preselect.length) { var pset = {}; opts.preselect.forEach(function (t) { pset[(t || "").toLowerCase()] = 1; }); ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (pset[(a.title || "").toLowerCase()] && sel.indexOf(a) < 0) sel.push(a); }); }); }
     var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
-    var ov = add(document.body, "div", "bento-ov");
-    var card = add(ov, "div", "bento-card");
+    var ov = add(document.body, "div", "bento-ov bento-sheet");
+    var card = add(ov, "div", "bento-card bento-sheet");
     var head = add(card, "div", "bento-head");
     if (opts.onBack) { var bb0 = add(head, "button", "bento-x"); bb0.innerHTML = '<i class="ti ti-chevron-left"></i>'; bb0.style.marginRight = "8px"; bb0.onclick = function () { close(); opts.onBack(); }; }
     add(head, "div", "bento-q", opts.title || "What are you doing?");
@@ -4177,7 +4185,7 @@
       return s;
     }
     function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
-    function renderOverview() {
+    function renderScoped() {
       // BIG-3 staged reminder card (light, one line) — only on the overview, above search (David 2026-06-28)
       if (opts.headNode) body.appendChild(opts.headNode);
       // SEARCH (scrolls away with the content now) + PINNED row (your most-important — pin anything to bring it here & to the front) — David 2026-06-24
@@ -4266,7 +4274,63 @@
       var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length && !opts.allowEmptyGo;
       b.onclick = function () { if (!sel.length && !opts.allowEmptyGo) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
     }
-    function render() { body.innerHTML = ""; if (view.cat) renderExpanded(view.cat); else renderOverview(); }
+    // NEW compact overview (David v644): 4 SUPERCATEGORY tiles + a Recent row + search — no wall of options. Tap a tile → that category's activities (grouped by domain). Used for the normal picker; the domain-scoped plan beats still use renderScoped().
+    function renderOverview() {
+      if (opts.headNode) body.appendChild(opts.headNode);
+      var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
+      var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
+      var pinList = []; ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); });
+      var pinned = add(body, "div", "bento-pinned");
+      if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
+      var recent = add(body, "div", "bento-pinned");
+      try { var fr = frequent(8); if (fr.length) { add(recent, "span", "bento-qlbl", "Recent"); fr.forEach(function (m) { actChip(actOf(m), recent, true); }); } } catch (e) {}
+      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); add(pr, "span", "bento-qlbl", "Been meaning to"); opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
+      var results = add(body, "div", "bento-results"); results.style.display = "none";
+      var grid = add(body, "div", "bento-supergrid");
+      SUPERCAT.forEach(function (sc) {
+        var n = 0; sc.domains.forEach(function (d) { n += (by[d] || []).length; });
+        var tile = add(grid, "button", "bento-supertile"); tile.style.background = mixHex(sc.c, "#160510", 0.66); tile.style.borderColor = mixHex(sc.c, "#160510", 0.32);
+        tile.innerHTML = '<i class="ti ' + sc.ti + '" style="color:' + sc.c + '"></i><span class="bst-l">' + esc(sc.l) + '</span><span class="bst-n">' + n + ' things</span>';
+        tile.onclick = function () { view.super = sc.k; render(); };
+      });
+      var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
+      function drawResults(q) {
+        if (!q) { results.style.display = "none"; results.innerHTML = ""; grid.style.display = ""; pinned.style.display = ""; recent.style.display = ""; addb.style.display = ""; return; }
+        grid.style.display = "none"; pinned.style.display = "none"; recent.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
+        var ql = q.toLowerCase(), hits = [], seen2 = {};
+        ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
+        hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });
+        hits.slice(0, 60).forEach(function (a) { actChip(a, results, false); });
+        var ab = add(results, "span", "bchip addc"); ab.innerHTML = '<i class="ti ti-plus"></i> "' + esc(q) + '"'; ab.onclick = function () { S.acts = S.acts || []; S.acts.push({ title: q, catK: null, domain: "focus" }); save(); by = bentoByDomain(); commit({ title: q, catK: null, habitId: null, domain: "focus", color: DOM.focus.c }); };
+      }
+      si.oninput = function () { searchQ = si.value; drawResults(searchQ.trim()); };
+      si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
+      drawResults(searchQ.trim());
+    }
+    function renderSuper(scKey) {
+      var sc = null; for (var i = 0; i < SUPERCAT.length; i++) if (SUPERCAT[i].k === scKey) sc = SUPERCAT[i];
+      if (!sc) { view.super = null; render(); return; }
+      var strip = add(body, "div", "bento-strip");
+      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { view.super = null; render(); };
+      SUPERCAT.forEach(function (s) { var t = add(strip, "span", "bento-tab" + (s.k === scKey ? " on" : ""), s.l); t.style.color = s.c; if (s.k === scKey) t.style.background = mixDark(s.c); t.onclick = function () { view.super = s.k; render(); }; });
+      var any = false;
+      sc.domains.forEach(function (d) {
+        var acts = (by[d] || []).slice(); if (!acts.length) return; any = true;
+        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
+        var D = DOM[d];
+        var hh = add(body, "div", "bento-domh"); hh.style.color = D.light; hh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l);
+        var wrap = add(body, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, wrap, true); });
+      });
+      if (!any) { add(body, "div", "bento-domh", "Nothing here yet — add one below"); }
+      var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
+    }
+    function render() {
+      body.innerHTML = "";
+      if (view.cat) { renderExpanded(view.cat); return; }            // deep per-domain view (still reachable)
+      if (view.super) { renderSuper(view.super); return; }           // a supercategory's activities
+      if (opts.domains && opts.domains.length) { renderScoped(); return; } // plan beats: scoped to specific domains → direct list
+      renderOverview();                                              // the 4-category compact overview
+    }
     render(); renderFoot();
   }
 
