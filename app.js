@@ -649,7 +649,7 @@
     else if (!gaming) revealTimeline();
   }
   // ===== 3-PANE SPINE (David 2026-06-30): horizontal swipe switches Planner ↔ Journey ↔ Game. One axis for the whole app; vertical scroll stays "within the pane". paneSwipe attaches a 1-finger horizontal detector that fires left()/right() ONLY on a committed horizontal gesture, and bails the instant a 2nd finger lands (pinch) or the gesture starts on an interactive drag target (bubble/grip/node/button/slider) so it never hijacks a tap, a bubble drag, or a pinch-zoom. =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b";
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit";
   function paneSwipe(host, opts) {
     if (!host || host._paneSw) return; host._paneSw = 1;
     var sx = 0, sy = 0, on = false, armed = false, multi = false;
@@ -3484,20 +3484,24 @@
     { x: 150, y: 74, r: 66, fn: function () { characterCard(); } },           // tree → character card (the self tab is now the game itself, David 2026-06-28)
     { x: -130, y: 28, r: 46, fn: function () { goTab("grow"); } }             // chest → habits
   ];
-  function wireWorldTap() { // drag the world to PAN the camera around the island (free-look, doesn't move the guy) — David 2026-06-24
+  function wireWorldTap() { // TWO-FINGER drag pans the camera around the island (David 2026-06-30): ONE finger is reserved for the 3-pane spine swipe (Journey ⇄ Game), so the world only pans with two fingers — which also composes naturally with the pinch-zoom (pan + zoom together, like the planner).
     if (worldTapWired) return; worldTapWired = true; var w = el("world"); if (!w) return;
-    var pts = {}; // track active pointers so a two-finger PINCH never also pans (David 2026-06-24)
+    var pts = {}; // active pointers that started ON the world surface (id → {x,y})
     function npts() { return Object.keys(pts).length; }
-    function rel(ev) { delete pts[ev.pointerId]; }
+    function mid() { var v = Object.keys(pts).map(function (i) { return pts[i]; }); return v.length < 2 ? null : { x: (v[0].x + v[1].x) / 2, y: (v[0].y + v[1].y) / 2 }; }
+    var panning = false, lmx = 0, lmy = 0, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3;
+    function rel(ev) { if (pts[ev.pointerId]) delete pts[ev.pointerId]; if (npts() < 2) panning = false; }
     w.addEventListener("pointerup", rel); w.addEventListener("pointercancel", rel); document.addEventListener("pointerup", rel); document.addEventListener("pointercancel", rel);
     w.addEventListener("pointerdown", function (ev) {
-      pts[ev.pointerId] = 1;
-      if (ev.target !== w) return; // only pan when grabbing the world itself — never from a zoom/joystick/notebook button on top
-      if (pinch0 > 0 || npts() >= 2) return; // a pinch-zoom is in progress → don't pan (fixes zoom-and-pan-at-once) — David 2026-06-24
-      var sx = ev.clientX, sy = ev.clientY, lx = sx, ly = sy, moved = false, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3;
-      function mv(e) { if (pinch0 > 0 || npts() >= 2) { up(); return; } if (!moved) { if (Math.abs(e.clientX - sx) < 6 && Math.abs(e.clientY - sy) < 6) return; moved = true; } var dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom)); } // a 2nd finger lands → abandon the pan, it's a pinch; require a real drag (>6px) so a tap never pans
-      function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); }
-      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      if (ev.target !== w) return; // only the world surface itself — never a joystick/zoom/notebook button on top
+      pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      if (npts() >= 2 && !panning) { var m = mid(); if (m) { panning = true; lmx = m.x; lmy = m.y; } } // second finger down → begin a midpoint-tracked pan
+    });
+    document.addEventListener("pointermove", function (e) {
+      if (pts[e.pointerId]) { pts[e.pointerId].x = e.clientX; pts[e.pointerId].y = e.clientY; }
+      if (!panning || npts() < 2) return;
+      var m = mid(); if (!m) return; var dx = m.x - lmx, dy = m.y - lmy; lmx = m.x; lmy = m.y;
+      camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom));
     });
   }
   function paintGuardian(t, st) {
@@ -5639,7 +5643,8 @@
     })();
     (function () { // 3-PANE SPINE wiring (David 2026-06-30): swipe the whole app between Planner ↔ Journey. (Game-swipe is next ship — it needs the world-pan conflict solved.)
       var ps = el("pullSheet"); if (ps) paneSwipe(ps, { left: function () { if (!document.body.classList.contains("journey-open")) openJourney(); } }); // planner → swipe left → journey (the pane to its right)
-      var jp = el("journeyPath"); if (jp) paneSwipe(jp, { right: function () { closeJourney(); } }); // journey → swipe right → planner (the pane to its left)
+      var jp = el("journeyPath"); if (jp) paneSwipe(jp, { right: function () { closeJourney(); }, left: function () { closeJourney(); try { openGame(); } catch (e) {} } }); // journey: swipe right → planner · swipe left → game
+      var gmEl = el("gameMode"); if (gmEl) paneSwipe(gmEl, { right: function () { try { closeGame(); } catch (e) {} openJourney(); } }); // game → swipe right → journey (game is the rightmost pane). Pan is two-finger now, so one-finger horizontal is free for this.
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
