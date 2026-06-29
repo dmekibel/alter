@@ -38,5 +38,12 @@ Self-reported:
 ## The common thread (the actual readiness bar)
 Mom, Sister, and Brother all share: **a real goal blocked by avoidance / overwhelm / fear / a past wound.** ALTER's job for them is NOT planning — it's **lowering the activation threshold of the first tiny step and emotionally scaffolding it.** That is what the journey/guardian system must do. David is the fourth axis: holding a *sprawling* portfolio without overwhelm + adapting to an irregular life.
 
+## NEW requirement — Welcome-Back Re-Assessment (David 2026-06-29)
+David: "Sometimes I'm doing everything correctly, then I drift off path for like a month. It wouldn't make sense for it to be the same journey if I've drifted for a month. The app needs to reassess me over time — recognize if I haven't used it for a week/two/more, and gauge where I'm at."
+- DETECT a lapse: track last-active day (S.log/blocks/timers); on load compute gap. Threshold ~10–14 days.
+- On return, DON'T resume the stale journey. Trigger a gentle, anti-shame re-gauge: "It's been [3 weeks]. No guilt — seasons happen. Let's see where you are now." A LIGHT 3-tap check (energy now? · which goals still matter — toggle active · restart gentle?) → recalibrate S.guide.unlocked (ease down a notch, don't demote-as-punishment per journeyNode monotonic-floor 351), reseed journey from CURRENT active goals, lower the plate (one block, not six). Reuse the recovery-weighted streak + bouncedBack (349) framing.
+- Anti-shame copy lint applies hard: never "you missed/failed/abandoned." Frame as a natural season + "that you came back is the whole skill."
+- Serves EVERYONE who lapses (extremely common), not just David. Slot as a new build wave.
+
 ## Open question the onboarding must answer
 Current onboarding (app.js `onboard()`, 11 steps) captures: vibe, gender/age, life-stage, activities, goals, identity/virtue/one-thing, habits, starting level, wake/sleep/peak. It does **NOT** currently capture the **blocker/fear behind a goal**, nor an explicit **energy/overwhelm** read — which is exactly what these three personas hinge on. Likely the #1 gap to close for "can it support a person like this."
