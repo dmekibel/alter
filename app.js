@@ -5140,12 +5140,12 @@
     load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
-    (function () { // iOS standalone reports a STALE viewport on first paint → the bottom gap; it self-corrects on a later reflow (inconsistently). Force that reflow at several delays + on every settle event so the fixed bottom menu always re-pins to the real bottom. (David 2026-07-02)
-      function settle() { try { void document.documentElement.offsetHeight; var jp = el("journeyPath"); if (jp && jp.classList.contains("on")) { var jn = el("jpNav"); if (jn) { jn.style.bottom = "-1px"; void jn.offsetHeight; jn.style.bottom = ""; } } } catch (e) {} }
+    (function () { // iOS standalone has a STALE full-screen viewport on first paint → the bottom gap. David's repro: going INTO the game and back fixes it permanently. The game's distinguishing act = it TOGGLES body scroll-lock (open→hidden, exit→"") which forces iOS to re-establish the full-screen viewport. So: REPLICATE that toggle automatically at several delays + on every settle event (just SETTING overflow once at boot, before iOS settles, wasn't enough). (David 2026-07-02)
+      function settle() { try { var b = document.body; b.style.overflow = ""; void document.documentElement.offsetHeight; b.style.overflow = "hidden"; void document.documentElement.offsetHeight; } catch (e) {} } // the scroll-lock TOGGLE = the same reflow the game's open/close cycle triggers → re-establishes the real full-screen bottom
       ["resize", "orientationchange", "pageshow", "focus"].forEach(function (ev) { window.addEventListener(ev, settle); });
       if (window.visualViewport) { window.visualViewport.addEventListener("resize", settle); window.visualViewport.addEventListener("scroll", settle); }
       document.addEventListener("visibilitychange", function () { if (!document.hidden) settle(); });
-      [60, 200, 500, 1000, 1800, 3000].forEach(function (d) { setTimeout(settle, d); });
+      [60, 200, 500, 1000, 1800, 3000, 4500].forEach(function (d) { setTimeout(settle, d); });
     })();
     var _lastMin = nowMin();
     setInterval(function () {
