@@ -539,7 +539,7 @@
     });
     mo.observe(document.body, { childList: true, subtree: true });
   }
-  function setLang(code) { S.langCode = code; var m = langMeta(code); S.lang = m.name; try { save(); } catch (e) {} try { document.documentElement.lang = code; } catch (e) {} translateTree(document.body); }
+  function setLang(code) { var same = (curLang() === code); S.langCode = code; var m = langMeta(code); S.lang = m.name; try { save(); } catch (e) {} try { document.documentElement.lang = code; } catch (e) {} if (same) { translateTree(document.body); return; } location.replace("index.html?cb=" + Date.now()); } // CHANGING language reloads from the English source then re-translates → fixes "can't switch back from Russian" (the live translator only goes EN→target, it can't reverse already-translated text) — David v661
   function ssLangLabel() { var fl = el("ssLangFlag"); if (fl) fl.innerHTML = flagSVG(curLang()); } // flag only — no language word (David v660)
   function showLangMenu() {
     var ss = el("startScreen"); if (!ss) return; var old = el("ssLangMenu"); if (old) { old.remove(); return; }
