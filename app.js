@@ -2684,6 +2684,16 @@
     ];
     var CAT_STEP = { 4: "energy", 5: "work", 6: "love", 7: "other" };
     var CAT_SUB = { energy: "your body, food, rest — the fuel", work: "career, focus, money — what you build", love: "people, hobbies, creating — what fills you", other: "chores, upkeep, habits to drop" };
+    // role → goals it tends to imply: the onboarding surfaces these FIRST, marked ✨, so the app feels like it already gets you (David 2026-06-29 — adaptive onboarding)
+    var ROLE_GOALS = {
+      filmmaker: ["Make videos", "Make money", "Grow my audience"], musician: ["Make music", "Grow my audience", "Make money"],
+      creative: ["Make art", "Grow my audience"], writer: ["Write a book", "Make art"],
+      founder: ["Grow my business", "Make money"], freelancer: ["Grow my business", "Make money"], sales: ["Grow my business", "Make money"],
+      developer: ["Make money", "Learn a skill"], remote: ["Make money", "Learn a skill"], manager: ["Grow my business"],
+      athlete: ["Get fit", "Lose weight"], student: ["Learn a skill", "Read more"], jobseeker: ["Grow my business", "Learn a skill"],
+      homemaker: ["Clean my home", "Eat healthier"], parent: ["Clean my home", "Feel calmer"], caregiver: ["Feel calmer"],
+      retired: ["Read more", "Feel calmer"], figuring: ["Feel calmer", "Learn a skill"], teacher: ["Read more"], healthcare: ["Feel calmer"]
+    };
     var EXTRA_HABITS = [{ id: "water", e: "💧", l: "Drink water", type: "build", per: 0, color: "#48d0e0" }, { id: "walk", e: "🚶", l: "Walk", type: "build", per: 0, color: "#ff8a1e" }, { id: "journal", e: "📓", l: "Journal", type: "build", per: 0, color: "#9a5cf0" }, { id: "stretch", e: "🤸", l: "Stretch", type: "build", per: 0, color: "#ff8a1e" }, { id: "meditate", e: "🧘", l: "Meditate", type: "build", per: 0, color: "#6a5cf0" }, { id: "noscroll", e: "📵", l: "No doomscroll", type: "quit", per: 0, color: "#7f9bc4" }, { id: "noweed", e: "🌿", l: "Less weed", type: "quit", per: 0, color: "#7f9bc4" }, { id: "nogame", e: "🎮", l: "Less gaming", type: "quit", per: 0, color: "#7f9bc4" }];
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     var bar = add(card, "div", "ob-bar"), barF = add(bar, "i");
@@ -2698,9 +2708,13 @@
       var sig = keys(data.stages).sort().join(","); if (data._pref !== sig) { data._pref = sig; seedKept(); }
       if (!data._habInit) { data._habInit = true; DEFAULT_HABITS.forEach(function (h) { data.habitsSel[h.id] = true; }); }
       var q = add(body, "div", "ob-q"); q.innerHTML = '<i class="ti ' + sc.ti + '" style="color:' + sc.c + '"></i> ' + sc.l; add(body, "div", "ob-sb", CAT_SUB[catK]);
-      // --- LONG-TERM GOALS ---
-      add(body, "div", "ob-lbl", "LONG-TERM GOALS"); var gr = add(body, "div", "ob-row");
-      GOAL_SEED.forEach(function (g) { if (DOM2SUPER[g.d] !== catK) return; var on = data.goals[g.l], D = DOM[g.d]; var c = chip(gr, '<i class="ti ' + g.ti + '"></i> ' + g.l + (on ? ' ✓' : ''), on, D.c, D.ink); c.onclick = function () { data.goals[g.l] = !data.goals[g.l]; draw(); }; });
+      // --- LONG-TERM GOALS (role-aware: goals your roles imply surface first, marked ✨) ---
+      var sugg = {}; keys(data.stages).forEach(function (rk) { (ROLE_GOALS[rk] || []).forEach(function (gl) { sugg[gl] = 1; }); });
+      function goalChip(p, g, star) { var on = data.goals[g.l], D = DOM[g.d]; var c = chip(p, (star ? '✨ ' : '') + '<i class="ti ' + g.ti + '"></i> ' + g.l + (on ? ' ✓' : ''), on, D.c, D.ink); c.onclick = function () { data.goals[g.l] = !data.goals[g.l]; draw(); }; }
+      var catGoals = GOAL_SEED.filter(function (g) { return DOM2SUPER[g.d] === catK; });
+      var sg = catGoals.filter(function (g) { return sugg[g.l]; }), rest = catGoals.filter(function (g) { return !sugg[g.l]; });
+      if (sg.length) { add(body, "div", "ob-lbl", "✨ SUGGESTED FOR YOU").style.color = "#ffd98a"; var sgr = add(body, "div", "ob-row"); sg.forEach(function (g) { goalChip(sgr, g, true); }); add(body, "div", "ob-lbl", "MORE"); } else add(body, "div", "ob-lbl", "LONG-TERM GOALS");
+      var gr = add(body, "div", "ob-row"); rest.forEach(function (g) { goalChip(gr, g, false); });
       keys(data.goals).forEach(function (g) { if (GOAL_SEED.filter(function (x) { return x.l === g; })[0]) return; if (DOM2SUPER[domainOf({ title: g })] !== catK) return; var c = chip(gr, '<i class="ti ti-star"></i> ' + esc(g) + ' ✓', true, "#ff8a3a", "#4a2400"); c.onclick = function () { data.goals[g] = false; draw(); }; });
       typeRow("a " + sc.l.toLowerCase() + " goal of your own…", function (v) { data.goals[v] = true; }, "✦ ADD A GOAL");
       // --- DAILY HABITS / ACTIVITIES ---
