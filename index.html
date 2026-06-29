@@ -66,7 +66,9 @@
   .ss-btn{ width:100%; max-width:380px; border-radius:18px; padding:16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; border:3px solid #160510; display:flex; align-items:center; justify-content:center; gap:9px; opacity:0; }
   .ss-primary{ background:linear-gradient(180deg,#ffd24a,#f0b400); color:#4a3000; box-shadow:0 5px 0 #160510; animation:ssRise var(--dur-enter) var(--ease-spring) .55s both; }
   .ss-primary:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .ss-new{ background:rgba(255,255,255,.05); color:#ff9a9a; border-color:#5a2233; animation:ssRise var(--dur-enter) var(--ease-spring) .66s both; }
+  .ss-load{ background:rgba(255,255,255,.05); color:#9fd0f0; border-color:#2a4a66; animation:ssRise var(--dur-enter) var(--ease-spring) .66s both; }
+  .ss-load:active{ transform:scale(.97); }
+  .ss-new{ background:rgba(255,255,255,.05); color:#ff9a9a; border-color:#5a2233; animation:ssRise var(--dur-enter) var(--ease-spring) .74s both; }
   .ss-new:active{ transform:scale(.97); }
   @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
   @media (prefers-reduced-motion: reduce){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
@@ -1626,9 +1628,11 @@
     </div>
     <div class="ss-actions">
       <button class="ss-btn ss-primary" id="ssPrimary"><i class="ti ti-player-play-filled"></i> Continue</button>
+      <button class="ss-btn ss-load" id="ssLoad"><i class="ti ti-upload"></i> Load game</button>
       <button class="ss-btn ss-new" id="ssNew"><i class="ti ti-rotate-2"></i> New game</button>
+      <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=654"></script>
+  <script src="app.js?v=655"></script>
 </body>
 </html>

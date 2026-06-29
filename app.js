@@ -480,6 +480,17 @@
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function () { var i = SS_LANGS.indexOf(S.lang || "English"); S.lang = SS_LANGS[(i + 1) % SS_LANGS.length]; try { save(); } catch (e) {} if (ln) ln.textContent = S.lang; }; // a selector for now (the choice is stored; full translation is a separate task)
     if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = '<i class="ti ti-alert-triangle"></i> Erase save &amp; start fresh?'; if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: New game wipes everything → reload → start screen → Begin → onboarding
+    var lf = el("ssLoad"), fi = el("ssFile");
+    if (lf && fi) { // LOAD GAME = upload a backup file (the exported .json) → restore → reload into it
+      lf.onclick = function () { fi.value = ""; fi.click(); };
+      fi.onchange = function () {
+        var f = fi.files && fi.files[0]; if (!f) return;
+        var r = new FileReader();
+        r.onload = function () { var d = parseBackup(String(r.result || "")); if (!d) { try { alert("That doesn't look like an ALTER backup file."); } catch (e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { try { alert("Couldn't load — storage may be full."); } catch (e2) {} return; } location.replace("index.html?cb=" + Date.now()); };
+        r.onerror = function () { try { alert("Couldn't read that file."); } catch (e) {} };
+        r.readAsText(f);
+      };
+    }
   }
   function ssEnter(has) {
     var ss = el("startScreen");
