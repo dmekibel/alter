@@ -447,12 +447,27 @@
       b.onclick = function () { if (tut && m !== 5) return; if (tut) { S.guide = S.guide || {}; S.guide.tutCommit = true; save(); } ov.remove(); onGo(m); };
     });
   }
-  var jpHabMenuKey = null; // which habit circle has its 3-way inline menu open (Mark done / Track it / Skip) — David 2026-06-28
-  function jpStart(n) { // START a circle: a DOING circle starts a live timer + expands in place; a HABIT opens its 3-way menu; PLAN commits a time (tutorial) then opens the planner
-    if (n.key === "plan") { timeCommit(n, function () { startTimer({ title: n.title, color: n.color }); drawJourney(true); try { shapeFlow(todayK()); } catch (e) {} }); return; } // planning IS a tracked activity: commit a time → start the timer (cockpit blooms) → open the planner
-    if (n.key === "onething" || (n.key && n.key.indexOf("blk:") === 0)) { startTimer({ title: n.title, catK: n.catK || null, color: n.color }); drawJourney(true); }
-    else if (n.key && n.key.indexOf("hab:") === 0) { jpHabMenuKey = n.key; drawJourney(true); } // habit → don't silently toggle; surface the menu
-    else if (n.act) { n.act(); }
+  var jpHabMenuKey = null, jpCommitKey = null; // which habit circle has its 3-way menu open · which circle is in the time-commitment beat (David 2026-06-28 / 2026-07-02)
+  function jpStart(n) { // START a circle: DOING/PLAN → the cockpit blooms into the time-commitment beat (commit a time = how it tracks); HABIT → its 3-way menu
+    if (n.key === "plan" || n.key === "onething" || (n.key && n.key.indexOf("blk:") === 0)) { jpCommitKey = n.key; jpHabMenuKey = null; drawJourney(true); return; }
+    if (n.key && n.key.indexOf("hab:") === 0) { jpHabMenuKey = n.key; drawJourney(true); return; }
+    if (n.act) n.act();
+  }
+  var JP_DUR = [ // context-aware presets per activity (minutes; 0.5 = 30s). Tap one (Duolingo-fast); "custom" opens the 30s–12h dial.
+    [/^plan/, [5, 10, 15]], [/deep|focus|study|writ|cod|work/, [25, 50, 90]], [/medit|breath|reflect|journal|gratitude|pray/, [2, 5, 10]],
+    [/walk|run|move|gym|exercis|yoga|stretch|swim/, [15, 30, 60]], [/read|learn/, [15, 30, 45]], [/sleep|nap|rest|wind/, [30, 60, 480]], [/tidy|clean|chore|dish|laundry/, [5, 15, 30]]
+  ];
+  function jpDurations(n) { var t = (n.title || "").toLowerCase(); if (n.key === "plan") return [5, 10, 15]; for (var i = 0; i < JP_DUR.length; i++) if (JP_DUR[i][0].test(t)) return JP_DUR[i][1]; return [15, 30, 60]; }
+  function durLbl(m) { return m < 1 ? Math.round(m * 60) + "s" : m < 60 ? m + "m" : (m % 60 === 0 ? (m / 60) + "h" : (m / 60).toFixed(1) + "h"); }
+  function jpCommitGo(n, mins) { if (!(S.guide && S.guide.tutCommit)) { S.guide = S.guide || {}; S.guide.tutCommit = true; save(); } jpCommitKey = null; startTimer({ title: n.title, color: n.color, catK: n.catK || null, commit: mins }); if (n.key === "plan") { try { shapeFlow(todayK()); } catch (e) {} } drawJourney(true); }
+  function jpDurSlider(ckp, n) { // CUSTOM: a 30s–12h dial (log scale → resolution where it matters)
+    var old = ckp.querySelector(".jp-durchips"); if (old) old.remove(); var h2 = ckp.querySelector(".jp-ckhint"); if (h2) h2.remove();
+    var wrap = add(ckp, "div", "jp-durslider"); var read = add(wrap, "div", "jp-durread");
+    var sl = add(wrap, "input", "jp-durrange"); sl.type = "range"; sl.min = "0"; sl.max = "100"; sl.value = "45";
+    function secs(v) { var lo = Math.log(30), hi = Math.log(43200); return Math.round(Math.exp(lo + (hi - lo) * (v / 100))); }
+    function fmtS(s) { return s < 60 ? s + "s" : s < 3600 ? Math.round(s / 60) + "m" : (s / 3600 % 1 === 0 ? (s / 3600) + "h" : (s / 3600).toFixed(1) + "h"); }
+    function upd() { read.textContent = fmtS(secs(+sl.value)); } sl.oninput = upd; upd();
+    var go = add(wrap, "button", "jp-durgo"); go.textContent = "Commit"; go.style.background = n.color; go.onclick = function () { jpCommitGo(n, secs(+sl.value) / 60); };
   }
   var JP_CHAPTERS = [ // the long-term GROWTH ARC = chapters. Active chapter = today's lessons; past = done milestones; future = locked aspiration. Driven by journeyNode() (which is goal/onboarding-shaped via readiness). (David 2026-06-28)
     { t: "Show up", ic: "ti-seedling" }, { t: "Plan your days", ic: "ti-map-2" }, { t: "Morning rituals", ic: "ti-sunrise" },
@@ -484,10 +499,20 @@
         curEl = node;
         var runT = (S.timers || []).filter(function (x) { return x.dayK === todayK() && x.title === n.title; })[0]; // a live timer for THIS activity?
         bub.onclick = function () { jpStart(n); };
-        if (runT) { // the now IS the cockpit — expand the circle into the live ring + timer, in place
+        if (jpCommitKey === n.key) { // THE TIME-COMMITMENT BEAT — the circle zooms into the cockpit ring + asks how long, in place (no popup). David 2026-07-02
           bub.style.display = "none";
-          var ckp = add(node, "div", "jp-cockpit");
-          var rg = add(ckp, "div", "jp-ring"); var ds = add(rg, "div", "jp-rdisc"); ds.style.background = tfStripe(n.color); ds.innerHTML = '<i class="ti ' + icon + '"></i>';
+          var tut = !(S.guide && S.guide.tutCommit);
+          var ckc = add(node, "div", "jp-cockpit jp-zoomin");
+          var rgc = add(ckc, "div", "jp-ring"); var dsc = add(rgc, "div", "jp-rdisc"); dsc.style.background = tfStripe(n.color); dsc.innerHTML = '<i class="ti ' + icon + '"></i>';
+          add(ckc, "div", "jp-ckq", tut ? "First — commit a time" : "How long?");
+          if (tut) add(ckc, "div", "jp-ckhint", "Everything here works by committing a little time — that's how it tracks you. Tap 5 minutes to begin.");
+          var chips = add(ckc, "div", "jp-durchips");
+          jpDurations(n).forEach(function (m) { var c = add(chips, "button", "jp-durchip" + (tut && m !== 5 ? " dim" : "") + (tut && m === 5 ? " glow" : "")); c.textContent = durLbl(m); c.onclick = function () { if (tut && m !== 5) return; jpCommitGo(n, m); }; });
+          var cu = add(chips, "button", "jp-durchip cust" + (tut ? " dim" : "")); cu.innerHTML = '<i class="ti ti-dots"></i>'; cu.onclick = function () { if (tut) return; jpDurSlider(ckc, n); };
+        } else if (runT) { // the now IS the cockpit — expand the circle into the live ring + timer, in place
+          bub.style.display = "none";
+          var ckp = add(node, "div", "jp-cockpit jp-zoomin");
+          var rg = add(ckp, "div", "jp-ring"); var ds = add(rg, "div", "jp-rdisc"); ds.style.background = tfStripe(n.color); ds.innerHTML = '<i class="ti ti-player-pause"></i>'; ds.title = "tracking"; // the icon flips to a PAUSE while it's playing (David 2026-07-02)
           add(ckp, "div", "jp-cktitle", n.title);
           var tmw = add(ckp, "div", "jp-cktimer"); tmw.innerHTML = '<span class="live-elapsed" data-tid="' + runT.id + '">' + elapsedStr(runT) + '</span>';
           var mx = add(ckp, "div", "jp-ckmatrix");
@@ -4844,7 +4869,7 @@
   }
 
   // ---- timers ------------------------------------------------------------
-  function startTimer(p) { var t = { id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }; if (p.flow) t.flow = p.flow; S.timers.push(t); save(); } /* p.flow (optional) tags a guided-cockpit timer so stageModeFor can re-derive its stage on redraw (CKPT-2) */
+  function startTimer(p) { var t = { id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }; if (p.flow) t.flow = p.flow; if (p.commit != null) t.commit = p.commit; S.timers.push(t); save(); } /* p.flow (optional) tags a guided-cockpit timer so stageModeFor can re-derive its stage on redraw (CKPT-2) */
   function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i]; if ((Date.now() - t.start) / 1000 < 15) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ too short — discarded"); return; } var dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} } toast(_covered ? "✨ completed your plan · +" + bonus + " Spark" : "✓ on-plan stretch tracked · +" + bonus + " Spark"); } S.timers.splice(i, 1); save(); renderAll(); } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {

@@ -761,6 +761,22 @@
   .tc-btn.tc-dim{ opacity:.3; pointer-events:none; }
   .tc-btn.tc-glow{ border-color:#ff5fa0; box-shadow:0 4px 0 #160510,0 0 0 4px rgba(255,95,160,.3); animation:tcPulse 1.4s ease-in-out infinite; }
   @keyframes tcPulse{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-3px); } }
+  /* IN-COCKPIT time-commitment beat (David 2026-07-02): zoom the circle into the ring, ask "how long" right there */
+  .jp-zoomin{ animation:jpZoom .26s cubic-bezier(.2,.9,.3,1.25); }
+  @keyframes jpZoom{ from{ transform:scale(.42); opacity:.25; } to{ transform:scale(1); opacity:1; } }
+  .jp-ckq{ font-family:var(--bub); font-size:15px; font-weight:800; color:#fff2f9; text-align:center; }
+  .jp-ckhint{ font-size:11.5px; font-weight:600; color:#c98ca6; text-align:center; max-width:240px; line-height:1.4; margin-top:-5px; }
+  .jp-durchips{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:250px; }
+  .jp-durchip{ background:#48122f; border:2.5px solid #160510; border-radius:12px; padding:11px 17px; font-family:var(--bub); font-size:16px; font-weight:800; color:#ffe3f1; cursor:pointer; box-shadow:0 4px 0 #160510; }
+  .jp-durchip:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .jp-durchip.dim{ opacity:.32; pointer-events:none; }
+  .jp-durchip.glow{ border-color:#ff5fa0; box-shadow:0 4px 0 #160510,0 0 0 4px rgba(255,95,160,.32); animation:tcPulse 1.4s ease-in-out infinite; }
+  .jp-durchip.cust{ background:#3a1226; color:#c98ca6; padding:11px 14px; }
+  .jp-durslider{ display:flex; flex-direction:column; align-items:center; gap:11px; width:240px; }
+  .jp-durread{ font-family:var(--bub); font-size:27px; font-weight:800; color:#ffd9ea; }
+  .jp-durrange{ width:100%; accent-color:#ff5fa0; height:26px; }
+  .jp-durgo{ border:2.5px solid #160510; border-radius:12px; padding:11px 26px; font-family:var(--bub); font-size:15px; font-weight:800; color:#fff; cursor:pointer; box-shadow:0 4px 0 #160510; }
+  .jp-durgo:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
   .bento-orderlist{ display:flex; flex-direction:column; gap:8px; }
   .bento-orow{ display:flex; align-items:center; gap:10px; background:#48122f; border:2px solid #160510; border-radius:13px; padding:11px 12px; transition:transform .2s cubic-bezier(.2,.8,.3,1); } /* touch-action:none REMOVED so the list scrolls; only the handle grabs (David 2026-06-28) */
   .bento-orow.drag{ box-shadow:0 0 0 3px #ffe3a0, 0 12px 28px rgba(0,0,0,.5); opacity:.98; }
@@ -1504,6 +1520,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=626"></script>
+  <script src="app.js?v=627"></script>
 </body>
 </html>
