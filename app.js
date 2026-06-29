@@ -779,7 +779,7 @@
     if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
   }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
-  function coolStreak() { if (S && S.game && S.game.streak) { S.game.streak = Math.max(0, S.game.streak - 1); save(); } }
+  function coolStreak() { /* anti-shame law (David): drift is DATA, never punishment — a streak is never broken by drifting. No-op kept as a hook so call-sites stay meaningful. (2026-06-29: was decrementing the streak, which contradicted "never a breakable streak") */ }
   function celebrate(color, streak) {
     var tier = comboTier(streak), pts = [10, 25, 60, 150][tier - 1];
     try { earn(pts, {}); } catch (e) {}
@@ -2724,7 +2724,7 @@
       var lib = {}; allActivities().forEach(function (a) { if (DOM2SUPER[a.domain] !== catK || shown[(a.title || "").toLowerCase()]) return; (lib[a.domain] = lib[a.domain] || []).push(a.title); });
       keys(data.kept).forEach(function (t) { var dm = domainOf({ title: t }); if (DOM2SUPER[dm] !== catK || shown[t.toLowerCase()]) return; lib[dm] = lib[dm] || []; if (lib[dm].indexOf(t) < 0) lib[dm].push(t); });
       Object.keys(lib).forEach(function (d) { var D = DOM[d]; lib[d].forEach(function (t) { if (shown[t.toLowerCase()]) return; shown[t.toLowerCase()] = 1; var on = data.kept[t]; var c = chip(hr, esc(t) + (on ? ' ✓' : ''), on, D.c, D.ink); c.onclick = function () { data.kept[t] = !data.kept[t]; draw(); }; }); });
-      typeRow("a " + sc.l.toLowerCase() + " habit of your own…", function (v) { var id = "h" + Date.now().toString(36); data.customHabits.push({ id: id, e: "✨", l: v, type: "build", per: 0, color: sc.c }); data.habitsSel[id] = true; }, "✦ ADD A HABIT");
+      typeRow("a " + sc.l.toLowerCase() + " habit of your own…", function (v) { var id = "h" + Date.now().toString(36); var q = /^(less|no |not |quit|stop|cut|reduce|avoid|skip|fewer)\b/i.test(v.trim()); data.customHabits.push({ id: id, e: q ? "🚫" : "✨", l: v, type: q ? "quit" : "build", per: 0, color: sc.c }); data.habitsSel[id] = true; }, "✦ ADD A HABIT"); // auto-detect a quit-target from the wording ("Less weed", "No scrolling") so reductions track correctly (David 2026-06-29)
     }
     function next() { if (step < STEPS - 1) { step++; draw(); } else finish(); }
     function finish() {
