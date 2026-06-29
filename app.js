@@ -433,7 +433,7 @@
 
     return nodes;
   }
-  function prefersReducedMotion() { try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+  function prefersReducedMotion() { return false; } // David wants animations to ALWAYS play — even with iOS "Reduce Motion" on (v659); that setting was making the app look static
   // PORTAL REVEAL (v648): punch a surface open through a circle growing from a focal point (e.g. the now-line). clip-path only → paint-time, never disturbs scroll/pinch. One-shot; clears itself on animationend.
   function playReveal(elm, focal) {
     if (!elm || prefersReducedMotion()) return;
@@ -462,7 +462,17 @@
       setTimeout(function () { blks.forEach(function (b) { b.classList.remove("casc-blk"); b.style.animationDelay = ""; }); }, 1200);
     } catch (e) {}
   }
-  function revealTimeline() { try { setTimeout(function () { playReveal(el("pullSheet"), nowLineEl); cascadeTimelineBlocks(); }, 60); } catch (e) {} } // reveal the planner timeline from the now-line + cascade the day's blocks in on open (not on scroll/rebuild)
+  function revealTimeline() { try { setTimeout(function () { cascadeTimelineBlocks(); }, 40); } catch (e) {} } // the planner's blocks cascade in on open. (Dropped the clip-path "portal" — it read as a broken circular wipe on dark; the journey now crossfades out to reveal the planner instead. David 2026-07-02 v659)
+  // STEPPING-STONES (David v659, Duolingo): when the journey opens (incl. app cold-open), its path nodes POP in one-by-one. We animate the inner .jp-bub (not the .jp-node, which carries the winding translateX) so the pop never fights the path positioning.
+  function cascadeJourney() {
+    if (prefersReducedMotion()) return;
+    try {
+      var trail = el("jpTrail"); if (!trail) return;
+      var items = trail.querySelectorAll(".jp-bub, .jp-unit, .jt-b");
+      for (var i = 0; i < items.length; i++) { var it = items[i]; it.classList.remove("jp-pop"); void it.offsetWidth; it.style.animationDelay = Math.min(i * 55, 950) + "ms"; it.classList.add("jp-pop"); }
+      setTimeout(function () { for (var j = 0; j < items.length; j++) { items[j].classList.remove("jp-pop"); items[j].style.animationDelay = ""; } }, 1700);
+    } catch (e) {}
+  }
   // STAGGERED CASCADE (v648): make a set of just-rendered nodes arrive one-by-one with a spring.
   function cascadeIn(nodes) { if (prefersReducedMotion() || !nodes) return; for (var i = 0; i < nodes.length; i++) { var k = nodes[i]; if (!k || !k.style) continue; k.classList.add("casc-item"); k.style.animationDelay = (i * 38) + "ms"; } }
   // ===== START SCREEN (v652): the animated launch screen — gates entry every cold open with Continue (load save) / New game (fresh) + a language pick. The living guardian sprite + entrance animations live in CSS. =====
@@ -554,15 +564,22 @@
   function ssEnter(has) {
     var ss = el("startScreen");
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); }, 440); } // zoom-fade out → reveal the app underneath
-    if (!has) { try { onboard(); } catch (e) {} } else { try { revealTimeline(); } catch (e) {} } // new user → onboarding; returning → re-play the portal reveal as you land
+    if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
+    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} }, 240); } // returning → as the start screen clears, the journey's stepping-stones cascade in (or the planner's blocks) — "especially when I open the app" (David v659)
   }
   function openJourney() {
-    var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
+    var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving"); p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
-    drawJourney(true);
+    drawJourney(true); cascadeJourney(); // stepping-stones pop in on open (v659)
   }
-  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); if (!document.body.classList.contains("gaming")) revealTimeline(); } // back to the Planner (a fixed-pullSheet scroller); body scroll stays locked by CSS (v640); portal-reveal the timeline on arrival (v648)
+  function closeJourney() { // crossfade the journey OUT to reveal the planner (v659 — replaces the broken portal wipe), then cascade the planner's blocks
+    var p = el("journeyPath"); document.body.classList.remove("journey-open");
+    document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
+    var gaming = document.body.classList.contains("gaming");
+    if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); }
+    else if (!gaming) revealTimeline();
+  }
   function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
     var tut = !(S.guide && S.guide.tutCommit);

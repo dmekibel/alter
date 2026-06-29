@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="ALTER" />
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1" />
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=1" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Fredoka:wght@400;500;600;700&family=Jost:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -27,7 +27,11 @@
   .casc-item{ animation:cascItem var(--dur-enter) var(--ease-spring) both; }
   @keyframes cascBlk{ from{ opacity:0; transform:scale(.78); } to{ opacity:1; transform:none; } } /* timeline BLOCKS pop into place, radiating out from the now-line — the visible "your day arrives" moment */
   .casc-blk{ animation:cascBlk var(--dur-enter) var(--ease-spring) both; }
-  @media (prefers-reduced-motion: reduce){ .sfc-reveal, .casc-item, .casc-blk{ animation:none !important; } }
+  @keyframes jpPop{ from{ opacity:0; transform:scale(.2); } to{ opacity:1; transform:none; } } /* journey STEPPING-STONES: each node bubble pops in, staggered (Duolingo path) */
+  .jp-pop{ animation:jpPop .5s var(--ease-spring) both; }
+  #journeyPath.jp-leaving{ animation:jpLeave .28s ease forwards; } /* crossfade the journey out to reveal the planner cleanly */
+  @keyframes jpLeave{ from{ opacity:1; } to{ opacity:0; } }
+  @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .sfc-reveal, .casc-item, .casc-blk{ animation:none !important; } }
   /* UNIVERSAL menu entrance (v650): EVERY overlay card springs in + its backdrop fades — one rule animates the whole app's menus on appear, not feature-by-feature */
   @keyframes popIn{ from{ opacity:0; transform:translateY(22px) scale(.8); } to{ opacity:1; transform:none; } }
   @keyframes ovFade{ from{ opacity:0; } to{ opacity:1; } }
@@ -36,7 +40,7 @@
   /* tap micro-spring on the things you press most — menu items + chips give instant springy feedback */
   .bchip, .tile, .pchip, .preset-row, .qopt, .subitem, .bigcat, .feat-row, .tool-row{ transition:transform var(--dur-micro) var(--ease-settle); }
   .bchip:active, .tile:active, .pchip:active, .preset-row:active, .qopt:active, .subitem:active, .feat-row:active, .tool-row:active{ transform:scale(.94); }
-  @media (prefers-reduced-motion: reduce){ .dur-card, .goal-card, .mind-card, .nb-card, .ob-card, .sheetcard, .dur-ov, .goal-ov, .mind-ov, .nb-ov, .cele-ov{ animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .dur-card, .goal-card, .mind-card, .nb-card, .ob-card, .sheetcard, .dur-ov, .goal-ov, .mind-ov, .nb-ov, .cele-ov{ animation:none !important; } }
   /* ===== START SCREEN (v652): the animated launch screen — living guardian (13-frame idle sprite) + title + language + Continue/New, Duolingo/Tuber-sim feel ===== */
   #startScreen{ position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:space-between; background:linear-gradient(170deg,#3a0f24 0%,#1c0814 52%,#140510 100%); padding:max(env(safe-area-inset-top,0px),26px) 22px calc(env(safe-area-inset-bottom,0px) + 30px); font-family:"Jost",sans-serif; overflow:hidden; }
   #startScreen.on{ display:flex; }
@@ -77,7 +81,7 @@
   .ss-new{ background:rgba(255,255,255,.05); color:#ff9a9a; border-color:#5a2233; animation:ssRise var(--dur-enter) var(--ease-spring) .74s both; }
   .ss-new:active{ transform:scale(.97); }
   @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
-  @media (prefers-reduced-motion: reduce){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
+  @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
   html,body{height:100%;color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-weight:500;
     background:linear-gradient(170deg,#92e2ff 0%,#c7b2ff 50%,#ffc0e2 100%);}
@@ -1639,6 +1643,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=658"></script>
+  <script src="app.js?v=659"></script>
 </body>
 </html>
