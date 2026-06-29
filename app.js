@@ -605,7 +605,7 @@
     var ss = el("startScreen");
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); }, 440); } // zoom-fade out → reveal the app underneath
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
-    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} }, 470); } // returning → AFTER the start screen has fully cleared (~440ms), the journey's stepping-stones cascade in one by one (David v659/661)
+    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { maybeWelcomeBack(); } catch (e) {} }, 470); } // returning → AFTER the start screen has fully cleared (~440ms), the journey cascades; if they've been gone ≥2wk, the gentle Welcome-Back re-gauge appears (David 2026-06-29)
   }
   function openJourney() {
     var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving"); p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
@@ -619,6 +619,32 @@
     var gaming = document.body.classList.contains("gaming");
     if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); }
     else if (!gaming) revealTimeline();
+  }
+  // ===== WELCOME-BACK RE-ASSESSMENT (David 2026-06-29): David drifts off-path for weeks then returns — the journey must NOT resume stale. Detect a lapse (≥14d since last activity) → a gentle, anti-shame re-gauge: energy now? · which goals still matter? · ease back gentle. Recalibrate (lowStart gate, prune paused goals) without demoting progress. =====
+  function daysSinceK(k) { try { var a = (k || "").split("-"), d = new Date(+a[0], +a[1] - 1, +a[2]); var t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - d) / 86400000)); } catch (e) { return 0; } }
+  function lastActiveK() { var tk = todayK(), ks = {}; Object.keys(S.log || {}).forEach(function (k) { if ((S.log[k] || []).length) ks[k] = 1; }); Object.keys(S.bk || {}).forEach(function (k) { var e = S.bk[k] || {}; if ((e.am && e.am.done) || (e.pm && e.pm.done) || ((e.journal || []).length)) ks[k] = 1; }); Object.keys(S.blocks || {}).forEach(function (k) { if ((S.blocks[k] || []).some(function (b) { return b.done; })) ks[k] = 1; }); return Object.keys(ks).filter(function (k) { return k < tk; }).sort().pop() || null; }
+  function maybeWelcomeBack() { try { if (!(S.profile && S.profile.set)) return; if (S.lastWelcomeBackK === todayK()) return; var last = lastActiveK(); if (!last) return; var gap = daysSinceK(last); if (gap < 14) return; welcomeBackSheet(gap); } catch (e) {} }
+  function welcomeBackSheet(gap) {
+    S.lastWelcomeBackK = todayK(); save(); // once per return
+    var weeks = Math.floor(gap / 7), human = weeks >= 1 ? (weeks + " week" + (weeks > 1 ? "s" : "")) : (gap + " days");
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
+    var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
+    add(body, "i", "ti ti-sparkles ob-spk");
+    add(body, "div", "ob-q", "Welcome back");
+    add(body, "div", "ob-sb", "It's been " + human + ". No guilt — seasons happen, and that you came back is the whole skill.");
+    add(body, "div", "ob-lbl", "HOW'S YOUR ENERGY NOW?");
+    var er = add(body, "div", "ob-row"), pick = { v: "" };
+    VIBES2.forEach(function (v) { var c = add(er, "span", "ob-ch"); c.innerHTML = '<i class="ti ' + v.ti + '"></i> ' + v.l; c.onclick = function () { pick.v = v.k; Array.prototype.forEach.call(er.children, function (x) { x.classList.remove("on"); }); c.classList.add("on"); c.style.background = v.c; c.style.color = "#160510"; }; });
+    var act = activeGoals();
+    if (act.length) { add(body, "div", "ob-lbl", "WHICH GOALS STILL MATTER?"); var gr = add(body, "div", "ob-row"); act.forEach(function (g) { g._wbKeep = true; var c = add(gr, "span", "ob-ch on"); c.textContent = g.title; c.onclick = function () { g._wbKeep = !g._wbKeep; c.classList.toggle("on", g._wbKeep); }; }); }
+    var b = add(foot, "button", "ob-btn go", "Ease me back in ▸");
+    b.onclick = function () {
+      if (pick.v) { S.profile.vibe = pick.v; S.profile.lowStart = (pick.v === "overwhelmed" || pick.v === "stuck"); } else { S.profile.lowStart = true; } // default: gentle re-entry (body-first gate leads)
+      (S.goals || []).forEach(function (g) { if ("_wbKeep" in g) { g.active = g._wbKeep; delete g._wbKeep; } }); // paused goals quietly go on-hold; kept goals stay (rotation resurfaces the stalest)
+      save(); ov.remove(); renderAll();
+      try { if (document.body.classList.contains("journey-open")) { drawJourney(true); cascadeJourney(); } else openJourney(); } catch (e) {}
+      toast("🌅 fresh start — one gentle step at a time");
+    };
   }
   function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
