@@ -4178,7 +4178,7 @@
       // SOFT = welcoming muted tile (colored ICON accent + light text on a dark-tinted bg) — kills the "wall of solid orange" in a category list (David 2026-07-02). Solid fill stays for short varied rows (Recent/Pinned/search) and the selected state.
       var iconStyle = "";
       if (a.domain !== "drift") {
-        if (soft && !on) { s.style.background = mixHex(D.c, "#190612", 0.7); s.style.color = D.light; s.style.borderColor = mixHex(D.c, "#160510", 0.28); iconStyle = ' style="color:' + D.c + '"'; }
+        if (soft && !on) { s.style.background = mixHex(D.c, "#1c0a17", 0.85); s.style.color = "#f7e9f1"; s.style.borderColor = "#34132a"; iconStyle = ' style="color:' + D.c + '"'; }
         else { s.style.background = D.c; s.style.color = D.ink; }
       }
       s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"' + iconStyle + '></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
