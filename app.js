@@ -3072,14 +3072,18 @@
     gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
     document.body.classList.add("gaming"); // body scroll locked by CSS (v640)
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
-    gameNavSetup(); gm.classList.remove("gn-open"); // start FOLDED — the corner button shows, thumbsticks above it
+    gameNavSetup(); gm.classList.add("gn-open"); // start with the bar SHOWN — it folds to the corner button once you actually pan/scroll the world (David 2026-07-02)
   }
   function gameNavSetup() { // the game menu FOLDS to a single corner button; tap it to bring up the Planner·Journey·Game bar (thumbsticks rise above it); any play touch folds it back (David 2026-07-02)
     var gm = el("gameMode"); if (!gm || gm._navWired) return; gm._navWired = true;
     function openMenu() { gm.classList.add("gn-open"); }
     function foldMenu() { gm.classList.remove("gn-open"); }
     var tg = el("gnToggle"); if (tg) tg.onclick = openMenu;
-    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gnToggle, #gameExit")) return; foldMenu(); }, true); // pan/zoom/joystick → fold the menu back to the button
+    var _gnSx = 0, _gnSy = 0, _gnTrack = false;
+    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gnToggle, #gameExit")) return; _gnSx = e.clientX; _gnSy = e.clientY; _gnTrack = true; }, true);
+    gm.addEventListener("pointermove", function (e) { if (!_gnTrack) return; if (Math.abs(e.clientX - _gnSx) > 10 || Math.abs(e.clientY - _gnSy) > 10) { _gnTrack = false; foldMenu(); } }, true); // the bar STAYS until you actually scroll/pan/play — a real DRAG (not a tap) folds it to the corner button (David 2026-07-02)
+    gm.addEventListener("pointerup", function () { _gnTrack = false; }, true);
+    gm.addEventListener("pointercancel", function () { _gnTrack = false; }, true);
     var p = el("gnPlanner"); if (p) p.onclick = function () { closeGame(); closeJourney(); };
     var j = el("gnJourney"); if (j) j.onclick = function () { closeGame(); openJourney(); };
     var g = el("gnGame"); if (g) g.onclick = foldMenu; // already in the game → just fold the menu
