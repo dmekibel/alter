@@ -5074,6 +5074,19 @@
     add(br, "button", "add", "📋 Copy").onclick = function () { exportData("copy"); };
     add(br, "button", "add", "⬇ Download").onclick = function () { exportData("download"); };
     add(br, "button", "add", "♻ Restore").onclick = function () { restoreUI(B); };
+    // START OVER (David 2026-07-02): wipe everything → fresh onboarding. Lives right under Back up so you're nudged to export first. Two-tap arm because it's irreversible.
+    add(B, "div", "divlab").innerHTML = '<span><i class="ti ti-alert-triangle"></i> Start over</span>';
+    var rl = add(B, "div", "lbl", "erase everything on this device and begin from zero. back up first — this can't be undone."); rl.style.cssText = "font-size:12px;color:#ff9a9a;line-height:1.4;";
+    var rs = add(B, "button", "add"); rs.innerHTML = '<i class="ti ti-rotate-2"></i> Start over'; rs.style.cssText = "display:block;width:100%;color:#ff7a7a;border-color:#ff7a7a;";
+    var armed = false, armT = null;
+    rs.onclick = function () {
+      if (!armed) { armed = true; rs.innerHTML = '<i class="ti ti-alert-triangle"></i> Tap again to erase EVERYTHING'; rs.style.background = "#5a1126"; rs.style.color = "#ffd6d6"; if (armT) clearTimeout(armT); armT = setTimeout(function () { armed = false; rs.innerHTML = '<i class="ti ti-rotate-2"></i> Start over'; rs.style.background = ""; rs.style.color = "#ff7a7a"; }, 4500); return; }
+      if (armT) clearTimeout(armT);
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      try { localStorage.clear(); } catch (e) {} // this PWA owns its origin → clear ALL keys = a true factory reset
+      try { sessionStorage.clear(); } catch (e) {}
+      location.replace("index.html?cb=" + Date.now()); // hard reload into a fresh app → onboarding from zero
+    };
   }
   var SURVEYQ = [
     { q: "How often do you work out?", v: "zest", p: "Athlete", e: "🏃" },
