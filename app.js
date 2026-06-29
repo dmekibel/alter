@@ -854,7 +854,7 @@
         else add(gc, "div", "goal-tagnone", "tap to break it down →");
         gc.onclick = function () { view = g; draw(); };
       });
-      typeAdd(body, "a goal you're working toward…", function (v) { (S.goals = S.goals || []).push({ title: v, domain: domainOf({ title: v }), subtasks: [], active: activeGoals().length < 3 }); save(); draw(); });
+      typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: activeGoals().length < 3 }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
       add(body, "div", "goal-foot", "few active · do fewer, finish more — Slow Productivity");
     }
     function drawGoal(g) {
@@ -2573,7 +2573,7 @@
       P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck"); P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other"; // wire the once-dead vibe: an overwhelmed/stuck onboarder gets the body-first low-energy gate until real mood data arrives (David 2026-06-29 readiness test)
       P.goals = keys(data.goals).join(", "); P.wake = data.wake; P.sleep = data.bed; P.peak = data.peak; P.lark = (data.peak !== "owl"); P.set = true;
       S.acts = S.acts || []; keys(data.kept).forEach(function (t) { if (!TITLE2CAT[t.toLowerCase()] && !S.acts.filter(function (a) { return a.title === t; })[0]) S.acts.push({ title: t, catK: null, domain: domainOf({ title: t }) }); });
-      S.goals = keys(data.goals).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; return { title: g, domain: seed ? seed.d : "focus", subtasks: [] }; });
+      S.goals = keys(data.goals).map(function (g) { var seed = GOAL_SEED.filter(function (x) { return x.l === g; })[0]; var go = { title: g, domain: seed ? seed.d : "focus", subtasks: [] }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} return go; }); // auto-break every goal into its loving steps at birth — the smallest one flows into daily suggestions; no buried "Break it down" button to find (David 2026-06-29 Wave B)
       // ===== ONBOARDING → JOURNEY SEED (David 2026-06-28): write what the journey path reads so a new user's trail is THEIRS, not generic demo circles. All additive, guarded. =====
       // 1) HABITS the user chose → S.habits (so the journey's habit circles are theirs). Fall back to defaults if they cleared everything.
       var allHabDefs = DEFAULT_HABITS.concat(EXTRA_HABITS).concat(data.customHabits);
