@@ -658,7 +658,8 @@
     return [el("gameMode")].filter(Boolean);
   }
   function setGroupX(n, x, z) { paneGroup(n).forEach(function (e) { e.style.setProperty("transform", "translateX(" + x + "px)", "important"); if (z != null) e.style.zIndex = z; }); }
-  function clearGroup(n) { paneGroup(n).forEach(function (e) { e.style.transform = ""; e.style.removeProperty("transform"); e.style.zIndex = ""; e.style.transition = ""; e.style.willChange = ""; }); }
+  function setGroupFrame(n, x, op, z) { paneGroup(n).forEach(function (e) { e.style.setProperty("transform", "translateX(" + x + "px)", "important"); if (op != null) e.style.opacity = op; if (z != null) e.style.zIndex = z; }); }
+  function clearGroup(n) { paneGroup(n).forEach(function (e) { e.style.transform = ""; e.style.removeProperty("transform"); e.style.opacity = ""; e.style.zIndex = ""; e.style.transition = ""; e.style.willChange = ""; }); }
   function panePrime(n, show) { // make a pane RENDERABLE beside the current one during a drag — WITHOUT its entrance animation (no portal, no cascade)
     if (n === "journey") { var jp = el("journeyPath"); if (jp) jp.classList.add("on"); }
     else if (n === "game") { var gm = el("gameMode"); if (gm) { gm.classList.add("on"); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} } }
@@ -675,13 +676,14 @@
   var _paneAnim = false;
   function initPaneCarousel() {
     var sx = 0, sy = 0, on = false, armed = false, multi = false, cur = null, nbr = null, sign = 0, W = 1;
-    function reset() { on = false; armed = false; multi = false; cur = null; nbr = null; sign = 0; }
+    function reset() { if (!_paneAnim) ["planner", "journey", "game"].forEach(function (p) { paneGroup(p).forEach(function (el2) { el2.style.willChange = ""; }); }); on = false; armed = false; multi = false; cur = null; nbr = null; sign = 0; }
     document.addEventListener("pointerdown", function (e) {
       if (_paneAnim) { armed = false; return; }
       if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
       multi = false; on = false; cur = null;
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
       sx = e.clientX; sy = e.clientY; W = window.innerWidth || 390;
+      if (armed) paneGroup(curPaneName()).forEach(function (el2) { el2.style.willChange = "transform"; }); // pre-promote the current pane's layer on touch-down so the first drag frames don't stutter
     }, true);
     function beginDrag(dir) { // dir -1 = swipe left (→ next pane) · +1 = swipe right (→ prev pane)
       cur = curPaneName(); var idx = PANE_ORDER.indexOf(cur);
@@ -690,8 +692,8 @@
       document.body.classList.add("pane-dragging");
       paneGroup(cur).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
       if (nbr) { panePrime(nbr); paneGroup(nbr).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
-        setGroupX(nbr, (dir < 0 ? W : -W), 299); } // neighbour parked one screen over, just above the rest
-      setGroupX(cur, 0, 300);
+        setGroupFrame(nbr, (dir < 0 ? W : -W), 0.68, 299); } // neighbour parked one screen over, dimmed (parallax depth), just under the leaving page
+      setGroupFrame(cur, 0, 1, 300);
     }
     document.addEventListener("pointermove", function (e) {
       if (!armed || multi) return;
@@ -703,19 +705,20 @@
       }
       e.preventDefault();
       var d = e.clientX - sx;
-      if (!nbr) d = d * 0.32; // edge pane in that direction → rubber-band, no commit
-      setGroupX(cur, d);
-      if (nbr) setGroupX(nbr, d + (sign < 0 ? W : -W));
+      if (!nbr) { d = d * 0.32; setGroupFrame(cur, d, 1); return; } // edge pane → rubber-band, no commit
+      var f = Math.min(1, Math.abs(d) / W); // 0..1 progress
+      setGroupFrame(cur, d, 1 - 0.28 * f); // LEAVING page: 1:1 with the thumb, recedes (dims) as it goes
+      setGroupFrame(nbr, (sign < 0 ? W : -W) + d * 0.86, 0.68 + 0.32 * f); // INCOMING page: parallax-LAGS behind the thumb (0.86×) + brightens in → depth between the two slides
     }, { passive: false });
     function settle(toCommit) {
       _paneAnim = true;
-      var EAS = "transform .26s cubic-bezier(.2,.85,.3,1)";
+      var EAS = "transform .3s cubic-bezier(.22,.9,.3,1), opacity .3s ease";
       paneGroup(cur).forEach(function (el2) { el2.style.transition = EAS; });
       if (nbr) paneGroup(nbr).forEach(function (el2) { el2.style.transition = EAS; });
-      if (toCommit && nbr) { setGroupX(cur, (sign < 0 ? -W : W)); setGroupX(nbr, 0); }
-      else { setGroupX(cur, 0); if (nbr) setGroupX(nbr, (sign < 0 ? W : -W)); }
+      if (toCommit && nbr) { setGroupFrame(cur, (sign < 0 ? -W : W), 0.4); setGroupFrame(nbr, 0, 1); } // finish: leaving page slides fully off + dim, incoming lands bright + flush
+      else { setGroupFrame(cur, 0, 1); if (nbr) setGroupFrame(nbr, (sign < 0 ? W : -W), 0.68); } // cancel: spring both back
       var landed = toCommit && nbr ? nbr : cur;
-      setTimeout(function () { setPaneRest(landed); _paneAnim = false; }, 290);
+      setTimeout(function () { setPaneRest(landed); _paneAnim = false; }, 320);
     }
     function cancelDrag() { if (on) settle(false); reset(); }
     document.addEventListener("pointerup", function (e) {
