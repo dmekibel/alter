@@ -719,7 +719,8 @@
   .bento-supertile{ display:flex; flex-direction:column; align-items:flex-start; gap:5px; border:2px solid #160510; border-radius:16px; padding:14px 14px 12px; cursor:pointer; font-family:"Jost",sans-serif; color:#fff; box-shadow:0 4px 0 #160510; text-align:left; position:relative; overflow:hidden; transition:transform .08s,box-shadow .08s; }
   .bento-supertile::before{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 8px, transparent 8px 17px); }
   .bento-supertile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .bento-supertile i{ font-size:26px; line-height:1; position:relative; z-index:1; }
+  .bst-ic{ width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; margin-bottom:3px; position:relative; z-index:1; }
+  .bst-ic i{ font-size:24px; line-height:1; }
   .bst-l{ font-weight:800; font-size:16px; position:relative; z-index:1; }
   .bst-n{ font-weight:700; font-size:11px; opacity:.66; position:relative; z-index:1; }
   .bento-domh{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:.4px; text-transform:uppercase; display:flex; align-items:center; gap:6px; margin:13px 0 7px; }
@@ -1551,6 +1552,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=644"></script>
+  <script src="app.js?v=645"></script>
 </body>
 </html>

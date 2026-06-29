@@ -4172,11 +4172,16 @@
     xb.onclick = close;
     ov.addEventListener("click", function (e) { if (e.target === ov) { close(); if (opts.onCancel) opts.onCancel(); } });
     function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } }
-    function actChip(a, container, big) {
+    function actChip(a, container, big, soft) {
       var D = DOM[a.domain], on = sel.indexOf(a) >= 0, pin = isPinned(a);
-      var s = add(container, "span", "bchip" + (big ? " big" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : ""));
-      if (a.domain !== "drift") { s.style.background = D.c; s.style.color = D.ink; }
-      s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
+      var s = add(container, "span", "bchip" + (big ? " big" : "") + (soft ? " soft" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : ""));
+      // SOFT = welcoming muted tile (colored ICON accent + light text on a dark-tinted bg) — kills the "wall of solid orange" in a category list (David 2026-07-02). Solid fill stays for short varied rows (Recent/Pinned/search) and the selected state.
+      var iconStyle = "";
+      if (a.domain !== "drift") {
+        if (soft && !on) { s.style.background = mixHex(D.c, "#190612", 0.7); s.style.color = D.light; s.style.borderColor = mixHex(D.c, "#160510", 0.28); iconStyle = ' style="color:' + D.c + '"'; }
+        else { s.style.background = D.c; s.style.color = D.ink; }
+      }
+      s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"' + iconStyle + '></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
       var holdT = null, held = false; // press & hold any chip → pin / unpin it (tap-only, no keyboard) — David 2026-06-24
       s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "📌 pinned to the top" : "unpinned"); render(); }, 450); });
       function cancelHold() { if (holdT) { clearTimeout(holdT); holdT = null; } }
@@ -4289,8 +4294,8 @@
       var grid = add(body, "div", "bento-supergrid");
       SUPERCAT.forEach(function (sc) {
         var n = 0; sc.domains.forEach(function (d) { n += (by[d] || []).length; });
-        var tile = add(grid, "button", "bento-supertile"); tile.style.background = mixHex(sc.c, "#160510", 0.66); tile.style.borderColor = mixHex(sc.c, "#160510", 0.32);
-        tile.innerHTML = '<i class="ti ' + sc.ti + '" style="color:' + sc.c + '"></i><span class="bst-l">' + esc(sc.l) + '</span><span class="bst-n">' + n + ' things</span>';
+        var tile = add(grid, "button", "bento-supertile"); tile.style.background = mixHex(sc.c, "#16060f", 0.6); tile.style.borderColor = mixHex(sc.c, "#160510", 0.3);
+        tile.innerHTML = '<span class="bst-ic" style="background:' + mixHex(sc.c, "#160510", 0.42) + ';color:' + sc.c + '"><i class="ti ' + sc.ti + '"></i></span><span class="bst-l">' + esc(sc.l) + '</span><span class="bst-n">' + n + ' things</span>';
         tile.onclick = function () { view.super = sc.k; render(); };
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
@@ -4319,7 +4324,7 @@
         acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
         var D = DOM[d];
         var hh = add(body, "div", "bento-domh"); hh.style.color = D.light; hh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l);
-        var wrap = add(body, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, wrap, true); });
+        var wrap = add(body, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, wrap, true, true); });
       });
       if (!any) { add(body, "div", "bento-domh", "Nothing here yet — add one below"); }
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
