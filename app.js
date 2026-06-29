@@ -432,6 +432,7 @@
     drawJourney(true);
   }
   function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); } // back to the Planner → highlight Planner
+  function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
     var tut = !(S.guide && S.guide.tutCommit);
     var ov = add(document.body, "div", "bento-ov");
@@ -482,7 +483,7 @@
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
     var curIdx = -1; for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // first undone today = CURRENT
     var allDone = curIdx < 0;
-    var sub = el("jpSub"); if (sub) sub.textContent = allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today";
+    var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today") + "  ·  " + appVer(); // version tag so we can confirm which build is actually loaded (David 2026-07-02)
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
     function banner(state, klabel, title, ic) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); }

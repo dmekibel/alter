@@ -511,8 +511,8 @@
   :root{ --ink:#3a2540 !important; --soft:#ffb3d9; --card:#ffdcef; --sh:3px 4px 0 rgba(58,37,64,.22); }
   html,body{ background:linear-gradient(170deg,#86205a 0%,#5c123c 55%,#480f2f 100%) !important; color:#3a2540; }
   /* iOS standalone PWA — KILL THE WHITE-TOP: every theme above sets `background` (a shorthand, some !important), which resets background-color to transparent → iOS paints WHITE in the status-bar / overscroll canvas gap. A solid html background-color, placed AFTER the !important theme so it actually wins the cascade, fills that gap dark; min-height:100dvh stops a short body from leaving a gap. Standalone-only effect; harmless in-browser. The timeline's own dark top is handled by the full-bleed pullSheet below. (David 2026-06-26) */
-  html{ background-color:#160510 !important; overscroll-behavior:none; } /* the journey's own ink — so any standalone safe-area sliver blends instead of showing a navy band (David 2026-07-02) */
-  body.journey-open{ background:#160510 !important; } /* when the journey is home, the page fallback is its ink so no bottom strip shows */
+  html{ background-color:#1c0612 !important; overscroll-behavior:none; } /* MATCH the journey's bottom MENU bar (#1c0612) so the uncovered home-indicator strip reads as the menu reaching the bottom (David 2026-07-02) */
+  body.journey-open{ background:#1c0612 !important; }
   body{ min-height:100dvh; overscroll-behavior:none; } /* kill Chrome pull-to-refresh so dragging the tracker down doesn't reload the page (David 2026-06-27) */
   /* page chrome (sits on the dark pink) → light text */
   #date{ color:#ffc4e2 !important; }
@@ -1521,6 +1521,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=630"></script>
+  <script src="app.js?v=631"></script>
 </body>
 </html>
