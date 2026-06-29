@@ -752,6 +752,15 @@
   .big3-rline{ font-size:12.5px; font-weight:600; margin-top:3px; line-height:1.35; }
   /* ORDER STEP — drag-reorder the chosen activities (David 2026-06-28) */
   .bento-orderhint{ color:#e6cfe0; font-size:12.5px; line-height:1.4; padding:4px 2px 12px; }
+  /* TIME-COMMITMENT menu (commit a time to track — first run is a tutorial) — David 2026-07-02 */
+  .tc-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-top:4px; }
+  .tc-btn{ background:#48122f; border:2.5px solid #160510; border-radius:13px; padding:14px 0; display:flex; flex-direction:column; align-items:center; gap:1px; color:#ffe3f1; font-family:"Jost",sans-serif; cursor:pointer; box-shadow:0 4px 0 #160510; }
+  .tc-btn b{ font-family:var(--bub); font-size:20px; font-weight:800; }
+  .tc-btn span{ font-size:10px; font-weight:700; color:#c98ca6; }
+  .tc-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .tc-btn.tc-dim{ opacity:.3; pointer-events:none; }
+  .tc-btn.tc-glow{ border-color:#ff5fa0; box-shadow:0 4px 0 #160510,0 0 0 4px rgba(255,95,160,.3); animation:tcPulse 1.4s ease-in-out infinite; }
+  @keyframes tcPulse{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-3px); } }
   .bento-orderlist{ display:flex; flex-direction:column; gap:8px; }
   .bento-orow{ display:flex; align-items:center; gap:10px; background:#48122f; border:2px solid #160510; border-radius:13px; padding:11px 12px; transition:transform .2s cubic-bezier(.2,.8,.3,1); } /* touch-action:none REMOVED so the list scrolls; only the handle grabs (David 2026-06-28) */
   .bento-orow.drag{ box-shadow:0 0 0 3px #ffe3a0, 0 12px 28px rgba(0,0,0,.5); opacity:.98; }
@@ -1495,6 +1504,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=624"></script>
+  <script src="app.js?v=625"></script>
 </body>
 </html>

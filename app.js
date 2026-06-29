@@ -391,7 +391,7 @@
     nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day",
       line: planned.length ? (gvName ? "Mapped toward being " + gvName + " — tap to reshape it." : "Your day's mapped — tap to reshape it.")
         : (pf.bouncedBack ? "You came back yesterday — that bounce is the skill. Let's map today." : gvName ? "Map today around being " + gvName + " — pick a few things." : "Map out today — pick a few things and let them wait for you."),
-      color: DOM.focus.c, done: planned.length > 0, act: function () { closeJourney(); shapeFlow(k); } });
+      color: DOM.focus.c, done: planned.length > 0 && !(S.timers || []).some(function (t) { return t.dayK === todayK() && t.title === "Plan your day"; }), act: function () { closeJourney(); shapeFlow(k); } }); // stays the live cockpit while you're TRACKING the planning (David 2026-07-02)
 
     // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
@@ -431,8 +431,25 @@
     drawJourney(true);
   }
   function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); }
+  function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
+    var tut = !(S.guide && S.guide.tutCommit);
+    var ov = add(document.body, "div", "bento-ov");
+    var card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head");
+    add(head, "div", "bento-q", tut ? "First — commit a time" : "How long?");
+    if (!tut) { var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); }; }
+    var body = add(card, "div", "bento-body");
+    add(body, "div", "bento-orderhint", tut ? "Everything here works by committing a little time to it — that's how it tracks you. Let's start small: tap 5 minutes to plan your day." : "How long will you give “" + esc(n.title) + "”?");
+    var grid = add(body, "div", "tc-grid");
+    [5, 10, 15, 30, 45, 60].forEach(function (m) {
+      var b = add(grid, "button", "tc-btn" + (tut && m !== 5 ? " tc-dim" : "") + (tut && m === 5 ? " tc-glow" : ""));
+      b.innerHTML = "<b>" + m + "</b><span>min</span>";
+      b.onclick = function () { if (tut && m !== 5) return; if (tut) { S.guide = S.guide || {}; S.guide.tutCommit = true; save(); } ov.remove(); onGo(m); };
+    });
+  }
   var jpHabMenuKey = null; // which habit circle has its 3-way inline menu open (Mark done / Track it / Skip) — David 2026-06-28
-  function jpStart(n) { // START a circle: a DOING circle starts a live timer + expands in place; a HABIT opens its 3-way menu; anything else runs its own flow (plan→planner, ritual→stage)
+  function jpStart(n) { // START a circle: a DOING circle starts a live timer + expands in place; a HABIT opens its 3-way menu; PLAN commits a time (tutorial) then opens the planner
+    if (n.key === "plan") { timeCommit(n, function () { startTimer({ title: n.title, color: n.color }); drawJourney(true); try { shapeFlow(todayK()); } catch (e) {} }); return; } // planning IS a tracked activity: commit a time → start the timer (cockpit blooms) → open the planner
     if (n.key === "onething" || (n.key && n.key.indexOf("blk:") === 0)) { startTimer({ title: n.title, catK: n.catK || null, color: n.color }); drawJourney(true); }
     else if (n.key && n.key.indexOf("hab:") === 0) { jpHabMenuKey = n.key; drawJourney(true); } // habit → don't silently toggle; surface the menu
     else if (n.act) { n.act(); }
@@ -456,7 +473,7 @@
     function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.innerHTML = '<i class="ti ' + glyph + '"></i>'; return t; }
     function coin(state, n, idx) {
       var node = add(trail, "div", "jp-node " + state);
-      node.style.transform = "translateX(" + (Math.sin(idx * 0.72) * 72).toFixed(0) + "px)"; // winding path, no connector lines
+      node.style.transform = "translateX(" + (state === "cur" ? 0 : Math.sin(idx * 0.72) * 72).toFixed(0) + "px)"; // winding path; the CURRENT node stays CENTERED (the focal point — fixes the "shifted right" look) (David 2026-07-02)
       var bub = add(node, "div", "jp-bub");
       var icon = state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
