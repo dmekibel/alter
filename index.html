@@ -1275,7 +1275,7 @@
   #nav .nb.on .ne{ filter:drop-shadow(0 0 7px rgba(255,95,160,.45)); }
   #nav .nb:active{ transform:scale(.92); }
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
-  body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
+  body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:calc(env(safe-area-inset-bottom,0px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
   #nav .nb[data-tab="self"], #nav #navJourney{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="self"], body.nav-collapsed.tab-day #nav #navJourney{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
@@ -1283,7 +1283,7 @@
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"]::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; } /* two faint bars on the right edge = "Goals & You are tucked behind, tap to open" */
-  body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
+  body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:calc(env(safe-area-inset-bottom,0px)) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   body.nav-collapsed.tab-day #liveDock .ld-seg{ display:none !important; } /* narrow row = play/info/elapsed only; expand the nav for the Replan/Drift row */
   /* COLLAPSED DOCK = EXACTLY the Today pill's height (62px) — one compact even row beside it (David 2026-06-28). Drop the grab handle + the .ld-main bottom margin, slim the padding, vertically centre. */
   body.nav-collapsed.tab-day #liveDock.on{ height:62px !important; box-sizing:border-box !important; padding:0 11px !important; display:flex !important; align-items:center !important; border-radius:14px !important; }
@@ -1303,7 +1303,7 @@
   #liveTracker{ display:none !important; }
   body:not(.gaming) #screen{ padding-top:14px !important; }
   /* TODAY tab (normal app) = the ORIGINAL rich pull-timeline, ALWAYS OPEN — sticky PLAN/REAL header, working zoom, swipe-between-days, every feature we built. NOT a rebuild. */
-  body.tab-day:not(.gaming) #pullSheet{ display:flex !important; transform:none !important; transition:none !important; top:0; left:0; right:0; border-top:none; border-left:none; border-right:none; border-radius:0; bottom:calc(74px + env(safe-area-inset-bottom,0px)); height:auto; z-index:40; } /* TRUE full-bleed top rim: the dark wine sheet BLEEDS under the status bar (top:0) and edge-to-edge (left/right:0), no top/side border, square corners → one seamless dark top, no white, no pink band (David 2026-06-26) */
+  body.tab-day:not(.gaming) #pullSheet{ display:flex !important; transform:none !important; transition:none !important; top:0; left:0; right:0; border-top:none; border-left:none; border-right:none; border-radius:0; bottom:calc(env(safe-area-inset-bottom,0px)); height:auto; z-index:40; } /* timeline is FULL-SCREEN to the bottom (behind the floating dock + nav) — same height whether the nav is expanded or collapsed, so scrolling never jumps; no cut-off strip above the dock (David v663). TRUE full-bleed top rim: the dark wine sheet BLEEDS under the status bar (top:0) and edge-to-edge (left/right:0), no top/side border, square corners → one seamless dark top, no white, no pink band (David 2026-06-26) */
   body.tab-day:not(.gaming) #pullHead{ border-radius:0; padding-top:calc(7px + env(safe-area-inset-top,0px)); } /* square corners + drop the header content below the status bar while the wine bg fills behind the notch (David 2026-06-26) */
   body.tab-day:not(.gaming) #pullBackdrop{ display:none !important; }
   body.tab-day:not(.gaming) #pullGrab{ display:none !important; }            /* no "pull up to close" — it's always open */
@@ -1647,6 +1647,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=662"></script>
+  <script src="app.js?v=663"></script>
 </body>
 </html>
