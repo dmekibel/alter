@@ -479,6 +479,7 @@
           var fl = add(mx, "button", "jp-ckbtn follow small"); fl.innerHTML = '<i class="ti ti-player-play"></i> Follow'; fl.onclick = function () { try { toast("✦ on plan — keep going"); } catch (e) {} };
           var rp = add(mx, "button", "jp-ckbtn replan small"); rp.innerHTML = '<i class="ti ti-calendar-event"></i> Replan'; rp.onclick = function () { if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4), bb = (blocks(todayK()) || []).filter(function (b) { return b.id === bid; })[0]; if (bb) { closeJourney(); blockEdit(bb, todayK()); return; } } planBreak("Replan — what, for how long?"); };
           var dr = add(mx, "button", "jp-ckbtn drift small"); dr.innerHTML = '<i class="ti ti-wind"></i> Drift'; dr.onclick = function () { stopTimer(runT.id); coolStreak(); try { toast("you stepped away — no shame"); } catch (e) {} drawJourney(true); };
+          var tl = add(mx, "button", "jp-ckbtn small"); tl.style.background = "#3a1226"; tl.style.color = "#ffd9ea"; tl.innerHTML = '<i class="ti ti-briefcase"></i> Tools'; tl.onclick = function () { try { openToolbox(); } catch (e) {} }; // the grimoire, from the cockpit (David 2026-06-29)
         } else if (n.key && n.key.indexOf("hab:") === 0 && jpHabMenuKey === n.key) {
           // HABIT 3-way inline menu — opened by tapping START on a habit circle (David 2026-06-28)
           bub.style.display = "none";
@@ -5133,6 +5134,7 @@
       var g = el("jpnGame"); if (g) g.onclick = function () { closeJourney(); try { openGame(); } catch (e) {} }; // Game = the island/world
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
+    (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home
     renderAll();
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
