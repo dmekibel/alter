@@ -652,8 +652,8 @@
   var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit";
   var PANE_ORDER = ["planner", "journey", "game"];
   function curPaneName() { var b = document.body.classList; return b.contains("gaming") ? "game" : b.contains("journey-open") ? "journey" : "planner"; }
-  function paneGroup(n) { // the element(s) that move together for this pane
-    if (n === "planner") return [el("pullSheet"), el("nav"), el("liveDock")].filter(Boolean);
+  function paneGroup(n) { // the element(s) that SLIDE for this pane. #nav is the ONE persistent bottom menu (fixed, on top) shared across all 3 panes — it never slides; only the page content does (David 2026-06-30).
+    if (n === "planner") return [el("pullSheet"), el("liveDock")].filter(Boolean);
     if (n === "journey") return [el("journeyPath")].filter(Boolean);
     return [el("gameMode")].filter(Boolean);
   }
@@ -667,11 +667,11 @@
   }
   function setPaneRest(n) { // commit the canonical rest-state for pane n, NO entrance animation; clear all drag transforms
     ["planner", "journey", "game"].forEach(clearGroup);
-    document.body.classList.remove("pane-dragging");
+    document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { drawJourney(false); } catch (e) {} }
-    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
+    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
   }
   var _paneAnim = false;
   function initPaneCarousel() {
@@ -692,8 +692,8 @@
       document.body.classList.add("pane-dragging");
       paneGroup(cur).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
       if (nbr) { panePrime(nbr); paneGroup(nbr).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
-        setGroupFrame(nbr, (dir < 0 ? W : -W), 0.68, 299); } // neighbour parked one screen over, dimmed (parallax depth), just under the leaving page
-      setGroupFrame(cur, 0, 1, 300);
+        setGroupX(nbr, (dir < 0 ? W : -W), 299); } // neighbour parked one screen over, just under the leaving page
+      setGroupX(cur, 0, 300);
     }
     document.addEventListener("pointermove", function (e) {
       if (!armed || multi) return;
@@ -705,18 +705,17 @@
       }
       e.preventDefault();
       var d = e.clientX - sx;
-      if (!nbr) { d = d * 0.32; setGroupFrame(cur, d, 1); return; } // edge pane → rubber-band, no commit
-      var f = Math.min(1, Math.abs(d) / W); // 0..1 progress
-      setGroupFrame(cur, d, 1 - 0.28 * f); // LEAVING page: 1:1 with the thumb, recedes (dims) as it goes
-      setGroupFrame(nbr, (sign < 0 ? W : -W) + d * 0.86, 0.68 + 0.32 * f); // INCOMING page: parallax-LAGS behind the thumb (0.86×) + brightens in → depth between the two slides
+      if (!nbr) { d = d * 0.32; setGroupX(cur, d); return; } // edge pane → rubber-band, no commit
+      setGroupX(cur, d); // CLEAN 1:1 connected slide — both pages locked to the thumb like swiping photos (no parallax/dim — that read as "broken"). Depth = the soft seam gradient only.
+      setGroupX(nbr, (sign < 0 ? W : -W) + d);
     }, { passive: false });
     function settle(toCommit) {
       _paneAnim = true;
-      var EAS = "transform .3s cubic-bezier(.22,.9,.3,1), opacity .3s ease";
+      var EAS = "transform .28s cubic-bezier(.22,.9,.3,1)";
       paneGroup(cur).forEach(function (el2) { el2.style.transition = EAS; });
       if (nbr) paneGroup(nbr).forEach(function (el2) { el2.style.transition = EAS; });
-      if (toCommit && nbr) { setGroupFrame(cur, (sign < 0 ? -W : W), 0.4); setGroupFrame(nbr, 0, 1); } // finish: leaving page slides fully off + dim, incoming lands bright + flush
-      else { setGroupFrame(cur, 0, 1); if (nbr) setGroupFrame(nbr, (sign < 0 ? W : -W), 0.68); } // cancel: spring both back
+      if (toCommit && nbr) { setGroupX(cur, (sign < 0 ? -W : W)); setGroupX(nbr, 0); } // finish: leaving page slides fully off, incoming lands flush
+      else { setGroupX(cur, 0); if (nbr) setGroupX(nbr, (sign < 0 ? W : -W)); } // cancel: spring both back
       var landed = toCommit && nbr ? nbr : cur;
       setTimeout(function () { setPaneRest(landed); _paneAnim = false; }, 320);
     }
@@ -5698,6 +5697,11 @@
       var g = el("jpnGame"); if (g) g.onclick = function () { closeJourney(); try { openGame(); } catch (e) {} }; // Game = the island/world
     })();
     initPaneCarousel(); // 3-PANE CAROUSEL (David 2026-06-30): one global finger-following slider across Planner | Journey | Game
+    (function () { // the PERSISTENT bottom menu (#nav) is shared across all 3 panes — tapping a button switches panes cleanly (closes the others), matching the swipe. (Overrides the older per-tab handlers.)
+      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (curPaneName() !== "planner") setPaneRest("planner"); };
+      var jr = el("navJourney"); if (jr) jr.onclick = function () { if (curPaneName() !== "journey") setPaneRest("journey"); };
+      var gm = document.querySelector('#nav .nb[data-tab="self"]'); if (gm) gm.onclick = function () { if (curPaneName() !== "game") setPaneRest("game"); };
+    })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; revealTimeline(); // Today (the always-open rich timeline) is the home; body scroll locked by CSS (v640); portal-reveal it on cold launch (v648)

@@ -1321,7 +1321,10 @@
   body.tracker header{ display:none; }
   /* garden (full-screen world) is now a secondary view reached from You → exit via ←, hide the tab bar while inside it */
   #gameExit{ display:flex !important; }
-  body.gaming #nav{ display:none !important; }
+  /* PERSISTENT 3-PANE MENU (David 2026-06-30): #nav is the ONE bottom bar across Planner/Journey/Game — show it in the game too (was display:none), and lift it above the journey(75)/game(60) overlays so it's always visible. The per-pane duplicate bars (#jpNav, #gameNav) are retired. */
+  body.gaming #nav, body.journey-open #nav{ display:flex !important; z-index:80; }
+  body.pane-dragging #nav{ z-index:360; } /* during a carousel slide, sit above the sliding panes (z~300) so the menu stays put + visible while pages move under it */
+  #jpNav, #gameNav, #gnToggle{ display:none !important; } /* retired — the persistent #nav replaces these per-pane bars */
   #notebookBtn{ display:none !important; }
   /* the live-tracker strip is retired — the timeline is the Today tab now; hiding it everywhere also stops it covering the garden's Exit button (David 2026-06-24) */
   #liveTracker{ display:none !important; }
@@ -1674,6 +1677,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=684"></script>
+  <script src="app.js?v=685"></script>
 </body>
 </html>
