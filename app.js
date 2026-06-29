@@ -658,7 +658,7 @@
     return [el("gameMode")].filter(Boolean);
   }
   function setGroupX(n, x, z) { paneGroup(n).forEach(function (e) { e.style.setProperty("transform", "translateX(" + x + "px)", "important"); if (z != null) e.style.zIndex = z; }); }
-  function setGroupFrame(n, x, op, z) { paneGroup(n).forEach(function (e) { e.style.setProperty("transform", "translateX(" + x + "px)", "important"); if (op != null) e.style.opacity = op; if (z != null) e.style.zIndex = z; }); }
+  function setGroupFrame(n, x, op, sc, z) { paneGroup(n).forEach(function (e) { e.style.setProperty("transform", "translateX(" + x + "px)" + (sc != null ? " scale(" + sc + ")" : ""), "important"); if (op != null) e.style.opacity = op; if (z != null) e.style.zIndex = z; }); }
   function clearGroup(n) { paneGroup(n).forEach(function (e) { e.style.transform = ""; e.style.removeProperty("transform"); e.style.opacity = ""; e.style.zIndex = ""; e.style.transition = ""; e.style.willChange = ""; }); }
   function panePrime(n, show) { // make a pane RENDERABLE beside the current one during a drag — WITHOUT its entrance animation (no portal, no cascade)
     if (n === "journey") { var jp = el("journeyPath"); if (jp) jp.classList.add("on"); }
@@ -692,8 +692,8 @@
       document.body.classList.add("pane-dragging");
       paneGroup(cur).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
       if (nbr) { panePrime(nbr); paneGroup(nbr).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
-        setGroupX(nbr, (dir < 0 ? W : -W), 299); } // neighbour parked one screen over, just under the leaving page
-      setGroupX(cur, 0, 300);
+        setGroupFrame(nbr, (dir < 0 ? W : -W), 0.5, 0.91, 299); } // neighbour parked one screen over, dimmed + scaled-back in depth
+      setGroupFrame(cur, 0, 1, 1, 300);
     }
     document.addEventListener("pointermove", function (e) {
       if (!armed || multi) return;
@@ -706,16 +706,18 @@
       e.preventDefault();
       var d = e.clientX - sx;
       if (!nbr) { d = d * 0.32; setGroupX(cur, d); return; } // edge pane → rubber-band, no commit
-      setGroupX(cur, d); // CLEAN 1:1 connected slide — both pages locked to the thumb like swiping photos (no parallax/dim — that read as "broken"). Depth = the soft seam gradient only.
-      setGroupX(nbr, (sign < 0 ? W : -W) + d);
+      var f = Math.min(1, Math.abs(d) / W); // 0..1 progress
+      // DEPTH PARALLAX: both pages stay edge-connected (translate 1:1) but gain Z-depth — the leaving page recedes (scales back + dims into shadow), the incoming page rises forward (scales up + brightens) from under the seam gradient. (David 2026-06-30)
+      setGroupFrame(cur, d, 1 - 0.5 * f, 1 - 0.09 * f);
+      setGroupFrame(nbr, (sign < 0 ? W : -W) + d, 0.5 + 0.5 * f, 0.91 + 0.09 * f);
     }, { passive: false });
     function settle(toCommit) {
       _paneAnim = true;
-      var EAS = "transform .28s cubic-bezier(.22,.9,.3,1)";
+      var EAS = "transform .3s cubic-bezier(.22,.9,.3,1), opacity .3s ease";
       paneGroup(cur).forEach(function (el2) { el2.style.transition = EAS; });
       if (nbr) paneGroup(nbr).forEach(function (el2) { el2.style.transition = EAS; });
-      if (toCommit && nbr) { setGroupX(cur, (sign < 0 ? -W : W)); setGroupX(nbr, 0); } // finish: leaving page slides fully off, incoming lands flush
-      else { setGroupX(cur, 0); if (nbr) setGroupX(nbr, (sign < 0 ? W : -W)); } // cancel: spring both back
+      if (toCommit && nbr) { setGroupFrame(cur, (sign < 0 ? -W : W), 0.5, 0.91); setGroupFrame(nbr, 0, 1, 1); } // finish: leaving page recedes fully off, incoming rises flush + bright
+      else { setGroupFrame(cur, 0, 1, 1); if (nbr) setGroupFrame(nbr, (sign < 0 ? W : -W), 0.5, 0.91); } // cancel: spring both back to depth
       var landed = toCommit && nbr ? nbr : cur;
       setTimeout(function () { setPaneRest(landed); _paneAnim = false; }, 320);
     }
