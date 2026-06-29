@@ -433,13 +433,32 @@
 
     return nodes;
   }
+  function prefersReducedMotion() { try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+  // PORTAL REVEAL (v648): punch a surface open through a circle growing from a focal point (e.g. the now-line). clip-path only → paint-time, never disturbs scroll/pinch. One-shot; clears itself on animationend.
+  function playReveal(elm, focal) {
+    if (!elm || prefersReducedMotion()) return;
+    try {
+      var r = elm.getBoundingClientRect(), x = 50, y = 42;
+      var f = focal && focal.getBoundingClientRect ? focal.getBoundingClientRect() : null;
+      if (f && f.width) { x = Math.max(0, Math.min(100, Math.round((f.left + f.width / 2 - r.left) / r.width * 100))); y = Math.max(0, Math.min(100, Math.round((f.top + f.height / 2 - r.top) / r.height * 100))); }
+      elm.style.setProperty("--rx", x + "%"); elm.style.setProperty("--ry", y + "%");
+      elm.classList.remove("sfc-reveal"); void elm.offsetWidth; elm.classList.add("sfc-reveal");
+      var done = function () { elm.classList.remove("sfc-reveal"); elm.style.removeProperty("--rx"); elm.style.removeProperty("--ry"); elm.removeEventListener("animationend", h); }; // belt + suspenders: animationend OR a timeout, so the clip-path can never linger
+      var h = function (e) { if (e.animationName === "sfcReveal") done(); };
+      elm.addEventListener("animationend", h);
+      setTimeout(done, 520);
+    } catch (e) {}
+  }
+  function revealTimeline() { try { setTimeout(function () { playReveal(el("pullSheet"), nowLineEl); }, 40); } catch (e) {} } // reveal the planner timeline from the now-line on open (not on scroll/rebuild)
+  // STAGGERED CASCADE (v648): make a set of just-rendered nodes arrive one-by-one with a spring.
+  function cascadeIn(nodes) { if (prefersReducedMotion() || !nodes) return; for (var i = 0; i < nodes.length; i++) { var k = nodes[i]; if (!k || !k.style) continue; k.classList.add("casc-item"); k.style.animationDelay = (i * 38) + "ms"; } }
   function openJourney() {
     var p = el("journeyPath"); if (!p) return; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
     drawJourney(true);
   }
-  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); } // back to the Planner (a fixed-pullSheet scroller); body scroll stays locked by CSS (v640)
+  function closeJourney() { var p = el("journeyPath"); if (p) p.classList.remove("on"); document.body.classList.remove("journey-open"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); if (!document.body.classList.contains("gaming")) revealTimeline(); } // back to the Planner (a fixed-pullSheet scroller); body scroll stays locked by CSS (v640); portal-reveal the timeline on arrival (v648)
   function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
     var tut = !(S.guide && S.guide.tutCommit);
@@ -3077,7 +3096,7 @@
   }
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
-    gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap();
+    gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap(); try { playReveal(gm); } catch (e) {} // portal-reveal the game on open (v648)
     document.body.classList.add("gaming"); // body scroll locked by CSS (v640)
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
     gameNavSetup(); gm.classList.add("gn-open"); // start with the bar SHOWN — it folds to the corner button once you actually pan/scroll the world (David 2026-07-02)
@@ -4305,6 +4324,7 @@
         var wrap = add(mc, "div", "bento-chips"); acts.forEach(function (a) { actChip(a, wrap, false); }); // ALL chips — the strip scrolls (David v647)
         var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew;
       });
+      cascadeIn(gridWrap.children); // the striped cards spring in, staggered (v648)
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
       function drawResults(q) {
         if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; tabsEl.style.display = ""; pinned.style.display = ""; recent.style.display = ""; addb.style.display = ""; return; }
@@ -5245,7 +5265,7 @@
       scard.addEventListener("pointerup", sdEnd); scard.addEventListener("pointercancel", sdEnd);
     })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
+    document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); revealTimeline(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
     (function () { var njb = el("navJourney"); if (njb) njb.onclick = function () { document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === njb); }); openJourney(); }; var jg = el("jpGoals"); if (jg) jg.onclick = function () { try { goalsSheet(); } catch (e) {} }; })(); // Journey = the home tab; its header target opens Goals (David 2026-06-29)
     (function () { // the journey's OWN bottom triple menu (Planner · Journey · Game) — the journey is home (David 2026-06-28)
       var p = el("jpnPlanner"); if (p) p.onclick = function () { closeJourney(); }; // Planner = the timeline underneath the journey
@@ -5254,7 +5274,7 @@
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
-    document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; // Today (the always-open rich timeline) is the home; body scroll is locked by CSS (body{height:100vh;overflow:hidden}) so the fixed bottom nav reaches the physical bottom (v640)
+    document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; revealTimeline(); // Today (the always-open rich timeline) is the home; body scroll locked by CSS (v640); portal-reveal it on cold launch (v648)
     renderAll();
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====

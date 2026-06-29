@@ -20,6 +20,12 @@
   :root{ --ink:#3a2540; --pink:#ff4fa0; --blue:#2a9fe0; --purple:#8a5cf0; --yellow:#ffc41f; --ok:#28cf86;
     --soft:#8a7ba0; --line:#ece2f5; --accent:#8a5cf0; --card:#fff;
     --bub:"Baloo 2",sans-serif; --sh:3px 4px 0 rgba(58,37,64,.18); }
+  :root{ --ease-spring:cubic-bezier(.34,1.56,.64,1); --ease-settle:cubic-bezier(.22,.9,.3,1); --dur-enter:.34s; --dur-micro:.14s; --stagger:38ms; } /* MOTION SYSTEM (v648, David's "alive & friendly" pass): tune the whole app's feel from ONE place — spring overshoot + settle curves, durations, stagger unit */
+  @keyframes sfcReveal{ from{ clip-path:circle(0% at var(--rx,50%) var(--ry,42%)); } to{ clip-path:circle(150% at var(--rx,50%) var(--ry,42%)); } } /* the signature PORTAL reveal — a surface is punched open through a circle growing from a focal point (the now-line). clip-path = paint-only → never touches the scroll/pinch math */
+  .sfc-reveal{ animation:sfcReveal var(--dur-enter) var(--ease-settle); }
+  @keyframes cascItem{ from{ opacity:0; transform:translateY(11px) scale(.985); } to{ opacity:1; transform:none; } } /* staggered cascade — menu/list items ARRIVE in sequence with a little spring */
+  .casc-item{ animation:cascItem var(--dur-enter) var(--ease-spring) both; }
+  @media (prefers-reduced-motion: reduce){ .sfc-reveal, .casc-item{ animation:none !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
   html,body{height:100%;color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-weight:500;
     background:linear-gradient(170deg,#92e2ff 0%,#c7b2ff 50%,#ffc0e2 100%);}
@@ -1559,6 +1565,6 @@
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
-  <script src="app.js?v=647"></script>
+  <script src="app.js?v=648"></script>
 </body>
 </html>
