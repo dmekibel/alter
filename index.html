@@ -46,8 +46,10 @@
   #startScreen.on{ display:flex; }
   #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
   @keyframes ssLeave{ to{ opacity:0; transform:scale(1.08); } }
-  .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.08); border:2px solid #3a1730; color:#ffd9ec; border-radius:14px; padding:8px 13px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; cursor:pointer; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
-  .ss-flag{ font-size:18px; line-height:1; }
+  .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.06); border:2px solid #3a1730; border-radius:12px; padding:7px; cursor:pointer; display:flex; align-items:center; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
+  .ss-lang:active{ transform:scale(.93); }
+  .ss-flag{ width:30px; height:22px; border-radius:4px; overflow:hidden; display:block; box-shadow:0 0 0 1px rgba(0,0,0,.3); }
+  .ss-flag svg{ display:block; width:100%; height:100%; }
   .ss-langmenu{ position:absolute; top:62px; right:18px; z-index:6; background:#2c081a; border:2px solid #160510; border-radius:16px; box-shadow:0 16px 44px rgba(0,0,0,.6); padding:6px; display:flex; flex-direction:column; gap:2px; min-width:178px; animation:popIn .26s var(--ease-spring) both; }
   .ss-langrow{ display:flex; align-items:center; gap:11px; background:none; border:none; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; padding:10px 12px; border-radius:11px; cursor:pointer; text-align:left; }
   .ss-langrow.on{ background:rgba(255,95,160,.13); }
@@ -56,8 +58,8 @@
   .ss-hero{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
   .ss-sparkles{ color:#ffd24a; font-size:30px; line-height:1; opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .15s both; }
   .ss-guardian-wrap{ margin:2px 0 8px; animation:ssSpawn .74s var(--ease-spring) both, ssBob 3.2s ease-in-out 1.1s infinite; }
-  .ss-guardian{ width:156px; height:156px; border-radius:36px; background:radial-gradient(circle at 50% 46%, rgba(255,95,160,.32), transparent 62%), linear-gradient(160deg,#300d20,#160510); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; animation:ssGlow 2.6s ease-in-out infinite; } /* the app mark as a tile — placeholder character TBD (David 2026-07-02) */
-  .ss-mark{ width:80%; height:80%; overflow:visible; }
+  .ss-guardian{ width:200px; height:200px; display:flex; align-items:center; justify-content:center; animation:ssGlow 2.6s ease-in-out infinite; } /* NO tile/outline — just the animated mark interior floating on the gradient (David v660) */
+  .ss-mark{ width:100%; height:100%; overflow:visible; }
   .ss-halo{ transform-box:fill-box; transform-origin:center; animation:ssHalo 4s ease-in-out infinite; }
   .ss-spark{ transform-box:fill-box; transform-origin:center; animation:ssSparkLive 2.6s ease-in-out infinite; }
   .ss-spk2{ transform-box:fill-box; transform-origin:center; animation:ssTwinkle 2s ease-in-out infinite; }
@@ -73,13 +75,13 @@
   @keyframes ssPop{ from{ opacity:0; transform:scale(.7); } to{ opacity:1; transform:none; } }
   @keyframes ssFade{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
   .ss-actions{ width:100%; display:flex; flex-direction:column; gap:11px; align-items:center; }
-  .ss-btn{ width:100%; max-width:380px; border-radius:18px; padding:16px; font-family:"Jost",sans-serif; font-weight:800; font-size:17px; cursor:pointer; border:3px solid #160510; display:flex; align-items:center; justify-content:center; gap:9px; opacity:0; }
-  .ss-primary{ background:linear-gradient(180deg,#ffd24a,#f0b400); color:#4a3000; box-shadow:0 5px 0 #160510; animation:ssRise var(--dur-enter) var(--ease-spring) .55s both; }
-  .ss-primary:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .ss-load{ background:rgba(255,255,255,.05); color:#9fd0f0; border-color:#2a4a66; animation:ssRise var(--dur-enter) var(--ease-spring) .66s both; }
-  .ss-load:active{ transform:scale(.97); }
-  .ss-new{ background:rgba(255,255,255,.05); color:#ff9a9a; border-color:#5a2233; animation:ssRise var(--dur-enter) var(--ease-spring) .74s both; }
-  .ss-new:active{ transform:scale(.97); }
+  .ss-btn{ font-family:"Jost",sans-serif; font-weight:800; cursor:pointer; border:3px solid #160510; border-radius:16px; box-shadow:0 5px 0 #160510; display:flex; align-items:center; justify-content:center; gap:9px; opacity:0; } /* app-theme: flat fill, ink border, hard offset shadow (David v660) */
+  .ss-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510 !important; }
+  .ss-primary{ width:100%; max-width:430px; padding:20px; font-size:20px; background:#ff5fa0; color:#4a1126; animation:ssRise var(--dur-enter) var(--ease-spring) .5s both; } /* BIG primary, brand pink */
+  .ss-subrow{ width:100%; max-width:430px; display:flex; gap:10px; }
+  .ss-sub{ flex:1; padding:13px 10px; font-size:14px; background:#2a0f1e; box-shadow:0 4px 0 #160510; animation:ssRise var(--dur-enter) var(--ease-spring) .62s both; } /* smaller, secondary */
+  .ss-load{ color:#7fc6f5; }
+  .ss-new{ color:#ff9a9a; }
   @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
@@ -1622,7 +1624,7 @@
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
   <div id="startScreen">
-    <button class="ss-lang" id="ssLang"><span class="ss-flag" id="ssLangFlag">🇬🇧</span> <span id="ssLangName">English</span></button>
+    <button class="ss-lang" id="ssLang" aria-label="Language"><span class="ss-flag" id="ssLangFlag"></span></button>
     <div class="ss-hero">
       <div class="ss-sparkles"><i class="ti ti-sparkles"></i></div>
       <div class="ss-guardian-wrap"><div class="ss-guardian">
@@ -1638,11 +1640,13 @@
     </div>
     <div class="ss-actions">
       <button class="ss-btn ss-primary" id="ssPrimary"><i class="ti ti-player-play-filled"></i> Continue</button>
-      <button class="ss-btn ss-load" id="ssLoad"><i class="ti ti-upload"></i> Load game</button>
-      <button class="ss-btn ss-new" id="ssNew"><i class="ti ti-rotate-2"></i> New game</button>
+      <div class="ss-subrow">
+        <button class="ss-btn ss-sub ss-load" id="ssLoad"><i class="ti ti-upload"></i> Load save</button>
+        <button class="ss-btn ss-sub ss-new" id="ssNew"><i class="ti ti-rotate-2"></i> Start fresh</button>
+      </div>
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=659"></script>
+  <script src="app.js?v=660"></script>
 </body>
 </html>

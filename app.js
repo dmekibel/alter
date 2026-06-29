@@ -483,8 +483,19 @@
     { code: "es", name: "Español", flag: "🇪🇸" }, { code: "fr", name: "Français", flag: "🇫🇷" },
     { code: "de", name: "Deutsch", flag: "🇩🇪" }, { code: "it", name: "Italiano", flag: "🇮🇹" }, { code: "pt", name: "Português", flag: "🇵🇹" }
   ];
+  // flat, designed flags (SVG) — not the glossy emoji (David v660)
+  var SS_FLAGS = {
+    en: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#012169"/><path d="M0 0L30 22M30 0L0 22" stroke="#fff" stroke-width="4.4"/><path d="M0 0L30 22M30 0L0 22" stroke="#C8102E" stroke-width="2"/><rect x="12.5" width="5" height="22" fill="#fff"/><rect y="8.5" width="30" height="5" fill="#fff"/><rect x="13.5" width="3" height="22" fill="#C8102E"/><rect y="9.5" width="30" height="3" fill="#C8102E"/></svg>',
+    ru: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#fff"/><rect y="7.33" width="30" height="7.34" fill="#0039A6"/><rect y="14.67" width="30" height="7.33" fill="#D52B1E"/></svg>',
+    es: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#AA151B"/><rect y="5.5" width="30" height="11" fill="#F1BF00"/></svg>',
+    fr: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#fff"/><rect width="10" height="22" fill="#0055A4"/><rect x="20" width="10" height="22" fill="#EF4135"/></svg>',
+    de: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#1a1a1a"/><rect y="7.33" width="30" height="7.34" fill="#DD0000"/><rect y="14.67" width="30" height="7.33" fill="#FFCE00"/></svg>',
+    it: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#fff"/><rect width="10" height="22" fill="#009246"/><rect x="20" width="10" height="22" fill="#CE2B37"/></svg>',
+    pt: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#DA291C"/><rect width="12" height="22" fill="#046A38"/><circle cx="12" cy="11" r="2.6" fill="#FFD100" stroke="#fff" stroke-width="0.6"/></svg>'
+  };
+  function flagSVG(code) { return SS_FLAGS[code] || SS_FLAGS.en; }
   var I18N = { ru: {
-    "Continue": "Продолжить", "Load game": "Загрузить игру", "New game": "Новая игра", "Start": "Начать", "Begin": "Начать",
+    "Continue": "Продолжить", "Load save": "Загрузить", "Start fresh": "Начать заново", "Load game": "Загрузить игру", "New game": "Новая игра", "Start": "Начать", "Begin": "Начать", "Erase & start over?": "Стереть и начать заново?",
     "your guardian-angel life sim": "твой ангел-хранитель — симулятор жизни",
     "Tap again to erase EVERYTHING": "Нажми ещё раз, чтобы стереть ВСЁ", "Erase save & start fresh?": "Стереть сохранение и начать заново?",
     "Planner": "Планер", "Journey": "Путь", "Game": "Игра", "Goals": "Цели", "Today": "Сегодня", "Now": "Сейчас", "You": "Ты", "Tomorrow": "Завтра", "Yesterday": "Вчера",
@@ -529,11 +540,11 @@
     mo.observe(document.body, { childList: true, subtree: true });
   }
   function setLang(code) { S.langCode = code; var m = langMeta(code); S.lang = m.name; try { save(); } catch (e) {} try { document.documentElement.lang = code; } catch (e) {} translateTree(document.body); }
-  function ssLangLabel() { var m = langMeta(curLang()); var ln = el("ssLangName"); if (ln) ln.textContent = m.name; var fl = el("ssLangFlag"); if (fl) fl.textContent = m.flag; }
+  function ssLangLabel() { var fl = el("ssLangFlag"); if (fl) fl.innerHTML = flagSVG(curLang()); } // flag only — no language word (David v660)
   function showLangMenu() {
     var ss = el("startScreen"); if (!ss) return; var old = el("ssLangMenu"); if (old) { old.remove(); return; }
     var ov = add(ss, "div", "ss-langmenu"); ov.id = "ssLangMenu";
-    LANGS.forEach(function (L) { var row = add(ov, "button", "ss-langrow" + (L.code === curLang() ? " on" : "")); row.innerHTML = '<span class="ss-flag">' + L.flag + '</span><span>' + L.name + '</span>' + (L.code === curLang() ? ' <i class="ti ti-check"></i>' : ''); row.onclick = function () { setLang(L.code); ssLangLabel(); ov.remove(); }; });
+    LANGS.forEach(function (L) { var row = add(ov, "button", "ss-langrow" + (L.code === curLang() ? " on" : "")); row.innerHTML = '<span class="ss-flag">' + flagSVG(L.code) + '</span><span>' + L.name + '</span>' + (L.code === curLang() ? ' <i class="ti ti-check"></i>' : ''); row.onclick = function () { setLang(L.code); ssLangLabel(); ov.remove(); }; });
     setTimeout(function () { var h = function (e) { if (ov && !ov.contains(e.target) && e.target.id !== "ssLang" && (!e.target.closest || !e.target.closest("#ssLang"))) { ov.remove(); document.removeEventListener("pointerdown", h, true); } }; document.addEventListener("pointerdown", h, true); }, 0);
   }
   function showStartScreen() {
@@ -541,14 +552,14 @@
     _ssShown = true;
     var has = !!(S.profile && S.profile.set);
     var prim = el("ssPrimary"), nb = el("ssNew"), ln = el("ssLangName"), lb = el("ssLang");
-    if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-player-play-filled"></i> Start'; // primary always present: Continue a save, or Start a fresh one (→ onboarding)
-    if (nb) { nb.style.display = ""; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; } // ALWAYS show New game so both options are visible (David 2026-07-02)
+    if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-player-play-filled"></i> Start'; // BIG primary: Continue a save, or Start a fresh one (→ onboarding)
+    if (nb) { nb.style.display = ""; nb.innerHTML = '<i class="ti ti-rotate-2"></i> Start fresh'; } // not "game" — it's a life app, not a game (David v660)
     ssLangLabel();
     ss.classList.add("on");
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
     if (curLang() !== "en") translateTree(ss); // translate the start screen into the chosen language
-    if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = '<i class="ti ti-alert-triangle"></i> Erase save &amp; start fresh?'; if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = '<i class="ti ti-rotate-2"></i> New game'; }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: New game wipes everything → reload → start screen → Begin → onboarding
+    if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = '<i class="ti ti-alert-triangle"></i> Erase &amp; start over?'; if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = '<i class="ti ti-rotate-2"></i> Start fresh'; }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: wipes everything → reload → onboarding
     var lf = el("ssLoad"), fi = el("ssFile");
     if (lf && fi) { // LOAD GAME = upload a backup file (the exported .json) → restore → reload into it
       lf.onclick = function () { fi.value = ""; fi.click(); };
