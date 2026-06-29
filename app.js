@@ -258,12 +258,13 @@
     drift:   { l: "Drift",   e: "🌫️", c: "#565b66", light: "#b8bcc6", dark: "#2a2d34", ring: "#7a808c", ink: "#cdd2db", ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
-  // 4 SUPERCATEGORIES (David 2026-07-02 v644): Energy · Work · Love · Other — the compact, un-overwhelming layer ABOVE the 8 domains. Tabler icons, never emojis. Drives the bento picker overview (+ onboarding + plan flow). Each domain belongs to exactly one supercat.
+  // 5 SUPERCATEGORIES (David 2026-06-29): Energy · Work · Love · Hobbies · Other — the compact layer ABOVE the 8 domains. Tabler icons, never emojis. Drives the bento picker overview (+ onboarding + plan flow). Each domain belongs to exactly one supercat. (Hobbies split back OUT of Love — Love = people, Hobbies = creating/play.)
   var SUPERCAT = [
-    { k: "energy", l: "Energy", ti: "ti-bolt",      c: "#ff8a3a", domains: ["move", "nourish", "restore"] },
-    { k: "work",   l: "Work",   ti: "ti-briefcase", c: "#36b3f0", domains: ["focus"] },
-    { k: "love",   l: "Love",   ti: "ti-heart",     c: "#ff5fa0", domains: ["connect", "create", "play"] }, // creating/hobbies = self-love (David 2026-06-29): piano, art, play live here, not under Work/Other
-    { k: "other",  l: "Other",  ti: "ti-dots",      c: "#9a8cc4", domains: ["upkeep", "drift"] }            // Other reserved for chores/upkeep + habits-to-drop
+    { k: "energy",  l: "Energy",  ti: "ti-bolt",      c: "#ff8a3a", domains: ["move", "nourish", "restore"] },
+    { k: "work",    l: "Work",    ti: "ti-briefcase", c: "#36b3f0", domains: ["focus"] },
+    { k: "love",    l: "Love",    ti: "ti-heart",     c: "#ff5fa0", domains: ["connect"] },                  // people & relationships only
+    { k: "hobbies", l: "Hobbies", ti: "ti-palette",   c: "#b07aff", domains: ["create", "play"] },           // creating + play — the things you love DOING
+    { k: "other",   l: "Other",   ti: "ti-dots",      c: "#9a8cc4", domains: ["upkeep", "drift"] }            // chores/upkeep + habits-to-drop
   ];
   var DOM2SUPER = {}; SUPERCAT.forEach(function (sc) { sc.domains.forEach(function (d) { DOM2SUPER[d] = sc.k; }); });
   // ordered keyword → domain (specific/multi-word first, then generic); first substring hit wins. Maps any activity title onto a domain.
@@ -2673,7 +2674,7 @@
   };
   function onboard() {
     var data = { gender: "", age: "", vibe: "", stages: {}, customStages: [], kept: {}, _pref: "", goals: {}, wake: "7–8", bed: "11–12", peak: "lark", identity: [], customIdent: [], virtue: "", oneThing: "", habitsSel: {}, customHabits: [], level: "" };
-    var step = 0, STEPS = 10; // 0 intro · 1 vibe · 2 you · 3 roles(grouped) · 4 Energy · 5 Work · 6 Love · 7 Other · 8 rhythm · 9 ready (David 2026-06-29: category-driven, calmer; dropped identity/virtue/all-habits/level)
+    var step = 0, STEPS = 11; // 0 intro · 1 vibe · 2 you · 3 roles(grouped) · 4 Energy · 5 Work · 6 Love · 7 Hobbies · 8 Other · 9 rhythm · 10 ready (David 2026-06-29: category-driven, calmer; dropped identity/virtue/all-habits/level)
     // role buckets so "What's your life like?" reads as a few calm labeled rows, not 23 flat chips (David 2026-06-29)
     var ROLE_GROUPS = [
       { l: "Work & Career", ti: "ti-briefcase", c: "#36b3f0", ks: ["founder", "employee", "freelancer", "developer", "remote", "manager", "sales", "teacher", "healthcare", "service", "trades"] },
@@ -2682,8 +2683,8 @@
       { l: "Learning & Figuring", ti: "ti-school", c: "#34d39a", ks: ["student", "jobseeker", "figuring"] },
       { l: "Body & Life", ti: "ti-leaf", c: "#9a8cc4", ks: ["athlete", "retired"] }
     ];
-    var CAT_STEP = { 4: "energy", 5: "work", 6: "love", 7: "other" };
-    var CAT_SUB = { energy: "your body, food, rest — the fuel", work: "career, focus, money — what you build", love: "people, hobbies, creating — what fills you", other: "chores, upkeep, habits to drop" };
+    var CAT_STEP = { 4: "energy", 5: "work", 6: "love", 7: "hobbies", 8: "other" };
+    var CAT_SUB = { energy: "your body, food, rest — the fuel", work: "career, focus, money — what you build", love: "people & relationships — who you invest in", hobbies: "creating & play — the things you love doing", other: "chores, upkeep, habits to drop" };
     // role → goals it tends to imply: the onboarding surfaces these FIRST, marked ✨, so the app feels like it already gets you (David 2026-06-29 — adaptive onboarding)
     var ROLE_GOALS = {
       filmmaker: ["Make videos", "Make money", "Grow my audience"], musician: ["Make music", "Grow my audience", "Make money"],
@@ -2767,7 +2768,7 @@
     }
     function draw() {
       barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
-      body.className = (step === 0 || step === 9) ? "ob-body center" : "ob-body";
+      body.className = (step === 0 || step === 10) ? "ob-body center" : "ob-body";
       if (step === 0) { add(body, "i", "ti ti-sparkles ob-spk"); var f = add(body, "div", "ob-face"); add(f, "span", "ob-eye l"); add(f, "span", "ob-eye r"); add(body, "div", "ob-q", "Hi, I'm Sage."); add(body, "div", "ob-sb", "your guardian. I'll help you become who you want to be — one day at a time."); }
       if (step === 1) { add(body, "div", "ob-q", "How's life feeling?"); add(body, "div", "ob-sb", "no wrong answer"); var col = add(body, "div", "ob-col"); VIBES2.forEach(function (v) { var c = chip(col, '<i class="ti ' + v.ti + '"></i> ' + v.l, data.vibe === v.k, v.c, "#160510"); c.onclick = function () { data.vibe = v.k; draw(); }; }); }
       if (step === 2) { add(body, "div", "ob-q", "A little about you"); add(body, "div", "ob-sb", "helps me suggest a starting point"); add(body, "div", "ob-lbl", "YOU ARE"); var gr = add(body, "div", "ob-row"); [["f", "she"], ["m", "he"], ["o", "they"], ["", "skip"]].forEach(function (g) { var c = chip(gr, g[1], data.gender === g[0]); c.onclick = function () { data.gender = g[0]; draw(); }; }); add(body, "div", "ob-lbl", "AGE"); var ar = add(body, "div", "ob-row"); ["teens", "20s", "30s", "40s", "50s", "60+"].forEach(function (a) { var c = chip(ar, a, data.age === a); c.onclick = function () { data.age = a; if (!keys(data.stages).length) data.stages[stageSuggest(a)] = true; draw(); }; }); }
@@ -2783,8 +2784,8 @@
         typeRow("your role / situation…", function (v) { data.customStages.push(v); data.stages["custom:" + v] = true; });
       }
       if (CAT_STEP[step]) drawCategory(CAT_STEP[step]);
-      if (step === 8) { add(body, "div", "ob-q", "Your daily rhythm"); add(body, "div", "ob-sb", "rough is fine — pick a range"); add(body, "div", "ob-lbl", "I USUALLY WAKE"); var ur = add(body, "div", "ob-row"); ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"].forEach(function (t) { var c = chip(ur, t, data.wake === t); c.onclick = function () { data.wake = t; draw(); }; }); add(body, "div", "ob-lbl", "I USUALLY SLEEP"); var brr = add(body, "div", "ob-row"); ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"].forEach(function (t) { var c = chip(brr, t, data.bed === t); c.onclick = function () { data.bed = t; draw(); }; }); add(body, "div", "ob-lbl", "SHARPEST"); var lr = add(body, "div", "ob-row"); [["lark", "Morning", "ti-sun", "#ffc83d", "#5a3a00"], ["owl", "Night", "ti-moon", "#9a7cff", "#241548"], ["mixed", "It varies", "ti-windmill", "#7f9bc4", "#16243a"]].forEach(function (o) { var on = data.peak === o[0], c = chip(lr, '<i class="ti ' + o[2] + '"></i> ' + o[1], on, o[3], o[4]); c.onclick = function () { data.peak = o[0]; draw(); }; }); }
-      if (step === 9) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
+      if (step === 9) { add(body, "div", "ob-q", "Your daily rhythm"); add(body, "div", "ob-sb", "rough is fine — pick a range"); add(body, "div", "ob-lbl", "I USUALLY WAKE"); var ur = add(body, "div", "ob-row"); ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"].forEach(function (t) { var c = chip(ur, t, data.wake === t); c.onclick = function () { data.wake = t; draw(); }; }); add(body, "div", "ob-lbl", "I USUALLY SLEEP"); var brr = add(body, "div", "ob-row"); ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"].forEach(function (t) { var c = chip(brr, t, data.bed === t); c.onclick = function () { data.bed = t; draw(); }; }); add(body, "div", "ob-lbl", "SHARPEST"); var lr = add(body, "div", "ob-row"); [["lark", "Morning", "ti-sun", "#ffc83d", "#5a3a00"], ["owl", "Night", "ti-moon", "#9a7cff", "#241548"], ["mixed", "It varies", "ti-windmill", "#7f9bc4", "#16243a"]].forEach(function (o) { var on = data.peak === o[0], c = chip(lr, '<i class="ti ' + o[2] + '"></i> ' + o[1], on, o[3], o[4]); c.onclick = function () { data.peak = o[0]; draw(); }; }); }
+      if (step === 10) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
       var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : "")); b.textContent = step === 0 ? "Let's go ▸" : step === STEPS - 1 ? "Plan your first day ▸" : "Next ▸"; b.onclick = next;
       if (step > 0 && step < STEPS - 1) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; draw(); }; }
       var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = function () { ov.remove(); try { openJourney(); } catch (e) {} }; // skip → reveal the journey with the stepping-stones cascade too (David v661)

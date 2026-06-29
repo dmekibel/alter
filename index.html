@@ -791,7 +791,7 @@
   .bento-tiles{ display:flex; flex-wrap:wrap; gap:6px; }
   /* the 4 category TABS (David v647): one row of equal pills; only the active category's striped cards show below */
   .bento-tabrow{ display:flex; gap:6px; margin:2px 0 12px; }
-  .bento-tabrow .bento-tab{ flex:1; text-align:center; text-transform:none; letter-spacing:0; font-size:13px; font-weight:800; padding:9px 4px; border:2px solid #341530; border-radius:12px; background:#220c1a; cursor:pointer; transition:transform .08s; }
+  .bento-tabrow .bento-tab{ flex:1; min-width:0; white-space:nowrap; text-align:center; text-transform:none; letter-spacing:0; font-size:12px; font-weight:800; padding:9px 3px; border:2px solid #341530; border-radius:12px; background:#220c1a; cursor:pointer; transition:transform .08s; }
   .bento-tabrow .bento-tab:active{ transform:scale(.95); }
   /* INSIDE EACH CARD SCROLLS (David v647): restore the original 2-row horizontal-scroll chip strip (the candy theme had forced flex-wrap → tall cards). Scoped to the picker sheet so the card stays compact and you swipe the row to see the rest. */
   .bento-card.bento-sheet .bento-cat .bento-chips{ display:grid !important; grid-auto-flow:column !important; grid-template-rows:repeat(2,auto) !important; grid-auto-columns:max-content !important; overflow-x:auto !important; overflow-y:hidden !important; flex-wrap:nowrap !important; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -1669,6 +1669,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=673"></script>
+  <script src="app.js?v=674"></script>
 </body>
 </html>
