@@ -355,6 +355,23 @@
     var floor = 0; (g.unlocked || []).forEach(function (n) { if (typeof n === "number" && n > floor) floor = n; });
     return Math.max(gate, floor);
   }
+  // ===== ADAPTIVE ENGINE — first build (David 2026-06-30, _course/spec/adaptive/SYNTHESIS.md §IX): behavior-evidence chapter advance. Replaces the fuzzy readiness() gate as the REAL advance signal — your data decides where you are. Additive; journeyTick keeps S.guide.unlocked sticky (never demotes). =====
+  function _daysWith7(fn) { var n = 0; lastDays(7).forEach(function (k) { try { if (fn(k)) n++; } catch (e) {} }); return n; }
+  function chapterMastered(n) { // is landmark n's KEYSTONE practice in place (behavior-evidence)? → unlocks n+1. Latent gates (features not built yet) return false and activate as those features ship.
+    switch (n) {
+      case 0: return _daysWith7(function (k) { return (logs(k) || []).length > 0 || (blocks(k) || []).some(function (b) { return b.done; }); }) >= 5; // O · showed up
+      case 1: return !!(S.profile && (S.profile.todayVirtues || []).length);                                       // I · named your virtues (Optimus)
+      case 2: return (S.goals || []).some(function (g) { return g.woop || (g.subtasks && g.subtasks.length); });    // II · a goal with a plan (WOOP keystone; proxy until WOOP-in-goals ships)
+      case 3: return _daysWith7(function (k) { var e = (S.bk || {})[k] || {}; return e.am && e.am.done; }) >= 5;     // III · Carpe Diem journal / morning 5 of 7
+      case 4: return _daysWith7(function (k) { var e = (S.bk || {})[k] || {}; return (e.am && e.am.done) && (e.pm && e.pm.done); }) >= 3; // IV · full bookends (masterpiece day)
+      case 5: return (S.habits || []).some(function (h) { return h.type === "build" && _daysWith7(function (k) { return ((S.habitDone || {})[k] || {})[h.id]; }) >= 5; }); // V · a habit installed + run
+      case 6: return !!(S.course && S.course.rx && S.course.rx.fundamental && Object.keys(S.course.rx.fundamental).length); // VI · Fundamentals Rx set
+    }
+    return false; // 7 (Soul Force) = latent until the Handbook / Ultimate Algorithm ships
+  }
+  function chapterUnlockCheck() { // highest CONSECUTIVELY-evidenced landmark = the behavior-evidence floor. The real advance signal; sticky via journeyTick.
+    var floor = 0; for (var n = 0; n < JOURNEY.length - 1; n++) { if (chapterMastered(n)) floor = n + 1; else break; } return floor;
+  }
   // ===== JOURNEY CURRICULUM (JX-NODES, David 2026-06-28): the 6-node spine. Each node = one daily action + a reward-never-shame next-step card. `done(k)` is a PURE read of today's real signals → drives the one-obvious-next-step + landing. `act()` picks which stage the cockpit wears (or which sheet it opens). Voice: warm, never should/must/missed/behind. =====
   // ===== JOURNEY CURRICULUM (Phase 1 Drop 1, 2026-06-30): 8-node spine aligned 1:1 to the 8 LANDMARKS (O→VII course arc). done() = pure read of existing state; act() = opens existing surfaces. No new stages; no SCHEMA bump. =====
   var JOURNEY = [
@@ -378,7 +395,7 @@
   function journeyActionDoneToday() { var n = journeyNode(), node = JOURNEY[Math.max(0, Math.min(JOURNEY.length - 1, n))]; try { return !!node.done(todayK()); } catch (e) { return false; } }
   function journeyTick() { // once per logical day: persist the inferred node as a sticky floor in S.guide.unlocked so an existing user (David) is met at his true level + never demotes. PURE-driven by readiness(); writes only the floor.
     var g = S.guide; if (!g) return; var k = todayK(); if (g.tickK === k) return; g.tickK = k;
-    var n = journeyNode(); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
+    var n = Math.max(journeyNode(), chapterUnlockCheck()); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
     /* Return-after-miss (SCHEMA 3, mirror-not-price): if yesterday earned 0 SF actions, quietly earn +1 on the NEXT open and show a forward-only guardian line — no "you missed" framing, no streak penalty. */
     var ydk = keyAdd(k, -1); var yesterdayActs = (S.sf && S.sf.actions && S.sf.actions[ydk]) || []; if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
     save();
