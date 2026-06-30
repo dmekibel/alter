@@ -357,14 +357,18 @@
   }
   // ===== ADAPTIVE ENGINE — first build (David 2026-06-30, _course/spec/adaptive/SYNTHESIS.md §IX): behavior-evidence chapter advance. Replaces the fuzzy readiness() gate as the REAL advance signal — your data decides where you are. Additive; journeyTick keeps S.guide.unlocked sticky (never demotes). =====
   function _daysWith7(fn) { var n = 0; lastDays(7).forEach(function (k) { try { if (fn(k)) n++; } catch (e) {} }); return n; }
+  // Decision B (adaptive/SYNTHESIS.md §VIII): 3 consecutive for high appetite; N-of-7 for medium/low. Faster advance rewards consistent engagement without softening the gate for casual users.
+  function _daysConsec3(fn) { var d=lastDays(3); try{return d.every(function(k){return fn(k);});}catch(e){return false;} }
+  function _highApp() { return ((S.guide||{}).appetiteState||{}).level==='high'; }
+  function _gated(fn, n) { return _highApp() ? _daysConsec3(fn) : _daysWith7(fn) >= n; }
   function chapterMastered(n) { // is landmark n's KEYSTONE practice in place (behavior-evidence)? → unlocks n+1. Latent gates (features not built yet) return false and activate as those features ship.
     switch (n) {
-      case 0: return _daysWith7(function (k) { return (logs(k) || []).length > 0 || (blocks(k) || []).some(function (b) { return b.done; }); }) >= 5; // O · showed up
+      case 0: return _gated(function (k) { return (logs(k) || []).length > 0 || (blocks(k) || []).some(function (b) { return b.done; }); }, 5); // O · showed up
       case 1: return !!(S.profile && (S.profile.todayVirtues || []).length);                                       // I · named your virtues (Optimus)
-      case 2: return (S.goals || []).some(function (g) { return g.woop || (g.subtasks && g.subtasks.length); });    // II · a goal with a plan (WOOP keystone; proxy until WOOP-in-goals ships)
-      case 3: return _daysWith7(function (k) { var e = (S.bk || {})[k] || {}; return e.am && e.am.done; }) >= 5;     // III · Carpe Diem journal / morning 5 of 7
-      case 4: return _daysWith7(function (k) { var e = (S.bk || {})[k] || {}; return (e.am && e.am.done) && (e.pm && e.pm.done); }) >= 3; // IV · full bookends (masterpiece day)
-      case 5: return (S.habits || []).some(function (h) { return h.type === "build" && _daysWith7(function (k) { return ((S.habitDone || {})[k] || {})[h.id]; }) >= 5; }); // V · a habit installed + run
+      case 2: return (S.goals || []).some(function (g) { return g.woop || (g.subtasks && g.subtasks.length); });    // II · a goal with an obstacle+plan (g.woop set when WOOP fields filled in goal detail)
+      case 3: return _gated(function (k) { var e = (S.bk || {})[k] || {}; return e.am && e.am.done; }, 5);          // III · morning 5 of 7 (or 3 consecutive on high appetite)
+      case 4: return _gated(function (k) { var e = (S.bk || {})[k] || {}; return (e.am && e.am.done) && (e.pm && e.pm.done); }, 3); // IV · full bookends
+      case 5: return (S.habits || []).some(function (h) { return h.type === "build" && _gated(function (k) { return ((S.habitDone || {})[k] || {})[h.id]; }, 5); }); // V · habit installed + run
       case 6: return !!(S.course && S.course.rx && S.course.rx.fundamental && Object.keys(S.course.rx.fundamental).length); // VI · Fundamentals Rx set
     }
     return false; // 7 (Soul Force) = latent until the Handbook / Ultimate Algorithm ships
@@ -418,6 +422,31 @@
     }
     a.nodeCap=_appCap(a.level);
     a.modeTarget={dormant:'off',floor:'guided',low:'light',medium:'guided',high:'guided'}[a.level]||'guided';
+  }
+  // ===== TEST-OUT (Path B): preSurfaceCheck — if skill already evidenced, replace teaching node with "already there?" card (evidence-grounded, two-choice). Synthesis §IV Step 8. =====
+  function preSurfaceCheck(nodeKey, skillN, evidenceLine) {
+    if (!chapterMastered(skillN)) return null; // skill not yet mastered → surface the teaching node
+    return { key:'already:'+nodeKey, icon:'ti-circle-check', title:'Already there?', line:evidenceLine,
+      color:'#2d6e3a', done:false, _alreadyThere:true, _claimKey:'sk'+skillN+'-claimed', _teachKey:nodeKey };
+  }
+  // ===== HERO SANDWICH (tool-surfacing trigger, Synthesis §VI): fires on drift when Chapter 2+ unlocked. Shows a 4-chip obstacle picker inline — "what got in the way?" → earn(15) + nodeHistory. =====
+  function heroSandwich() {
+    var ob = add(document.body, "div", "hs-ov");
+    ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
+    add(ob, "div", "", "What got in the way?").style.cssText = "font-size:13px;font-weight:700;color:#e6cfe0;margin-bottom:10px;font-family:'Jost',sans-serif;";
+    var chips = add(ob, "div", ""); chips.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;";
+    ["Low energy","Short on time","Not sure how","Felt hard"].forEach(function(txt) {
+      var c = add(chips, "button", "jp-durchip"); c.textContent = txt;
+      c.onclick = function() {
+        S.guide = S.guide||{}; S.guide.nodeHistory = S.guide.nodeHistory||{};
+        var key = 'obstacle-named'; S.guide.nodeHistory[key] = S.guide.nodeHistory[key]||[];
+        S.guide.nodeHistory[key].push({k:todayK(), obs:txt}); save();
+        try{earn(15,{label:'obstacle named'});}catch(e){}
+        ob.remove(); try{toast("Named it. That’s the real work.");}catch(e){} drawJourney(true);
+      };
+    });
+    var skip = add(ob, "button", "jp-hmbtn skip"); skip.innerHTML = '<i class="ti ti-x"></i> Not now'; skip.onclick = function(){ob.remove();};
+    setTimeout(function(){if(ob.parentNode)ob.remove();},8000);
   }
   // ===== JOURNEY CURRICULUM (JX-NODES, David 2026-06-28): the 6-node spine. Each node = one daily action + a reward-never-shame next-step card. `done(k)` is a PURE read of today's real signals → drives the one-obvious-next-step + landing. `act()` picks which stage the cockpit wears (or which sheet it opens). Voice: warm, never should/must/missed/behind. =====
   // ===== JOURNEY CURRICULUM (Phase 1 Drop 1, 2026-06-30): 8-node spine aligned 1:1 to the 8 LANDMARKS (O→VII course arc). done() = pure read of existing state; act() = opens existing surfaces. No new stages; no SCHEMA bump. =====
@@ -482,9 +511,12 @@
     }
 
     // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
-    if (jn >= 2 && !dormant) { nodes.push({ key: "am", emoji: "🌅", title: "Open the morning", line: gvName ? "Who you're being today: " + gvName + ". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
-      color: DOM.create.c, done: !!am.done, act: function () { closeJourney(); try { enterStage("am", { byTap: true }); } catch (e) {} } });
-      if (settleNode) { nodes.push(settleNode); settleNode = null; } // settle slots in as 2nd node when am is 1st
+    if (jn >= 2 && !dormant) {
+      var amNode = { key:"am", emoji:"🌅", title:"Open the morning", line: gvName ? "Who you're being today: "+gvName+". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
+        color:DOM.create.c, done:!!am.done, act:function(){ closeJourney(); try{enterStage("am",{byTap:true});}catch(e){} } };
+      var atAm = preSurfaceCheck('am', 3, "You've opened your morning 5 of the last 7 days — already there?");
+      nodes.push(atAm || amNode);
+      if (!atAm && settleNode) { nodes.push(settleNode); settleNode = null; } // settle slots in as 2nd node when am is 1st
     }
 
     // Plan your day — copy ADAPTS to the goal + to your recovery (reward-never-shame).
@@ -550,7 +582,10 @@
 
     // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3).
     if (jn >= 3 && !dormant) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
-      nodes.push({ key: "pm", emoji: "🌙", title: "Close the day", line: "One honest line. A line is enough.", color: DOM.restore.c, done: pmDone, act: function () { closeJourney(); try { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } catch (e) {} } }); }
+      var pmNode = { key:"pm", emoji:"🌙", title:"Close the day", line:"One honest line. A line is enough.", color:DOM.restore.c, done:pmDone, act:function(){ closeJourney(); try{enterStage("pm",{trackTitle:"Reflection",byTap:true});}catch(e){} } };
+      var atPm = preSurfaceCheck('pm', 4, "You've done full bookends 3 of the last 7 days — already there?");
+      nodes.push(atPm || pmNode);
+    }
 
     return nodes;
   }
@@ -950,7 +985,7 @@
           // FOLLOW / REPLAN / DRIFT matrix — the live triad next to Done (reward-never-shame; David 2026-06-28)
           var fl = add(mx, "button", "jp-ckbtn follow small"); fl.innerHTML = '<i class="ti ti-player-play"></i> Follow'; fl.onclick = function () { try { toast("✦ on plan — keep going"); } catch (e) {} };
           var rp = add(mx, "button", "jp-ckbtn replan small"); rp.innerHTML = '<i class="ti ti-calendar-event"></i> Replan'; rp.onclick = function () { if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4), bb = (blocks(todayK()) || []).filter(function (b) { return b.id === bid; })[0]; if (bb) { closeJourney(); blockEdit(bb, todayK()); return; } } planBreak("Replan — what, for how long?"); };
-          var dr = add(mx, "button", "jp-ckbtn drift small"); dr.innerHTML = '<i class="ti ti-wind"></i> Drift'; dr.onclick = function () { stopTimer(runT.id); coolStreak(); try { toast("you stepped away — no shame"); } catch (e) {} drawJourney(true); };
+          var dr = add(mx, "button", "jp-ckbtn drift small"); dr.innerHTML = '<i class="ti ti-wind"></i> Drift'; dr.onclick = function () { stopTimer(runT.id); coolStreak(); try { toast("you stepped away — no shame"); } catch (e) {} if ((S.guide&&(S.guide.unlocked||[]).indexOf(2)>=0)) { try{heroSandwich();}catch(e){} } drawJourney(true); };
           var tl = add(mx, "button", "jp-ckbtn small"); tl.style.background = "#3a1226"; tl.style.color = "#ffd9ea"; tl.innerHTML = '<i class="ti ti-briefcase"></i> Tools'; tl.onclick = function () { try { openToolbox(); } catch (e) {} }; // the grimoire, from the cockpit (David 2026-06-29)
         } else if (n.key && n.key.indexOf("hab:") === 0 && jpHabMenuKey === n.key) {
           // HABIT 3-way inline menu — opened by tapping START on a habit circle (David 2026-06-28)
@@ -960,6 +995,25 @@
           b1.onclick = function () { jpHabMenuKey = null; var was = !!doneMap(todayK())[n.key.slice(4)]; toggleHabit(n.key.slice(4)); if (!was && doneMap(todayK())[n.key.slice(4)]) { try { celebrateGated(n.color, bumpStreak()); } catch (e) {} } drawJourney(true); };
           var b2 = add(hm2, "button", "jp-hmbtn"); b2.style.background = mixHex(n.color, "#fff", 0.18); b2.innerHTML = '<i class="ti ti-stopwatch"></i> Track it'; b2.onclick = function () { jpHabMenuKey = null; startTimer({ title: n.title, color: n.color, habitId: n.key.slice(4) }); drawJourney(true); };
           var b3 = add(hm2, "button", "jp-hmbtn skip"); b3.innerHTML = '<i class="ti ti-player-skip-forward"></i> Skip for now'; b3.onclick = function () { jpHabMenuKey = null; try { toast("set aside — come back any time"); } catch (e) {} drawJourney(true); };
+        } else if (n._alreadyThere) {
+          // Path B: "already there?" — evidence-grounded, two choices (Synthesis §IV Step 8 / §VI test-out)
+          bub.style.display = "none";
+          var atCard = add(node, "div", "jp-card");
+          add(atCard, "div", "jc-t", n.title);
+          if (n.line) add(atCard, "div", "jc-l", n.line);
+          var atRow = add(atCard, "div", "jc-at-row");
+          var keep = add(atRow, "button", "jc-cta"); keep.textContent = "All good"; keep.style.background = n.color;
+          keep.onclick = function() {
+            S.guide=S.guide||{}; S.guide.nodeHistory=S.guide.nodeHistory||{};
+            var key=n._claimKey; (S.guide.nodeHistory[key]=S.guide.nodeHistory[key]||[]).push(todayK()); save();
+            try{earn(10,{label:'already there'});}catch(e){} drawJourney(true);
+          };
+          var teach = add(atRow, "button", "jc-second"); teach.innerHTML = '<i class="ti ti-refresh"></i> Remind me'; teach.onclick = function() {
+            S.guide=S.guide||{}; S.guide.nodeHistory=S.guide.nodeHistory||{};
+            var tkey='sk'+(n._claimKey||'').replace('sk','').replace('-claimed','') + '-taught-chosen';
+            (S.guide.nodeHistory[tkey]=S.guide.nodeHistory[tkey]||[]).push(todayK()); save();
+            try{ closeJourney(); enterStage(n._teachKey, {byTap:true}); }catch(e){}
+          };
         } else {
           var card = add(node, "div", "jp-card");
           add(card, "div", "jc-t", n.title);
@@ -1199,6 +1253,16 @@
       var body = add(card, "div", "goal-body");
       var ab = add(body, "button", "goal-active-btn" + (g.active ? " on" : "")); ab.innerHTML = g.active ? '<i class="ti ti-star-filled"></i> Active — pulls into your days' : '<i class="ti ti-star"></i> On hold — tap to activate'; ab.onclick = function () { g.active = !g.active; save(); draw(); renderSuggest(todayK()); };
       metricSection(g, body, draw); // trackable number (weight / bank / followers) — auto-detected, logged with a tap (David 2026-06-29)
+      // WOOP — Obstacle + Plan fields (always available; Decision D rec (a): the STRUCTURE is a core feature, the TEACHING is chapter-gated). Fills g.woop → chapterMastered(2) becomes true.
+      var woop = g.woop || {};
+      var ws = add(body, "div", "goal-woop");
+      var wl1 = add(ws, "div", "goal-hint"); wl1.innerHTML = '<i class="ti ti-barrier-block"></i> Main obstacle';
+      var obsInp = add(ws, "input", "goal-input"); obsInp.type="text"; obsInp.placeholder="the inner block that gets in the way…"; obsInp.value=woop.obstacle||"";
+      var wl2 = add(ws, "div", "goal-hint"); wl2.innerHTML = '<i class="ti ti-arrow-right"></i> If that hits, I\'ll…';
+      var planInp = add(ws, "input", "goal-input"); planInp.type="text"; planInp.placeholder="my if-then plan…"; planInp.value=woop.plan||"";
+      function saveWoop(){var ob=obsInp.value.trim(),pl=planInp.value.trim();if(ob||pl){g.woop={obstacle:ob,plan:pl};save();}}
+      obsInp.addEventListener("blur",saveWoop); planInp.addEventListener("blur",saveWoop);
+      planInp.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();saveWoop();}});
       var hint = add(body, "div", "goal-hint"); hint.innerHTML = '<i class="ti ti-subtask"></i> break it into steps → schedule them into your days';
       var brow = add(body, "div", "goal-brow");
       var bd = add(brow, "button", "goal-breakdown"); bd.innerHTML = '<i class="ti ti-wand"></i> Break it down for me'; bd.onclick = function () { var have = {}; (g.subtasks || []).forEach(function (s) { have[s.title.toLowerCase()] = 1; }); decomposeGoal(g).forEach(function (st) { if (!have[st.toLowerCase()]) (g.subtasks = g.subtasks || []).push({ title: st, done: false }); }); save(); draw(); };
