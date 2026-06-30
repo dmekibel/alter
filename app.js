@@ -655,7 +655,9 @@
 
     // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
-      nodes.push({ key: "onething", emoji: "⭐", title: oneThing, catK: null, line: "Your one thing today — the vote that matters most.",
+      var aimedAhead = !!am.aimedAhead; // set last night via the PM "name tomorrow's one thing" beat → greet it as today's first move (the night-before → morning loop, David 2026-07-01)
+      nodes.push({ key: "onething", icon: aimedAhead ? "ti-target-arrow" : "ti-star", emoji: "⭐", title: oneThing, catK: null, _aimed: aimedAhead,
+        line: aimedAhead ? "You aimed at this last night — one move toward it." : "Your one thing today — the vote that matters most.",
         color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); renderAll(); toast("▶ started " + oneThing); } });
     }
 
@@ -1135,7 +1137,8 @@
     // #5: seed the done-set on first call so bursts only fire for completions that happen THIS session
     if (!_jpDoneSetSeeded) { _jpDoneSetSeeded = true; real.forEach(function (n) { if (n.done && n.key) _jpDoneSet[todayK() + ":" + n.key] = 1; }); }
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
-    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // first undone today = CURRENT
+    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (real[i]._aimed && !real[i].done) { curIdx = i; break; } } // an aim you set last night greets you as today's first move (David 2026-07-01)
+    if (curIdx < 0) for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // else first undone today = CURRENT
     var allDone = curIdx < 0;
     var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today") + "  ·  " + appVer(); // version tag so we can confirm which build is actually loaded (David 2026-07-02)
     var spk = el("jpSpark"); if (spk) { var spkn = spk.querySelector(".spark-n"); if (spkn) spkn.textContent = ((S.game && S.game.spark) || 0).toLocaleString(); }
@@ -3076,7 +3079,7 @@
     var tk = tomK();
     if (!(blocks(tk) || []).length) { skeletonDay(tk, title); } // empty tomorrow → seed a skeleton with the one thing as the starred deep-work block
     else { var have = false; blocks(tk).forEach(function (b) { if ((b.title || "").toLowerCase() === title.toLowerCase()) have = true; }); if (!have) { blocks(tk).push(markFutureBlock({ id: uid(), time: "09:00", mins: 90, title: title, prio: 3, color: "#2a9fe0", domain: "focus", done: false, star: true }, tk)); reflow(tk); } }
-    var rec = bk(tk); rec.am = rec.am || {}; rec.am.oneThing = title; save();
+    var rec = bk(tk); rec.am = rec.am || {}; rec.am.oneThing = title; rec.am.aimedAhead = true; save(); // mark aimed-ahead so tomorrow morning greets it as "you set this last night" (David 2026-07-01)
   }
   function pmCarryToTomorrow(b) {
     var tk = tomK(); var have = false; blocks(tk).forEach(function (x) { if ((x.title || "").toLowerCase() === (b.title || "").toLowerCase()) have = true; });
