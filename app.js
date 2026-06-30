@@ -604,8 +604,8 @@
     var settleNode = null;
     if (pf.lowEnergy && jn >= 1) { // settle only from Ch2 onward — a fresh user's first step should never be "breathe"
       var settled = !!dm.breathe || (logs(k) || []).some(function (l) { return domainOf(l) === "restore"; });
-      settleNode = { key: "settle", emoji: "🫧", title: "Settle", line: "Low fuel — a breath or two before you push. Optional, but kind.",
-        color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } };
+      settleNode = { key: "settle", icon: "ti-wind", emoji: "🫧", title: "Settle the body first", line: "You're running low — one breath before anything else. When you're depleted, that IS the move.", _lead: true,
+        color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } }; // _lead → the Sequencer's energy-first law: a depleted morning leads with regulation, not "go go go" (David 2026-07-01)
     }
 
     // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
@@ -1135,7 +1135,8 @@
     // #5: seed the done-set on first call so bursts only fire for completions that happen THIS session
     if (!_jpDoneSetSeeded) { _jpDoneSetSeeded = true; real.forEach(function (n) { if (n.done && n.key) _jpDoneSet[todayK() + ":" + n.key] = 1; }); }
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
-    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (real[i]._aimed && !real[i].done) { curIdx = i; break; } } // an aim you set last night greets you as today's first move (David 2026-07-01)
+    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (real[i]._lead && !real[i].done) { curIdx = i; break; } } // ENERGY-FIRST (Sequencer step 1): when you're depleted, the gentle reset leads — regulate before you push (David 2026-07-01)
+    if (curIdx < 0) for (var i = 0; i < real.length; i++) { if (real[i]._aimed && !real[i].done) { curIdx = i; break; } } // else an aim you set last night greets you as today's first move
     if (curIdx < 0) for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // else first undone today = CURRENT
     var allDone = curIdx < 0;
     var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today") + "  ·  " + appVer(); // version tag so we can confirm which build is actually loaded (David 2026-07-02)
