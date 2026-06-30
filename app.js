@@ -1504,12 +1504,38 @@
   }
   // PLAN DAY — the future-only setup entry (David 2026-06-25): pick activities or a habit stack → they land on the timeline (drag to arrange). Stacks live INSIDE here now; the below-now button is gone.
   function distributePlan(k, sel) {
+    // FIX #3d: gap-fill from earliest free slot, not after ALL existing blocks.
+    // Build a sorted list of occupied [start, end] ranges from existing blocks, then
+    // for each new item find the earliest minute (≥ dayStart and ≥ now) where it fits.
     if (!sel || !sel.length) return;
     pushUndo();
-    var arr = blocks(k), start = 8 * 60;
-    arr.forEach(function (b) { start = Math.max(start, hm(b.time) + (b.mins || 30)); });
-    if (k === todayK()) start = Math.max(start, logicalNowMin());
-    sel.forEach(function (x) { if (!x) return; var dom = domainOf(x), mins = x.mins || 30, prio = x.prio || 2; arr.push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: mins, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: prio }); start += mins; }); // honour the editor's chosen length + importance (David 2026-06-28)
+    var arr = blocks(k);
+    var dayStart = (k === todayK()) ? Math.max(8 * 60, logicalNowMin()) : 8 * 60;
+    // snapshot existing occupied ranges (sorted by start time)
+    var occupied = arr.map(function (b) { var s = hm(b.time); return { s: s, e: s + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
+    function findSlot(fromMin, dur) {
+      // find the earliest minute ≥ fromMin where dur minutes fit around all occupied ranges
+      var t = fromMin, guard = 0;
+      while (guard++ < 200) {
+        var ok = true;
+        for (var i = 0; i < occupied.length; i++) {
+          if (t < occupied[i].e && t + dur > occupied[i].s) { t = occupied[i].e; ok = false; break; } // overlaps → jump past
+        }
+        if (ok) return t;
+      }
+      return t; // fallback: end of last block
+    }
+    var cursor = dayStart;
+    sel.forEach(function (x) {
+      if (!x) return;
+      var dom = domainOf(x), mins = x.mins || 30, prio = x.prio || 2;
+      var slot = findSlot(cursor, mins);
+      slot = Math.min(1410, slot);
+      arr.push({ id: uid(), time: pad(Math.floor(slot / 60)) + ":" + pad(slot % 60), mins: mins, title: x.title, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, prio: prio });
+      // add this new block to occupied so subsequent items fill around it too
+      occupied.push({ s: slot, e: slot + mins }); occupied.sort(function (a, b) { return a.s - b.s; });
+      cursor = slot + mins; // next item tries from where this one ends (packs tightly but still skips occupied)
+    }); // honour the editor's chosen length + importance (David 2026-06-28)
     reflow(k); save(); renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
   }
   // EDIT-FUNDAMENTALS menu (David 2026-06-25): customise the recurring basics that "Daily fundamentals" drops in (saved per-profile, falls back to the default set)
@@ -4947,7 +4973,7 @@
   // one-line identity+virtue reminder (Johnson "who am I being") then a domain-scoped bento. Picks accumulate across beats → the order/length/importance editor (orderStep).
   // Back/skip per beat, never forced. No ugly white pickerSheet, no instant drop.
   var BIG3 = [
-    { id: "energy", emoji: "⚡", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
+    { id: "energy", emoji: "🔥", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
     { id: "work", emoji: "💼", label: "Work", domains: ["focus", "create"], virtue: "disc" },
     { id: "love", emoji: "❤️", label: "Love", domains: ["connect"], virtue: "love" }
   ];
@@ -5848,7 +5874,7 @@
     })();
     initPaneCarousel(); // 3-PANE CAROUSEL (David 2026-06-30): one global finger-following slider across Planner | Journey | Game
     (function () { // the PERSISTENT bottom menu (#nav) is shared across all 3 panes — tapping a button switches panes cleanly (closes the others), matching the swipe. (Overrides the older per-tab handlers.)
-      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (curPaneName() !== "planner") setPaneRest("planner"); };
+      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "planner") setPaneRest("planner"); }; // FIX #1: when nav is collapsed, the Today-pill tap MUST re-expand it (the old per-tab handler did this but was overwritten by the carousel pane handler — David 2026-06-30)
       var jr = el("navJourney"); if (jr) jr.onclick = function () { if (curPaneName() !== "journey") setPaneRest("journey"); };
       var gm = document.querySelector('#nav .nb[data-tab="self"]'); if (gm) gm.onclick = function () { if (curPaneName() !== "game") setPaneRest("game"); };
     })();

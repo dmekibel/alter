@@ -772,7 +772,7 @@
   .bento-head{ display:flex; align-items:center; justify-content:space-between; padding:13px 14px 8px; flex:none; }
   .bento-q{ color:#ffe3f1; font-size:17px; font-weight:700; }
   .bento-x{ width:32px; height:32px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .bento-body{ overflow:auto; padding:4px 12px 14px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; }
+  .bento-body{ overflow:auto; padding:4px 12px 14px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; overscroll-behavior:contain; touch-action:pan-y; } /* FIX #3c: contain overscroll so bento scroll never bleeds into the timeline pull gesture — DEVICE-UNTESTED (David 2026-06-30) */
   .bento-foot{ flex:none; }
   .bento-card{ max-height:88vh; max-height:88dvh; }
   /* COMPACT BOTTOM-SHEET picker + 4 supercategories (David 2026-07-02 v644): the activity picker is a SHORT bottom sheet (never full-screen) that opens to 4 category tiles + a Recent row — no wall of options */
@@ -1313,7 +1313,7 @@
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
   body.nav-collapsed.tab-day #nav .nb[data-tab="day"]::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; } /* two faint bars on the right edge = "Goals & You are tucked behind, tap to open" */
-  body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
+  body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; position:fixed !important; z-index:70 !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* FIX #2: explicit position:fixed + raised z-index so the folded dock stays pinned during planner scroll and can't be occluded — DEVICE-UNTESTED (David 2026-06-30) */
   body.nav-collapsed.tab-day #liveDock .ld-seg{ display:none !important; } /* narrow row = play/info/elapsed only; expand the nav for the Replan/Drift row */
   /* COLLAPSED DOCK = EXACTLY the Today pill's height (62px) — one compact even row beside it (David 2026-06-28). Drop the grab handle + the .ld-main bottom margin, slim the padding, vertically centre. */
   body.nav-collapsed.tab-day #liveDock.on{ height:62px !important; box-sizing:border-box !important; padding:0 11px !important; display:flex !important; align-items:center !important; border-radius:14px !important; }
@@ -1526,8 +1526,8 @@
   .hill-hint{ position:absolute; left:50%; transform:translateX(-50%); z-index:12; background:#3a1228; border:1.5px solid #6a3050; color:#ffb3d6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; padding:7px 14px; border-radius:999px; display:flex; align-items:center; gap:6px; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,.5); white-space:nowrap; }
   .day-cardscroll::-webkit-scrollbar{ width:0; }
   /* ============ v447 — bento 2-column + stripes + shimmer · ghost=image4 · streak tiers (David 2026-06-24) ============ */
-  /* BENTO: two-column grid of category panels with wrapped chips (David's image 1) */
-  .bento-gridwrap{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  /* BENTO: single-column full-width list of category panels (FIX #3b: was 2-col tiny boxes — DEVICE-UNTESTED) */
+  .bento-gridwrap{ display:flex; flex-direction:column; gap:9px; }
   .bento-cat{ border:2px solid #160510 !important; border-radius:14px; padding:9px 9px 10px; position:relative; overflow:hidden; }
   .bento-cat::before{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 8px, transparent 8px 17px); } /* subtle diagonal stripes — more appealing */
   .bento-catl{ position:relative; z-index:1; font-size:11px; font-weight:800; letter-spacing:.6px; margin-bottom:8px; cursor:pointer; }
@@ -1685,6 +1685,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=694"></script>
+  <script src="app.js?v=695"></script>
 </body>
 </html>
