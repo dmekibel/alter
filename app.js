@@ -525,12 +525,27 @@
       cta: "Carry on", done: function (k) { return true; }, act: function () { closeTrackerFull(); } }
   ];
   function journeyActionDoneToday() { var n = journeyNode(), node = JOURNEY[Math.max(0, Math.min(JOURNEY.length - 1, n))]; try { return !!node.done(todayK()); } catch (e) { return false; } }
+  // ===== WATCH-CONFIRM TICK (Decision A/C, Synthesis §VIII): onboarding placement self-claims verified after threshold days. Pass → floor-unlock. Fail → entry removed, natural teaching resumes. =====
+  function watchConfirmTick() {
+    var g = S.guide; if (!g) return;
+    if (!g.watchConfirm || !g.watchConfirm.length) return;
+    var changed = false;
+    g.watchConfirm = g.watchConfirm.filter(function(entry) {
+      var threshold = entry.type === 'onboard' ? 7 : 3;
+      if (daysSince(entry.seededAt) < threshold) return true; // still watching
+      changed = true;
+      if (chapterMastered(entry.skill)) { g.unlocked = g.unlocked||[]; for (var _j=0;_j<=entry.skill;_j++) if (g.unlocked.indexOf(_j)<0) g.unlocked.push(_j); }
+      return false;
+    });
+    if (changed) save();
+  }
   function journeyTick() { // once per logical day: persist the inferred node as a sticky floor in S.guide.unlocked so an existing user (David) is met at his true level + never demotes. PURE-driven by readiness(); writes only the floor.
     var g = S.guide; if (!g) return; var k = todayK(); if (g.tickK === k) return; g.tickK = k;
     var n = Math.max(journeyNode(), chapterUnlockCheck()); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
     /* Return-after-miss (SCHEMA 3, mirror-not-price): if yesterday earned 0 SF actions, quietly earn +1 on the NEXT open and show a forward-only guardian line — no "you missed" framing, no streak penalty. */
     var ydk = keyAdd(k, -1); var yesterdayActs = (S.sf && S.sf.actions && S.sf.actions[ydk]) || []; if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
     try { appetiteUpdate(); } catch (e) {}
+    try { watchConfirmTick(); } catch (e) {}
     save();
   }
   // ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28): the VISIBLE daily journey. A full-screen winding node-trail of today's real sequence — Plan → fundamentals/undone habits → planned blocks (time order) → bookend. PURE-derives node states from today's real signals (block.done / habit done / matching log). Reward-never-shame: upcoming = calm-dim, never red/locked. Auto-scrolls the CURRENT node into view so the next thing is literally in front of you. =====
@@ -3106,6 +3121,38 @@
     homemaker: [["Meal prep", "nourish"], ["Clean", "upkeep"], ["Laundry", "upkeep"], ["Errands", "upkeep"]],
     figuring: [["Journal", "restore"], ["Explore", "play"], ["Study", "focus"]]
   };
+  // ===== PLACEMENT QUESTIONS (Decision A, Synthesis §VIII): 3 one-tap yes/no questions shown once after onboarding, before the journey opens. "Yes" seeds a Path C watchConfirm entry verified by watchConfirmTick() after 7 days. =====
+  function placementQuestions(onDone) {
+    var g = S.guide||{}; var unlocked = g.unlocked||[];
+    var QUESTIONS = [
+      {skill:3, label:"Morning routine?",   hint:"you open your day on purpose — even a brief one"},
+      {skill:4, label:"Closing your day?",  hint:"you end with at least one honest thought"},
+      {skill:5, label:"Active daily habit?",hint:"something you run every day, building on purpose"}
+    ].filter(function(q){ return unlocked.indexOf(q.skill)<0; });
+    if (!QUESTIONS.length) { onDone(); return; }
+    var answers = {};
+    var ob = add(document.body, "div", "hs-ov");
+    ob.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:#1c0f20;z-index:10000;display:flex;flex-direction:column;justify-content:center;padding:32px 20px;";
+    add(ob,"div","","One quick check.").style.cssText="font-size:20px;font-weight:800;color:#e6cfe0;margin-bottom:6px;font-family:'Jost',sans-serif;";
+    add(ob,"div","","Do any of these already describe you?").style.cssText="font-size:13px;color:#9a7090;margin-bottom:28px;font-family:'Jost',sans-serif;";
+    var qRows = add(ob,"div",""); qRows.style.cssText="display:flex;flex-direction:column;gap:20px;margin-bottom:32px;";
+    QUESTIONS.forEach(function(q){
+      var row=add(qRows,"div",""); row.style.cssText="display:flex;flex-direction:column;gap:6px;";
+      add(row,"div","",q.label).style.cssText="font-size:15px;font-weight:700;color:#e6cfe0;font-family:'Jost',sans-serif;";
+      add(row,"div","",q.hint).style.cssText="font-size:11px;color:#9a7090;font-family:'Jost',sans-serif;";
+      var chips=add(row,"div",""); chips.style.cssText="display:flex;gap:8px;margin-top:2px;";
+      var yes=add(chips,"button","jp-durchip"); yes.textContent="Yes, already";
+      var no =add(chips,"button","jp-durchip"); no.textContent="Not yet";
+      function setAns(v){ answers[q.skill]=v; yes.style.background=v===true?DOM.move.c:""; yes.style.color=v===true?"#fff":""; no.style.background=v===false?"#4a2d40":""; no.style.color=v===false?"#c89ab4":""; }
+      yes.onclick=function(){setAns(true);}; no.onclick=function(){setAns(false);};
+    });
+    var cont=add(ob,"button","jc-cta"); cont.innerHTML='<i class="ti ti-arrow-right"></i> Continue'; cont.style.cssText="background:"+DOM.focus.c+";color:#fff;";
+    cont.onclick=function(){
+      var wc=S.guide.watchConfirm=S.guide.watchConfirm||[];
+      QUESTIONS.forEach(function(q){ if(answers[q.skill]===true&&!wc.some(function(e){return e.skill===q.skill;})) wc.push({skill:q.skill,seededAt:todayK(),type:'onboard'}); });
+      save(); ob.remove(); onDone();
+    };
+  }
   function onboard() {
     var data = { gender: "", age: "", vibe: "", stages: {}, customStages: [], kept: {}, _pref: "", goals: {}, wake: "7–8", bed: "11–12", peak: "lark", identity: [], customIdent: [], virtue: "", oneThing: "", habitsSel: {}, customHabits: [], level: "" };
     var step = 0, STEPS = 7; // 0 intro · 1 vibe · 2 you · 3 roles · 4 goals-light · 5 rhythm · 6 ready (2026-06-30: replaced 5 heavy category screens with one calm multi-select)
@@ -3206,7 +3253,7 @@
           reflow(todayK());
         }
       } catch (e) {}
-      save(); ov.remove(); renderAll(); viewK = todayK(); zoomMode = "day"; try { openJourney(); } catch (e) {} toast("✨ Your world is ready — your journey's all set"); // land on the JOURNEY (cascaded stepping-stones), not the planner, after onboarding (David v661)
+      save(); ov.remove(); try{placementQuestions(function(){renderAll();viewK=todayK();zoomMode="day";try{openJourney();}catch(e){}toast("Your world is ready.");});}catch(e){renderAll();viewK=todayK();zoomMode="day";try{openJourney();}catch(e){}} // land on the JOURNEY (cascaded stepping-stones), not the planner, after onboarding (David v661)
     }
     function draw() {
       barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
