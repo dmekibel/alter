@@ -423,6 +423,34 @@
     a.nodeCap=_appCap(a.level);
     a.modeTarget={dormant:'off',floor:'guided',low:'light',medium:'guided',high:'guided'}[a.level]||'guided';
   }
+  // ===== APPETITE INVITE SURFACE (Decision C, Synthesis §VIII): shown once-per-offer when appetiteUpdate seeds g.cache.appetiteInvite. Accept = escalates level; Decline = increments counter + permanent-locks only if two declines within same 7-day window. =====
+  function showAppetiteInvite(inv) {
+    var old = document.getElementById("appetite-inv"); if (old) old.remove(); // prevent stacking
+    var ob = add(document.body, "div", "hs-ov"); ob.id = "appetite-inv";
+    ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
+    add(ob,"div","","Ready to go deeper?").style.cssText="font-size:15px;font-weight:800;color:#e6cfe0;margin-bottom:6px;font-family:'Jost',sans-serif;";
+    add(ob,"div","",inv.copy||"You've been showing up consistently.").style.cssText="font-size:13px;color:#c89ab4;margin-bottom:13px;font-family:'Jost',sans-serif;";
+    var row=add(ob,"div",""); row.style.cssText="display:flex;gap:8px;";
+    var yes=add(row,"button","jp-durchip"); yes.innerHTML='<i class="ti ti-star"></i> Yes, one more layer'; yes.style.cssText="background:"+DOM.focus.c+";color:#fff;flex:1;";
+    yes.onclick=function(){ob.remove();try{appetiteAccept(inv.to);}catch(e){}};
+    var no=add(row,"button","jp-hmbtn skip"); no.innerHTML='<i class="ti ti-x"></i> Not yet'; no.style.cssText="flex:none;";
+    no.onclick=function(){ob.remove();try{appetiteDecline();}catch(e){}};
+    setTimeout(function(){if(ob.parentNode)ob.remove();},9000);
+  }
+  function appetiteAccept(newLevel) {
+    var g=S.guide; if(!g) return;
+    var a=g.appetiteState=g.appetiteState||{}; a.level=newLevel; a.stateAge=0; a.inviteDeclineCount=0; a.nodeCap=_appCap(newLevel);
+    g.cache=g.cache||{}; delete g.cache.appetiteInvite;
+    save(); try{toast("Let's go — one more layer.");drawJourney(true);}catch(e){}
+  }
+  function appetiteDecline() {
+    var g=S.guide; if(!g) return;
+    var a=g.appetiteState=g.appetiteState||{}; var k=todayK(); var prev=a.lastDeclineK;
+    a.inviteDeclineCount=(a.inviteDeclineCount||0)+1; a.lastDeclineK=k;
+    if(a.inviteDeclineCount>=2&&prev&&daysSince(prev)<=7) a.stateLockedByUser=true; // permanent lock only when both declines within same 7-day window (SYNTHESIS §I fix)
+    g.cache=g.cache||{}; delete g.cache.appetiteInvite;
+    save(); try{drawJourney(true);}catch(e){}
+  }
   // ===== TEST-OUT (Path B): preSurfaceCheck — if skill already evidenced, replace teaching node with "already there?" card (evidence-grounded, two-choice). Synthesis §IV Step 8. =====
   function preSurfaceCheck(nodeKey, skillN, evidenceLine) {
     if (!chapterMastered(skillN)) return null; // skill not yet mastered → surface the teaching node
@@ -1128,6 +1156,8 @@
     if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
     // #5: fire completion bursts after layout settles (DEVICE-UNTESTED feel — the pop + float animate on the node after it scrolls into view)
     if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); } catch (e) {} }); }, 380); }
+    // Appetite invite: auto-surface once per offer when appetiteUpdate seeds the invite (shown once per day until accepted/declined)
+    try { var _g = S.guide; if (_g&&_g.cache&&_g.cache.appetiteInvite) { var _inv=_g.cache.appetiteInvite; if (_inv.shownK!==todayK()) { _inv.shownK=todayK(); save(); (function(ii){setTimeout(function(){try{if(ii===((S.guide||{}).cache||{}).appetiteInvite)showAppetiteInvite(ii);}catch(e){}},1400);})(S.guide.cache.appetiteInvite); } } } catch(e) {}
   }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { /* anti-shame law (David): drift is DATA, never punishment — a streak is never broken by drifting. No-op kept as a hook so call-sites stay meaningful. (2026-06-29: was decrementing the streak, which contradicted "never a breakable streak") */ }
