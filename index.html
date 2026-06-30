@@ -232,8 +232,10 @@
   .jp-node.up .jp-bub{width:66px;height:66px;font-size:27px;}
   .jp-node.locked .jp-bub{width:58px;height:58px;font-size:22px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
   .jp-node.cur{margin:14px auto 16px;}
-  .jp-node.cur .jp-bub{width:90px;height:90px;font-size:40px;box-shadow:0 6px 0 var(--ink);animation:jpPulse 1.9s ease-in-out infinite;}
+  .jp-node.cur .jp-bub{width:90px;height:90px;font-size:40px;box-shadow:0 6px 0 var(--ink);animation:jpAlive 2.6s var(--ease-settle) infinite;}
   @keyframes jpPulse{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  /* ALIVE active node (David 2026-07-01): the start-screen's breathing-glow language applied to "your next step" — a calm lift + scale-breath + a glowing pink halo that swells, so the focal coin feels living & invitingly expensive instead of frozen */
+  @keyframes jpAlive{0%,100%{transform:translateY(0) scale(1);filter:drop-shadow(0 4px 10px rgba(255,95,160,.18));}50%{transform:translateY(-5px) scale(1.035);filter:drop-shadow(0 10px 26px rgba(255,95,160,.5));}}
   .jp-card{margin-top:13px;width:236px;max-width:84vw;background:#2c081a;border:2.5px solid var(--ink);border-radius:15px;padding:13px 15px;text-align:center;position:relative;z-index:4;}
   .jp-card:before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#2c081a;border-left:2.5px solid var(--ink);border-top:2.5px solid var(--ink);}
   .jp-card .jc-t{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;line-height:1.15;}
@@ -1711,6 +1713,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=715"></script>
+  <script src="app.js?v=716"></script>
 </body>
 </html>
