@@ -2804,15 +2804,36 @@
       bLet.onclick = function () { try { pushUndo(); var a = blocks(k), i = a.indexOf(b); if (i >= 0) a.splice(i, 1); reflow(k); save(); renderToday(); } catch (e) {} done("Let go — no trace, no weight."); };
     });
   }
-  // ---- BEAT 3: ASK (adaptive) — pickPrompt over the PM bank + textarea + mood.
+  // ---- BEAT 3: ASK — Win-or-Learn when Chapter 4+ unlocked (Synthesis §VI, Landmark 6 Celebrate); otherwise adaptive pickPrompt.
   function pmBeatAsk(card, sb, mr, k) {
-    var q = pickPrompt("pm", journalCtx()); sb.dataset.q = q;
-    add(card, "div", "tfs-h", "One honest line.");
-    add(card, "div", "tfs-sub").textContent = q;
-    var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough — or a few"; ta.rows = 4;
-    ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
-    var prev = ((S.bk || {})[k] || {}).pm; if (prev && prev.reflect) ta.value = prev.reflect;
-    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
+    var _INP = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;-webkit-appearance:none;";
+    var prev = ((S.bk || {})[k] || {}).pm;
+    if (journeyNode() >= 4) {
+      // WIN-OR-LEARN: structured 2-part reflection; writes to sb.dataset.reflect as "Win: …\nLearn: …"
+      sb.dataset.q = "Win or Learn";
+      add(card, "div", "tfs-h", "Win or Learn.");
+      add(card, "div", "tfs-sub", "Every day is a win or a lesson. Both move you forward.").style.opacity = ".8";
+      var winInp = add(card, "input"); winInp.type = "text"; winInp.placeholder = "Today's win…"; winInp.setAttribute("style", _INP + "margin-bottom:8px;");
+      add(card, "div", "", "What I learned").style.cssText = "font-size:11px;font-weight:700;color:#9a7090;text-transform:uppercase;letter-spacing:.4px;margin:2px 0 4px;font-family:'Jost',sans-serif;";
+      var learnInp = add(card, "input"); learnInp.type = "text"; learnInp.placeholder = "What I learned…"; learnInp.setAttribute("style", _INP);
+      function syncReflect() { var w=winInp.value.trim(),l=learnInp.value.trim(); sb.dataset.reflect=w||l?(w&&l?"Win: "+w+"\nLearn: "+l:w||l):""; }
+      winInp.oninput = learnInp.oninput = syncReflect;
+      if (prev && prev.reflect) {
+        var pmParts = prev.reflect.split("\nLearn:");
+        if (pmParts.length >= 2) { winInp.value = pmParts[0].replace(/^Win:\s*/,""); learnInp.value = pmParts[1].trim(); }
+        else winInp.value = prev.reflect;
+        syncReflect();
+      }
+    } else {
+      // original ask: random adaptive prompt + textarea
+      var q = pickPrompt("pm", journalCtx()); sb.dataset.q = q;
+      add(card, "div", "tfs-h", "One honest line.");
+      add(card, "div", "tfs-sub").textContent = q;
+      var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough — or a few"; ta.rows = 4;
+      ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
+      if (prev && prev.reflect) ta.value = prev.reflect;
+    }
+    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;margin-top:10px;");
     MOODS.forEach(function (m, i) {
       var f = add(moodWrap, "button", "jr-mood");
       f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
@@ -2979,8 +3000,18 @@
       sumc.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:10px 12px;line-height:1.6;");
       add(card, "div", "tfs-sub").textContent = "I'll place these on your timeline and carry your intention through the day.";
       card.lastChild.style.cssText = "font-size:12px;color:#cfa8c4;";
+      // VIRTUE MEDITATION (Synthesis §VI, Landmark 4 keystone — the #1 practice): Chapter 4+ gate. Offer a breath-into-virtue before sealing the morning intention.
+      if ((S.guide&&(S.guide.unlocked||[]).indexOf(4)>=0) && sb.dataset.virtue) {
+        var _vmV = VIRTUES.filter(function(v){return v.k===sb.dataset.virtue;})[0];
+        var vmCard = add(card,"div",""); vmCard.style.cssText="background:#1c0f20;border:1.5px solid #2d1a38;border-radius:12px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;";
+        var vmL = add(vmCard,"div",""); vmL.style.cssText="display:flex;flex-direction:column;gap:2px;";
+        add(vmL,"div","","Virtue Meditation").style.cssText="font-size:11px;font-weight:700;color:#c89ab4;text-transform:uppercase;letter-spacing:.5px;";
+        add(vmL,"div","","Breathe into " + (_vmV?_vmV.l:"your virtue") + ".").style.cssText="font-size:13px;color:#e6cfe0;";
+        var vmBtn=add(vmCard,"button","jp-durchip"); vmBtn.innerHTML='<i class="ti ti-wind"></i> Begin'; vmBtn.style.cssText="flex-shrink:0;background:"+DOM.restore.c+";color:#fff;";
+        vmBtn.onclick=(function(_sb){return function(){breathwork(3,function(){amStageStep(_sb);});};})(sb);
+      }
       // Save commits via exitStage('am', true) — same as the trackerControls 'am' primary; mirrored here as the obvious finish.
-      nextBtn("Save the morning ☀️", function () { exitStage(true); });
+      nextBtn("Save the morning", function () { exitStage(true); });
       backLink();
     }
   }
