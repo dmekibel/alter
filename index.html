@@ -214,28 +214,28 @@
   .jp-unit.open{background:#33203a;color:#d6abc4;border-color:#6a4a78;}
   .jp-unit.open .ju-ic{background:#1c0612;color:#caa0bd;}
   /* NODE + tile — FLAT domain color, ink border, Tabler symbol (no gloss/glow); current = striped hero tile */
-  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:170px;padding:9px 0;}
-  .jp-bub{position:relative;z-index:2;width:74px;height:74px;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:31px;color:#fff;cursor:pointer;transition:transform .12s;box-shadow:0 5px 0 var(--ink);}
+  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:200px;padding:13px 0;}
+  .jp-bub{position:relative;z-index:2;width:96px;height:96px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;cursor:pointer;transition:transform .12s;box-shadow:0 6px 0 var(--ink);}
   .jp-bub i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-bub:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
   /* #4 — done node: clearly distinct from undone. Bubble dims, turns green-tinted, icon fades; cap gets strikethrough; check badge enlarges + glows. */
-  .jp-node.done .jp-bub{width:62px;height:62px;font-size:24px;opacity:.72;filter:grayscale(.25) brightness(.88);border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 3px 0 #0a4028 !important;}
+  .jp-node.done .jp-bub{width:80px;height:80px;font-size:31px;opacity:.72;filter:grayscale(.25) brightness(.88);border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 3px 0 #0a4028 !important;}
   .jp-node.done .jp-bub i{opacity:.6;}
   .jp-node.done .jp-cap{color:#46e2a4;text-decoration:line-through;opacity:.7;}
-  .jp-node.done .jp-check{position:absolute;right:-2px;bottom:2px;width:30px;height:30px;border-radius:50%;background:#28cf86;border:2.5px solid var(--ink);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);}
+  .jp-node.done .jp-check{position:absolute;right:-2px;bottom:2px;width:36px;height:36px;border-radius:50%;background:#28cf86;border:3px solid var(--ink);color:#fff;font-size:19px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);}
   /* #5 — node completion burst: a quick scale-pop + gold ring on the bubble */
   .jp-node.jp-just-done .jp-bub{animation:jpNodeDone .55s cubic-bezier(.3,1.6,.4,1) forwards;}
   @keyframes jpNodeDone{0%{transform:scale(1);}40%{transform:scale(1.22);}70%{transform:scale(.95);}100%{transform:scale(1);}}
   /* floating ✦ spark that pops from the node on completion */
   .jp-node-spark{position:fixed;z-index:99;pointer-events:none;font-family:"Jost",sans-serif;font-weight:900;font-size:17px;color:#ffd54a;text-shadow:0 1px 6px rgba(0,0,0,.5);animation:jpNodeSpark .85s cubic-bezier(.2,.9,.3,1) forwards;}
   @keyframes jpNodeSpark{0%{opacity:0;transform:translate(-50%,0) scale(.7);}20%{opacity:1;transform:translate(-50%,-8px) scale(1.18);}100%{opacity:0;transform:translate(-50%,-52px) scale(1);}}
-  .jp-node.up .jp-bub{width:66px;height:66px;font-size:27px;}
-  .jp-node.locked .jp-bub{width:58px;height:58px;font-size:22px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
-  .jp-node.cur{margin:14px auto 16px;}
-  .jp-node.cur .jp-bub{width:90px;height:90px;font-size:40px;box-shadow:0 6px 0 var(--ink);animation:jpAlive 2.6s var(--ease-settle) infinite;}
+  .jp-node.up .jp-bub{width:86px;height:86px;font-size:35px;}
+  .jp-node.locked .jp-bub{width:76px;height:76px;font-size:30px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 5px 0 #2a0d1c;}
+  .jp-node.cur{margin:18px auto 20px;}
+  .jp-node.cur .jp-bub{width:120px;height:120px;font-size:52px;box-shadow:0 7px 0 var(--ink);animation:jpAlive 2.8s var(--ease-settle) infinite;}
   @keyframes jpPulse{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
-  /* ALIVE active node (David 2026-07-01): the start-screen's breathing-glow language applied to "your next step" — a calm lift + scale-breath + a glowing pink halo that swells, so the focal coin feels living & invitingly expensive instead of frozen */
-  @keyframes jpAlive{0%,100%{transform:translateY(0) scale(1);filter:drop-shadow(0 4px 10px rgba(255,95,160,.18));}50%{transform:translateY(-5px) scale(1.035);filter:drop-shadow(0 10px 26px rgba(255,95,160,.5));}}
+  /* ALIVE active node (David 2026-07-01, refined): crisp COLOR-MATCHED glow (var --glow set per node) — a calm lift + scale-breath + a tight halo in the node's own colour that swells, so the focal coin reads premium & coherent, not a blurry off-colour smudge */
+  @keyframes jpAlive{0%,100%{transform:translateY(0) scale(1);filter:drop-shadow(0 4px 7px var(--glow,rgba(255,95,160,.3)));}50%{transform:translateY(-6px) scale(1.04);filter:drop-shadow(0 9px 17px var(--glow,rgba(255,95,160,.55)));}}
   .jp-card{margin-top:13px;width:236px;max-width:84vw;background:#2c081a;border:2.5px solid var(--ink);border-radius:15px;padding:13px 15px;text-align:center;position:relative;z-index:4;}
   .jp-card:before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#2c081a;border-left:2.5px solid var(--ink);border-top:2.5px solid var(--ink);}
   .jp-card .jc-t{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;line-height:1.15;}
@@ -1713,6 +1713,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=716"></script>
+  <script src="app.js?v=717"></script>
 </body>
 </html>

@@ -1155,6 +1155,7 @@
       var icon = state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
       if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
+      if (state === "cur") { var _gh = (n.color || "#ff5fa0").replace("#", ""); if (_gh.length === 3) _gh = _gh.replace(/(.)/g, "$1$1"); bub.style.setProperty("--glow", "rgba(" + parseInt(_gh.substr(0, 2), 16) + "," + parseInt(_gh.substr(2, 2), 16) + "," + parseInt(_gh.substr(4, 2), 16) + ",.5)"); } // color-matched glow → jpAlive breathes the node's OWN colour, never an off-brand smudge (David 2026-07-01)
       if (state === "done") {
         var ck = add(node, "div", "jp-check"); ck.innerHTML = '<i class="ti ti-check"></i>';
         // #5: detect undone→done transition; queue a burst for after DOM layout (DEVICE-UNTESTED feel)
