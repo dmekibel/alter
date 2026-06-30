@@ -3473,12 +3473,13 @@
           var anyOn = grp.ks.some(function (k) { return data.stages[k]; });
           var gc2 = add(gcards, "button", "ob-gcard" + (anyOn ? " on" : ""));
           gc2.style.borderColor = grp.c;
-          // outline state = dark domain-tint fill; selected = the striped reward texture (matches timeline bubbles). Text stays light-berry / dark-ink — never white. (David design principles)
-          gc2.style.background = anyOn ? tfStripe(grp.c) : mixHex(grp.c, "#160510", 0.8);
-          var iconC = anyOn ? "#1c0a17" : grp.c, titleC = anyOn ? "#1c0a17" : mixHex(grp.c, "#f7e9f1", 0.7), subC = anyOn ? "#2e0f24" : "#b48fab";
+          // Option A (David picked): unselected = dark domain-tint fill + colored outline; selected = SOLID domain-color fill + dark-ink text + check (matches the bento activity chips). No stripes, no gold ring, never white. (David design principles)
+          gc2.style.background = anyOn ? grp.c : mixHex(grp.c, "#160510", 0.8);
+          var iconC = anyOn ? "#160510" : grp.c, titleC = anyOn ? "#160510" : mixHex(grp.c, "#f7e9f1", 0.7), subC = anyOn ? mixHex(grp.c, "#160510", 0.38) : "#b48fab";
           gc2.innerHTML = '<i class="ti ' + grp.ti + ' ob-gci" style="color:' + iconC + '"></i>'
             + '<span class="ob-gctext"><span class="ob-gcl" style="color:' + titleC + '">' + esc(grp.l) + '</span>'
-            + '<span class="ob-gcsub" style="color:' + subC + '">' + esc(GRP_SUB[gi] || '') + '</span></span>';
+            + '<span class="ob-gcsub" style="color:' + subC + '">' + esc(GRP_SUB[gi] || '') + '</span></span>'
+            + (anyOn ? '<i class="ti ti-check ob-gcck" style="color:#160510;margin-left:auto;flex:none;font-size:21px;"></i>' : '');
           gc2.onclick = function () { var allOn2 = grp.ks.every(function (k) { return data.stages[k]; }); grp.ks.forEach(function (k) { data.stages[k] = !allOn2; }); draw(); };
         });
       }
