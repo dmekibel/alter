@@ -5738,8 +5738,26 @@
     });
   }
 
+  // ===== DEV / TEST HARNESS (David 2026-06-30) — fast full-workflow testing + headless drive (bypasses the cockpit drag-gesture). OFF unless ?dev in the URL or localStorage.alter_dev='1'. window.DEV mirrors every action for console/eval (lets the app be driven + screenshotted without a finger). =====
+  function devOn() { try { if (/[?&]dev\b/.test(location.search)) localStorage.setItem("alter_dev", "1"); return localStorage.getItem("alter_dev") === "1"; } catch (e) { return false; } }
+  function devOpenStage(mode) { mode = mode || "sleepmath"; if (!TF_OPEN) openTrackerFull(); TF_MODE_USERSET = true; enterStage(mode, { byTap: true }); return "stage:" + mode; }
+  function devDemoProfile() { S.profile = S.profile || {}; var p = S.profile; p.gender = p.gender || "m"; p.age = p.age || "30s"; p.vibe = p.vibe || "thriving"; p.stages = (p.stages && p.stages.length) ? p.stages : ["founder"]; p.occ = p.occ || "founder"; p.goals = p.goals || []; p.wake = p.wake || "07:00"; p.sleep = p.sleep || "7-8"; if (p.lark == null) p.lark = true; if (p.lowStart == null) p.lowStart = false; p.todayIdentity = (p.todayIdentity && p.todayIdentity.length) ? p.todayIdentity : ["Creator"]; p.todayVirtues = (p.todayVirtues && p.todayVirtues.length) ? p.todayVirtues : ["zest"]; p.set = true; save(); try { renderAll(); } catch (e) {} return "demo profile set"; }
+  function devGuided(on) { S.guide = S.guide || {}; S.guide.mode = on ? "guided" : "off"; save(); try { renderAll(); } catch (e) {} return "guided=" + S.guide.mode; }
+  function devSeedDay() { try { fillTestDay(); return "seeded test day"; } catch (e) { return "fillTestDay missing: " + e.message; } }
+  function devReonboard() { try { onboard(); } catch (e) {} return "re-onboarding"; }
+  function devFreshUser() { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); }
+  window.DEV = { open: devOpenStage, stage: devOpenStage, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } } };
+  function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
+  function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
+    var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
+    var acts = [["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser]];
+    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
+    var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
+    document.body.appendChild(s);
+  }
   function init() {
     load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
+    try { devInit(); } catch (e) {}
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)
