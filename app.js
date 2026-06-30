@@ -451,10 +451,10 @@
     save(); try{drawJourney(true);}catch(e){}
   }
   // ===== TEST-OUT (Path B): preSurfaceCheck — if skill already evidenced, replace teaching node with "already there?" card (evidence-grounded, two-choice). Synthesis §IV Step 8. =====
-  function preSurfaceCheck(nodeKey, skillN, evidenceLine) {
+  function preSurfaceCheck(nodeKey, skillN, evidenceLine, todayDone, label) {
     if (!chapterMastered(skillN)) return null; // skill not yet mastered → surface the teaching node
-    return { key:'already:'+nodeKey, icon:'ti-circle-check', title:'Already there?', line:evidenceLine,
-      color:'#2d6e3a', done:false, _alreadyThere:true, _claimKey:'sk'+skillN+'-claimed', _teachKey:nodeKey };
+    return { key:'already:'+nodeKey, icon:'ti-circle-check', title: label || 'Already there?', line:evidenceLine,
+      color:'#2d6e3a', done:!!todayDone, _alreadyThere:true, _claimKey:'sk'+skillN+'-claimed', _teachKey:nodeKey };
   }
   // ===== HERO SANDWICH (tool-surfacing trigger, Synthesis §VI): fires on drift when Chapter 2+ unlocked. Shows a 4-chip obstacle picker inline — "what got in the way?" → earn(15) + nodeHistory. =====
   function heroSandwich() {
@@ -612,7 +612,7 @@
     if (jn >= 2 && !dormant) {
       var amNode = { key:"am", emoji:"🌅", title:"Open the morning", line: gvName ? "Who you're being today: "+gvName+". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
         color:DOM.create.c, done:!!am.done, act:function(){ closeJourney(); try{enterStage("am",{byTap:true});}catch(e){} } };
-      var atAm = preSurfaceCheck('am', 3, "You've opened your morning 5 of the last 7 days — already there?");
+      var atAm = preSurfaceCheck('am', 3, "You've opened your morning 5 of the last 7 days — already there?", am.done, "Morning opened");
       nodes.push(atAm || amNode);
       if (!atAm && settleNode) { nodes.push(settleNode); settleNode = null; } // settle slots in as 2nd node when am is 1st
     }
@@ -623,6 +623,35 @@
         : (pf.bouncedBack ? "You came back yesterday — that bounce is the skill. Let's map today." : gvName ? "Map today around being " + gvName + " — pick a few things." : "Map out today — pick a few things and let them wait for you."),
       color: DOM.focus.c, done: planned.length > 0 && !(S.timers || []).some(function (t) { return t.dayK === todayK() && t.title === "Plan your day"; }), act: function () { closeJourney(); shapeFlow(k); } }); // stays the live cockpit while you're TRACKING the planning (David 2026-07-02)
     if (settleNode) { nodes.push(settleNode); settleNode = null; } // #6: settle falls in as 2nd node after Plan (when AM not unlocked); still available but not the headline
+
+    // CHAPTER TASK — one chapter-specific practice node that grounds the daily trail in the current growth arc.
+    // Only shown for the ACTIVE chapter (jn). No new state fields — done/act use existing data.
+    var _CT = [
+      null, // 0: Why You're Here — showing up IS the task
+      { key:"chtask:1", icon:"ti-user-star",     title:"Name who you're being",  line:"One virtue for today — that's Chapter 2 in one breath.",                      color:"#7c3aed",
+        done:function(){ return !!(S.profile&&(S.profile.todayVirtues||[]).length); },
+        act:function(){closeJourney();try{enterStage("am",{byTap:true});}catch(e){}} },
+      { key:"chtask:2", icon:"ti-shield-bolt",    title:"Name your obstacle",     line:"Chapter 3: what's most likely to derail you today — and the move around it.", color:"#e85d04",
+        done:function(){ return (S.goals||[]).some(function(g){return g.woop;}); },
+        act:function(){closeJourney();try{goalsSheet();}catch(e){}} },
+      { key:"chtask:3", icon:"ti-layout-columns", title:"Cover your Big Three",   line:"Chapter 4: one planned block for energy, one for work, one for love.",        color:"#0ea5e9",
+        done:function(){ var bl=blocks(k)||[],dm={}; bl.forEach(function(b){dm[domainOf(b)]=1;}); return !!(dm.focus&&(dm.move||dm.restore||dm.nourish)&&(dm.love||dm.connect)); },
+        act:function(){closeJourney();try{shapeFlow(k);}catch(e){}} },
+      { key:"chtask:4", icon:"ti-crown",          title:"Architect your day",     line:"Chapter 5: would you repeat today? Build it like a masterpiece.",              color:"#d97706",
+        done:function(){ return (blocks(k)||[]).filter(function(b){return b.title;}).length>=3; },
+        act:function(){closeJourney();try{shapeFlow(k);}catch(e){}} },
+      { key:"chtask:5", icon:"ti-refresh",        title:"Run your full stack",    line:"Chapter 6: the habit runs itself when it's automatic — mark each done.",      color:"#059669",
+        done:function(){ var habs=(S.habits||[]).filter(function(h){return h.type!=="quit";}); return habs.length>0&&habs.every(function(h){return !!doneMap(k)[h.id];}); },
+        act:function(){closeJourney();try{goTab("day");}catch(e){}} },
+      null, // 6: The Fundamentals — rxFund node already handles this (Sun/Mon gate)
+      { key:"chtask:7", icon:"ti-star",           title:"Who are you now?",       line:"Chapter 8: one honest line about who you've become. Write it.",               color:"#f59e0b",
+        done:function(){ return (logs(k)||[]).length>0; },
+        act:function(){closeJourney();try{enterStage("pm",{byTap:true});}catch(e){}} }
+    ];
+    if (jn < _CT.length && _CT[jn]) {
+      var _ct = _CT[jn];
+      nodes.push({ key:_ct.key, icon:_ct.icon, title:_ct.title, line:_ct.line, color:_ct.color, done:_ct.done(), act:_ct.act });
+    }
 
     // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
@@ -679,9 +708,9 @@
     });
 
     // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3).
-    if (jn >= 3 && !dormant) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
+    if (jn >= 3 && !dormant && (!!am.done || new Date().getHours() >= 17)) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
       var pmNode = { key:"pm", emoji:"🌙", title:"Close the day", line:"One honest line. A line is enough.", color:DOM.restore.c, done:pmDone, act:function(){ closeJourney(); try{enterStage("pm",{trackTitle:"Reflection",byTap:true});}catch(e){} } };
-      var atPm = preSurfaceCheck('pm', 4, "You've done full bookends 3 of the last 7 days — already there?");
+      var atPm = preSurfaceCheck('pm', 4, "You've done full bookends 3 of the last 7 days — already there?", pmDone, "Day closed");
       nodes.push(atPm || pmNode);
     }
     // FUNDAMENTALS RX weekly node (Synthesis §VI, Landmark 6): Chapter 6+ gate. Surfaces Sunday/Monday so the week starts clean.
@@ -900,7 +929,7 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
-    else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { drawJourney(false); } catch (e) {} }
+    else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { drawJourney(true); } catch (e) {} }
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
   }
   var _paneAnim = false;
