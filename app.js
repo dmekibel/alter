@@ -642,7 +642,7 @@
         act:function(){closeJourney();try{shapeFlow(k);}catch(e){}} },
       { key:"chtask:5", icon:"ti-refresh",        title:"Run your full stack",    line:"Chapter 6: the habit runs itself when it's automatic — mark each done.",      color:"#059669",
         done:function(){ var habs=(S.habits||[]).filter(function(h){return h.type!=="quit";}); return habs.length>0&&habs.every(function(h){return !!doneMap(k)[h.id];}); },
-        act:function(){closeJourney();try{goTab("day");}catch(e){}} },
+        act:function(){closeJourney();try{buildPull();}catch(e){renderAll();}} },
       null, // 6: The Fundamentals — rxFund node already handles this (Sun/Mon gate)
       { key:"chtask:7", icon:"ti-star",           title:"Who are you now?",       line:"Chapter 8: one honest line about who you've become. Write it.",               color:"#f59e0b",
         done:function(){ return (logs(k)||[]).length>0; },
@@ -656,7 +656,7 @@
     // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
       nodes.push({ key: "onething", emoji: "⭐", title: oneThing, catK: null, line: "Your one thing today — the vote that matters most.",
-        color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + oneThing); } });
+        color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); renderAll(); toast("▶ started " + oneThing); } });
     }
 
     // GOAL ⇄ JOURNEY (David 2026-06-29 — the spine): each active goal projects its NEXT move onto the trail, so the journey advances your goals, not just today's blocks. A metric goal → "log your number"; a step goal → its smallest undone step. Skips moves already on today's plan (the block node covers those). Capped so the trail never floods.
@@ -683,7 +683,7 @@
         nodes.push({ key: "goalst:" + g.title, emoji: "🎯", icon: gti, title: st.title, catK: null,
           line: "Next on " + g.title + " — tap to start it now.",
           color: gc, done: (logs(k) || []).some(function (l) { return (l.title || "").toLowerCase() === st.title.toLowerCase(); }),
-          act: function () { goalTouch(g); save(); startTimer({ title: st.title, color: gc }); closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ " + st.title); } });
+          act: function () { goalTouch(g); save(); startTimer({ title: st.title, color: gc }); closeJourney(); renderAll(); toast("▶ " + st.title); } });
       }
     });
 
@@ -703,7 +703,7 @@
         color: b.color || (DOM[dom] || DOM.focus).c, done: isDone, act: function () {
           if (isDone) { closeJourney(); blockEdit(b, k); return; } // already done → open it to review/edit
           startTimer({ title: b.title, catK: b.catK, emoji: (DOM[dom] || DOM.focus).e, color: b.color || (DOM[dom] || DOM.focus).c });
-          closeJourney(); try { goTab("day"); } catch (e) {} renderAll(); toast("▶ started " + b.title);
+          closeJourney(); renderAll(); toast("▶ started " + b.title);
         } });
     });
 
@@ -1958,7 +1958,7 @@
       occupied.push({ s: slot, e: slot + mins }); occupied.sort(function (a, b) { return a.s - b.s; });
       cursor = slot + mins; // next item tries from where this one ends (packs tightly but still skips occupied)
     }); // honour the editor's chosen length + importance (David 2026-06-28)
-    reflow(k); save(); renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
+    reflow(k); save(); pendingScrollNow = true; renderToday(); buildPull(); toast("📋 placed on " + relLabel(k).toLowerCase());
   }
   // EDIT-FUNDAMENTALS menu (David 2026-06-25): customise the recurring basics that "Daily fundamentals" drops in (saved per-profile, falls back to the default set)
   function fundamentalsMenu() {
@@ -3456,20 +3456,7 @@
       S.guide.mode = "guided";
       var lvl = data.vibe === "thriving" ? 4 : data.vibe === "coasting" ? 2 : data.vibe === "stuck" ? 1 : 0; // infer the journey's opening chapter from how life feels — no separate "where are you starting?" question (David 2026-06-29)
       S.guide.unlocked = S.guide.unlocked || []; for (var _i = 0; _i <= lvl; _i++) if (S.guide.unlocked.indexOf(_i) < 0) S.guide.unlocked.push(_i);
-      // 4) SEED TODAY'S PLAN from their one-thing + chosen activities so the journey isn't empty — they finish standing on a populated path. Uses the SAFE skeletonDay path (never touches calendarView render).
-      try {
-        if (!(blocks(todayK()) || []).some(function (b) { return b.title; })) {
-          skeletonDay(todayK(), oneT || "");
-          var keptActs = keys(data.kept).slice(0, 3);
-          keptActs.forEach(function (t) {
-            if ((blocks(todayK()) || []).some(function (b) { return (b.title || "").toLowerCase() === t.toLowerCase(); })) return;
-            var dm = domainOf({ title: t }), tm = nextFreeMin(todayK());
-            blocks(todayK()).push({ id: uid(), time: pad(Math.floor(tm / 60)) + ":" + pad(tm % 60), mins: 30, title: t, prio: 2, color: (DOM[dm] || DOM.focus).c, domain: dm, done: false });
-          });
-          reflow(todayK());
-        }
-      } catch (e) {}
-      save(); ov.remove(); try{placementQuestions(function(){renderAll();viewK=todayK();zoomMode="day";try{openJourney();}catch(e){}toast("Your world is ready.");});}catch(e){renderAll();viewK=todayK();zoomMode="day";try{openJourney();}catch(e){}} // land on the JOURNEY (cascaded stepping-stones), not the planner, after onboarding (David v661)
+      save(); ov.remove(); try{renderAll();viewK=todayK();zoomMode="day";try{openJourney();}catch(e){}toast("Your world is ready.");}catch(e){renderAll();viewK=todayK();zoomMode="day";try{openJourney();}catch(e){}} // land on the JOURNEY after onboarding — plan node in the trail handles first-day planning (David v709)
     }
     function draw() {
       barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
@@ -3478,19 +3465,22 @@
       if (step === 1) { add(body, "div", "ob-q", "How's life feeling?"); add(body, "div", "ob-sb", "no wrong answer"); var col = add(body, "div", "ob-col"); VIBES2.forEach(function (v) { var c = chip(col, '<i class="ti ' + v.ti + '"></i> ' + v.l, data.vibe === v.k, v.c, "#160510"); c.onclick = function () { data.vibe = v.k; draw(); }; }); }
       if (step === 2) { add(body, "div", "ob-q", "A little about you"); add(body, "div", "ob-sb", "helps me suggest a starting point"); add(body, "div", "ob-lbl", "YOU ARE"); var gr = add(body, "div", "ob-row"); [["f", "she"], ["m", "he"], ["o", "they"], ["", "skip"]].forEach(function (g) { var c = chip(gr, g[1], data.gender === g[0]); c.onclick = function () { data.gender = g[0]; draw(); }; }); add(body, "div", "ob-lbl", "AGE"); var ar = add(body, "div", "ob-row"); ["teens", "20s", "30s", "40s", "50s", "60+"].forEach(function (a) { var c = chip(ar, a, data.age === a); c.onclick = function () { data.age = a; if (!keys(data.stages).length) data.stages[stageSuggest(data.age)] = true; draw(); }; }); }
       if (step === 3) {
-        add(body, "div", "ob-q", "What's your life like?"); add(body, "div", "ob-sb", "pick all that fit — you can be more than one · or type your own");
+        add(body, "div", "ob-q", "What's your life like?"); add(body, "div", "ob-sb", "pick all that fit — your guardian adapts");
         if (!keys(data.stages).length && data.age) data.stages[stageSuggest(data.age)] = true;
-        ROLE_GROUPS.forEach(function (grp) {
-          var sec = add(body, "div", "ob-libsec"); var dh = add(sec, "div", "ob-dh"); dh.innerHTML = '<i class="ti ' + grp.ti + '"></i> ' + grp.l.toUpperCase(); dh.style.color = grp.c;
-          var w = add(sec, "div", "ob-row");
-          grp.ks.forEach(function (k) { var s = LIFESTAGES.filter(function (x) { return x.k === k; })[0]; if (!s) return; var on = data.stages[s.k]; var c = chip(w, '<i class="ti ' + s.ti + '"></i> ' + s.l + (on ? ' ✓' : ''), on, s.c, "#160510"); c.onclick = function () { data.stages[s.k] = !data.stages[s.k]; draw(); }; });
+        var GRP_SUB = ["building a business or career","making art, music, or film","family, caregiving, running the home","in school or finding your way","training, retired, health-first"];
+        var gcards = add(body, "div", "ob-gcards");
+        ROLE_GROUPS.forEach(function (grp, gi) {
+          var anyOn = grp.ks.some(function (k) { return data.stages[k]; });
+          var gc2 = add(gcards, "button", "ob-gcard" + (anyOn ? " on" : ""));
+          gc2.style.borderColor = grp.c;
+          if (anyOn) { gc2.style.background = mixHex(grp.c, "#160510", 0.78); }
+          gc2.innerHTML = '<i class="ti ' + grp.ti + ' ob-gci" style="color:' + (anyOn ? '#fff' : grp.c) + '"></i><span class="ob-gcl" style="color:' + (anyOn ? '#fff' : '#e6cfe0') + '">' + esc(grp.l) + '</span><span class="ob-gcsub">' + esc(GRP_SUB[gi] || '') + '</span>';
+          gc2.onclick = function () { var allOn2 = grp.ks.every(function (k) { return data.stages[k]; }); grp.ks.forEach(function (k) { data.stages[k] = !allOn2; }); draw(); };
         });
-        var cw = add(body, "div", "ob-row"); (data.customStages || []).forEach(function (v) { var ck = "custom:" + v, on = data.stages[ck], c = chip(cw, '<i class="ti ti-user"></i> ' + esc(v) + (on ? ' ✓' : ''), on, "#ff8a3a", "#4a2400"); c.onclick = function () { data.stages[ck] = !data.stages[ck]; draw(); }; });
-        typeRow("your role / situation…", function (v) { data.customStages.push(v); data.stages["custom:" + v] = true; });
       }
       if (step === 4) drawGoalsLight();
       if (step === 5) { add(body, "div", "ob-q", "Your daily rhythm"); add(body, "div", "ob-sb", "rough is fine — pick a range"); add(body, "div", "ob-lbl", "I USUALLY WAKE"); var ur = add(body, "div", "ob-row"); ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"].forEach(function (t) { var c = chip(ur, t, data.wake === t); c.onclick = function () { data.wake = t; draw(); }; }); add(body, "div", "ob-lbl", "I USUALLY SLEEP"); var brr = add(body, "div", "ob-row"); ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"].forEach(function (t) { var c = chip(brr, t, data.bed === t); c.onclick = function () { data.bed = t; draw(); }; }); add(body, "div", "ob-lbl", "SHARPEST"); var lr = add(body, "div", "ob-row"); [["lark", "Morning", "ti-sun", "#ffc83d", "#5a3a00"], ["owl", "Night", "ti-moon", "#9a7cff", "#241548"], ["mixed", "It varies", "ti-windmill", "#7f9bc4", "#16243a"]].forEach(function (o) { var on = data.peak === o[0], c = chip(lr, '<i class="ti ' + o[2] + '"></i> ' + o[1], on, o[3], o[4]); c.onclick = function () { data.peak = o[0]; draw(); }; }); }
-      if (step === 6) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
+      if (step === 6) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "your guardian knows you. let's build today together."); }
       var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : "")); b.textContent = step === 0 ? "Let's go ▸" : step === STEPS - 1 ? "Plan your first day ▸" : "Next ▸"; b.onclick = next;
       if (step > 0 && step < STEPS - 1) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; draw(); }; }
       var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = function () { ov.remove(); try { openJourney(); } catch (e) {} }; // skip → reveal the journey with the stepping-stones cascade too (David v661)

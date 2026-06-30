@@ -259,14 +259,13 @@
   .jp-rdisc i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-cktitle{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;}
   .jp-cktimer{font-family:var(--bub);font-size:27px;font-weight:800;color:#ffd9ea;letter-spacing:1px;margin-top:-4px;}
-  .jp-ckmatrix{display:flex;gap:9px;}
-  .jp-ckbtn{border:2.5px solid var(--ink);border-radius:12px;padding:10px 20px;font-family:var(--bub);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;gap:6px;}
-  .jp-ckbtn.done{background:#34d39a;color:#06351f;}
+  .jp-ckmatrix{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
+  .jp-ckbtn{border:2.5px solid var(--ink);border-radius:12px;padding:9px 10px;font-family:var(--bub);font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:5px;}
+  .jp-ckbtn.done{grid-column:1/-1;padding:11px 20px;font-size:15px;background:#34d39a;color:#06351f;}
   .jp-ckbtn.follow{background:#7cc8ff;color:#0b2740;}
   .jp-ckbtn.replan{background:#ffd54a;color:#4a3500;}
   .jp-ckbtn.drift{background:#caa6e6;color:#321a48;}
-  .jp-ckbtn.small{padding:9px 14px;font-size:13px;}
-  .jp-ckmatrix{flex-wrap:wrap;justify-content:center;}
+  .jp-ckbtn.small{padding:9px 10px;font-size:13px;}
   .jp-ckbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
   /* HABIT 3-way inline menu — render in the cockpit slot, the habit's color (David 2026-06-28) */
   .jp-habmenu{display:flex;flex-direction:column;align-items:stretch;gap:9px;margin:8px 0 4px;width:208px;}
@@ -1277,6 +1276,12 @@
   .ob-back{ background:#48122f; color:#ffd9ec; border:2px solid #160510; border-radius:12px; padding:13px 14px; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; cursor:pointer; flex:none; }
   .ob-skip{ background:none; border:none; color:#8a5a72; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; flex:none; }
   .ob-libsec{ margin-bottom:11px; }
+  .ob-gcards{ display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+  .ob-gcard{ border:2.5px solid #4a2040; border-radius:18px; padding:15px 16px; cursor:pointer; background:#2a1030; display:flex; align-items:center; gap:14px; font-family:"Jost",sans-serif; text-align:left; box-shadow:0 3px 0 #160510; transition:background .15s; }
+  .ob-gcard.on{ box-shadow:0 3px 0 #160510, 0 0 0 3px #ffd54a; }
+  .ob-gci{ font-size:24px; flex:none; }
+  .ob-gcl{ font-size:17px; font-weight:800; display:block; }
+  .ob-gcsub{ font-size:12px; color:#9a7090; font-weight:500; display:block; margin-top:2px; }
   .ob-addrow{ display:flex; gap:7px; margin-bottom:6px; }
   .ob-input{ flex:1; min-width:0; background:#48122f !important; border:2px solid #ff7ab8 !important; border-radius:11px; padding:10px 12px; color:#ffe3f1 !important; font-size:14px; font-family:"Jost",sans-serif; font-weight:600; }
   .ob-addbtn{ flex:none; background:#34d39a; color:#0c3d29; border:2px solid #160510; border-radius:11px; box-shadow:0 3px 0 #160510; padding:0 14px; font-family:"Jost",sans-serif; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:4px; }
@@ -1702,6 +1707,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=708"></script>
+  <script src="app.js?v=709"></script>
 </body>
 </html>
