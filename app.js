@@ -2838,7 +2838,7 @@
   };
   function onboard() {
     var data = { gender: "", age: "", vibe: "", stages: {}, customStages: [], kept: {}, _pref: "", goals: {}, wake: "7–8", bed: "11–12", peak: "lark", identity: [], customIdent: [], virtue: "", oneThing: "", habitsSel: {}, customHabits: [], level: "" };
-    var step = 0, STEPS = 11; // 0 intro · 1 vibe · 2 you · 3 roles(grouped) · 4 Energy · 5 Work · 6 Love · 7 Hobbies · 8 Other · 9 rhythm · 10 ready (David 2026-06-29: category-driven, calmer; dropped identity/virtue/all-habits/level)
+    var step = 0, STEPS = 7; // 0 intro · 1 vibe · 2 you · 3 roles · 4 goals-light · 5 rhythm · 6 ready (2026-06-30: replaced 5 heavy category screens with one calm multi-select)
     // role buckets so "What's your life like?" reads as a few calm labeled rows, not 23 flat chips (David 2026-06-29)
     var ROLE_GROUPS = [
       { l: "Work & Career", ti: "ti-briefcase", c: "#36b3f0", ks: ["founder", "employee", "freelancer", "developer", "remote", "manager", "sales", "teacher", "healthcare", "service", "trades"] },
@@ -2847,8 +2847,6 @@
       { l: "Learning & Figuring", ti: "ti-school", c: "#34d39a", ks: ["student", "jobseeker", "figuring"] },
       { l: "Body & Life", ti: "ti-leaf", c: "#9a8cc4", ks: ["athlete", "retired"] }
     ];
-    var CAT_STEP = { 4: "energy", 5: "work", 6: "love", 7: "hobbies", 8: "other" };
-    var CAT_SUB = { energy: "your body, food, rest — the fuel", work: "career, focus, money — what you build", love: "people & relationships — who you invest in", hobbies: "creating & play — the things you love doing", other: "chores, upkeep, habits to drop" };
     // role → goals it tends to imply: the onboarding surfaces these FIRST, marked ✨, so the app feels like it already gets you (David 2026-06-29 — adaptive onboarding)
     var ROLE_GOALS = {
       filmmaker: ["Make videos", "Make money", "Grow my audience"], musician: ["Make music", "Grow my audience", "Make money"],
@@ -2867,31 +2865,41 @@
     function keys(o) { return Object.keys(o).filter(function (k) { return o[k]; }); }
     function seedKept() { data.kept = {}; for (var d in STAGE_BASE) STAGE_BASE[d].forEach(function (t) { data.kept[t] = true; }); keys(data.stages).forEach(function (sk) { (STAGE_EXTRA[sk] || []).forEach(function (a) { data.kept[a[0]] = true; }); var st = LIFESTAGES.filter(function (x) { return x.k === sk; })[0]; if (st) { var o = OCC_BY_K[st.occ]; if (o && o.work) o.work.forEach(function (g) { g.tasks.slice(0, 3).forEach(function (t) { data.kept[t.l] = true; }); }); } }); }
     function typeRow(placeholder, onAdd, label) { add(body, "div", "ob-lbl", label || "✦ MISSING SOMETHING? TYPE IT"); var arow = add(body, "div", "ob-addrow"); var inp = document.createElement("input"); inp.className = "ob-input"; inp.placeholder = placeholder; arow.appendChild(inp); var ab = add(arow, "button", "ob-addbtn"); ab.innerHTML = '<i class="ti ti-plus"></i> add'; ab.onclick = function () { var v = inp.value.trim(); if (!v) { inp.focus(); return; } onAdd(v); draw(); }; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") ab.onclick(); }); }
-    // one calm screen per supercategory: this category's long-term goals on top, daily habits below (David 2026-06-29)
-    function drawCategory(catK) {
-      var sc = SUPERCAT.filter(function (x) { return x.k === catK; })[0];
-      var sig = keys(data.stages).sort().join(","); if (data._pref !== sig) { data._pref = sig; seedKept(); }
-      if (!data._habInit) { data._habInit = true; DEFAULT_HABITS.forEach(function (h) { data.habitsSel[h.id] = true; }); }
-      var q = add(body, "div", "ob-q"); q.innerHTML = '<i class="ti ' + sc.ti + '" style="color:' + sc.c + '"></i> ' + sc.l; add(body, "div", "ob-sb", CAT_SUB[catK]);
-      // --- LONG-TERM GOALS (role-aware: goals your roles imply surface first, marked ✨) ---
+    // ONE calm multi-select step: "What do you want help with?" — all GOAL_SEED chips, role-suggested ones floated first (✨), skippable, plus a type-your-own row. Replaces the 5 heavy per-category screens. Habits stay silently auto-seeded. (2026-06-30)
+    function drawGoalsLight() {
+      add(body, "div", "ob-q", "What do you want help with?");
+      add(body, "div", "ob-sb", "tap anything that resonates — or skip, no pressure");
+      // auto-seed default habits silently (user never sees the habit picker during onboarding now)
+      if (!data._habInit) { data._habInit = true; DEFAULT_HABITS.forEach(function (h) { data.habitsSel[h.id] = true; }); seedKept(); }
+      // build suggested set from roles
       var sugg = {}; keys(data.stages).forEach(function (rk) { (ROLE_GOALS[rk] || []).forEach(function (gl) { sugg[gl] = 1; }); });
-      function goalChip(p, g, star) { var on = data.goals[g.l], D = DOM[g.d]; var c = chip(p, (star ? '✨ ' : '') + '<i class="ti ' + g.ti + '"></i> ' + g.l + (on ? ' ✓' : ''), on, D.c, D.ink); c.onclick = function () { data.goals[g.l] = !data.goals[g.l]; draw(); }; }
-      var catGoals = GOAL_SEED.filter(function (g) { return DOM2SUPER[g.d] === catK; });
-      var sg = catGoals.filter(function (g) { return sugg[g.l]; }), rest = catGoals.filter(function (g) { return !sugg[g.l]; });
-      if (sg.length) { add(body, "div", "ob-lbl", "✨ SUGGESTED FOR YOU").style.color = "#ffd98a"; var sgr = add(body, "div", "ob-row"); sg.forEach(function (g) { goalChip(sgr, g, true); }); add(body, "div", "ob-lbl", "MORE"); } else add(body, "div", "ob-lbl", "LONG-TERM GOALS");
+      var suggested = GOAL_SEED.filter(function (g) { return sugg[g.l]; });
+      var rest = GOAL_SEED.filter(function (g) { return !sugg[g.l]; });
+      function goalChip(p, g, star) {
+        var on = data.goals[g.l]; var D = DOM[g.d] || DOM.focus;
+        var c = chip(p, (star ? '✨ ' : '') + '<i class="ti ' + g.ti + '"></i> ' + g.l + (on ? ' ✓' : ''), on, D.c, D.ink);
+        c.onclick = function () { data.goals[g.l] = !data.goals[g.l]; draw(); };
+      }
+      if (suggested.length) {
+        add(body, "div", "ob-lbl", "✨ SUGGESTED FOR YOU").style.color = "#ffd98a";
+        var sgr = add(body, "div", "ob-row"); suggested.forEach(function (g) { goalChip(sgr, g, true); });
+        add(body, "div", "ob-lbl", "MORE IDEAS");
+      } else {
+        add(body, "div", "ob-lbl", "WHAT MATTERS TO YOU");
+      }
       var gr = add(body, "div", "ob-row"); rest.forEach(function (g) { goalChip(gr, g, false); });
-      keys(data.goals).forEach(function (g) { if (GOAL_SEED.filter(function (x) { return x.l === g; })[0]) return; if (DOM2SUPER[domainOf({ title: g })] !== catK) return; var c = chip(gr, '<i class="ti ti-star"></i> ' + esc(g) + ' ✓', true, "#ff8a3a", "#4a2400"); c.onclick = function () { data.goals[g] = false; draw(); }; });
-      typeRow("a " + sc.l.toLowerCase() + " goal of your own…", function (v) { data.goals[v] = true; }, "✦ ADD A GOAL");
-      // --- DAILY HABITS / ACTIVITIES ---
-      add(body, "div", "ob-lbl", "DAILY HABITS"); var hr = add(body, "div", "ob-row"); var shown = {};
-      DEFAULT_HABITS.concat(EXTRA_HABITS).concat(data.customHabits).forEach(function (h) { if (DOM2SUPER[domainOf({ title: h.l })] !== catK) return; shown[h.l.toLowerCase()] = 1; var on = data.habitsSel[h.id]; var c = chip(hr, h.e + ' ' + esc(h.l) + (on ? ' ✓' : ''), on, h.color || "#9a5cf0", "#160510"); c.onclick = function () { data.habitsSel[h.id] = !data.habitsSel[h.id]; draw(); }; });
-      var lib = {}; allActivities().forEach(function (a) { if (DOM2SUPER[a.domain] !== catK || shown[(a.title || "").toLowerCase()]) return; (lib[a.domain] = lib[a.domain] || []).push(a.title); });
-      keys(data.kept).forEach(function (t) { var dm = domainOf({ title: t }); if (DOM2SUPER[dm] !== catK || shown[t.toLowerCase()]) return; lib[dm] = lib[dm] || []; if (lib[dm].indexOf(t) < 0) lib[dm].push(t); });
-      Object.keys(lib).forEach(function (d) { var D = DOM[d]; lib[d].forEach(function (t) { if (shown[t.toLowerCase()]) return; shown[t.toLowerCase()] = 1; var on = data.kept[t]; var c = chip(hr, esc(t) + (on ? ' ✓' : ''), on, D.c, D.ink); c.onclick = function () { data.kept[t] = !data.kept[t]; draw(); }; }); });
-      typeRow("a " + sc.l.toLowerCase() + " habit of your own…", function (v) { var id = "h" + Date.now().toString(36); var q = /^(less|no |not |quit|stop|cut|reduce|avoid|skip|fewer)\b/i.test(v.trim()); data.customHabits.push({ id: id, e: q ? "🚫" : "✨", l: v, type: q ? "quit" : "build", per: 0, color: sc.c }); data.habitsSel[id] = true; }, "✦ ADD A HABIT"); // auto-detect a quit-target from the wording ("Less weed", "No scrolling") so reductions track correctly (David 2026-06-29)
+      // show any custom goals the user has typed
+      var customGoalKeys = keys(data.goals).filter(function (g) { return !GOAL_SEED.filter(function (x) { return x.l === g; })[0]; });
+      if (customGoalKeys.length) {
+        var cgr = add(body, "div", "ob-row");
+        customGoalKeys.forEach(function (g) { var c = chip(cgr, '<i class="ti ti-star"></i> ' + esc(g) + ' ✓', true, "#ff8a3a", "#4a2400"); c.onclick = function () { data.goals[g] = false; draw(); }; });
+      }
+      typeRow("something else on your mind…", function (v) { data.goals[v] = true; }, "✦ ADD YOUR OWN");
     }
     function next() { if (step < STEPS - 1) { step++; draw(); } else finish(); }
     function finish() {
+      // guard: if the user skipped step 4 entirely, still seed default habits + kept activities silently
+      if (!data._habInit) { data._habInit = true; DEFAULT_HABITS.forEach(function (h) { data.habitsSel[h.id] = true; }); seedKept(); }
       S.profile = S.profile || {}; var P = S.profile;
       var sel = keys(data.stages).map(function (k) { return LIFESTAGES.filter(function (x) { return x.k === k; })[0]; }).filter(Boolean);
       P.gender = data.gender; P.age = data.age; P.vibe = data.vibe; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck"); P.stages = keys(data.stages); P.occ = sel.length ? sel[0].occ : "other"; // wire the once-dead vibe: an overwhelmed/stuck onboarder gets the body-first low-energy gate until real mood data arrives (David 2026-06-29 readiness test)
@@ -2932,10 +2940,10 @@
     }
     function draw() {
       barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
-      body.className = (step === 0 || step === 10) ? "ob-body center" : "ob-body";
+      body.className = (step === 0 || step === 6) ? "ob-body center" : "ob-body";
       if (step === 0) { add(body, "i", "ti ti-sparkles ob-spk"); var f = add(body, "div", "ob-face"); add(f, "span", "ob-eye l"); add(f, "span", "ob-eye r"); add(body, "div", "ob-q", "Hi, I'm Sage."); add(body, "div", "ob-sb", "your guardian. I'll help you become who you want to be — one day at a time."); }
       if (step === 1) { add(body, "div", "ob-q", "How's life feeling?"); add(body, "div", "ob-sb", "no wrong answer"); var col = add(body, "div", "ob-col"); VIBES2.forEach(function (v) { var c = chip(col, '<i class="ti ' + v.ti + '"></i> ' + v.l, data.vibe === v.k, v.c, "#160510"); c.onclick = function () { data.vibe = v.k; draw(); }; }); }
-      if (step === 2) { add(body, "div", "ob-q", "A little about you"); add(body, "div", "ob-sb", "helps me suggest a starting point"); add(body, "div", "ob-lbl", "YOU ARE"); var gr = add(body, "div", "ob-row"); [["f", "she"], ["m", "he"], ["o", "they"], ["", "skip"]].forEach(function (g) { var c = chip(gr, g[1], data.gender === g[0]); c.onclick = function () { data.gender = g[0]; draw(); }; }); add(body, "div", "ob-lbl", "AGE"); var ar = add(body, "div", "ob-row"); ["teens", "20s", "30s", "40s", "50s", "60+"].forEach(function (a) { var c = chip(ar, a, data.age === a); c.onclick = function () { data.age = a; if (!keys(data.stages).length) data.stages[stageSuggest(a)] = true; draw(); }; }); }
+      if (step === 2) { add(body, "div", "ob-q", "A little about you"); add(body, "div", "ob-sb", "helps me suggest a starting point"); add(body, "div", "ob-lbl", "YOU ARE"); var gr = add(body, "div", "ob-row"); [["f", "she"], ["m", "he"], ["o", "they"], ["", "skip"]].forEach(function (g) { var c = chip(gr, g[1], data.gender === g[0]); c.onclick = function () { data.gender = g[0]; draw(); }; }); add(body, "div", "ob-lbl", "AGE"); var ar = add(body, "div", "ob-row"); ["teens", "20s", "30s", "40s", "50s", "60+"].forEach(function (a) { var c = chip(ar, a, data.age === a); c.onclick = function () { data.age = a; if (!keys(data.stages).length) data.stages[stageSuggest(data.age)] = true; draw(); }; }); }
       if (step === 3) {
         add(body, "div", "ob-q", "What's your life like?"); add(body, "div", "ob-sb", "pick all that fit — you can be more than one · or type your own");
         if (!keys(data.stages).length && data.age) data.stages[stageSuggest(data.age)] = true;
@@ -2947,9 +2955,9 @@
         var cw = add(body, "div", "ob-row"); (data.customStages || []).forEach(function (v) { var ck = "custom:" + v, on = data.stages[ck], c = chip(cw, '<i class="ti ti-user"></i> ' + esc(v) + (on ? ' ✓' : ''), on, "#ff8a3a", "#4a2400"); c.onclick = function () { data.stages[ck] = !data.stages[ck]; draw(); }; });
         typeRow("your role / situation…", function (v) { data.customStages.push(v); data.stages["custom:" + v] = true; });
       }
-      if (CAT_STEP[step]) drawCategory(CAT_STEP[step]);
-      if (step === 9) { add(body, "div", "ob-q", "Your daily rhythm"); add(body, "div", "ob-sb", "rough is fine — pick a range"); add(body, "div", "ob-lbl", "I USUALLY WAKE"); var ur = add(body, "div", "ob-row"); ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"].forEach(function (t) { var c = chip(ur, t, data.wake === t); c.onclick = function () { data.wake = t; draw(); }; }); add(body, "div", "ob-lbl", "I USUALLY SLEEP"); var brr = add(body, "div", "ob-row"); ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"].forEach(function (t) { var c = chip(brr, t, data.bed === t); c.onclick = function () { data.bed = t; draw(); }; }); add(body, "div", "ob-lbl", "SHARPEST"); var lr = add(body, "div", "ob-row"); [["lark", "Morning", "ti-sun", "#ffc83d", "#5a3a00"], ["owl", "Night", "ti-moon", "#9a7cff", "#241548"], ["mixed", "It varies", "ti-windmill", "#7f9bc4", "#16243a"]].forEach(function (o) { var on = data.peak === o[0], c = chip(lr, '<i class="ti ' + o[2] + '"></i> ' + o[1], on, o[3], o[4]); c.onclick = function () { data.peak = o[0]; draw(); }; }); }
-      if (step === 10) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
+      if (step === 4) drawGoalsLight();
+      if (step === 5) { add(body, "div", "ob-q", "Your daily rhythm"); add(body, "div", "ob-sb", "rough is fine — pick a range"); add(body, "div", "ob-lbl", "I USUALLY WAKE"); var ur = add(body, "div", "ob-row"); ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"].forEach(function (t) { var c = chip(ur, t, data.wake === t); c.onclick = function () { data.wake = t; draw(); }; }); add(body, "div", "ob-lbl", "I USUALLY SLEEP"); var brr = add(body, "div", "ob-row"); ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"].forEach(function (t) { var c = chip(brr, t, data.bed === t); c.onclick = function () { data.bed = t; draw(); }; }); add(body, "div", "ob-lbl", "SHARPEST"); var lr = add(body, "div", "ob-row"); [["lark", "Morning", "ti-sun", "#ffc83d", "#5a3a00"], ["owl", "Night", "ti-moon", "#9a7cff", "#241548"], ["mixed", "It varies", "ti-windmill", "#7f9bc4", "#16243a"]].forEach(function (o) { var on = data.peak === o[0], c = chip(lr, '<i class="ti ' + o[2] + '"></i> ' + o[1], on, o[3], o[4]); c.onclick = function () { data.peak = o[0]; draw(); }; }); }
+      if (step === 6) { var w = add(body, "div", "ob-world"); w.innerHTML = '<i class="ti ti-sparkles"></i>'; add(body, "div", "ob-q", "Your world is ready ✨"); add(body, "div", "ob-sb", "seeded with your life. let's make today count."); }
       var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : "")); b.textContent = step === 0 ? "Let's go ▸" : step === STEPS - 1 ? "Plan your first day ▸" : "Next ▸"; b.onclick = next;
       if (step > 0 && step < STEPS - 1) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; draw(); }; }
       var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = function () { ov.remove(); try { openJourney(); } catch (e) {} }; // skip → reveal the journey with the stepping-stones cascade too (David v661)
