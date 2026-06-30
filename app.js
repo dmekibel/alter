@@ -724,6 +724,8 @@
       }
     }
 
+    // SEQUENCER step 3 (David 2026-07-01): on a DEPLETED day the trail shouldn't be a wall of tasks. Keep the essentials (the lead, bookends, your one thing, goals, the away/rest stones) and quietly drop the optional pile (habits, the chapter practice) UNTIL you've got fuel back. Done ones stay (the trail behind you). Reward-never-shame: less to face, not less worth.
+    if (pf.lowEnergy) { nodes = nodes.filter(function (n) { if (n.done) return true; var k = n.key || ""; return !(k.indexOf("hab:") === 0 || k.indexOf("chtask:") === 0); }); }
     return nodes;
   }
   function prefersReducedMotion() { return false; } // David wants animations to ALWAYS play — even with iOS "Reduce Motion" on (v659); that setting was making the app look static
@@ -1135,6 +1137,17 @@
     // #5: seed the done-set on first call so bursts only fire for completions that happen THIS session
     if (!_jpDoneSetSeeded) { _jpDoneSetSeeded = true; real.forEach(function (n) { if (n.done && n.key) _jpDoneSet[todayK() + ":" + n.key] = 1; }); }
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
+    // SEQUENCER step 4 (David 2026-07-01): a state-aware guardian line above the focal step — the app SEES you (bounced back, returning after a gap, mid-streak). Anticipate-and-compensate: normalise BEFORE you blame yourself. Shown only when it has something true to say.
+    function jpLeadPreface(n) {
+      try {
+        if (n._lead) return null; // the settle step already speaks to a depleted day
+        var p = profile();
+        if (p.bouncedBack) return "You came back yesterday — that bounce IS the skill.";
+        if (doneN === 0 && p.missDays >= 1) return "Good to see you. One small step is plenty today.";
+        var st = curStreak(); if (doneN === 0 && st >= 3) return "Day " + (st + 1) + " of your thread — let's keep it alive.";
+      } catch (e) {}
+      return null;
+    }
     // SEQUENCER (David 2026-07-01): the focal step = the most important UNDONE move for your state, not just the first in the list. One braid priority (canon: ritual > course > goal > habit), with the energy-first override on top.
     function _leadW(n) {
       if (n._lead) return 100;                                                   // regulate-first when depleted (Johnson Step 1)
@@ -1150,7 +1163,7 @@
     }
     var curIdx = -1, _bw = -1; for (var i = 0; i < real.length; i++) { if (real[i].done) continue; var _w = _leadW(real[i]); if (_w > _bw) { _bw = _w; curIdx = i; } } // highest-priority undone = the one focal step
     var allDone = curIdx < 0;
-    var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today") + "  ·  " + appVer(); // version tag so we can confirm which build is actually loaded (David 2026-07-02)
+    var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful" : doneN === 0 ? "Your day's ahead — one step at a time" : doneN + " of " + total + " today") + "  ·  " + appVer(); // endowed progress: never a cold "0 of N", always forward-framed (canon, David 2026-07-01) // version tag so we can confirm which build is actually loaded (David 2026-07-02)
     var spk = el("jpSpark"); if (spk) { var spkn = spk.querySelector(".spark-n"); if (spkn) spkn.textContent = ((S.game && S.game.spark) || 0).toLocaleString(); }
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
@@ -1229,6 +1242,7 @@
           };
         } else {
           var card = add(node, "div", "jp-card");
+          var _pre = jpLeadPreface(n); if (_pre) { var _pe = add(card, "div", "jc-pre", _pre); _pe.setAttribute("style", "font-size:11px;font-weight:700;color:#caa0bd;margin-bottom:5px;letter-spacing:.2px;line-height:1.3;"); }
           add(card, "div", "jc-t", n.title);
           if (n.line) add(card, "div", "jc-l", n.line);
           var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : "START"; cta.style.background = n.color; cta.onclick = function () { jpStart(n); };
