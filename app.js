@@ -3473,8 +3473,12 @@
           var anyOn = grp.ks.some(function (k) { return data.stages[k]; });
           var gc2 = add(gcards, "button", "ob-gcard" + (anyOn ? " on" : ""));
           gc2.style.borderColor = grp.c;
-          if (anyOn) { gc2.style.background = mixHex(grp.c, "#160510", 0.78); }
-          gc2.innerHTML = '<i class="ti ' + grp.ti + ' ob-gci" style="color:' + (anyOn ? '#fff' : grp.c) + '"></i><span class="ob-gcl" style="color:' + (anyOn ? '#fff' : '#e6cfe0') + '">' + esc(grp.l) + '</span><span class="ob-gcsub">' + esc(GRP_SUB[gi] || '') + '</span>';
+          // outline state = dark domain-tint fill; selected = the striped reward texture (matches timeline bubbles). Text stays light-berry / dark-ink — never white. (David design principles)
+          gc2.style.background = anyOn ? tfStripe(grp.c) : mixHex(grp.c, "#160510", 0.8);
+          var iconC = anyOn ? "#1c0a17" : grp.c, titleC = anyOn ? "#1c0a17" : mixHex(grp.c, "#f7e9f1", 0.7), subC = anyOn ? "#2e0f24" : "#b48fab";
+          gc2.innerHTML = '<i class="ti ' + grp.ti + ' ob-gci" style="color:' + iconC + '"></i>'
+            + '<span class="ob-gctext"><span class="ob-gcl" style="color:' + titleC + '">' + esc(grp.l) + '</span>'
+            + '<span class="ob-gcsub" style="color:' + subC + '">' + esc(GRP_SUB[gi] || '') + '</span></span>';
           gc2.onclick = function () { var allOn2 = grp.ks.every(function (k) { return data.stages[k]; }); grp.ks.forEach(function (k) { data.stages[k] = !allOn2; }); draw(); };
         });
       }
