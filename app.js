@@ -356,18 +356,23 @@
     return Math.max(gate, floor);
   }
   // ===== JOURNEY CURRICULUM (JX-NODES, David 2026-06-28): the 6-node spine. Each node = one daily action + a reward-never-shame next-step card. `done(k)` is a PURE read of today's real signals → drives the one-obvious-next-step + landing. `act()` picks which stage the cockpit wears (or which sheet it opens). Voice: warm, never should/must/missed/behind. =====
+  // ===== JOURNEY CURRICULUM (Phase 1 Drop 1, 2026-06-30): 8-node spine aligned 1:1 to the 8 LANDMARKS (O→VII course arc). done() = pure read of existing state; act() = opens existing surfaces. No new stages; no SCHEMA bump. =====
   var JOURNEY = [
-    { id: 0, key: "showup", title: "Show up", line: "Track one thing you're doing right now — that's the whole step.",
-      cta: "Track one thing", done: function (k) { return (logs(k) || []).length > 0 || (blocks(k) || []).some(function (b) { return b.done; }); }, act: function () { closeTrackerFull(); nowSheet(); } },
-    { id: 1, key: "plansmall", title: "Plan small", line: "Name tomorrow's one thing — just one — and let it wait for you.",
-      cta: "Name tomorrow's one thing", done: function (k) { return (blocks(tomK()) || []).some(function (b) { return b.title; }); }, act: function () { closeTrackerFull(); planSheet(tomK(), "tomorrow"); } },
-    { id: 2, key: "morning", title: "The morning", line: "Open the day on purpose — who you're being, your one thing.", timed: "morning",
+    { id: 0, key: "why", title: "Why You're Here", line: "Name what you actually want. One sentence — your real reason.",
+      cta: "Name your why", done: function (k) { return (logs(k) || []).length > 0 || (blocks(k) || []).some(function (b) { return b.done; }); }, act: function () { closeTrackerFull(); nowSheet(); } },
+    { id: 1, key: "optimus", title: "Who You Are", line: "Meet your best self — the version who already has what you want.", timed: "morning",
+      cta: "Open the morning", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done) || (blocks(k) || []).some(function (b) { return b.done; }); }, act: function () { enterStage("am", { byTap: true }); } },
+    { id: 2, key: "obstacle", title: "The Obstacle OS", line: "What's in the way IS the way. Name the obstacle — it becomes fuel.",
       cta: "Start the morning", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done); }, act: function () { enterStage("am", { byTap: true }); } },
-    { id: 3, key: "reflect", title: "Reflect", line: "Close the day with one honest line. A line is enough.", timed: "evening",
-      cta: "Close the day", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || (((S.bk || {})[k] || {}).journal || []).length > 0; }, act: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } },
-    { id: 4, key: "identity", title: "Identity", line: "Each kept block is a vote for who you're becoming. Cast one.",
-      cta: "Cast a vote", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done) || (blocks(k) || []).some(function (b) { return b.done; }); }, act: function () { enterStage("am", { byTap: true }); } },
-    { id: 5, key: "mastery", title: "Mastery", line: "You've got the rhythm. This is yours now — I'll be here on the arc.",
+    { id: 3, key: "bigthree", title: "Your Big Three", line: "Energy, work, love — map today across all three.", timed: "morning",
+      cta: "Open the morning", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done); }, act: function () { enterStage("am", { byTap: true }); } },
+    { id: 4, key: "masterpiece", title: "Masterpiece Day", line: "Open the day on purpose. Close it with one honest line. Repeat.", timed: "morning",
+      cta: "Start the morning", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.am && e.am.done); }, act: function () { enterStage("am", { byTap: true }); } },
+    { id: 5, key: "algorithms", title: "Your Algorithms", line: "Plan tomorrow's one thing tonight — make the good stuff automatic.",
+      cta: "Name tomorrow's one thing", done: function (k) { return (blocks(tomK()) || []).some(function (b) { return b.title; }); }, act: function () { closeTrackerFull(); planSheet(tomK(), "tomorrow"); } },
+    { id: 6, key: "fundamentals", title: "The Fundamentals", line: "Eat, move, sleep, breathe — the foundation everything else rests on.",
+      cta: "Close the day", done: function (k) { var e = (S.bk || {})[k] || {}; return !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0); }, act: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } },
+    { id: 7, key: "soulforce", title: "Soul Force", line: "You've walked the road. This is who you are now — carry it forward.",
       cta: "Carry on", done: function (k) { return true; }, act: function () { closeTrackerFull(); } }
   ];
   function journeyActionDoneToday() { var n = journeyNode(), node = JOURNEY[Math.max(0, Math.min(JOURNEY.length - 1, n))]; try { return !!node.done(todayK()); } catch (e) { return false; } }
@@ -793,9 +798,15 @@
     function upd() { read.textContent = fmtS(secs(+sl.value)); } sl.oninput = upd; upd();
     var go = add(wrap, "button", "jp-durgo"); go.textContent = "Commit"; go.style.background = n.color; go.onclick = function () { jpCommitGo(n, secs(+sl.value) / 60); };
   }
-  var JP_CHAPTERS = [ // the long-term GROWTH ARC = chapters. Active chapter = today's lessons; past = done milestones; future = locked aspiration. Driven by journeyNode() (which is goal/onboarding-shaped via readiness). (David 2026-06-28)
-    { t: "Show up", ic: "ti-seedling" }, { t: "Plan your days", ic: "ti-map-2" }, { t: "Morning rituals", ic: "ti-sunrise" },
-    { t: "Evening reflection", ic: "ti-moon" }, { t: "Become who you are", ic: "ti-star" }, { t: "Mastery", ic: "ti-crown" }
+  var JP_CHAPTERS = [ // the long-term GROWTH ARC = 8 LANDMARKS (O→VII course arc). Each has a short title, one-line why subtitle, and icon. Active = today's chapter; past = trophied milestones; future = dim aspiration. (Phase 1 Drop 1, 2026-06-30)
+    { t: "Why You're Here",    why: "Get clear on what you actually want.",             ic: "ti-flame" },
+    { t: "Who You Are",        why: "Meet your best self and name your strengths.",      ic: "ti-user-star" },
+    { t: "The Obstacle OS",    why: "Turn what's in your way into fuel.",               ic: "ti-shield-bolt" },
+    { t: "Your Big Three",     why: "Energy, work, love — the shape of a good day.",    ic: "ti-layout-columns" },
+    { t: "Masterpiece Day",    why: "Architect a day worth repeating.",                  ic: "ti-crown" },
+    { t: "Your Algorithms",    why: "Make the good stuff automatic.",                    ic: "ti-refresh" },
+    { t: "The Fundamentals",   why: "Eat, move, sleep, breathe — the foundation.",      ic: "ti-heart-rate-monitor" },
+    { t: "Soul Force",         why: "Live it. This is who you've become.",              ic: "ti-star" }
   ];
   var JP_ICON = { plan: "ti-map-2", settle: "ti-wind", am: "ti-sunrise", pm: "ti-moon", onething: "ti-star" }; // node-key → Tabler symbol (no emojis — match the day-viewer language)
   function drawJourney(autoScroll) {
@@ -809,7 +820,7 @@
     var spk = el("jpSpark"); if (spk) { var spkn = spk.querySelector(".spark-n"); if (spkn) spkn.textContent = ((S.game && S.game.spark) || 0).toLocaleString(); }
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
-    function banner(state, klabel, title, ic) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); }
+    function banner(state, klabel, title, ic, why) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); if (why) { var ws = add(tx, "div", "ju-why", why); ws.style.cssText = "font-size:11px;opacity:.62;margin-top:2px;line-height:1.3;"; } return u; }
     function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.innerHTML = '<i class="ti ' + glyph + '"></i>'; return t; }
     function coin(state, n, idx) {
       var node = add(trail, "div", "jp-node " + state);
@@ -867,17 +878,25 @@
     // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.
     // FUTURE chapters — locked, Mastery highest, descending toward today
     for (var f = JP_CHAPTERS.length - 1; f > jn; f--) {
-      banner("locked", "Unit " + (f + 1), JP_CHAPTERS[f].t, "ti-lock");
+      banner("locked", "Unit " + (f + 1), JP_CHAPTERS[f].t, "ti-lock", JP_CHAPTERS[f].why);
       for (var z = 0; z < 3; z++) coin("locked", { emoji: "★", title: "" }, gi++);
       trophy("locked", "ti-lock");
     }
     // ACTIVE chapter = TODAY. Banner on top, then today's reward summit, then today's steps ASCENDING (latest up high; current/done lower, so you climb toward them)
-    banner("active", "Today · Unit " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic);
+    banner("active", "Today · Unit " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic, JP_CHAPTERS[jn].why);
     var endT = trophy(allDone ? "done" : "locked", allDone ? "ti-trophy" : "ti-gift"); // today's reward summit
     for (var r = real.length - 1; r >= 0; r--) { var rn = real[r]; coin(rn.done ? "done" : (r === curIdx ? "cur" : "up"), rn, gi++); }
     if (!curEl) curEl = endT;
-    // PAST chapters — completed milestones, foundation at the very bottom
-    for (var c = jn - 1; c >= 0; c--) { banner("done", "Unit " + (c + 1) + " · complete", JP_CHAPTERS[c].t, JP_CHAPTERS[c].ic); trophy("done", "ti-trophy"); }
+    // PAST chapters — completed milestones, tappable to review (gentle recap). Foundation at the very bottom.
+    for (var c = jn - 1; c >= 0; c--) {
+      (function(ci) {
+        var ch = JP_CHAPTERS[ci], cjn = JOURNEY[ci];
+        var pu = banner("done", "Unit " + (ci + 1) + " · complete", ch.t, ch.ic, ch.why);
+        // make the past banner tappable → open the chapter's surface for review
+        if (pu && cjn && cjn.act) { pu.style.cursor = "pointer"; pu.title = "Tap to revisit"; pu.onclick = function () { try { toast("✦ revisiting " + ch.t); cjn.act(); } catch (e) {} }; }
+        trophy("done", "ti-trophy");
+      })(c);
+    }
 
     if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
   }
