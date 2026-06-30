@@ -1953,7 +1953,7 @@
     renderTFControls(onplan ? "onplan" : "off");
   }
   // ===== COCKPIT FUNNELS (CKPT-2, David 2026-06-28): one door in (enterStage), one out (exitStage), one dispatcher (renderStage), one pure router (stageModeFor). Wired to NOTHING that auto-triggers this wave — defaults keep TF_MODE null. =====
-  function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", sleepmath: "Sleep Math", track: "" })[mode] || ""; }
+  function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", sleepmath: "Sleep Math", rx: "Rx", track: "" })[mode] || ""; }
   function enterStage(mode, opts) { // the single entry door every guided flow uses
     opts = opts || {};
     if (opts.trackTitle) { startTimer({ title: opts.trackTitle, catK: "restore", color: DOM.restore.c, flow: mode }); var r = activeTimers(); TF_BLOCKID = r.length ? r[r.length - 1].id : null; } // the ring lights + will slide aside in the SAME gesture (guidance+tracking fused); finish stops it
@@ -2026,6 +2026,7 @@
       case "pm": pmStageStep(sb); break;   // PM bookend: mirror the day back, then ask the one right question
       case "am": amStageStep(sb); break;   // AM bookend: greet, reflect last night's seed, set who you wake as + intrinsic why
       case "sleepmath": sleepMathStep(sb); break;   // D-1: AutoCalc / Sleep Math
+      case "rx": rxStep(sb); break;   // D-2: Rx Pad (prescription)
       default:                              // 'tool' handled by the early return above (toolboxStageStep)
         sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break;
     }
@@ -2053,6 +2054,7 @@
     var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
     var tb = add(w, "button", "tf-chip"); tb.innerHTML = '<i class="ti ti-briefcase" style="color:' + DOM.restore.light + '"></i> Toolbox'; tb.onclick = openToolbox; // WISDOM TOOLBOX entry door (TB-SHEET)
     var sm = add(w, "button", "tf-chip"); sm.innerHTML = '<i class="ti ti-bed" style="color:' + DOM.restore.light + '"></i> Sleep Math'; sm.onclick = function () { enterStage("sleepmath", { byTap: true }); }; // D-1: AutoCalc entry door
+    var rx = add(w, "button", "tf-chip"); rx.innerHTML = '<i class="ti ti-clipboard-heart" style="color:' + DOM.restore.light + '"></i> Daily Rx'; rx.onclick = function () { RX_ACTIVE = "fundamental"; enterStage("rx", { byTap: true }); }; // D-2: Rx Pad entry door
   }
   // ===== D-1: SLEEP MATH (AutoCalc primitive instance) — _course/BUILD-SPEC.md §D. Pure calc; saves to S.course.sleepMath; live recompute via input handlers (idempotent stage = inputs survive the 1s tick). =====
   function smMin(hhmm) { var p = (hhmm || "").split(":"); if (p.length < 2) return null; return (+p[0]) * 60 + (+p[1]); }
@@ -2080,6 +2082,29 @@
     minus.onclick = function () { hrs = Math.max(4, hrs - 1); hv.textContent = hrs; compute(); };
     plus.onclick = function () { hrs = Math.min(12, hrs + 1); hv.textContent = hrs; compute(); };
     compute();
+  }
+  // ===== D-2: Rx PAD (prescription primitive) — _course/BUILD-SPEC.md §D. Config-driven; saves to S.course.rx[id]. Auto-height textareas via oninput (iOS ignores resize:vertical). =====
+  var RX_CONFIGS = {
+    fundamental: { title: "📋 Daily Rx", sub: "Your prescription — three moves, no more.", fields: [
+      { k: "self", label: "#1 Self-Care", ph: "the one thing that keeps you you (e.g. 8h sleep)" },
+      { k: "start", label: "#1 to Start", ph: "the highest-leverage thing to begin" },
+      { k: "stop", label: "#1 to Stop", ph: "the kryptonite to cut" } ] }
+  };
+  var RX_ACTIVE = "fundamental";
+  function rxAutoH(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
+  function rxStep(sb) {
+    var cfg = RX_CONFIGS[RX_ACTIVE] || RX_CONFIGS.fundamental;
+    S.course = S.course || {}; S.course.rx = S.course.rx || {}; var saved = S.course.rx[RX_ACTIVE] = S.course.rx[RX_ACTIVE] || {};
+    sb.innerHTML = "";
+    var card = add(sb, "div", "tf-stagecard"); card.setAttribute("style", JR_CARD + "display:flex;flex-direction:column;gap:13px;");
+    add(card, "div", "tfs-h", cfg.title).style.cssText = "font-weight:800;font-size:17px;";
+    add(card, "div", "tfs-sub", cfg.sub).style.cssText = "opacity:.72;font-size:13px;margin-top:-7px;";
+    cfg.fields.forEach(function (f) {
+      var wrap = add(card, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
+      add(wrap, "div", null, f.label).style.cssText = "font-size:13px;font-weight:700;color:" + DOM.restore.light + ";";
+      var ta = add(wrap, "textarea"); ta.rows = 1; ta.placeholder = f.ph || ""; ta.value = saved[f.k] || ""; ta.setAttribute("style", JR_TA);
+      rxAutoH(ta); ta.oninput = function () { rxAutoH(ta); saved[f.k] = ta.value.trim(); save(); };
+    });
   }
   // ===== JOURNALING 101 — shared style + small builders (David 2026-06-28) =====
   var JR_TA = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;";
@@ -2743,7 +2768,7 @@
       case "pm-mirror": case "pm-ask": case "am-greet":
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
-      case "sleepmath":
+      case "sleepmath": case "rx":
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(false); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "tool":
