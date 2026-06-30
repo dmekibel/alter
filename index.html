@@ -216,7 +216,17 @@
   .jp-bub{position:relative;z-index:2;width:74px;height:74px;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:31px;color:#fff;cursor:pointer;transition:transform .12s;box-shadow:0 5px 0 var(--ink);}
   .jp-bub i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-bub:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
-  .jp-node.done .jp-check{position:absolute;right:3px;bottom:5px;width:26px;height:26px;border-radius:50%;background:#28cf86;border:2.5px solid var(--ink);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:3;}
+  /* #4 — done node: clearly distinct from undone. Bubble dims, turns green-tinted, icon fades; cap gets strikethrough; check badge enlarges + glows. */
+  .jp-node.done .jp-bub{width:62px;height:62px;font-size:24px;opacity:.72;filter:grayscale(.25) brightness(.88);border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 3px 0 #0a4028 !important;}
+  .jp-node.done .jp-bub i{opacity:.6;}
+  .jp-node.done .jp-cap{color:#46e2a4;text-decoration:line-through;opacity:.7;}
+  .jp-node.done .jp-check{position:absolute;right:-2px;bottom:2px;width:30px;height:30px;border-radius:50%;background:#28cf86;border:2.5px solid var(--ink);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);}
+  /* #5 — node completion burst: a quick scale-pop + gold ring on the bubble */
+  .jp-node.jp-just-done .jp-bub{animation:jpNodeDone .55s cubic-bezier(.3,1.6,.4,1) forwards;}
+  @keyframes jpNodeDone{0%{transform:scale(1);}40%{transform:scale(1.22);}70%{transform:scale(.95);}100%{transform:scale(1);}}
+  /* floating ✦ spark that pops from the node on completion */
+  .jp-node-spark{position:fixed;z-index:99;pointer-events:none;font-family:"Jost",sans-serif;font-weight:900;font-size:17px;color:#ffd54a;text-shadow:0 1px 6px rgba(0,0,0,.5);animation:jpNodeSpark .85s cubic-bezier(.2,.9,.3,1) forwards;}
+  @keyframes jpNodeSpark{0%{opacity:0;transform:translate(-50%,0) scale(.7);}20%{opacity:1;transform:translate(-50%,-8px) scale(1.18);}100%{opacity:0;transform:translate(-50%,-52px) scale(1);}}
   .jp-node.up .jp-bub{width:66px;height:66px;font-size:27px;}
   .jp-node.locked .jp-bub{width:58px;height:58px;font-size:22px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
   .jp-node.cur{margin:14px auto 16px;}
@@ -1685,6 +1695,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=695"></script>
+  <script src="app.js?v=696"></script>
 </body>
 </html>

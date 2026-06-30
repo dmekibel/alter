@@ -384,6 +384,17 @@
     save();
   }
   // ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28): the VISIBLE daily journey. A full-screen winding node-trail of today's real sequence — Plan → fundamentals/undone habits → planned blocks (time order) → bookend. PURE-derives node states from today's real signals (block.done / habit done / matching log). Reward-never-shame: upcoming = calm-dim, never red/locked. Auto-scrolls the CURRENT node into view so the next thing is literally in front of you. =====
+  var _jpDoneSet = {}; // #5: tracks which node keys were already done on last drawJourney — so we fire the burst exactly once per completion, not every redraw. keyed by "dayK:nodeKey".
+  function jpNodeCompletionBurst(nodeEl, pts) { // #5: micro-celebration on the node element. Scale-pop (CSS class) + floating ✦+N spark. DEVICE-UNTESTED feel.
+    if (!nodeEl) return;
+    nodeEl.classList.add("jp-just-done"); setTimeout(function () { try { nodeEl.classList.remove("jp-just-done"); } catch (e) {} }, 600);
+    try {
+      var r = nodeEl.getBoundingClientRect();
+      var fl = document.createElement("div"); fl.className = "jp-node-spark";
+      fl.textContent = "✦ +" + pts; fl.style.left = (r.left + r.width / 2) + "px"; fl.style.top = (r.top + r.height * 0.3) + "px";
+      document.body.appendChild(fl); setTimeout(function () { try { fl.remove(); } catch (e) {} }, 880);
+    } catch (e) {}
+  }
   function jpNodes() { // returns the ADAPTIVE ordered node list for today — shaped by your self-help stage (profile/journeyNode) AND your goals (today's AM virtue + one-thing). Each {key,emoji,title,line,color,done,act}.
     var k = todayK(), nodes = [], dm = doneMap(k), planned = (blocks(k) || []).filter(function (b) { return b.title; });
     var pf = profile(), jn = journeyNode(); // pf.lowEnergy = body-first gate · jn = curriculum stage (which guided nodes have unlocked)
@@ -395,22 +406,27 @@
     // AWAY / OFF-DAY MODE (David 2026-06-29 — his beach/Shabbat/travel rhythm): when you flag yourself away, the journey becomes ONE calm rest-stone — no task pressure, streaks held — so a trip never feels like falling behind.
     if (S.away) { nodes.push({ key: "away", emoji: "🌴", title: "You're away", line: "Resting / travelling — no pressure, nothing's slipping, your streaks are safe. Tap here when you're back.", color: DOM.restore.c, done: true, act: function () { S.away = false; S.awaySince = null; save(); drawJourney(true); toast("👋 welcome back — let's ease in"); } }); return nodes; }
 
-    // SELF-HELP ADAPT 1 — BODY-FIRST GATE (the law): low energy → a settle node LEADS, so the body comes back online before anything cognitive. Checks off once you breathe / restore today, then the trail advances.
+    // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
+    // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
+    var settleNode = null;
     if (pf.lowEnergy) {
       var settled = !!dm.breathe || (logs(k) || []).some(function (l) { return domainOf(l) === "restore"; });
-      nodes.push({ key: "settle", emoji: "🫧", title: "Settle first", line: "Low fuel today — let's get the body back online before anything else. The rest can wait.",
-        color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } });
+      settleNode = { key: "settle", emoji: "🫧", title: "Settle", line: "Low fuel — a breath or two before you push. Optional, but kind.",
+        color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } };
     }
 
     // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
-    if (jn >= 2) nodes.push({ key: "am", emoji: "🌅", title: "Open the morning", line: gvName ? "Who you're being today: " + gvName + ". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
+    if (jn >= 2) { nodes.push({ key: "am", emoji: "🌅", title: "Open the morning", line: gvName ? "Who you're being today: " + gvName + ". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
       color: DOM.create.c, done: !!am.done, act: function () { closeJourney(); try { enterStage("am", { byTap: true }); } catch (e) {} } });
+      if (settleNode) { nodes.push(settleNode); settleNode = null; } // settle slots in as 2nd node when am is 1st
+    }
 
     // Plan your day — copy ADAPTS to the goal + to your recovery (reward-never-shame).
     nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day",
       line: planned.length ? (gvName ? "Mapped toward being " + gvName + " — tap to reshape it." : "Your day's mapped — tap to reshape it.")
         : (pf.bouncedBack ? "You came back yesterday — that bounce is the skill. Let's map today." : gvName ? "Map today around being " + gvName + " — pick a few things." : "Map out today — pick a few things and let them wait for you."),
       color: DOM.focus.c, done: planned.length > 0 && !(S.timers || []).some(function (t) { return t.dayK === todayK() && t.title === "Plan your day"; }), act: function () { closeJourney(); shapeFlow(k); } }); // stays the live cockpit while you're TRACKING the planning (David 2026-07-02)
+    if (settleNode) { nodes.push(settleNode); settleNode = null; } // #6: settle falls in as 2nd node after Plan (when AM not unlocked); still available but not the headline
 
     // GOAL ADAPT — your ONE THING as its own keystone node (only if you named one in the morning AND it isn't already a planned block).
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
@@ -811,10 +827,13 @@
     { t: "Soul Force",         why: "Live it. This is who you've become.",              ic: "ti-star" }
   ];
   var JP_ICON = { plan: "ti-map-2", settle: "ti-wind", am: "ti-sunrise", pm: "ti-moon", onething: "ti-star" }; // node-key → Tabler symbol (no emojis — match the day-viewer language)
+  var _jpDoneSetSeeded = false; // #5: on first drawJourney call, pre-seed _jpDoneSet with already-done nodes so the burst only fires for NEW completions this session, not on app open
   function drawJourney(autoScroll) {
     var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
     var jn = Math.max(0, Math.min(JP_CHAPTERS.length - 1, journeyNode()));
     var nodes = jpNodes(), real = nodes.filter(function (n) { return !!n.title; });
+    // #5: seed the done-set on first call so bursts only fire for completions that happen THIS session
+    if (!_jpDoneSetSeeded) { _jpDoneSetSeeded = true; real.forEach(function (n) { if (n.done && n.key) _jpDoneSet[todayK() + ":" + n.key] = 1; }); }
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
     var curIdx = -1; for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // first undone today = CURRENT
     var allDone = curIdx < 0;
@@ -822,6 +841,8 @@
     var spk = el("jpSpark"); if (spk) { var spkn = spk.querySelector(".spark-n"); if (spkn) spkn.textContent = ((S.game && S.game.spark) || 0).toLocaleString(); }
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
+    var _burstQueue = []; // #5: nodes to burst-animate after the DOM is built (can't fire during build — elements aren't in viewport yet)
+    var _dk = todayK();
     function banner(state, klabel, title, ic, why) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); if (why) { var ws = add(tx, "div", "ju-why", why); ws.style.cssText = "font-size:11px;opacity:.62;margin-top:2px;line-height:1.3;"; } return u; }
     function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.innerHTML = '<i class="ti ' + glyph + '"></i>'; return t; }
     function coin(state, n, idx) {
@@ -831,7 +852,12 @@
       var icon = state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
       if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
-      if (state === "done") { var ck = add(node, "div", "jp-check"); ck.innerHTML = '<i class="ti ti-check"></i>'; }
+      if (state === "done") {
+        var ck = add(node, "div", "jp-check"); ck.innerHTML = '<i class="ti ti-check"></i>';
+        // #5: detect undone→done transition; queue a burst for after DOM layout (DEVICE-UNTESTED feel)
+        var dsetKey = _dk + ":" + n.key;
+        if (!_jpDoneSet[dsetKey] && n.key) { _jpDoneSet[dsetKey] = 1; _burstQueue.push({ el: node, pts: 15 }); }
+      }
       if (n.act && state !== "locked" && state !== "cur") bub.onclick = n.act;
       if (state === "cur") {
         curEl = node;
@@ -901,6 +927,8 @@
     }
 
     if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
+    // #5: fire completion bursts after layout settles (DEVICE-UNTESTED feel — the pop + float animate on the node after it scrolls into view)
+    if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); } catch (e) {} }); }, 380); }
   }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { /* anti-shame law (David): drift is DATA, never punishment — a streak is never broken by drifting. No-op kept as a hook so call-sites stay meaningful. (2026-06-29: was decrementing the streak, which contradicted "never a breakable streak") */ }
