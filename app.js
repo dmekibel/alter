@@ -1135,9 +1135,20 @@
     // #5: seed the done-set on first call so bursts only fire for completions that happen THIS session
     if (!_jpDoneSetSeeded) { _jpDoneSetSeeded = true; real.forEach(function (n) { if (n.done && n.key) _jpDoneSet[todayK() + ":" + n.key] = 1; }); }
     var doneN = real.filter(function (n) { return n.done; }).length, total = real.length;
-    var curIdx = -1; for (var i = 0; i < real.length; i++) { if (real[i]._lead && !real[i].done) { curIdx = i; break; } } // ENERGY-FIRST (Sequencer step 1): when you're depleted, the gentle reset leads — regulate before you push (David 2026-07-01)
-    if (curIdx < 0) for (var i = 0; i < real.length; i++) { if (real[i]._aimed && !real[i].done) { curIdx = i; break; } } // else an aim you set last night greets you as today's first move
-    if (curIdx < 0) for (var i = 0; i < real.length; i++) { if (!real[i].done) { curIdx = i; break; } } // else first undone today = CURRENT
+    // SEQUENCER (David 2026-07-01): the focal step = the most important UNDONE move for your state, not just the first in the list. One braid priority (canon: ritual > course > goal > habit), with the energy-first override on top.
+    function _leadW(n) {
+      if (n._lead) return 100;                                                   // regulate-first when depleted (Johnson Step 1)
+      if (n.key === "am") return 90;                                             // open the day on purpose, first
+      if (n._aimed) return 85;                                                   // last night's aim
+      if (n.key === "pm") return (new Date().getHours() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
+      if (n.key === "onething") return 70;                                       // your one thing
+      if (n.key && (n.key.indexOf("goalst:") === 0 || n.key.indexOf("goalm:") === 0 || n.key.indexOf("goalhit:") === 0)) return 60; // a goal's next move
+      if (n.key === "plan") return 50;                                           // plan your day
+      if (n.key && n.key.indexOf("chtask:") === 0) return 45;                    // the chapter practice
+      if (n.key && n.key.indexOf("hab:") === 0) return 20;                       // a small habit
+      return 30;
+    }
+    var curIdx = -1, _bw = -1; for (var i = 0; i < real.length; i++) { if (real[i].done) continue; var _w = _leadW(real[i]); if (_w > _bw) { _bw = _w; curIdx = i; } } // highest-priority undone = the one focal step
     var allDone = curIdx < 0;
     var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful ✨" : doneN + " of " + total + " today") + "  ·  " + appVer(); // version tag so we can confirm which build is actually loaded (David 2026-07-02)
     var spk = el("jpSpark"); if (spk) { var spkn = spk.querySelector(".spark-n"); if (spkn) spkn.textContent = ((S.game && S.game.spark) || 0).toLocaleString(); }
