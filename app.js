@@ -602,7 +602,7 @@
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
     // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
     var settleNode = null;
-    if (pf.lowEnergy) {
+    if (pf.lowEnergy && jn >= 1) { // settle only from Ch2 onward — a fresh user's first step should never be "breathe"
       var settled = !!dm.breathe || (logs(k) || []).some(function (l) { return domainOf(l) === "restore"; });
       settleNode = { key: "settle", emoji: "🫧", title: "Settle", line: "Low fuel — a breath or two before you push. Optional, but kind.",
         color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } };
@@ -1063,6 +1063,70 @@
     { t: "Soul Force",         why: "Live it. This is who you've become.",              ic: "ti-star" }
   ];
   var JP_ICON = { plan: "ti-map-2", settle: "ti-wind", am: "ti-sunrise", pm: "ti-moon", onething: "ti-star" }; // node-key → Tabler symbol (no emojis — match the day-viewer language)
+  var JP_LESSON = [ // chapter guide content — shown in chapterSheet(ci) when the user taps a chapter banner
+    { headline: "Before you build great days, get clear on what you're building toward.",
+      idea: "Most people are in constant reaction mode — responding to whatever shows up. The guardian's first job is orientation. Chapter 1 is simple: just show up. Not perfectly — consistently. Five out of seven days proves you mean it, and that proof unlocks everything else.",
+      milestones: [
+        { l: "Take the placement check-in", done: function() { return !!(S.profile && S.profile.set); } },
+        { l: "Open the app 3 different days", done: function() { return _daysWith7(function(k){return (logs(k)||[]).length>0||(blocks(k)||[]).some(function(b){return b.title;});})>=3; } },
+        { l: "Show up 5 of 7 days (unlocks Chapter 2)", done: function() { return chapterMastered(0); } }
+      ]
+    },
+    { headline: "Most self-help starts with what's wrong. This one starts with what's RIGHT.",
+      idea: "Before we optimize you, we inventory you. Your virtues — the qualities already strong in you — become the compass. When you know who you are at your best, every decision gets clearer: you're not building a new person, you're being MORE of who you already are.",
+      milestones: [
+        { l: "Set your identity (who you're being today)", done: function() { return !!(S.profile && (S.profile.todayIdentity||[]).length); } },
+        { l: "Pick your first virtue (unlocks Chapter 3)", done: function() { return chapterMastered(1); } },
+        { l: "Open your morning with your virtue (3 days)", done: function() { return _daysWith7(function(k){var e=(S.bk||{})[k]||{};return !!(e.am&&e.am.virtue);})>=3; } }
+      ]
+    },
+    { headline: "The thing in your way isn't a problem. It's the curriculum.",
+      idea: "Ancient Stoics and modern psychology agree: naming the obstacle and pre-planning the move around it is the most powerful thing you can do before starting anything. This chapter installs the WOOP system — Wish, Outcome, Obstacle, Plan — the single most evidence-backed behavior-change tool in existence.",
+      milestones: [
+        { l: "Add your first goal", done: function() { return (S.goals||[]).length > 0; } },
+        { l: "Complete the WOOP for one goal (unlocks Chapter 4)", done: function() { return chapterMastered(2); } }
+      ]
+    },
+    { headline: "Energy, work, love — cover these three and almost everything else takes care of itself.",
+      idea: "Brian Johnson calls them the Big Three: energy (body), work (your calling), and love (relationships). One honest move in each lane per day. When all three are covered, your day has shape. Miss one consistently and that part of your life slowly unravels. Chapter 4 is about designing for all three at once.",
+      milestones: [
+        { l: "Open your first morning ritual", done: function() { return _daysWith7(function(k){var e=(S.bk||{})[k]||{};return !!(e.am&&e.am.done);})>=1; } },
+        { l: "Morning ritual 3 days running", done: function() { return _daysConsec3(function(k){var e=(S.bk||{})[k]||{};return !!(e.am&&e.am.done);}); } },
+        { l: "Morning 5 of 7 days (unlocks Chapter 5)", done: function() { return chapterMastered(3); } }
+      ]
+    },
+    { headline: "What would a day look like if you'd be happy to repeat it forever?",
+      idea: "The Masterpiece Day isn't about the perfect schedule — it's about designing a day that expresses who you are. Marcus Aurelius, Darwin, and Franklin didn't just work hard. They had rituals: morning intention, deep work, evening reflection. This chapter is about finding yours and learning to close each day with honesty.",
+      milestones: [
+        { l: "Close your first day (PM reflection)", done: function() { return _daysWith7(function(k){var e=(S.bk||{})[k]||{};return !!(e.pm&&(e.pm.done||e.pm.reflect));})>=1; } },
+        { l: "Full AM + PM bookends in one day", done: function() { return _daysWith7(function(k){var e=(S.bk||{})[k]||{};return !!(e.am&&e.am.done&&e.pm&&(e.pm.done||e.pm.reflect));})>=1; } },
+        { l: "Full bookends 3 of 7 days (unlocks Chapter 6)", done: function() { return chapterMastered(4); } }
+      ]
+    },
+    { headline: "The goal isn't discipline — it's making the right thing automatic.",
+      idea: "James Clear: habits compound. Nir Eyal: hooks create automatic behavior. Brian Johnson: you don't need motivation when the behavior is installed. This chapter is about taking 2–3 important daily actions and running them until they stack themselves — no willpower required.",
+      milestones: [
+        { l: "Add your first habit to the stack", done: function() { return (S.habits||[]).filter(function(h){return h.type==='build';}).length>0; } },
+        { l: "Run a habit 3 days in a row", done: function() { return (S.habits||[]).some(function(h){return h.type==='build'&&_daysConsec3(function(k){return !!((S.habitDone||{})[k]||{})[h.id];}); }); } },
+        { l: "Habit running 5 of 7 days (unlocks Chapter 7)", done: function() { return chapterMastered(5); } }
+      ]
+    },
+    { headline: "Sleep, eat, move, breathe — the boring stuff that makes everything else work.",
+      idea: "Aristotle and Johnson arrive at the same place from different directions: the good life runs on fundamentals. When sleep is off, everything is harder. When you move daily, everything is clearer. When breathing is deep, stress doesn't stick. This chapter audits the seven pillars your whole life runs on.",
+      milestones: [
+        { l: "Know your seven pillars", done: function() { return !!(S.course && S.course.rx); } },
+        { l: "All seven pillars on point (unlocks Chapter 8)", done: function() { return chapterMastered(6); } }
+      ]
+    },
+    { headline: "This is who you've become. Now live it.",
+      idea: "Chapter 8 isn't something you build — it's something you discover you already have when the fundamentals are solid, the habits are automatic, and the virtues are embodied. Soul Force isn't the destination. It's the realization that you've already been living it. The guardian's job is to keep proving it to you.",
+      milestones: [
+        { l: "All 7 chapters mastered", done: function() { return chapterMastered(6); } },
+        { l: "1,000 Spark earned", done: function() { return ((S.game&&S.game.spark)||0)>=1000; } },
+        { l: "You are the message", done: function() { return ((S.game&&S.game.spark)||0)>=2500; } }
+      ]
+    }
+  ];
   var _jpDoneSetSeeded = false; // #5: on first drawJourney call, pre-seed _jpDoneSet with already-done nodes so the burst only fires for NEW completions this session, not on app open
   function drawJourney(autoScroll) {
     var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
@@ -1159,24 +1223,27 @@
     }
 
     // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.
-    // FUTURE chapters — locked, Mastery highest, descending toward today
+    // FUTURE chapters — locked, descending toward today. Tappable to preview the lesson.
     for (var f = JP_CHAPTERS.length - 1; f > jn; f--) {
-      banner("locked", "Unit " + (f + 1), JP_CHAPTERS[f].t, "ti-lock", JP_CHAPTERS[f].why);
+      var _fb = banner("locked", "Chapter " + (f + 1), JP_CHAPTERS[f].t, "ti-lock", JP_CHAPTERS[f].why);
+      (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
       for (var z = 0; z < 3; z++) coin("locked", { emoji: "★", title: "" }, gi++);
       trophy("locked", "ti-lock");
     }
-    // ACTIVE chapter = TODAY. Banner on top, then today's reward summit, then today's steps ASCENDING (latest up high; current/done lower, so you climb toward them)
-    banner("active", "Today · Unit " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic, JP_CHAPTERS[jn].why);
+    // ACTIVE chapter = TODAY. Banner on top, then today's reward summit, then today's steps ASCENDING.
+    var _ab = banner("active", "Today · Chapter " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic, JP_CHAPTERS[jn].why);
+    _ab.style.cursor = "pointer"; _ab.title = "Tap to see chapter guide";
+    (function(idx){ _ab.onclick = function(){ try{chapterSheet(idx);}catch(e){}; }; })(jn);
     var endT = trophy(allDone ? "done" : "locked", allDone ? "ti-trophy" : "ti-gift"); // today's reward summit
     for (var r = real.length - 1; r >= 0; r--) { var rn = real[r]; coin(rn.done ? "done" : (r === curIdx ? "cur" : "up"), rn, gi++); }
     if (!curEl) curEl = endT;
-    // PAST chapters — completed milestones, tappable to review (gentle recap). Foundation at the very bottom.
+    // PAST chapters — tappable to open the chapter lesson sheet for review.
     for (var c = jn - 1; c >= 0; c--) {
       (function(ci) {
-        var ch = JP_CHAPTERS[ci], cjn = JOURNEY[ci];
-        var pu = banner("done", "Unit " + (ci + 1) + " · complete", ch.t, ch.ic, ch.why);
-        // make the past banner tappable → open the chapter's surface for review
-        if (pu && cjn && cjn.act) { pu.style.cursor = "pointer"; pu.title = "Tap to revisit"; pu.onclick = function () { try { toast("✦ revisiting " + ch.t); cjn.act(); } catch (e) {} }; }
+        var ch = JP_CHAPTERS[ci];
+        var pu = banner("done", "Chapter " + (ci + 1) + " · complete", ch.t, ch.ic, ch.why);
+        pu.style.cursor = "pointer"; pu.title = "Tap to see chapter guide";
+        pu.onclick = function(){ try{chapterSheet(ci);}catch(e){}; };
         trophy("done", "ti-trophy");
       })(c);
     }
@@ -1186,6 +1253,66 @@
     if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); } catch (e) {} }); }, 380); }
     // Appetite invite: auto-surface once per offer when appetiteUpdate seeds the invite (shown once per day until accepted/declined)
     try { var _g = S.guide; if (_g&&_g.cache&&_g.cache.appetiteInvite) { var _inv=_g.cache.appetiteInvite; if (_inv.shownK!==todayK()) { _inv.shownK=todayK(); save(); (function(ii){setTimeout(function(){try{if(ii===((S.guide||{}).cache||{}).appetiteInvite)showAppetiteInvite(ii);}catch(e){}},1400);})(S.guide.cache.appetiteInvite); } } } catch(e) {}
+  }
+  // ===== CHAPTER SHEET — lesson guide overlay (Duolingo-style). Opens when user taps any chapter banner in the trail. Shows the chapter concept + milestone progress + a continue button. =====
+  function chapterSheet(ci) {
+    var ch = JP_CHAPTERS[ci], les = JP_LESSON[ci]; if (!ch || !les) return;
+    var old = document.getElementById("jp-csheet"); if (old) old.remove();
+    var ov = add(document.body, "div", "hs-ov"); ov.id = "jp-csheet";
+    var card = add(ov, "div", "hs-card"); card.style.cssText = "max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;padding:0;";
+
+    // Header
+    var head = add(card, "div", "goal-head"); head.style.cssText = "align-items:center;gap:12px;padding:14px 16px;";
+    var hic = add(head, "div", ""); hic.innerHTML = '<i class="ti ' + ch.ic + '" style="font-size:22px;color:#e879a0;"></i>';
+    var htx = add(head, "div", ""); htx.style.cssText = "flex:1;";
+    add(htx, "div", "ju-k", "Chapter " + (ci + 1));
+    add(htx, "div", "ju-t", ch.t);
+    var xb = add(head, "button", "goal-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function(){ ov.remove(); };
+
+    // Body
+    var body = add(card, "div", ""); body.style.cssText = "padding:0 16px 8px;flex:1;overflow-y:auto;";
+
+    // Headline (italic hook)
+    var hl = add(body, "div", ""); hl.style.cssText = "font-size:13px;color:#c89ab4;font-style:italic;margin:12px 0 16px;line-height:1.55;font-family:'Jost',sans-serif;";
+    hl.textContent = les.headline;
+
+    // The Idea section
+    var s1 = add(body, "div", ""); s1.style.cssText = "font-size:10px;font-weight:700;letter-spacing:.1em;color:#6a3050;margin-bottom:8px;font-family:'Jost',sans-serif;";
+    s1.textContent = "THE IDEA";
+    var idea = add(body, "div", ""); idea.style.cssText = "font-size:14px;color:#e6cfe0;line-height:1.65;margin-bottom:20px;font-family:'Jost',sans-serif;";
+    idea.textContent = les.idea;
+
+    // Milestones / Your Path
+    var s2 = add(body, "div", ""); s2.style.cssText = "font-size:10px;font-weight:700;letter-spacing:.1em;color:#6a3050;margin-bottom:6px;font-family:'Jost',sans-serif;";
+    s2.textContent = "YOUR PATH";
+    var ms = les.milestones || [], doneCount = 0;
+    ms.forEach(function(m) {
+      var d = false; try { d = !!m.done(); } catch(e) {} if (d) doneCount++;
+      var row = add(body, "div", ""); row.style.cssText = "display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #1c0f20;";
+      var ic = add(row, "div", ""); ic.style.cssText = "flex-shrink:0;padding-top:1px;";
+      ic.innerHTML = '<i class="ti ' + (d ? "ti-circle-check" : "ti-circle") + '" style="font-size:18px;color:' + (d ? "#4ade80" : "#6a3050") + ';"></i>';
+      var lbl = add(row, "div", ""); lbl.style.cssText = "font-size:13px;color:" + (d ? "#e6cfe0" : "#9a6080") + ";font-family:'Jost',sans-serif;line-height:1.45;";
+      lbl.textContent = m.l;
+    });
+
+    // Progress
+    var pct = ms.length ? Math.round(doneCount / ms.length * 100) : 0;
+    var pgr = add(body, "div", ""); pgr.style.cssText = "margin-top:14px;margin-bottom:4px;";
+    var pglbl = add(pgr, "div", ""); pglbl.style.cssText = "font-size:11px;color:#9a6080;margin-bottom:6px;font-family:'Jost',sans-serif;";
+    pglbl.textContent = doneCount + " of " + ms.length + " milestones";
+    var pgtrack = add(pgr, "div", ""); pgtrack.style.cssText = "height:3px;background:#2a1228;border-radius:2px;";
+    var pgfill = add(pgtrack, "div", ""); pgfill.style.cssText = "height:100%;width:" + pct + "%;background:#e879a0;border-radius:2px;transition:width .3s;";
+
+    // Footer CTA
+    var foot = add(card, "div", ""); foot.style.cssText = "padding:14px 16px 18px;border-top:1px solid #2a1228;";
+    var btn = add(foot, "button", "ob-btn"); btn.style.cssText = "width:100%;font-family:'Jost',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;";
+    var jnNow = journeyNode();
+    if (ci < jnNow) { btn.innerHTML = '<i class="ti ti-rotate-clockwise"></i> Review chapter'; }
+    else if (ci === jnNow) { btn.innerHTML = '<i class="ti ti-bolt"></i> Continue'; }
+    else { btn.innerHTML = '<i class="ti ti-lock"></i> Complete previous chapters first'; btn.disabled = true; btn.style.opacity = "0.4"; }
+    btn.onclick = function(){ ov.remove(); try{ openJourney(); }catch(e){} };
+
+    ov.onclick = function(e){ if (e.target === ov) ov.remove(); };
   }
   function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
   function coolStreak() { /* anti-shame law (David): drift is DATA, never punishment — a streak is never broken by drifting. No-op kept as a hook so call-sites stay meaningful. (2026-06-29: was decrementing the streak, which contradicted "never a breakable streak") */ }
