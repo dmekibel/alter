@@ -1238,13 +1238,14 @@
     for (var r = real.length - 1; r >= 0; r--) { var rn = real[r]; coin(rn.done ? "done" : (r === curIdx ? "cur" : "up"), rn, gi++); }
     if (!curEl) curEl = endT;
     // PAST chapters — tappable to open the chapter lesson sheet for review.
+    // HONESTY (David 2026-07-02): only "· complete" + trophy when the keystone is ACTUALLY earned (chapterMastered). A chapter that's merely UNLOCKED via the onboarding vibe-seed (you said life feels good → we met you higher up) is shown as "open" — neutral, no trophy — because you haven't done it yet.
     for (var c = jn - 1; c >= 0; c--) {
       (function(ci) {
-        var ch = JP_CHAPTERS[ci];
-        var pu = banner("done", "Chapter " + (ci + 1) + " · complete", ch.t, ch.ic, ch.why);
+        var ch = JP_CHAPTERS[ci], earned = chapterMastered(ci);
+        var pu = banner(earned ? "done" : "open", "Chapter " + (ci + 1) + (earned ? " · complete" : " · open"), ch.t, ch.ic, ch.why);
         pu.style.cursor = "pointer"; pu.title = "Tap to see chapter guide";
         pu.onclick = function(){ try{chapterSheet(ci);}catch(e){}; };
-        trophy("done", "ti-trophy");
+        if (earned) trophy("done", "ti-trophy"); // trophy ONLY for an earned chapter — never for an unearned one (David: the trophy felt out of place)
       })(c);
     }
 
