@@ -1,0 +1,880 @@
+{
+  "meta": {
+    "schemaVersion": 3,
+    "lastShip": "v705",
+    "description": "ALTER self-audit guard. Run: node _dev/audit.js. Device-only items confirmed by David on phone."
+  },
+  "personas": {
+    "fresh": {
+      "description": "Day 0 — clean install, no profile, no data, onboarding required",
+      "state": {
+        "v": 3,
+        "habits": [],
+        "habitDone": {},
+        "blocks": {},
+        "log": {},
+        "timers": [],
+        "game": {
+          "spark": 0,
+          "total": 0,
+          "ups": {},
+          "garden": []
+        },
+        "brain": {
+          "engine": "off",
+          "key": ""
+        },
+        "microState": {},
+        "mood": {},
+        "acts": [],
+        "bk": {},
+        "guide": {
+          "mode": "off",
+          "seedTier": 0,
+          "unlocked": [],
+          "cache": {},
+          "offeredK": null
+        },
+        "tools": {
+          "use": {},
+          "last": {},
+          "fav": [],
+          "recents": []
+        }
+      },
+      "_timeSeries": {
+        "loggedDaysLast7": 0,
+        "amDoneLast7": 0,
+        "pmDoneLast7": 0,
+        "habitBuildDoneLast7": 0
+      }
+    },
+    "early": {
+      "description": "Day 3 — profile set + virtues (ch1 gate met), but only 2/7 days logged (ch0 gate not met yet)",
+      "state": {
+        "v": 3,
+        "profile": {
+          "gender": "f",
+          "age": "30s",
+          "vibe": "okay",
+          "stages": [
+            "manager"
+          ],
+          "occ": "manager",
+          "goals": [],
+          "wake": "07:00",
+          "sleep": "7-8",
+          "lark": true,
+          "lowStart": false,
+          "todayIdentity": [
+            "Connector"
+          ],
+          "todayVirtues": [
+            "love"
+          ],
+          "set": true
+        },
+        "habits": [
+          {
+            "id": "move",
+            "e": "ti-run",
+            "l": "Move",
+            "type": "build",
+            "per": 0,
+            "color": "#ff8a1e"
+          }
+        ],
+        "habitDone": {},
+        "blocks": {},
+        "log": {},
+        "timers": [],
+        "game": {
+          "spark": 0,
+          "total": 0,
+          "ups": {},
+          "garden": []
+        },
+        "brain": {
+          "engine": "off",
+          "key": ""
+        },
+        "microState": {},
+        "mood": {},
+        "acts": [],
+        "bk": {},
+        "guide": {
+          "mode": "guided",
+          "seedTier": 1,
+          "unlocked": [
+            0
+          ],
+          "cache": {},
+          "offeredK": null,
+          "appetiteState": {
+            "level": "floor",
+            "nodeCap": 2,
+            "modeTarget": "guided",
+            "stateAge": 0,
+            "stateLockedByUser": false,
+            "inviteDeclineCount": 0
+          }
+        },
+        "tools": {
+          "use": {},
+          "last": {},
+          "fav": [],
+          "recents": []
+        }
+      },
+      "_timeSeries": {
+        "loggedDaysLast7": 2,
+        "amDoneLast7": 0,
+        "pmDoneLast7": 0,
+        "habitBuildDoneLast7": 0
+      }
+    },
+    "building": {
+      "description": "Week 2 — ch 0+1+2 mastered (5/7 logged, virtues set, WOOP goal); no bookends yet so ch3 locked",
+      "state": {
+        "v": 3,
+        "profile": {
+          "gender": "m",
+          "age": "20s",
+          "vibe": "thriving",
+          "stages": [
+            "founder"
+          ],
+          "occ": "founder",
+          "goals": [],
+          "wake": "06:30",
+          "sleep": "7-8",
+          "lark": true,
+          "lowStart": false,
+          "todayIdentity": [
+            "Creator"
+          ],
+          "todayVirtues": [
+            "zest"
+          ],
+          "set": true
+        },
+        "goals": [
+          {
+            "id": "g1",
+            "title": "Ship ALTER",
+            "domain": "focus",
+            "woop": {
+              "wish": "Ship ALTER v1",
+              "outcome": "Users love it",
+              "obstacle": "Time",
+              "plan": "Ship every day"
+            },
+            "subtasks": [
+              {
+                "title": "Build audit system",
+                "done": false
+              }
+            ]
+          }
+        ],
+        "habits": [
+          {
+            "id": "move",
+            "e": "ti-run",
+            "l": "Move",
+            "type": "build",
+            "per": 0,
+            "color": "#ff8a1e"
+          },
+          {
+            "id": "deep",
+            "e": "ti-brain",
+            "l": "Deep work",
+            "type": "build",
+            "per": 0,
+            "color": "#2a9fe0"
+          }
+        ],
+        "habitDone": {},
+        "blocks": {},
+        "log": {},
+        "timers": [],
+        "game": {
+          "spark": 0,
+          "total": 0,
+          "ups": {},
+          "garden": []
+        },
+        "brain": {
+          "engine": "off",
+          "key": ""
+        },
+        "microState": {},
+        "mood": {},
+        "acts": [],
+        "bk": {},
+        "guide": {
+          "mode": "guided",
+          "seedTier": 2,
+          "unlocked": [
+            0,
+            1,
+            2
+          ],
+          "cache": {},
+          "offeredK": null,
+          "appetiteState": {
+            "level": "medium",
+            "nodeCap": 2,
+            "modeTarget": "guided",
+            "stateAge": 0,
+            "stateLockedByUser": false,
+            "inviteDeclineCount": 0
+          }
+        },
+        "tools": {
+          "use": {},
+          "last": {},
+          "fav": [],
+          "recents": []
+        }
+      },
+      "_timeSeries": {
+        "loggedDaysLast7": 5,
+        "amDoneLast7": 0,
+        "pmDoneLast7": 0,
+        "habitBuildDoneLast7": 0
+      }
+    },
+    "established": {
+      "description": "Month 1 — ch 0-3 mastered (5 AM bookends), medium appetite; ch4 not yet (needs AM+PM pairs)",
+      "state": {
+        "v": 3,
+        "profile": {
+          "gender": "f",
+          "age": "40s",
+          "vibe": "okay",
+          "stages": [
+            "student"
+          ],
+          "occ": "student",
+          "goals": [],
+          "wake": "07:00",
+          "sleep": "8+",
+          "lark": true,
+          "lowStart": false,
+          "todayIdentity": [
+            "Scholar"
+          ],
+          "todayVirtues": [
+            "wisdom"
+          ],
+          "set": true
+        },
+        "goals": [
+          {
+            "id": "g2",
+            "title": "Exercise 5x/week",
+            "domain": "move",
+            "woop": {
+              "wish": "Fit",
+              "outcome": "More energy",
+              "obstacle": "Tiredness",
+              "plan": "Morning gym"
+            },
+            "subtasks": []
+          }
+        ],
+        "habits": [
+          {
+            "id": "move",
+            "e": "ti-run",
+            "l": "Move",
+            "type": "build",
+            "per": 0,
+            "color": "#ff8a1e"
+          },
+          {
+            "id": "read",
+            "e": "ti-book",
+            "l": "Read",
+            "type": "build",
+            "per": 3,
+            "color": "#9a5cf0"
+          }
+        ],
+        "habitDone": {},
+        "blocks": {},
+        "log": {},
+        "timers": [],
+        "game": {
+          "spark": 10,
+          "total": 10,
+          "ups": {},
+          "garden": []
+        },
+        "brain": {
+          "engine": "off",
+          "key": ""
+        },
+        "microState": {},
+        "mood": {},
+        "acts": [],
+        "bk": {},
+        "guide": {
+          "mode": "guided",
+          "seedTier": 3,
+          "unlocked": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "cache": {},
+          "offeredK": null,
+          "appetiteState": {
+            "level": "medium",
+            "nodeCap": 2,
+            "modeTarget": "guided",
+            "stateAge": 0,
+            "stateLockedByUser": false,
+            "inviteDeclineCount": 0
+          }
+        },
+        "tools": {
+          "use": {},
+          "last": {},
+          "fav": [],
+          "recents": []
+        }
+      },
+      "_timeSeries": {
+        "loggedDaysLast7": 7,
+        "amDoneLast7": 5,
+        "pmDoneLast7": 0,
+        "habitBuildDoneLast7": 3
+      }
+    },
+    "power": {
+      "description": "Power user — all chapters 0-6 mastered, high appetite (3-consec gates), Fundamentals Rx set",
+      "state": {
+        "v": 3,
+        "profile": {
+          "gender": "m",
+          "age": "30s",
+          "vibe": "thriving",
+          "stages": [
+            "athlete",
+            "founder"
+          ],
+          "occ": "founder",
+          "goals": [],
+          "wake": "05:30",
+          "sleep": "7-8",
+          "lark": true,
+          "lowStart": false,
+          "todayIdentity": [
+            "Creator",
+            "Athlete"
+          ],
+          "todayVirtues": [
+            "zest",
+            "wisdom"
+          ],
+          "set": true
+        },
+        "goals": [
+          {
+            "id": "g3",
+            "title": "Launch product",
+            "domain": "focus",
+            "woop": {
+              "wish": "Launch",
+              "outcome": "1000 users",
+              "obstacle": "Distraction",
+              "plan": "Deep work 4h AM"
+            },
+            "subtasks": [
+              {
+                "title": "Build MVP",
+                "done": true
+              },
+              {
+                "title": "Beta test",
+                "done": false
+              }
+            ]
+          }
+        ],
+        "habits": [
+          {
+            "id": "move",
+            "e": "ti-run",
+            "l": "Move",
+            "type": "build",
+            "per": 0,
+            "color": "#ff8a1e"
+          },
+          {
+            "id": "deep",
+            "e": "ti-brain",
+            "l": "Deep work",
+            "type": "build",
+            "per": 0,
+            "color": "#2a9fe0"
+          },
+          {
+            "id": "breathe",
+            "e": "ti-wind",
+            "l": "Breathe",
+            "type": "build",
+            "per": 0,
+            "color": "#6a5cf0"
+          }
+        ],
+        "habitDone": {},
+        "blocks": {},
+        "log": {},
+        "timers": [],
+        "game": {
+          "spark": 250,
+          "total": 500,
+          "ups": {
+            "focus": 1,
+            "create": 1
+          },
+          "garden": []
+        },
+        "brain": {
+          "engine": "off",
+          "key": ""
+        },
+        "microState": {},
+        "mood": {},
+        "acts": [],
+        "bk": {},
+        "guide": {
+          "mode": "guided",
+          "seedTier": 5,
+          "unlocked": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "cache": {},
+          "offeredK": null,
+          "appetiteState": {
+            "level": "high",
+            "nodeCap": 3,
+            "modeTarget": "guided",
+            "stateAge": 0,
+            "stateLockedByUser": false,
+            "inviteDeclineCount": 0
+          }
+        },
+        "tools": {
+          "use": {},
+          "last": {},
+          "fav": [],
+          "recents": []
+        },
+        "course": {
+          "rx": {
+            "fundamental": {
+              "eat": true,
+              "move": true,
+              "sleep": true
+            }
+          }
+        }
+      },
+      "_timeSeries": {
+        "loggedDaysLast7": 7,
+        "amDoneLast7": 7,
+        "pmDoneLast7": 5,
+        "habitBuildDoneLast7": 7
+      }
+    }
+  },
+  "invariants": [
+    {
+      "id": "ch0-not-mastered-fresh",
+      "desc": "Fresh: ch0 NOT mastered — 0 logged days, gate needs 5",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        0
+      ],
+      "persona": "fresh",
+      "expect": false,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch0-not-mastered-early",
+      "desc": "Early: ch0 NOT mastered — 2 logged days, gate needs 5",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        0
+      ],
+      "persona": "early",
+      "expect": false,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch0-mastered-building",
+      "desc": "Building: ch0 mastered — 5 of last 7 days logged",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        0
+      ],
+      "persona": "building",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch1-not-mastered-fresh",
+      "desc": "Fresh: ch1 NOT mastered — no profile, no virtues",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        1
+      ],
+      "persona": "fresh",
+      "expect": false,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch1-mastered-early",
+      "desc": "Early: ch1 mastered — todayVirtues set even though ch0 not yet met",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        1
+      ],
+      "persona": "early",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch2-not-mastered-fresh",
+      "desc": "Fresh: ch2 NOT mastered — no goals",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        2
+      ],
+      "persona": "fresh",
+      "expect": false,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch2-mastered-building",
+      "desc": "Building: ch2 mastered — goal with WOOP set",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        2
+      ],
+      "persona": "building",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch3-not-mastered-building",
+      "desc": "Building: ch3 NOT mastered — 0 AM bookends done, needs 5",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        3
+      ],
+      "persona": "building",
+      "expect": false,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch3-mastered-established",
+      "desc": "Established: ch3 mastered — 5 of last 7 AM bookends done",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        3
+      ],
+      "persona": "established",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch4-not-mastered-established",
+      "desc": "Established: ch4 NOT mastered — medium appetite, 0/7 days have BOTH AM+PM done",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        4
+      ],
+      "persona": "established",
+      "expect": false,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch4-mastered-power",
+      "desc": "Power: ch4 mastered — high appetite, last 3 consecutive days have both AM+PM done",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        4
+      ],
+      "persona": "power",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch5-mastered-power",
+      "desc": "Power: ch5 mastered — habit build done 3 consecutive days (high appetite uses consec gate)",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        5
+      ],
+      "persona": "power",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "ch6-mastered-power",
+      "desc": "Power: ch6 mastered — course.rx.fundamental has entries",
+      "method": "audit.js",
+      "fn": "chapterMastered",
+      "args": [
+        6
+      ],
+      "persona": "power",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "unlock-check-fresh",
+      "desc": "Fresh: chapterUnlockCheck = 0 — nothing mastered",
+      "method": "audit.js",
+      "fn": "chapterUnlockCheck",
+      "args": [],
+      "persona": "fresh",
+      "expect": 0,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "unlock-check-sequential-early",
+      "desc": "Early: chapterUnlockCheck = 0 — ch1 individually mastered but consecutive lock blocks it (ch0 must come first)",
+      "method": "audit.js",
+      "fn": "chapterUnlockCheck",
+      "args": [],
+      "persona": "early",
+      "expect": 0,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "unlock-check-building",
+      "desc": "Building: chapterUnlockCheck = 3 — ch0+1+2 mastered, ch3 now unlocked",
+      "method": "audit.js",
+      "fn": "chapterUnlockCheck",
+      "args": [],
+      "persona": "building",
+      "expect": 3,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "unlock-check-established",
+      "desc": "Established: chapterUnlockCheck = 4 — ch0-3 mastered, ch4 now unlocked",
+      "method": "audit.js",
+      "fn": "chapterUnlockCheck",
+      "args": [],
+      "persona": "established",
+      "expect": 4,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "unlock-check-power",
+      "desc": "Power: chapterUnlockCheck = 7 — all ch0-6 mastered",
+      "method": "audit.js",
+      "fn": "chapterUnlockCheck",
+      "args": [],
+      "persona": "power",
+      "expect": 7,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "appcap-high",
+      "desc": "_appCap('high') = 3 nodeCap",
+      "method": "audit.js",
+      "fn": "_appCap",
+      "args": [
+        "high"
+      ],
+      "persona": null,
+      "expect": 3,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "appcap-medium",
+      "desc": "_appCap('medium') = 2 nodeCap",
+      "method": "audit.js",
+      "fn": "_appCap",
+      "args": [
+        "medium"
+      ],
+      "persona": null,
+      "expect": 2,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "appcap-low",
+      "desc": "_appCap('low') = 1 nodeCap",
+      "method": "audit.js",
+      "fn": "_appCap",
+      "args": [
+        "low"
+      ],
+      "persona": null,
+      "expect": 1,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "appcap-dormant",
+      "desc": "_appCap('dormant') = 0 — tracker-only mode, all course nodes suppressed",
+      "method": "audit.js",
+      "fn": "_appCap",
+      "args": [
+        "dormant"
+      ],
+      "persona": null,
+      "expect": 0,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "nodecap-power-is-3",
+      "desc": "Power: appetiteState.nodeCap = 3 (high appetite)",
+      "method": "audit.js",
+      "fn": "appetiteNodeCap",
+      "args": [],
+      "persona": "power",
+      "expect": 3,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "guide-shape-fresh",
+      "desc": "Fresh: guide has required keys — mode (string), unlocked (array), seedTier (number)",
+      "method": "audit.js",
+      "fn": "guideValid",
+      "args": [],
+      "persona": "fresh",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "habits-non-empty-after-load",
+      "desc": "Fresh: after fixture inflation habits is non-empty (DEFAULT_HABITS applied by inflateFixture)",
+      "method": "audit.js",
+      "fn": "habitsNonEmpty",
+      "args": [],
+      "persona": "fresh",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "habits-all-fields-building",
+      "desc": "Building: all habits have required fields — id, l, type",
+      "method": "audit.js",
+      "fn": "habitsValid",
+      "args": [],
+      "persona": "building",
+      "expect": true,
+      "lastResult": "PASS",
+      "lastShip": "v705"
+    },
+    {
+      "id": "timeline-scroll-continuous",
+      "desc": "Vertical scroll flows prev/next day continuously — no bounce or cut at midnight",
+      "method": "device-only",
+      "persona": null,
+      "lastResult": null,
+      "lastShip": null,
+      "lastDeviceConfirmed": null
+    },
+    {
+      "id": "drag-block-move-resize",
+      "desc": "Drag moves/resizes blocks; tap-block opens editor; tap-empty creates a block",
+      "method": "device-only",
+      "persona": null,
+      "lastResult": null,
+      "lastShip": null,
+      "lastDeviceConfirmed": null
+    },
+    {
+      "id": "pane-swipe-planner-journey-game",
+      "desc": "Horizontal swipe switches Planner / Journey / Game panes without stutter",
+      "method": "device-only",
+      "persona": null,
+      "lastResult": null,
+      "lastShip": null,
+      "lastDeviceConfirmed": null
+    },
+    {
+      "id": "week-strip-tracks-day",
+      "desc": "Week strip + Today/Now pill track the centered day correctly",
+      "method": "device-only",
+      "persona": null,
+      "lastResult": null,
+      "lastShip": null,
+      "lastDeviceConfirmed": null
+    },
+    {
+      "id": "journey-building-shows-nodes",
+      "desc": "Building persona: journey pane renders chapter nodes (AM, plan, habits) without blank screen",
+      "method": "device-only",
+      "persona": "building",
+      "lastResult": null,
+      "lastShip": null,
+      "lastDeviceConfirmed": null
+    },
+    {
+      "id": "onboarding-fresh-renders",
+      "desc": "Fresh persona: onboarding flow renders on load, not a blank screen",
+      "method": "device-only",
+      "persona": "fresh",
+      "lastResult": null,
+      "lastShip": null,
+      "lastDeviceConfirmed": null
+    }
+  ]
+}

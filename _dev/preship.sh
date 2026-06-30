@@ -14,7 +14,12 @@ fail() { printf '\033[31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 node --check app.js || fail "app.js has a syntax error — fix before shipping."
 say "✓ app.js parses"
 
-# 2. Auto-bump the cache-buster in index.html (the #1 forgotten step).
+# 2. Logic invariant audit — mirrors chapter gates + appetite dial from app.js.
+#    Fails fast if any testable invariant regresses. Writes results back to GUARD.json.
+node _dev/audit.js --write || fail "logic invariants FAILED — fix before shipping (see above)."
+say "✓ logic invariants pass"
+
+# 3. Auto-bump the cache-buster in index.html (the #1 forgotten step).
 cur=$(grep -oE 'app\.js\?v=[0-9]+' index.html | head -1 | grep -oE '[0-9]+')
 [ -n "${cur:-}" ] || fail "couldn't find app.js?v=NNN in index.html"
 next=$((cur + 1))
@@ -22,10 +27,10 @@ next=$((cur + 1))
 sed -i '' "s/app\.js?v=${cur}/app.js?v=${next}/g" index.html
 say "✓ cache-buster bumped: v${cur} -> v${next}"
 
-# 3. Regenerate the deploy artifact so it can never drift from source.
+# 4. Regenerate the deploy artifact so it can never drift from source.
 node build-hf-server.js >/dev/null && say "✓ server.js regenerated from index.html + app.js"
 
-# 4. Hand David the cache-bust link.
+# 5. Hand David the cache-bust link.
 say ""
 say "READY TO SHIP (v${next}). Now:"
 echo "    git add -A && git commit -m \"…\" && git push"
