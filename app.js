@@ -1953,7 +1953,7 @@
     renderTFControls(onplan ? "onplan" : "off");
   }
   // ===== COCKPIT FUNNELS (CKPT-2, David 2026-06-28): one door in (enterStage), one out (exitStage), one dispatcher (renderStage), one pure router (stageModeFor). Wired to NOTHING that auto-triggers this wave — defaults keep TF_MODE null. =====
-  function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", track: "" })[mode] || ""; }
+  function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", sleepmath: "Sleep Math", track: "" })[mode] || ""; }
   function enterStage(mode, opts) { // the single entry door every guided flow uses
     opts = opts || {};
     if (opts.trackTitle) { startTimer({ title: opts.trackTitle, catK: "restore", color: DOM.restore.c, flow: mode }); var r = activeTimers(); TF_BLOCKID = r.length ? r[r.length - 1].id : null; } // the ring lights + will slide aside in the SAME gesture (guidance+tracking fused); finish stops it
@@ -2025,6 +2025,7 @@
       case "journey": journeyStageStep(sb); break;
       case "pm": pmStageStep(sb); break;   // PM bookend: mirror the day back, then ask the one right question
       case "am": amStageStep(sb); break;   // AM bookend: greet, reflect last night's seed, set who you wake as + intrinsic why
+      case "sleepmath": sleepMathStep(sb); break;   // D-1: AutoCalc / Sleep Math
       default:                              // 'tool' handled by the early return above (toolboxStageStep)
         sb.innerHTML = '<div class="tf-stagecard"><div class="tfs-h">' + esc(stageLabel(mode) || "Stage") + '</div><div class="tfs-sub">Coming soon.</div></div>'; break;
     }
@@ -2051,6 +2052,34 @@
     var am = add(w, "button", "tf-chip"); am.innerHTML = '<i class="ti ti-sun-high" style="color:#ffc83d"></i> Morning'; am.onclick = function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); };
     var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
     var tb = add(w, "button", "tf-chip"); tb.innerHTML = '<i class="ti ti-briefcase" style="color:' + DOM.restore.light + '"></i> Toolbox'; tb.onclick = openToolbox; // WISDOM TOOLBOX entry door (TB-SHEET)
+    var sm = add(w, "button", "tf-chip"); sm.innerHTML = '<i class="ti ti-bed" style="color:' + DOM.restore.light + '"></i> Sleep Math'; sm.onclick = function () { enterStage("sleepmath", { byTap: true }); }; // D-1: AutoCalc entry door
+  }
+  // ===== D-1: SLEEP MATH (AutoCalc primitive instance) — _course/BUILD-SPEC.md §D. Pure calc; saves to S.course.sleepMath; live recompute via input handlers (idempotent stage = inputs survive the 1s tick). =====
+  function smMin(hhmm) { var p = (hhmm || "").split(":"); if (p.length < 2) return null; return (+p[0]) * 60 + (+p[1]); }
+  function sleepMathStep(sb) {
+    var saved = (S.course && S.course.sleepMath) || {}, wake = saved.wake || "07:00", hrs = saved.hours || 8;
+    sb.innerHTML = "";
+    var card = add(sb, "div", "tf-stagecard"); card.setAttribute("style", JR_CARD + "display:flex;flex-direction:column;gap:12px;");
+    add(card, "div", "tfs-h", "🌙 Sleep Math").style.cssText = "font-weight:800;font-size:17px;";
+    add(card, "div", "tfs-sub", "Work back from your wake time to find when to wind down.").style.cssText = "opacity:.72;font-size:13px;margin-top:-7px;";
+    var row1 = add(card, "label"); row1.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;";
+    add(row1, "span", null, "Wake at");
+    var wIn = add(row1, "input"); wIn.type = "time"; wIn.value = wake; wIn.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:9px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:7px 10px;-webkit-appearance:none;");
+    var row2 = add(card, "label"); row2.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;";
+    add(row2, "span", null, "Hours of sleep");
+    var stp = add(row2, "div"); stp.style.cssText = "display:flex;align-items:center;gap:12px;";
+    var minus = add(stp, "button", null, "–"), hv = add(stp, "b", null, String(hrs)), plus = add(stp, "button", null, "+");
+    minus.setAttribute("style", "width:32px;height:32px;border-radius:8px;border:none;background:#3a2147;color:#fff;font-size:18px;font-weight:700;");
+    plus.setAttribute("style", "width:32px;height:32px;border-radius:8px;border:none;background:#3a2147;color:#fff;font-size:18px;font-weight:700;");
+    hv.style.cssText = "min-width:34px;text-align:center;font-size:17px;";
+    var res = add(card, "div"); res.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:4px;";
+    function line(lbl) { var r = add(res, "div"); r.style.cssText = "display:flex;justify-content:space-between;font-size:15px;border-top:1px solid #2a1730;padding-top:8px;"; add(r, "span", null, lbl).style.opacity = ".8"; var v = add(r, "b"); v.style.color = DOM.restore.light; return v; }
+    var oShut = line("🛑 Wind down"), oSun = line("📵 Screens off"), oBed = line("🛏 In bed by");
+    function compute() { var wm = smMin(wIn.value); if (wm == null) return; var bed = ((wm - (hrs * 60 + 60)) % 1440 + 1440) % 1440, sun = (bed - 60 + 1440) % 1440, shut = (bed - 120 + 1440) % 1440; oBed.textContent = fmt(bed); oSun.textContent = fmt(sun); oShut.textContent = fmt(shut); S.course = S.course || {}; S.course.sleepMath = { wake: wIn.value, hours: hrs }; save(); }
+    wIn.oninput = compute;
+    minus.onclick = function () { hrs = Math.max(4, hrs - 1); hv.textContent = hrs; compute(); };
+    plus.onclick = function () { hrs = Math.min(12, hrs + 1); hv.textContent = hrs; compute(); };
+    compute();
   }
   // ===== JOURNALING 101 — shared style + small builders (David 2026-06-28) =====
   var JR_TA = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;";
@@ -2713,6 +2742,9 @@
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "pm-mirror": case "pm-ask": case "am-greet":
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(true); }, primary: true },
+                { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
+      case "sleepmath":
+        return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(false); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "tool":
         return [{ icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, primary: true }];
