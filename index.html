@@ -259,13 +259,13 @@
   .jp-rdisc i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-cktitle{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;}
   .jp-cktimer{font-family:var(--bub);font-size:27px;font-weight:800;color:#ffd9ea;letter-spacing:1px;margin-top:-4px;}
-  .jp-ckmatrix{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
-  .jp-ckbtn{border:2.5px solid var(--ink);border-radius:12px;padding:9px 10px;font-family:var(--bub);font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:5px;}
-  .jp-ckbtn.done{grid-column:1/-1;padding:11px 20px;font-size:15px;background:#34d39a;color:#06351f;}
+  .jp-ckmatrix{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .jp-ckbtn{border:2.5px solid var(--ink);border-radius:12px;padding:11px 10px;font-family:var(--bub);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;}
+  .jp-ckbtn.done{grid-column:1/-1;padding:12px 20px;font-size:15px;background:#34d39a;color:#06351f;}
   .jp-ckbtn.follow{background:#7cc8ff;color:#0b2740;}
   .jp-ckbtn.replan{background:#ffd54a;color:#4a3500;}
   .jp-ckbtn.drift{background:#caa6e6;color:#321a48;}
-  .jp-ckbtn.small{padding:9px 10px;font-size:13px;}
+  .jp-ckbtn.small{padding:11px 10px;font-size:14px;}
   .jp-ckbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
   /* HABIT 3-way inline menu — render in the cockpit slot, the habit's color (David 2026-06-28) */
   .jp-habmenu{display:flex;flex-direction:column;align-items:stretch;gap:9px;margin:8px 0 4px;width:208px;}
@@ -1707,6 +1707,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=709"></script>
+  <script src="app.js?v=710"></script>
 </body>
 </html>
