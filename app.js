@@ -1869,6 +1869,7 @@
   function renderSwitchChips(curTitle) { var w = el("tfSwitch"); if (!w) return; w.innerHTML = ""; var tg = tfSwitchTargets(curTitle); if (!tg.length) { w.style.display = "none"; return; } w.style.display = ""; add(w, "span", "tf-swlab", "SWITCH TO"); tg.forEach(function (o) { var D = DOM[o.dom] || DOM.focus, c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + (o.block ? tiClass(o.block) : (o.act ? tiClass(o.act) : D.ti)) + '" style="color:' + D.light + '"></i> ' + esc(o.title); c.onclick = (function (it) { return function () { tfSwitchTo(it); }; })(o); }); }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
+    var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
     // COCKPIT PRE-BRANCH (CKPT-2): if a guided stage mode is active, corner-pose the ring (CSS .tf-staged) + delegate the freed area to #tfStageBody, then RETURN. With TF_MODE null (default) this is a no-op and the existing 6-state body below runs UNTOUCHED → zero behavior change. (David 2026-06-28)
     tf.classList.toggle("tf-staged", !!TF_MODE);
     if (TF_MODE) {
@@ -3673,7 +3674,27 @@
 
   // ---- the game: spark currency + compounding upgrades -------------------
   function hasShippedToday() { var lg = logs(todayK()), i; for (i = 0; i < lg.length; i++) if (virtueOf(lg[i]) === "courage") return true; var bl = blocks(todayK()); for (i = 0; i < bl.length; i++) if (bl[i].done && virtueOf(bl[i]) === "courage") return true; return false; }
-  function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; save();
+  /* ===== B: SOUL FORCE score + "THAT'S LIKE ME" ping (David 2026-06-30, _course/BUILD-SPEC.md §B). Additive; reads existing state; no shape change. Labels are placeholders — rename anytime. ===== */
+  var TLM_PHRASES = ["That's like me.", "That's like me. ✦", "That's so like me."];
+  var _tlmTimer = null;
+  function pickTLM(domain) { return TLM_PHRASES[Math.floor(Date.now() / 2000) % TLM_PHRASES.length]; }
+  function triggerTLM(ctx) { var chip = el("tlmChip"); if (!chip) return; chip.textContent = (ctx && ctx.tlm) || pickTLM(ctx && ctx.domain); chip.classList.remove("show"); void chip.offsetWidth; chip.classList.add("show"); if (_tlmTimer) clearTimeout(_tlmTimer); _tlmTimer = setTimeout(function () { chip.classList.remove("show"); }, 2100); }
+  function logSF(ctx) { var dk = todayK(); S.sf = S.sf || { history: {}, actions: {} }; S.sf.actions = S.sf.actions || {}; (S.sf.actions[dk] = S.sf.actions[dk] || []).push({ t: Date.now(), label: (ctx && ctx.label) || "", domain: (ctx && ctx.domain) || null }); var ks = Object.keys(S.sf.actions); if (ks.length > 45) { ks.sort(); ks.slice(0, ks.length - 40).forEach(function (k) { delete S.sf.actions[k]; }); } }
+  function sfNow(dk) {
+    dk = dk || todayK();
+    var hb = (S.habits || []).filter(function (h) { return h.type === "build"; }), done = S.habitDone[dk] || {};
+    var e = hb.length ? Math.round(hb.filter(function (h) { return done[h.id]; }).length / hb.length * 100) : 50;
+    var blocks = (S.blocks[dk] || []).filter(function (b) { return b.time != null && b.mins; }), nm = nowMin();
+    var elp = blocks.filter(function (b) { return b.time <= nm; });
+    var f = elp.length ? Math.round(elp.filter(function (b) { return b.done; }).length / elp.length * 100) : 50;
+    var acts = (S.sf && S.sf.actions && S.sf.actions[dk]) || [];
+    var w = acts.length ? Math.min(acts.length * 15, 100) : ((S.bk[dk] && S.bk[dk].am && S.bk[dk].am.done) ? 70 : 30);
+    var streak = curStreak(), c = Math.max(0.5, Math.min(streak, 10));
+    var sf = Math.round(Math.pow((e * f * w) / 1e6, c / 10) * 100);
+    sf = Math.max(10, sf); if (streak < 7) sf = Math.min(99, sf);
+    return { sf: sf, e: e, f: f, w: w };
+  }
+  function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; logSF(ctx); save(); triggerTLM(ctx);
     var jspk = el("jpSpark"); if (jspk) { var jn = jspk.querySelector(".spark-n"); if (jn) jn.textContent = (S.game.spark || 0).toLocaleString(); jspk.classList.remove("bump"); void jspk.offsetWidth; jspk.classList.add("bump"); if (document.body.classList.contains("journey-open")) { try { var jr = jspk.getBoundingClientRect(); var jf = document.createElement("div"); jf.className = "spark-float"; jf.textContent = "+" + got; jf.style.left = (jr.left + jr.width / 2 - 8) + "px"; jf.style.top = (jr.top + 4) + "px"; document.body.appendChild(jf); setTimeout(function () { try { jf.remove(); } catch (e) {} }, 950); } catch (e) {} } } // persistent Spark counter pulses + floats +N (David 2026-07-02)
     var sp = el("spark"); if (sp) { sp.style.transition = "none"; sp.style.transform = "scale(1.14)"; setTimeout(function () { sp.style.transition = "transform .3s"; sp.style.transform = "scale(1)"; renderGame(); }, 30); try { var r0 = sp.getBoundingClientRect(); var fl = document.createElement("div"); fl.className = "spark-float"; fl.textContent = "+" + got; fl.style.left = (r0.left + r0.width / 2 + (Math.random() * 26 - 13)) + "px"; fl.style.top = (r0.top + 2) + "px"; document.body.appendChild(fl); setTimeout(function () { try { fl.remove(); } catch (e) {} }, 950); } catch (e) {} } } // floating +N feedback so earning Spark feels good (David 2026-06-24 night)
   function renderGame() {

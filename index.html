@@ -941,6 +941,12 @@
   /* SHARED-ELEMENT MORPH (FLIP) model (David 2026-06-28): the sheet shows at FULL size; only its dark BACKGROUND fades in (content crossfade is banned). Each big element FLIES/GROWS from its mini dock counterpart — circles via uniform scale only, never distort. The outer no longer clips by height (no more rise/crossfade). */
   #trackerFull{ position:fixed; left:0; right:0; bottom:0; top:auto; height:calc(100dvh - 92px); z-index:90; overflow:hidden; opacity:0; pointer-events:none; border-radius:18px 18px 0 0; touch-action:none; overscroll-behavior:none; }
   #trackerFull.on{ opacity:1; pointer-events:auto; }
+  /* B (David 2026-06-30): Soul Force readout (cockpit) + "that's like me" ping (body-level so it shows even when cockpit is closed) */
+  .tf-sf{ position:absolute; top:30px; left:50%; transform:translateX(-50%); font-size:12px; color:#ffd98a; font-weight:600; letter-spacing:.02em; opacity:.92; z-index:4; white-space:nowrap; pointer-events:none; }
+  .tf-sf b{ color:#fff; font-size:14px; }
+  #trackerFull.tf-staged .tf-sf{ display:none; }
+  #tlmChip{ position:fixed; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(12px); background:rgba(138,92,240,.94); color:#fff; font-size:14px; font-weight:700; padding:9px 18px; border-radius:18px; z-index:400; opacity:0; pointer-events:none; box-shadow:0 6px 22px rgba(138,92,240,.5); transition:opacity .22s ease, transform .28s cubic-bezier(.2,.9,.3,1); white-space:nowrap; }
+  #tlmChip.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   #trackerFull.tf-bg{ transition:opacity .26s linear, height .4s cubic-bezier(.2,.82,.3,1); } /* the dark sheet background fades in/out; height only animates on the finger-drag fallback */
   /* the morphing shared elements: GPU transform from the top-left corner (FLIP math is corner-delta + size-ratio). tf-morph adds the spring; cleared after the morph so layout is normal. */
   #tfRing, #tfTitle, #tfTime, #tfCtrls{ will-change:transform,opacity; transform-origin:0 0; }
@@ -1633,6 +1639,7 @@
     <button id="tfClose" class="tf-close" aria-label="Close"><i class="ti ti-chevron-down"></i></button>
     <div class="tf-clock" id="tfClock"></div><!-- current wall-clock time (status-bar style, am/pm) — distinct from the mm:ss elapsed -->
     <div class="tf-spark" id="tfSpark"></div><!-- streak + today, top-right status (kept OUT of the center so it doesn't bunch up) -->
+    <div class="tf-sf" id="sfReadout"></div><!-- B: live Soul Force readout (top-center), updated by renderTrackerFull -->
     <div class="tf-say" id="tfSay"></div><!-- the guardian's continuity heartbeat: one line proving it remembers you, on every open (soul-layer seam #1) -->
     <div class="tf-stage">
       <div class="tf-ring" id="tfRing"><!-- conic green reward band (set in JS) hugging a STRIPED activity tile = #14 album-in-reward-ring -->
@@ -1650,6 +1657,7 @@
     <div class="tf-ctrls" id="tfCtrls"></div>
    </div>
   </div>
+  <div id="tlmChip"></div><!-- B: "that's like me" identity-ping; body-level so it fires whether the cockpit is open or not -->
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
@@ -1677,6 +1685,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=687"></script>
+  <script src="app.js?v=688"></script>
 </body>
 </html>
