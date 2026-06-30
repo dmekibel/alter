@@ -66,7 +66,7 @@
   function addVoiceToggle(ov) {
     if (!TTS.supported) return null;
     var b = document.createElement("button"); b.className = "bw-voice"; b.type = "button";
-    function paint() { b.textContent = voiceOn() ? "🔊" : "🔇"; }
+    function paint() { b.innerHTML = voiceOn() ? '<i class="ti ti-volume"></i>' : '<i class="ti ti-volume-off"></i>'; }
     paint();
     b.onclick = function (e) { e.stopPropagation(); if (S) { S.voice = !voiceOn(); save(); } paint(); if (!voiceOn()) TTS.stop(); };
     ov.appendChild(b); return b;
@@ -104,7 +104,7 @@
   function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false, bd = domainOf(b); for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs && domainOf(dl[i]) === bd) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= logicalNowMin()) return "miss"; return "plan"; } // "done" only if you actually did the SAME domain; otherwise a passed plan goes ghost/dark (David 2026-06-23)
   var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, nowLineEl = null;
 
-  var DEFAULT_HABITS = [{ id: "move", e: "🏃", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "🧠", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "🧹", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "🪥", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "📖", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "🌬️", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
+  var DEFAULT_HABITS = [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "ti-home-2", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "ti-tooth", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "ti-book", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
   // SHORT-TERM goal decomposition (David: "split complex cleaning into subtasks — dishes, vacuum…"): any complex activity → concrete steps
   var SUBTASKS = {
@@ -149,28 +149,27 @@
     render();
   }
   var DURS = [15, 30, 45, 60, 90, 120];
-  var MORNING_RITUAL = { t: "☀️ Morning bookend", steps: [
-    { l: "Make your bed", e: "🛏️", log: { title: "Make the bed", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 3 } },
-    { l: "Quick tidy", e: "🧹", log: { title: "Tidy", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 5 } },
-    { l: "Journal a few lines", e: "📓", log: { title: "Journal", catK: "love", color: "#ff4fa0", mins: 5 } },
-    { l: "Name today's ONE thing", e: "🎯", action: "plan" },
-    { l: "Three deep breaths", e: "🌬️", log: { title: "Breathe", catK: "energy", color: "#ff8a1e", habitId: "breathe", mins: 2 } }
+  var MORNING_RITUAL = { t: "Morning bookend", steps: [
+    { l: "Make your bed", e: "ti-bed", log: { title: "Make the bed", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 3 } },
+    { l: "Quick tidy", e: "ti-home-2", log: { title: "Tidy", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 5 } },
+    { l: "Journal a few lines", e: "ti-notebook", log: { title: "Journal", catK: "love", color: "#ff4fa0", mins: 5 } },
+    { l: "Name today's ONE thing", e: "ti-target", action: "plan" },
+    { l: "Three deep breaths", e: "ti-wind", log: { title: "Breathe", catK: "energy", color: "#ff8a1e", habitId: "breathe", mins: 2 } }
   ] };
-  var EVENING_RITUAL = { t: "🌙 Evening bookend", steps: [
-    { l: "What went well today?", e: "🙏", log: { title: "Gratitude", catK: "love", color: "#ff4fa0", mins: 4 } },
-    { l: "Tidy your space", e: "🧹", log: { title: "Tidy", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 5 } },
-    { l: "Set tomorrow's ONE thing", e: "🎯", action: "planTom" },
-    { l: "Put the phone to bed", e: "📵" }
+  var EVENING_RITUAL = { t: "Evening bookend", steps: [
+    { l: "What went well today?", e: "ti-heart-handshake", log: { title: "Gratitude", catK: "love", color: "#ff4fa0", mins: 4 } },
+    { l: "Tidy your space", e: "ti-home-2", log: { title: "Tidy", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 5 } },
+    { l: "Set tomorrow's ONE thing", e: "ti-target", action: "planTom" },
+    { l: "Put the phone to bed", e: "ti-device-mobile-off" }
   ] };
-  var WINDDOWN = { t: "😴 Wind down", steps: [
-    { l: "Dim the lights", e: "🌙" },
-    { l: "Tidy the surfaces", e: "🧹", log: { title: "Tidy", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 4 } },
-    { l: "Phone out of reach", e: "📵" },
-    { l: "Head toward bed", e: "🛏️" }
+  var WINDDOWN = { t: "Wind down", steps: [
+    { l: "Dim the lights", e: "ti-moon" },
+    { l: "Tidy the surfaces", e: "ti-home-2", log: { title: "Tidy", catK: "energy", color: "#ff8a1e", habitId: "tidy", mins: 4 } },
+    { l: "Phone out of reach", e: "ti-device-mobile-off" },
+    { l: "Head toward bed", e: "ti-bed" }
   ] };
   var PRIOS = [{ v: 3, l: "Must", c: "#ff4fa0" }, { v: 2, l: "Should", c: "#8a5cf0" }, { v: 1, l: "Nice", c: "#b9b0cf" }];
   function prioC(v) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].v === v) return PRIOS[i].c; return "#8a5cf0"; }
-  var FACES = ["😞", "😕", "😐", "🙂", "💪"];
   var CATS = [
     { k: "energy", label: "Energy", e: "⚡", color: "#ff8a1e", groups: [
       { g: "Fitness", tasks: [{ l: "Run", e: "🏃", id: "move" }, { l: "Gym", e: "🏋️", id: "move" }, { l: "Outdoor gym", e: "💪", id: "move" }, { l: "Go outside", e: "🌤️" }, { l: "Walk", e: "🚶" }, { l: "Yoga", e: "🧘" }, { l: "Stretch", e: "🤸" }, { l: "Cycle", e: "🚴" }, { l: "Swim", e: "🏊" }, { l: "Sports", e: "⚽" }, { l: "Hike", e: "🥾" }] },
@@ -598,7 +597,7 @@
     function isOneThing(title) { var x = (title || "").toLowerCase().trim(), y = oneThing.toLowerCase(); return !!y && (x === y || (x.length > 3 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0))); }
 
     // AWAY / OFF-DAY MODE (David 2026-06-29 — his beach/Shabbat/travel rhythm): when you flag yourself away, the journey becomes ONE calm rest-stone — no task pressure, streaks held — so a trip never feels like falling behind.
-    if (S.away) { nodes.push({ key: "away", emoji: "🌴", title: "You're away", line: "Resting / travelling — no pressure, nothing's slipping, your streaks are safe. Tap here when you're back.", color: DOM.restore.c, done: true, act: function () { S.away = false; S.awaySince = null; save(); drawJourney(true); toast("👋 welcome back — let's ease in"); } }); return nodes; }
+    if (S.away) { nodes.push({ key: "away", emoji: "ti-plane-inflight", title: "You're away", line: "Resting / travelling — no pressure, nothing's slipping, your streaks are safe. Tap here when you're back.", color: DOM.restore.c, done: true, act: function () { S.away = false; S.awaySince = null; save(); drawJourney(true); toast("welcome back — let's ease in"); } }); return nodes; }
 
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
     // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
@@ -1172,7 +1171,7 @@
     var n = 3 + tier * 2;
     for (var i = 0; i < n; i++) { var ang = (i / n) * 6.28 + (i % 2), dist = 70 + (i % 3) * 30; var st = add(ov, "i", "cele-star ti " + (tier >= 3 && i % 2 ? "ti-flame" : "ti-star")); st.style.setProperty("--dx", (Math.cos(ang) * dist) + "px"); st.style.setProperty("--dy", (Math.sin(ang) * dist) + "px"); st.style.color = tier >= 3 ? (i % 2 ? "#ff7a1a" : "#ffd54a") : "#ffd54a"; st.style.animationDelay = (i * 0.03) + "s"; }
     add(ov, "div", "cele-pts", "+" + pts);
-    add(ov, "div", "cele-combo", tier >= 4 ? "ON FIRE · x" + streak : tier >= 3 ? "🔥 streak x" + streak : tier >= 2 ? "combo x" + streak : "on plan!");
+    add(ov, "div", "cele-combo", tier >= 4 ? "ON FIRE · x" + streak : tier >= 3 ? "streak x" + streak : tier >= 2 ? "combo x" + streak : "on plan!");
     setTimeout(function () { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 300); }, 1500);
   }
   function celebrateGated(color, streak) { // GENTLE bookend reward, GATED once-per-logical-day so journal+PM+AM don't triple-fire the full burst (CKPT-5, David 2026-06-28)
@@ -1249,7 +1248,7 @@
       added.push(f.t);
     });
     reflow(k); save(); renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull();
-    toast(added.length ? '✨ added ' + added.length + ' fundamental' + (added.length > 1 ? 's' : '') + ': ' + added.join(", ") : "✓ fundamentals already covered");
+    toast(added.length ? 'added ' + added.length + ' fundamental' + (added.length > 1 ? 's' : '') + ': ' + added.join(", ") : "fundamentals already covered");
   }
   function durationSheet(label, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); [15, 30, 45, 60, 90, 120].forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
   // ---- GOALS pillar (§16, mockups 009/010): capture → decompose (guided, manual = free) → schedule steps down into the day-calendar; active goals pull into planning ----
@@ -1747,7 +1746,7 @@
     item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
     item("", "ti-compass", "Guidance", function () { guidanceSheet(); });
     item("", "ti-brain", "Brain", function () { brainSheet(); });        // AI tailoring — relocated out of the game/You surface (David 2026-06-28)
-    item("", S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "🌴 Away on — rest easy, your streaks are held" : "👋 welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} }); // travel/off-day mode (David 2026-06-29)
+    item("", S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} }); // travel/off-day mode (David 2026-06-29)
     item("", "ti-sparkles", "Redo setup", function () { onboard(); });   // re-run onboarding — relocated from the old You-tab menu
     item("dev", "ti-flask", "Test day", function () { fillTestDay(); });
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
@@ -2475,7 +2474,7 @@
     order.forEach(function (t) {
       var row = add(grid, "button", "tf-chip"); var isSug = t.id === suggested, isFav = t.id === fav;
       row.style.cssText = "display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:2px solid " + (isSug ? DOM.restore.light : "#160510") + ";background:#1c0f20;width:100%;box-sizing:border-box;";
-      var ic = add(row, "div"); ic.style.cssText = "font-size:20px;line-height:1.2;flex:0 0 auto;"; ic.textContent = t.e;
+      var ic = add(row, "div"); ic.style.cssText = "font-size:20px;line-height:1.2;flex:0 0 auto;"; ic.innerHTML = '<i class="ti ' + t.icon + '"></i>';
       var txt = add(row, "div"); txt.style.cssText = "flex:1;min-width:0;";
       var h = add(txt, "div"); h.style.cssText = "font-size:14px;color:#ffe3f1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
       h.appendChild(document.createTextNode(t.label));
@@ -2496,7 +2495,7 @@
     var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
     // header row: type label + a quiet "switch" chip (always escapable — never trapped in one template)
     var hrow = add(card, "div"); hrow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;";
-    add(hrow, "div", "tfs-h", t.e + " " + t.label).style.margin = "0";
+    var _jtH = add(hrow, "div", "tfs-h"); _jtH.innerHTML = '<i class="ti ' + t.icon + '"></i> ' + esc(t.label); _jtH.style.margin = "0";
     var sw = add(hrow, "button", "tf-chip"); sw.innerHTML = '<i class="ti ti-switch-horizontal"></i> switch'; sw.style.cssText = "opacity:.7;font-size:12px;flex:0 0 auto;";
     sw.onclick = function () { sb.dataset.jpicked = ""; jrRenderPicker(sb); };
     var src = add(card, "div", "tfs-sub", t.src); src.style.cssText = "font-size:11px;color:#7e6378;margin-top:-6px;"; // cite Johnson, quietly
@@ -2810,7 +2809,7 @@
     else if (mr.kept >= 1) extra = "Even one thing kept is a vote for who you're becoming.";
     else extra = "A soft day — and rest is part of the work, not a gap in it.";
     var ex = add(card, "div", "tfs-sub"); ex.textContent = extra; ex.style.lineHeight = "1.45";
-    if (mr.streak >= 2) { var stk = add(card, "div", "tfs-sub"); stk.textContent = "🔥 " + mr.streak + "-day thread, still going."; stk.style.color = DOM.restore.light; stk.style.fontSize = "13px"; }
+    if (mr.streak >= 2) { var stk = add(card, "div", "tfs-sub"); stk.innerHTML = '<i class="ti ti-flame"></i> ' + mr.streak + "-day thread, still going."; stk.style.color = DOM.restore.light; stk.style.fontSize = "13px"; }
     if (pmHasDrift(mr)) { var note = add(card, "div", "tfs-sub"); note.textContent = (mr.drift ? "The day drifted for a bit" : "A plan or two slid by") + " — just information, not a verdict. We'll re-story it next."; note.style.color = DRIFT_GRAY; note.style.fontSize = "13px"; }
   }
   // ---- BEAT 2: RE-STORY DRIFT (PM-RESTORY) — three calm taps per missed/drifted block. Drift in cool-gray, never red, never guilt.
@@ -4057,12 +4056,12 @@
     for (var i = 0; i < n; i++) { var frac = n === 1 ? 0.5 : i / (n - 1), gx = W * (0.06 + frac * 0.88), gy = baseY + 5 + (i % 2) * 4; plantSprite(gx, gy, g[i].t); }
   }
   function plantGarden() {
-    if (!hasShippedToday()) { toast("ship one real thing today — then your world grows 🌱"); return; }
+    if (!hasShippedToday()) { toast("ship one real thing today — then your world grows"); return; }
     var n = (S.game.garden || []).length, cost = 20 * (n + 1);
     if (S.game.spark < cost) { toast("not enough Spark yet — earn a little more"); return; }
-    S.game.spark -= cost; S.game.garden.push({ t: n % 5 }); save(); renderGame(); toast("🌱 planted — your world grew");
+    S.game.spark -= cost; S.game.garden.push({ t: n % 5 }); save(); renderGame(); toast("planted — your world grew");
   }
-  var MOODS = [{ e: "🌫️", l: "Foggy" }, { e: "🌥️", l: "Heavy" }, { e: "⛅", l: "Okay" }, { e: "☀️", l: "Clear" }, { e: "✨", l: "Radiant" }];
+  var MOODS = [{ e: "ti-cloud-fog", l: "Foggy" }, { e: "ti-cloud", l: "Heavy" }, { e: "ti-cloud-sun", l: "Okay" }, { e: "ti-sun", l: "Clear" }, { e: "ti-sparkles", l: "Radiant" }];
   function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
     if (!gctx) { requestAnimationFrame(drawGuardian); return; }
@@ -4071,11 +4070,11 @@
     requestAnimationFrame(drawGuardian);
   }
   function setMood(i) { S.mood = S.mood || {}; S.mood[todayK()] = { lvl: i, t: Date.now() }; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mood: " + MOODS[i].l, mins: 1, catK: "love", color: "#9a5cf0" }); earn(2, { catK: "love" }); save(); renderMood(); renderGame(); }
-  function renderMood() { var M = el("moodRow"); if (!M) return; M.innerHTML = ""; var cur = currentMood(); add(M, "div", "qlab", "🌦️ your inner weather — how do you feel?"); var row = add(M, "div", "moods"); MOODS.forEach(function (m, i) { var c = add(row, "div", "mood" + (cur === i ? " on" : "")); add(c, "div", "moode", m.e); add(c, "div", "moodl", m.l); c.onclick = function () { setMood(i); }; }); }
+  function renderMood() { var M = el("moodRow"); if (!M) return; M.innerHTML = ""; var cur = currentMood(); add(M, "div", "qlab", "your inner weather — how do you feel?"); var row = add(M, "div", "moods"); MOODS.forEach(function (m, i) { var c = add(row, "div", "mood" + (cur === i ? " on" : "")); var _de = add(c, "div", "moode"); _de.innerHTML = '<i class="ti ' + m.e + '"></i>'; add(c, "div", "moodl", m.l); c.onclick = function () { setMood(i); }; }); }
 
   // ---- render ------------------------------------------------------------
-  function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + " 👋"; }
-  function renderHero() { var cap = el("guardianCap"); if (cap) { if (S.profile && S.profile.set && vState) cap.innerHTML = "<b>" + (VCLASS[vState.top.k] || "Awakening") + "</b> · Lv " + vState.level + "  ·  ✨ " + S.game.spark.toLocaleString(); else cap.textContent = "your mirror — it grows when you do"; } var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
+  function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey"); }
+  function renderHero() { var cap = el("guardianCap"); if (cap) { if (S.profile && S.profile.set && vState) cap.innerHTML = "<b>" + (VCLASS[vState.top.k] || "Awakening") + "</b> · Lv " + vState.level + ' · <i class="ti ti-sparkles"></i> ' + S.game.spark.toLocaleString(); else cap.textContent = "your mirror — it grows when you do"; } var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
 
   var vState = null;
   // CHARACTER CARD (David 2026-06-27): tap the guardian → a clean berry card of who you're becoming — class, level, virtue stars + their skill trees. Reuses virtues()/VCLASS/virtueDetail.
@@ -4087,7 +4086,7 @@
     var head = add(card, "div", "bento-head"); var hq = add(head, "div", "bento-q"); hq.innerHTML = '<i class="ti ti-shield-star"></i> ' + (VCLASS[v.top.k] || "Your character"); var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
     var body = add(card, "div", "bento-body");
     var P = S.profile, bits = ["Lv " + v.level]; if (P.age) bits.push(P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.occ) bits.push(esc(P.occ));
-    add(body, "div", "char-sub", bits.join(" · ") + " · ✨ " + (S.game.spark || 0).toLocaleString());
+    var _csub = add(body, "div", "char-sub"); _csub.innerHTML = esc(bits.join(" · ")) + ' · <i class="ti ti-sparkles"></i> ' + (S.game.spark || 0).toLocaleString();
     add(body, "div", "sughead", "your virtues — they level by living. tap one to open its skill tree");
     var grid = add(body, "div", "char-grid");
     v.list.slice().sort(function (a, b) { return b.lv - a.lv; }).forEach(function (vv) {
@@ -4101,24 +4100,24 @@
   }
   function renderChar() {
     var L = el("charFoot"); L.innerHTML = "";
-    if (!(S.profile && S.profile.set)) { el("statLvl").textContent = ""; vState = null; renderPulls(); var b = add(L, "button", "done2", "✨ Set up your world →"); b.onclick = onboard; return; }
+    if (!(S.profile && S.profile.set)) { el("statLvl").textContent = ""; vState = null; renderPulls(); var b = add(L, "button", "done2", "Set up your world →"); b.onclick = onboard; return; }
     var v = virtues(); vState = v;
     el("statLvl").textContent = (VCLASS[v.top.k] || "") + " · Lv " + v.level;
-    var P = S.profile, parts = []; if (P.age) parts.push("🧬 " + P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push("🎯 " + P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
-    var h = add(L, "div", "lbl", "tap a star to open its skill tree ✨"); h.style.textAlign = "center"; h.style.marginTop = "4px";
-    var sv = add(L, "button", "add", "📊 calibrate my levels"); sv.style.cssText = "margin:10px auto 0;display:block;"; sv.onclick = surveySheet;
-    var bn = add(L, "button", "add", "🧠 brain (free AI)"); bn.style.cssText = "margin:8px auto 0;display:block;"; bn.onclick = brainSheet;
-    var ml = add(L, "button", "add", "🌳 See your life"); ml.style.cssText = "margin:8px auto 0;display:block;"; ml.onclick = mindmapSheet; // the identity mindmap (§21)
-    var wb = add(L, "button", "add", "🌅 Wake & bedtime"); wb.style.cssText = "margin:8px auto 0;display:block;"; wb.onclick = wakeBedSheet; // 1-tap re-set of the day frame (David 2026-06-26)
-    var rs = add(L, "button", "add", "✨ Redo setup"); rs.style.cssText = "margin:8px auto 0;display:block;"; rs.onclick = onboard; // re-run onboarding anytime (David asked)
+    var P = S.profile, parts = []; if (P.age) parts.push(P.age + (P.gender ? " " + ({ m: "♂", f: "♀", o: "⚧" }[P.gender] || "") : "")); if (P.goals) parts.push(P.goals); if (parts.length) add(L, "div", "pfline", parts.join("   ·   "));
+    var h = add(L, "div", "lbl", "tap a star to open its skill tree"); h.style.textAlign = "center"; h.style.marginTop = "4px";
+    var sv = add(L, "button", "add"); sv.innerHTML = '<i class="ti ti-chart-bar"></i> calibrate my levels'; sv.style.cssText = "margin:10px auto 0;display:block;"; sv.onclick = surveySheet;
+    var bn = add(L, "button", "add"); bn.innerHTML = '<i class="ti ti-brain"></i> brain (free AI)'; bn.style.cssText = "margin:8px auto 0;display:block;"; bn.onclick = brainSheet;
+    var ml = add(L, "button", "add"); ml.innerHTML = '<i class="ti ti-tree"></i> See your life'; ml.style.cssText = "margin:8px auto 0;display:block;"; ml.onclick = mindmapSheet;
+    var wb = add(L, "button", "add"); wb.innerHTML = '<i class="ti ti-sunrise"></i> Wake & bedtime'; wb.style.cssText = "margin:8px auto 0;display:block;"; wb.onclick = wakeBedSheet;
+    var rs = add(L, "button", "add", "Redo setup"); rs.style.cssText = "margin:8px auto 0;display:block;"; rs.onclick = onboard;
     var re = add(L, "button", "add", "edit"); re.style.cssText = "margin:8px auto 0;display:block;"; re.onclick = charSheet;
     renderPulls();
   }
   function renderPulls() {
     var d7 = lastDays(7), vm = {}; d7.forEach(function (k) { logs(k).forEach(function (e) { if (catOf(e) === "vice") vm[e.title] = (vm[e.title] || 0) + (e.mins || 0); }); });
-    var pulls = Object.keys(vm).map(function (t) { var min = vm[t], r = min < 30 ? { l: "light", e: "🌱", c: "#23c98a" } : min < 150 ? { l: "moderate", e: "🌀", c: "#ff9f1c" } : { l: "heavy", e: "🔥", c: "#ff7a4d" }; return { title: t, min: min, rate: r }; }).sort(function (a, b) { return b.min - a.min; });
+    var pulls = Object.keys(vm).map(function (t) { var min = vm[t], r = min < 30 ? { l: "light", e: "ti-leaf", c: "#23c98a" } : min < 150 ? { l: "moderate", e: "ti-flame", c: "#ff9f1c" } : { l: "heavy", e: "ti-alert-triangle", c: "#ff7a4d" }; return { title: t, min: min, rate: r }; }).sort(function (a, b) { return b.min - a.min; });
     var pl = el("pullList"), lab = el("pullLab"); pl.innerHTML = "";
-    if (pulls.length) { lab.style.display = "flex"; pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); add(r, "div", null, v.rate.e + " " + v.title).style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
+    if (pulls.length) { lab.style.display = "flex"; pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); var _pr = add(r, "div"); _pr.innerHTML = '<i class="ti ' + v.rate.e + '"></i> ' + esc(v.title); _pr.style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
   }
 
   // ---- the game: spark currency + compounding upgrades -------------------
@@ -4150,41 +4149,41 @@
     var sp = el("spark"); if (!sp) return; var L = el("upgrades"); if (L) L.innerHTML = "";
     if (!(S.profile && S.profile.set)) { sp.textContent = ""; return; }
     var shipped = hasShippedToday();
-    sp.innerHTML = "✨ " + S.game.spark.toLocaleString() + " <span style='font-size:11px;opacity:.7;font-weight:600;'>Spark</span>" + (shipped ? " <span style='font-size:12px;color:#46e2a4;'>· 🌱 today grew</span>" : " <span style='font-size:11px;color:#ffc24a;'>· ship 1 thing to grow</span>");
+    sp.innerHTML = '<i class="ti ti-sparkles"></i> ' + S.game.spark.toLocaleString() + " <span style='font-size:11px;opacity:.7;font-weight:600;'>Spark</span>" + (shipped ? " <span style='font-size:12px;color:#46e2a4;'>· today grew</span>" : " <span style='font-size:11px;color:#ffc24a;'>· ship 1 thing to grow</span>");
     if (L) {
       var n = (S.game.garden || []).length, cost = 20 * (n + 1);
-      var pb = add(L, "button", "done2", "🌱 Plant in your world · ✨" + cost); pb.style.marginTop = "8px"; pb.disabled = !shipped || S.game.spark < cost; pb.onclick = plantGarden;
+      var pb = add(L, "button", "done2", "Plant in your world · " + cost + " Spark"); pb.style.marginTop = "8px"; pb.disabled = !shipped || S.game.spark < cost; pb.onclick = plantGarden;
       var h = add(L, "div", "lbl", shipped ? (n + " planted — your world fills as you do") : "ship one real thing today, then plant"); h.style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
       var bcost = 120;
       if (!(S.game.ups && S.game.ups.board)) {
-        var sb = add(L, "button", "done2", "🛹 Build a skateboard · ✨" + bcost); sb.style.marginTop = "8px"; sb.disabled = S.game.spark < bcost;
+        var sb = add(L, "button", "done2", "Build a skateboard · " + bcost + " Spark"); sb.style.marginTop = "8px"; sb.disabled = S.game.spark < bcost;
         sb.onclick = function () { if (S.game.spark < bcost) return; S.game.spark -= bcost; S.game.ups = S.game.ups || {}; S.game.ups.board = true; save(); renderGame(); };
       } else {
-        add(L, "div", "lbl", "🛹 Skateboard built — tap the left pad to skate").style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
+        add(L, "div", "lbl", "Skateboard built — tap the left pad to skate").style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
         var tcost = 400;
         if (!(S.game.ups && S.game.ups.tricks)) {
-          var tb = add(L, "button", "done2", "🛼 Trick deck · ✨" + tcost); tb.style.marginTop = "8px"; tb.disabled = S.game.spark < tcost;
+          var tb = add(L, "button", "done2", "Trick deck · " + tcost + " Spark"); tb.style.marginTop = "8px"; tb.disabled = S.game.spark < tcost;
           tb.onclick = function () { if (S.game.spark < tcost) return; S.game.spark -= tcost; S.game.ups = S.game.ups || {}; S.game.ups.tricks = true; save(); renderGame(); };
-        } else { add(L, "div", "lbl", "🛼 Trick deck — jump while skating, flick the right stick for flips & spins").style.cssText = "font-size:12px;text-align:center;margin-top:6px;"; }
+        } else { add(L, "div", "lbl", "Trick deck — jump while skating, flick the right stick for flips & spins").style.cssText = "font-size:12px;text-align:center;margin-top:6px;"; }
       }
     }
   }
 
   var MICRO = [
-    { e: "💧", l: "Drink water", catK: "energy", mins: 1, sp: 3 },
-    { e: "🧍", l: "Stand & move", catK: "energy", mins: 2, sp: 3 },
-    { e: "🌬️", l: "2-min breath", catK: "energy", mins: 2, sp: 5, habitId: "breathe", breath: true },
-    { e: "🤸", l: "Quick stretch", catK: "energy", mins: 2, sp: 4 },
-    { e: "🧘", l: "Mindfulness check", catK: "love", mins: 2, sp: 5 },
-    { e: "🙏", l: "One gratitude", catK: "love", mins: 1, sp: 4 },
-    { e: "📞", l: "Reach someone", catK: "love", mins: 3, sp: 6 },
-    { e: "☀️", l: "Step outside", catK: "energy", mins: 3, sp: 4 },
-    { e: "🪥", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
-    { e: "📵", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 },
-    { e: "🧘", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true },
-    { e: "🧘", l: "Meditate", catK: "love", mins: 5, sp: 8, med: true },
-    { e: "👆", l: "Tapping (EFT)", catK: "love", mins: 3, sp: 7, tap: true },
-    { e: "🗣️", l: "Mantra", catK: "love", mins: 3, sp: 7, mantra: true }
+    { e: "ti-droplet", l: "Drink water", catK: "energy", mins: 1, sp: 3 },
+    { e: "ti-walk", l: "Stand & move", catK: "energy", mins: 2, sp: 3 },
+    { e: "ti-wind", l: "2-min breath", catK: "energy", mins: 2, sp: 5, habitId: "breathe", breath: true },
+    { e: "ti-stretching", l: "Quick stretch", catK: "energy", mins: 2, sp: 4 },
+    { e: "ti-brain", l: "Mindfulness check", catK: "love", mins: 2, sp: 5 },
+    { e: "ti-heart-handshake", l: "One gratitude", catK: "love", mins: 1, sp: 4 },
+    { e: "ti-phone", l: "Reach someone", catK: "love", mins: 3, sp: 6 },
+    { e: "ti-sun", l: "Step outside", catK: "energy", mins: 3, sp: 4 },
+    { e: "ti-home-2", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
+    { e: "ti-device-mobile-off", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 },
+    { e: "ti-spa", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true },
+    { e: "ti-leaf", l: "Meditate", catK: "love", mins: 5, sp: 8, med: true },
+    { e: "ti-hand-finger", l: "Tapping (EFT)", catK: "love", mins: 3, sp: 7, tap: true },
+    { e: "ti-microphone-2", l: "Mantra", catK: "love", mins: 3, sp: 7, mantra: true }
   ];
   var MICROPHASE = { morning: [2, 11, 13, 7], afternoon: [10, 1, 11, 12], evening: [11, 12, 6, 8], night: [2, 13, 11, 9] };
   // ===== JOURNALING 101 (David 2026-06-28): a PALETTE of Brian Johnson journal TYPES, not one forced template.
@@ -4539,8 +4538,8 @@
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
     (MICROPHASE[phase()] || [0, 1, 5, 3]).forEach(function (mi) {
       var m = MICRO[mi], ms = st[mi], c = add(Q, "div", "qw" + (ms && ms.s === "done" ? " won" : ms && ms.s === "planned" ? " planned" : ""));
-      add(c, "div", "qwe", m.e); add(c, "div", "qwl", m.l);
-      add(c, "div", "qws", ms && ms.s === "done" ? "✓ done" : ms && ms.s === "planned" ? "tap = ✓" : "+" + m.sp + "✨");
+      var _qwe = add(c, "div", "qwe"); _qwe.innerHTML = '<i class="ti ' + m.e + '"></i>'; add(c, "div", "qwl", m.l);
+      add(c, "div", "qws", ms && ms.s === "done" ? "✓ done" : ms && ms.s === "planned" ? "tap = ✓" : "+" + m.sp + " Spark");
       c.onclick = function () { microTap(mi, c); };
     });
   }
@@ -5032,10 +5031,10 @@
     var L = el("habitList"); if (!L) return; L.innerHTML = ""; var dm = doneMap(todayK()), done = 0; // Habits menu removed — same thing as the bento (David 2026-06-23)
     S.habits.forEach(function (hb) {
       var on = !!dm[hb.id]; if (on) done++;
-      var r = add(L, "div", "hab" + (on ? " done" : "")); add(r, "div", "he", hb.e); add(r, "div", "hn", hb.l);
+      var r = add(L, "div", "hab" + (on ? " done" : "")); var _he = add(r, "div", "he"); _he.innerHTML = hb.e && hb.e.indexOf("ti-") === 0 ? '<i class="ti ' + hb.e + '"></i>' : hb.e; add(r, "div", "hn", hb.l);
       if (hb.type === "quit") { var tag = add(r, "span", "htag", "quit"); tag.style.background = "#ff4d4d"; tag.style.marginRight = "6px"; }
       if (hb.per > 0) { var wk = weekDone(hb.id); var wd = add(r, "div", "wkdots"); for (var i = 0; i < hb.per; i++) { var di = add(wd, "i"); if (i < wk) di.style.background = hb.color; } }
-      else { var sk = streak(hb.id); if (sk > 1) { var s = add(r, "div", null, "🔥 " + sk); s.style.cssText = "font-family:var(--bub);font-size:13px;color:#e0791c;font-weight:800;margin-right:4px;"; } }
+      else { var sk = streak(hb.id); if (sk > 1) { var s = add(r, "div"); s.innerHTML = '<i class="ti ti-flame"></i> ' + sk; s.style.cssText = "font-family:var(--bub);font-size:13px;color:#e0791c;font-weight:800;margin-right:4px;"; } }
       var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = hb.color;
       var del = add(r, "div", "del", "✕"); del.onclick = function (e) { e.stopPropagation(); var i = S.habits.indexOf(hb); if (i >= 0) S.habits.splice(i, 1); save(); renderHabits(); };
       r.onclick = function () { toggleHabit(hb.id); };
@@ -5048,13 +5047,13 @@
     var L = el("statsList"); if (!L) return; L.innerHTML = "";
     var days = lastDays(14).reverse();
     S.habits.forEach(function (h) {
-      var r = add(L, "div", "hmrow"); add(r, "div", "hmn", h.e + " " + h.l);
+      var r = add(L, "div", "hmrow"); var _hmn = add(r, "div", "hmn"); _hmn.innerHTML = (h.e && h.e.indexOf("ti-") === 0 ? '<i class="ti ' + h.e + '"></i> ' : (h.e || "")) + esc(h.l);
       var grid = add(r, "div", "hmdots");
       days.forEach(function (k) { var d = add(grid, "i"); if ((S.habitDone[k] || {})[h.id]) d.style.background = h.color; });
-      var s = streak(h.id); if (s > 1) add(r, "div", "hms", "🔥" + s);
+      var s = streak(h.id); if (s > 1) { var _hms = add(r, "div", "hms"); _hms.innerHTML = '<i class="ti ti-flame"></i>' + s; }
     });
     var tot = 0; lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { tot += e.mins || 0; }); });
-    var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak 🔥" + bestStreak()); sm.style.marginTop = "12px";
+    var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
   function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); }
 
@@ -5101,7 +5100,7 @@
       }
       s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"' + iconStyle + '></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
       var holdT = null, held = false; // press & hold any chip → pin / unpin it (tap-only, no keyboard) — David 2026-06-24
-      s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "📌 pinned to the top" : "unpinned"); render(); }, 450); });
+      s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "pinned to the top" : "unpinned"); render(); }, 450); });
       function cancelHold() { if (holdT) { clearTimeout(holdT); holdT = null; } }
       s.addEventListener("pointermove", cancelHold); s.addEventListener("pointerup", cancelHold); s.addEventListener("pointercancel", cancelHold);
       s.onclick = function (e) { e.stopPropagation(); if (held) { held = false; return; } commit(a); };
@@ -5119,7 +5118,7 @@
       if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
       else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
       // "you've been meaning to…" — the inferred procrastination list, surfaced prominently right under the pins (David 2026-06-28). actOf() maps each to a real activity obj so chips colour by domain + toggle-select like any other.
-      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); add(pr, "span", "bento-qlbl", '🕓 been meaning to'); opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
+      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); var _bmt = add(pr, "span", "bento-qlbl"); _bmt.innerHTML = '<i class="ti ti-clock-hour-3"></i> been meaning to'; opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
       var results = add(body, "div", "bento-results"); results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
       ORDER.forEach(function (d) {
@@ -5303,9 +5302,9 @@
   // one-line identity+virtue reminder (Johnson "who am I being") then a domain-scoped bento. Picks accumulate across beats → the order/length/importance editor (orderStep).
   // Back/skip per beat, never forced. No ugly white pickerSheet, no instant drop.
   var BIG3 = [
-    { id: "energy", emoji: "🔥", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
-    { id: "work", emoji: "💼", label: "Work", domains: ["focus", "create"], virtue: "disc" },
-    { id: "love", emoji: "❤️", label: "Love", domains: ["connect"], virtue: "love" }
+    { id: "energy", emoji: "ti-zap", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
+    { id: "work", emoji: "ti-briefcase", label: "Work", domains: ["focus", "create"], virtue: "disc" },
+    { id: "love", emoji: "ti-heart", label: "Love", domains: ["connect"], virtue: "love" }
   ];
   // a LIGHT reminder line for a beat — pulls today's identity + virtue if set, else a gentle prompt. Never a form. (Johnson: who am I being + the virtue)
   function big3Reminder(beat) {
@@ -5321,7 +5320,7 @@
   function big3HeadNode(beat) {
     var wrap = document.createElement("div"); wrap.className = "big3-remind";
     var r = big3Reminder(beat);
-    var top = add(wrap, "div", "big3-rtop"); top.innerHTML = '<span class="big3-remoji">' + beat.emoji + '</span> <span class="big3-rlbl">' + esc(beat.label.toUpperCase()) + '</span>';
+    var top = add(wrap, "div", "big3-rtop"); top.innerHTML = '<span class="big3-remoji"><i class="ti ' + beat.emoji + '"></i></span> <span class="big3-rlbl">' + esc(beat.label.toUpperCase()) + '</span>';
     if (r.who) { var w = add(wrap, "div", "big3-rwho"); w.textContent = r.who; }
     if (r.line) { var l = add(wrap, "div", "big3-rline"); l.style.color = r.vc; l.textContent = r.line; }
     return wrap;
@@ -5339,7 +5338,7 @@
       if (i >= BIG3.length) { runElse(); return; }
       var beat = BIG3[i];
       bentoPicker({
-        title: beat.emoji + " " + beat.label,
+        title: beat.label,
         multi: true, domains: beat.domains, headNode: big3HeadNode(beat), preselect: accTitlesFor(beat.domains),
         // surface the "been meaning to…" items that belong to THIS beat's domains
         priority: avoided.filter(function (m) { return beat.domains.indexOf(domainOf(m)) >= 0; }),
@@ -5352,8 +5351,8 @@
     }
     function runElse() {
       bentoPicker({
-        title: "✨ Everything else",
-        multi: true, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: (function () { var w = document.createElement("div"); w.className = "big3-remind"; var t = add(w, "div", "big3-rtop"); t.innerHTML = '<span class="big3-remoji">✨</span> <span class="big3-rlbl">EVERYTHING ELSE</span>'; add(w, "div", "big3-rline").textContent = "anything that doesn't fit the Big 3."; return w; })(),
+        title: "Everything else",
+        multi: true, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: (function () { var w = document.createElement("div"); w.className = "big3-remind"; var t = add(w, "div", "big3-rtop"); t.innerHTML = '<span class="big3-remoji"><i class="ti ti-sparkles"></i></span> <span class="big3-rlbl">EVERYTHING ELSE</span>'; add(w, "div", "big3-rline").textContent = "anything that doesn't fit the Big 3."; return w; })(),
         priority: avoided.filter(function (m) { var d = domainOf(m); return BIG3.every(function (b) { return b.domains.indexOf(d) < 0; }); }),
         goLabel: "Arrange them", goIcon: '<i class="ti ti-adjustments-horizontal"></i>',
         allowEmptyGo: true,
@@ -5545,7 +5544,7 @@
   function toolboxStageStep(sb) { // renders the kit into #tfStageBody (the 'tool' cockpit stage). Reuses .tf-stagecard / .tf-chip material + berry palette. No new menu, no timeline touch.
     sb.innerHTML = "";
     var head = add(sb, "div", "tf-stagecard");
-    add(head, "div", "tfs-h", "🧰 Your toolbox");
+    var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
     add(head, "div", "tfs-sub", "the right move for the moment you're in — sourced from your Field Guide. Using one on a hard day is the win.");
     var sos = add(head, "button", "tf-chip"); sos.style.marginTop = "11px"; sos.innerHTML = '<i class="ti ti-urgent"></i> What\'s loud right now?'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
     // Favorites / Recents pinned row
@@ -5975,16 +5974,16 @@
     };
   }
   var SURVEYQ = [
-    { q: "How often do you work out?", v: "zest", p: "Athlete", e: "🏃" },
-    { q: "How dialed-in are your sleep & food?", v: "zest", p: "Well-Fed", e: "🥗" },
-    { q: "How strong is your deep-work focus?", v: "disc", p: "Deep Focus", e: "🧠" },
-    { q: "How tidy do you keep your space?", v: "disc", p: "Clean Space", e: "🧹" },
-    { q: "How connected are you with loved ones?", v: "love", p: "Connector", e: "💞" },
-    { q: "How often do you make or create things?", v: "curiosity", p: "Creator", e: "🎨" },
-    { q: "How much do you read & learn?", v: "wisdom", p: "Scholar", e: "📖" },
-    { q: "How often do you ship / put work out there?", v: "courage", p: "Shipper", e: "✦" },
-    { q: "How consistent are your mornings & planning?", v: "hope", p: "Architect", e: "🗒️" },
-    { q: "How present & grateful do you feel?", v: "gratitude", p: "Grateful", e: "🙏" }
+    { q: "How often do you work out?", v: "zest", p: "Athlete", e: "ti-run" },
+    { q: "How dialed-in are your sleep & food?", v: "zest", p: "Well-Fed", e: "ti-leaf" },
+    { q: "How strong is your deep-work focus?", v: "disc", p: "Deep Focus", e: "ti-brain" },
+    { q: "How tidy do you keep your space?", v: "disc", p: "Clean Space", e: "ti-home-2" },
+    { q: "How connected are you with loved ones?", v: "love", p: "Connector", e: "ti-heart" },
+    { q: "How often do you make or create things?", v: "curiosity", p: "Creator", e: "ti-palette" },
+    { q: "How much do you read & learn?", v: "wisdom", p: "Scholar", e: "ti-book" },
+    { q: "How often do you ship / put work out there?", v: "courage", p: "Shipper", e: "ti-send" },
+    { q: "How consistent are your mornings & planning?", v: "hope", p: "Architect", e: "ti-calendar" },
+    { q: "How present & grateful do you feel?", v: "gratitude", p: "Grateful", e: "ti-heart-handshake" }
   ];
   var SCALE = ["Rarely", "Sometimes", "Often", "Always"];
   function applySurvey() { S.profile = S.profile || {}; var ans = S.profile.survey || {}, bv = {}, bp = {}; SURVEYQ.forEach(function (Q, qi) { var a = ans[qi]; if (a) { bv[Q.v] = (bv[Q.v] || 0) + a * 60; bp[Q.p] = (bp[Q.p] || 0) + a * 5; } }); S.profile.base = { virtue: bv, perk: bp }; S.profile.set = true; save(); }
@@ -5992,12 +5991,12 @@
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
     S.profile = S.profile || {}; var ans = S.profile.survey = S.profile.survey || {}, answered = 0;
     SURVEYQ.forEach(function (_, qi) { if (ans[qi] != null) answered++; });
-    add(B, "div", "sttl", "📊 Build your self-map");
+    var _svTtl = add(B, "div", "sttl"); _svTtl.innerHTML = '<i class="ti ti-chart-bar"></i> Build your self-map';
     add(B, "div", "lbl", "just the fundamentals first — add more whenever you like. mapped " + answered + "/" + SURVEYQ.length + ".");
     var batch = [], qi, editing = false; for (qi = 0; qi < SURVEYQ.length && batch.length < 4; qi++) if (ans[qi] == null) batch.push(qi);
     if (!batch.length) { editing = true; for (qi = 0; qi < SURVEYQ.length && batch.length < 4; qi++) batch.push(qi); add(B, "div", "lbl", "✓ your whole map is built — tap to fine-tune."); }
-    batch.forEach(function (qx) { var Q = SURVEYQ[qx]; add(B, "div", "qline", Q.e + "  " + Q.q); var row = add(B, "div", "facerow2"); SCALE.forEach(function (lbl, si) { var x = add(row, "div", "sv" + (ans[qx] === si ? " on" : ""), lbl); x.onclick = function () { ans[qx] = si; applySurvey(); Array.prototype.forEach.call(row.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; }); });
-    if (!editing && answered + batch.length < SURVEYQ.length) { var mb = add(B, "button", "add", "➕ map a few more"); mb.style.cssText = "display:block;margin:4px auto 8px;"; mb.onclick = function () { applySurvey(); surveySheet(); }; }
+    batch.forEach(function (qx) { var Q = SURVEYQ[qx]; var _ql = add(B, "div", "qline"); _ql.innerHTML = '<i class="ti ' + Q.e + '"></i>  ' + esc(Q.q); var row = add(B, "div", "facerow2"); SCALE.forEach(function (lbl, si) { var x = add(row, "div", "sv" + (ans[qx] === si ? " on" : ""), lbl); x.onclick = function () { ans[qx] = si; applySurvey(); Array.prototype.forEach.call(row.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); }; }); });
+    if (!editing && answered + batch.length < SURVEYQ.length) { var mb = add(B, "button", "add"); mb.innerHTML = '<i class="ti ti-plus"></i> map a few more'; mb.style.cssText = "display:block;margin:4px auto 8px;"; mb.onclick = function () { applySurvey(); surveySheet(); }; }
     add(B, "button", "done2", "Done for now ✓").onclick = function () { applySurvey(); closeSheet(); renderChar(); renderGame(); };
   }
   function tidySheet() { var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Tidy up — one step at a time"); var picked = {}; TIDY_SUB.forEach(function (lbl, i) { var r = add(B, "div", "subi"); var ck = add(r, "div", "ck"); add(r, "div", null, lbl).style.flex = "1"; r.onclick = function () { if (picked[i]) return; picked[i] = true; ck.className = "ck on"; ck.textContent = "✓"; S.lastTidy = todayK(); doneMap(todayK()).tidy = true; var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: lbl, mins: 10, habitId: "tidy", catK: "energy", color: "#ff8a1e" }); save(); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; }
@@ -6005,7 +6004,7 @@
     var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", r.t); add(B, "div", "lbl", "tap each as you do it — small steps");
     var done = {};
     r.steps.forEach(function (s, i) {
-      var row = add(B, "div", "subi"); var ck = add(row, "div", "ck"); add(row, "div", null, s.e + "  " + s.l).style.flex = "1";
+      var row = add(B, "div", "subi"); var ck = add(row, "div", "ck"); var _sl = add(row, "div"); _sl.innerHTML = '<i class="ti ' + s.e + '"></i>  ' + esc(s.l); _sl.style.flex = "1";
       row.onclick = function () { if (done[i]) return; done[i] = true; ck.className = "ck on"; ck.textContent = "✓";
         if (s.log) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: s.log.title, mins: s.log.mins || 5, catK: s.log.catK, color: s.log.color, habitId: s.log.habitId }); if (s.log.habitId) doneMap(todayK())[s.log.habitId] = true; if (s.log.habitId === "tidy") S.lastTidy = todayK(); earn(s.log.mins || 5, { catK: s.log.catK }); save(); }
         if (s.action === "plan") { closeSheet(); planSheet(todayK(), "today"); }
@@ -6039,11 +6038,11 @@
     var resurf = [];
     [7, 30, 90, 365].forEach(function (n) { var ek = keyAdd(todayK(), -n); if (byK[ek]) resurf.push({ n: n, e: byK[ek] }); });
     if (resurf.length) {
-      add(B, "div", "lbl", "🕰️ On this day").style.cssText = "margin-top:4px;color:#e6cfe0;font-size:13px;";
+      var _otd = add(B, "div", "lbl"); _otd.innerHTML = '<i class="ti ti-clock-hour-9"></i> On this day'; _otd.style.cssText = "margin-top:4px;color:#e6cfe0;font-size:13px;";
       resurf.forEach(function (r) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;cursor:pointer;";
         var head = (r.n === 365 ? "a year ago" : r.n + " days ago") + " · " + relLabel(r.e.k);
         add(card, "div", "lt", head).style.cssText = "color:#b89bb4;font-size:11px;";
-        add(card, "div", "ln", (r.e.mood != null && MOODS[r.e.mood] ? MOODS[r.e.mood].e + "  " : "") + (r.e.text || r.e.q)).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
+        var _jln1 = add(card, "div", "ln"); if (r.e.mood != null && MOODS[r.e.mood]) { var _mi1 = document.createElement("i"); _mi1.className = "ti " + MOODS[r.e.mood].e; _mi1.style.marginRight = "6px"; _jln1.appendChild(_mi1); } _jln1.appendChild(document.createTextNode(r.e.text || r.e.q || "")); _jln1.style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
         card.onclick = function () { journalDaySheet(r.e.k); };
       });
     }
@@ -6058,10 +6057,10 @@
       if (!shown.length) { add(feed, "div", "empty", "Nothing matches that."); return; }
       shown.slice(0, 120).forEach(function (e) {
         var row = add(feed, "div", "logi"); row.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;cursor:pointer;";
-        var tBadge = e.jtype ? (jtype(e.jtype).e + " " + (e.jlabel || jtype(e.jtype).label) + " · ") : ""; // JOURNALING 101: show the type up front
+        var tBadge = e.jtype ? ((e.jlabel || jtype(e.jtype).label) + " · ") : ""; // JOURNALING 101: show the type up front
         var meta = tBadge + relLabel(e.k) + (!e.jtype && e.q ? " · " + e.q : "");
         add(row, "div", "lt", meta).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
-        add(row, "div", "ln", (e.mood != null && MOODS[e.mood] ? MOODS[e.mood].e + "  " : "") + (e.text || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
+        var _jln2 = add(row, "div", "ln"); if (e.mood != null && MOODS[e.mood]) { var _mi2 = document.createElement("i"); _mi2.className = "ti " + MOODS[e.mood].e; _mi2.style.marginRight = "6px"; _jln2.appendChild(_mi2); } _jln2.appendChild(document.createTextNode(e.text || "(mood only)")); _jln2.style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;";
         row.onclick = function () { journalDaySheet(e.k); };
       });
     }
@@ -6069,32 +6068,32 @@
   }
   function journalDaySheet(k) { // tap an entry → reopen that day's full record (reflections + that day's notes)
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "📔 " + relLabel(k));
+    add(B, "div", "sttl", relLabel(k));
     var back = add(B, "button", "add", "← all entries"); back.style.cssText = "display:block;margin:0 0 8px;"; back.onclick = journalSheet;
     var rec = (S.bk || {})[k] || {}, any = false;
     if (rec.am && (rec.am.virtue || (rec.am.identity && rec.am.identity.length) || rec.am.why)) {
-      any = true; add(B, "div", "lbl", "🌅 morning intention");
+      any = true; add(B, "div", "lbl", "morning intention");
       var v = rec.am.virtue ? (VCLASS[rec.am.virtue] || rec.am.virtue) : "", line = [v, rec.am.why].filter(Boolean).join(" — ");
       add(B, "div", "logi", line || "set").style.cssText = "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;line-height:1.4;";
     }
     var refs = [];
     if (rec.pm && (rec.pm.reflect || rec.pm.mood != null) && !(rec.journal || []).some(function (j) { return j.text === rec.pm.reflect; })) refs.push({ q: rec.pm.q, text: rec.pm.reflect, mood: rec.pm.mood }); // skip a pm dup of a journal entry
     (rec.journal || []).forEach(function (j) { refs.push(j); });
-    if (refs.length) { any = true; add(B, "div", "lbl", "🌙 reflections");
+    if (refs.length) { any = true; add(B, "div", "lbl", "reflections");
       refs.forEach(function (r) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:4px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;";
-        if (r.type) { var th = add(card, "div", "lt"); th.innerHTML = jtype(r.type).e + " " + esc(r.label || jtype(r.type).label); th.style.cssText = "color:" + DOM.restore.light + ";font-size:11px;font-weight:600;line-height:1.3;"; }
+        if (r.type) { var th = add(card, "div", "lt"); th.innerHTML = '<i class="ti ' + jtype(r.type).icon + '"></i> ' + esc(r.label || jtype(r.type).label); th.style.cssText = "color:" + DOM.restore.light + ";font-size:11px;font-weight:600;line-height:1.3;"; }
         else if (r.q) add(card, "div", "lt", r.q).style.cssText = "color:#b89bb4;font-size:11px;line-height:1.3;";
         if (r.entries && r.entries.length) { // JOURNALING 101: render the structured beats (label: text)
           r.entries.forEach(function (en) { var ln = add(card, "div"); ln.style.cssText = "font-size:14px;line-height:1.45;color:#ffe3f1;"; ln.innerHTML = '<span style="color:#b89bb4;font-size:12px;">' + esc(en.label) + ':</span> ' + esc(en.text); });
-          if (r.mood != null && MOODS[r.mood]) add(card, "div", null, MOODS[r.mood].e).style.cssText = "font-size:16px;";
-        } else add(card, "div", "ln", (r.mood != null && MOODS[r.mood] ? MOODS[r.mood].e + "  " : "") + (r.text || r.summary || "(mood only)")).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; });
+          if (r.mood != null && MOODS[r.mood]) { var _mEl = add(card, "div"); _mEl.innerHTML = '<i class="ti ' + MOODS[r.mood].e + '"></i>'; _mEl.style.cssText = "font-size:16px;"; }
+        } else { var _jln3 = add(card, "div", "ln"); if (r.mood != null && MOODS[r.mood]) { var _mi3 = document.createElement("i"); _mi3.className = "ti " + MOODS[r.mood].e; _mi3.style.marginRight = "6px"; _jln3.appendChild(_mi3); } _jln3.appendChild(document.createTextNode(r.text || r.summary || "(mood only)")); _jln3.style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; } });
     }
     var notes = (logs(k) || []).filter(function (l) { return l.note && String(l.note).trim(); });
-    if (notes.length) { any = true; add(B, "div", "lbl", "📝 notes"); notes.forEach(function (l) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;"; add(card, "div", "lt", (l.time || "") + " · " + (l.title || "")).style.cssText = "color:#b89bb4;font-size:11px;"; add(card, "div", "ln", l.note).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; }); }
+    if (notes.length) { any = true; add(B, "div", "lbl", "notes"); notes.forEach(function (l) { var card = add(B, "div", "logi"); card.style.cssText = "flex-direction:column;align-items:flex-start;gap:3px;background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 12px;margin-bottom:6px;"; add(card, "div", "lt", (l.time || "") + " · " + (l.title || "")).style.cssText = "color:#b89bb4;font-size:11px;"; add(card, "div", "ln", l.note).style.cssText = "font-size:14px;line-height:1.4;color:#ffe3f1;"; }); }
     if (!any) add(B, "div", "empty", "Nothing written that day.");
   }
   function yesterdaySheet() {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "📓 Yesterday");
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet(); add(B, "div", "sttl", "Yesterday");
     var yk = keyAdd(todayK(), -1), lg = logs(yk), dm = S.habitDone[yk] || {};
     var doneH = S.habits.filter(function (h) { return dm[h.id]; });
     if (!lg.length && !doneH.length) { add(B, "div", "empty", "Nothing logged yesterday — a fresh page today."); return; }
