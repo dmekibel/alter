@@ -372,6 +372,53 @@
   function chapterUnlockCheck() { // highest CONSECUTIVELY-evidenced landmark = the behavior-evidence floor. The real advance signal; sticky via journeyTick.
     var floor = 0; for (var n = 0; n < JOURNEY.length - 1; n++) { if (chapterMastered(n)) floor = n + 1; else break; } return floor;
   }
+  // ===== APPETITE DIAL (v699, _course/spec/adaptive/SYNTHESIS.md §IV Step 4): rolling 7-day course-completion rate → AppetiteState (level / nodeCap / modeTarget). Runs once per logical day in journeyTick(). Additive only — never touches S.guide.unlocked. =====
+  function _appCap(level) { return level==='high'?3:level==='medium'?2:level==='low'?1:level==='dormant'?0:2; } // floor = 2
+  function appetiteUpdate() {
+    var g = S.guide; if (!g) return;
+    var k = todayK(), ydk = keyAdd(k, -1);
+    // 1 — Record yesterday's course node completions (am + pm only; habit/goal/block completions never contaminate this denominator)
+    var jnFloor = (g.unlocked||[]).filter(function(n){return typeof n==='number';}).reduce(function(mx,n){return n>mx?n:mx;},0);
+    g.completionHistory = g.completionHistory||{};
+    var offered = (jnFloor>=2?1:0)+(jnFloor>=3?1:0);
+    if (offered>0) {
+      var ybk=(S.bk||{})[ydk]||{};
+      var completed=0;
+      if (jnFloor>=2 && ybk.am && ybk.am.done) completed++;
+      if (jnFloor>=3 && ((ybk.pm&&(ybk.pm.done||ybk.pm.reflect))||(ybk.journal||[]).length>0)) completed++;
+      g.completionHistory[ydk]={offered:offered,completed:Math.min(completed,offered)};
+    }
+    var keep14=lastDays(14); Object.keys(g.completionHistory).forEach(function(dk){if(keep14.indexOf(dk)<0)delete g.completionHistory[dk];});
+    // 2 — Compute 7-day rate
+    var h7=lastDays(7),tot=0,cmp=0;
+    h7.forEach(function(dk){var d=g.completionHistory[dk];if(d){tot+=d.offered;cmp+=(d.completed||0);}});
+    g.cache=g.cache||{}; g.cache.completionRate7d=tot>0?cmp/tot:null;
+    var rate=g.cache.completionRate7d;
+    // 3 — AppetiteState machine
+    g.appetiteState=g.appetiteState||{level:'floor',nodeCap:2,modeTarget:'guided',stateAge:0,stateLockedByUser:false,inviteDeclineCount:0,lastDeclineK:null,lastInviteSentK:null};
+    var a=g.appetiteState;
+    if (a.stateLockedByUser){a.nodeCap=_appCap(a.level);return;}
+    if (rate===null){a.nodeCap=_appCap(a.level);return;}
+    var RANK={dormant:0,floor:1,low:2,medium:3,high:4};
+    var suggested=rate>=0.6?'high':rate>=0.4?'medium':rate>0?'low':'dormant';
+    if (RANK[suggested]===RANK[a.level]) {
+      a.stateAge=0;
+    } else if (RANK[suggested]<RANK[a.level]) {
+      a.stateAge=(a.stateAge||0)+1;
+      var waitDown=suggested==='dormant'?14:a.level==='floor'?3:5;
+      if (a.stateAge>=waitDown){a.level=suggested;a.stateAge=0;
+        if (suggested==='dormant') try{toast('Just a planner for now — here when you’re ready.');}catch(e){}}
+    } else {
+      a.stateAge=(a.stateAge||0)+1;
+      var waitUp=a.level==='floor'?3:5;
+      if (a.stateAge>=waitUp){
+        var canInvite=!a.lastInviteSentK||lastDays(14).indexOf(a.lastInviteSentK)<0;
+        if (canInvite){g.cache.appetiteInvite={to:suggested,copy:"You’ve been showing up. Want to take on one more thing?"};a.lastInviteSentK=k;a.inviteDeclineCount=0;}
+      }
+    }
+    a.nodeCap=_appCap(a.level);
+    a.modeTarget={dormant:'off',floor:'guided',low:'light',medium:'guided',high:'guided'}[a.level]||'guided';
+  }
   // ===== JOURNEY CURRICULUM (JX-NODES, David 2026-06-28): the 6-node spine. Each node = one daily action + a reward-never-shame next-step card. `done(k)` is a PURE read of today's real signals → drives the one-obvious-next-step + landing. `act()` picks which stage the cockpit wears (or which sheet it opens). Voice: warm, never should/must/missed/behind. =====
   // ===== JOURNEY CURRICULUM (Phase 1 Drop 1, 2026-06-30): 8-node spine aligned 1:1 to the 8 LANDMARKS (O→VII course arc). done() = pure read of existing state; act() = opens existing surfaces. No new stages; no SCHEMA bump. =====
   var JOURNEY = [
@@ -398,6 +445,7 @@
     var n = Math.max(journeyNode(), chapterUnlockCheck()); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
     /* Return-after-miss (SCHEMA 3, mirror-not-price): if yesterday earned 0 SF actions, quietly earn +1 on the NEXT open and show a forward-only guardian line — no "you missed" framing, no streak penalty. */
     var ydk = keyAdd(k, -1); var yesterdayActs = (S.sf && S.sf.actions && S.sf.actions[ydk]) || []; if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
+    try { appetiteUpdate(); } catch (e) {}
     save();
   }
   // ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28): the VISIBLE daily journey. A full-screen winding node-trail of today's real sequence — Plan → fundamentals/undone habits → planned blocks (time order) → bookend. PURE-derives node states from today's real signals (block.done / habit done / matching log). Reward-never-shame: upcoming = calm-dim, never red/locked. Auto-scrolls the CURRENT node into view so the next thing is literally in front of you. =====
@@ -415,6 +463,7 @@
   function jpNodes() { // returns the ADAPTIVE ordered node list for today — shaped by your self-help stage (profile/journeyNode) AND your goals (today's AM virtue + one-thing). Each {key,emoji,title,line,color,done,act}.
     var k = todayK(), nodes = [], dm = doneMap(k), planned = (blocks(k) || []).filter(function (b) { return b.title; });
     var pf = profile(), jn = journeyNode(); // pf.lowEnergy = body-first gate · jn = curriculum stage (which guided nodes have unlocked)
+    var dormant = ((S.guide||{}).appetiteState||{}).level==='dormant'; // appetite dial: dormant = tracker-only mode, suppress all course nodes (am/pm)
     var am = ((S.bk || {})[k] || {}).am || {}, goalV = am.virtue || "", gv = goalV ? vlabel(goalV) : null, gvName = gv ? gv.l : ""; // today's GOAL signal
     var oneThing = (am.oneThing || "").trim();
     function matchesGoal(b) { return goalV && virtueOf(b) === goalV; } // does this block serve today's chosen virtue?
@@ -433,7 +482,7 @@
     }
 
     // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
-    if (jn >= 2) { nodes.push({ key: "am", emoji: "🌅", title: "Open the morning", line: gvName ? "Who you're being today: " + gvName + ". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
+    if (jn >= 2 && !dormant) { nodes.push({ key: "am", emoji: "🌅", title: "Open the morning", line: gvName ? "Who you're being today: " + gvName + ". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
       color: DOM.create.c, done: !!am.done, act: function () { closeJourney(); try { enterStage("am", { byTap: true }); } catch (e) {} } });
       if (settleNode) { nodes.push(settleNode); settleNode = null; } // settle slots in as 2nd node when am is 1st
     }
@@ -500,7 +549,7 @@
     });
 
     // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3).
-    if (jn >= 3) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
+    if (jn >= 3 && !dormant) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
       nodes.push({ key: "pm", emoji: "🌙", title: "Close the day", line: "One honest line. A line is enough.", color: DOM.restore.c, done: pmDone, act: function () { closeJourney(); try { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } catch (e) {} } }); }
 
     return nodes;
