@@ -72,7 +72,7 @@
     ov.appendChild(b); return b;
   }
   var el = function (id) { return document.getElementById(id); };
-  var KEY = "alter_plan2", SCHEMA = 2, lastSaveErr = 0;
+  var KEY = "alter_plan2", SCHEMA = 3, lastSaveErr = 0;
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -379,6 +379,8 @@
   function journeyTick() { // once per logical day: persist the inferred node as a sticky floor in S.guide.unlocked so an existing user (David) is met at his true level + never demotes. PURE-driven by readiness(); writes only the floor.
     var g = S.guide; if (!g) return; var k = todayK(); if (g.tickK === k) return; g.tickK = k;
     var n = journeyNode(); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
+    /* Return-after-miss (SCHEMA 3, mirror-not-price): if yesterday earned 0 SF actions, quietly earn +1 on the NEXT open and show a forward-only guardian line — no "you missed" framing, no streak penalty. */
+    var ydk = keyAdd(k, -1); var yesterdayActs = (S.sf && S.sf.actions && S.sf.actions[ydk]) || []; if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
     save();
   }
   // ===== JOURNEY PATH (Duolingo-style daily trail, David 2026-06-28): the VISIBLE daily journey. A full-screen winding node-trail of today's real sequence — Plan → fundamentals/undone habits → planned blocks (time order) → bookend. PURE-derives node states from today's real signals (block.done / habit done / matching log). Reward-never-shame: upcoming = calm-dim, never red/locked. Auto-scrolls the CURRENT node into view so the next thing is literally in front of you. =====
@@ -946,7 +948,8 @@
     bl.forEach(function (b) { var s = hm(b.time), e = s + (b.mins || 30); if (t < e && t + 30 > s) t = e; });
     t = Math.min(1410, Math.round(t / 15) * 15); return pad(Math.floor(t / 60)) + ":" + pad(t % 60);
   }
-  function addSuggested(k, s) { var dom = s.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: s.mins || 30, title: s.title, prio: 2, color: DOM[dom].c, catK: s.catK || null, domain: dom, done: false }); reflow(k); save(); renderToday(); }
+  function markFutureBlock(b, dk) { if (dk > todayK()) b.plannedAhead = true; return b; } // reward-economy helper: any block planted on a future day gets plannedAhead=true so planned-then-done can fire celebrate() (SCHEMA 3, 2026-06-30)
+  function addSuggested(k, s) { var dom = s.domain || "focus"; var nb = markFutureBlock({ id: uid(), time: nextFreeTime(k), mins: s.mins || 30, title: s.title, prio: 2, color: DOM[dom].c, catK: s.catK || null, domain: dom, done: false }, k); blocks(k).push(nb); reflow(k); save(); renderToday(); }
   function renderSuggest(k) {
     var SB = el("suggestBar"); if (!SB) return; SB.innerHTML = "";
     if (k !== todayK() && k !== tomK()) { SB.style.display = "none"; return; } SB.style.display = "";
@@ -1043,7 +1046,7 @@
   }
   function typeAdd(parent, ph, cb) { var w = add(parent, "div", "goal-add"); var inp = document.createElement("input"); inp.type = "text"; inp.placeholder = ph; inp.className = "goal-input"; w.appendChild(inp); var b = add(w, "button", "goal-addb"); b.innerHTML = '<i class="ti ti-plus"></i>'; function go() { var v = inp.value.trim(); if (v) { cb(v); inp.value = ""; } } b.onclick = go; inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } }); }
   function pickSheet(q, opts, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var qq = add(card, "div", "dur-q"); qq.innerHTML = q; var row = add(card, "div", "dur-row"); opts.forEach(function (o) { var c = add(row, "button", "dur-chip", o.label); c.onclick = function () { ov.remove(); cb(o.val); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
-  function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule “' + esc(st.title) + '” — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }); reflow(k); st.schedK = k; goalTouch(g); save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
+  function scheduleSubtask(g, st) { pickSheet('<i class="ti ti-calendar-plus"></i> Schedule "' + esc(st.title) + '" — when?', [{ label: "Today", val: 0 }, { label: "Tomorrow", val: 1 }, { label: "In 3 days", val: 3 }], function (off) { var d = new Date(); d.setDate(d.getDate() + off); var k = key(d), dom = g.domain || "focus"; blocks(k).push(markFutureBlock({ id: uid(), time: nextFreeTime(k), mins: 30, title: st.title, prio: 2, color: DOM[dom].c, catK: null, domain: dom, done: false, goalId: g.title }, k)); reflow(k); st.schedK = k; goalTouch(g); save(); renderToday(); toast('📅 scheduled — ' + (off === 0 ? "today" : off === 1 ? "tomorrow" : "in 3 days") + ' · on your calendar'); }); }
   // ===== TRACKABLE GOAL METRICS (David 2026-06-29): a goal can be a NUMBER moving toward a target (weight 90→75↓, savings→target↑, followers↑). Auto-detected from the title + manually addable. Lives alongside subtasks. =====
   var METRIC_GUESS = [
     { kw: /weight|lose.*(weight|kg|lb)|slim|leaner|body\s*fat|\bbmi\b/, unit: "kg", dir: "down", label: "Weight" },
@@ -2583,12 +2586,12 @@
   function pmPlantOneThing(title) {
     var tk = tomK();
     if (!(blocks(tk) || []).length) { skeletonDay(tk, title); } // empty tomorrow → seed a skeleton with the one thing as the starred deep-work block
-    else { var have = false; blocks(tk).forEach(function (b) { if ((b.title || "").toLowerCase() === title.toLowerCase()) have = true; }); if (!have) { blocks(tk).push({ id: uid(), time: "09:00", mins: 90, title: title, prio: 3, color: "#2a9fe0", domain: "focus", done: false, star: true }); reflow(tk); } }
+    else { var have = false; blocks(tk).forEach(function (b) { if ((b.title || "").toLowerCase() === title.toLowerCase()) have = true; }); if (!have) { blocks(tk).push(markFutureBlock({ id: uid(), time: "09:00", mins: 90, title: title, prio: 3, color: "#2a9fe0", domain: "focus", done: false, star: true }, tk)); reflow(tk); } }
     var rec = bk(tk); rec.am = rec.am || {}; rec.am.oneThing = title; save();
   }
   function pmCarryToTomorrow(b) {
     var tk = tomK(); var have = false; blocks(tk).forEach(function (x) { if ((x.title || "").toLowerCase() === (b.title || "").toLowerCase()) have = true; });
-    if (!have) { var t = nextFreeMin(tk); blocks(tk).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: b.mins || 30, title: b.title, prio: b.prio || 2, color: b.color || (DOM[domainOf(b)] || DOM.focus).c, domain: domainOf(b), catK: b.catK || null, done: false, carried: true }); reflow(tk); save(); }
+    if (!have) { var t = nextFreeMin(tk); blocks(tk).push(markFutureBlock({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: b.mins || 30, title: b.title, prio: b.prio || 2, color: b.color || (DOM[domainOf(b)] || DOM.focus).c, domain: domainOf(b), catK: b.catK || null, done: false, carried: true }, tk)); reflow(tk); save(); }
   }
   // ===== AM BOOKEND — FULL MORNING RITUAL (David 2026-06-28) =====
   // Multi-beat flow rendered ENTIRELY into #tfStageBody (no #sheet). One internal step index (sb.dataset.amStep);
@@ -3023,6 +3026,12 @@
         if (h.chain === undefined) h.chain = { best: 0, debt: 0 };
       });
       if (!S.vmStreak) S.vmStreak = { current: 0, best: 0, lastDate: null };
+    }
+    /* ===== F-1 (SCHEMA 2→3, 2026-06-30): plannedAhead field — marks blocks created for a future day so the reward economy can fire the planned-then-done celebrate(). Migration sets existing blocks to false (safe default). New blocks get plannedAhead=true at creation time when dayKey > todayK(). ===== */
+    if (prevSchema < 3) {
+      Object.keys(S.blocks || {}).forEach(function (dk) {
+        (S.blocks[dk] || []).forEach(function (b) { if (b.plannedAhead === undefined) b.plannedAhead = false; });
+      });
     }
     /* additive top-level keys (every load, idempotent — match S.bk/S.tools precedent, no bump needed for these) */
     S.sf = S.sf || { history: {}, actions: {} }; S.scorecard = S.scorecard || { weeks: {} }; S.alg = S.alg || { list: [], catalysts: {} }; S.course = S.course || {}; S.cdj = S.cdj || {}; S.guide.nodeHistory = S.guide.nodeHistory || {}; if (S.guide.onboard2 === undefined) S.guide.onboard2 = null; if (S.profile) S.profile.viaTop5 = S.profile.viaTop5 || [];
@@ -4370,7 +4379,7 @@
       var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "") + amVirtueGlyph(b)); /* AM FLOW-DOWN (c): dim today's-virtue glyph — PURE additive concat, no geometry */
-      if (status === "miss") { var ms = add(card, "div", "csub", "missed"); ms.style.color = "rgba(255,240,249,.45)"; } // muted "missed" (David's image 4)
+      if (status === "miss") { var ms = add(card, "div", "csub", b.plannedAhead ? "want to Replan it?" : "want to log it?"); ms.style.color = "rgba(255,240,249,.45)"; } // Blizzard-invert (SCHEMA 3): no "missed" label — forward-only framing per Design Principles Law 7
       // ARMED AT PRESENT (David 2026-06-27): a FUTURE plan slid UP until its start bumps the now-line → a round Play affordance appears ON the bubble. Tap = startPlanned(b): tracking begins charging from now, so it "prints in both lanes" (plan stays left, the tracked half flows down the right via the existing straddle/matched render). Shows only when the block sits at/just-after now, is still a plan (not done/matched), isn't the live straddling block, and nothing of its own domain is already tracking. Render-driven (not a transient flag) so it survives the full-DOM rebuild a drop triggers. (regression contract #2: bs >= now means it never crossed into the past)
       var _nowFloor = Math.ceil(now / 15) * 15, _trkDom = !!(_liveT && domainOf(_liveT) === dom);
       var _armed = showNow && k === todayK() && b.title && status === "plan" && !partial && !_straddle && !_trkDom && bs >= now && bs <= _nowFloor + 1;
@@ -4655,7 +4664,7 @@
     // MARK DONE (plan only)
     if (!isLog) {
       var didit = add(B, "button", "ed-didit" + (o.done ? " on" : "")); function ddTxt() { didit.innerHTML = o.done ? '<i class="ti ti-circle-check"></i> did it · tap to undo' : '<i class="ti ti-circle"></i> mark done'; } ddTxt();
-      didit.onclick = function () { o.done = !o.done; didit.classList.toggle("on"); ddTxt(); if (o.done) { var _st = bumpStreak(); celebrate(D().c, _st); } else coolStreak(); commit(); };
+      didit.onclick = function () { o.done = !o.done; didit.classList.toggle("on"); ddTxt(); if (o.done) { var _st = bumpStreak(); if (o.plannedAhead) { /* planned-then-done tier — block was planted before today */ celebrate(D().c, _st); try { earn(2, { label: "planned-then-done" }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game."); } else { /* Tracking tier — done without pre-plan: quiet earn(8) + standard celebrate */ try { earn(8, { label: "tracking" }); } catch (e) {} celebrate(D().c, _st); } } else coolStreak(); commit(); };
     }
     // FOOTER — auto-save means no Save; just Done + delete
     var foot = add(B, "div", "ed-foot");
@@ -5155,8 +5164,8 @@
   function skeletonDay(k, oneThing) {
     var hasMp = S.profile && S.profile.masterpiece && S.profile.masterpiece.length;
     if (hasMp) { fillMasterpiece(k); }
-    else { var T = [{ h: "08:00", m: 30, t: "Breakfast", c: "#ff8a1e", p: 2 }, { h: "09:00", m: 90, t: oneThing || "Deep work", c: "#2a9fe0", p: 3 }, { h: "11:00", m: 45, t: "Move", c: "#ff8a1e", p: 3 }, { h: "13:00", m: 45, t: "Lunch", c: "#ff8a1e", p: 2 }, { h: "18:30", m: 45, t: "Dinner", c: "#ff8a1e", p: 2 }, { h: "21:30", m: 30, t: "Wind down", c: "#48d0e0", p: 2 }]; S.blocks[k] = T.map(function (x) { return { id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }; }); }
-    if (oneThing) { var have = false; blocks(k).forEach(function (b) { if (b.title.toLowerCase() === oneThing.toLowerCase()) have = true; }); if (!have) blocks(k).push({ id: uid(), time: "09:00", mins: 90, title: oneThing, prio: 3, color: "#2a9fe0", done: false, star: true }); }
+    else { var T = [{ h: "08:00", m: 30, t: "Breakfast", c: "#ff8a1e", p: 2 }, { h: "09:00", m: 90, t: oneThing || "Deep work", c: "#2a9fe0", p: 3 }, { h: "11:00", m: 45, t: "Move", c: "#ff8a1e", p: 3 }, { h: "13:00", m: 45, t: "Lunch", c: "#ff8a1e", p: 2 }, { h: "18:30", m: 45, t: "Dinner", c: "#ff8a1e", p: 2 }, { h: "21:30", m: 30, t: "Wind down", c: "#48d0e0", p: 2 }]; S.blocks[k] = T.map(function (x) { return markFutureBlock({ id: uid(), time: x.h, mins: x.m, title: x.t, prio: x.p, color: x.c, done: false }, k); }); }
+    if (oneThing) { var have = false; blocks(k).forEach(function (b) { if (b.title.toLowerCase() === oneThing.toLowerCase()) have = true; }); if (!have) blocks(k).push(markFutureBlock({ id: uid(), time: "09:00", mins: 90, title: oneThing, prio: 3, color: "#2a9fe0", done: false, star: true }, k)); }
     reflow(k); save();
   }
   // ===== WISDOM TOOLBOX (TB-*, David 2026-06-28): the cockpit 'tool' stage mode. Adopts the six already-shipping runners under David's 8-Layer Self-Help Stack with KB-EXACT 'when to use me' lines, adds Stutz's Reversal of Desire + a Blair eyes-open self-hypnosis shell + a Part-X triage front door. Reward-never-shame: using a tool on a hard day IS the win. NOT a third menu — it renders into #tfStageBody via renderStage('tool'). =====
@@ -5494,13 +5503,13 @@
         add(B, "div", "lbl", "priority — lowest gets dropped if you run out of time"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === cfg.prio ? " on" : ""), p.l); x.onclick = function () { cfg.prio = p.v; draw(); }; });
         add(B, "div", "lbl", "tap to drop it at " + fmt(hm(cfg.time)) + " — they stack back-to-back");
       },
-      onTask: function (t, picked, draw) { blocks(k).push({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, color: t.color || prioC(cfg.prio), done: false }); advance(); reflow(k); save(); draw(); },
+      onTask: function (t, picked, draw) { blocks(k).push(markFutureBlock({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, color: t.color || prioC(cfg.prio), done: false }, k)); advance(); reflow(k); save(); draw(); },
       foot: function (B) { var list = add(B, "div"); list.style.marginTop = "10px"; blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "–" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); add(ti, "span", null, b.title); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); planSheet(k, label); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; } });
   }
 
   // ---- timers ------------------------------------------------------------
-  function startTimer(p) { var t = { id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }; if (p.flow) t.flow = p.flow; if (p.commit != null) t.commit = p.commit; S.timers.push(t); save(); } /* p.flow (optional) tags a guided-cockpit timer so stageModeFor can re-derive its stage on redraw (CKPT-2) */
-  function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i]; if ((Date.now() - t.start) / 1000 < 15) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ too short — discarded"); return; } var dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} } toast(_covered ? "✨ completed your plan · +" + bonus + " Spark" : "✓ on-plan stretch tracked · +" + bonus + " Spark"); } S.timers.splice(i, 1); save(); renderAll(); } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night)
+  function startTimer(p) { var t = { id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }; if (p.flow) t.flow = p.flow; if (p.commit != null) t.commit = p.commit; S.timers.push(t); save(); try { earn(2, { label: "awareness" }); } catch (e) {} } /* p.flow (optional) tags a guided-cockpit timer so stageModeFor can re-derive its stage on redraw (CKPT-2). earn(2) = Awareness tier (mirror, never pre-announced — points appear AFTER action as reflection). */
+  function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i]; if ((Date.now() - t.start) / 1000 < 15) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ too short — discarded"); return; } var dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {
     var C = el("nowCard"); if (!C) return; C.innerHTML = ""; // legacy "Tracking now" card removed — the live timer lives in the timeline (David 2026-06-23)
