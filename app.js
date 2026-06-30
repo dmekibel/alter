@@ -2138,7 +2138,7 @@
     var saved = (S.course && S.course.sleepMath) || {}, wake = saved.wake || "07:00", hrs = saved.hours || 8;
     sb.innerHTML = "";
     var card = add(sb, "div", "tf-stagecard"); card.setAttribute("style", JR_CARD + "display:flex;flex-direction:column;gap:12px;");
-    add(card, "div", "tfs-h", "🌙 Sleep Math").style.cssText = "font-weight:800;font-size:17px;";
+    var _smh = add(card, "div", "tfs-h"); _smh.innerHTML = '<i class="ti ti-moon"></i> Sleep Math'; _smh.style.cssText = "font-weight:800;font-size:17px;";
     add(card, "div", "tfs-sub", "Work back from your wake time to find when to wind down.").style.cssText = "opacity:.72;font-size:13px;margin-top:-7px;";
     var row1 = add(card, "label"); row1.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;";
     add(row1, "span", null, "Wake at");
@@ -2151,8 +2151,8 @@
     plus.setAttribute("style", "width:32px;height:32px;border-radius:8px;border:none;background:#3a2147;color:#fff;font-size:18px;font-weight:700;");
     hv.style.cssText = "min-width:34px;text-align:center;font-size:17px;";
     var res = add(card, "div"); res.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:4px;";
-    function line(lbl) { var r = add(res, "div"); r.style.cssText = "display:flex;justify-content:space-between;font-size:15px;border-top:1px solid #2a1730;padding-top:8px;"; add(r, "span", null, lbl).style.opacity = ".8"; var v = add(r, "b"); v.style.color = DOM.restore.light; return v; }
-    var oShut = line("🛑 Wind down"), oSun = line("📵 Screens off"), oBed = line("🛏 In bed by");
+    function line(lbl) { var r = add(res, "div"); r.style.cssText = "display:flex;justify-content:space-between;font-size:15px;border-top:1px solid #2a1730;padding-top:8px;"; var _ls = add(r, "span"); _ls.innerHTML = lbl; _ls.style.opacity = ".8"; var v = add(r, "b"); v.style.color = DOM.restore.light; return v; }
+    var oShut = line('<i class="ti ti-wind"></i> Wind down'), oSun = line('<i class="ti ti-device-mobile-off"></i> Screens off'), oBed = line('<i class="ti ti-bed"></i> In bed by');
     function compute() { var wm = smMin(wIn.value); if (wm == null) return; var bed = ((wm - (hrs * 60 + 60)) % 1440 + 1440) % 1440, sun = (bed - 60 + 1440) % 1440, shut = (bed - 120 + 1440) % 1440; oBed.textContent = fmt(bed); oSun.textContent = fmt(sun); oShut.textContent = fmt(shut); S.course = S.course || {}; S.course.sleepMath = { wake: wIn.value, hours: hrs }; save(); }
     wIn.oninput = compute;
     minus.onclick = function () { hrs = Math.max(4, hrs - 1); hv.textContent = hrs; compute(); };
@@ -2161,7 +2161,7 @@
   }
   // ===== D-2: Rx PAD (prescription primitive) — _course/BUILD-SPEC.md §D. Config-driven; saves to S.course.rx[id]. Auto-height textareas via oninput (iOS ignores resize:vertical). =====
   var RX_CONFIGS = {
-    fundamental: { title: "📋 Daily Rx", sub: "Your prescription — three moves, no more.", fields: [
+    fundamental: { title: "Daily Rx", icon: "ti-clipboard-heart", sub: "Your prescription — three moves, no more.", fields: [
       { k: "self", label: "#1 Self-Care", ph: "the one thing that keeps you you (e.g. 8h sleep)" },
       { k: "start", label: "#1 to Start", ph: "the highest-leverage thing to begin" },
       { k: "stop", label: "#1 to Stop", ph: "the kryptonite to cut" } ] }
@@ -2173,7 +2173,7 @@
     S.course = S.course || {}; S.course.rx = S.course.rx || {}; var saved = S.course.rx[RX_ACTIVE] = S.course.rx[RX_ACTIVE] || {};
     sb.innerHTML = "";
     var card = add(sb, "div", "tf-stagecard"); card.setAttribute("style", JR_CARD + "display:flex;flex-direction:column;gap:13px;");
-    add(card, "div", "tfs-h", cfg.title).style.cssText = "font-weight:800;font-size:17px;";
+    var _rxh = add(card, "div", "tfs-h"); _rxh.innerHTML = '<i class="ti ' + (cfg.icon || "ti-clipboard-heart") + '"></i> ' + cfg.title; _rxh.style.cssText = "font-weight:800;font-size:17px;";
     add(card, "div", "tfs-sub", cfg.sub).style.cssText = "opacity:.72;font-size:13px;margin-top:-7px;";
     cfg.fields.forEach(function (f) {
       var wrap = add(card, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:5px;";
