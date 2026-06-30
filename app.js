@@ -448,6 +448,62 @@
     var skip = add(ob, "button", "jp-hmbtn skip"); skip.innerHTML = '<i class="ti ti-x"></i> Not now'; skip.onclick = function(){ob.remove();};
     setTimeout(function(){if(ob.parentNode)ob.remove();},8000);
   }
+  // ===== +3 CATALYST (tool-surfacing trigger, Synthesis §VI, Landmark 5): fires when a vice/quit timer stops — Chapter 5+ gate. Names the urge, converts it to a redirect. =====
+  function catalystCard(title, mins) {
+    var ob = add(document.body, "div", "hs-ov");
+    ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
+    add(ob, "div", "", mins + " min of " + title).style.cssText = "font-size:11px;font-weight:700;color:#9a7090;margin-bottom:5px;font-family:'Jost',sans-serif;letter-spacing:.4px;text-transform:uppercase;";
+    add(ob, "div", "", "What was it for you?").style.cssText = "font-size:14px;font-weight:800;color:#e6cfe0;margin-bottom:11px;font-family:'Jost',sans-serif;";
+    var chips = add(ob, "div", ""); chips.style.cssText = "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;";
+    [["Resting","ti-sofa"],["Coping","ti-cloud-rain"],["Distracted","ti-arrows-shuffle"]].forEach(function(pair) {
+      var c = add(chips, "button", "jp-durchip"); c.innerHTML = '<i class="ti ' + pair[1] + '"></i> ' + pair[0];
+      c.onclick = function() {
+        S.guide = S.guide||{}; S.guide.nodeHistory = S.guide.nodeHistory||{};
+        (S.guide.nodeHistory["catalyst-named"] = S.guide.nodeHistory["catalyst-named"]||[]).push({k:todayK(),type:pair[0],title:title,mins:mins}); save();
+        ob.remove();
+        var conv = add(document.body, "div", "hs-ov"); conv.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
+        add(conv, "div", "", "Turn that energy into something?").style.cssText = "font-size:14px;font-weight:800;color:#e6cfe0;margin-bottom:11px;font-family:'Jost',sans-serif;";
+        var yr = add(conv, "div", ""); yr.style.cssText = "display:flex;gap:8px;";
+        var yes = add(yr, "button", "jp-durchip"); yes.innerHTML = '<i class="ti ti-arrow-right"></i> Name it'; yes.style.cssText = "background:" + DOM.focus.c + ";color:#fff;";
+        yes.onclick = function() { conv.remove(); try { closeTrackerFull(); nowSheet(); } catch(e) {} };
+        var nope = add(yr, "button", "jp-hmbtn skip"); nope.innerHTML = '<i class="ti ti-x"></i> Not now'; nope.onclick = function() { conv.remove(); };
+        setTimeout(function(){if(conv.parentNode)conv.remove();},5000);
+        try { earn(15, {label:"catalyst-named"}); } catch(e) {} try { drawJourney(true); } catch(e) {}
+      };
+    });
+    var skip2 = add(ob, "button", "jp-hmbtn skip"); skip2.innerHTML = '<i class="ti ti-x"></i> Skip'; skip2.onclick = function(){ob.remove();};
+    setTimeout(function(){if(ob.parentNode)ob.remove();},7000);
+  }
+  // ===== FUNDAMENTALS RX CARD (Synthesis §VI, Landmark 6): weekly 7-pillar check. Opened from the weekly trail node. Writes to S.course.rx.fundamental; chapterMastered(6) keys off that. =====
+  function fundRxCard() {
+    var ob = add(document.body, "div", "hs-ov");
+    ob.style.cssText = "position:fixed;top:44px;bottom:80px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:20px;padding:18px 16px 72px;z-index:9999;overflow-y:auto;box-shadow:0 8px 32px #0a0008;";
+    add(ob, "div", "", "Fundamentals check").style.cssText = "font-size:16px;font-weight:800;color:#e6cfe0;margin-bottom:4px;font-family:'Jost',sans-serif;";
+    add(ob, "div", "", "Tap each one on point this week.").style.cssText = "font-size:12px;color:#9a7090;margin-bottom:16px;font-family:'Jost',sans-serif;";
+    S.course = S.course||{}; S.course.rx = S.course.rx||{}; S.course.rx.fundamental = S.course.rx.fundamental||{};
+    var rx = S.course.rx.fundamental;
+    var pillars = [{k:"eat",icon:"ti-salad",l:"Eat"},{k:"move",icon:"ti-run",l:"Move"},{k:"sleep",icon:"ti-moon",l:"Sleep"},{k:"breathe",icon:"ti-wind",l:"Breathe"},{k:"focus",icon:"ti-brain",l:"Focus"},{k:"celebrate",icon:"ti-confetti",l:"Celebrate"},{k:"prosper",icon:"ti-coins",l:"Prosper"}];
+    var rows = add(ob, "div", ""); rows.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-bottom:20px;";
+    pillars.forEach(function(p) {
+      var row = add(rows, "button", "jp-hmbtn"); row.innerHTML = '<i class="ti ' + p.icon + '"></i> ' + p.l;
+      if (rx[p.k]) { row.style.background = DOM.move.c; row.style.color = "#fff"; }
+      row.onclick = function() {
+        rx[p.k] = !rx[p.k]; save();
+        row.innerHTML = '<i class="ti ' + p.icon + '"></i> ' + p.l;
+        if (rx[p.k]) { row.style.background = DOM.move.c; row.style.color = "#fff"; }
+        else { row.style.background = ""; row.style.color = ""; }
+        if (pillars.filter(function(x){return rx[x.k];}).length >= 7) {
+          try { earn(25, {label:"fundamentals-rx"}); } catch(e) {}
+          ob.remove(); try { toast("All seven. Foundation is solid."); drawJourney(true); } catch(e) {}
+        }
+      };
+    });
+    var doneBtn = add(ob, "button", "jc-cta"); doneBtn.textContent = "Done for now"; doneBtn.style.cssText = "background:" + DOM.restore.c + ";margin-top:4px;";
+    doneBtn.onclick = function() { save(); ob.remove(); try { drawJourney(true); } catch(e) {} };
+    var xBtn = add(ob, "button", ""); xBtn.innerHTML = '<i class="ti ti-x"></i>';
+    xBtn.style.cssText = "position:absolute;top:16px;right:16px;background:transparent;border:none;color:#9a7090;font-size:18px;cursor:pointer;padding:4px;";
+    xBtn.onclick = function() { ob.remove(); };
+  }
   // ===== JOURNEY CURRICULUM (JX-NODES, David 2026-06-28): the 6-node spine. Each node = one daily action + a reward-never-shame next-step card. `done(k)` is a PURE read of today's real signals → drives the one-obvious-next-step + landing. `act()` picks which stage the cockpit wears (or which sheet it opens). Voice: warm, never should/must/missed/behind. =====
   // ===== JOURNEY CURRICULUM (Phase 1 Drop 1, 2026-06-30): 8-node spine aligned 1:1 to the 8 LANDMARKS (O→VII course arc). done() = pure read of existing state; act() = opens existing surfaces. No new stages; no SCHEMA bump. =====
   var JOURNEY = [
@@ -585,6 +641,14 @@
       var pmNode = { key:"pm", emoji:"🌙", title:"Close the day", line:"One honest line. A line is enough.", color:DOM.restore.c, done:pmDone, act:function(){ closeJourney(); try{enterStage("pm",{trackTitle:"Reflection",byTap:true});}catch(e){} } };
       var atPm = preSurfaceCheck('pm', 4, "You've done full bookends 3 of the last 7 days — already there?");
       nodes.push(atPm || pmNode);
+    }
+    // FUNDAMENTALS RX weekly node (Synthesis §VI, Landmark 6): Chapter 6+ gate. Surfaces Sunday/Monday so the week starts clean.
+    if (jn >= 6 && !dormant) {
+      var dow = new Date().getDay(); // 0=Sun, 1=Mon
+      if (dow === 0 || dow === 1) {
+        var rxDone = (function() { var r = (S.course&&S.course.rx&&S.course.rx.fundamental)||{}; return Object.keys(r).filter(function(x){return r[x];}).length >= 7; })();
+        nodes.push({ key:"rxfund", icon:"ti-clipboard-heart", title:"Fundamentals check", line:"Seven pillars — tap each one on point this week.", color:"#2d6e5a", done:rxDone, act:function(){ try{fundRxCard();}catch(e){} } });
+      }
     }
 
     return nodes;
@@ -5693,7 +5757,7 @@
 
   // ---- timers ------------------------------------------------------------
   function startTimer(p) { var t = { id: uid(), title: p.title, catK: p.catK, emoji: p.emoji || "", habitId: p.habitId || null, color: p.color || "#8a5cf0", start: Date.now(), dayK: todayK() }; if (p.flow) t.flow = p.flow; if (p.commit != null) t.commit = p.commit; S.timers.push(t); save(); try { earn(2, { label: "awareness" }); } catch (e) {} } /* p.flow (optional) tags a guided-cockpit timer so stageModeFor can re-derive its stage on redraw (CKPT-2). earn(2) = Awareness tier (mirror, never pre-announced — points appear AFTER action as reflection). */
-  function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i]; if ((Date.now() - t.start) / 1000 < 15) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ too short — discarded"); return; } var dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
+  function stopTimer(id) { var i = -1; S.timers.forEach(function (t, k) { if (t.id === id) i = k; }); if (i < 0) return; var t = S.timers[i]; if ((Date.now() - t.start) / 1000 < 15) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ too short — discarded"); return; } var dk = t.dayK || key(new Date(t.start)), mins = Math.max(1, Math.round((Date.now() - t.start) / 60000)), d = new Date(t.start); logs(dk).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); try { var _isVice = t.catK==='vice' || (S.habits||[]).some(function(h){return h.id===t.habitId&&h.type==='quit';}); if (_isVice && (S.guide&&(S.guide.unlocked||[]).indexOf(5)>=0)) { (function(_t,_m){setTimeout(function(){catalystCard(_t.title,_m);},350);})(t,mins);}  } catch(e) {} } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {
     var C = el("nowCard"); if (!C) return; C.innerHTML = ""; // legacy "Tracking now" card removed — the live timer lives in the timeline (David 2026-06-23)
