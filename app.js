@@ -2446,6 +2446,7 @@
       var txt = (tap ? tap.value.trim() : "") || (sbp && sbp.dataset.reflect) || ""; // close beat has no textarea → fall back to the value flushed when leaving the ask beat
       var qp = (sbp && sbp.dataset.q) || "", mp = (sbp && sbp.dataset.mood != null && sbp.dataset.mood !== "") ? +sbp.dataset.mood : null;
       var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = txt; recp.pm.q = qp; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true;
+      var _dr = (sbp && sbp.dataset.dayRating) || ""; if (_dr) { recp.pm.wol = recp.pm.wol || { wentWell: "", needsWork: "", optimize: "", dayRating: "" }; recp.pm.wol.dayRating = _dr; } // day-close rating → the once-dead pm.wol.dayRating field
       if (txt || mp != null) { recp.journal = (recp.journal || []).concat([{ q: qp, text: txt, mood: mp, ts: Date.now() }]); } // also feed the journal feed, like the journal door does
       save();
     }
@@ -3046,11 +3047,29 @@
   // ---- BEAT 5: CLOSE — warm forward line. (commit happens in exitStage when the primary fires from this beat.)
   function pmBeatClose(card, sb, mr, k) {
     add(card, "div", "tfs-h", "That's the day, well closed.");
+    // DAY-CLOSE RATING (David 2026-06-30, course IV.1 Win-or-Learn): one tap names the day. Reward-never-shame — even a hard day earns a warm "Rebound" badge, never "bad". Persisted to pm.wol.dayRating in exitStage. Was a dead migration-only field until now.
+    add(card, "div", "tfs-sub", "How did today feel?").style.opacity = ".85";
+    var prevR = (((S.bk || {})[k] || {}).pm || {}).wol || {};
+    if (sb.dataset.dayRating == null) sb.dataset.dayRating = prevR.dayRating || "";
+    var RATES = [
+      { k: "masterpiece", l: "Masterpiece", ic: "ti-crown",       sub: "a day you'd repeat",         c: "#ffc83d" },
+      { k: "solid",       l: "Solid",       ic: "ti-circle-check", sub: "showed up, moved forward",   c: "#34d39a" },
+      { k: "rebound",     l: "Rebound",     ic: "ti-refresh",      sub: "tough — but you came back",  c: "#7cc8ff" }
+    ];
+    var row = add(card, "div"); row.setAttribute("style", "display:flex;gap:8px;");
+    RATES.forEach(function (r) {
+      var sel = sb.dataset.dayRating === r.k;
+      var b = add(row, "button"); b.setAttribute("style", "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:" + (sel ? r.c : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:11px 6px;cursor:pointer;color:" + (sel ? "#160510" : "#e6cfe0") + ";");
+      b.innerHTML = '<i class="ti ' + r.ic + '" style="font-size:21px;color:' + (sel ? "#160510" : r.c) + '"></i><span style="font-family:\'Jost\',sans-serif;font-weight:800;font-size:12.5px">' + r.l + '</span>';
+      b.onclick = function () { sb.dataset.dayRating = sel ? "" : r.k; pmRenderBeat(sb); }; // close beat has no text inputs → safe to re-render for the selection state
+    });
+    var sel0 = RATES.filter(function (r) { return r.k === sb.dataset.dayRating; })[0];
+    if (sel0) { var sl = add(card, "div", "tfs-sub"); sl.textContent = sel0.sub + "."; sl.setAttribute("style", "color:" + sel0.c + ";font-size:13px;"); }
     var one = ((S.bk || {})[tomK()] || {}).am || {}, line;
     if (one.oneThing) line = "Tomorrow opens with one clear move: " + one.oneThing + ". I've got the morning — rest now.";
     else line = "You met the day and named what mattered. Rest now — I've got the morning.";
     var l = add(card, "div", "tfs-sub"); l.textContent = line; l.style.lineHeight = "1.5";
-    l.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:12px 14px;line-height:1.5;");
+    l.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:12px 14px;line-height:1.5;margin-top:4px;");
   }
   // ---- safe tomorrow-write helpers (PM-PLAN / PM-RESTORY) — ONLY skeletonDay / blocks(tomK()).push + reflow(tomK()); never the live timeline render
   function pmPlantOneThing(title) {
