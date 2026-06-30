@@ -763,11 +763,9 @@
       var trail = el("jpTrail"); if (!trail) return;
       var items = [].slice.call(trail.querySelectorAll(".jp-bub, .jp-unit, .jt-b"));
       if (!items.length) return;
-      // Duolingo stepping-stones: pop in ONE BY ONE, rippling OUT from the node you're on (the current one lands first, then neighbours up & down).
-      var cur = trail.querySelector(".jp-node.cur .jp-bub") || items[0];
-      var cy = cur.getBoundingClientRect().top;
-      items.sort(function (a, b) { return Math.abs(a.getBoundingClientRect().top - cy) - Math.abs(b.getBoundingClientRect().top - cy); });
-      items.forEach(function (it, i) { it.classList.remove("jp-pop"); void it.offsetWidth; it.style.animationDelay = (i * 95) + "ms"; it.classList.add("jp-pop"); }); // 95ms gap → each stone clearly lands after the previous, not all at once
+      // Islands rise into view from the BOTTOM of the screen UPWARD, one by one — you watch the path build up ahead of you (David 2026-07-01)
+      items.sort(function (a, b) { return b.getBoundingClientRect().top - a.getBoundingClientRect().top; }); // bottom-most lands first, then up the trail
+      items.forEach(function (it, i) { it.classList.remove("jp-pop"); void it.offsetWidth; it.style.animationDelay = (i * 80) + "ms"; it.classList.add("jp-pop"); }); // 80ms gap → each island clearly lands after the previous, not all at once
       setTimeout(function () { items.forEach(function (it) { it.classList.remove("jp-pop"); it.style.animationDelay = ""; }); }, items.length * 95 + 800);
     } catch (e) {}
   }
@@ -3048,9 +3046,42 @@
     var setBtn = add(card, "button", "tf-chip"); setBtn.style.marginTop = "2px"; setBtn.innerHTML = '<i class="ti ti-star"></i> Set it for tomorrow';
     setBtn.onclick = function () { var v = (inp.value || "").trim(); if (!v) { inp.focus(); return; } sb.dataset.oneThing = v; pmPlantOneThing(v); status.textContent = "✓ Set for tomorrow: " + v + " — starred and waiting."; };
   }
-  // ---- BEAT 5: CLOSE — warm forward line. (commit happens in exitStage when the primary fires from this beat.)
+  // ===== THE FOUR-FACET COMPASS (Plotkin / Wild Mind, David 2026-07-01): a WHOLE day = every part of you got some air, not just the productive part. De-cheesed from Plotkin's four cardinal facets of the Self — structure only, zero soul/eco mysticism. Pure derived read (no new data, no SCHEMA bump). Reward-never-shame: a dim petal is "asleep" — an invitation, never a failing. =====
+  var FACETS = [
+    { k: "builder", l: "Builder",  ic: "ti-tools",     c: "#36b3f0", asleep: "the Builder" },
+    { k: "wild",    l: "Wild One", ic: "ti-flame",     c: "#ff8a1e", asleep: "the Wild One" },
+    { k: "light",   l: "Light",    ic: "ti-sun-high",  c: "#ffc83d", asleep: "the Light" },
+    { k: "dreamer", l: "Dreamer",  ic: "ti-sparkles",  c: "#9a5cf0", asleep: "the Dreamer" }
+  ];
+  var DOMAIN_FACETS = { focus: ["builder"], upkeep: ["builder"], connect: ["builder"], move: ["wild"], nourish: ["wild"], play: ["wild", "light"], restore: ["light"], create: ["dreamer"], drift: [] };
+  function dayFacets(k) { // which facets got ANY air today: done blocks + real logs + a closed bookend (= a moment of perspective → Light)
+    var got = {};
+    (blocks(k) || []).forEach(function (b) { if (b.done) (DOMAIN_FACETS[domainOf(b)] || []).forEach(function (f) { got[f] = 1; }); });
+    (logs(k) || []).forEach(function (l) { (DOMAIN_FACETS[domainOf(l)] || []).forEach(function (f) { got[f] = 1; }); });
+    var e = (S.bk || {})[k] || {}; if (e.pm && (e.pm.done || e.pm.reflect)) got.light = 1;
+    return got;
+  }
+  function renderDayCompass(card, k) {
+    var got = dayFacets(k), lit = FACETS.filter(function (f) { return got[f.k]; }), sleeping = FACETS.filter(function (f) { return !got[f.k]; });
+    add(card, "div", "tfs-sub", "Which parts of you got air today").setAttribute("style", "opacity:.72;font-size:12px;");
+    var row = add(card, "div"); row.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;");
+    FACETS.forEach(function (f) {
+      var on = !!got[f.k], cell = add(row, "div"); cell.setAttribute("style", "flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;");
+      var disc = add(cell, "div"); disc.setAttribute("style", "width:44px;height:44px;border-radius:50%;border:2px solid #160510;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #160510;background:" + (on ? f.c : "#241328") + (on ? "" : ";opacity:.5"));
+      disc.innerHTML = '<i class="ti ' + f.ic + '" style="font-size:21px;color:' + (on ? "#160510" : f.c) + '"></i>';
+      add(cell, "div", "", f.l).setAttribute("style", "font-size:10.5px;font-weight:700;font-family:'Jost',sans-serif;color:" + (on ? "#e6cfe0" : "#8a5a72") + ";");
+    });
+    var line = add(card, "div", "tfs-sub"); line.setAttribute("style", "font-size:12.5px;line-height:1.4;");
+    if (lit.length >= 4) line.textContent = "A whole day — every part of you got to live.";
+    else if (lit.length === 3) line.textContent = "A full day. Only " + sleeping[0].asleep + " stayed quiet.";
+    else if (lit.length) line.textContent = "Mostly " + lit[0].l + " today — let " + (sleeping[0] ? sleeping[0].asleep : "more") + " out tomorrow.";
+    else line.textContent = "A quiet day — tomorrow's a fresh chance to let yourself out.";
+  }
+  // ---- BEAT 5: CLOSE — the day's compass + a one-tap rating + warm forward line. (commit happens in exitStage when the primary fires from this beat.)
   function pmBeatClose(card, sb, mr, k) {
     add(card, "div", "tfs-h", "That's the day, well closed.");
+    renderDayCompass(card, k); // Plotkin: was today a WHOLE day? (the four facets that got air) — reframes the rating below toward wholeness, not just productivity
+    var _div = add(card, "div"); _div.setAttribute("style", "height:1px;background:#3a2640;margin:2px 0;");
     // DAY-CLOSE RATING (David 2026-06-30, course IV.1 Win-or-Learn): one tap names the day. Reward-never-shame — even a hard day earns a warm "Rebound" badge, never "bad". Persisted to pm.wol.dayRating in exitStage. Was a dead migration-only field until now.
     add(card, "div", "tfs-sub", "How did today feel?").style.opacity = ".85";
     var prevR = (((S.bk || {})[k] || {}).pm || {}).wol || {};
