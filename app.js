@@ -15,31 +15,33 @@
   function voiceBus() { sharedAudioCtx(); return _voiceBus; }
   function bgBus() { sharedAudioCtx(); return _bgBus; }
   function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
-  // ===== BACKGROUND MUSIC — "Creative Exercise" (David 2026-07-01): a Mario-Paint-BGM-3-style lo-fi loop. FM Rhodes on a CMaj7↔FMaj7 comp + a plucky pentatonic lead + soft sub-bass, through a convolution reverb. Routes into _bgBus so the Background volume slider controls it. =====
+  // ===== BACKGROUND MUSIC — "Mysterious" (David 2026-07-01): the deep, hypnotic, spacious Mario-Paint-BGM-3 vibe. ~70 BPM, a slow 2-chord vamp — Ab min9 ⟷ Db dom9 — each swelling for 2 bars. Sub-bass root on the downbeat, a warm low-passed saw pad washing the upper extensions in and out, and sparse glassy pentatonic plucks drifting on top like stars. Big reverb. Routes into _bgBus. =====
   var BGM = (function () {
-    var running = false, timer = null, step = 0, nextTime = 0, chordBus = null, leadBus = null, bassBus = null, conv = null, revGain = null, tremGain = null, lfo = null;
-    var BPM = 96, beat = 60 / BPM, eighth = beat / 2, LOOK = 0.12;
+    var running = false, timer = null, step = 0, nextTime = 0, bassBus = null, padBus = null, pluckBus = null, conv = null, revGain = null;
+    var BPM = 70, beat = 60 / BPM, eighth = beat / 2, LOOK = 0.18;
     var mtof = function (m) { return 440 * Math.pow(2, (m - 69) / 12); };
-    var NO = { C3: 48, E3: 52, G3: 55, B3: 59, F3: 53, A3: 57, C4: 60, E4: 64, C5: 72, D5: 74, E5: 76, F5: 77, G5: 79, A5: 81, C6: 84 };
-    var fq = function (n) { return mtof(NO[n]); };
-    var CH_C = ["C3", "E3", "G3", "B3"], CH_F = ["F3", "A3", "C4", "E4"];
-    var MEL = ["E5", null, "G5", null, "C6", null, null, "G5", "A5", null, "G5", null, "E5", null, "D5", null, "F5", null, "A5", null, "C6", null, null, "A5", "G5", null, "E5", null, "C5", null, null, null];
+    // Ab min9 (Ab Cb Eb Gb Bb) & Db dom9 (Db F Ab Cb Eb). roots low; pad = upper extensions; MIDI numbers.
+    var BASS = [32, 37];                                  // Ab1, Db2 — root per chord (2-bar each)
+    var PAD  = [[59, 63, 66, 70], [65, 68, 71, 75]];      // Cb/Eb/Gb/Bb  ·  F/Ab/Cb/Eb
+    var PENT = [80, 83, 85, 87, 90, 92];                  // Ab minor pentatonic, high (Ab5 Cb6 Db6 Eb6 Gb6 Ab6) — drifting stars
     function impulse(ctx, sec, dec) { var rate = ctx.sampleRate, len = Math.floor(rate * sec), buf = ctx.createBuffer(2, len, rate); for (var ch = 0; ch < 2; ch++) { var d = buf.getChannelData(ch); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dec); } return buf; }
     function graph(ctx) { var out = bgBus() || ctx.destination;
-      conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 3.6, 2.4); revGain = ctx.createGain(); revGain.gain.value = 0.3; conv.connect(revGain); revGain.connect(out);
-      chordBus = ctx.createGain(); chordBus.gain.value = 0.5; tremGain = ctx.createGain(); tremGain.gain.value = 1;
-      lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 4.7; var la = ctx.createGain(); la.gain.value = 0.12; lfo.connect(la); la.connect(tremGain.gain); lfo.start();
-      chordBus.connect(tremGain); tremGain.connect(out); tremGain.connect(conv);
-      leadBus = ctx.createGain(); leadBus.gain.value = 0.4; leadBus.connect(out); leadBus.connect(conv);
-      bassBus = ctx.createGain(); bassBus.gain.value = 0.45; bassBus.connect(out); bassBus.connect(conv);
+      conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 4.6, 2.6); revGain = ctx.createGain(); revGain.gain.value = 0.55; conv.connect(revGain); revGain.connect(out);
+      function bus(vol, send) { var b = ctx.createGain(); b.gain.value = vol; b.connect(out); var s = ctx.createGain(); s.gain.value = send; b.connect(s); s.connect(conv); return b; }
+      bassBus = bus(0.6, 0.12); padBus = bus(0.5, 0.42); pluckBus = bus(0.4, 0.62);
     }
-    function ep(ctx, freq, t, dur, vel) { var car = ctx.createOscillator(); car.type = "sine"; car.frequency.value = freq; var mod = ctx.createOscillator(); mod.type = "sine"; mod.frequency.value = freq; var mg = ctx.createGain(); mg.gain.setValueAtTime(freq * 2.6 * vel, t); mg.gain.exponentialRampToValueAtTime(freq * 0.4, t + 0.45); mod.connect(mg); mg.connect(car.frequency); var a = ctx.createGain(); a.gain.setValueAtTime(0.0001, t); a.gain.linearRampToValueAtTime(vel, t + 0.006); a.gain.exponentialRampToValueAtTime(vel * 0.5, t + 0.4); a.gain.exponentialRampToValueAtTime(0.0001, t + dur); car.connect(a); a.connect(chordBus); car.start(t); mod.start(t); car.stop(t + dur + 0.1); mod.stop(t + dur + 0.1); }
-    function pluck(ctx, freq, t, vel) { var o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq; var o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2; var g = ctx.createGain(), g2 = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); g2.gain.setValueAtTime(0.0001, t); g2.gain.linearRampToValueAtTime(vel * 0.25, t + 0.005); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.25); o.connect(g); o2.connect(g2); g.connect(leadBus); g2.connect(leadBus); o.start(t); o2.start(t); o.stop(t + 1); o2.stop(t + 1); }
-    function bs(ctx, freq, t, dur) { var o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = freq; var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.5, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(bassBus); o.start(t); o.stop(t + dur + 0.05); }
-    function schedStep(ctx, s, t) { var chord = s < 16 ? CH_C : CH_F; if (s % 8 === 0) { chord.forEach(function (n, i) { ep(ctx, fq(n), t, 2 * beat * 0.95, 0.2 - i * 0.014); }); bs(ctx, mtof(NO[chord[0]] - 12), t, 2 * beat); } var m = MEL[s]; if (m) pluck(ctx, fq(m), t, 0.42); }
+    function subBass(ctx, m, t, dur) { var freq = mtof(m); var o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq; var o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2; var g2 = ctx.createGain(); g2.gain.value = 0.12; o2.connect(g2); var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.95, t + 0.14); g.gain.setValueAtTime(0.95, t + dur * 0.55); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g2.connect(g); g.connect(bassBus); o.start(t); o2.start(t); o.stop(t + dur + 0.1); o2.stop(t + dur + 0.1); }
+    function padVoice(ctx, m, t, dur) { var o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m); o.detune.value = (Math.random() * 8 - 4); var f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 0.8; f.frequency.setValueAtTime(320, t); f.frequency.linearRampToValueAtTime(1500, t + dur * 0.45); f.frequency.linearRampToValueAtTime(420, t + dur); var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.13, t + dur * 0.4); g.gain.linearRampToValueAtTime(0.0001, t + dur); o.connect(f); f.connect(g); g.connect(padBus); o.start(t); o.stop(t + dur + 0.15); }
+    function star(ctx, m, t) { var freq = mtof(m); var o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq; var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.2, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.0); o.connect(g); g.connect(pluckBus); o.start(t); o.stop(t + 2.1); }
+    function schedStep(ctx, s, t) {
+      var ci = s < 16 ? 0 : 1;                            // which chord (2 bars each)
+      if (s % 8 === 0) subBass(ctx, BASS[ci], t, 2 * beat * 0.98);         // root on every bar downbeat
+      if (s % 16 === 0) PAD[ci].forEach(function (m) { padVoice(ctx, m, t, 4 * beat); }); // pad swells across the 2-bar chord
+      if (Math.random() < 0.16) star(ctx, PENT[Math.floor(Math.random() * PENT.length)], t + Math.random() * eighth); // sparse drifting stars
+    }
     function tick() { var ctx = sharedAudioCtx(); if (!ctx) return; while (nextTime < ctx.currentTime + LOOK) { schedStep(ctx, step, nextTime); nextTime += eighth; step = (step + 1) % 32; } }
-    function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } graph(ctx); running = true; step = 0; nextTime = ctx.currentTime + 0.12; tick(); timer = setInterval(tick, 25); }
-    function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } var ctx = sharedAudioCtx(); if (ctx && tremGain) { try { tremGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.3); } catch (e) {} } setTimeout(function () { try { if (lfo) lfo.stop(); } catch (e) {} [chordBus, leadBus, bassBus, revGain, conv, tremGain].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); chordBus = leadBus = bassBus = conv = revGain = tremGain = lfo = null; }, 1800); }
+    function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } graph(ctx); running = true; step = 0; nextTime = ctx.currentTime + 0.15; tick(); timer = setInterval(tick, 30); }
+    function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { [bassBus, padBus, pluckBus, revGain, conv].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); bassBus = padBus = pluckBus = revGain = conv = null; }, 2600); }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
   function bedMode() { return (S.audio && S.audio.bed) || "music"; } // 'music' (Creative Exercise) · 'pad' (ambient drone) · 'off'
@@ -6117,7 +6119,7 @@
       b.onclick = function () { S.audio.bed = o[0]; save(); paintSeg(); if (o[0] !== "music") { try { BGM.stop(); } catch (e) {} } else if (document.getElementById("breatheOv")) { try { BGM.start(); } catch (e) {} } };
     });
     paintSeg();
-    add(card, "div", null, "“Creative Exercise” — a soft lo-fi loop to work to").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;";
+    add(card, "div", null, "“Mysterious” — a deep, spacious ambient loop").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;";
     var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
   }
