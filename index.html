@@ -769,6 +769,7 @@
   /* live footer (mockup 007): elapsed bottom-left + a big pink stop bottom-right */
   .calblk.live .livefoot{ position:absolute; left:9px; right:8px; bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px; z-index:5; }
   .calblk.live .live-elapsed{ font-weight:800; font-size:14px; letter-spacing:.3px; }
+  .live-elapsed.commit-ready{ color:#ffd54a; text-shadow:0 0 6px rgba(255,213,74,.65); } /* Day 4 (David 2026-07-02): timer commitment self-completes — glows gold once elapsed reaches the committed time, so she never has to remember to stop */
   .calblk.live .live-stop{ width:32px; height:32px; border-radius:9px; background:#ff5fa0; border:2px solid #160510; color:#4a1126; font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 0 #160510; padding:0; flex:none; -webkit-tap-highlight-color:transparent; }
   .calblk.live .live-stop:active{ transform:translateY(1px); box-shadow:0 1px 0 #160510; }
   /* ARMED-AT-PRESENT play button — a future plan slid up against the now-line gets a round Play; tap = start tracking now (David 2026-06-27). Berry round button in the activity colour, modelled on .ld-stop / .live-stop. */
@@ -1410,7 +1411,7 @@
   #trashZone.on{ display:flex; }
   #trashZone.armed{ background:#ff5fa0; color:#fff; border-style:solid; transform:translateX(-50%) scale(1.28); }
   #liveDock{ display:none; }
-  body.tab-day:not(.gaming):not(.journey-open) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:74px; z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; transition:left .26s cubic-bezier(.2,.85,.3,1),right .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* slimmer dock → more timeline (David 2026-06-25); base transition so it slides both into AND out of the collapsed corner (David 2026-06-27) */
+  body.tab-day:not(.gaming):not(.journey-open) #liveDock.on, body.simple-mode.journey-open:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:74px; z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; transition:left .26s cubic-bezier(.2,.85,.3,1),right .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* slimmer dock → more timeline (David 2026-06-25); base transition so it slides both into AND out of the collapsed corner (David 2026-06-27). simpleMode (Day 4, David 2026-07-02): the journey pane IS her home, so the live tracker must stay visible there too, not just on the hidden planner. */
   #liveDock .ld-grab{ width:100%; height:24px; background:transparent; margin:-4px 0 0; position:relative; cursor:grab; touch-action:none; } /* full-width tall touch zone — drag UP to expand (the visual bar is the ::before) (David 2026-06-27) */
   #liveDock .ld-grab::before{ content:""; position:absolute; top:7px; left:50%; transform:translateX(-50%); width:40px; height:5px; border-radius:3px; background:#5a2c44; }
   #liveDock .ld-main{ display:flex; align-items:center; gap:9px; margin-bottom:5px; }
@@ -1744,6 +1745,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=773"></script>
+  <script src="app.js?v=774"></script>
 </body>
 </html>

@@ -716,7 +716,15 @@
     var g = S.guide; if (!g) return; var k = todayK(); if (g.tickK === k) return; g.tickK = k;
     var n = Math.max(journeyNode(), chapterUnlockCheck()); g.unlocked = g.unlocked || []; if (g.unlocked.indexOf(n) < 0) { for (var i = 0; i <= n; i++) if (g.unlocked.indexOf(i) < 0) g.unlocked.push(i); } // append-only sticky floor up to the inferred node (cold-infers David straight to mastery on first guided open; never re-locks)
     /* Return-after-miss (SCHEMA 3, mirror-not-price): if yesterday earned 0 SF actions, quietly earn +1 on the NEXT open and show a forward-only guardian line — no "you missed" framing, no streak penalty. */
-    var ydk = keyAdd(k, -1); var yesterdayActs = (S.sf && S.sf.actions && S.sf.actions[ydk]) || []; if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
+    var ydk = keyAdd(k, -1); var yesterdayActs = (S.sf && S.sf.actions && S.sf.actions[ydk]) || [];
+    // GAP-TIER RETURN (Day 4, David 2026-07-02): a real absence (3-13 days since her last logged activity) gets its own warm line here in journeyTick; jpNodes() separately surfaces a matching return-as-focal-node so the trail doesn't just dump her back into whatever chapter she left off in.
+    var _actKs = Object.keys((S.sf && S.sf.actions) || {}).filter(function (dk) { return dk !== k && (S.sf.actions[dk] || []).length; }).sort();
+    var _lastActK = _actKs.length ? _actKs[_actKs.length - 1] : null;
+    var _gapDays = _lastActK ? daysSince(_lastActK) : null;
+    if (_gapDays != null && _gapDays >= 3 && _gapDays <= 13) { try { toast("✦ You came back. That IS the skill."); } catch (e) {} }
+    else if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
+    // FIRST-WEEK RETENTION NUDGE (Day 4, David 2026-07-02): days 2-7 since the onboarding pact, once per day, keeps the seed narrative alive regardless of streak status.
+    if (S.profile && S.profile.pact && S.profile.pact.ts) { var _pactDays = daysSince(key(new Date(S.profile.pact.ts))); if (_pactDays >= 2 && _pactDays <= 7 && (_gapDays == null || _gapDays < 3)) { try { toast("your seed's still here — one small thing today?"); } catch (e) {} } }
     try { appetiteUpdate(); } catch (e) {}
     try { watchConfirmTick(); } catch (e) {}
     save();
@@ -744,6 +752,19 @@
 
     // AWAY / OFF-DAY MODE (David 2026-06-29 — his beach/Shabbat/travel rhythm): when you flag yourself away, the journey becomes ONE calm rest-stone — no task pressure, streaks held — so a trip never feels like falling behind.
     if (S.away) { nodes.push({ key: "away", emoji: "ti-plane-inflight", title: "You're away", line: "Resting / travelling — no pressure, nothing's slipping, your streaks are safe. Tap here when you're back.", color: DOM.restore.c, done: true, act: function () { S.away = false; S.awaySince = null; save(); drawJourney(true); toast("welcome back — let's ease in"); } }); return nodes; }
+
+    // GAP-TIER RETURN (Day 4, David 2026-07-02 — the core inversion): a real absence (3-13 days since her last logged activity) becomes ONE warm return-stone with an instant micro-win, not a dump back into whatever chapter she left off in. Mirrors journeyTick()'s matching toast.
+    if (!(S.sf && S.sf.actions && S.sf.actions[k] && S.sf.actions[k].length)) {
+      var _gActKs = Object.keys((S.sf && S.sf.actions) || {}).filter(function (dk) { return dk !== k && (S.sf.actions[dk] || []).length; }).sort();
+      var _gLastK = _gActKs.length ? _gActKs[_gActKs.length - 1] : null;
+      var _gDays = _gLastK ? daysSince(_gLastK) : null;
+      if (_gDays != null && _gDays >= 3 && _gDays <= 13) {
+        nodes.push({ key: "gapreturn", icon: "ti-sparkles", emoji: "✦", title: "You came back.", _lead: true,
+          line: "That IS the skill. One small thing — right now.", color: DOM.focus.c, done: false,
+          act: function () { closeJourney(); nowSheet(); } });
+        return nodes;
+      }
+    }
 
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
     // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
@@ -776,11 +797,17 @@
       if (!atAm && settleNode) { nodes.push(settleNode); settleNode = null; } // settle slots in as 2nd node when am is 1st
     }
 
-    // Plan your day — copy ADAPTS to the goal + to your recovery (reward-never-shame).
-    nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day",
-      line: planned.length ? (gvName ? "Mapped toward being " + gvName + " — tap to reshape it." : "Your day's mapped — tap to reshape it.")
-        : (pf.bouncedBack ? "You came back yesterday — that bounce is the skill. Let's map today." : gvName ? "Map today around being " + gvName + " — pick a few things." : "Map out today — pick a few things and let them wait for you."),
-      color: DOM.focus.c, done: planned.length > 0 && !(S.timers || []).some(function (t) { return t.dayK === todayK() && t.title === "Plan your day"; }), act: function () { closeJourney(); shapeFlow(k); } }); // stays the live cockpit while you're TRACKING the planning (David 2026-07-02)
+    // Plan your day — copy ADAPTS to the goal + to your recovery (reward-never-shame). simpleMode (Day 4, David 2026-07-02): she never sees "plan" — the focal move is always track-before-plan.
+    if (S.profile && S.profile.simpleMode) {
+      var trackedToday = (S.sf && S.sf.actions && S.sf.actions[k] && S.sf.actions[k].length) > 0;
+      nodes.push({ key: "now", emoji: "▶", title: "What are you doing right now?", line: "Track it — that's the whole game. No plan needed.",
+        color: DOM.focus.c, done: trackedToday, act: function () { closeJourney(); nowSheet(); } });
+    } else {
+      nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day",
+        line: planned.length ? (gvName ? "Mapped toward being " + gvName + " — tap to reshape it." : "Your day's mapped — tap to reshape it.")
+          : (pf.bouncedBack ? "You came back yesterday — that bounce is the skill. Let's map today." : gvName ? "Map today around being " + gvName + " — pick a few things." : "Map out today — pick a few things and let them wait for you."),
+        color: DOM.focus.c, done: planned.length > 0 && !(S.timers || []).some(function (t) { return t.dayK === todayK() && t.title === "Plan your day"; }), act: function () { closeJourney(); shapeFlow(k); } }); // stays the live cockpit while you're TRACKING the planning (David 2026-07-02)
+    }
     if (settleNode) { nodes.push(settleNode); settleNode = null; } // #6: settle falls in as 2nd node after Plan (when AM not unlocked); still available but not the headline
 
     // CHAPTER TASK — one chapter-specific practice node that grounds the daily trail in the current growth arc.
@@ -851,6 +878,7 @@
     // Fundamentals / habits — done stays visible with a check so the trail fills behind you. BODY-FIRST: when energy is low, body/restore habits sort to the front.
     var habs = (S.habits || []).filter(function (h) { return h.type !== "quit"; });
     if (pf.lowEnergy) { var BODY = /move|breath|walk|run|stretch|water|drink|sleep|rest|medit|sun|cold|shower|wash|tidy/i; habs = habs.slice().sort(function (a, b) { return (BODY.test(b.l) ? 1 : 0) - (BODY.test(a.l) ? 1 : 0); }); }
+    var _nodeCap = ((S.guide || {}).appetiteState || {}).nodeCap || 3; habs = habs.slice(0, _nodeCap); // honor the appetite dial's nodeCap (David 2026-07-02) — it was computed in appetiteUpdate() but never applied, so chapter 0 could flood the trail with every habit at once
     var HAB_ICON = { move: "ti-run", deep: "ti-brain", tidy: "ti-sparkles", teeth: "ti-dental", read: "ti-book", breathe: "ti-wind" }; // explicit Tabler symbols for the default habits (title-only inference mislabels them)
     habs.forEach(function (h) {
       nodes.push({ key: "hab:" + h.id, emoji: h.e || "✨", icon: HAB_ICON[h.id] || tiClass({ title: h.l }), title: h.l, line: "A small basic — tap when it's done.",
@@ -1100,7 +1128,11 @@
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
   var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit";
   var PANE_ORDER = ["planner", "journey", "game"];
-  function curPaneName() { var b = document.body.classList; return b.contains("gaming") ? "game" : b.contains("journey-open") ? "journey" : "planner"; }
+  // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
+  function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
+  function curPaneName() { var b = document.body.classList; var n = b.contains("gaming") ? "game" : b.contains("journey-open") ? "journey" : "planner"; if (n === "planner" && S.profile && S.profile.simpleMode) return "journey"; return n; }
+  // simpleMode (Day 4, David 2026-07-02): toggles the body class the CSS keys off (hides the planner nav tab, keeps liveDock visible on the journey pane — see index.html #liveDock rules).
+  function applySimpleMode() { var on = !!(S.profile && S.profile.simpleMode); document.body.classList.toggle("simple-mode", on); var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.style.display = on ? "none" : ""; }
   function paneGroup(n) { // the element(s) that SLIDE for this pane. #nav is the ONE persistent bottom menu (fixed, on top) shared across all 3 panes — it never slides; only the page content does (David 2026-06-30).
     if (n === "planner") return [el("pullSheet")].filter(Boolean); // liveDock is NOT in the slide group — it's a persistent fixed sibling (like #nav) that stays put during the drag, then CSS hides it off the planner. David 2026-07-01
     if (n === "journey") return [el("journeyPath")].filter(Boolean);
@@ -1137,9 +1169,9 @@
       if (armed) paneGroup(curPaneName()).forEach(function (el2) { el2.style.willChange = "transform"; }); // pre-promote the current pane's layer on touch-down so the first drag frames don't stutter
     }, true);
     function beginDrag(dir) { // dir -1 = swipe left (→ next pane) · +1 = swipe right (→ prev pane)
-      cur = curPaneName(); var idx = PANE_ORDER.indexOf(cur);
+      var order = activePaneOrder(); cur = curPaneName(); var idx = order.indexOf(cur);
       var tgtIdx = idx + (dir < 0 ? 1 : -1); sign = dir;
-      nbr = (tgtIdx >= 0 && tgtIdx < PANE_ORDER.length) ? PANE_ORDER[tgtIdx] : null;
+      nbr = (tgtIdx >= 0 && tgtIdx < order.length) ? order[tgtIdx] : null;
       document.body.classList.add("pane-dragging");
       paneGroup(cur).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
       if (nbr) { panePrime(nbr); paneGroup(nbr).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
@@ -1205,20 +1237,21 @@
     };
   }
   function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
+  // NOTE (David 2026-07-02): this function has no caller yet anywhere in app.js — it's scaffolding, not wired into the live tracking flow. Day 4 fixed its CONTENT per spec (30s/1m floor, always-visible X); wiring it to an actual duration-commit call site is a separate, undone product decision.
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
     var tut = !(S.guide && S.guide.tutCommit);
     var ov = add(document.body, "div", "bento-ov");
     var card = add(ov, "div", "bento-card");
     var head = add(card, "div", "bento-head");
     add(head, "div", "bento-q", tut ? "First — commit a time" : "How long?");
-    if (!tut) { var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); }; }
+    var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); }; // Day 4 (David 2026-07-02): always render the X — a tutorial screen with no way out is a dead end, not a wall
     var body = add(card, "div", "bento-body");
     add(body, "div", "bento-orderhint", tut ? "Everything here works by committing a little time to it — that's how it tracks you. Let's start small: tap 5 minutes to plan your day." : "How long will you give “" + esc(n.title) + "”?");
     var grid = add(body, "div", "tc-grid");
-    [5, 10, 15, 30, 45, 60].forEach(function (m) {
-      var b = add(grid, "button", "tc-btn" + (tut && m !== 5 ? " tc-dim" : "") + (tut && m === 5 ? " tc-glow" : ""));
-      b.innerHTML = "<b>" + m + "</b><span>min</span>";
-      b.onclick = function () { if (tut && m !== 5) return; if (tut) { S.guide = S.guide || {}; S.guide.tutCommit = true; save(); } ov.remove(); onGo(m); };
+    [{ v: 0.5, l: "30", s: "sec" }, { v: 1, l: "1", s: "min" }, { v: 5, l: "5", s: "min" }, { v: 10, l: "10", s: "min" }, { v: 15, l: "15", s: "min" }, { v: 30, l: "30", s: "min" }, { v: 45, l: "45", s: "min" }, { v: 60, l: "60", s: "min" }].forEach(function (d) { // Day 4 (David 2026-07-02): 30s/1m floor allowed — a real first win can be tiny
+      var b = add(grid, "button", "tc-btn" + (tut && d.v !== 5 ? " tc-dim" : "") + (tut && d.v === 5 ? " tc-glow" : ""));
+      b.innerHTML = "<b>" + d.l + "</b><span>" + d.s + "</span>";
+      b.onclick = function () { if (tut && d.v !== 5) return; if (tut) { S.guide = S.guide || {}; S.guide.tutCommit = true; save(); } ov.remove(); onGo(d.v); };
     });
   }
   var jpHabMenuKey = null, jpCommitKey = null; // which habit circle has its 3-way menu open · which circle is in the time-commitment beat (David 2026-06-28 / 2026-07-02)
@@ -1231,7 +1264,7 @@
     [/^plan/, [5, 10, 15]], [/deep|focus|study|writ|cod|work/, [25, 50, 90]], [/medit|breath|reflect|journal|gratitude|pray/, [2, 5, 10]],
     [/walk|run|move|gym|exercis|yoga|stretch|swim/, [15, 30, 60]], [/read|learn/, [15, 30, 45]], [/sleep|nap|rest|wind/, [30, 60, 480]], [/tidy|clean|chore|dish|laundry/, [5, 15, 30]]
   ];
-  function jpDurations(n) { var t = (n.title || "").toLowerCase(); if (n.key === "plan") return [5, 10, 15]; for (var i = 0; i < JP_DUR.length; i++) if (JP_DUR[i][0].test(t)) return JP_DUR[i][1]; return [15, 30, 60]; }
+  function jpDurations(n) { var t = (n.title || "").toLowerCase(); if (n.key === "plan") return [1, 5, 15]; for (var i = 0; i < JP_DUR.length; i++) if (JP_DUR[i][0].test(t)) return JP_DUR[i][1]; return [15, 30, 60]; } // Day 4 (David 2026-07-02): 1-min floor on "plan" too — a real first win can be tiny
   function durLbl(m) { return m < 1 ? Math.round(m * 60) + "s" : m < 60 ? m + "m" : (m % 60 === 0 ? (m / 60) + "h" : (m / 60).toFixed(1) + "h"); }
   function jpCommitGo(n, mins) { if (!(S.guide && S.guide.tutCommit)) { S.guide = S.guide || {}; S.guide.tutCommit = true; save(); } jpCommitKey = null; startTimer({ title: n.title, color: n.color, catK: n.catK || null, commit: mins }); if (n.key === "plan") { try { shapeFlow(todayK()); } catch (e) {} } drawJourney(true); }
   function jpDurSlider(ckp, n) { // CUSTOM: a 30s–12h dial (log scale → resolution where it matters)
@@ -1382,13 +1415,14 @@
         if (jpCommitKey === n.key) { // THE TIME-COMMITMENT BEAT — the circle zooms into the cockpit ring + asks how long, in place (no popup). David 2026-07-02
           bub.style.display = "none";
           var tut = !(S.guide && S.guide.tutCommit);
-          var ckc = add(node, "div", "jp-cockpit jp-zoomin");
+          var ckc = add(node, "div", "jp-cockpit jp-zoomin"); ckc.style.position = "relative";
+          var xbc = add(ckc, "button"); xbc.innerHTML = '<i class="ti ti-x"></i>'; xbc.style.cssText = "position:absolute;top:-6px;right:2px;width:26px;height:26px;border-radius:50%;background:#3a1430;border:2px solid #160510;color:#d2aae8;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;"; xbc.onclick = function () { jpCommitKey = null; drawJourney(true); }; // Day 4 (David 2026-07-02): always a way out — this beat had no close before
           var rgc = add(ckc, "div", "jp-ring"); var dsc = add(rgc, "div", "jp-rdisc"); dsc.style.background = tfStripe(n.color); dsc.innerHTML = '<i class="ti ' + icon + '"></i>';
           add(ckc, "div", "jp-ckq", tut ? "First — commit a time" : "How long?");
-          if (tut) add(ckc, "div", "jp-ckhint", "Everything here works by committing a little time — that's how it tracks you. Tap 5 minutes to begin.");
+          if (tut) add(ckc, "div", "jp-ckhint", "Everything here works by committing a little time — that's how it tracks you. Any of these works.");
           var chips = add(ckc, "div", "jp-durchips");
-          jpDurations(n).forEach(function (m) { var c = add(chips, "button", "jp-durchip" + (tut && m !== 5 ? " dim" : "") + (tut && m === 5 ? " glow" : "")); c.textContent = durLbl(m); c.onclick = function () { if (tut && m !== 5) return; jpCommitGo(n, m); }; });
-          var cu = add(chips, "button", "jp-durchip cust" + (tut ? " dim" : "")); cu.innerHTML = '<i class="ti ti-dots"></i>'; cu.onclick = function () { if (tut) return; jpDurSlider(ckc, n); };
+          jpDurations(n).forEach(function (m) { var c = add(chips, "button", "jp-durchip" + (tut && m === 5 ? " glow" : "")); c.textContent = durLbl(m); c.onclick = function () { jpCommitGo(n, m); }; }); // Day 4 (David 2026-07-02): every chip is tappable even on the first-ever commit — she is never walled into exactly 5 minutes
+          var cu = add(chips, "button", "jp-durchip cust"); cu.innerHTML = '<i class="ti ti-dots"></i>'; cu.onclick = function () { jpDurSlider(ckc, n); };
         } else if (runT) { // the now IS the cockpit — expand the circle into the live ring + timer, in place
           bub.style.display = "none";
           var ckp = add(node, "div", "jp-cockpit jp-zoomin");
@@ -4461,7 +4495,7 @@
   function renderMood() { var M = el("moodRow"); if (!M) return; M.innerHTML = ""; var cur = currentMood(); add(M, "div", "qlab", "your inner weather — how do you feel?"); var row = add(M, "div", "moods"); MOODS.forEach(function (m, i) { var c = add(row, "div", "mood" + (cur === i ? " on" : "")); var _de = add(c, "div", "moode"); _de.innerHTML = '<i class="ti ' + m.e + '"></i>'; add(c, "div", "moodl", m.l); c.onclick = function () { setMood(i); }; }); }
 
   // ---- render ------------------------------------------------------------
-  function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey"); }
+  function renderHeader() { el("date").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }); var p = phase(); var nm = S.profile && S.profile.name; el("hello").textContent = (p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : p === "evening" ? "Good evening" : "Hey") + (nm ? ", " + nm : ""); } // Day 4 (David 2026-07-02): read S.profile.name when hand-seeded — greeting personalizes for free, no new question in onboarding
   function renderHero() { var cap = el("guardianCap"); if (cap) { if (S.profile && S.profile.set && vState) cap.innerHTML = "<b>" + (VCLASS[vState.top.k] || "Awakening") + "</b> · Lv " + vState.level + ' · <i class="ti ti-sparkles"></i> ' + S.game.spark.toLocaleString(); else cap.textContent = "your mirror — it grows when you do"; } var pr = proactive(), h = el("hero"); h.innerHTML = ""; add(h, "div", "ht", pr.kicker); add(h, "div", "hl", pr.line); add(h, "div", "hs", pr.sub); add(h, "button", "hp", pr.primary.label).onclick = pr.primary.fn; if (pr.chips.length) { var c = add(h, "div", "chips"); pr.chips.forEach(function (ch) { add(c, "div", "chip", ch.label).onclick = ch.fn; }); } }
 
   var vState = null;
@@ -7176,7 +7210,9 @@
     var _lastMin = nowMin();
     setInterval(function () {
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
-      var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) ce[ci].textContent = elapsedStr(ct); }
+      // Timer commitment self-completes (Day 4, David 2026-07-02): elapsed ≥ commit → glow + one toast, so she never has to remember to stop. The existing stop/claim tap is unchanged — this just tells her it's ready.
+      S.timers.forEach(function (t) { if (t.commit && !t._commitHit && (Date.now() - t.start) / 60000 >= t.commit) { t._commitHit = true; save(); try { toast("⏱ " + durLbl(t.commit) + " done — tap to claim it."); } catch (e) {} } });
+      var ce = document.querySelectorAll(".live-elapsed[data-tid]"); for (var ci = 0; ci < ce.length; ci++) { var ct = (S.timers || []).filter(function (x) { return x.id === ce[ci].getAttribute("data-tid"); })[0]; if (ct) { ce[ci].textContent = elapsedStr(ct); ce[ci].classList.toggle("commit-ready", !!ct._commitHit); } }
       if (S.brk) { var _lcd = document.querySelector("#ldEl[data-brk]"); if (_lcd) { var _lbr = S.brk.start + S.brk.mins * 60000 - Date.now(); _lcd.textContent = fmtCD(Math.max(0, _lbr)); if (_lbr <= 0 && _lbr > -1500) renderLiveDock(); } } // live dock break countdown (flips the sub-line to "break's up" at 0)
       if (TF_OPEN) { var _tc = el("tfClock"); if (_tc) _tc.textContent = fmt(nowMin()).toUpperCase(); } // keep the tracker's wall-clock live
       if (TF_OPEN && S.brk) { var _be = S.brk.start + S.brk.mins * 60000, _br = _be - Date.now(), _tt = el("tfTime"); if (_tt) _tt.textContent = fmtCD(Math.max(0, _br)); if (_br <= 0 && _br > -1500) renderTrackerFull(); } // live break countdown + flip to "break's up" when it hits 0
@@ -7224,9 +7260,10 @@
     })();
     initPaneCarousel(); // 3-PANE CAROUSEL (David 2026-06-30): one global finger-following slider across Planner | Journey | Game
     (function () { // the PERSISTENT bottom menu (#nav) is shared across all 3 panes — tapping a button switches panes cleanly (closes the others), matching the swipe. (Overrides the older per-tab handlers.)
-      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "planner") setPaneRest("planner"); }; // FIX #1: when nav is collapsed, the Today-pill tap MUST re-expand it (the old per-tab handler did this but was overwritten by the carousel pane handler — David 2026-06-30)
+      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (S.profile && S.profile.simpleMode) { if (curPaneName() !== "journey") setPaneRest("journey"); return; } if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "planner") setPaneRest("planner"); }; // FIX #1: when nav is collapsed, the Today-pill tap MUST re-expand it (the old per-tab handler did this but was overwritten by the carousel pane handler — David 2026-06-30). simpleMode (Day 4, David 2026-07-02): hide the planner behind the journey — the button itself is display:none (see applySimpleMode()) but this guards against any stray tap reaching it.
       var jr = el("navJourney"); if (jr) jr.onclick = function () { if (curPaneName() !== "journey") setPaneRest("journey"); };
       var gm = document.querySelector('#nav .nb[data-tab="self"]'); if (gm) gm.onclick = function () { if (curPaneName() !== "game") setPaneRest("game"); };
+      try { applySimpleMode(); } catch (e) {}
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
