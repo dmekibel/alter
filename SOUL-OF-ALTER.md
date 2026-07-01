@@ -198,6 +198,44 @@ All the mechanisms above trade in this one conserved quantity: **catches close t
 
 ---
 
+## PART II — THE ARTIFACTS: Tools & Journey Designed for One User
+
+The Profound Layer gives us the *currency* (catches, evidence, alignment). This layer is about what the tools and the journey *become* — both stop being generic content and become artifacts that could only exist for this specific user.
+
+### TOOLS — From Library to Laboratory
+
+**Prescription, not selection.** A pharmacy stocks; a doctor prescribes dose and timing. The Vibe-read doesn't just trigger a tool, it **doses it** — dysregulated at 11pm gets the 60-second settle, not a menu. Go further: **pre-emptive prescription.** The logs say David drifts at 3pm on no-settle mornings. At 2:50pm, the guardian quietly offers one 90-second reset, *before* the collapse. An app that treats the pattern before symptoms appear feels like precognition.
+
+**The n=1 laboratory** — true "scientific grimoire." After each tool, one tap: *lighter / same*. Accumulated, this discovers which tools *actually shift your state*. Six months in, your grimoire is calibrated to your nervous system — a personal pharmacopeia nobody else could have. You've replicated Stutz's method *on yourself*; the book continues.
+
+**Trigger-mounted tools** (zero-schedule practice). Tools live in sessions; the Fogg-move mounts them on life-triggers: "after closing laptop → 3 breaths," "reaching for phone in bed → 8-second release." Practice escapes the appointment, becomes a reflex you installed. The graduation thesis made mechanical — the tool becomes invisible.
+
+**Tools accumulate relationship.** Each remembers: "This one pulled you out 7 times. First used during the move." A well-used blade reads differently than a fresh tile. The grimoire feels like *your* worn book.
+
+### JOURNEY — From Path to Chronicle
+
+**Bosses mined from your data.** Stutz names the adversary "Part X" (never you). Take it literally into the game: the app detects your *recurring* drift patterns and lets you **name them as characters** — "The 3pm Collapse," "The Sunday Spiral." These become bosses: health bar = pattern frequency in your logs. You "fight" by catching it (the inversion again — noticing is the weapon), and defeating it = that pattern shrinking statistically. The game's enemies are your actual adversaries, and beating them is *literally* the behavior change. No skin needed — the mapping is exact.
+
+**Chapters written backward.** The future path is faint (potential), but the *past* path is **composed retrospectively from what actually happened.** "Chapter 3: The Return — you came back four times this month, faster each time." Scroll back and read the chronicle of who you've been. The burning-timeline law at the scale of months: the journey doesn't consume content, it *writes your chronicle*.
+
+**Honest weather, not fake sunshine.** The world reflects your real state — low weeks are rain. The kind twist: **practicing in rain earns something specific** ("you showed up on a heavy day" — the hardest, most identity-defining rep). Truth rendered beautifully; courage gets the shine.
+
+**Real forks, chosen rarely.** A few times per chapter: deepen meditation vs. open embodiment — both valid, both votes for who you're becoming (Clear's self-image). Six months in, your tree diverges uniquely. "The journey IS the game" becomes true — your choices mattered.
+
+**The spiral, not the line.** Mastery isn't one-pass. Graduated skills echo back at spaced intervals ("remember whole-breath? one minute, keeping sharp"). The path spirals, revisiting old ground at higher altitude. Deepens rather than merely lengthens — solves the infinite-treadmill trap.
+
+### The Unifying Insight
+
+Tools become **instruments the app calibrates to you**; the journey becomes the **chronicle and battlefield of your actual patterns**. Both stop being content. Both are artifacts that could only exist for one person — which is what makes them a guardian, not an app.
+
+**Highest leverage first:**
+- **The one-tap efficacy lab** (#2) — "lighter / same" tap after tools, accumulated to discover your personal pharmacopeia. Small data plumbing on existing S storage.
+- **Bosses from drift data** (#5) — recurring patterns become named antagonists, defeated by catching them. Behavior change IS the game mechanic.
+
+Both are data-light builds that make several downstream ideas (prescription, honest weather, chapter-spirals) fall out naturally.
+
+---
+
 ## TENSIONS TO RESOLVE — the real decisions only David can make
 
 **1.** INTRINSIC-ONLY vs SOFT ESCAPE HATCH (genuinely open, David's call): the AM why-chips deliberately offer no extrinsic option — lock it fully autonomy-only (strongest SDT stance) or add a soft 'something else…' free-type so it never feels coercive? GRAND-VISION openQuestions Q1. NOTE: this is spec-authored, not a David quote — and his own 'find YOUR way' law (#17) actually argues FOR a hatch while his intrinsic principle argues against. He must pick.
