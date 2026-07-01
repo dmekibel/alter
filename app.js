@@ -6206,7 +6206,7 @@
     // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
     var padCtl = null, usedBGM = false, bedM = bedMode();
     if (opts.drone !== false && bedM === "music") { try { BGM.start(); usedBGM = true; } catch (e) {} }
-    else if (opts.drone !== false && bedM === "pad" && ctx) { try { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.09); } catch (e) { padCtl = null; } }
+    else if (opts.drone !== false && bedM === "pad" && ctx) { try { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); } catch (e) { padCtl = null; } } // much louder bed (David 2026-07-01)
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], baseCtx = 0, offset = 0, raf = 0;
