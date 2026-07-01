@@ -5748,6 +5748,7 @@
     { id: "jeopardy", layer: "Feel it through",         name: "Jeopardy",          ti: "ti-hourglass",      emoji: "⏳", thinker: "Stutz — Tool 5", when: "demoralized and stuck — or right after a win, when the work quietly stops", why: "Picturing the cost of not acting recruits loss-aversion — the strongest motivator we have.", fn: function () { jeopardy(); } },
     { id: "mantra",   layer: "Become who you're being", name: "Mantra",            ti: "ti-message-2",      emoji: "🗣️", thinker: "Murphy · Goddard", when: "the morning identity step, low self-trust, or pre-performance", why: "A repeated phrase in a calm state seeds the subconscious — repetition is how self-image installs.", fn: function () { mantraPlayer(); } },
     { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   ti: "ti-mountain",       emoji: "🦁", thinker: "Stutz — Tool 3", when: "before a hard conversation or performance, or when you freeze up", why: "Rehearsing your grounded self first primes the brain to actually run that version live.", fn: function () { innerAuthority(); } },
+    { id: "reprogram",layer: "Become who you're being", name: "Rewire",            ti: "ti-brain",          emoji: "🧠", thinker: "Silva · Dispenza · Maltz", when: "to install a new belief or self-image — the core reset", why: "A calm, focused state lets a new self-image slip past the critical mind and land — your brain rehearses it as real.", fn: function () { reprogramTool(); } },
     { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     ti: "ti-spiral",         emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", why: "A light trance quiets the critical mind so a new self-image can land — the induction is what makes it stick.", fn: function () { selfHypnosis(); } },
     { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", why: "Gratitude shifts you out of the threat network into the care network — a different brain state, on demand.", fn: function () { gratefulFlow(); } }
   ];
@@ -5858,6 +5859,19 @@
       }
     });
     if (avoidedBlock) toast("after this — “" + esc(avoidedBlock.title) + "”"); // tiny pre-frame so the close action isn't a surprise
+  }
+  // REWIRE — the guided reprogramming tool (HANDOFF-reprogramming-toolkit §2, David 2026-07-01). The de-cheesed 3-move stack every reprogramming system reduces to: INDUCTION (settle to a receptive state) → INSTALL (picture the change already true + one present-tense line) → REINFORCE (seal + repeat). ≤3 min, 8-second floor (skip anytime). Silva alpha count-down + Dispenza coherence breath + Maltz self-image, stripped of trance/occult framing. Safety: install a better belief, never dig up a wound.
+  function reprogramTool() {
+    beatRunner({
+      id: "reprogram", title: "Rewire", logTitle: "Rewire", catK: "love", color: "#9a5cf0", spark: 7, voiceProf: VPROF.relax,
+      beats: [
+        { lab: "Settle down", sub: "Slow breath — make the exhale longer than the inhale. With each one, a step calmer.", orb: "out" },
+        { lab: "Three… two… one…", sub: "let the body go soft and the mind go quiet and open", orb: "out" },
+        { lab: "Picture it already true", sub: "see yourself being it — clear, real, right now. Hold the image.", orb: "in" },
+        { lab: "Say it as now", sub: "one present-tense line — like “I start before I feel ready.” Say it slow, and mean it.", orb: "" },
+        { lab: "Seal it", sub: "one full breath, the line once more… and it's in. Carry it.", orb: "out" }
+      ], lastLabel: "Done ✓"
+    });
   }
   // ===== TB-STUTZ-FANOUT (David 2026-06-28): the remaining Stutz arsenal. Each a beatRunner clone with VERBATIM KB cues (phil-stutz-master-guide.md). Each logs a tracked Restore + earns Spark + GENTLE celebrateGated + ticks the skill ladder. Reward-never-shame: using one on a hard day IS the win. =====
   // ACTIVE LOVE — Stutz Tool 2 (master-guide L194-211), L4 / Outflow. When-to-use (verbatim): when someone "takes up residence in your head" and you can't stop rehearsing the argument (the Maze). Framed as self-interest, NOT virtue — this frees YOU. MUST precede Grateful Flow while a grievance is live (master-guide L119). Concentration → Transmission → Penetration.
