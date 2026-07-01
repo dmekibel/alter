@@ -6330,42 +6330,11 @@
   }
   // the horizontal CapCut-style timeline — the universal session composer (David 2026-07-01)
   function stackTimeline(track) {
-    var sel = -1, PPS = 0.85, mmss = function (s) { s = Math.round(s); return Math.floor(s / 60) + ":" + pad(s % 60); };
-    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
-    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
-    var box = add(ov, "div"); box.style.cssText = "width:94%;max-width:460px;color:#f0e6ef;font-family:var(--bub);margin-top:calc(env(safe-area-inset-top,0px) + 60px);";
-    function render() {
-      box.innerHTML = "";
-      var total = track.reduce(function (a, t) { return a + t.d; }, 0);
-      var hd = add(box, "div"); hd.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;";
-      add(hd, "div", null, "Your session").style.cssText = "font-size:21px;font-weight:800;";
-      add(hd, "div", null, "~" + Math.max(1, Math.round(total / 60)) + " min").style.cssText = "font-size:16px;font-weight:800;color:#c9a6ff;";
-      add(box, "div", null, "reorder, trim, add tools — then run it one step at a time.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
-      var list = add(box, "div"); list.style.cssText = "display:flex;flex-direction:column;";
-      track.forEach(function (t, i) {
-        var s = stackTool(t.k), wrap = add(list, "div");
-        var row = add(wrap, "div"); row.style.cssText = "display:flex;align-items:center;gap:13px;cursor:pointer;";
-        var bub = add(row, "div"); bub.style.cssText = "width:50px;height:50px;border-radius:50%;flex:none;background:" + s.col + ";border:3px solid " + (sel === i ? "#fff" : "rgba(0,0,0,.28)") + ";display:flex;align-items:center;justify-content:center;color:#1c0f20;box-shadow:0 3px 0 rgba(0,0,0,.22);"; bub.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:21px;"></i>';
-        var meta = add(row, "div"); meta.style.cssText = "flex:1;"; meta.innerHTML = '<div style="font-size:15px;font-weight:800;">' + s.name + '</div><div style="font-size:11.5px;color:#b39ab0;">' + mmss(t.d) + '</div>';
-        row.onclick = function () { sel = sel === i ? -1 : i; render(); };
-        if (sel === i) {
-          var ctl = add(wrap, "div"); ctl.style.cssText = "margin:8px 0 6px 63px;";
-          var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
-          [60, 120, 180, 300, 600].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:5px 9px;font-family:var(--bub);font-weight:800;font-size:11.5px;color:#f0e6ef;background:" + (t.d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function (e) { e.stopPropagation(); track[i].d = d; render(); }; });
-          var rr = add(ctl, "div"); rr.style.cssText = "display:flex;gap:6px;margin-top:8px;";
-          function cb2(ic, fn) { var b = add(rr, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i>'; b.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:6px 13px;font-family:var(--bub);font-size:14px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function (e) { e.stopPropagation(); fn(); }; }
-          cb2("ti-chevron-up", function () { if (i > 0) { var x = track.splice(i, 1)[0]; track.splice(i - 1, 0, x); sel = i - 1; render(); } });
-          cb2("ti-chevron-down", function () { if (i < track.length - 1) { var x = track.splice(i, 1)[0]; track.splice(i + 1, 0, x); sel = i + 1; render(); } });
-          cb2("ti-trash", function () { track.splice(i, 1); sel = -1; render(); });
-        }
-        if (i < track.length - 1) { var conn = add(list, "div"); conn.style.cssText = "width:3px;height:15px;background:#3a2a4a;margin:2px 0 2px 26px;border-radius:2px;"; }
-      });
-      add(box, "div", null, "Add a tool").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:16px 0 7px;";
-      var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
-      STACK_TOOLS.forEach(function (s) { var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: s.id, d: s.dur }); sel = track.length - 1; render(); }; });
-      var go = add(box, "button", "done2", "Begin session →"); go.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; go.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.stack = track.map(function (t) { return { k: t.k, d: t.d }; }); save(); if (ov.parentNode) ov.remove(); setTimeout(function () { runStack(track, 0); }, 120); };
-    }
-    render();
+    openSessionComposer({
+      title: "Your session", track: track, lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: "Add a tool", playLabel: "Begin session →",
+      onSave: function (t) { S.tools = S.tools || {}; S.tools.stack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); },
+      onPlay: function (t) { runStack(t, 0); }
+    });
   }
   function runStack(track, i) {
     if (i >= track.length) { stackComplete(track.length); return; }
@@ -6500,8 +6469,68 @@
   // adaptive reminder density — learned from your distraction taps. More drift → shorter cadence (more re-anchors), so a beginner can do a LONG session; it eases off as you steady. (David 2026-07-01)
   function medCadence() { try { var mf = S.tools && S.tools.medFocus; if (!mf || !mf.n) return 11; return Math.max(6, Math.min(16, Math.round(14 - (mf.rate || 0) * 2))); } catch (e) { return 11; } }
   // ===== MEDITATION EDITOR (David 2026-07-01): compose a session on a sideways, CapCut-style timeline — drag-free blocks you add/trim/reorder, a time ruler, total length, then Play. Each section = recorded guide phrases distributed across its duration; composed into the timelinePlayer. =====
-  function medEditor() {
+  // ===== SESSION COMPOSER (David 2026-07-01): a planner-style VERTICAL timeline — rectangular blocks, drag the ⋮⋮ handle to reorder, drag the bottom edge to resize (set length), ± to zoom, scroll. Stripped down from the day planner: no plan/reality split, no now-line (it's pure plan). Shared by the meditation editor + the self-help stack. =====
+  // cfg: { title, track:[{k,d}], lookup(k)->{name,col,ti,adv}, pool:[k], addDur, poolLabel, playLabel, onSave(track), onPlay(track) }
+  function openSessionComposer(cfg) {
     try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
+    var track = cfg.track, zoom = 26, mm = function (s) { s = Math.round(s); return Math.floor(s / 60) + ":" + pad(s % 60); };
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
+    var box = add(ov, "div"); box.style.cssText = "width:94%;max-width:440px;height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 78px);margin-top:calc(env(safe-area-inset-top,0px) + 52px);color:#f0e6ef;font-family:var(--bub);display:flex;flex-direction:column;";
+    var hd = add(box, "div"); hd.style.cssText = "display:flex;align-items:center;justify-content:space-between;flex:none;";
+    add(hd, "div", null, cfg.title).style.cssText = "font-size:20px;font-weight:800;";
+    var right = add(hd, "div"); right.style.cssText = "display:flex;align-items:center;gap:7px;";
+    var zO = add(right, "button"); zO.innerHTML = '<i class="ti ti-minus"></i>'; var zI = add(right, "button"); zI.innerHTML = '<i class="ti ti-plus"></i>';
+    [zO, zI].forEach(function (b) { b.style.cssText = "width:30px;height:30px;border-radius:8px;border:1.5px solid #6a4a6a;background:rgba(255,255,255,.05);color:#f0e6ef;font-size:13px;cursor:pointer;padding:0;"; });
+    var totLbl = add(right, "div"); totLbl.style.cssText = "font-size:15px;font-weight:800;color:#c9a6ff;min-width:42px;text-align:right;";
+    zO.onclick = function () { zoom = Math.max(12, zoom - 8); render(); }; zI.onclick = function () { zoom = Math.min(72, zoom + 8); render(); };
+    add(box, "div", null, "drag ⋮⋮ to reorder · drag the bottom edge to set length · ± to zoom").style.cssText = "font-size:11px;color:#b39ab0;margin:2px 0 8px;flex:none;line-height:1.4;";
+    var scroller = add(box, "div"); scroller.style.cssText = "overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:80px;border:1.5px solid #3a1730;border-radius:12px;background:rgba(0,0,0,.25);padding:8px 8px 8px 42px;position:relative;";
+    var lane = add(scroller, "div"); lane.style.position = "relative";
+    var foot = add(box, "div"); foot.style.cssText = "flex:none;padding-top:8px;";
+    function persist() { if (cfg.onSave) cfg.onSave(track); }
+    function startResize(e, i, blk) { e.preventDefault(); e.stopPropagation(); var sy = e.clientY, sd = track[i].d;
+      function mv(ev) { var dy = (ev.clientY != null ? ev.clientY : sy) - sy; var nd = Math.max(15, Math.round((sd + dy / zoom * 60) / 15) * 15); track[i].d = nd; blk.style.height = Math.max(30, nd * zoom / 60) + "px"; }
+      function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); persist(); render(); }
+      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+    }
+    function startReorder(e, i, blk) { e.preventDefault(); e.stopPropagation(); var sy = e.clientY, moved = false;
+      function mv(ev) { var dy = (ev.clientY != null ? ev.clientY : sy) - sy; if (Math.abs(dy) > 4) { moved = true; blk.style.transform = "translateY(" + dy + "px)"; blk.style.opacity = ".92"; blk.style.zIndex = "5"; blk.style.boxShadow = "0 8px 24px rgba(0,0,0,.5)"; } }
+      function up(ev) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up);
+        if (moved) { var dy = (ev.clientY != null ? ev.clientY : sy) - sy, dir = dy > 0 ? 1 : -1, rem = Math.abs(dy), j = i;
+          while (true) { var nj = j + dir; if (nj < 0 || nj >= track.length) break; var nh = Math.max(30, track[nj].d * zoom / 60) + 4; if (rem > nh * 0.5) { rem -= nh; j = nj; } else break; }
+          if (j !== i) { var x = track.splice(i, 1)[0]; track.splice(j, 0, x); persist(); }
+        }
+        render();
+      }
+      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+    }
+    function render() {
+      var total = track.reduce(function (a, t) { return a + t.d; }, 0); totLbl.textContent = mm(total);
+      lane.innerHTML = ""; var y = 0;
+      if (!track.length) { add(lane, "div", null, "empty — add from below").style.cssText = "color:#8a7a9a;font-size:12px;padding:18px;text-align:center;"; }
+      track.forEach(function (t, i) { (function (i) {
+        var m = cfg.lookup(t.k), h = Math.max(30, t.d * zoom / 60);
+        var blk = add(lane, "div"); blk.style.cssText = "position:relative;height:" + h + "px;margin-bottom:4px;border-radius:9px;background:" + m.col + ";border:2px solid rgba(0,0,0,.3);color:#1c0f20;box-shadow:0 2px 0 rgba(0,0,0,.2);touch-action:pan-y;overflow:hidden;";
+        var tl = add(blk, "div", null, mm(y)); tl.style.cssText = "position:absolute;left:-38px;top:-1px;font-size:9px;color:#8a7a9a;font-family:var(--bub);";
+        var handle = add(blk, "div"); handle.innerHTML = '<i class="ti ti-grip-vertical"></i>'; handle.style.cssText = "position:absolute;left:1px;top:0;bottom:0;width:24px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,.45);cursor:grab;touch-action:none;";
+        var c = add(blk, "div"); c.style.cssText = "padding:5px 8px 5px 28px;display:flex;align-items:center;gap:8px;height:100%;box-sizing:border-box;pointer-events:none;"; c.innerHTML = '<i class="ti ' + m.ti + '" style="font-size:' + (h > 46 ? 20 : 15) + 'px;"></i><span style="font-weight:800;font-size:' + (h > 46 ? 14 : 12.5) + 'px;">' + m.name + (m.adv ? ' <span style="font-size:8px;opacity:.6;">adv</span>' : '') + '</span><span style="margin-left:auto;font-size:11px;opacity:.72;">' + mm(t.d) + '</span>';
+        var rm = add(blk, "div"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "position:absolute;top:3px;right:5px;font-size:13px;color:rgba(0,0,0,.5);cursor:pointer;"; rm.onclick = function (e) { e.stopPropagation(); track.splice(i, 1); persist(); render(); };
+        var grip = add(blk, "div"); grip.style.cssText = "position:absolute;left:24px;right:0;bottom:0;height:14px;cursor:ns-resize;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;touch-action:none;"; grip.innerHTML = '<div style="width:34px;height:3px;border-radius:2px;background:rgba(0,0,0,.4);"></div>';
+        handle.addEventListener("pointerdown", function (e) { startReorder(e, i, blk); });
+        grip.addEventListener("pointerdown", function (e) { startResize(e, i, blk); });
+        if (cfg.onTap) blk.addEventListener("click", function (e) { if (e.target === rm || (e.target.closest && e.target.closest("[data-nc]"))) return; cfg.onTap(i, render); });
+        y += t.d;
+      })(i); });
+    }
+    add(foot, "div", null, cfg.poolLabel || "Add").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:2px 0 6px;";
+    var pool = add(foot, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+    cfg.pool.forEach(function (k) { var m = cfg.lookup(k); var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + m.ti + '"></i> ' + m.name; b.style.cssText = "border:2px solid " + m.col + ";border-radius:11px;padding:6px 10px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: cfg.addDur || 60 }); persist(); render(); scroller.scrollTop = scroller.scrollHeight; }; });
+    var play = add(foot, "button", "done2", cfg.playLabel || "Play ▶"); play.style.cssText = "margin:12px auto 0;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; persist(); if (ov.parentNode) ov.remove(); cfg.onPlay(track); };
+    render();
+    return { close: function () { if (ov.parentNode) ov.remove(); } };
+  }
+  function medEditor() {
     var SEC = {
       settle: { name: "Arrival", col: "#9a7cff", ti: "ti-seedling", lines: ["Settle in…, let your eyes soften", "Soften your forehead, and unclench your jaw", "Drop your shoulders, let them fall", "Soften your chest, and your belly", "Let your arms go heavy, down to your fingertips", "Release your legs, all the way to your feet", "Your whole body is heavy and calm, nothing to do, nowhere to be", "One mindful moment, just be here, now"] },
       breath: { name: "Breath", col: "#63d3c9", ti: "ti-wind", lines: ["Soft focus — just aware of the space around you", "A few big breaths… in through the nose, out through the mouth", "Let the body soften with each out-breath", "Nothing to do, nothing to respond to — just time for you", "Feel the weight of the body pressing down", "Find the breath rising and falling", "One on the in-breath… two on the out-breath", "Feel that sense of space with each exhale", "Thoughts come — that's fine. Gently back to the breath", "Now let the mind be completely free"] },
@@ -6511,46 +6540,13 @@
       bliss: { name: "Bliss", col: "#ff9ec9", ti: "ti-sun-high", adv: true, lines: ["Let attention rest on the shining side of awareness — the glow, not the emptiness", "Sense a quiet fullness there, an overflowing satisfaction. First, just detect it — that's the bliss", "You don't have to fix any feeling, or take apart the story — that's only conflict with yourself", "Whatever is here — sadness, restlessness — let it turn toward the bliss, drawn to it", "Let the feeling and the bliss come together, and fuse", "Come exactly as you are — nothing to become first, nothing to earn", "Notice the bliss arises on its own — you're not making it happen. Just receive it", "If a warmth rises with it, welcome that too — the heart saturating, content, full", "Not I feel bliss — just, bliss is here. Let the sense of self soften into it", "Don't reach for a result. Let this be the only step — no end, nowhere to get to", "If you tighten, that's fine — just notice; it passes on its own. Nothing can hold the bliss back"] },
       play: { name: "Play", col: "#8ad0ff", ti: "ti-confetti", adv: true, lines: ["Set down the need for any of this to make sense — no plan behind it, human or otherwise", "Existence is play, not a serious agenda. There's no goal to reach", "So you can relax, and simply look — no demand, no anger in the looking", "Watch a thought: where it begins, while it's here, and where it goes when it fades", "Don't hunt for an answer. The ache to know is just a weight — let it drop", "Don't try to find a place outside the motion. Let it move, and move with it", "Trust exactly where you are — nothing to fix about your starting point", "Let both meet: the clear seeing and the warm feeling. Ease is their balance", "You don't get rid of the seeker — the seeking just softens into ease, for no reason", "When the demand for sense falls away, insight can arise on its own — uninvited, alive"] }
     };
-    var ORDER = ["settle", "breath", "body", "aware", "rest", "bliss", "play"], PPS = 1.7;
+    var ORDER = ["settle", "breath", "body", "aware", "rest", "bliss", "play"];
     var track = ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }]).map(function (x) { return { k: x.k, d: x.d }; });
-    var sel = -1;
-    var mmss = function (s) { s = Math.round(s); return Math.floor(s / 60) + ":" + pad(s % 60); };
-    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
-    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
-    var box = add(ov, "div"); box.style.cssText = "width:94%;max-width:460px;color:#f0e6ef;font-family:var(--bub);margin-top:calc(env(safe-area-inset-top,0px) + 60px);";
-    function render() {
-      box.innerHTML = "";
-      var total = track.reduce(function (a, t) { return a + t.d; }, 0);
-      var hd = add(box, "div"); hd.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;";
-      add(hd, "div", null, "Edit your meditation").style.cssText = "font-size:21px;font-weight:800;";
-      add(hd, "div", null, mmss(total)).style.cssText = "font-size:17px;font-weight:800;color:#c9a6ff;";
-      add(box, "div", null, "tap a bubble to set its length, reorder, or remove.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
-      // VERTICAL bubble list (minimal — not the day timeline). David 2026-07-01
-      var list = add(box, "div"); list.style.cssText = "display:flex;flex-direction:column;";
-      track.forEach(function (t, i) {
-        var s = SEC[t.k], wrap = add(list, "div");
-        var row = add(wrap, "div"); row.style.cssText = "display:flex;align-items:center;gap:13px;cursor:pointer;";
-        var bub = add(row, "div"); bub.style.cssText = "width:50px;height:50px;border-radius:50%;flex:none;background:" + s.col + ";border:3px solid " + (sel === i ? "#fff" : "rgba(0,0,0,.28)") + ";display:flex;align-items:center;justify-content:center;color:#1c0f20;box-shadow:0 3px 0 rgba(0,0,0,.22);"; bub.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:21px;"></i>';
-        var meta = add(row, "div"); meta.style.cssText = "flex:1;"; meta.innerHTML = '<div style="font-size:15px;font-weight:800;">' + s.name + (s.adv ? ' <span style="font-size:9px;color:#ff9ec9;border:1px solid #ff9ec9;border-radius:6px;padding:1px 4px;vertical-align:middle;">advanced</span>' : '') + '</div><div style="font-size:11.5px;color:#b39ab0;">' + mmss(t.d) + '</div>';
-        row.onclick = function () { sel = sel === i ? -1 : i; render(); };
-        if (sel === i) {
-          var ctl = add(wrap, "div"); ctl.style.cssText = "margin:8px 0 6px 63px;";
-          var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
-          [30, 60, 120, 300, 600, 1200].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:5px 9px;font-family:var(--bub);font-weight:800;font-size:11.5px;color:#f0e6ef;background:" + (t.d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function (e) { e.stopPropagation(); track[i].d = d; render(); }; });
-          var rr = add(ctl, "div"); rr.style.cssText = "display:flex;gap:6px;margin-top:8px;";
-          function cbtn(ic, fn) { var b = add(rr, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i>'; b.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:6px 13px;font-family:var(--bub);font-size:14px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function (e) { e.stopPropagation(); fn(); }; }
-          cbtn("ti-chevron-up", function () { if (i > 0) { var x = track.splice(i, 1)[0]; track.splice(i - 1, 0, x); sel = i - 1; render(); } });
-          cbtn("ti-chevron-down", function () { if (i < track.length - 1) { var x = track.splice(i, 1)[0]; track.splice(i + 1, 0, x); sel = i + 1; render(); } });
-          cbtn("ti-trash", function () { track.splice(i, 1); sel = -1; render(); });
-        }
-        if (i < track.length - 1) { var conn = add(list, "div"); conn.style.cssText = "width:3px;height:15px;background:#3a2a4a;margin:2px 0 2px 26px;border-radius:2px;"; }
-      });
-      add(box, "div", null, "Add a section").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:16px 0 7px;";
-      var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
-      ORDER.forEach(function (k) { var s = SEC[k]; var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: 60 }); sel = track.length - 1; render(); }; });
-      var play = add(box, "button", "done2", "Play ▶"); play.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.medTrack = track.map(function (x) { return { k: x.k, d: x.d }; }); save(); var tot = track.reduce(function (a, t) { return a + t.d; }, 0); var cad = medCadence(); var segs = []; track.forEach(function (t) { var s = SEC[t.k], n = Math.max(1, Math.round(t.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); if (ov.parentNode) ov.remove(); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true }); };
-    }
-    render();
+    openSessionComposer({
+      title: "Edit your meditation", track: track, lookup: function (k) { return SEC[k]; }, pool: ORDER, addDur: 60, poolLabel: "Add a section", playLabel: "Play ▶",
+      onSave: function (t) { S.tools = S.tools || {}; S.tools.medTrack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); },
+      onPlay: function (t) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0); var cad = medCadence(); var segs = []; t.forEach(function (x) { var s = SEC[x.k], n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true }); }
+    });
   }
   function reprogramTool(onDone) {
     beatRunner({
