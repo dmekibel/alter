@@ -3,10 +3,18 @@
 (function () {
   "use strict";
   // ONE shared, persistent Web Audio context for the whole app (voice + tool ambient beds). Reused everywhere so we never leak/exhaust iOS's context cap (each `new AudioContext()` per tool was leaking — a likely cause of "some tools have sound, some don't"). Resumed on every gesture. (David 2026-07-01)
-  var _sharedACtx = null;
+  var _sharedACtx = null, _voiceBus = null, _bgBus = null;
+  function _audioCfg() { return (typeof S !== "undefined" && S && S.audio) ? S.audio : { voice: 1, bg: 1 }; }
   function sharedAudioCtx() {
-    try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; if (!_sharedACtx) _sharedACtx = new AC(); if (_sharedACtx.state === "suspended") { try { _sharedACtx.resume(); } catch (e) {} } return _sharedACtx; } catch (e) { return null; }
+    try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; if (!_sharedACtx) _sharedACtx = new AC(); if (_sharedACtx.state === "suspended") { try { _sharedACtx.resume(); } catch (e) {} }
+      // TWO master buses (David 2026-07-01): every VOICE clip routes through _voiceBus, every ambient/drone through _bgBus → the volume sliders set these and affect ALL audio live, including a running tool.
+      if (!_voiceBus) { _voiceBus = _sharedACtx.createGain(); _voiceBus.gain.value = _audioCfg().voice != null ? _audioCfg().voice : 1; _voiceBus.connect(_sharedACtx.destination); }
+      if (!_bgBus) { _bgBus = _sharedACtx.createGain(); _bgBus.gain.value = _audioCfg().bg != null ? _audioCfg().bg : 1; _bgBus.connect(_sharedACtx.destination); }
+      return _sharedACtx; } catch (e) { return null; }
   }
+  function voiceBus() { sharedAudioCtx(); return _voiceBus; }
+  function bgBus() { sharedAudioCtx(); return _bgBus; }
+  function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
   // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
   //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
   //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
@@ -79,7 +87,7 @@
           if (myGen !== playGen) return;
           try {
             var src = ctx.createBufferSource(); src.buffer = buf;
-            var g = ctx.createGain(); g.gain.value = vol; src.connect(g); g.connect(ctx.destination);
+            var g = ctx.createGain(); g.gain.value = vol; src.connect(g); g.connect(voiceBus() || ctx.destination);
             src.onended = function () { if (src === curSrc) curSrc = null; fin(); };
             curSrc = src; src.start(0); dbg("PLAY ctx:" + ctx.state + " v:" + vol.toFixed(2));
           } catch (e) { dbg("start-EXC:" + (e && e.name)); fin(); }
@@ -110,7 +118,7 @@
     function warm(texts) { try { (texts || []).forEach(function (t) { getBuffer(t); }); } catch (e) {} } // pre-decode a set of lines into the cache (call while the user is still choosing settings)
     function decodeKey(key) { if (bufCache[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return; fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (buf) { bufCache[key] = buf; }).catch(function () {}); }
     function warmAll() { if (!vset) return; var keys = Object.keys(vset), i = 0; function batch() { var n = 0; while (i < keys.length && n < 8) { decodeKey(keys[i++]); n++; } if (i < keys.length) setTimeout(batch, 120); } batch(); } // pre-decode the WHOLE voice bank (batched, ~2s) so every tool launched from the toolbox has cached clips → its audio can start inside the launch tap (iOS gesture rule). David 2026-07-01: "fix all the audio."
-    function scheduleClip(text, atSec, vol) { try { var ctx = sharedAudioCtx(); var buf = getBufferSync(text); if (!ctx || !buf) return null; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } var src = ctx.createBufferSource(); src.buffer = buf; var g = ctx.createGain(); g.gain.value = vol != null ? vol : 1; src.connect(g); g.connect(ctx.destination); src.start(ctx.currentTime + Math.max(0, atSec)); return src; } catch (e) { return null; } } // schedule a cached clip at a future time — called UP FRONT inside a start gesture so timer-paced tools (breath/tapping) speak reliably (no per-cue timer play)
+    function scheduleClip(text, atSec, vol) { try { var ctx = sharedAudioCtx(); var buf = getBufferSync(text); if (!ctx || !buf) return null; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } var src = ctx.createBufferSource(); src.buffer = buf; var g = ctx.createGain(); g.gain.value = vol != null ? vol : 1; src.connect(g); g.connect(voiceBus() || ctx.destination); src.start(ctx.currentTime + Math.max(0, atSec)); return src; } catch (e) { return null; } } // schedule a cached clip at a future time — called UP FRONT inside a start gesture so timer-paced tools (breath/tapping) speak reliably (no per-cue timer play)
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
     return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, ctx: sharedAudioCtx };
@@ -1018,7 +1026,7 @@
       if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
       multi = false; on = false; cur = null;
       // CONTEXT-AWARE (David 2026-07-01): while ANY overlay/menu is open — a tool/player, a modal sheet, the expanded tracker (cockpit) or toolbox, the plan-a-day bento, a radial/duration/onboarding sheet — DON'T let a horizontal swipe switch app panes. The swipe belongs to that surface; close it to switch.
-      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on"))) { armed = false; return; }
+      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
       sx = e.clientX; sy = e.clientY; W = window.innerWidth || 390;
       if (armed) paneGroup(curPaneName()).forEach(function (el2) { el2.style.willChange = "transform"; }); // pre-promote the current pane's layer on touch-down so the first drag frames don't stutter
@@ -2023,6 +2031,7 @@
     row("ti-compass", "Guidance", "how much I lead — Guided / Light / Off", function () { guidanceSheet(); });
     row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
     row(S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", "travel or off-days — your streaks are held", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} });
+    row("ti-volume", "Sound", "voice + background volume", function () { openVolumePanel(); });
     row("ti-sparkles", "Redo setup", "re-run onboarding", function () { onboard(); });
     row("ti-flask", "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
     row(S.voiceDebug ? "ti-bug" : "ti-bug-off", S.voiceDebug ? "Voice debug: ON" : "Voice debug: OFF", "the little ♪ readout at the top — temporary", function () { S.voiceDebug = !S.voiceDebug; save(); var e = document.getElementById("voiceDbg"); if (e && !S.voiceDebug) e.remove(); toast(S.voiceDebug ? "voice debug on" : "voice debug off"); });
@@ -3659,7 +3668,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = true; /* TEMP (David 2026-07-01): on-screen voice diagnostic ON by default until the Stutz-tool silence is pinned; toggle in Settings */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; /* voice + background volume, applied via the two master buses */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
     /* ===== F-0 (SCHEMA 1→2, David 2026-06-30): consolidated migration — keystone for the Heroic-course build (_course/BUILD-SPEC.md §2). Adds scaffolding fields/keys ONLY; zero behavior change. prevSchema captured near top of load(). ===== */
     if (prevSchema < 2) {
       Object.keys(S.bk).forEach(function (dk) { var day = S.bk[dk]; if (!day) return;
@@ -4646,7 +4655,7 @@
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     // BREATH HUM (David 2026-07-01): NOT a prominent chord — a soft low background pad, like the ambient bed in the other tools. The "breathing" comes from a gentle volume SWELL (louder on the in-breath, softer on the out) rather than a melodic change. Subtle, almost the sound of someone breathing.
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, bwOscs = [], bwGain = null;
-    try { if (AC) { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0.006; bwGain.connect(actx.destination);
+    try { if (AC) { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0.006; bwGain.connect(bgBus() || actx.destination);
       [[130.81, "sine", 1], [196.0, "sine", 0.4], [261.63, "triangle", 0.14]].forEach(function (o) { var os = actx.createOscillator(), g = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g.gain.value = o[2]; os.connect(g); g.connect(bwGain); os.start(); bwOscs.push(os); });
     } } catch (e) { actx = null; }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
@@ -4753,7 +4762,7 @@
       addVoiceToggle(ov);
       var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-      try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
+      try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(bgBus() || actx.destination); osc.start(); } } catch (e) { actx = null; }
       function blip(freq) { if (!actx) return; var now = actx.currentTime; osc.frequency.setValueAtTime(freq, now); gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.006, now + 0.4); }
       var steps = [], setupLine = "Even though I feel " + cfg.feel[0] + ", I deeply and completely accept myself.";
       for (var s = 0; s < 3; s++) steps.push({ pt: "Setup — side of hand", say: setupLine, setup: true });
@@ -6004,7 +6013,7 @@
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nextB = ov.querySelector(".bw-next");
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, gain = null, oscs = [];
-    if (opts.drone !== false) { try { if (AC) { actx = sharedAudioCtx(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(actx.destination);
+    if (opts.drone !== false) { try { if (AC) { actx = sharedAudioCtx(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(bgBus() || actx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.55], [220, "triangle", 0.22]].forEach(function (o) { var os = actx.createOscillator(), g2 = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(gain); os.start(); oscs.push(os); }); // warm 3-voice pad (root + a fifth + a soft octave) — an auto "meditation-app" bed instead of a flat sine (David 2026-07-01)
       var lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 0.011; lfo.connect(lg); lg.connect(gain.gain); lfo.start(); oscs.push(lfo); // a slow breathing swell
       gain.gain.linearRampToValueAtTime(0.032, actx.currentTime + 1.8);
@@ -6057,6 +6066,23 @@
       begin.onclick = function () { S.tools = S.tools || {}; S.tools.seen = S.tools.seen || {}; S.tools.seen[opts.id] = 1; save(); card.remove(); orb.style.display = ""; lab.style.display = ""; sub.style.display = ""; nextB.style.display = ""; setTimeout(paint, 250); };
     }
   }
+  // Sound panel — two live volume sliders (voice + background), for every audio tool (David 2026-07-01). Adjusts the master buses in real time.
+  function openVolumePanel() {
+    S.audio = S.audio || { voice: 1, bg: 1 };
+    var ov = add(document.body, "div", "vol-ov"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(10,4,14,.55);display:flex;align-items:center;justify-content:center;";
+    var card = add(ov, "div"); card.style.cssText = "width:82%;max-width:340px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;";
+    add(card, "div", null, "Sound").style.cssText = "font-size:19px;font-weight:800;";
+    add(card, "div", null, "adjust anytime — even while it plays").style.cssText = "font-size:12px;color:#b39ab0;margin-bottom:8px;";
+    function slider(label, kind) {
+      var row = add(card, "div"); row.style.cssText = "margin:16px 0 4px;";
+      var lr = add(row, "div"); lr.style.cssText = "display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:7px;"; add(lr, "span", null, label); var pct = add(lr, "span", null, Math.round(S.audio[kind] * 100) + "%"); pct.style.color = "#ff8fc4";
+      var s = add(row, "input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round(S.audio[kind] * 100); s.style.cssText = "width:100%;accent-color:#9a7cff;height:26px;";
+      s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
+    }
+    slider("Voice", "voice"); slider("Background", "bg");
+    var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+  }
   // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
   function timelinePlayer(opts) {
@@ -6067,6 +6093,9 @@
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     orb.style.animation = "breathe 9s ease-in-out infinite";
+    var waves = add(ov, "div", "gp-waves"); waves.innerHTML = "<span></span><span></span><span></span>"; // slow-drifting Headspace-style depth bands behind the orb (David 2026-07-01)
+    if (opts.title) { var tb = add(ov, "div", "gp-title", opts.title); } // pinned session title, Headspace-style
+    var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
     function dbg2(m) { try { if (!(typeof S !== "undefined" && S && S.voiceDebug)) return; var e = document.getElementById("voiceDbg"); if (!e) { e = document.createElement("div"); e.id = "voiceDbg"; e.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 2px);left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.75);color:#8fffa8;font:600 10px ui-monospace,monospace;padding:2px 9px;border-radius:9px;pointer-events:none;max-width:94vw;white-space:nowrap;"; document.body.appendChild(e); } e.textContent = "♪ " + m; } catch (e2) {} }
     // transport bar (built now, wired after decode)
     var bar = add(ov, "div", "gp-bar");
@@ -6079,7 +6108,7 @@
     bar.style.visibility = "hidden";
     // ambient bed (a real soft pad — doubles as an honest keep-warm for the context; NOT the inaudible hack)
     var drGain = null, drOscs = [];
-    if (opts.drone !== false && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(ctx.destination);
+    if (opts.drone !== false && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(bgBus() || ctx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.5], [220, "triangle", 0.2]].forEach(function (o) { var os = ctx.createOscillator(), g2 = ctx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(drGain); os.start(); drOscs.push(os); });
       drGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 2);
     } catch (e) { drGain = null; } }
@@ -6108,7 +6137,7 @@
       stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
       segs.forEach(function (sg) {
         if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
-        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); g.gain.value = opts.vol != null ? opts.vol : 1; src.connect(g); g.connect(ctx.destination);
+        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); g.gain.value = opts.vol != null ? opts.vol : 1; src.connect(g); g.connect(voiceBus() || ctx.destination);
           if (sg.start >= sec) src.start(baseCtx + (sg.start - sec)); else src.start(baseCtx, sec - sg.start); // future clip, or mid-clip resume
           sources.push(src);
         } catch (e) {}

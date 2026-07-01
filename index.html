@@ -259,8 +259,8 @@
   .jp-trophy.locked .jt-b{background:#2a1320;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
   /* IN-JOURNEY COCKPIT — the now-circle, once STARTED, expands into the live ring + timer right on the path (David 2026-06-28) */
   .jp-cockpit{display:flex;flex-direction:column;align-items:center;gap:11px;margin:8px 0 4px;}
-  .jp-ring{width:184px;height:184px;border-radius:50%;border:15px solid #34d39a;background:#160510;display:flex;align-items:center;justify-content:center;}/* the tracking cockpit is the HERO — clearly bigger than the plan nodes (David 2026-07-01) */
-  .jp-rdisc{width:118px;height:118px;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:50px;color:#fff;}
+  .jp-ring{width:216px;height:216px;border-radius:50%;border:16px solid #34d39a;background:#160510;display:flex;align-items:center;justify-content:center;}/* the tracking cockpit is the HERO — clearly bigger than the plan nodes (David 2026-07-01) */
+  .jp-rdisc{width:138px;height:138px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:58px;color:#fff;}
   .jp-rdisc i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-cktitle{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;}
   .jp-cktimer{font-family:var(--bub);font-size:27px;font-weight:800;color:#ffd9ea;letter-spacing:1px;margin-top:-4px;}
@@ -513,6 +513,19 @@
   #breatheOv .gp-side{font-size:30px;opacity:.82;}
   #breatheOv .gp-play{width:66px;height:66px;border-radius:50%;background:#9a7cff;box-shadow:0 6px 20px rgba(120,90,255,.5);font-size:30px;color:#fff;}
   #breatheOv .gp-play:active{transform:scale(.94);}
+  #breatheOv.gp-ov{overflow:hidden;}
+  #breatheOv .gp-title{position:fixed;top:calc(env(safe-area-inset-top,0px) + 22px);left:0;right:0;text-align:center;font-family:var(--bub);font-size:12.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(240,230,239,.5);z-index:4;pointer-events:none;}
+  #breatheOv .gp-cog{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:18px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);color:#efeaff;border-radius:14px;width:44px;height:40px;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;padding:0;}
+  #breatheOv .bw-orb,#breatheOv .bw-label,#breatheOv .bw-sub{position:relative;z-index:2;}
+  /* slow-drifting depth bands behind the orb — the Headspace "premium" motion, on berry palette (David 2026-07-01) */
+  #breatheOv .gp-waves{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+  #breatheOv .gp-waves span{position:absolute;left:-30%;right:-30%;height:62%;border-radius:50%;filter:blur(8px);}
+  #breatheOv .gp-waves span:nth-child(1){top:16%;background:radial-gradient(ellipse at center,rgba(154,124,255,.30),transparent 70%);animation:gpWave1 15s ease-in-out infinite;}
+  #breatheOv .gp-waves span:nth-child(2){top:44%;background:radial-gradient(ellipse at center,rgba(255,95,160,.22),transparent 70%);animation:gpWave2 19s ease-in-out infinite;}
+  #breatheOv .gp-waves span:nth-child(3){top:2%;background:radial-gradient(ellipse at center,rgba(120,90,220,.24),transparent 70%);animation:gpWave3 23s ease-in-out infinite;}
+  @keyframes gpWave1{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-8%) scale(1.09);}}
+  @keyframes gpWave2{0%,100%{transform:translateY(0) scale(1.05);}50%{transform:translateY(7%) scale(1);}}
+  @keyframes gpWave3{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(6%) scale(1.1);}}
   .radial{position:fixed;inset:0;background:rgba(20,12,36,.8);z-index:60;}
   .ritem{position:absolute;width:72px;height:72px;border-radius:50%;background:#251d40;border:2.5px solid #8a5cf0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.5);}
   .ritem:active{transform:scale(.92);}
@@ -1726,6 +1739,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=744"></script>
+  <script src="app.js?v=745"></script>
 </body>
 </html>
