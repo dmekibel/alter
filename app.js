@@ -5991,7 +5991,7 @@
     var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
     add(head, "div", "tfs-sub", "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.");
     var _stk = add(head, "button"); _stk.innerHTML = '<i class="ti ti-stack-2"></i> Build a session — stack a few in a row'; _stk.style.cssText = "margin-top:11px;width:100%;background:rgba(154,124,255,.14);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;color:#e6d8ff;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _stk.onclick = function () { try { stackBuilder(); } catch (e) {} }; // SELF-HELP STACK entry
-    var _bg = add(head, "button"); _bg.innerHTML = '<i class="ti ti-brain"></i> Sharpen the mind — a 60-second focus game'; _bg.style.cssText = "margin-top:8px;width:100%;background:rgba(99,211,201,.12);border:1.5px solid #3a6a64;border-radius:12px;padding:11px;color:#cdeeea;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _bg.onclick = function () { try { recallGame(); } catch (e) {} }; // BRAIN GYM entry (Recall)
+    var _bg = add(head, "button"); _bg.innerHTML = '<i class="ti ti-brain"></i> Sharpen the mind — a 60-second focus game'; _bg.style.cssText = "margin-top:8px;width:100%;background:rgba(99,211,201,.12);border:1.5px solid #3a6a64;border-radius:12px;padding:11px;color:#cdeeea;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _bg.onclick = function () { try { brainGym(); } catch (e) {} }; // BRAIN GYM entry (chooser: Recall / Focus Cross / Link)
     // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
     var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
     if (_pt) {
@@ -6372,6 +6372,83 @@
       try { earn(6, { catK: "focus" }); if (got >= best && got > 0) celebrateGated("#9a7cff", curStreak() || 1); save(); renderAll(); } catch (e) {}
     }
     next();
+  }
+  // BRAIN GYM — Focus Cross (a 60-sec focus/coordination reset; honest — not "reprogramming")
+  function focusCrossGame(onDone) {
+    S.tools = S.tools || {}; S.tools.games = S.tools.games || {};
+    var LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), CUES = [{ k: "L", l: "Left" }, { k: "BOTH", l: "Both" }, { k: "R", l: "Right" }];
+    var i = 0, correct = 0, total = 0, cur = null, tmr = null, answered = false, best = S.tools.games.focus || 0, TOTAL = 24;
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (tmr) clearTimeout(tmr); if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+    var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:92%;max-width:380px;";
+    add(box, "div", null, "Focus Cross").style.cssText = "font-size:22px;font-weight:800;";
+    add(box, "div", null, "tap the side the letter says — keep the rhythm").style.cssText = "font-size:12px;color:#b39ab0;margin:3px 0 8px;";
+    var stage = add(box, "div"); stage.style.cssText = "height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;";
+    var big = add(stage, "div"); big.style.cssText = "font-size:72px;font-weight:800;line-height:1;";
+    var cue = add(stage, "div"); cue.style.cssText = "font-size:20px;font-weight:800;letter-spacing:2px;margin-top:8px;";
+    var prog = add(box, "div"); prog.style.cssText = "font-size:12px;color:#9c8fc4;margin:4px 0 12px;";
+    var zones = add(box, "div"); zones.style.cssText = "display:flex;gap:8px;";
+    CUES.forEach(function (c) { var b = add(zones, "button", null, c.l); b.style.cssText = "flex:1;height:74px;border-radius:16px;border:2.5px solid #6a4a6a;background:rgba(255,255,255,.05);color:#f0e6ef;font-family:var(--bub);font-weight:800;font-size:15px;cursor:pointer;"; b.onclick = function () { answer(c.k); }; });
+    add(box, "div").innerHTML = '<div style="font-size:11px;color:#9c8fc4;margin-top:14px;line-height:1.4;"><b style="color:#c9a6ff;">Why · </b>pairing a mental track (the letters) with a motor one (left/right) is a real focus warm-up + state-shift. Not "reprogramming."</div>';
+    function step() { if (i >= TOTAL) { endGame(); return; } answered = false; cur = CUES[Math.floor(Math.random() * 3)].k; big.textContent = LETTERS[i % 26]; cue.textContent = cur === "BOTH" ? "BOTH" : (cur === "L" ? "◀ LEFT" : "RIGHT ▶"); cue.style.color = "#ff8fc4"; prog.textContent = (i + 1) + " / " + TOTAL; var dur = Math.max(850, 1600 - i * 32); tmr = setTimeout(function () { if (!answered) total++; i++; step(); }, dur); }
+    function answer(k) { if (answered) return; answered = true; total++; if (k === cur) { correct++; cue.style.color = "#63d3c9"; } else { cue.style.color = "#ff5f7a"; } }
+    function endGame() { var acc = total ? Math.round(correct / total * 100) : 0; if (acc > best) { best = acc; S.tools.games.focus = best; save(); }
+      box.innerHTML = ""; add(box, "div", null, acc >= best && acc > 0 ? "Sharp!" : "Good reps").style.cssText = "font-size:22px;font-weight:800;";
+      add(box, "div").innerHTML = '<div style="font-size:40px;font-weight:800;color:#63d3c9;margin:8px 0;">' + acc + '%</div><div style="font-size:12px;color:#b39ab0;">accuracy · best ' + best + '%</div>';
+      var again = add(box, "button", "done2", "Again"); again.style.cssText = "margin:16px auto 6px;display:block;max-width:200px;"; again.onclick = function () { if (ov.parentNode) ov.remove(); focusCrossGame(onDone); };
+      var dn = add(box, "button", null, "Done"); dn.style.cssText = "background:none;border:none;color:#b39ab0;font-family:var(--bub);font-size:13px;cursor:pointer;"; dn.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+      try { earn(6, { catK: "focus" }); if (acc >= best && acc > 0) celebrateGated("#63d3c9", curStreak() || 1); save(); renderAll(); } catch (e) {}
+    }
+    setTimeout(step, 700);
+  }
+  // BRAIN GYM — Link (the real memory-champion linking technique; it transfers)
+  function linkGame(onDone) {
+    S.tools = S.tools || {}; S.tools.games = S.tools.games || {};
+    var POOL = ["apple", "rocket", "tiger", "piano", "cloud", "anchor", "candle", "dragon", "bicycle", "mirror", "volcano", "penguin", "lantern", "cactus", "robot", "violin", "balloon", "compass", "turtle", "hammer", "umbrella", "donut", "wizard", "skateboard"];
+    var words = POOL.slice(); for (var s = words.length - 1; s > 0; s--) { var j = Math.floor(Math.random() * (s + 1)), t = words[s]; words[s] = words[j]; words[j] = t; } words = words.slice(0, 8);
+    var best = S.tools.games.link || 0;
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+    var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:90%;max-width:360px;max-height:82vh;overflow-y:auto;";
+    function learn() {
+      box.innerHTML = "";
+      add(box, "div", null, "Link").style.cssText = "font-size:22px;font-weight:800;";
+      add(box, "div", null, "chain these into ONE absurd movie — each word smashing into the next. vivid + silly sticks.").style.cssText = "font-size:12.5px;color:#b39ab0;margin:4px 0 12px;line-height:1.4;";
+      var chain = add(box, "div"); chain.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+      words.forEach(function (w, i) { var r = add(chain, "div"); r.style.cssText = "display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border-radius:10px;padding:9px 12px;"; r.innerHTML = '<b style="width:20px;color:#ff8fc4;">' + (i + 1) + '</b><span style="font-size:16px;font-weight:700;text-transform:capitalize;">' + w + '</span>'; });
+      add(box, "div").innerHTML = '<div style="font-size:11px;color:#9c8fc4;margin-top:12px;line-height:1.4;"><b style="color:#c9a6ff;">Why · </b>vivid association is the oldest evidence-backed memory method — the one memory champions actually use, and it transfers.</div>';
+      var go = add(box, "button", "done2", "I've linked them → recall"); go.style.cssText = "margin:16px auto 0;display:block;"; go.onclick = recall;
+    }
+    function recall() { box.innerHTML = ""; add(box, "div", null, "Recall").style.cssText = "font-size:22px;font-weight:800;"; add(box, "div", null, "look away and replay your movie — in order. tap Reveal when you've tried.").style.cssText = "font-size:12.5px;color:#b39ab0;margin:4px 0 16px;line-height:1.4;"; var rev = add(box, "button", "done2", "Reveal"); rev.style.cssText = "margin:0 auto;display:block;"; rev.onclick = reveal; }
+    function reveal() {
+      box.innerHTML = "";
+      add(box, "div", null, "Here they were").style.cssText = "font-size:18px;font-weight:800;";
+      var chain = add(box, "div"); chain.style.cssText = "display:flex;flex-direction:column;gap:5px;margin:10px 0;";
+      words.forEach(function (w, i) { var r = add(chain, "div"); r.style.cssText = "background:rgba(255,255,255,.05);border-radius:10px;padding:8px 12px;font-size:15px;font-weight:700;text-transform:capitalize;text-align:left;"; r.textContent = (i + 1) + ". " + w; });
+      add(box, "div", null, "how many did you get, in order?").style.cssText = "font-size:13px;color:#b39ab0;margin:6px 0 8px;";
+      var chips = add(box, "div"); chips.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;justify-content:center;";
+      for (var n = 0; n <= 8; n++) { (function (n) { var b = add(chips, "button", null, String(n)); b.style.cssText = "width:40px;height:40px;border-radius:10px;border:2px solid #6a4a6a;background:rgba(255,255,255,.05);color:#f0e6ef;font-family:var(--bub);font-weight:800;cursor:pointer;"; b.onclick = function () { done(n); }; })(n); }
+    }
+    function done(n) { if (n > best) { best = n; S.tools.games.link = best; save(); }
+      box.innerHTML = ""; add(box, "div", null, n >= 7 ? "Incredible." : n >= best ? "New best!" : "Nice work").style.cssText = "font-size:22px;font-weight:800;";
+      add(box, "div").innerHTML = '<div style="font-size:40px;font-weight:800;color:#ffd24a;margin:8px 0;">' + n + ' / 8</div><div style="font-size:12px;color:#b39ab0;">recalled in order · best ' + best + '</div><div style="font-size:12px;color:#9c8fc4;margin-top:10px;">that\'s the linking method — it works, and it\'s yours to keep.</div>';
+      var again = add(box, "button", "done2", "Again"); again.style.cssText = "margin:16px auto 6px;display:block;max-width:200px;"; again.onclick = function () { if (ov.parentNode) ov.remove(); linkGame(onDone); };
+      var dn = add(box, "button", null, "Done"); dn.style.cssText = "background:none;border:none;color:#b39ab0;font-family:var(--bub);font-size:13px;cursor:pointer;"; dn.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+      try { earn(7, { catK: "focus" }); if (n >= best && n > 0) celebrateGated("#ffd24a", curStreak() || 1); save(); renderAll(); } catch (e) {}
+    }
+    learn();
+  }
+  // BRAIN GYM chooser — three honest games (David 2026-07-01)
+  function brainGym() {
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
+    var box = add(ov, "div"); box.style.cssText = "width:90%;max-width:360px;color:#f0e6ef;font-family:var(--bub);";
+    add(box, "div", null, "Sharpen the mind").style.cssText = "font-size:24px;font-weight:800;text-align:center;";
+    add(box, "div", null, "short games — a focus reset, a memory workout. not magic, just real skills.").style.cssText = "font-size:12px;color:#b39ab0;text-align:center;margin:4px 0 16px;line-height:1.4;";
+    function card(ti, col, name, desc, fn) { var b = add(box, "button"); b.style.cssText = "display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:rgba(255,255,255,.05);border:1.5px solid #3a1730;border-radius:14px;padding:14px;margin-bottom:9px;cursor:pointer;color:#f0e6ef;"; b.innerHTML = '<i class="ti ' + ti + '" style="font-size:24px;color:' + col + ';flex:none;"></i><span style="display:flex;flex-direction:column;gap:2px;"><b style="font-size:16px;">' + name + '</b><span style="font-size:11.5px;color:#b39ab0;">' + desc + '</span></span>'; b.onclick = function () { if (ov.parentNode) ov.remove(); fn(); }; }
+    card("ti-brain", "#ff5fa0", "Recall", "working memory — tap back a growing sequence", function () { recallGame(); });
+    card("ti-focus-2", "#63d3c9", "Focus Cross", "60-sec focus reset — tap left/right in rhythm", function () { focusCrossGame(); });
+    card("ti-bulb", "#ffd24a", "Link", "the real memory trick — chain words into a story", function () { linkGame(); });
   }
   function reprogramTool(onDone) {
     beatRunner({
