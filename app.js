@@ -4872,9 +4872,9 @@
   function meditationQuick(onDone, durSec) {
     var seq = ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"];
     TTS.unlock(); TTS.warm(seq);
-    var tail = seq.slice(-3), perCue = 11, totalSec = durSec || 300, segs = [], t = 0, ci = 0;
+    var tail = seq.slice(-3), perCue = medCadence(), totalSec = durSec || 300, segs = [], t = 0, ci = 0;
     while (t < totalSec - 1) { segs.push({ text: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], label: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], sub: "" }); t += perCue; ci++; }
-    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · Sam Harris", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
+    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · Sam Harris", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
@@ -6185,6 +6185,14 @@
     var waves = add(ov, "div", "gp-waves"); waves.innerHTML = "<span></span><span></span><span></span>"; // slow-drifting Headspace-style depth bands behind the orb (David 2026-07-01)
     if (opts.title) { var tb = add(ov, "div", "gp-title", opts.title); } // pinned session title, Headspace-style
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
+    // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
+    var driftCount = 0;
+    function medChime() { var c = TTS.ctx && TTS.ctx(); if (!c) return; var t = c.currentTime, out = (typeof bgBus === "function" && bgBus()) || c.destination; [528, 792].forEach(function (f, i) { var o = c.createOscillator(), g = c.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.04); g.gain.linearRampToValueAtTime(0.13 - i * 0.06, t + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); o.connect(g); g.connect(out); o.start(t); o.stop(t + 1.6); }); }
+    if (opts.drift) {
+      orb.style.cursor = "pointer";
+      var dhint = add(ov, "div", null, "tap the orb the moment you notice you've drifted"); dhint.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);left:0;right:0;text-align:center;font-size:11.5px;color:rgba(240,230,239,.42);z-index:4;pointer-events:none;";
+      orb.addEventListener("click", function (e) { e.stopPropagation(); driftCount++; try { medChime(); } catch (er) {} var was = lab.textContent; lab.textContent = "good catch — back to it"; setTimeout(function () { if (lab.textContent === "good catch — back to it") lab.textContent = was; }, 1500); });
+    }
     function dbg2(m) { try { if (!(typeof S !== "undefined" && S && S.voiceDebug)) return; var e = document.getElementById("voiceDbg"); if (!e) { e = document.createElement("div"); e.id = "voiceDbg"; e.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 2px);left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.75);color:#8fffa8;font:600 10px ui-monospace,monospace;padding:2px 9px;border-radius:9px;pointer-events:none;max-width:94vw;white-space:nowrap;"; document.body.appendChild(e); } e.textContent = "♪ " + m; } catch (e2) {} }
     // transport bar (built now, wired after decode)
     var bar = add(ov, "div", "gp-bar");
@@ -6254,8 +6262,11 @@
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
-      if (!skip) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease"; orb.style.transform = "scale(.7)"; }
-      setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : 1500);
+      if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
+        try { var mins = Math.max(0.5, total / 60), rate = driftCount / mins, mf = (S.tools && S.tools.medFocus) || { rate: rate, n: 0 }; mf.rate = mf.n ? mf.rate * 0.7 + rate * 0.3 : rate; mf.n = (mf.n || 0) + 1; mf.lastDrift = driftCount; S.tools = S.tools || {}; S.tools.medFocus = mf; } catch (e) {}
+      }
+      if (!skip) { lab.textContent = "Done ✓"; sub.textContent = opts.drift ? (driftCount === 0 ? "steady the whole way — beautiful" : "you noticed " + driftCount + " time" + (driftCount === 1 ? "" : "s") + " — that noticing IS the practice") : "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease"; orb.style.transform = "scale(.7)"; }
+      setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : (opts.drift && driftCount ? 2600 : 1500));
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: Math.max(1, Math.round(total / 60)), catK: opts.catK || "love", color: col }); earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id); try { celebrateGated(col, curStreak() || 1); } catch (e) {} save(); renderAll(); }
       if (opts.onFinish) opts.onFinish(skip);
     }
@@ -6481,6 +6492,8 @@
     card("ti-focus-2", "#63d3c9", "Focus Cross", "60-sec focus reset — tap left/right in rhythm", function () { focusCrossGame(); });
     card("ti-bulb", "#ffd24a", "Link", "the real memory trick — chain words into a story", function () { linkGame(); });
   }
+  // adaptive reminder density — learned from your distraction taps. More drift → shorter cadence (more re-anchors), so a beginner can do a LONG session; it eases off as you steady. (David 2026-07-01)
+  function medCadence() { try { var mf = S.tools && S.tools.medFocus; if (!mf || !mf.n) return 11; return Math.max(6, Math.min(16, Math.round(14 - (mf.rate || 0) * 2))); } catch (e) { return 11; } }
   // ===== MEDITATION EDITOR (David 2026-07-01): compose a session on a sideways, CapCut-style timeline — drag-free blocks you add/trim/reorder, a time ruler, total length, then Play. Each section = recorded guide phrases distributed across its duration; composed into the timelinePlayer. =====
   function medEditor() {
     try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
@@ -6516,7 +6529,7 @@
         var ctl = add(box, "div"); ctl.style.cssText = "margin-top:10px;background:rgba(154,124,255,.1);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;";
         add(ctl, "div", null, SEC[track[sel].k].name + " — length").style.cssText = "font-size:12px;font-weight:800;color:#e6d8ff;margin-bottom:7px;";
         var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
-        [30, 60, 120, 180, 300].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:10px;padding:6px 10px;font-family:var(--bub);font-weight:800;font-size:12px;color:#f0e6ef;background:" + (track[sel].d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function () { track[sel].d = d; render(); }; });
+        [30, 60, 120, 300, 600, 1200].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:10px;padding:6px 10px;font-family:var(--bub);font-weight:800;font-size:12px;color:#f0e6ef;background:" + (track[sel].d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function () { track[sel].d = d; render(); }; }); // up to 20 min — long sessions are open to beginners; the drift-adaptive reminders make them doable
         var row = add(ctl, "div"); row.style.cssText = "display:flex;gap:6px;margin-top:9px;";
         function ctlBtn(host, ic, label, fn) { var b = add(host, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:10px;padding:8px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = fn; }
         ctlBtn(row, "ti-chevron-left", "", function () { if (sel > 0) { var x = track.splice(sel, 1)[0]; track.splice(sel - 1, 0, x); sel--; render(); } });
@@ -6526,7 +6539,7 @@
       add(box, "div", null, "Add a section").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:14px 0 7px;";
       var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
       ORDER.forEach(function (k) { var s = SEC[k]; var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: 60 }); sel = track.length - 1; render(); }; });
-      var play = add(box, "button", "done2", "Play ▶"); play.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.medTrack = track.map(function (x) { return { k: x.k, d: x.d }; }); save(); var tot = track.reduce(function (a, t) { return a + t.d; }, 0); var segs = []; track.forEach(function (t) { var s = SEC[t.k], n = Math.max(1, Math.round(t.d / 11)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); if (ov.parentNode) ov.remove(); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: 11, totalSec: tot, segments: segs, autostart: true }); };
+      var play = add(box, "button", "done2", "Play ▶"); play.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.medTrack = track.map(function (x) { return { k: x.k, d: x.d }; }); save(); var tot = track.reduce(function (a, t) { return a + t.d; }, 0); var cad = medCadence(); var segs = []; track.forEach(function (t) { var s = SEC[t.k], n = Math.max(1, Math.round(t.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); if (ov.parentNode) ov.remove(); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true }); };
     }
     render();
   }
