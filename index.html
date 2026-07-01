@@ -259,8 +259,8 @@
   .jp-trophy.locked .jt-b{background:#2a1320;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
   /* IN-JOURNEY COCKPIT — the now-circle, once STARTED, expands into the live ring + timer right on the path (David 2026-06-28) */
   .jp-cockpit{display:flex;flex-direction:column;align-items:center;gap:11px;margin:8px 0 4px;}
-  .jp-ring{width:128px;height:128px;border-radius:50%;border:12px solid #34d39a;background:#160510;display:flex;align-items:center;justify-content:center;}
-  .jp-rdisc{width:80px;height:80px;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;}
+  .jp-ring{width:184px;height:184px;border-radius:50%;border:15px solid #34d39a;background:#160510;display:flex;align-items:center;justify-content:center;}/* the tracking cockpit is the HERO — clearly bigger than the plan nodes (David 2026-07-01) */
+  .jp-rdisc{width:118px;height:118px;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:50px;color:#fff;}
   .jp-rdisc i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-cktitle{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;}
   .jp-cktimer{font-family:var(--bub);font-size:27px;font-weight:800;color:#ffd9ea;letter-spacing:1px;margin-top:-4px;}
@@ -1385,7 +1385,7 @@
   body:not(.tab-day):not(.gaming) #pullSheet{ display:none !important; }       /* hidden while on Goals / You */
   /* ===== 3-PANE CAROUSEL polish (David 2026-06-30) ===== */
   body.pane-dragging #pullSheet, body.pane-dragging #journeyPath, body.pane-dragging #gameMode{ will-change:transform; } /* promote each pane to its own GPU layer so the heavy timeline slides smoothly instead of stuttering */
-  body.pane-dragging #journeyPath, body.pane-dragging #gameMode{ box-shadow:-20px 0 44px -12px rgba(0,0,0,.62), 20px 0 44px -12px rgba(0,0,0,.62); } /* soft edge-gradient on the vertical seams → the two sliding pages read as connected photos with a gentle shadow between them, not a hard cut */
+  body.pane-dragging #pullSheet, body.pane-dragging #journeyPath, body.pane-dragging #gameMode{ box-shadow:-10px 0 20px -8px rgba(0,0,0,.5), 10px 0 20px -8px rgba(0,0,0,.5); } /* THIN soft gradient on the vertical seam → panes read as connected with a gentle fade between them, not a hard cut and not a color gap (David 2026-07-01) */
   /* pull-up live-tracker dock — only on Today, only while tracking (David 2026-06-25) */
   /* drag-to-trash bin — appears bottom-middle while dragging a bubble (David 2026-06-25) */
   #trashZone{ position:fixed; left:50%; bottom:96px; transform:translateX(-50%); width:54px; height:54px; border-radius:50%; background:#3a1226; border:2.5px dashed #ff5fa0; color:#ff9dc6; display:none; align-items:center; justify-content:center; font-size:24px; z-index:75; box-shadow:0 6px 20px rgba(0,0,0,.55); pointer-events:none; }
@@ -1726,6 +1726,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=743"></script>
+  <script src="app.js?v=744"></script>
 </body>
 </html>

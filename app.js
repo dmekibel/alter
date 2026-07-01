@@ -1017,8 +1017,8 @@
       if (_paneAnim) { armed = false; return; }
       if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
       multi = false; on = false; cur = null;
-      // CONTEXT-AWARE (David 2026-07-01): while a tool/player or a modal sheet is open, DON'T let a horizontal swipe switch app panes — it breaks the running tool. The swipe belongs to the tool; to leave, you close it first.
-      if (document.getElementById("breatheOv") || (el("sheet") && el("sheet").classList.contains("on")) || document.querySelector(".radial")) { armed = false; return; }
+      // CONTEXT-AWARE (David 2026-07-01): while ANY overlay/menu is open — a tool/player, a modal sheet, the expanded tracker (cockpit) or toolbox, the plan-a-day bento, a radial/duration/onboarding sheet — DON'T let a horizontal swipe switch app panes. The swipe belongs to that surface; close it to switch.
+      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on"))) { armed = false; return; }
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
       sx = e.clientX; sy = e.clientY; W = window.innerWidth || 390;
       if (armed) paneGroup(curPaneName()).forEach(function (el2) { el2.style.willChange = "transform"; }); // pre-promote the current pane's layer on touch-down so the first drag frames don't stutter
@@ -1030,7 +1030,7 @@
       document.body.classList.add("pane-dragging");
       paneGroup(cur).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
       if (nbr) { panePrime(nbr); paneGroup(nbr).forEach(function (el2) { el2.style.transition = "none"; el2.style.willChange = "transform"; });
-        setGroupFrame(nbr, (dir < 0 ? W : -W), 0.5, 0.91, 299); } // neighbour parked one screen over, dimmed + scaled-back in depth
+        setGroupFrame(nbr, (dir < 0 ? W : -W), 1, 1, 299); } // neighbour parked exactly one screen over, FULL size — panes stay flush edge-to-edge (no scale gap that revealed the pink/dark body behind). David 2026-07-01
       setGroupFrame(cur, 0, 1, 1, 300);
     }
     document.addEventListener("pointermove", function (e) {
@@ -1043,19 +1043,18 @@
       }
       e.preventDefault();
       var d = e.clientX - sx;
-      if (!nbr) { d = d * 0.32; setGroupX(cur, d); return; } // edge pane → rubber-band, no commit
-      var f = Math.min(1, Math.abs(d) / W); // 0..1 progress
-      // DEPTH PARALLAX: both pages stay edge-connected (translate 1:1) but gain Z-depth — the leaving page recedes (scales back + dims into shadow), the incoming page rises forward (scales up + brightens) from under the seam gradient. (David 2026-06-30)
-      setGroupFrame(cur, d, 1 - 0.5 * f, 1 - 0.09 * f);
-      setGroupFrame(nbr, (sign < 0 ? W : -W) + d, 0.5 + 0.5 * f, 0.91 + 0.09 * f);
+      if (!nbr) { d = d * 0.18; setGroupX(cur, d); return; } // edge pane (nothing beyond) → a small rubber-band, barely reveals anything
+      // FLUSH SLIDE (David 2026-07-01): both panes translate 1:1, edge-to-edge, full size — no scale/dim parallax (that scale left a gap that showed the pink/dark body between them). The thin gradient seam-shadow (CSS body.pane-dragging) is the soft "fade" that connects them.
+      setGroupX(cur, d);
+      setGroupX(nbr, (sign < 0 ? W : -W) + d);
     }, { passive: false });
     function settle(toCommit) {
       _paneAnim = true;
       var EAS = "transform .3s cubic-bezier(.22,.9,.3,1), opacity .3s ease";
       paneGroup(cur).forEach(function (el2) { el2.style.transition = EAS; });
       if (nbr) paneGroup(nbr).forEach(function (el2) { el2.style.transition = EAS; });
-      if (toCommit && nbr) { setGroupFrame(cur, (sign < 0 ? -W : W), 0.5, 0.91); setGroupFrame(nbr, 0, 1, 1); } // finish: leaving page recedes fully off, incoming rises flush + bright
-      else { setGroupFrame(cur, 0, 1, 1); if (nbr) setGroupFrame(nbr, (sign < 0 ? W : -W), 0.5, 0.91); } // cancel: spring both back to depth
+      if (toCommit && nbr) { setGroupFrame(cur, (sign < 0 ? -W : W), 1, 1); setGroupFrame(nbr, 0, 1, 1); } // finish: leaving page slides fully off, incoming lands flush
+      else { setGroupFrame(cur, 0, 1, 1); if (nbr) setGroupFrame(nbr, (sign < 0 ? W : -W), 1, 1); } // cancel: spring both back, flush
       var landed = toCommit && nbr ? nbr : cur;
       setTimeout(function () { setPaneRest(landed); _paneAnim = false; }, 320);
     }
