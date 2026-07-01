@@ -4868,11 +4868,11 @@
     var segs = LINES.map(function (line) { return { text: line, label: line, sub: "" }; });
     timelinePlayer({ id: "mantra", title: "Mantra", logTitle: "Mantra", catK: "love", color: "#ff7ab8", spark: 7, vol: VPROF.mantra.volume, drone: true, cadenceSec: 5, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
-  // a quick fixed 5-min meditation for stacks (skips the config screen), default guide (David 2026-07-01)
-  function meditationQuick(onDone) {
+  // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
+  function meditationQuick(onDone, durSec) {
     var seq = ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"];
     TTS.unlock(); TTS.warm(seq);
-    var tail = seq.slice(-3), perCue = 11, totalSec = 300, segs = [], t = 0, ci = 0;
+    var tail = seq.slice(-3), perCue = 11, totalSec = durSec || 300, segs = [], t = 0, ci = 0;
     while (t < totalSec - 1) { segs.push({ text: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], label: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], sub: "" }); t += perCue; ci++; }
     timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · Sam Harris", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
@@ -6288,47 +6288,78 @@
   // REWIRE — the guided reprogramming tool (HANDOFF-reprogramming-toolkit §2, David 2026-07-01). The de-cheesed 3-move stack every reprogramming system reduces to: INDUCTION (settle to a receptive state) → INSTALL (picture the change already true + one present-tense line) → REINFORCE (seal + repeat). ≤3 min, 8-second floor (skip anytime). Silva alpha count-down + Dispenza coherence breath + Maltz self-image, stripped of trance/occult framing. Safety: install a better belief, never dig up a wound.
   // ===== SELF-HELP STACK (David 2026-07-01, HANDOFF-stacks-and-meditation): compose a few tools in order and run them one at a time. Regulate first, then go inward — the proven layered order. Each step is a TAP (one-next-step UX + it satisfies the iOS audio gesture). =====
   var STACK_TOOLS = [
-    { id: "relax", name: "Settle the body", ti: "ti-wind", run: function (cb) { relaxMoment(cb); } },
-    { id: "breathe", name: "Breathe", ti: "ti-lungs", run: function (cb) { breathwork(4, cb); } },
-    { id: "reprogram", name: "Rewire", ti: "ti-rotate-2", run: function (cb) { reprogramTool(cb); } },
-    { id: "meditate", name: "Meditate", ti: "ti-moon", run: function (cb) { meditationQuick(cb); } },
-    { id: "mantra", name: "Mantra", ti: "ti-quote", run: function (cb) { mantraPlayer(cb); } }
+    { id: "relax", name: "Settle", ti: "ti-wind", col: "#9a7cff", dur: 60, run: function (cb, d) { relaxMoment(cb); } },
+    { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#63d3c9", dur: 120, run: function (cb, d) { breathwork(Math.max(3, Math.round((d || 120) / 16)), cb); } },
+    { id: "meditate", name: "Meditate", ti: "ti-moon", col: "#ff5fa0", dur: 240, run: function (cb, d) { meditationQuick(cb, d || 300); } },
+    { id: "reprogram", name: "Rewire", ti: "ti-rotate-2", col: "#ffd24a", dur: 150, run: function (cb, d) { reprogramTool(cb); } },
+    { id: "mantra", name: "Mantra", ti: "ti-quote", col: "#ff8a5c", dur: 120, run: function (cb, d) { mantraPlayer(cb); } }
   ];
-  var STACK_DEFAULT = ["relax", "breathe", "meditate"]; // regulate → breathe → go inward
+  // prebuilt packs — offered by how much time you have; the proven self-help order (regulate → breathe → go inward → install)
+  var STACK_PACKS = [
+    { name: "Quick reset", min: 5, track: [{ k: "relax", d: 60 }, { k: "breathe", d: 120 }, { k: "meditate", d: 120 }] },
+    { name: "Go deeper", min: 10, track: [{ k: "relax", d: 60 }, { k: "breathe", d: 120 }, { k: "meditate", d: 300 }, { k: "reprogram", d: 150 }] },
+    { name: "Full reset", min: 20, track: [{ k: "relax", d: 90 }, { k: "breathe", d: 150 }, { k: "meditate", d: 600 }, { k: "reprogram", d: 150 }, { k: "mantra", d: 120 }] }
+  ];
   function stackTool(id) { for (var i = 0; i < STACK_TOOLS.length; i++) if (STACK_TOOLS[i].id === id) return STACK_TOOLS[i]; return null; }
+  // packs + custom chooser
   function stackBuilder() {
     try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
-    var chosen = ((S.tools && S.tools.stack) || STACK_DEFAULT).slice();
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "Build a session");
-    add(B, "div", "lbl", "Stack a few tools — I'll walk you through them one at a time. The order matters: settle the body first, then go inward.");
-    var list = add(B, "div"); list.style.cssText = "display:flex;flex-direction:column;gap:8px;margin:12px 0;";
-    var BTN = "background:rgba(255,255,255,.06);border:1.5px solid #3a1730;border-radius:10px;width:34px;height:34px;color:#d8b8d2;cursor:pointer;flex:none;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0;";
-    function redraw() {
-      list.innerHTML = "";
-      if (!chosen.length) { add(list, "div", "lbl", "empty — add a tool below").style.opacity = ".6"; }
-      chosen.forEach(function (id, i) { var m = stackTool(id); if (!m) return;
-        var r = add(list, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1.5px solid #3a1730;border-radius:12px;padding:9px 11px;color:#f0e6ef;font-family:var(--bub);";
-        r.innerHTML = '<b style="width:22px;height:22px;border-radius:50%;background:#9a7cff;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none;">' + (i + 1) + '</b><i class="ti ' + m.ti + '" style="font-size:19px;color:#ff8fc4;flex:none;"></i><span style="flex:1;font-weight:700;font-size:14.5px;">' + m.name + '</span>';
-        var up = add(r, "button"); up.innerHTML = '<i class="ti ti-chevron-up"></i>'; up.style.cssText = BTN; up.onclick = function () { if (i > 0) { var x = chosen.splice(i, 1)[0]; chosen.splice(i - 1, 0, x); redraw(); } };
-        var rm = add(r, "button"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = BTN; rm.onclick = function () { chosen.splice(i, 1); redraw(); };
-      });
-    }
-    redraw();
-    add(B, "div", "lbl", "Add a tool").style.marginTop = "4px";
-    var pool = add(B, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
-    STACK_TOOLS.forEach(function (m) { var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + m.ti + '"></i> ' + m.name; b.style.cssText = "border:2px solid #6a4a6a;border-radius:12px;padding:8px 12px;font-family:var(--bub);font-weight:700;font-size:13px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { chosen.push(m.id); redraw(); }; });
-    var go = add(B, "button", "done2", "Begin session →"); go.style.marginTop = "18px"; go.onclick = function () { if (!chosen.length) return; S.tools = S.tools || {}; S.tools.stack = chosen.slice(); save(); closeSheet(); setTimeout(function () { runStack(chosen, 0); }, 140); };
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
+    var box = add(ov, "div"); box.style.cssText = "width:92%;max-width:420px;color:#f0e6ef;font-family:var(--bub);margin-top:calc(env(safe-area-inset-top,0px) + 60px);";
+    add(box, "div", null, "Build a session").style.cssText = "font-size:23px;font-weight:800;text-align:center;";
+    add(box, "div", null, "grab a ready pack by the time you have — or build your own on the timeline.").style.cssText = "font-size:12px;color:#b39ab0;text-align:center;margin:4px 0 16px;line-height:1.4;";
+    STACK_PACKS.forEach(function (p) {
+      var names = p.track.map(function (t) { return stackTool(t.k).name; }).join(" · ");
+      var b = add(box, "button"); b.style.cssText = "display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(255,255,255,.05);border:1.5px solid #3a1730;border-radius:14px;padding:12px;margin-bottom:9px;cursor:pointer;color:#f0e6ef;";
+      b.innerHTML = '<div style="width:46px;height:46px;border-radius:12px;background:#9a7cff;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;"><b style="font-size:17px;line-height:1;">' + p.min + '</b><span style="font-size:9px;">min</span></div><span style="display:flex;flex-direction:column;gap:2px;"><b style="font-size:16px;">' + p.name + '</b><span style="font-size:11px;color:#b39ab0;">' + names + '</span></span>';
+      b.onclick = function () { if (ov.parentNode) ov.remove(); stackTimeline(p.track.map(function (t) { return { k: t.k, d: t.d }; })); };
+    });
+    var cust = add(box, "button", "done2", "Build your own →"); cust.style.cssText = "margin:12px auto 0;display:block;"; cust.onclick = function () { if (ov.parentNode) ov.remove(); stackTimeline(((S.tools && S.tools.stack) || [{ k: "relax", d: 60 }, { k: "breathe", d: 120 }, { k: "meditate", d: 240 }]).map(function (t) { return { k: t.k, d: t.d }; })); };
   }
-  function runStack(ids, i) {
-    if (i >= ids.length) { stackComplete(ids.length); return; }
-    var m = stackTool(ids[i]); if (!m) { runStack(ids, i + 1); return; }
+  // the horizontal CapCut-style timeline — the universal session composer (David 2026-07-01)
+  function stackTimeline(track) {
+    var sel = -1, PPS = 0.85, mmss = function (s) { s = Math.round(s); return Math.floor(s / 60) + ":" + pad(s % 60); };
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
+    var box = add(ov, "div"); box.style.cssText = "width:94%;max-width:460px;color:#f0e6ef;font-family:var(--bub);margin-top:calc(env(safe-area-inset-top,0px) + 60px);";
+    function render() {
+      box.innerHTML = "";
+      var total = track.reduce(function (a, t) { return a + t.d; }, 0);
+      var hd = add(box, "div"); hd.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;";
+      add(hd, "div", null, "Your session").style.cssText = "font-size:21px;font-weight:800;";
+      add(hd, "div", null, "~" + Math.max(1, Math.round(total / 60)) + " min").style.cssText = "font-size:16px;font-weight:800;color:#c9a6ff;";
+      add(box, "div", null, "reorder, trim, add tools — then run it one step at a time.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
+      var scroller = add(box, "div"); scroller.style.cssText = "overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border:1.5px solid #3a1730;border-radius:12px;background:rgba(0,0,0,.25);padding:8px;";
+      var lane = add(scroller, "div"); lane.style.cssText = "display:flex;gap:4px;height:74px;width:max-content;";
+      track.forEach(function (t, i) { var s = stackTool(t.k); var b = add(lane, "div"); b.style.cssText = "width:" + Math.max(62, t.d * PPS) + "px;flex:none;border-radius:9px;background:" + s.col + (sel === i ? "" : "cc") + ";border:" + (sel === i ? "3px solid #fff" : "2px solid rgba(0,0,0,.3)") + ";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#1c0f20;"; b.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:18px;"></i><span style="font-size:10px;font-weight:800;">' + s.name + '</span><span style="font-size:9px;opacity:.75;">' + mmss(t.d) + '</span>'; b.onclick = function () { sel = sel === i ? -1 : i; render(); }; });
+      if (sel >= 0 && sel < track.length) {
+        var ctl = add(box, "div"); ctl.style.cssText = "margin-top:10px;background:rgba(154,124,255,.1);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;";
+        add(ctl, "div", null, stackTool(track[sel].k).name + " — length").style.cssText = "font-size:12px;font-weight:800;color:#e6d8ff;margin-bottom:7px;";
+        var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
+        [60, 120, 180, 300, 600].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:10px;padding:6px 10px;font-family:var(--bub);font-weight:800;font-size:12px;color:#f0e6ef;background:" + (track[sel].d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function () { track[sel].d = d; render(); }; });
+        var row = add(ctl, "div"); row.style.cssText = "display:flex;gap:6px;margin-top:9px;";
+        function cb2(ic, fn) { var b = add(row, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i>'; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:10px;padding:8px;font-family:var(--bub);font-size:14px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = fn; }
+        cb2("ti-chevron-left", function () { if (sel > 0) { var x = track.splice(sel, 1)[0]; track.splice(sel - 1, 0, x); sel--; render(); } });
+        cb2("ti-chevron-right", function () { if (sel < track.length - 1) { var x = track.splice(sel, 1)[0]; track.splice(sel + 1, 0, x); sel++; render(); } });
+        cb2("ti-trash", function () { track.splice(sel, 1); sel = -1; render(); });
+      }
+      add(box, "div", null, "Add a tool").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:14px 0 7px;";
+      var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
+      STACK_TOOLS.forEach(function (s) { var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: s.id, d: s.dur }); sel = track.length - 1; render(); }; });
+      var go = add(box, "button", "done2", "Begin session →"); go.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; go.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.stack = track.map(function (t) { return { k: t.k, d: t.d }; }); save(); if (ov.parentNode) ov.remove(); setTimeout(function () { runStack(track, 0); }, 120); };
+    }
+    render();
+  }
+  function runStack(track, i) {
+    if (i >= track.length) { stackComplete(track.length); return; }
+    var t = track[i], m = stackTool(t.k); if (!m) { runStack(track, i + 1); return; }
     var ov = document.createElement("div"); ov.id = "breatheOv";
     ov.innerHTML = '<button class="bw-x">end</button>'; document.body.appendChild(ov);
     var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:86%;max-width:400px;";
-    box.innerHTML = '<div style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:#ff8fc4;font-weight:800;">Step ' + (i + 1) + ' of ' + ids.length + '</div><div style="font-size:28px;font-weight:800;margin:12px 0 4px;"><i class="ti ' + m.ti + '"></i> ' + m.name + '</div><div style="font-size:12.5px;color:#b39ab0;">your session · take your time</div>';
+    box.innerHTML = '<div style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:#ff8fc4;font-weight:800;">Step ' + (i + 1) + ' of ' + track.length + '</div><div style="font-size:28px;font-weight:800;margin:12px 0 4px;"><i class="ti ' + m.ti + '"></i> ' + m.name + '</div><div style="font-size:12.5px;color:#b39ab0;">your session · take your time</div>';
     var begin = add(box, "button", "done2", i === 0 ? "Begin ▶" : "Next ▶"); begin.style.cssText = "margin:20px auto 0;display:block;max-width:260px;";
-    begin.onclick = function () { if (ov.parentNode) ov.remove(); try { m.run(function () { runStack(ids, i + 1); }); } catch (e) { runStack(ids, i + 1); } }; // synchronous → stays in the gesture so the tool's audio unlocks
+    begin.onclick = function () { if (ov.parentNode) ov.remove(); try { m.run(function () { runStack(track, i + 1); }, t.d); } catch (e) { runStack(track, i + 1); } }; // synchronous → stays in the gesture so the tool's audio unlocks; pass the block's duration
     ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
   }
   function stackComplete(n) {
