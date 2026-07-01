@@ -11,12 +11,14 @@
     var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0;
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
     function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
+    function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
       if (chosen) return chosen;
       if (!voices.length) load();
-      var i, j;
-      for (i = 0; i < PREF.length; i++) for (j = 0; j < voices.length; j++) if (voices[j].name === PREF[i]) { chosen = voices[j]; return chosen; }
-      for (j = 0; j < voices.length; j++) if (voices[j].lang && voices[j].lang.indexOf("en") === 0) { chosen = voices[j]; return chosen; }
+      var i, j, v, HQ = /enhanced|premium|neural|natural|siri/i; // TTS #1 (David 2026-07-01): PREFER a high-quality voice when one is installed (iOS "Enhanced"/Siri, Edge/Google "Natural/Neural") — auto lift from the robotic compact voices, still free + offline
+      for (j = 0; j < voices.length; j++) { v = voices[j]; if (isEn(v) && (HQ.test(v.name || "") || HQ.test(v.voiceURI || ""))) { chosen = v; return chosen; } }
+      for (i = 0; i < PREF.length; i++) for (j = 0; j < voices.length; j++) if (voices[j].name === PREF[i]) { chosen = voices[j]; return chosen; } // then the good named compact voices
+      for (j = 0; j < voices.length; j++) if (isEn(voices[j])) { chosen = voices[j]; return chosen; } // then any English voice
       return null; // null voice is valid — the OS default still speaks
     }
     function initVoices() {
