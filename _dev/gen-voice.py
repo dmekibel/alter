@@ -1,33 +1,50 @@
 #!/usr/bin/env python3
-# Regenerate the pre-recorded tool-voice MP3s (TTS #2). Run: python3 _dev/gen-voice.py
-# Extracts the FIXED beatRunner lines from app.js, generates a calm British-male neural
-# MP3 per line (edge-tts / en-GB-RyanNeural), names each by a normalized djb2 hash that
-# matches TTS.vhash() in app.js, and writes assets/voice/manifest.json. Web Speech is the
-# runtime fallback for anything not pre-recorded (custom lines, dynamic counts).
+# Regenerate ALL spoken tool lines as calm British-male neural MP3s (edge-tts / en-GB-RyanNeural).
+# Covers: beatRunner beats (Rewire + Stutz), meditation guides, mantra, relax, breath cues, tapping.
+# Names each by a normalized djb2 hash matching TTS.vhash() in app.js. Run: python3 _dev/gen-voice.py
 import re, json, asyncio, edge_tts, os
-VOICE = "en-GB-RyanNeural"; RATE = "-14%"; PITCH = "-4Hz"
-src = open('app.js', encoding='utf-8').read()
-def unescape(s): return s.replace('\\"','"').replace("\\'","'").replace('\\n',' ').replace('\\\\','\\')
-def norm(s): return re.sub(r'[^a-z0-9]','', s.lower())
+VOICE="en-GB-RyanNeural"; RATE="-14%"; PITCH="-4Hz"
+src=open('app.js',encoding='utf-8').read()
+def un(s): return s.replace('\\"','"').replace("\\'","'").replace('\\n',' ').replace('\\\\','\\')
+def norm(s): return re.sub(r'[^a-z0-9]','',s.lower())
 def h32(s):
     h=5381
-    for ch in s: h=((h*33) ^ ord(ch)) & 0xffffffff
+    for ch in s: h=((h*33)^ord(ch))&0xffffffff
     return format(h,'x')
-pairs = re.findall(r'lab:\s*"((?:\\.|[^"\\])*)"\s*,\s*sub:\s*"((?:\\.|[^"\\])*)"', src)
-lines=[]; seen=set()
-for lab, sub in pairs:
-    lab=unescape(lab); sub=unescape(sub)
-    line = lab + (". " + sub if sub.strip() else "")
-    if len(norm(line)) < 6 or line in seen: continue
-    seen.add(line); lines.append(line)
-os.makedirs('assets/voice', exist_ok=True)
+STR=r'"((?:\\.|[^"\\])*)"'
+lines=[]
+def add(l):
+    if len(norm(l))>=3: lines.append(l)
+# 1) beatRunner beats: lab + ". " + sub
+for lab,sub in re.findall(r'lab:\s*'+STR+r'\s*,\s*sub:\s*'+STR, src):
+    lab,sub=un(lab),un(sub); add(lab+(". "+sub if sub.strip() else ""))
+# 2) meditation guides: each seq item verbatim
+for seq in re.findall(r'seq:\s*\[([^\]]*)\]', src):
+    for s in re.findall(STR, seq): add(un(s))
+# 3) mantra LINES: verbatim
+for arr in re.findall(r'var LINES\s*=\s*\[([^\]]*)\]', src):
+    for s in re.findall(STR, arr): add(un(s))
+# 4) relaxMoment STEPS: a + ", " + b  (["a","b",num])
+for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*,\s*\d+\s*\]', src):
+    add(un(a)+", "+un(b))
+# 5) breath cues (PH labels, hardcoded — spoken for non-rest phases)
+for c in ["Breathe in","Hold","Breathe out"]: add(c)
+# 6) tapping steps: pt + ". " + say  AND  say alone (covers setup)
+for pt,say in re.findall(r'pt:\s*'+STR+r'\s*,\s*say:\s*'+STR, src):
+    pt,say=un(pt),un(say); add(pt+". "+say); add(say)
+# de-dupe
+uniq=[]; seen=set()
+for l in lines:
+    if l not in seen: seen.add(l); uniq.append(l)
+print("total unique spoken lines:", len(uniq))
+os.makedirs('assets/voice',exist_ok=True)
 manifest=[]
 async def run():
-    for line in lines:
-        key=h32(norm(line)); manifest.append(key); path=f"assets/voice/{key}.mp3"
-        if os.path.exists(path): continue
-        try: await edge_tts.Communicate(line, VOICE, rate=RATE, pitch=PITCH).save(path)
-        except Exception as e: print("FAIL:", line[:40], e)
+    for l in uniq:
+        key=h32(norm(l)); manifest.append(key); p=f"assets/voice/{key}.mp3"
+        if os.path.exists(p): continue
+        try: await edge_tts.Communicate(l,VOICE,rate=RATE,pitch=PITCH).save(p)
+        except Exception as e: print("FAIL:",l[:40],e)
 asyncio.run(run())
-json.dump(sorted(set(manifest)), open('assets/voice/manifest.json','w'))
-print(f"{len(lines)} lines · {len(set(manifest))} manifest keys")
+json.dump(sorted(set(manifest)),open('assets/voice/manifest.json','w'))
+print("manifest keys:",len(set(manifest)),"| files:",len([f for f in os.listdir('assets/voice') if f.endswith('.mp3')]))

@@ -64,7 +64,7 @@
         vaudio.onended = function () { if (opts.onend) try { opts.onend(); } catch (e) {} };
         vaudio.onerror = function () { speakSynth(text, opts); };
         vaudio.muted = false; vaudio.volume = opts.volume != null ? opts.volume : 1; vaudio.src = "assets/voice/" + key + ".mp3"; vaudio.currentTime = 0;
-        var pr = vaudio.play(); if (pr && pr.catch) pr.catch(function () { speakSynth(text, opts); }); // pre-recorded neural line; on any block/error → Web-Speech fallback
+        var pr = vaudio.play(); if (pr && pr.catch) pr.catch(function () { try { var p2 = vaudio.play(); if (p2 && p2.catch) p2.catch(function () {}); } catch (e) {} }); // on iOS play() can reject even though the primed element still plays — RETRY, never fall back to Web-Speech here (that caused the double male+robot voice). Genuine load failures fall back via onerror.
         return;
       } catch (e) {} } }
       speakSynth(text, opts);
@@ -6172,16 +6172,7 @@
     return false;
   }
   function gratefulFlow(onDone) {
-    // HARD GUARD (master-guide L119): Grateful Flow is blocked while a grievance is live — Active Love must discharge it first. Offer the redirect rather than running on top of an unresolved loop. (Bypassed when called as the bookend close via onDone, where the user explicitly chose the gratitude beat.)
-    if (!onDone && typeof haveLiveGrievance === "function" && haveLiveGrievance()) {
-      var GB = el("sheetBody"); GB.innerHTML = ""; openSheet();
-      add(GB, "div", "sttl", "First, clear what's live");
-      add(GB, "div", "lbl", "there's a grievance still running — gratitude won't land on top of it. Active Love discharges it first (for YOUR liberation, 60s), then gratitude lights up.");
-      add(GB, "div", "breathorb");
-      add(GB, "button", "done2", "💗 Active Love ▶").onclick = function () { closeSheet(); activeLove(); };
-      var sk = add(GB, "button", "add", "do gratitude anyway"); sk.style.cssText = "display:block;margin:10px auto 0;"; sk.onclick = function () { gratefulFlow(function () { closeSheet(); renderAll(); }); }; // explicit override routes through the onDone branch (bypasses the guard)
-      return;
-    }
+    // (Removed the grievance HARD-GUARD — it treated ANY recent drift as a "grievance" and blocked this core tool behind a redirect sheet, so Grateful Flow felt unpressable. Gratitude always opens now. David 2026-07-01)
     var grats = [];
     function gather() {
       var B = el("sheetBody"); B.innerHTML = ""; openSheet();
