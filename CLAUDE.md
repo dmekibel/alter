@@ -45,3 +45,13 @@ If a change can't be device-confirmed this session, label it **DEVICE-UNTESTED**
 
 ## Don't replan instead of building
 There are 16 planning docs and 3 rebuild cycles already. Don't add a 17th. Update the newest `TRACKER-HANDOFF-*.md` in place; the rest are archive. A new doc is justified only when David asks for one.
+
+## Fable 5 usage (~2× Opus price — cheaper per SOLVED task, not per token)
+1. **Effort = the throttle.** Default LOW (bug fixes, CSS/palette, version bumps, ship-loop, handoffs, reformatting). HIGH only for: the timeline/gesture regression zone, multi-region refactors (menu unification, killing innerHTML wipes), REBUILD-PLAN.md work. Can't say WHY it needs high? It doesn't.
+2. **One-shot with a spec.** Non-trivial task → 10 lines first (what changes, which regions/functions, which regression-contract items, how verified), then execute ONCE. No blind edit-check-edit loops.
+3. **Batch, don't nibble.** Read an app.js region once; do ALL related edits in that pass. Group small fixes into one context (separate commits ok).
+4. **Long runs go at the DEBT.** Multi-hour autonomy = the landmines as one contiguous run held against the regression contract — never for 5-minute fixes.
+5. **No intelligence on mechanical steps.** preship/commit/push/boot-check: just run them, no narration.
+6. **Constitution outranks confidence.** Preview still lies about gestures — "boots clean; gesture feel DEVICE-UNTESTED" stays the only honest report.
+7. **Pace the budget.** If a run grows: ship what's verified, log the rest DEVICE-UNTESTED in the newest handoff. Half-shipped-verified > fully-drafted-unverified. David must never wake to zero.
+8. **Design options = cheap tournament.** Parallel low-effort variants, sketched in chat for David to pick. Never a high-effort run on options he might reject.
