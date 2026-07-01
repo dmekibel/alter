@@ -5888,35 +5888,53 @@
     var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
     pins = pins.slice(0, 4);
     if (pins.length) { var pwrap = add(sb, "div"); add(pwrap, "div", "tfs-sub", "Recent").style.marginTop = "8px"; var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + T.ti + '"></i> ' + esc(T.name); c.onclick = function () { runTool(T); }; }); }
-    // YOURS — the custom tools you built + the builder entry (CD3 creativity endgame). Each runs the Rewire move personalised to your pick. (David 2026-07-01)
-    var _mine = customTools();
-    add(sb, "div", "tfs-sub", "Yours").style.cssText = "margin-top:9px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
-    _mine.forEach(function (t) {
-      var mc = add(sb, "button", "tf-stagecard"); mc.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
-      var mtop = add(mc, "div"); mtop.style.cssText = "display:flex;align-items:center;gap:9px;";
-      add(mtop, "span").innerHTML = (t.sigil && t.sigil.length) ? t.sigil.map(function (ic) { return '<i class="ti ' + ic + '" style="font-size:18px;color:#ffb3d9"></i>'; }).join(" ") : '<i class="ti ' + (t.ti || "ti-sparkles") + '" style="font-size:22px;color:#ffb3d9"></i>';
-      var mnm = add(mtop, "div"); mnm.style.flex = "1"; add(mnm, "div", "tfs-h", t.name).style.marginBottom = "1px";
-      var _wl = (TB_WHEN.filter(function (x) { return x.k === t.when; })[0] || {}).l || t.when;
-      add(mnm, "div", "tfs-sub", "your tool · for when " + String(_wl || "").toLowerCase()).style.fontSize = "11px";
-      var del = add(mtop, "button"); del.innerHTML = '<i class="ti ti-trash"></i>'; del.setAttribute("style", "background:none;border:none;color:#8a5a72;cursor:pointer;flex:none;font-size:16px;padding:4px;"); del.onclick = function (e) { e.stopPropagation(); S.tools.custom = customTools().filter(function (x) { return x.id !== t.id; }); save(); try { renderStage("tool"); } catch (err) {} };
-      mc.onclick = function () { runCustomTool(t); };
+    // CATEGORY TABS (David 2026-07-01): the tools are already grouped into 5 layers (+ Yours). Show ONE category at a time via a tab switcher so it's never a long, overwhelming scroll.
+    var TB_CATS = [
+      { l: "Body",   ti: "ti-lungs",     layer: "Steady the body" },
+      { l: "Mind",   ti: "ti-atom",      layer: "Clear the mind" },
+      { l: "Feel",   ti: "ti-heart",     layer: "Feel it through" },
+      { l: "Become", ti: "ti-user-star", layer: "Become who you're being" },
+      { l: "Lift",   ti: "ti-sun-high",  layer: "Lift the lens" },
+      { l: "Yours",  ti: "ti-star",      layer: "__custom" }
+    ];
+    if (!sb.dataset.tbcat) sb.dataset.tbcat = (!_isC && _pt && _pt.layer) ? _pt.layer : "Steady the body"; // open on the FOR-RIGHT-NOW tool's category so it's relevant
+    var _cat = sb.dataset.tbcat;
+    var tabs = add(sb, "div"); tabs.style.cssText = "display:flex;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;";
+    TB_CATS.forEach(function (c) {
+      var on = _cat === c.layer, tb = add(tabs, "button");
+      tb.setAttribute("style", "flex:none;display:flex;align-items:center;gap:5px;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;padding:8px 11px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:12px;white-space:nowrap;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#e6cfe0") + ";");
+      tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + c.l;
+      tb.onclick = function () { sb.dataset.tbcat = c.layer; try { renderStage("tool"); } catch (e) {} };
     });
-    var mk = add(sb, "button", "tf-chip"); mk.style.marginTop = "5px"; mk.innerHTML = '<i class="ti ti-plus"></i> Build your own tool'; mk.onclick = function () { buildToolFlow(); };
-    TOOL_LAYERS.forEach(function (layer) {
-      var inLayer = TOOLS.filter(function (t) { return t.layer === layer; }); if (!inLayer.length) return;
-      add(sb, "div", "tfs-sub", layer).style.cssText = "margin-top:9px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
-      inLayer.forEach(function (t) {
-        var card = add(sb, "button", "tf-stagecard"); card.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
-        var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:9px;";
-        add(top, "span").innerHTML = '<i class="ti ' + t.ti + '" style="font-size:22px;color:#ffb3d9"></i>';
-        var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
-        var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
-        var _pinned = dailyTools().indexOf(t.id) >= 0; var pinB = add(top, "button"); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = "add to your daily"; pinB.setAttribute("style", "background:none;border:none;cursor:pointer;flex:none;font-size:15px;padding:4px;color:" + (_pinned ? "#ffb3d9" : "#5a3550") + ";"); pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
-        add(card, "div", "tfs-sub", "Why it works: " + t.why).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;"; // the breathing-app feel: one line of real science per tool
-        add(card, "div", "tfs-sub", "Reach for it when: " + t.when).style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;";
-        card.onclick = function () { runTool(t); };
+    var pane = add(sb, "div"); pane.style.marginTop = "10px";
+    function builtinCard(parent, t) {
+      var card = add(parent, "button", "tf-stagecard"); card.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
+      var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:9px;";
+      add(top, "span").innerHTML = '<i class="ti ' + t.ti + '" style="font-size:22px;color:#ffb3d9"></i>';
+      var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
+      var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
+      var _pinned = dailyTools().indexOf(t.id) >= 0; var pinB = add(top, "button"); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = "add to your daily"; pinB.setAttribute("style", "background:none;border:none;cursor:pointer;flex:none;font-size:15px;padding:4px;color:" + (_pinned ? "#ffb3d9" : "#5a3550") + ";"); pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
+      add(card, "div", "tfs-sub", "Why it works: " + t.why).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;";
+      add(card, "div", "tfs-sub", "Reach for it when: " + t.when).style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;";
+      card.onclick = function () { runTool(t); };
+    }
+    if (_cat === "__custom") {
+      var _mine = customTools();
+      if (!_mine.length) add(pane, "div", "tfs-sub", "Nothing here yet — make a little tool that's yours.").style.cssText = "font-size:12.5px;color:#b596ad;margin-bottom:8px;";
+      _mine.forEach(function (t) {
+        var mc = add(pane, "button", "tf-stagecard"); mc.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
+        var mtop = add(mc, "div"); mtop.style.cssText = "display:flex;align-items:center;gap:9px;";
+        add(mtop, "span").innerHTML = (t.sigil && t.sigil.length) ? t.sigil.map(function (ic) { return '<i class="ti ' + ic + '" style="font-size:18px;color:#ffb3d9"></i>'; }).join(" ") : '<i class="ti ' + (t.ti || "ti-sparkles") + '" style="font-size:22px;color:#ffb3d9"></i>';
+        var mnm = add(mtop, "div"); mnm.style.flex = "1"; add(mnm, "div", "tfs-h", t.name).style.marginBottom = "1px";
+        var _wl = (TB_WHEN.filter(function (x) { return x.k === t.when; })[0] || {}).l || t.when;
+        add(mnm, "div", "tfs-sub", "your tool · for when " + String(_wl || "").toLowerCase()).style.fontSize = "11px";
+        var del = add(mtop, "button"); del.innerHTML = '<i class="ti ti-trash"></i>'; del.setAttribute("style", "background:none;border:none;color:#8a5a72;cursor:pointer;flex:none;font-size:16px;padding:4px;"); del.onclick = function (e) { e.stopPropagation(); S.tools.custom = customTools().filter(function (x) { return x.id !== t.id; }); save(); try { renderStage("tool"); } catch (err) {} };
+        mc.onclick = function () { runCustomTool(t); };
       });
-    });
+      var mk = add(pane, "button", "tf-chip"); mk.style.marginTop = "6px"; mk.innerHTML = '<i class="ti ti-plus"></i> Build your own tool'; mk.onclick = function () { buildToolFlow(); };
+    } else {
+      TOOLS.filter(function (t) { return t.layer === _cat; }).forEach(function (t) { builtinCard(pane, t); });
+    }
   }
   function runTool(t) { try { t.fn(); } catch (e) { toast("couldn't open that one"); } } // launch a tool from the grid (it logs its own use on finish via tickTool)
   function tickTool(id) { // log a COMPLETED rep (counts up only — never a breakable streak). Called from each runner's finish() handler. De-duped per logical-day per microState precedent so re-running twice/day doesn't double-count the ladder.
