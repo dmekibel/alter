@@ -2,6 +2,11 @@
    gamified picker, Toggl multitask timers, Streaks habits, auto-adjust schedule, proactive. $0. */
 (function () {
   "use strict";
+  // GLOBAL ERROR NET (David 2026-07-02): a boot/render crash used to just brick the screen silently. Catch it, rate-limit so a repeating error doesn't spam, tap-to-reload.
+  var _lastErrToast = 0;
+  function _globalErrToast() { var n = Date.now(); if (n - _lastErrToast < 6000) return; _lastErrToast = n; try { var t = document.createElement("div"); t.className = "toast show"; t.textContent = "something glitched — tap to refresh"; t.style.cursor = "pointer"; t.onclick = function () { location.reload(); }; document.body.appendChild(t); setTimeout(function () { try { t.remove(); } catch (e) {} }, 6000); } catch (e) {} }
+  window.addEventListener("error", _globalErrToast);
+  window.addEventListener("unhandledrejection", _globalErrToast);
   // ONE shared, persistent Web Audio context for the whole app (voice + tool ambient beds). Reused everywhere so we never leak/exhaust iOS's context cap (each `new AudioContext()` per tool was leaking — a likely cause of "some tools have sound, some don't"). Resumed on every gesture. (David 2026-07-01)
   var _sharedACtx = null, _voiceBus = null, _bgBus = null;
   function _audioCfg() { return (typeof S !== "undefined" && S && S.audio) ? S.audio : { voice: 1, bg: 1 }; }
@@ -182,9 +187,18 @@
     function decodeKey(key) { if (bufCache[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return; fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (buf) { bufCache[key] = buf; }).catch(function () {}); }
     function warmAll() { if (!vset) return; var keys = Object.keys(vset), i = 0; function batch() { var n = 0; while (i < keys.length && n < 8) { decodeKey(keys[i++]); n++; } if (i < keys.length) setTimeout(batch, 120); } batch(); } // pre-decode the WHOLE voice bank (batched, ~2s) so every tool launched from the toolbox has cached clips → its audio can start inside the launch tap (iOS gesture rule). David 2026-07-01: "fix all the audio."
     function scheduleClip(text, atSec, vol) { try { var ctx = sharedAudioCtx(); var buf = getBufferSync(text); if (!ctx || !buf) return null; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } var src = ctx.createBufferSource(); src.buffer = buf; var g = ctx.createGain(); g.gain.value = vol != null ? vol : 1; src.connect(g); g.connect(voiceBus() || ctx.destination); src.start(ctx.currentTime + Math.max(0, atSec)); return src; } catch (e) { return null; } } // schedule a cached clip at a future time — called UP FRONT inside a start gesture so timer-paced tools (breath/tapping) speak reliably (no per-cue timer play)
+    // COLD-CACHE FALLBACK (David 2026-07-02): scheduleClip needs an already-decoded buffer; if warmAll() hasn't reached this line yet (fresh open, fast tap-through), it silently returns null and the whole session goes voiceless. Fall back to the async decode and still land it near its scheduled offset.
+    function scheduleClipAsync(text, atSec, vol, t0) {
+      var src = scheduleClip(text, atSec, vol); if (src) return src;
+      try {
+        var ctx = sharedAudioCtx(); if (!ctx) return null; var start = t0 != null ? t0 : ctx.currentTime;
+        getBuffer(text).then(function (buf) { if (!buf) return; try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); g2.gain.value = vol != null ? vol : 1; s2.connect(g2); g2.connect(voiceBus() || ctx.destination); s2.start(ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime)); } catch (e) {} });
+      } catch (e) {}
+      return null;
+    }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, ctx: sharedAudioCtx };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -329,7 +343,7 @@
       { g: "Mind", tasks: [{ l: "Read", e: "📖", id: "read" }, { l: "Language", e: "🗣️" }, { l: "Podcast", e: "🎙️" }, { l: "Chess", e: "♟️" }] },
       { g: "Outdoors", tasks: [{ l: "Nature", e: "🌲" }, { l: "Garden", e: "🌱" }, { l: "Travel", e: "✈️" }, { l: "Explore", e: "🗺️" }] }
     ] },
-    { k: "vice", label: "Vices", e: "💀", color: "#ff4d4d", groups: [
+    { k: "vice", label: "Vices", e: "🌫️", color: "#c4607f", groups: [
       { g: "Digital", tasks: [{ l: "Instagram", e: "📱" }, { l: "TikTok", e: "📲" }, { l: "Scrolling", e: "📰" }, { l: "YouTube", e: "▶️" }, { l: "Doomscroll", e: "😵" }, { l: "Porn", e: "🔞" }] },
       { g: "Substance", tasks: [{ l: "Weed", e: "🌿" }, { l: "Cigarettes", e: "🚬" }, { l: "Vape", e: "💨" }, { l: "Alcohol", e: "🍷" }, { l: "Caffeine", e: "☕" }] },
       { g: "Other", tasks: [{ l: "Sugar", e: "🍬" }, { l: "Junk food", e: "🍔" }, { l: "Shopping", e: "🛍️" }, { l: "Gambling", e: "🎰" }, { l: "Procrastinate", e: "🐌" }] }
@@ -1090,7 +1104,7 @@
       if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
       multi = false; on = false; cur = null;
       // CONTEXT-AWARE (David 2026-07-01): while ANY overlay/menu is open — a tool/player, a modal sheet, the expanded tracker (cockpit) or toolbox, the plan-a-day bento, a radial/duration/onboarding sheet — DON'T let a horizontal swipe switch app panes. The swipe belongs to that surface; close it to switch.
-      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
+      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
       sx = e.clientX; sy = e.clientY; W = window.innerWidth || 390;
       if (armed) paneGroup(curPaneName()).forEach(function (el2) { el2.style.willChange = "transform"; }); // pre-promote the current pane's layer on touch-down so the first drag frames don't stutter
@@ -1272,8 +1286,8 @@
       idea: "Chapter 8 isn't something you build — it's something you discover you already have when the fundamentals are solid, the habits are automatic, and the virtues are embodied. Soul Force isn't the destination. It's the realization that you've already been living it. The guardian's job is to keep proving it to you.",
       milestones: [
         { l: "All 7 chapters mastered", done: function() { return chapterMastered(6); } },
-        { l: "1,000 Spark earned", done: function() { return ((S.game&&S.game.spark)||0)>=1000; } },
-        { l: "You are the message", done: function() { return ((S.game&&S.game.spark)||0)>=2500; } }
+        { l: "1,000 Spark earned", done: function() { return ((S.game&&S.game.total)||0)>=1000; } },
+        { l: "You are the message", done: function() { return ((S.game&&S.game.total)||0)>=2500; } }
       ]
     }
   ];
@@ -1311,7 +1325,7 @@
     }
     var curIdx = -1, _bw = -1; for (var i = 0; i < real.length; i++) { if (real[i].done) continue; var _w = _leadW(real[i]); if (_w > _bw) { _bw = _w; curIdx = i; } } // highest-priority undone = the one focal step
     var allDone = curIdx < 0;
-    var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful" : doneN === 0 ? "Your day's ahead — one step at a time" : doneN + " of " + total + " today") + "  ·  " + appVer(); // endowed progress: never a cold "0 of N", always forward-framed (canon, David 2026-07-01) // version tag so we can confirm which build is actually loaded (David 2026-07-02)
+    var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete — beautiful" : doneN === 0 ? "Your day's ahead — one step at a time" : doneN + " of " + total + " today"); // endowed progress: never a cold "0 of N", always forward-framed (canon, David 2026-07-01) // version tag so we can confirm which build is actually loaded (David 2026-07-02)
     var spk = el("jpSpark"); if (spk) { var spkn = spk.querySelector(".spark-n"); if (spkn) spkn.textContent = ((S.game && S.game.spark) || 0).toLocaleString(); }
     var pf = el("jpProgFill"); if (pf) pf.style.width = (total ? Math.round(doneN / total * 100) : 0) + "%";
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
@@ -2093,12 +2107,12 @@
     }
     row("ti-target", "Goals", "your longer arcs — what you're building toward", function () { try { goalsSheet(); } catch (e) {} });
     row("ti-compass", "Guidance", "how much I lead — Guided / Light / Off", function () { guidanceSheet(); });
-    row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
+    if (devOn()) row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
     row(S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", "travel or off-days — your streaks are held", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} });
     row("ti-volume", "Sound", "voice + background volume", function () { openVolumePanel(); });
-    row("ti-sparkles", "Redo setup", "re-run onboarding", function () { onboard(); });
-    row("ti-flask", "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
-    row(S.voiceDebug ? "ti-bug" : "ti-bug-off", S.voiceDebug ? "Voice debug: ON" : "Voice debug: OFF", "the little ♪ readout at the top — temporary", function () { S.voiceDebug = !S.voiceDebug; save(); var e = document.getElementById("voiceDbg"); if (e && !S.voiceDebug) e.remove(); toast(S.voiceDebug ? "voice debug on" : "voice debug off"); });
+    if (devOn()) row("ti-sparkles", "Redo setup", "re-run onboarding", function () { onboard(); });
+    if (devOn()) row("ti-flask", "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
+    if (devOn()) row(S.voiceDebug ? "ti-bug" : "ti-bug-off", S.voiceDebug ? "Voice debug: ON" : "Voice debug: OFF", "the little ♪ readout at the top — temporary", function () { S.voiceDebug = !S.voiceDebug; save(); var e = document.getElementById("voiceDbg"); if (e && !S.voiceDebug) e.remove(); toast(S.voiceDebug ? "voice debug on" : "voice debug off"); });
     add(B, "button", "done2", "Done").onclick = closeSheet;
   }
   // ===== GUIDANCE DIAL (JX-GUIDANCE-TOGGLE, David 2026-06-28): the autonomy knob — Guided / Light / Off. Clones the brainSheet engine-picker idiom (pchips). Default 'off' restores today's behavior + reveals everything; choosing less is framed as leveling up, never desertion. Off silences journey nudges but the engine keeps computing silently. =====
@@ -3732,7 +3746,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "pad"; if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */ if (S.audio.appMusic == null) S.audio.appMusic = true; /* voice + background volume (master buses) + which background bed + subtle whole-app music (Creative Exercise) */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
+  function load() { var _rawLoad = localStorage.getItem(KEY); try { S = JSON.parse(_rawLoad) || fresh(); if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "pad"; if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */ if (S.audio.appMusic == null) S.audio.appMusic = true; /* voice + background volume (master buses) + which background bed + subtle whole-app music (Creative Exercise) */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
     /* ===== F-0 (SCHEMA 1→2, David 2026-06-30): consolidated migration — keystone for the Heroic-course build (_course/BUILD-SPEC.md §2). Adds scaffolding fields/keys ONLY; zero behavior change. prevSchema captured near top of load(). ===== */
     if (prevSchema < 2) {
       Object.keys(S.bk).forEach(function (dk) { var day = S.bk[dk]; if (!day) return;
@@ -3754,7 +3768,9 @@
     }
     /* additive top-level keys (every load, idempotent — match S.bk/S.tools precedent, no bump needed for these) */
     S.sf = S.sf || { history: {}, actions: {} }; S.scorecard = S.scorecard || { weeks: {} }; S.alg = S.alg || { list: [], catalysts: {} }; S.course = S.course || {}; S.cdj = S.cdj || {}; S.guide.nodeHistory = S.guide.nodeHistory || {}; if (S.guide.onboard2 === undefined) S.guide.onboard2 = null; if (S.profile) S.profile.viaTop5 = S.profile.viaTop5 || [];
-    S.v = SCHEMA; }
+    S.v = SCHEMA;
+    } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged — backed up + started fresh"); }
+  }
   function bk(k) { S.bk = S.bk || {}; return (S.bk[k] = S.bk[k] || { am: {}, pm: {} }); } // bookend baton accessor — guarded lazy shape (CKPT-4)
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
   // multi-level UNDO for timeline edits — snapshot BEFORE each mutating action so an accidental move/resize/delete/clear is one tap to recover (David 2026-06-25)
@@ -3774,7 +3790,7 @@
     else if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(json).then(function () { toast("📋 backup copied — keep it safe"); }, function () { copyFallback(json); }); }
     else copyFallback(json);
   }
-  function parseBackup(txt) { var obj; try { obj = JSON.parse(txt); } catch (e) { toast("⚠️ not valid backup JSON"); return null; } var d = (obj && obj.data) ? obj.data : obj; if (!d || (!d.habits && !d.blocks && !d.log)) { toast("⚠️ doesn't look like an ALTER backup"); return null; } return d; }
+  function parseBackup(txt) { var obj; try { obj = JSON.parse(txt); } catch (e) { toast("⚠️ not valid backup JSON"); return null; } var d = (obj && obj.data) ? obj.data : obj; if (!d || (!d.habits && !d.blocks && !d.log)) { toast("⚠️ doesn't look like an ALTER backup"); return null; } if ((d.habits !== undefined && !Array.isArray(d.habits)) || (d.blocks !== undefined && (typeof d.blocks !== "object" || d.blocks === null || Array.isArray(d.blocks))) || (d.log !== undefined && (typeof d.log !== "object" || d.log === null || Array.isArray(d.log)))) { toast("⚠️ backup shape looks wrong — not restored"); return null; } return d; }
   // FUTURE-PROOF MERGE: combine a backup into the current data (instead of replacing). Days union by id, habits dedupe by name (remapping their done-history), game takes the best, and ANY unknown future field is carried over untouched — so backups stay importable as the app grows. (David 2026-06-27)
   function mergeImport(d) {
     var norm = function (s) { return (s || "").toLowerCase().trim(); };
@@ -4311,7 +4327,7 @@
         jz = 0; jvz = 0;
         if (flipState || Math.abs(bodySpin) >= 150) {
           var landed = flipState ? flipState.landed : true;
-          if (landed) { trickCombo++; var pts = trickCombo * 10; if (S.game) { S.game.spark = (S.game.spark || 0) + pts; S.game.total = (S.game.total || 0) + pts; } trickMsg = (flipState ? flipState.n : (Math.abs(bodySpin) >= 330 ? "360 SPIN" : "180 SPIN")) + (trickCombo > 1 ? " x" + trickCombo : "") + " +" + pts; trickMsgT = 70; shake = 4 + trickCombo * 2; for (var dd = 0; dd < 6; dd++) dust.push({ x: px + (Math.random() - 0.5) * 18, y: py + 4, vx: (Math.random() - 0.5) * 2.4, vy: -Math.random() * 1.2, life: 16 }); save(); renderGame(); }
+          if (landed) { trickCombo++; trickMsg = (flipState ? flipState.n : (Math.abs(bodySpin) >= 330 ? "360 SPIN" : "180 SPIN")) + (trickCombo > 1 ? " x" + trickCombo : ""); trickMsgT = 70; shake = 4 + trickCombo * 2; for (var dd = 0; dd < 6; dd++) dust.push({ x: px + (Math.random() - 0.5) * 18, y: py + 4, vx: (Math.random() - 0.5) * 2.4, vy: -Math.random() * 1.2, life: 16 }); renderGame(); } // Law 2 restored (David 2026-07-02): tricks are FEEL, not mint — the combo/shake/dust stays, the game no longer prints its own Spark
           else { trickMsg = "BAIL!"; trickMsgT = 40; shake = 6; trickCombo = 0; }
         }
         bodySpin = 0; flipState = null;
@@ -4724,7 +4740,7 @@
     } } catch (e) { actx = null; }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
     var schedSrcs = [];
-    (function () { var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClip(PH[pi][0], tSec, VPROF.breath.volume); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
+    (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClipAsync(PH[pi][0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
     var done = false, tmr = null;
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
@@ -5374,7 +5390,7 @@
     S.habits.forEach(function (hb) {
       var on = !!dm[hb.id]; if (on) done++;
       var r = add(L, "div", "hab" + (on ? " done" : "")); var _he = add(r, "div", "he"); _he.innerHTML = hb.e && hb.e.indexOf("ti-") === 0 ? '<i class="ti ' + hb.e + '"></i>' : hb.e; add(r, "div", "hn", hb.l);
-      if (hb.type === "quit") { var tag = add(r, "span", "htag", "quit"); tag.style.background = "#ff4d4d"; tag.style.marginRight = "6px"; }
+      if (hb.type === "quit") { var tag = add(r, "span", "htag", "quit"); tag.style.background = "#c4607f"; tag.style.marginRight = "6px"; }
       if (hb.per > 0) { var wk = weekDone(hb.id); var wd = add(r, "div", "wkdots"); for (var i = 0; i < hb.per; i++) { var di = add(wd, "i"); if (i < wk) di.style.background = hb.color; } }
       else { var sk = streak(hb.id); if (sk > 1) { var s = add(r, "div"); s.innerHTML = '<i class="ti ti-flame"></i> ' + sk; s.style.cssText = "font-family:var(--bub);font-size:13px;color:#e0791c;font-weight:800;margin-right:4px;"; } }
       var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = hb.color;
@@ -6760,7 +6776,7 @@
       add(B, "div", "lbl", "Stutz & Michels' practice — name a few specific things. small is good.");
       var frm = add(B, "div", "frm"); var gi = document.createElement("input"); gi.type = "text"; gi.placeholder = "something you're grateful for…"; frm.appendChild(gi); var go = add(frm, "button", "go", "+");
       var ul = add(B, "div");
-      function redraw() { ul.innerHTML = ""; grats.forEach(function (g, i) { var r = add(ul, "div", "subi"); add(r, "div", null, "" . g).style.flex = "1"; var x = add(r, "div", "del", "✕"); x.onclick = function () { grats.splice(i, 1); redraw(); }; }); }
+      function redraw() { ul.innerHTML = ""; grats.forEach(function (g, i) { var r = add(ul, "div", "subi"); add(r, "div", null, g).style.flex = "1"; var x = add(r, "div", "del", "✕"); x.onclick = function () { grats.splice(i, 1); redraw(); }; }); }
       go.onclick = function () { var v = gi.value.trim(); if (v) { grats.push(v); gi.value = ""; redraw(); } };
       var saved = (S.profile && S.profile.gratList) || ["my health", "a warm bed", "someone who loves me"];
       add(B, "div", "lbl", "or tap a familiar one"); var pc = add(B, "div", "pchips"); saved.forEach(function (g) { var x = add(pc, "div", "pchip", g); x.onclick = function () { if (grats.indexOf(g) < 0) { grats.push(g); redraw(); } }; });
