@@ -38,11 +38,7 @@
     function unlock() {
       if (!unlocked) { unlocked = true; try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {} }
       // Unlock Web Audio INSIDE the gesture: a resumed AudioContext can play decoded buffers at ANY time — even fired from a setInterval/setTimeout — which an HTMLAudio element CANNOT on iOS. That timer restriction was exactly why meditation/breathwork were silent while the tap-through beatRunner tools spoke. Play a 1-sample silent buffer to fully arm the channel. (David 2026-07-01)
-      try { var ctx = sharedAudioCtx(); if (ctx && !vprimed) {
-        var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0);
-        try { var ko = ctx.createOscillator(), kg = ctx.createGain(); kg.gain.value = 0.0001; ko.type = "sine"; ko.frequency.value = 30; ko.connect(kg); kg.connect(ctx.destination); ko.start(); } catch (e) {} // KEEP-ALIVE: a permanent inaudible 30Hz tone so iOS never SUSPENDS the shared context between timer-driven cues. That auto-suspend was why meditation/breathwork (which advance on a setInterval/timer, not "Next" taps) stayed silent even on Web Audio, while the tap-advance beatRunner tools spoke. (David 2026-07-01)
-        vprimed = true;
-      } } catch (e) {}
+      try { var ctx = sharedAudioCtx(); if (ctx && !vprimed) { var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); vprimed = true; } } catch (e) {} // arm the channel inside the gesture. (No permanent keep-alive tone — bad practice: battery + hijacks the audio session. The composed player schedules all clips up front while the context is awake, so it needs no keep-alive.)
     }
     function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
     function chunk(text) {
@@ -96,9 +92,22 @@
         .catch(function () { fin(); });
     }
     function stop() { playGen++; if (curSrc) { try { curSrc.onended = null; curSrc.stop(0); } catch (e) {} curSrc = null; } clearWd(); curU = null; if (supported) { try { synth.cancel(); } catch (e) {} } }
+    // fetch+decode a line's clip to an AudioBuffer (cached), or null if there's no recording. Used by the composed timeline player to pre-decode a whole session, then SCHEDULE every clip up front on the context — no per-cue timer plays (the thing iOS blocks). (David 2026-07-01)
+    function getBuffer(text) {
+      return new Promise(function (resolve) {
+        if (!text || !vset) { resolve(null); return; }
+        var key = vhash(text); if (!vset[key]) { resolve(null); return; }
+        if (bufCache[key]) { resolve(bufCache[key]); return; }
+        var ctx = sharedAudioCtx(); if (!ctx) { resolve(null); return; }
+        fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
+          .then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); })
+          .then(function (buf) { bufCache[key] = buf; resolve(buf); })
+          .catch(function () { resolve(null); });
+      });
+    }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, ctx: sharedAudioCtx };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -4711,19 +4720,12 @@
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
-      TTS.unlock(); // gesture-bound: this runs inside the "Begin ▶" tap
-      ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
-      addVoiceToggle(ov);
-      var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-      var G = GUIDES[cfg.guide];
-      orb.style.animation = "breathe " + G.orb + "s ease-in-out infinite";
-      var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-      try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
-      var seq = G.seq, tail = seq.slice(-3), ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
-      function cue() { if (done) return; var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; lab.textContent = line; say(line, VPROF.med); ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
-      function finish(skip) { if (done) return; done = true; TTS.stop(); if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); tickTool("meditate"); save(); renderAll(); }, 1700); }
-      ov.querySelector(".bw-x").onclick = function () { finish(true); };
-      cue(); cueT = setInterval(cue, FREQ[cfg.freq] * 1000); tickT = setInterval(function () { elapsed++; if (elapsed >= total) finish(false); }, 1000);
+      // COMPOSE the session as a fixed timeline (David 2026-07-01): guide lines spaced at the chosen cadence, filling the chosen length. The player schedules every clip up front on Web Audio + gives the Headspace transport (play/pause · ±15s · scrub). Fixes the iOS timer-silence AND makes it length/frequency-adaptive.
+      var G = GUIDES[cfg.guide], seq = G.seq, tail = seq.slice(-3), perCue = FREQ[cfg.freq], totalSec = cfg.mins * 60;
+      var segs = [], t = 0, ci = 0;
+      while (t < totalSec - 1) { var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; segs.push({ text: line, label: line, sub: "" }); t += perCue; ci++; }
+      if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
+      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + G.who, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs });
     }
     build();
   }
@@ -6069,6 +6071,86 @@
       var begin = add(card, "button", "done2", seen ? "Begin ▶" : "I'm ready ▶"); begin.style.cssText = "margin:18px auto 4px;display:block;max-width:280px;";
       begin.onclick = function () { S.tools = S.tools || {}; S.tools.seen = S.tools.seen || {}; S.tools.seen[opts.id] = 1; save(); card.remove(); orb.style.display = ""; lab.style.display = ""; sub.style.display = ""; nextB.style.display = ""; setTimeout(paint, 250); };
     }
+  }
+  // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
+  // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
+  function timelinePlayer(opts) {
+    TTS.unlock(); // gesture-bound: schedule while the context is awake
+    var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "gp-ov";
+    ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div>';
+    document.body.appendChild(ov);
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
+    orb.style.animation = "breathe 9s ease-in-out infinite";
+    // transport bar (built now, wired after decode)
+    var bar = add(ov, "div", "gp-bar");
+    var scrub = add(bar, "div", "gp-scrub"); var fill = add(scrub, "div", "gp-fill"); var knob = add(scrub, "div", "gp-knob");
+    var times = add(bar, "div", "gp-times"); var tCur = add(times, "span", null, "0:00"); var tTot = add(times, "span", null, "0:00");
+    var btns = add(bar, "div", "gp-btns");
+    var bBack = add(btns, "button", "gp-b gp-side"); bBack.innerHTML = '<i class="ti ti-rewind-backward-15"></i>';
+    var bPlay = add(btns, "button", "gp-b gp-play"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
+    var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
+    bar.style.visibility = "hidden";
+    // ambient bed (a real soft pad — doubles as an honest keep-warm for the context; NOT the inaudible hack)
+    var drGain = null, drOscs = [];
+    if (opts.drone !== false && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(ctx.destination);
+      [[110, "sine", 1], [164.81, "sine", 0.5], [220, "triangle", 0.2]].forEach(function (o) { var os = ctx.createOscillator(), g2 = ctx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(drGain); os.start(); drOscs.push(os); });
+      drGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 2);
+    } catch (e) { drGain = null; } }
+
+    var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
+    var total = 0, ready = false, playing = false, done = false, sources = [], baseCtx = 0, offset = 0, raf = 0;
+    function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
+
+    // pre-decode every clip, then lay out the schedule (cumulative start times + gaps)
+    Promise.all(segs.map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (bufs) {
+      var t = 0;
+      segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
+      total = Math.max(t, opts.totalSec || 0);
+      ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = "";
+      startFrom(0); tick();
+    });
+
+    function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; }
+    function startFrom(sec) { // schedule every remaining clip up front, relative to now
+      if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
+      stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
+      segs.forEach(function (sg) {
+        if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
+        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); g.gain.value = opts.vol != null ? opts.vol : 1; src.connect(g); g.connect(ctx.destination);
+          if (sg.start >= sec) src.start(baseCtx + (sg.start - sec)); else src.start(baseCtx, sec - sg.start); // future clip, or mid-clip resume
+          sources.push(src);
+        } catch (e) {}
+      });
+    }
+    function pause() { if (!playing) return; offset = curElapsed(); playing = false; stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
+    function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
+    function paintNow(e) { var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = fmtT(e); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
+    function tick() {
+      if (done) return; var e = curElapsed();
+      if (e >= total) { finish(false); return; }
+      if (playing) paintNow(e);
+      raf = requestAnimationFrame(tick);
+    }
+    bPlay.onclick = function () { if (!ready || done) return; if (playing) pause(); else startFrom(offset); };
+    bBack.onclick = function () { if (ready) seek(curElapsed() - 15); };
+    bFwd.onclick = function () { if (ready) seek(curElapsed() + 15); };
+    (function () { var dragging = false; function frac(x) { var r = scrub.getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)); }
+      function down(ev) { if (!ready) return; dragging = true; ev.preventDefault(); var wasP = playing; if (wasP) pause(); scrub._wasP = wasP; move(ev); }
+      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); offset = frac(x) * total; paintNow(offset); }
+      function up() { if (!dragging) return; dragging = false; if (scrub._wasP) startFrom(offset); }
+      scrub.addEventListener("pointerdown", down); window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+    })();
+
+    function finish(skip) {
+      if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
+      if (drGain) { try { drGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5); drOscs.forEach(function (o) { try { o.stop(ctx.currentTime + 0.6); } catch (e) {} }); } catch (e) {} }
+      if (!skip) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease"; orb.style.transform = "scale(.7)"; }
+      setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : 1500);
+      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: Math.max(1, Math.round(total / 60)), catK: opts.catK || "love", color: col }); earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id); try { celebrateGated(col, curStreak() || 1); } catch (e) {} save(); renderAll(); }
+      if (opts.onFinish) opts.onFinish(skip);
+    }
+    ov.querySelector(".bw-x").onclick = function () { finish(true); };
   }
   // REVERSAL OF DESIRE — Stutz Tool 1 (master-guide L172-190), david-framework L4 / Force of Forward Motion. When-to-use (verbatim): right before something you've been avoiding (the Comfort Zone). The flagship trigger→tool tool: avoidance is the most common daily Part X mode. (TB-REVERSAL)
   function reversalOfDesire(avoidedBlock) {
