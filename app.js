@@ -5870,7 +5870,7 @@
   var TOOLS = [
     { id: "breathe",  layer: "Steady the body",        name: "Breathe",          ti: "ti-wind",           emoji: "🌬️", thinker: "Huberman · Johnson", when: "acute stress, a spike, or right before something hard — any transition crash", why: "Long exhales pull the vagal brake — your nervous system downshifts in about 90 seconds.", fn: function () { breathwork(4); } },
     { id: "relax",    layer: "Steady the body",        name: "Relax all muscles", ti: "ti-ripple",         emoji: "🧘", thinker: "Maltz — Psycho-Cybernetics", when: "tension, pre-sleep, or pre-focus", why: "Releasing muscle tension signals the brain the threat is over — the body leads, the mind follows.", fn: function () { relaxMoment(); } },
-    { id: "meditate", layer: "Clear the mind",          name: "Meditate",          ti: "ti-atom",           emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", why: "Watching thoughts without grabbing them quiets the mind's default chatter — focus returns.", fn: function () { meditation(); } },
+    { id: "meditate", layer: "Clear the mind",          name: "Meditate",          ti: "ti-atom",           emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", why: "Watching thoughts without grabbing them quiets the mind's default chatter — focus returns.", fn: function () { medEditor(); } },
     { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     ti: "ti-hand-finger",    emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", why: "Tapping pressure points while naming a feeling lowers amygdala arousal — the charge drains.", fn: function () { tapping(); } },
     { id: "reversal", layer: "Feel it through",         name: "Reversal of Desire",ti: "ti-flame",          emoji: "🔥", thinker: "Stutz — Tool 1", when: "right before something you've been avoiding", why: "Moving toward the discomfort flips avoidance into approach — the brain learns the thing is safe.", fn: function () { reversalOfDesire(null); } },
     { id: "activelove",layer: "Feel it through",        name: "Active Love",       ti: "ti-heart-handshake",emoji: "💗", thinker: "Stutz — Tool 2", when: "when someone's living rent-free in your head and you can't stop rehearsing the argument", why: "You can't rehearse a grudge and generate warmth at once — one overrides the other.", fn: function () { activeLove(); } },
@@ -6449,6 +6449,55 @@
     card("ti-brain", "#ff5fa0", "Recall", "working memory — tap back a growing sequence", function () { recallGame(); });
     card("ti-focus-2", "#63d3c9", "Focus Cross", "60-sec focus reset — tap left/right in rhythm", function () { focusCrossGame(); });
     card("ti-bulb", "#ffd24a", "Link", "the real memory trick — chain words into a story", function () { linkGame(); });
+  }
+  // ===== MEDITATION EDITOR (David 2026-07-01): compose a session on a sideways, CapCut-style timeline — drag-free blocks you add/trim/reorder, a time ruler, total length, then Play. Each section = recorded guide phrases distributed across its duration; composed into the timelinePlayer. =====
+  function medEditor() {
+    try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
+    var SEC = {
+      settle: { name: "Arrival", col: "#9a7cff", ti: "ti-seedling", lines: ["Settle in…, let your eyes soften", "Soften your forehead, and unclench your jaw", "Drop your shoulders, let them fall", "Soften your chest, and your belly", "Let your arms go heavy, down to your fingertips", "Release your legs, all the way to your feet", "Your whole body is heavy and calm, nothing to do, nowhere to be", "One mindful moment, just be here, now"] },
+      breath: { name: "Breath", col: "#63d3c9", ti: "ti-wind", lines: ["Soft focus — just aware of the space around you", "A few big breaths… in through the nose, out through the mouth", "Let the body soften with each out-breath", "Nothing to do, nothing to respond to — just time for you", "Feel the weight of the body pressing down", "Find the breath rising and falling", "One on the in-breath… two on the out-breath", "Feel that sense of space with each exhale", "Thoughts come — that's fine. Gently back to the breath", "Now let the mind be completely free"] },
+      body: { name: "Body", col: "#ff8a5c", ti: "ti-body-scan", lines: ["Calm, even breath — nothing happening but this breath", "Come down into your feet — deep contact", "Attune to the quality of self inside your feet", "Inhabit your legs… your hips… settle down into them", "Inhabit your belly — attune to the quality of power there", "Inhabit your chest — attune to the quality of love", "Let the breath move gently through the heart", "Inhabit your whole body at once — this is yours", "Find the space outside your body, in the room", "Feel that you ARE that space"] },
+      aware: { name: "Awareness", col: "#ff5fa0", ti: "ti-eye", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"] },
+      rest: { name: "Rest", col: "#ffd24a", ti: "ti-moon", lines: ["There's nothing to do here", "Awareness is already present — you don't make it happen", "Relinquish the doer — pat it on the head, it's irrelevant", "Not the watcher, not the witness — just resting", "Let everything be exactly as it is, right now", "Just rest as awareness", "Whenever you've drifted, simply rest again", "Nothing for the mind to do… and that's okay", "You and awareness are not two"] }
+    };
+    var ORDER = ["settle", "breath", "body", "aware", "rest"], PPS = 1.7;
+    var track = ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }]).map(function (x) { return { k: x.k, d: x.d }; });
+    var sel = -1;
+    var mmss = function (s) { s = Math.round(s); return Math.floor(s / 60) + ":" + pad(s % 60); };
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
+    var box = add(ov, "div"); box.style.cssText = "width:94%;max-width:460px;color:#f0e6ef;font-family:var(--bub);margin-top:calc(env(safe-area-inset-top,0px) + 60px);";
+    function render() {
+      box.innerHTML = "";
+      var total = track.reduce(function (a, t) { return a + t.d; }, 0);
+      var hd = add(box, "div"); hd.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;";
+      add(hd, "div", null, "Edit your meditation").style.cssText = "font-size:21px;font-weight:800;";
+      add(hd, "div", null, mmss(total)).style.cssText = "font-size:17px;font-weight:800;color:#c9a6ff;";
+      add(box, "div", null, "build the session on the timeline — add sections, trim their length, reorder.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
+      // TIMELINE (sideways, scrollable) — ruler + colored blocks
+      var scroller = add(box, "div"); scroller.style.cssText = "overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border:1.5px solid #3a1730;border-radius:12px;background:rgba(0,0,0,.25);padding:8px;";
+      var inner = add(scroller, "div"); inner.style.cssText = "position:relative;width:" + Math.max(280, total * PPS + 20) + "px;";
+      var ruler = add(inner, "div"); ruler.style.cssText = "position:relative;height:16px;margin-bottom:5px;"; for (var mmk = 0; mmk <= Math.ceil(total / 60); mmk++) { var tick = add(ruler, "div", null, mmk + "m"); tick.style.cssText = "position:absolute;left:" + (mmk * 60 * PPS) + "px;top:0;font-size:9px;color:#8a7a9a;border-left:1px solid #4a3a5a;padding-left:3px;"; }
+      var lane = add(inner, "div"); lane.style.cssText = "display:flex;gap:3px;height:64px;";
+      track.forEach(function (t, i) { var s = SEC[t.k]; var b = add(lane, "div"); b.style.cssText = "width:" + (t.d * PPS) + "px;min-width:34px;flex:none;border-radius:8px;background:" + s.col + (sel === i ? "" : "cc") + ";border:" + (sel === i ? "3px solid #fff" : "2px solid rgba(0,0,0,.3)") + ";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:#1c0f20;"; b.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:16px;"></i><span style="font-size:9.5px;font-weight:800;white-space:nowrap;">' + (t.d * PPS > 46 ? s.name : "") + '</span>'; b.onclick = function () { sel = (sel === i ? -1 : i); render(); }; });
+      // selected block controls
+      if (sel >= 0 && sel < track.length) {
+        var ctl = add(box, "div"); ctl.style.cssText = "margin-top:10px;background:rgba(154,124,255,.1);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;";
+        add(ctl, "div", null, SEC[track[sel].k].name + " — length").style.cssText = "font-size:12px;font-weight:800;color:#e6d8ff;margin-bottom:7px;";
+        var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
+        [30, 60, 120, 180, 300].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:10px;padding:6px 10px;font-family:var(--bub);font-weight:800;font-size:12px;color:#f0e6ef;background:" + (track[sel].d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function () { track[sel].d = d; render(); }; });
+        var row = add(ctl, "div"); row.style.cssText = "display:flex;gap:6px;margin-top:9px;";
+        function ctlBtn(host, ic, label, fn) { var b = add(host, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:10px;padding:8px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = fn; }
+        ctlBtn(row, "ti-chevron-left", "", function () { if (sel > 0) { var x = track.splice(sel, 1)[0]; track.splice(sel - 1, 0, x); sel--; render(); } });
+        ctlBtn(row, "ti-chevron-right", "", function () { if (sel < track.length - 1) { var x = track.splice(sel, 1)[0]; track.splice(sel + 1, 0, x); sel++; render(); } });
+        ctlBtn(row, "ti-trash", "Remove", function () { track.splice(sel, 1); sel = -1; render(); });
+      }
+      add(box, "div", null, "Add a section").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:14px 0 7px;";
+      var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
+      ORDER.forEach(function (k) { var s = SEC[k]; var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: 60 }); sel = track.length - 1; render(); }; });
+      var play = add(box, "button", "done2", "Play ▶"); play.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.medTrack = track.map(function (x) { return { k: x.k, d: x.d }; }); save(); var tot = track.reduce(function (a, t) { return a + t.d; }, 0); var segs = []; track.forEach(function (t) { var s = SEC[t.k], n = Math.max(1, Math.round(t.d / 11)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); if (ov.parentNode) ov.remove(); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: 11, totalSec: tot, segments: segs, autostart: true }); };
+    }
+    render();
   }
   function reprogramTool(onDone) {
     beatRunner({
