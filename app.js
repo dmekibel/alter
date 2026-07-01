@@ -106,9 +106,11 @@
           .catch(function () { resolve(null); });
       });
     }
+    function getBufferSync(text) { if (!text || !vset) return null; var key = vhash(text); return bufCache[key] || null; } // already-decoded buffer or null — lets the player START in the SAME gesture (no async .then) when clips were pre-warmed on the config screen
+    function warm(texts) { try { (texts || []).forEach(function (t) { getBuffer(t); }); } catch (e) {} } // pre-decode a set of lines into the cache (call while the user is still choosing settings)
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, ctx: sharedAudioCtx };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, ctx: sharedAudioCtx };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -4713,6 +4715,7 @@
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     function build() {
       ov.innerHTML = "";
+      TTS.unlock(); TTS.warm(GUIDES[cfg.guide].seq); // pre-decode this guide's lines WHILE the user is still choosing → by the time they hit Begin the clips are cached, so Begin itself starts playback in one tap (David 2026-07-01)
       var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
       box.innerHTML = '<div style="font-size:26px;font-weight:800;">🧘 Meditate</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:12px;">even a tiny one counts</div>';
@@ -4734,7 +4737,7 @@
       var segs = [], t = 0, ci = 0;
       while (t < totalSec - 1) { var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; segs.push({ text: line, label: line, sub: "" }); t += perCue; ci++; }
       if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
-      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + G.who, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs });
+      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + G.who, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true });
     }
     build();
   }
@@ -6112,16 +6115,19 @@
     var total = 0, ready = false, playing = false, done = false, sources = [], baseCtx = 0, offset = 0, raf = 0;
     function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
 
-    // pre-decode every clip, then lay out the schedule (cumulative start times + gaps)
-    Promise.all(segs.map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (bufs) {
+    function layout(bufs, autoplay) {
       var t = 0;
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
-      ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = "";
-      // DON'T auto-start: the decode is async so this callback is NOT in a gesture → iOS would silence it (the meditation-silence bug). Show the big Play; the user's tap starts playback inside a gesture. (David 2026-07-01 — matches Headspace's tap-to-play.)
-      playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; paintNow(0); tick();
-      dbg2("ready · tap play");
-    });
+      ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = ""; paintNow(0);
+      if (autoplay) { startFrom(0); } // clips were pre-warmed → we're still inside the Begin tap, so we can start right now
+      else { playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; dbg2("ready · tap play"); }
+      tick();
+    }
+    // If every clip is ALREADY decoded (pre-warmed on the config screen), lay out + START synchronously — still inside the Begin gesture, so iOS plays it. Otherwise decode async and show the Play button (starting from that tap).
+    var syncBufs = opts.autostart ? segs.map(function (sg) { return sg.text ? TTS.getBufferSync(sg.text) : null; }) : null;
+    if (syncBufs && segs.every(function (sg, i) { return !sg.text || syncBufs[i]; })) { layout(syncBufs, true); }
+    else { Promise.all(segs.map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (bufs) { layout(bufs, false); }); }
 
     function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; }
     function startFrom(sec) { // schedule every remaining clip up front, relative to now
