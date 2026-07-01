@@ -108,9 +108,12 @@
     }
     function getBufferSync(text) { if (!text || !vset) return null; var key = vhash(text); return bufCache[key] || null; } // already-decoded buffer or null — lets the player START in the SAME gesture (no async .then) when clips were pre-warmed on the config screen
     function warm(texts) { try { (texts || []).forEach(function (t) { getBuffer(t); }); } catch (e) {} } // pre-decode a set of lines into the cache (call while the user is still choosing settings)
+    function decodeKey(key) { if (bufCache[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return; fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (buf) { bufCache[key] = buf; }).catch(function () {}); }
+    function warmAll() { if (!vset) return; var keys = Object.keys(vset), i = 0; function batch() { var n = 0; while (i < keys.length && n < 8) { decodeKey(keys[i++]); n++; } if (i < keys.length) setTimeout(batch, 120); } batch(); } // pre-decode the WHOLE voice bank (batched, ~2s) so every tool launched from the toolbox has cached clips → its audio can start inside the launch tap (iOS gesture rule). David 2026-07-01: "fix all the audio."
+    function scheduleClip(text, atSec, vol) { try { var ctx = sharedAudioCtx(); var buf = getBufferSync(text); if (!ctx || !buf) return null; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } var src = ctx.createBufferSource(); src.buffer = buf; var g = ctx.createGain(); g.gain.value = vol != null ? vol : 1; src.connect(g); g.connect(ctx.destination); src.start(ctx.currentTime + Math.max(0, atSec)); return src; } catch (e) { return null; } } // schedule a cached clip at a future time — called UP FRONT inside a start gesture so timer-paced tools (breath/tapping) speak reliably (no per-cue timer play)
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, ctx: sharedAudioCtx };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, ctx: sharedAudioCtx };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -2633,7 +2636,7 @@
     b.onclick = function () { try { node.act(); } catch (e) {} };
   }
   // ===== JOURNAL STAGE (CKPT-5, David 2026-06-28): the fusion proof — guidance IS tracking. One adaptive question + a textarea + an optional mood face, rendered into #tfStageBody while the Reflection ring tracks in the corner. Built ONCE (renderStage's dataset.mode guard skips rebuild), so the 1s live-tick never wipes what you're typing. =====
-  function openToolbox() { enterStage("tool", { byTap: true }); } // WISDOM TOOLBOX (TB-SHEET): open the cockpit 'tool' stage — corner-poses the ring, fills #tfStageBody with the kit. No trackTitle: the toolbox is a shelf, individual tools track themselves on finish.
+  function openToolbox() { try { TTS.unlock(); TTS.warmAll(); } catch (e) {} enterStage("tool", { byTap: true }); } // WISDOM TOOLBOX (TB-SHEET): open the cockpit 'tool' stage. Warm the whole voice bank on open (this tap is a gesture → unlocks audio) so every tool launched from here has cached clips and can start its audio in the launch tap. // corner-poses the ring, fills #tfStageBody with the kit.
   function openJournal() { enterStage("journal", { trackTitle: "Reflection", byTap: true }); } // the Journal chip's door: lights the ring + slides it aside + fills the stage in one gesture
   function renderStageChips() { // the BASE (track-mode) entry doors into guided flows — visible + tappable (not gesture-only). Built fresh each track render (cheap, no inputs to preserve). (CKPT-5)
     var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";
@@ -4642,14 +4645,18 @@
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div>';
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-    // BREATH CHORD (David 2026-07-01): not a lone sighing sine — a warm major triad that GLIDES UP a full chord on the inhale and DOWN on the exhale. Two chords an octave apart, going back and forth with the breath.
-    var AC = window.AudioContext || window.webkitAudioContext, actx = null, bwOscs = [], bwGain = null, RATIOS = [1, 1.25, 1.5, 2]; // root · major third · fifth · octave
-    try { if (AC) { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0; bwGain.connect(actx.destination);
-      RATIOS.forEach(function (r, i) { var o = actx.createOscillator(), g = actx.createGain(); o.type = "sine"; o.frequency.value = 196 * r; g.gain.value = [1, 0.45, 0.5, 0.28][i]; o.connect(g); g.connect(bwGain); o.start(); bwOscs.push(o); });
+    // BREATH HUM (David 2026-07-01): NOT a prominent chord — a soft low background pad, like the ambient bed in the other tools. The "breathing" comes from a gentle volume SWELL (louder on the in-breath, softer on the out) rather than a melodic change. Subtle, almost the sound of someone breathing.
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, bwOscs = [], bwGain = null;
+    try { if (AC) { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0.006; bwGain.connect(actx.destination);
+      [[130.81, "sine", 1], [196.0, "sine", 0.4], [261.63, "triangle", 0.14]].forEach(function (o) { var os = actx.createOscillator(), g = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g.gain.value = o[2]; os.connect(g); g.connect(bwGain); os.start(); bwOscs.push(os); });
     } } catch (e) { actx = null; }
+    // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
+    var schedSrcs = [];
+    (function () { var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClip(PH[pi][0], tSec, VPROF.breath.volume); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
     var done = false, tmr = null;
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
+      schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
       if (actx) { try { bwGain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); bwOscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.5); } catch (e) {} }); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); tickTool("breathe"); save(); renderAll(); }
@@ -4663,42 +4670,25 @@
       if (cyc >= cycles) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; tmr = setTimeout(function () { finish(false); }, 1500); return; }
       var p = PH[phi], dur = p[1], kind = p[2];
       lab.textContent = p[0]; sub.textContent = "cycle " + (cyc + 1) + " / " + cycles;
-      if (kind !== "rest") say(p[0], VPROF.breath); // speak the short phase cue; silence holds the count
-
+      // (voice cues are pre-scheduled up front — no timer-fired speak, which iOS silences)
       orb.style.transition = "transform " + (dur / 1000) + "s cubic-bezier(.45,0,.4,1)";
       if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "out") orb.style.transform = "scale(.5)";
       if (actx) { var now = actx.currentTime, t = dur / 1000;
-        function glide(rootHz) { bwOscs.forEach(function (o, i) { o.frequency.cancelScheduledValues(now); o.frequency.setValueAtTime(o.frequency.value, now); o.frequency.linearRampToValueAtTime(rootHz * RATIOS[i], now + t); }); }
         bwGain.gain.cancelScheduledValues(now); bwGain.gain.setValueAtTime(bwGain.gain.value, now);
-        if (kind === "in") { glide(261.63); bwGain.gain.linearRampToValueAtTime(0.055, now + t * 0.9); }       // rise to the higher chord (C4), swell in
-        else if (kind === "out") { glide(130.81); bwGain.gain.linearRampToValueAtTime(0.02, now + t); }         // fall to the lower chord (C3), fade down
-        else { bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.045 : 0.006, now + 0.4); } }             // hold sustains softly; rest goes near-silent
+        if (kind === "in") bwGain.gain.linearRampToValueAtTime(0.03, now + t * 0.95);        // soft swell, like an in-breath
+        else if (kind === "out") bwGain.gain.linearRampToValueAtTime(0.008, now + t);        // fade, like an out-breath
+        else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.022 : 0.006, now + 0.5); } // hold sustains gently; rest near-silent
       phi++; if (phi >= PH.length) { phi = 0; cyc++; }
       tmr = setTimeout(step, dur);
     }
   }
   // Psycho-Cybernetics ARRIVAL as a standalone: relax all muscles + a mindful moment (the universal opener of every stack module)
   function relaxMoment(onDone) {
-    TTS.unlock();
-    var STEPS = [["Settle in…", "let your eyes soften", 2600], ["Soften your forehead", "and unclench your jaw", 3400], ["Drop your shoulders", "let them fall", 3400], ["Soften your chest", "and your belly", 3400], ["Let your arms go heavy", "down to your fingertips", 3400], ["Release your legs", "all the way to your feet", 3400], ["Your whole body is heavy and calm", "nothing to do, nowhere to be", 3800], ["One mindful moment", "just be here, now", 5200]];
-    var ov = document.createElement("div"); ov.id = "breatheOv";
-    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Relax…</div><div class="bw-sub"></div>';
-    document.body.appendChild(ov); addVoiceToggle(ov);
-    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-    orb.style.animation = "breathe 9s ease-in-out infinite";
-    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-    try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; }
-    var done = false, i = 0, tmr = null;
-    function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
-      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); osc.stop(actx.currentTime + 0.5); } catch (e) {} }
-      if (ov.parentNode) ov.parentNode.removeChild(ov);
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mindful moment", mins: 2, catK: "energy", color: "#9a5cf0" }); earn(5, { catK: "energy" }); tickTool("relax"); save(); renderAll(); }
-      if (onDone) onDone();
-    }
-    ov.querySelector(".bw-x").onclick = function () { finish(true); };
-    function step() { if (done) return; if (i >= STEPS.length) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; tmr = setTimeout(function () { finish(false); }, 1500); return; } lab.textContent = STEPS[i][0]; sub.textContent = STEPS[i][1]; say(STEPS[i][0] + ", " + STEPS[i][1], VPROF.relax); tmr = setTimeout(step, STEPS[i][2]); i++; }
-    setTimeout(step, 700);
+    // now runs on the composed player (reliable voice + transport). David 2026-07-01: "fix all the audio."
+    TTS.unlock(); TTS.warm(["Settle in…, let your eyes soften", "Soften your forehead, and unclench your jaw", "Drop your shoulders, let them fall", "Soften your chest, and your belly", "Let your arms go heavy, down to your fingertips", "Release your legs, all the way to your feet", "Your whole body is heavy and calm, nothing to do, nowhere to be", "One mindful moment, just be here, now"]);
+    var STEPS = [["Settle in…", "let your eyes soften"], ["Soften your forehead", "and unclench your jaw"], ["Drop your shoulders", "let them fall"], ["Soften your chest", "and your belly"], ["Let your arms go heavy", "down to your fingertips"], ["Release your legs", "all the way to your feet"], ["Your whole body is heavy and calm", "nothing to do, nowhere to be"], ["One mindful moment", "just be here, now"]];
+    var segs = STEPS.map(function (s) { return { text: s[0] + ", " + s[1], label: s[0], sub: s[1] }; });
+    timelinePlayer({ id: "relax", title: "Mindful moment", logTitle: "Mindful moment", catK: "energy", color: "#9a5cf0", spark: 5, vol: VPROF.relax.volume, drone: true, cadenceSec: 4.2, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
   // adaptive guided meditation: YOU choose how often it re-anchors you (for a 0-attention-span mind) + modular focus + tiny durations
   function meditation() {
@@ -4770,9 +4760,13 @@
       for (var s = 0; s < 3; s++) steps.push({ pt: "Setup — side of hand", say: setupLine, setup: true });
       for (var rd = 0; rd < cfg.rounds; rd++) PTS.forEach(function (p) { steps.push({ pt: p[0], loc: p[1], say: "“" + cfg.feel[1] + "”" }); });
       steps.push({ pt: "Take a slow breath", say: "and notice how it feels now", end: true });
+      // SCHEDULE the spoken cues up front (inside this Begin tap) so they actually play on iOS — no timer-fired speak. Matches step()'s pacing below.
+      var schedSrcs = [];
+      (function () { var tSec = 0.7; steps.forEach(function (st) { var txt = st.setup ? st.say : st.pt + ". " + st.say; var src = TTS.scheduleClip(txt, tSec, VPROF.eft.volume); if (src) schedSrcs.push(src); tSec += st.setup ? 6.4 : (st.end ? 5.6 : 4.4); }); })();
       var i = 0, done = false, tmr = null;
       function finish(skip) {
         if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
+        schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
         if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3); osc.stop(actx.currentTime + 0.4); } catch (e) {} }
         if (skip) { if (ov.parentNode) ov.remove(); return; }
         lab.textContent = "Done ✓"; sub.textContent = "let it settle"; orb.style.animation = ""; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)";
@@ -4785,9 +4779,9 @@
         var st = steps[i];
         lab.textContent = st.pt; sub.textContent = st.say + (st.loc ? "  ·  " + st.loc : "");
         orb.style.animation = st.end ? "breathe 6s ease-in-out infinite" : "breathe 1s ease-in-out infinite";
-        say(st.setup ? st.say : st.pt + ". " + st.say, VPROF.eft);
+        // (voice cues pre-scheduled up front — no timer-fired speak)
         blip(st.setup ? 165 : (st.end ? 150 : 175 + i * 6));
-        i++; tmr = setTimeout(step, st.setup ? (voiceOn() ? 6400 : 5200) : (st.end ? 5600 : 4400));
+        i++; tmr = setTimeout(step, st.setup ? 6400 : (st.end ? 5600 : 4400));
       }
       orb.style.animation = "breathe 1s ease-in-out infinite";
       setTimeout(step, 700);
@@ -4797,30 +4791,10 @@
   // Mantra — David's own first-person affirmation as a calm teleprompter (the keystone willpower-free step of his stack). Read along or speak it.
   function mantraPlayer() {
     var LINES = ["I have absolute trust in myself.", "My instincts are unerring, my thoughts are clear,", "and my feelings guide me wisely.", "I am the sole authority on what is best for me.", "I love myself unconditionally.", "I embrace my mistakes and imperfections fully,", "and continue to love who I am.", "I hold deep respect for myself", "and unwavering confidence in my abilities.", "I vow to keep evolving — never ceasing to improve.", "I push beyond my comfort zone every single day.", "I will do whatever it takes to become a greater man.", "I bring joy to others. My aura radiates positivity.", "I am athletic, intelligent, loving, and ambitious —", "yet I savor life and cherish this beautiful planet.", "I deserve the very best.", "My life is phenomenal — spontaneous and overflowing with love.", "I find joy within myself, and don't take things too seriously.", "Every mistake is a teacher. If something needs redoing — fantastic.", "I do not judge reality; I accept it.", "I am indifferent to others' opinions of me.", "I am the master of my life,", "fully aware of what's best for me.", "What would I do if I wasn't afraid?"];
-    TTS.unlock();
-    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">skip</button>'; document.body.appendChild(ov); addVoiceToggle(ov);
-    var box = add(ov, "div"); box.style.cssText = "width:86%;max-width:440px;color:#f3e9ff;font-family:var(--bub);text-align:center;font-size:23px;font-weight:800;line-height:1.5;text-shadow:0 2px 12px rgba(0,0,0,.45);min-height:130px;display:flex;align-items:center;justify-content:center;transition:opacity .5s;";
-    var sub = add(ov, "div", null, "say it out loud, or just read along"); sub.style.cssText = "color:#bcb0e8;font-family:var(--bub);font-size:12px;margin-top:20px;letter-spacing:.5px;";
-    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-    try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.028, actx.currentTime + 1.8); } } catch (e) { actx = null; }
-    var i = 0, done = false, tmr = null;
-    function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
-      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); osc.stop(actx.currentTime + 0.6); } catch (e) {} }
-      if (ov.parentNode) ov.remove();
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Mantra", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); tickTool("mantra"); save(); renderAll(); }
-    }
-    ov.querySelector(".bw-x").onclick = function () { finish(true); };
-    function step() {
-      if (done) return;
-      if (i >= LINES.length) { box.style.opacity = "0"; tmr = setTimeout(function () { if (done) return; box.textContent = "✓"; box.style.fontSize = "44px"; box.style.opacity = "1"; sub.textContent = "that's who you are"; tmr = setTimeout(function () { finish(false); }, 1700); }, 500); return; }
-      var line = LINES[i], last = i === LINES.length - 1;
-      box.style.opacity = "0";
-      tmr = setTimeout(function () { if (done) return; box.textContent = line; box.style.opacity = "1"; say(line, VPROF.mantra); }, 450);
-      var dur = Math.max(voiceOn() ? 4200 : 3000, line.length * (voiceOn() ? 115 : 62)) + (last ? 2800 : 0); // let the spoken line finish
-      i++; var nxt = setTimeout(step, dur); tmr = nxt;
-    }
-    setTimeout(step, 700);
+    // now runs on the composed player (reliable voice + transport). David 2026-07-01: "fix all the audio."
+    TTS.unlock(); TTS.warm(LINES);
+    var segs = LINES.map(function (line) { return { text: line, label: line, sub: "" }; });
+    timelinePlayer({ id: "mantra", title: "Mantra", logTitle: "Mantra", catK: "love", color: "#ff7ab8", spark: 7, vol: VPROF.mantra.volume, drone: true, cadenceSec: 5, segments: segs, autostart: true });
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
