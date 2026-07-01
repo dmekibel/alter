@@ -1045,9 +1045,9 @@
       if (!armed || multi) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
       if (!on) {
-        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { armed = false; return; } // vertical → it's a scroll
-        if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy) * 1.4) { on = true; beginDrag(dx < 0 ? -1 : 1); }
-        else return;
+        if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { armed = false; return; } // vertical wins ties → it's a scroll (journey/timeline scroll must never fight the swipe). David 2026-07-01
+        if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 2) { on = true; beginDrag(dx < 0 ? -1 : 1); } // only a DECISIVELY horizontal drag (2:1) starts a pane swipe
+        else return; // not yet decisive → wait for more movement
       }
       e.preventDefault();
       var d = e.clientX - sx;

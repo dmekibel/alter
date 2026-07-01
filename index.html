@@ -496,7 +496,9 @@
   .breathorb--slow{animation-duration:11s;background:radial-gradient(circle,rgba(255,220,120,.55),rgba(255,200,80,0) 70%);box-shadow:0 0 52px rgba(255,210,110,.4);}
   @keyframes breathe{0%,100%{transform:scale(.68);opacity:.55;}50%{transform:scale(1.12);opacity:1;}}
   /* guided breathwork overlay (first self-help module) */
-  #breatheOv{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);}
+  #breatheOv{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
+  @keyframes toolIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
+  .vol-ov{animation:toolIn .24s ease both;}
   #breatheOv .bw-orb{width:165px;height:165px;border-radius:50%;background:radial-gradient(circle,rgba(205,185,255,.92),rgba(150,120,255,.3) 58%,rgba(150,120,255,0) 74%);box-shadow:0 0 80px rgba(170,140,255,.55);transform:scale(.55);}
   #breatheOv .bw-label{font-family:var(--bub);font-size:28px;font-weight:800;color:#efeaff;margin-top:34px;letter-spacing:.5px;}
   #breatheOv .bw-sub{font-size:13px;color:#bcb0e8;font-weight:600;margin-top:4px;}
@@ -1739,6 +1741,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=745"></script>
+  <script src="app.js?v=746"></script>
 </body>
 </html>
