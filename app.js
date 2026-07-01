@@ -6341,21 +6341,26 @@
       add(hd, "div", null, "Your session").style.cssText = "font-size:21px;font-weight:800;";
       add(hd, "div", null, "~" + Math.max(1, Math.round(total / 60)) + " min").style.cssText = "font-size:16px;font-weight:800;color:#c9a6ff;";
       add(box, "div", null, "reorder, trim, add tools — then run it one step at a time.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
-      var scroller = add(box, "div"); scroller.style.cssText = "overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border:1.5px solid #3a1730;border-radius:12px;background:rgba(0,0,0,.25);padding:8px;";
-      var lane = add(scroller, "div"); lane.style.cssText = "display:flex;gap:4px;height:74px;width:max-content;";
-      track.forEach(function (t, i) { var s = stackTool(t.k); var b = add(lane, "div"); b.style.cssText = "width:" + Math.max(62, t.d * PPS) + "px;flex:none;border-radius:9px;background:" + s.col + (sel === i ? "" : "cc") + ";border:" + (sel === i ? "3px solid #fff" : "2px solid rgba(0,0,0,.3)") + ";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#1c0f20;"; b.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:18px;"></i><span style="font-size:10px;font-weight:800;">' + s.name + '</span><span style="font-size:9px;opacity:.75;">' + mmss(t.d) + '</span>'; b.onclick = function () { sel = sel === i ? -1 : i; render(); }; });
-      if (sel >= 0 && sel < track.length) {
-        var ctl = add(box, "div"); ctl.style.cssText = "margin-top:10px;background:rgba(154,124,255,.1);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;";
-        add(ctl, "div", null, stackTool(track[sel].k).name + " — length").style.cssText = "font-size:12px;font-weight:800;color:#e6d8ff;margin-bottom:7px;";
-        var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
-        [60, 120, 180, 300, 600].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:10px;padding:6px 10px;font-family:var(--bub);font-weight:800;font-size:12px;color:#f0e6ef;background:" + (track[sel].d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function () { track[sel].d = d; render(); }; });
-        var row = add(ctl, "div"); row.style.cssText = "display:flex;gap:6px;margin-top:9px;";
-        function cb2(ic, fn) { var b = add(row, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i>'; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:10px;padding:8px;font-family:var(--bub);font-size:14px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = fn; }
-        cb2("ti-chevron-left", function () { if (sel > 0) { var x = track.splice(sel, 1)[0]; track.splice(sel - 1, 0, x); sel--; render(); } });
-        cb2("ti-chevron-right", function () { if (sel < track.length - 1) { var x = track.splice(sel, 1)[0]; track.splice(sel + 1, 0, x); sel++; render(); } });
-        cb2("ti-trash", function () { track.splice(sel, 1); sel = -1; render(); });
-      }
-      add(box, "div", null, "Add a tool").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:14px 0 7px;";
+      var list = add(box, "div"); list.style.cssText = "display:flex;flex-direction:column;";
+      track.forEach(function (t, i) {
+        var s = stackTool(t.k), wrap = add(list, "div");
+        var row = add(wrap, "div"); row.style.cssText = "display:flex;align-items:center;gap:13px;cursor:pointer;";
+        var bub = add(row, "div"); bub.style.cssText = "width:50px;height:50px;border-radius:50%;flex:none;background:" + s.col + ";border:3px solid " + (sel === i ? "#fff" : "rgba(0,0,0,.28)") + ";display:flex;align-items:center;justify-content:center;color:#1c0f20;box-shadow:0 3px 0 rgba(0,0,0,.22);"; bub.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:21px;"></i>';
+        var meta = add(row, "div"); meta.style.cssText = "flex:1;"; meta.innerHTML = '<div style="font-size:15px;font-weight:800;">' + s.name + '</div><div style="font-size:11.5px;color:#b39ab0;">' + mmss(t.d) + '</div>';
+        row.onclick = function () { sel = sel === i ? -1 : i; render(); };
+        if (sel === i) {
+          var ctl = add(wrap, "div"); ctl.style.cssText = "margin:8px 0 6px 63px;";
+          var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
+          [60, 120, 180, 300, 600].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:5px 9px;font-family:var(--bub);font-weight:800;font-size:11.5px;color:#f0e6ef;background:" + (t.d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function (e) { e.stopPropagation(); track[i].d = d; render(); }; });
+          var rr = add(ctl, "div"); rr.style.cssText = "display:flex;gap:6px;margin-top:8px;";
+          function cb2(ic, fn) { var b = add(rr, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i>'; b.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:6px 13px;font-family:var(--bub);font-size:14px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function (e) { e.stopPropagation(); fn(); }; }
+          cb2("ti-chevron-up", function () { if (i > 0) { var x = track.splice(i, 1)[0]; track.splice(i - 1, 0, x); sel = i - 1; render(); } });
+          cb2("ti-chevron-down", function () { if (i < track.length - 1) { var x = track.splice(i, 1)[0]; track.splice(i + 1, 0, x); sel = i + 1; render(); } });
+          cb2("ti-trash", function () { track.splice(i, 1); sel = -1; render(); });
+        }
+        if (i < track.length - 1) { var conn = add(list, "div"); conn.style.cssText = "width:3px;height:15px;background:#3a2a4a;margin:2px 0 2px 26px;border-radius:2px;"; }
+      });
+      add(box, "div", null, "Add a tool").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:16px 0 7px;";
       var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
       STACK_TOOLS.forEach(function (s) { var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: s.id, d: s.dur }); sel = track.length - 1; render(); }; });
       var go = add(box, "button", "done2", "Begin session →"); go.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; go.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.stack = track.map(function (t) { return { k: t.k, d: t.d }; }); save(); if (ov.parentNode) ov.remove(); setTimeout(function () { runStack(track, 0); }, 120); };
@@ -6519,26 +6524,28 @@
       var hd = add(box, "div"); hd.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;";
       add(hd, "div", null, "Edit your meditation").style.cssText = "font-size:21px;font-weight:800;";
       add(hd, "div", null, mmss(total)).style.cssText = "font-size:17px;font-weight:800;color:#c9a6ff;";
-      add(box, "div", null, "build the session on the timeline — add sections, trim their length, reorder.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
-      // TIMELINE (sideways, scrollable) — ruler + colored blocks
-      var scroller = add(box, "div"); scroller.style.cssText = "overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border:1.5px solid #3a1730;border-radius:12px;background:rgba(0,0,0,.25);padding:8px;";
-      var inner = add(scroller, "div"); inner.style.cssText = "position:relative;width:" + Math.max(280, total * PPS + 20) + "px;";
-      var ruler = add(inner, "div"); ruler.style.cssText = "position:relative;height:16px;margin-bottom:5px;"; for (var mmk = 0; mmk <= Math.ceil(total / 60); mmk++) { var tick = add(ruler, "div", null, mmk + "m"); tick.style.cssText = "position:absolute;left:" + (mmk * 60 * PPS) + "px;top:0;font-size:9px;color:#8a7a9a;border-left:1px solid #4a3a5a;padding-left:3px;"; }
-      var lane = add(inner, "div"); lane.style.cssText = "display:flex;gap:3px;height:64px;";
-      track.forEach(function (t, i) { var s = SEC[t.k]; var b = add(lane, "div"); b.style.cssText = "width:" + (t.d * PPS) + "px;min-width:34px;flex:none;border-radius:8px;background:" + s.col + (sel === i ? "" : "cc") + ";border:" + (sel === i ? "3px solid #fff" : "2px solid rgba(0,0,0,.3)") + ";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:#1c0f20;"; b.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:16px;"></i><span style="font-size:9.5px;font-weight:800;white-space:nowrap;">' + (t.d * PPS > 46 ? s.name : "") + '</span>'; b.onclick = function () { sel = (sel === i ? -1 : i); render(); }; });
-      // selected block controls
-      if (sel >= 0 && sel < track.length) {
-        var ctl = add(box, "div"); ctl.style.cssText = "margin-top:10px;background:rgba(154,124,255,.1);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;";
-        add(ctl, "div", null, SEC[track[sel].k].name + " — length").style.cssText = "font-size:12px;font-weight:800;color:#e6d8ff;margin-bottom:7px;";
-        var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
-        [30, 60, 120, 300, 600, 1200].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:10px;padding:6px 10px;font-family:var(--bub);font-weight:800;font-size:12px;color:#f0e6ef;background:" + (track[sel].d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function () { track[sel].d = d; render(); }; }); // up to 20 min — long sessions are open to beginners; the drift-adaptive reminders make them doable
-        var row = add(ctl, "div"); row.style.cssText = "display:flex;gap:6px;margin-top:9px;";
-        function ctlBtn(host, ic, label, fn) { var b = add(host, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i> ' + label; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:10px;padding:8px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = fn; }
-        ctlBtn(row, "ti-chevron-left", "", function () { if (sel > 0) { var x = track.splice(sel, 1)[0]; track.splice(sel - 1, 0, x); sel--; render(); } });
-        ctlBtn(row, "ti-chevron-right", "", function () { if (sel < track.length - 1) { var x = track.splice(sel, 1)[0]; track.splice(sel + 1, 0, x); sel++; render(); } });
-        ctlBtn(row, "ti-trash", "Remove", function () { track.splice(sel, 1); sel = -1; render(); });
-      }
-      add(box, "div", null, "Add a section").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:14px 0 7px;";
+      add(box, "div", null, "tap a bubble to set its length, reorder, or remove.").style.cssText = "font-size:11.5px;color:#b39ab0;margin:3px 0 12px;line-height:1.4;";
+      // VERTICAL bubble list (minimal — not the day timeline). David 2026-07-01
+      var list = add(box, "div"); list.style.cssText = "display:flex;flex-direction:column;";
+      track.forEach(function (t, i) {
+        var s = SEC[t.k], wrap = add(list, "div");
+        var row = add(wrap, "div"); row.style.cssText = "display:flex;align-items:center;gap:13px;cursor:pointer;";
+        var bub = add(row, "div"); bub.style.cssText = "width:50px;height:50px;border-radius:50%;flex:none;background:" + s.col + ";border:3px solid " + (sel === i ? "#fff" : "rgba(0,0,0,.28)") + ";display:flex;align-items:center;justify-content:center;color:#1c0f20;box-shadow:0 3px 0 rgba(0,0,0,.22);"; bub.innerHTML = '<i class="ti ' + s.ti + '" style="font-size:21px;"></i>';
+        var meta = add(row, "div"); meta.style.cssText = "flex:1;"; meta.innerHTML = '<div style="font-size:15px;font-weight:800;">' + s.name + (s.adv ? ' <span style="font-size:9px;color:#ff9ec9;border:1px solid #ff9ec9;border-radius:6px;padding:1px 4px;vertical-align:middle;">advanced</span>' : '') + '</div><div style="font-size:11.5px;color:#b39ab0;">' + mmss(t.d) + '</div>';
+        row.onclick = function () { sel = sel === i ? -1 : i; render(); };
+        if (sel === i) {
+          var ctl = add(wrap, "div"); ctl.style.cssText = "margin:8px 0 6px 63px;";
+          var lens = add(ctl, "div"); lens.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
+          [30, 60, 120, 300, 600, 1200].forEach(function (d) { var c = add(lens, "button", null, mmss(d)); c.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:5px 9px;font-family:var(--bub);font-weight:800;font-size:11.5px;color:#f0e6ef;background:" + (t.d === d ? "#9a7cff" : "rgba(255,255,255,.05)") + ";cursor:pointer;"; c.onclick = function (e) { e.stopPropagation(); track[i].d = d; render(); }; });
+          var rr = add(ctl, "div"); rr.style.cssText = "display:flex;gap:6px;margin-top:8px;";
+          function cbtn(ic, fn) { var b = add(rr, "button"); b.innerHTML = '<i class="ti ' + ic + '"></i>'; b.style.cssText = "border:2px solid #6a4a6a;border-radius:9px;padding:6px 13px;font-family:var(--bub);font-size:14px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function (e) { e.stopPropagation(); fn(); }; }
+          cbtn("ti-chevron-up", function () { if (i > 0) { var x = track.splice(i, 1)[0]; track.splice(i - 1, 0, x); sel = i - 1; render(); } });
+          cbtn("ti-chevron-down", function () { if (i < track.length - 1) { var x = track.splice(i, 1)[0]; track.splice(i + 1, 0, x); sel = i + 1; render(); } });
+          cbtn("ti-trash", function () { track.splice(i, 1); sel = -1; render(); });
+        }
+        if (i < track.length - 1) { var conn = add(list, "div"); conn.style.cssText = "width:3px;height:15px;background:#3a2a4a;margin:2px 0 2px 26px;border-radius:2px;"; }
+      });
+      add(box, "div", null, "Add a section").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:16px 0 7px;";
       var pool = add(box, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
       ORDER.forEach(function (k) { var s = SEC[k]; var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + s.ti + '"></i> ' + s.name; b.style.cssText = "border:2px solid " + s.col + ";border-radius:12px;padding:7px 11px;font-family:var(--bub);font-weight:700;font-size:12.5px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: 60 }); sel = track.length - 1; render(); }; });
       var play = add(box, "button", "done2", "Play ▶"); play.style.cssText = "margin:18px auto 8px;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; S.tools = S.tools || {}; S.tools.medTrack = track.map(function (x) { return { k: x.k, d: x.d }; }); save(); var tot = track.reduce(function (a, t) { return a + t.d; }, 0); var cad = medCadence(); var segs = []; track.forEach(function (t) { var s = SEC[t.k], n = Math.max(1, Math.round(t.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); if (ov.parentNode) ov.remove(); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true }); };
