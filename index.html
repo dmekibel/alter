@@ -45,6 +45,7 @@
   #startScreen{ position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:space-between; background:linear-gradient(170deg,#3a0f24 0%,#1c0814 52%,#140510 100%); padding:max(env(safe-area-inset-top,0px),26px) 22px calc(env(safe-area-inset-bottom,0px) + 30px); font-family:"Jost",sans-serif; overflow:hidden; }
   #startScreen.on{ display:flex; }
   #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
+  .ss-ver{ position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); left:0; right:0; text-align:center; font-family:"Jost",sans-serif; font-size:11px; letter-spacing:.5px; color:rgba(255,255,255,.28); pointer-events:none; }
   @keyframes ssLeave{ to{ opacity:0; transform:scale(1.08); } }
   .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.06); border:2px solid #3a1730; border-radius:12px; padding:7px; cursor:pointer; display:flex; align-items:center; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
   .ss-lang:active{ transform:scale(.93); }
@@ -1688,7 +1689,7 @@
   <div id="tlmChip"></div><!-- B: "that's like me" identity-ping; body-level so it fires whether the cockpit is open or not -->
   <div id="pullSheet"><div id="pullHead"></div><div id="pullBody"></div><div id="pullGrab"><span class="pull-handle"></span><i class="ti ti-chevron-up"></i> pull up to close</div></div>
   <div id="sheet"><div class="scard"><button id="sheetX">✕</button><div class="shandle"></div><div id="sheetBody"></div></div></div>
-  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Goals"><i class="ti ti-target"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
+  <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Tools"><i class="ti ti-briefcase"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
   <div id="startScreen">
     <button class="ss-lang" id="ssLang" aria-label="Language"><span class="ss-flag" id="ssLangFlag"></span></button>
     <div class="ss-hero">
@@ -1712,7 +1713,8 @@
       </div>
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
+    <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=734"></script>
+  <script src="app.js?v=735"></script>
 </body>
 </html>

@@ -62,12 +62,13 @@
       if (vset) { var key = vhash(text); if (vset[key]) { try {
         if (!vaudio) vaudio = new Audio();
         vaudio.onended = function () { if (opts.onend) try { opts.onend(); } catch (e) {} };
-        vaudio.onerror = function () { speakSynth(text, opts); };
+        vaudio.onerror = function () { if (opts.onend) try { opts.onend(); } catch (e) {} }; // David 2026-07-01: NEVER fall back to the robot Web-Speech voice — he hates it. Silence (still advance) if the pre-recorded male audio can't load.
         vaudio.muted = false; vaudio.volume = opts.volume != null ? opts.volume : 1; vaudio.src = "assets/voice/" + key + ".mp3"; vaudio.currentTime = 0;
         var pr = vaudio.play(); if (pr && pr.catch) pr.catch(function () { try { var p2 = vaudio.play(); if (p2 && p2.catch) p2.catch(function () {}); } catch (e) {} }); // on iOS play() can reject even though the primed element still plays — RETRY, never fall back to Web-Speech here (that caused the double male+robot voice). Genuine load failures fall back via onerror.
         return;
       } catch (e) {} } }
-      speakSynth(text, opts);
+      // David 2026-07-01: no pre-recorded audio for this exact line → STAY SILENT. Never the robot Web-Speech voice. (Dynamic/custom lines get on-device neural TTS later.)
+      if (opts.onend) try { opts.onend(); } catch (e) {}
     }
     function stop() { if (vaudio) { try { vaudio.pause(); } catch (e) {} } clearWd(); curU = null; if (supported) { try { synth.cancel(); } catch (e) {} } }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
@@ -906,6 +907,7 @@
     if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-player-play-filled"></i> Start'; // BIG primary: Continue a save, or Start a fresh one (→ onboarding)
     if (nb) { nb.style.display = ""; nb.innerHTML = '<i class="ti ti-rotate-2"></i> Start fresh'; } // not "game" — it's a life app, not a game (David v660)
     ssLangLabel();
+    var vEl = el("ssVer"); if (vEl) vEl.textContent = appVer(); // show the live build number (auto-synced from the app.js?v= tag preship bumps) — David 2026-07-01
     ss.classList.add("on");
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
@@ -1962,12 +1964,27 @@
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
     item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
-    item("", "ti-compass", "Guidance", function () { guidanceSheet(); });
-    item("", "ti-brain", "Brain", function () { brainSheet(); });        // AI tailoring — relocated out of the game/You surface (David 2026-06-28)
-    item("", S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} }); // travel/off-day mode (David 2026-06-29)
-    item("", "ti-sparkles", "Redo setup", function () { onboard(); });   // re-run onboarding — relocated from the old You-tab menu
-    item("dev", "ti-flask", "Test day", function () { fillTestDay(); });
+    item("", "ti-settings", "Settings", function () { settingsSheet(); }); // David 2026-07-01: the giant menu was overwhelming — the config/rare items (Goals, Guidance, Brain, Away, Redo setup, Test day) now live behind one Settings door
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
+  }
+  // ===== SETTINGS SHEET (David 2026-07-01): one calm home for the config/rare items pulled out of the overwhelming ⋯ menu. Each row opens its own flow. =====
+  function settingsSheet() {
+    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
+    add(B, "div", "sttl", "Settings");
+    add(B, "div", "lbl", "The less-often stuff, all in one place.");
+    var list = add(B, "div"); list.style.cssText = "display:flex;flex-direction:column;gap:2px;margin-top:6px;";
+    function row(ic, label, desc, fn) {
+      var b = add(list, "button"); b.style.cssText = "display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:14px;padding:13px 15px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
+      b.innerHTML = '<i class="ti ' + ic + '" style="font-size:20px;color:#ff8fc4;flex:none;"></i><span style="display:flex;flex-direction:column;gap:1px;"><b style="font-size:15px;font-weight:800;">' + label + '</b><span style="font-size:11.5px;color:#b39ab0;font-weight:600;">' + desc + '</span></span>';
+      b.onclick = function () { closeSheet(); setTimeout(fn, 60); };
+    }
+    row("ti-target", "Goals", "your longer arcs — what you're building toward", function () { try { goalsSheet(); } catch (e) {} });
+    row("ti-compass", "Guidance", "how much I lead — Guided / Light / Off", function () { guidanceSheet(); });
+    row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
+    row(S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", "travel or off-days — your streaks are held", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} });
+    row("ti-sparkles", "Redo setup", "re-run onboarding", function () { onboard(); });
+    row("ti-flask", "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
+    add(B, "button", "done2", "Done").onclick = closeSheet;
   }
   // ===== GUIDANCE DIAL (JX-GUIDANCE-TOGGLE, David 2026-06-28): the autonomy knob — Guided / Light / Off. Clones the brainSheet engine-picker idiom (pchips). Default 'off' restores today's behavior + reveals everything; choosing less is framed as leveling up, never desertion. Off silences journey nudges but the engine keeps computing silently. =====
   function guidanceSheet() {
@@ -6004,12 +6021,40 @@
       nextB.textContent = (i === opts.beats.length - 1) ? (opts.lastLabel || "Finish ✓") : "Next ▶";
     }
     nextB.onclick = function () { if (done) return; i++; paint(); };
-    setTimeout(paint, 500);
+    // INTRO CARD (David 2026-07-01): the tools jumped straight into the beats with no context — "the black cloud just jumps in." Now each guided tool opens with full instructions (what it is · how to do it · the science). FIRST time = the whole thing; after that = a one-line reminder with a "how does this work?" expander. Never oversimplified.
+    if (opts.intro) startWithIntro(); else setTimeout(paint, 500);
+    function startWithIntro() {
+      var it = opts.intro, seen = !!(S.tools && S.tools.seen && S.tools.seen[opts.id]);
+      orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; nextB.style.display = "none";
+      var card = add(ov, "div", "bw-introcard");
+      card.style.cssText = "width:88%;max-width:440px;color:#f0e6ef;font-family:var(--bub);text-align:left;max-height:78vh;overflow-y:auto;-webkit-overflow-scrolling:touch;";
+      var t = add(card, "div", null, opts.title); t.style.cssText = "font-size:24px;font-weight:800;text-align:center;";
+      if (it.tag) { var tg = add(card, "div", null, it.tag); tg.style.cssText = "font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#ff8fc4;text-align:center;margin:5px 0 15px;font-weight:800;"; }
+      var wh = add(card, "div", null, it.what); wh.style.cssText = "font-size:14.5px;line-height:1.55;color:#e8d8e6;";
+      // the step-by-step how — shown in full the first time; collapsed behind a tap once you've done it
+      var howWrap = add(card, "div"); howWrap.style.cssText = "margin-top:14px;";
+      function renderHow(host) {
+        var hh = add(host, "div", null, "How to do it"); hh.style.cssText = "font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#b39ab0;font-weight:800;margin-bottom:7px;";
+        var ol = add(host, "div"); ol.style.cssText = "display:flex;flex-direction:column;gap:7px;";
+        (it.how || []).forEach(function (step, n) { var r = add(ol, "div"); r.style.cssText = "display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:#e2d2e0;"; r.innerHTML = '<b style="flex:none;width:20px;height:20px;border-radius:50%;background:' + col + ';color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:1px;">' + (n + 1) + '</b><span>' + step + '</span>'; });
+      }
+      if (!seen) { renderHow(howWrap); }
+      else { var tgl = add(howWrap, "button", null, "How does this work? ▾"); tgl.style.cssText = "background:none;border:none;color:#ff8fc4;font-family:var(--bub);font-weight:700;font-size:13px;cursor:pointer;padding:4px 0;"; var body = add(howWrap, "div"); body.style.display = "none"; var open = false; tgl.onclick = function () { open = !open; if (open && !body.firstChild) renderHow(body); body.style.display = open ? "" : "none"; tgl.textContent = open ? "How does this work? ▴" : "How does this work? ▾"; }; }
+      if (it.why) { var wy = add(card, "div"); wy.style.cssText = "margin-top:15px;padding:11px 13px;background:rgba(255,143,196,.08);border-radius:12px;font-size:12.5px;line-height:1.5;color:#d8b8d2;"; wy.innerHTML = '<b style="color:#ff8fc4;">Why it works · </b>' + it.why; }
+      var begin = add(card, "button", "done2", seen ? "Begin ▶" : "I'm ready ▶"); begin.style.cssText = "margin:18px auto 4px;display:block;max-width:280px;";
+      begin.onclick = function () { S.tools = S.tools || {}; S.tools.seen = S.tools.seen || {}; S.tools.seen[opts.id] = 1; save(); card.remove(); orb.style.display = ""; lab.style.display = ""; sub.style.display = ""; nextB.style.display = ""; setTimeout(paint, 250); };
+    }
   }
   // REVERSAL OF DESIRE — Stutz Tool 1 (master-guide L172-190), david-framework L4 / Force of Forward Motion. When-to-use (verbatim): right before something you've been avoiding (the Comfort Zone). The flagship trigger→tool tool: avoidance is the most common daily Part X mode. (TB-REVERSAL)
   function reversalOfDesire(avoidedBlock) {
     beatRunner({
       id: "reversal", title: "Reversal of Desire", logTitle: "Reversal of Desire", catK: "energy", color: "#ff8a3a", spark: 6, voiceProf: VPROF.breath,
+      intro: {
+        tag: "for the thing you're avoiding · 30 sec",
+        what: "When you keep putting something off, the avoidance itself becomes the wall. This tool turns that discomfort into something you move toward instead of around — and momentum comes right back.",
+        how: ["Bring to mind the exact thing you've been avoiding.", "Picture the discomfort of it as a dark cloud floating in front of you.", "Move toward the cloud — silently cheer it on: “bring it on.”", "Let it surround you completely — go all the way in.", "Feel yourself pass through and out the far side, into light — now you're moving."],
+        why: "Approaching what you avoid teaches the brain the thing is safe. Avoidance shrinks, and the forward motion is the whole reward."
+      },
       beats: [
         { lab: "See the pain as a cloud", sub: "the thing you're avoiding — picture it as a cloud right in front of you", orb: "in" },
         { lab: "“Bring it on!”", sub: "move toward the cloud — say it, mean it", orb: "in" },
@@ -6028,6 +6073,12 @@
   function reprogramTool() {
     beatRunner({
       id: "reprogram", title: "Rewire", logTitle: "Rewire", catK: "love", color: "#9a5cf0", spark: 7, voiceProf: VPROF.relax,
+      intro: {
+        tag: "install a new self-belief · 2–3 min",
+        what: "A calm, guided way to plant one new belief about yourself. You settle the body, picture the change as already true, and say it in the present tense — the same three moves under every reprogramming method, stripped of the mysticism.",
+        how: ["Settle down: slow breaths, exhale longer than the inhale.", "Let the body soften and the mind go quiet and open.", "Picture yourself already being the way you want to be — vividly, right now.", "Say one present-tense line, like “I start before I feel ready,” and mean it.", "Seal it with one full breath, and carry it with you."],
+        why: "The brain rehearses a vividly imagined self almost like a real one. Repeating a calm, present-tense image is how a new self-image actually installs."
+      },
       beats: [
         { lab: "Settle down", sub: "Slow breath — make the exhale longer than the inhale. With each one, a step calmer.", orb: "out" },
         { lab: "Three… two… one…", sub: "let the body go soft and the mind go quiet and open", orb: "out" },
@@ -6042,6 +6093,12 @@
   function activeLove() {
     beatRunner({
       id: "activelove", title: "Active Love", logTitle: "Active Love", catK: "love", color: "#ff4fa0", spark: 7, voiceProf: VPROF.mantra,
+      intro: {
+        tag: "when someone's stuck in your head · 45 sec",
+        what: "For when a person has taken up residence in your mind and you can't stop replaying the argument. This isn't forgiveness and it isn't for them — you generate warmth on purpose to free your own attention.",
+        how: ["Feel a raw sense of love radiating out from your chest — not aimed at anyone yet.", "Now direct all of it at the person who's stuck in your head.", "Picture them completely bathed in it, filled with it.", "Feel that warmth return to you, larger — and notice the loop has let go."],
+        why: "You can't rehearse a grudge and generate warmth at the same time — one crowds out the other. Doing it deliberately discharges the rumination."
+      },
       beats: [
         { lab: "Concentration", sub: "feel love flowing through your whole body — not at anyone yet, just the raw force, radiating from your chest", orb: "in" },
         { lab: "Transmission", sub: "direct that love at the person who wronged you — see them bathed in it. Not forgiving — generating an infinite force, because it serves YOUR liberation", orb: "" },
@@ -6054,6 +6111,12 @@
   function innerAuthority() {
     beatRunner({
       id: "innerauth", title: "Inner Authority", logTitle: "Inner Authority", catK: "love", color: "#8a5cf0", spark: 7, voiceProf: VPROF.mantra,
+      intro: {
+        tag: "before you speak up or perform · 45 sec",
+        what: "For the moment before a hard conversation or performance, when you freeze up worried about being judged. You make peace with the most insecure part of yourself and speak from one unified voice instead of from fear.",
+        how: ["Take one slow breath and drop your shoulders — settle the body first.", "Picture the version of you you're most ashamed of, standing in front of you.", "Feel that it's still you — not an enemy, your other half. Feel the bond.", "Together, as one voice, say “Listen!” — your authority comes from inside, not their approval."],
+        why: "Owning the part of you that fears judgment removes its power to freeze you. Rehearsing your grounded self first primes the brain to run that version live."
+      },
       beats: [
         { lab: "One slow breath first", sub: "drop the shoulders, settle — you can't speak from your core on a wound-up body", orb: "in" },
         { lab: "Project your Shadow", sub: "see the version of yourself you're most ashamed of — weak, imperfect, broken — a vivid image standing right in front of you", orb: "" },
@@ -6066,6 +6129,12 @@
   function jeopardy(launchAfter) {
     beatRunner({
       id: "jeopardy", title: "Jeopardy", logTitle: "Jeopardy", catK: "energy", color: "#ff8a3a", spark: 6, voiceProf: VPROF.breath,
+      intro: {
+        tag: "when you're stalled or coasting · 30 sec",
+        what: "For when you're demoralized and can't reach for anything else — or right after a win, when the work quietly stops. You borrow urgency from the one part of you that knows exactly what this moment is worth.",
+        how: ["Picture your future self on their deathbed, out of time.", "Feel them looking back at THIS moment — the one you're about to waste.", "Let their urgency land in you — they know its value because they have none left.", "Use that spark now: launch the very next thing immediately."],
+        why: "Picturing the cost of not acting recruits loss-aversion — the strongest motivator we have — and the urgency it creates is real, not manufactured."
+      },
       beats: [
         { lab: "Your deathbed self", sub: "he has run out of present moments. He is looking back at THIS one — the one you're about to waste", orb: "" },
         { lab: "Feel him scream at you", sub: "he knows the value of this moment because he has none left. Let his urgency enter you", orb: "in" },
@@ -6078,6 +6147,12 @@
   function blackSun() {
     beatRunner({
       id: "blacksun", title: "Black Sun", logTitle: "Black Sun", catK: "energy", color: "#6a4fd0", spark: 6, voiceProf: VPROF.breath,
+      intro: {
+        tag: "when you feel the pull to numb · 30 sec",
+        what: "For the urge to scroll, snack, or numb out — the “I deserve this, one break won't hurt” voice. Instead of feeding it from outside, you find the energy already inside the emptiness and put it back into your day.",
+        how: ["Notice the emptiness underneath the craving — not the craving itself.", "Picture a dark sun rising out of that void — your own compressed energy.", "Feel it fill you from the inside, not from the screen or the snack.", "Send that energy back out into your day — that's where it wants to go."],
+        why: "The urge to numb is really a signal of depletion. Sourcing the fill from within, then acting, resolves it far better than feeding it from outside."
+      },
       beats: [
         { lab: "Feel the void underneath", sub: "not the craving itself — the emptiness driving it. The deprivation that wants to be filled from outside", orb: "out" },
         { lab: "A Black Sun rises", sub: "from that void, an orb of dark light lifts — the compressed Life Force itself", orb: "in" },
@@ -6090,6 +6165,12 @@
   function vortex() {
     beatRunner({
       id: "vortex", title: "The Vortex", logTitle: "The Vortex", catK: "energy", color: "#ff8a3a", spark: 6, voiceProf: VPROF.breath,
+      intro: {
+        tag: "for flatness or between tasks · 30 sec",
+        what: "For lethargy, a mid-day crash, or the unguarded gap between two tasks. A quick visualization that pours energy back in and gets you moving into the next thing.",
+        how: ["Picture twelve suns arranged in a circle, surrounding you.", "Watch them slowly rise around you.", "Feel them grow and expand — energy pouring in to fill you.", "Carry that charge straight into the next thing."],
+        why: "A vivid energizing image plus a clear next action beats the inertia of a transition — the window where most drift begins."
+      },
       beats: [
         { lab: "Twelve suns around you", sub: "picture twelve suns arranged in a circle, surrounding you", orb: "" },
         { lab: "They begin to rise", sub: "slowly they lift around you", orb: "in" },
@@ -6123,7 +6204,14 @@
       { lab: "Coming back up… 1", sub: "one… beginning to return", orb: "in" },
       { lab: "…4, 5 — eyes bright", sub: "fully back, calm and clear, carrying it with you", orb: "in" }
     ];
-    beatRunner({ id: "selfhyp", title: "Self-Hypnosis", logTitle: "Self-Hypnosis", catK: "love", color: "#8a5cf0", spark: 8, voiceProf: VPROF.mantra, beats: BEATS, lastLabel: "Open eyes ✓" });
+    beatRunner({ id: "selfhyp", title: "Self-Hypnosis", logTitle: "Self-Hypnosis", catK: "love", color: "#8a5cf0", spark: 8, voiceProf: VPROF.mantra, beats: BEATS, lastLabel: "Open eyes ✓",
+      intro: {
+        tag: "read yourself into a calmer state · 2–3 min",
+        what: "An eyes-open way to settle deeply and read a few calming lines into yourself. You stay awake and just read along — reading the words slowly IS the whole technique.",
+        how: ["Keep your eyes open with a soft gaze — no need to close them.", "Let your body settle: shoulders drop, breath slows.", "Picture a calm beach, then count slowly down the steps.", "In the quiet, read the lines slowly — let each one take hold.", "Count back up, eyes bright, carrying the calm with you."],
+        why: "A relaxed, focused state is when a calm suggestion lands most easily. Reading a present-tense line slowly, as if already true, is a gentle, well-worn technique."
+      }
+    });
   }
   // PART-X TRIAGE (TB-PARTX-TRIAGE, full) — the in-the-moment front door, rendered as Stutz's Part-X attack-mode router. Enforces the ordering rule VERBATIM (master-guide L126-132): BODY first → Observer → Label "that's Part X" → Tool → Higher force. On an acute spike, a sub-60s physiological reset (breath) fires BEFORE any cognitive/identity tool — you can't reframe a dysregulated nervous system. Grateful Flow stays HARD-BLOCKED while a grievance is live (Active Love discharges it first, L119). The five attack modes route to the dedicated Coming-Alive runners: avoidance→Reversal, grievance→Active Love, post-win stall→Jeopardy, lethargy/transition→Vortex, urge-to-numb→Black Sun.
   function partXTriage(opts) {
@@ -6612,7 +6700,7 @@
     })();
     document.addEventListener("gesturestart", function (e) { e.preventDefault(); }); document.addEventListener("dblclick", function (e) { e.preventDefault(); });
     document.querySelectorAll("#nav .nb").forEach(function (b) { if (!b.dataset.tab) return; b.onclick = function () { var t = b.dataset.tab; if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); if (t === "day") return; } document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === b); }); if (t === "self") { openGame(); return; } /* the plant/You tab IS the full island game now — no small preview, no menu step (David 2026-06-28) */ document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-" + t); }); document.body.classList.remove("tab-goals", "tab-day", "tab-self"); document.body.classList.add("tab-" + t); if (t === "day") { pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; buildPull(); revealTimeline(); } }; }); // tapping the collapsed Today pill EXPANDS the nav (Goals/You slide back, tracker lifts above); body.tab-* drives which screen the always-open timeline shows on (David 2026-06-24/26)
-    (function () { var njb = el("navJourney"); if (njb) njb.onclick = function () { document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === njb); }); openJourney(); }; var jg = el("jpGoals"); if (jg) jg.onclick = function () { try { goalsSheet(); } catch (e) {} }; })(); // Journey = the home tab; its header target opens Goals (David 2026-06-29)
+    (function () { var njb = el("navJourney"); if (njb) njb.onclick = function () { document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x === njb); }); openJourney(); }; var jg = el("jpGoals"); if (jg) jg.onclick = function () { try { openToolbox(); } catch (e) {} }; })(); // Journey = the home tab; its header button opens the TOOLBOX — tools always one tap away (David 2026-07-01, replaced the low-value Goals target; Goals now lives in the planner menu)
     (function () { // the journey's OWN bottom triple menu (Planner · Journey · Game) — the journey is home (David 2026-06-28)
       var p = el("jpnPlanner"); if (p) p.onclick = function () { closeJourney(); }; // Planner = the timeline underneath the journey
       var j = el("jpnJourney"); if (j) j.onclick = function () { drawJourney(true); }; // scroll back to now
