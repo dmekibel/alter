@@ -8,9 +8,12 @@
   var TTS = (function () {
     var synth = window.speechSynthesis || null;
     var supported = !!synth && typeof window.SpeechSynthesisUtterance === "function";
-    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0;
+    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null;
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
     function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
+    // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
+    function vhash(text) { var n = String(text).toLowerCase().replace(/[^a-z0-9]/g, ""), h = 5381, i; for (i = 0; i < n.length; i++) h = ((h * 33) ^ n.charCodeAt(i)) >>> 0; return h.toString(16); }
+    function loadManifest() { try { fetch("assets/voice/manifest.json", { cache: "force-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { vset = {}; a.forEach(function (k) { vset[k] = 1; }); } }).catch(function () {}); } catch (e) {} }
     function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
       if (chosen) return chosen;
@@ -22,11 +25,14 @@
       return null; // null voice is valid — the OS default still speaks
     }
     function initVoices() {
+      loadManifest();
       if (!supported) return; load();
       try { synth.addEventListener("voiceschanged", load); } catch (e) { synth.onvoiceschanged = load; }
       var p = setInterval(function () { load(); if (voices.length || ++polls > 12) clearInterval(p); }, 250); // ~3s
     }
-    function unlock() { if (!supported || unlocked) return; try { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); unlocked = true; } catch (e) {} }
+    function unlock() { if (unlocked) return; unlocked = true;
+      try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {}
+      try { if (!vaudio) vaudio = new Audio(); if (vset) { var ks = Object.keys(vset); if (ks.length) { vaudio.muted = true; vaudio.src = "assets/voice/" + ks[0] + ".mp3"; var pp = vaudio.play(); if (pp && pp.catch) pp.catch(function () {}); setTimeout(function () { try { vaudio.pause(); vaudio.currentTime = 0; vaudio.muted = false; } catch (e) {} }, 40); } } } catch (e) {} } // prime the audio channel inside the opening gesture so pre-recorded lines can play on iOS
     function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
     function chunk(text) {
       if (text.length <= 200) return [text];
@@ -45,13 +51,25 @@
       clearWd(); var est = Math.max(3500, chunks[i].length * 95); wd = setTimeout(function () { curU = null; speakChunks(chunks, i + 1, opts); }, est + 2000);
       try { synth.speak(u); } catch (e) { next(); }
     }
-    function speak(text, opts) {
+    function speakSynth(text, opts) {
       if (!supported || !text) return; opts = opts || {};
       try { synth.cancel(); } catch (e) {} // single utterance in flight
       var chunks = chunk(String(text));
       setTimeout(function () { speakChunks(chunks, 0, opts); }, 60); // let cancel() settle on iOS
     }
-    function stop() { if (!supported) return; clearWd(); curU = null; try { synth.cancel(); } catch (e) {} }
+    function speak(text, opts) {
+      if (!text) return; opts = opts || {}; stop();
+      if (vset) { var key = vhash(text); if (vset[key]) { try {
+        if (!vaudio) vaudio = new Audio();
+        vaudio.onended = function () { if (opts.onend) try { opts.onend(); } catch (e) {} };
+        vaudio.onerror = function () { speakSynth(text, opts); };
+        vaudio.muted = false; vaudio.volume = opts.volume != null ? opts.volume : 1; vaudio.src = "assets/voice/" + key + ".mp3"; vaudio.currentTime = 0;
+        var pr = vaudio.play(); if (pr && pr.catch) pr.catch(function () { speakSynth(text, opts); }); // pre-recorded neural line; on any block/error → Web-Speech fallback
+        return;
+      } catch (e) {} } }
+      speakSynth(text, opts);
+    }
+    function stop() { if (vaudio) { try { vaudio.pause(); } catch (e) {} } clearWd(); curU = null; if (supported) { try { synth.cancel(); } catch (e) {} } }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
     return { supported: supported, unlock: unlock, speak: speak, stop: stop };
