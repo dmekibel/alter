@@ -44,7 +44,46 @@
     function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { [bassBus, padBus, pluckBus, revGain, conv].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); bassBus = padBus = pluckBus = revGain = conv = null; }, 2600); }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
-  function bedMode() { return (S.audio && S.audio.bed) || "music"; } // 'music' (Creative Exercise) · 'pad' (ambient drone) · 'off'
+  function bedMode() { return (S.audio && S.audio.bed) || "music"; } // 'music' (Mysterious) · 'pad' (ambient drone) · 'off'
+  // ===== APP BACKGROUND MUSIC — "Creative Exercise" (David 2026-07-01): the peppy lo-fi loop, repurposed as SUBTLE whole-app background. Low internal level; auto-pauses whenever a tool/player is open (that audio takes over) and resumes after. Routes into _bgBus; easy off in the Sound panel. =====
+  var APPMUSIC = (function () {
+    var running = false, timer = null, step = 0, nextTime = 0, chordBus = null, leadBus = null, bassBus = null, conv = null, revGain = null, tremGain = null, lfo = null;
+    var BPM = 96, beat = 60 / BPM, eighth = beat / 2, LOOK = 0.18;
+    var mtof = function (m) { return 440 * Math.pow(2, (m - 69) / 12); };
+    var NO = { C3: 48, E3: 52, G3: 55, B3: 59, F3: 53, A3: 57, C4: 60, E4: 64, C5: 72, D5: 74, E5: 76, F5: 77, G5: 79, A5: 81, C6: 84 };
+    var fq = function (n) { return mtof(NO[n]); };
+    var CH_C = ["C3", "E3", "G3", "B3"], CH_F = ["F3", "A3", "C4", "E4"];
+    var MEL = ["E5", null, "G5", null, "C6", null, null, "G5", "A5", null, "G5", null, "E5", null, "D5", null, "F5", null, "A5", null, "C6", null, null, "A5", "G5", null, "E5", null, "C5", null, null, null];
+    function impulse(ctx, sec, dec) { var rate = ctx.sampleRate, len = Math.floor(rate * sec), buf = ctx.createBuffer(2, len, rate); for (var ch = 0; ch < 2; ch++) { var d = buf.getChannelData(ch); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dec); } return buf; }
+    function graph(ctx) { var out = bgBus() || ctx.destination;
+      conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 3.4, 2.4); revGain = ctx.createGain(); revGain.gain.value = 0.16; conv.connect(revGain); revGain.connect(out);
+      chordBus = ctx.createGain(); chordBus.gain.value = 0.2; tremGain = ctx.createGain(); tremGain.gain.value = 1;
+      lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 4.7; var la = ctx.createGain(); la.gain.value = 0.1; lfo.connect(la); la.connect(tremGain.gain); lfo.start();
+      chordBus.connect(tremGain); tremGain.connect(out); tremGain.connect(conv);
+      leadBus = ctx.createGain(); leadBus.gain.value = 0.15; leadBus.connect(out); leadBus.connect(conv);
+      bassBus = ctx.createGain(); bassBus.gain.value = 0.17; bassBus.connect(out); bassBus.connect(conv);
+    }
+    function ep(ctx, freq, t, dur, vel) { var car = ctx.createOscillator(); car.type = "sine"; car.frequency.value = freq; var mod = ctx.createOscillator(); mod.type = "sine"; mod.frequency.value = freq; var mg = ctx.createGain(); mg.gain.setValueAtTime(freq * 2.6 * vel, t); mg.gain.exponentialRampToValueAtTime(freq * 0.4, t + 0.45); mod.connect(mg); mg.connect(car.frequency); var a = ctx.createGain(); a.gain.setValueAtTime(0.0001, t); a.gain.linearRampToValueAtTime(vel, t + 0.006); a.gain.exponentialRampToValueAtTime(vel * 0.5, t + 0.4); a.gain.exponentialRampToValueAtTime(0.0001, t + dur); car.connect(a); a.connect(chordBus); car.start(t); mod.start(t); car.stop(t + dur + 0.1); mod.stop(t + dur + 0.1); }
+    function pluck(ctx, freq, t, vel) { var o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq; var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); o.connect(g); g.connect(leadBus); o.start(t); o.stop(t + 1); }
+    function bs(ctx, freq, t, dur) { var o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = freq; var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.5, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(bassBus); o.start(t); o.stop(t + dur + 0.05); }
+    function schedStep(ctx, s, t) { var chord = s < 16 ? CH_C : CH_F; if (s % 8 === 0) { chord.forEach(function (n, i) { ep(ctx, fq(n), t, 2 * beat * 0.95, 0.2 - i * 0.014); }); bs(ctx, mtof(NO[chord[0]] - 12), t, 2 * beat); } var m = MEL[s]; if (m) pluck(ctx, fq(m), t, 0.4); }
+    function tick() { var ctx = sharedAudioCtx(); if (!ctx) return; while (nextTime < ctx.currentTime + LOOK) { schedStep(ctx, step, nextTime); nextTime += eighth; step = (step + 1) % 32; } }
+    function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } graph(ctx); running = true; step = 0; nextTime = ctx.currentTime + 0.15; tick(); timer = setInterval(tick, 30); }
+    function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { try { if (lfo) lfo.stop(); } catch (e) {} [chordBus, leadBus, bassBus, revGain, conv, tremGain].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); chordBus = leadBus = bassBus = revGain = conv = tremGain = lfo = null; }, 1600); }
+    return { start: start, stop: stop, running: function () { return running; } };
+  })();
+  // keep app music in sync: play only when enabled, past the start screen, and NO tool/player overlay is open (tool audio takes over). Idempotent + debounced.
+  var _amTO = null;
+  function appMusicSync() {
+    try {
+      var want = !!(S.audio && S.audio.appMusic) && S.profile && S.profile.set
+        && !(el("startScreen") && el("startScreen").classList.contains("on"))
+        && !document.getElementById("breatheOv") && !document.hidden;
+      if (want) APPMUSIC.start(); else APPMUSIC.stop();
+    } catch (e) {}
+  }
+  function appMusicPoke() { if (_amTO) clearTimeout(_amTO); _amTO = setTimeout(appMusicSync, 250); }
+  try { if (typeof document !== "undefined" && document.body) { new MutationObserver(appMusicPoke).observe(document.body, { childList: true }); document.addEventListener("visibilitychange", appMusicSync); } } catch (e) {} // watch overlay open/close → pause/resume app music
   // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
   //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
   //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
@@ -1005,7 +1044,8 @@
   }
   function ssEnter(has) {
     var ss = el("startScreen");
-    if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); }, 440); } // zoom-fade out → reveal the app underneath
+    try { TTS.unlock(); } catch (e) {} // this Continue/Start tap is a gesture → unlock audio so the app music can begin
+    if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
     else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { maybeWelcomeBack(); } catch (e) {} }, 470); } // returning → AFTER the start screen has fully cleared (~440ms), the journey cascades; if they've been gone ≥2wk, the gentle Welcome-Back re-gauge appears (David 2026-06-29)
   }
@@ -3698,7 +3738,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "music"; /* voice + background volume (master buses) + which background bed: music / pad / off */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "music"; if (S.audio.appMusic == null) S.audio.appMusic = true; /* voice + background volume (master buses) + which background bed + subtle whole-app music (Creative Exercise) */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
     /* ===== F-0 (SCHEMA 1→2, David 2026-06-30): consolidated migration — keystone for the Heroic-course build (_course/BUILD-SPEC.md §2). Adds scaffolding fields/keys ONLY; zero behavior change. prevSchema captured near top of load(). ===== */
     if (prevSchema < 2) {
       Object.keys(S.bk).forEach(function (dk) { var day = S.bk[dk]; if (!day) return;
@@ -6120,6 +6160,11 @@
     });
     paintSeg();
     add(card, "div", null, "“Mysterious” — a deep, spacious ambient loop").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;";
+    // whole-app subtle background music toggle
+    var amRow = add(card, "button"); amRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:12px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
+    function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">App background music</b><span style="font-size:11px;color:#b39ab0;">subtle “Creative Exercise” while you browse</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
+    amPaint();
+    amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
     var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
   }
