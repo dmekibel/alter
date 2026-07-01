@@ -5917,7 +5917,7 @@
     ];
     if (!sb.dataset.tbcat) sb.dataset.tbcat = (!_isC && _pt && _pt.layer) ? _pt.layer : "Steady the body"; // open on the FOR-RIGHT-NOW tool's category so it's relevant
     var _cat = sb.dataset.tbcat;
-    var tabs = add(sb, "div"); tabs.style.cssText = "display:flex;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;";
+    var tabs = add(sb, "div"); tabs.style.cssText = "display:flex;flex:none;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;"; // flex:none — an overflow-x flex-column child otherwise gets min-height:0 and collapses to a sliver (David 2026-07-01)
     TB_CATS.forEach(function (c) {
       var on = _cat === c.layer, tb = add(tabs, "button");
       tb.setAttribute("style", "flex:none;display:flex;align-items:center;gap:5px;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;padding:8px 11px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:12px;white-space:nowrap;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#e6cfe0") + ";");
