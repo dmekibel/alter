@@ -1014,7 +1014,7 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
-    else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { drawJourney(true); } catch (e) {} }
+    else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
   }
   var _paneAnim = false;
@@ -1045,8 +1045,8 @@
       if (!armed || multi) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
       if (!on) {
-        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.3) { armed = false; return; } // clearly vertical → let it scroll
-        if (Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy) * 1.3) { on = true; beginDrag(dx < 0 ? -1 : 1); } // clearly horizontal → pane swipe. Balanced 1.3:1 so a real sideways drag commits but a scroll doesn't (David 2026-07-01)
+        if (Math.abs(dy) > 14 && Math.abs(dy) > Math.abs(dx) * 1.5) { armed = false; return; } // only bail to scroll when clearly VERTICAL (needs 1.5x) → a slow, slightly-wobbly sideways swipe isn't stolen by the scroll
+        if (Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy) * 1.2) { on = true; beginDrag(dx < 0 ? -1 : 1); } // commit the pane swipe as soon as it's mostly horizontal (David 2026-07-01)
         else return; // still ambiguous (near-diagonal) → wait for the gesture to declare itself
       }
       e.preventDefault();
