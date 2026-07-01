@@ -5772,6 +5772,9 @@
   ];
   var TB_SIGILS = ["ti-circle", "ti-triangle", "ti-square", "ti-star", "ti-spiral", "ti-wave-sine", "ti-flame", "ti-bolt", "ti-moon", "ti-sun", "ti-diamond", "ti-heart", "ti-infinity", "ti-target", "ti-eye", "ti-key", "ti-anchor", "ti-mountain", "ti-leaf", "ti-hexagon"]; // build-your-own SIGIL = pick/combine 1-3 Tabler line-marks (David 2026-07-01) — a symbol you choose, never an emoji
   function customTools() { return (S.tools && S.tools.custom) || []; }
+  // REINFORCE loop (HANDOFF §8 / David 2026-07-01): pin a prebuilt tool as a daily 20-second practice. Repetition is how a self-image installs — a pinned tool becomes "your daily", surfaced at the top of the toolbox with a done-today check. Additive: S.tools.daily.
+  function dailyTools() { return (S.tools && S.tools.daily) || []; }
+  function toggleDaily(id) { S.tools = S.tools || {}; S.tools.daily = S.tools.daily || []; var i = S.tools.daily.indexOf(id); if (i >= 0) S.tools.daily.splice(i, 1); else S.tools.daily.push(id); save(); toast(i >= 0 ? "removed from your daily" : "✦ pinned to your daily"); }
   function runCustomTool(t) {
     var it = TB_INTENT.filter(function (x) { return x.k === t.intent; })[0] || TB_INTENT[0];
     var an = TB_ANCHOR.filter(function (x) { return x.k === t.anchor; })[0] || TB_ANCHOR[0];
@@ -5846,7 +5849,8 @@
   // the ONE right tool for right now — a CUSTOM tool wins if its trigger matches your state (it's yours), else the best built-in. Returns {custom} or {tool}.
   function toolForNow() {
     var states = nowStates(), mine = customTools();
-    for (var i = 0; i < mine.length; i++) { if (states.indexOf(mine[i].when) >= 0) return { custom: mine[i], state: mine[i].when }; }
+    var matches = mine.filter(function (t) { return states.indexOf(t.when) >= 0; });
+    if (matches.length) { var _u = (S.tools && S.tools.use) || {}; matches.sort(function (a, b) { return (_u[b.id] || 0) - (_u[a.id] || 0); }); return { custom: matches[0], state: matches[0].when }; } // learn-your-kit: among your matching custom tools, the one you actually use most wins (David 2026-07-01)
     var hr = new Date().getHours(), m = currentMood(), craving = states.indexOf("craving") >= 0;
     var id = craving ? "blacksun" : (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate";
     return { tool: TOOLS.filter(function (t) { return t.id === id; })[0] || TOOLS[0] };
@@ -5869,6 +5873,13 @@
       add(nt, "div", "tfs-h", _pt.name).style.flex = "1";
       add(now, "div", "tfs-sub", _why2).style.cssText = "margin-top:6px;font-size:12.5px;line-height:1.42;color:#e6cfe0;";
       var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
+    }
+    // YOUR DAILY — prebuilt tools pinned as a daily 20-second practice (the REINFORCE loop) with a done-today check (David 2026-07-01)
+    var _daily = dailyTools();
+    if (_daily.length) {
+      add(sb, "div", "tfs-sub", "Your daily").style.cssText = "margin-top:10px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
+      var drow = add(sb, "div"); drow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;";
+      _daily.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var doneToday = (((S.tools || {}).last) || {})[id] === todayK(); var c = add(drow, "button", "tf-chip"); if (doneToday) c.style.opacity = ".6"; c.innerHTML = '<i class="ti ' + (doneToday ? "ti-circle-check" : T.ti) + '"></i> ' + esc(T.name) + (doneToday ? " · done" : ""); c.onclick = function () { runTool(T); }; });
     }
     var sos = add(sb, "button", "tf-chip"); sos.style.marginTop = "9px"; sos.innerHTML = '<i class="ti ti-urgent"></i> Something specific is loud — help me pick'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
     // Favorites / Recents pinned row
@@ -5898,6 +5909,7 @@
         add(top, "span").innerHTML = '<i class="ti ' + t.ti + '" style="font-size:22px;color:#ffb3d9"></i>';
         var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
         var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
+        var _pinned = dailyTools().indexOf(t.id) >= 0; var pinB = add(top, "button"); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = "add to your daily"; pinB.setAttribute("style", "background:none;border:none;cursor:pointer;flex:none;font-size:15px;padding:4px;color:" + (_pinned ? "#ffb3d9" : "#5a3550") + ";"); pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
         add(card, "div", "tfs-sub", "Why it works: " + t.why).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;"; // the breathing-app feel: one line of real science per tool
         add(card, "div", "tfs-sub", "Reach for it when: " + t.when).style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;";
         card.onclick = function () { runTool(t); };
@@ -5924,12 +5936,16 @@
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div><button class="done2 bw-next" style="max-width:260px;margin:30px auto 0;display:block;">Next ▶</button>';
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nextB = ov.querySelector(".bw-next");
-    var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-    if (opts.drone !== false) { try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 160; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; } }
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, gain = null, oscs = [];
+    if (opts.drone !== false) { try { if (AC) { actx = new AC(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(actx.destination);
+      [[110, "sine", 1], [164.81, "sine", 0.55], [220, "triangle", 0.22]].forEach(function (o) { var os = actx.createOscillator(), g2 = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(gain); os.start(); oscs.push(os); }); // warm 3-voice pad (root + a fifth + a soft octave) — an auto "meditation-app" bed instead of a flat sine (David 2026-07-01)
+      var lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 0.011; lfo.connect(lg); lg.connect(gain.gain); lfo.start(); oscs.push(lfo); // a slow breathing swell
+      gain.gain.linearRampToValueAtTime(0.032, actx.currentTime + 1.8);
+    } } catch (e) { actx = null; } }
     var i = 0, done = false;
     function finish(skip) {
       if (done) return; done = true; TTS.stop();
-      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); osc.stop(actx.currentTime + 0.5); } catch (e) {} }
+      if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); oscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.6); } catch (e) {} }); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) {
         var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: 2, catK: opts.catK || "love", color: col });
