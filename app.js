@@ -18,7 +18,7 @@
     function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
     function vhash(text) { var n = String(text).toLowerCase().replace(/[^a-z0-9]/g, ""), h = 5381, i; for (i = 0; i < n.length; i++) h = ((h * 33) ^ n.charCodeAt(i)) >>> 0; return h.toString(16); }
-    function loadManifest() { try { fetch("assets/voice/manifest.json", { cache: "force-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { vset = {}; a.forEach(function (k) { vset[k] = 1; }); } }).catch(function () {}); } catch (e) {} }
+    function loadManifest() { try { var cb = ""; try { var sc = document.querySelector('script[src*="app.js"]'); var m = sc && (sc.getAttribute("src") || "").match(/v=(\d+)/); cb = m ? "?v=" + m[1] : "?t=" + (window.performance && performance.timeOrigin ? Math.floor(performance.timeOrigin) : ""); } catch (e) {} fetch("assets/voice/manifest.json" + cb, { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { vset = {}; a.forEach(function (k) { vset[k] = 1; }); } }).catch(function () {}); } catch (e) {} } // FRESH manifest every build (David 2026-07-01): force-cache served a STALE manifest missing newer lines → they showed as no-clip and went silent. Cache-bust by app version + no-cache revalidation; the hash-named mp3s stay force-cached (immutable).
     function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
       if (chosen) return chosen;
@@ -6091,6 +6091,7 @@
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     orb.style.animation = "breathe 9s ease-in-out infinite";
+    function dbg2(m) { try { if (!(typeof S !== "undefined" && S && S.voiceDebug)) return; var e = document.getElementById("voiceDbg"); if (!e) { e = document.createElement("div"); e.id = "voiceDbg"; e.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 2px);left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.75);color:#8fffa8;font:600 10px ui-monospace,monospace;padding:2px 9px;border-radius:9px;pointer-events:none;max-width:94vw;white-space:nowrap;"; document.body.appendChild(e); } e.textContent = "♪ " + m; } catch (e2) {} }
     // transport bar (built now, wired after decode)
     var bar = add(ov, "div", "gp-bar");
     var scrub = add(bar, "div", "gp-scrub"); var fill = add(scrub, "div", "gp-fill"); var knob = add(scrub, "div", "gp-knob");
@@ -6117,7 +6118,9 @@
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
       ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = "";
-      startFrom(0); tick();
+      // DON'T auto-start: the decode is async so this callback is NOT in a gesture → iOS would silence it (the meditation-silence bug). Show the big Play; the user's tap starts playback inside a gesture. (David 2026-07-01 — matches Headspace's tap-to-play.)
+      playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; paintNow(0); tick();
+      dbg2("ready · tap play");
     });
 
     function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; }
@@ -6131,6 +6134,7 @@
           sources.push(src);
         } catch (e) {}
       });
+      dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
