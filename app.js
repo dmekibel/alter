@@ -5450,10 +5450,8 @@
     }
     function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
     function renderScoped() {
-      // BIG-3 staged reminder card (light, one line) — only on the overview, above search (David 2026-06-28)
-      if (opts.headNode) body.appendChild(opts.headNode);
-      // SEARCH (scrolls away with the content now) + PINNED row (your most-important — pin anything to bring it here & to the front) — David 2026-06-24
-      var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
+      // reminder card removed (no redundant "second energy text" / emoji) + search moved BELOW the categories (David 2026-07-01). Build search detached; append after the grid.
+      var sb = document.createElement("div"); sb.className = "bento-search"; var _sic = add(sb, "span", "bento-sicon"); _sic.innerHTML = '<i class="ti ti-search"></i>';
       var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
       var pinList = []; ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); }); // grouped by domain so the colours cluster
       var pinned = add(body, "div", "bento-pinned");
@@ -5461,7 +5459,7 @@
       else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
       // "you've been meaning to…" — the inferred procrastination list, surfaced prominently right under the pins (David 2026-06-28). actOf() maps each to a real activity obj so chips colour by domain + toggle-select like any other.
       if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); var _bmt = add(pr, "span", "bento-qlbl"); _bmt.innerHTML = '<i class="ti ti-clock-hour-3"></i> been meaning to'; opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
-      var results = add(body, "div", "bento-results"); results.style.display = "none";
+      var results = document.createElement("div"); results.className = "bento-results"; results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
       ORDER.forEach(function (d) {
         var acts = (by[d] || []).slice(); if (!acts.length) return;
@@ -5472,6 +5470,7 @@
         acts.forEach(function (a) { var c = actChip(a, wrap, false); c.style.flex = "0 0 auto"; c.style.whiteSpace = "nowrap"; });
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
+      body.appendChild(results); body.appendChild(sb); // results + search BELOW the categories (David 2026-07-01)
       function drawResults(q) {
         if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; pinned.style.display = ""; addb.style.display = ""; return; }
         gridWrap.style.display = "none"; pinned.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
