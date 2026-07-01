@@ -15,6 +15,34 @@
   function voiceBus() { sharedAudioCtx(); return _voiceBus; }
   function bgBus() { sharedAudioCtx(); return _bgBus; }
   function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
+  // ===== BACKGROUND MUSIC — "Creative Exercise" (David 2026-07-01): a Mario-Paint-BGM-3-style lo-fi loop. FM Rhodes on a CMaj7↔FMaj7 comp + a plucky pentatonic lead + soft sub-bass, through a convolution reverb. Routes into _bgBus so the Background volume slider controls it. =====
+  var BGM = (function () {
+    var running = false, timer = null, step = 0, nextTime = 0, chordBus = null, leadBus = null, bassBus = null, conv = null, revGain = null, tremGain = null, lfo = null;
+    var BPM = 96, beat = 60 / BPM, eighth = beat / 2, LOOK = 0.12;
+    var mtof = function (m) { return 440 * Math.pow(2, (m - 69) / 12); };
+    var NO = { C3: 48, E3: 52, G3: 55, B3: 59, F3: 53, A3: 57, C4: 60, E4: 64, C5: 72, D5: 74, E5: 76, F5: 77, G5: 79, A5: 81, C6: 84 };
+    var fq = function (n) { return mtof(NO[n]); };
+    var CH_C = ["C3", "E3", "G3", "B3"], CH_F = ["F3", "A3", "C4", "E4"];
+    var MEL = ["E5", null, "G5", null, "C6", null, null, "G5", "A5", null, "G5", null, "E5", null, "D5", null, "F5", null, "A5", null, "C6", null, null, "A5", "G5", null, "E5", null, "C5", null, null, null];
+    function impulse(ctx, sec, dec) { var rate = ctx.sampleRate, len = Math.floor(rate * sec), buf = ctx.createBuffer(2, len, rate); for (var ch = 0; ch < 2; ch++) { var d = buf.getChannelData(ch); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dec); } return buf; }
+    function graph(ctx) { var out = bgBus() || ctx.destination;
+      conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 3.6, 2.4); revGain = ctx.createGain(); revGain.gain.value = 0.3; conv.connect(revGain); revGain.connect(out);
+      chordBus = ctx.createGain(); chordBus.gain.value = 0.5; tremGain = ctx.createGain(); tremGain.gain.value = 1;
+      lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 4.7; var la = ctx.createGain(); la.gain.value = 0.12; lfo.connect(la); la.connect(tremGain.gain); lfo.start();
+      chordBus.connect(tremGain); tremGain.connect(out); tremGain.connect(conv);
+      leadBus = ctx.createGain(); leadBus.gain.value = 0.4; leadBus.connect(out); leadBus.connect(conv);
+      bassBus = ctx.createGain(); bassBus.gain.value = 0.45; bassBus.connect(out); bassBus.connect(conv);
+    }
+    function ep(ctx, freq, t, dur, vel) { var car = ctx.createOscillator(); car.type = "sine"; car.frequency.value = freq; var mod = ctx.createOscillator(); mod.type = "sine"; mod.frequency.value = freq; var mg = ctx.createGain(); mg.gain.setValueAtTime(freq * 2.6 * vel, t); mg.gain.exponentialRampToValueAtTime(freq * 0.4, t + 0.45); mod.connect(mg); mg.connect(car.frequency); var a = ctx.createGain(); a.gain.setValueAtTime(0.0001, t); a.gain.linearRampToValueAtTime(vel, t + 0.006); a.gain.exponentialRampToValueAtTime(vel * 0.5, t + 0.4); a.gain.exponentialRampToValueAtTime(0.0001, t + dur); car.connect(a); a.connect(chordBus); car.start(t); mod.start(t); car.stop(t + dur + 0.1); mod.stop(t + dur + 0.1); }
+    function pluck(ctx, freq, t, vel) { var o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq; var o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2; var g = ctx.createGain(), g2 = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); g2.gain.setValueAtTime(0.0001, t); g2.gain.linearRampToValueAtTime(vel * 0.25, t + 0.005); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.25); o.connect(g); o2.connect(g2); g.connect(leadBus); g2.connect(leadBus); o.start(t); o2.start(t); o.stop(t + 1); o2.stop(t + 1); }
+    function bs(ctx, freq, t, dur) { var o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = freq; var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.5, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(bassBus); o.start(t); o.stop(t + dur + 0.05); }
+    function schedStep(ctx, s, t) { var chord = s < 16 ? CH_C : CH_F; if (s % 8 === 0) { chord.forEach(function (n, i) { ep(ctx, fq(n), t, 2 * beat * 0.95, 0.2 - i * 0.014); }); bs(ctx, mtof(NO[chord[0]] - 12), t, 2 * beat); } var m = MEL[s]; if (m) pluck(ctx, fq(m), t, 0.42); }
+    function tick() { var ctx = sharedAudioCtx(); if (!ctx) return; while (nextTime < ctx.currentTime + LOOK) { schedStep(ctx, step, nextTime); nextTime += eighth; step = (step + 1) % 32; } }
+    function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } graph(ctx); running = true; step = 0; nextTime = ctx.currentTime + 0.12; tick(); timer = setInterval(tick, 25); }
+    function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } var ctx = sharedAudioCtx(); if (ctx && tremGain) { try { tremGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.3); } catch (e) {} } setTimeout(function () { try { if (lfo) lfo.stop(); } catch (e) {} [chordBus, leadBus, bassBus, revGain, conv, tremGain].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); chordBus = leadBus = bassBus = conv = revGain = tremGain = lfo = null; }, 1800); }
+    return { start: start, stop: stop, running: function () { return running; } };
+  })();
+  function bedMode() { return (S.audio && S.audio.bed) || "music"; } // 'music' (Creative Exercise) · 'pad' (ambient drone) · 'off'
   // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
   //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
   //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
@@ -3668,7 +3696,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; /* voice + background volume, applied via the two master buses */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "music"; /* voice + background volume (master buses) + which background bed: music / pad / off */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
     /* ===== F-0 (SCHEMA 1→2, David 2026-06-30): consolidated migration — keystone for the Heroic-course build (_course/BUILD-SPEC.md §2). Adds scaffolding fields/keys ONLY; zero behavior change. prevSchema captured near top of load(). ===== */
     if (prevSchema < 2) {
       Object.keys(S.bk).forEach(function (dk) { var day = S.bk[dk]; if (!day) return;
@@ -6080,6 +6108,16 @@
       s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
     }
     slider("Voice", "voice"); slider("Background", "bg");
+    // which background bed plays under the guided tools
+    var bl = add(card, "div", null, "Background sound"); bl.style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 8px;";
+    var seg = add(card, "div"); seg.style.cssText = "display:flex;gap:7px;"; var segBtns = [];
+    function paintSeg() { segBtns.forEach(function (b) { b.style.background = bedMode() === b.dataset.bed ? "#9a7cff" : "rgba(255,255,255,.05)"; }); }
+    [["music", "Music"], ["pad", "Ambient"], ["off", "Off"]].forEach(function (o) {
+      var b = add(seg, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:9px 4px;font-family:var(--bub);font-weight:800;font-size:13px;cursor:pointer;color:#f0e6ef;"; segBtns.push(b);
+      b.onclick = function () { S.audio.bed = o[0]; save(); paintSeg(); if (o[0] !== "music") { try { BGM.stop(); } catch (e) {} } else if (document.getElementById("breatheOv")) { try { BGM.start(); } catch (e) {} } };
+    });
+    paintSeg();
+    add(card, "div", null, "“Creative Exercise” — a soft lo-fi loop to work to").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;";
     var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
   }
@@ -6106,9 +6144,10 @@
     var bPlay = add(btns, "button", "gp-b gp-play"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
     var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
     bar.style.visibility = "hidden";
-    // ambient bed (a real soft pad — doubles as an honest keep-warm for the context; NOT the inaudible hack)
-    var drGain = null, drOscs = [];
-    if (opts.drone !== false && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(bgBus() || ctx.destination);
+    // background bed — the Creative Exercise music, the soft ambient pad, or nothing (David 2026-07-01, Sound panel)
+    var drGain = null, drOscs = [], usedBGM = false, bedM = bedMode();
+    if (opts.drone !== false && bedM === "music") { try { BGM.start(); usedBGM = true; } catch (e) {} }
+    else if (opts.drone !== false && bedM === "pad" && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(bgBus() || ctx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.5], [220, "triangle", 0.2]].forEach(function (o) { var os = ctx.createOscillator(), g2 = ctx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(drGain); os.start(); drOscs.push(os); });
       drGain.gain.linearRampToValueAtTime(0.075, ctx.currentTime + 2); // louder ambient bed (David 2026-07-01)
     } catch (e) { drGain = null; } }
@@ -6165,6 +6204,7 @@
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
+      if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (drGain) { try { drGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5); drOscs.forEach(function (o) { try { o.stop(ctx.currentTime + 0.6); } catch (e) {} }); } catch (e) {} }
       if (!skip) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease"; orb.style.transform = "scale(.7)"; }
       setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : 1500);
