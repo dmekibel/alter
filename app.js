@@ -15,6 +15,20 @@
   function voiceBus() { sharedAudioCtx(); return _voiceBus; }
   function bgBus() { sharedAudioCtx(); return _bgBus; }
   function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
+  // PEACEFUL PAD (David 2026-07-01): the original meditation drone he liked best — an open A pad (A2·E3·A3) with a gentle breathing swell, that slowly + OCCASIONALLY drifts to a warm neighbour chord (F2·C3·A3, common A3 top) and back for a touch of nuance. Reused for the tool bed AND the whole-app music. Returns { stop }.
+  function startPad(ctx, out, level) {
+    if (!ctx || !out) return { stop: function () {} };
+    var CHA = [110, 164.81, 220], CHB = [87.31, 130.81, 220]; // A(A2 E3 A3) ⟷ F(F2 C3 A3)
+    var g = ctx.createGain(); g.gain.value = 0; g.connect(out);
+    var types = ["sine", "sine", "triangle"], vols = [1, 0.5, 0.22], oscs = [];
+    for (var i = 0; i < 3; i++) { var o = ctx.createOscillator(); o.type = types[i]; o.frequency.value = CHA[i]; var og = ctx.createGain(); og.gain.value = vols[i]; o.connect(og); og.connect(g); o.start(); oscs.push(o); }
+    var lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.07; var la = ctx.createGain(); la.gain.value = level * 0.32; lfo.connect(la); la.connect(g.gain); lfo.start(); // slow breathing swell
+    g.gain.linearRampToValueAtTime(level, ctx.currentTime + 2.5);
+    var stopped = false, timers = [], atB = false;
+    function glide() { if (stopped) return; var c = sharedAudioCtx(); if (!c) return; atB = !atB; var tgt = atB ? CHB : CHA, now = c.currentTime; oscs.forEach(function (o, i) { o.frequency.cancelScheduledValues(now); o.frequency.setValueAtTime(o.frequency.value, now); o.frequency.linearRampToValueAtTime(tgt[i], now + 4.5); }); timers.push(setTimeout(glide, atB ? 9000 : 22000)); } // mostly on A (~22s), a brief drift to F (~9s)
+    timers.push(setTimeout(glide, 22000));
+    return { stop: function () { stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + 1.2); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 1400); } };
+  }
   // ===== BACKGROUND MUSIC — "Mysterious" (David 2026-07-01): the deep, hypnotic, spacious Mario-Paint-BGM-3 vibe. ~70 BPM, a slow 2-chord vamp — Ab min9 ⟷ Db dom9 — each swelling for 2 bars. Sub-bass root on the downbeat, a warm low-passed saw pad washing the upper extensions in and out, and sparse glassy pentatonic plucks drifting on top like stars. Big reverb. Routes into _bgBus. =====
   var BGM = (function () {
     var running = false, timer = null, step = 0, nextTime = 0, bassBus = null, padBus = null, pluckBus = null, conv = null, revGain = null;
@@ -44,26 +58,12 @@
     function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { [bassBus, padBus, pluckBus, revGain, conv].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); bassBus = padBus = pluckBus = revGain = conv = null; }, 2600); }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
-  function bedMode() { return (S.audio && S.audio.bed) || "music"; } // 'music' (Mysterious) · 'pad' (ambient drone) · 'off'
-  // ===== APP BACKGROUND MUSIC (David 2026-07-01): SUBTLE whole-app bed = just the two relaxing opening chords from his reference — a slow warm electric-piano wash, F major ⟷ C major, each swelling and holding ~8s. No melody, no plucks. Low level; auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
+  function bedMode() { return (S.audio && S.audio.bed) || "pad"; } // 'pad' (peaceful drone, DEFAULT) · 'music' (Mysterious) · 'off'
+  // ===== APP BACKGROUND MUSIC (David 2026-07-01): the SAME peaceful pad, at a very low level, drifting under the whole app. Auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
   var APPMUSIC = (function () {
-    var running = false, timer = null, idx = 0, nextTime = 0, chordBus = null, conv = null, revGain = null, tremGain = null, lfo = null;
-    var mtof = function (m) { return 440 * Math.pow(2, (m - 69) / 12); };
-    var CHORDS = [[41, 57, 60], [36, 52, 55]]; // F major (F2 A3 C4) ⟷ C major (C2 E3 G3) — warm open EP thirds
-    var CDUR = 8; // seconds per chord — slow + hypnotic
-    function impulse(ctx, sec, dec) { var rate = ctx.sampleRate, len = Math.floor(rate * sec), buf = ctx.createBuffer(2, len, rate); for (var ch = 0; ch < 2; ch++) { var d = buf.getChannelData(ch); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dec); } return buf; }
-    function graph(ctx) { var out = bgBus() || ctx.destination;
-      conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 3.8, 2.4); revGain = ctx.createGain(); revGain.gain.value = 0.2; conv.connect(revGain); revGain.connect(out);
-      chordBus = ctx.createGain(); chordBus.gain.value = 0.24; tremGain = ctx.createGain(); tremGain.gain.value = 1;
-      lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 3.4; var la = ctx.createGain(); la.gain.value = 0.05; lfo.connect(la); la.connect(tremGain.gain); lfo.start();
-      chordBus.connect(tremGain); tremGain.connect(out); tremGain.connect(conv);
-    }
-    // warm electric-piano voice with a SLOW wash-in (not a struck attack) so the chords breathe rather than plink
-    function ep(ctx, m, t, dur, vel) { var f = mtof(m); var car = ctx.createOscillator(); car.type = "sine"; car.frequency.value = f; var mod = ctx.createOscillator(); mod.type = "sine"; mod.frequency.value = f; var mg = ctx.createGain(); mg.gain.setValueAtTime(f * 1.4 * vel, t); mg.gain.exponentialRampToValueAtTime(f * 0.22, t + 1.8); mod.connect(mg); mg.connect(car.frequency); var a = ctx.createGain(); a.gain.setValueAtTime(0.0001, t); a.gain.linearRampToValueAtTime(vel, t + 0.9); a.gain.setValueAtTime(vel, t + dur * 0.5); a.gain.exponentialRampToValueAtTime(0.0001, t + dur); car.connect(a); a.connect(chordBus); car.start(t); mod.start(t); car.stop(t + dur + 0.15); mod.stop(t + dur + 0.15); }
-    function playChord(ctx, ch, t, dur) { ch.forEach(function (m, i) { ep(ctx, m, t, dur, 0.34 - i * 0.05); }); }
-    function tick() { var ctx = sharedAudioCtx(); if (!ctx) return; while (nextTime < ctx.currentTime + 0.6) { playChord(ctx, CHORDS[idx % CHORDS.length], nextTime, CDUR + 0.6); idx++; nextTime += CDUR; } } // slight overlap → chords crossfade seamlessly
-    function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } graph(ctx); running = true; idx = 0; nextTime = ctx.currentTime + 0.2; tick(); timer = setInterval(tick, 120); }
-    function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { try { if (lfo) lfo.stop(); } catch (e) {} [chordBus, revGain, conv, tremGain].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); chordBus = revGain = conv = tremGain = lfo = null; }, 2200); }
+    var ctl = null, running = false;
+    function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } ctl = startPad(ctx, bgBus() || ctx.destination, 0.05); running = true; }
+    function stop() { if (!running) return; running = false; if (ctl) { try { ctl.stop(); } catch (e) {} ctl = null; } }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
   // keep app music in sync: play only when enabled, past the start screen, and NO tool/player overlay is open (tool audio takes over). Idempotent + debounced.
@@ -3732,7 +3732,7 @@
 
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "music"; if (S.audio.appMusic == null) S.audio.appMusic = true; /* voice + background volume (master buses) + which background bed + subtle whole-app music (Creative Exercise) */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
+  function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); } if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "pad"; if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */ if (S.audio.appMusic == null) S.audio.appMusic = true; /* voice + background volume (master buses) + which background bed + subtle whole-app music (Creative Exercise) */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
     /* ===== F-0 (SCHEMA 1→2, David 2026-06-30): consolidated migration — keystone for the Heroic-course build (_course/BUILD-SPEC.md §2). Adds scaffolding fields/keys ONLY; zero behavior change. prevSchema captured near top of load(). ===== */
     if (prevSchema < 2) {
       Object.keys(S.bk).forEach(function (dk) { var day = S.bk[dk]; if (!day) return;
@@ -6148,12 +6148,12 @@
     var bl = add(card, "div", null, "Background sound"); bl.style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 8px;";
     var seg = add(card, "div"); seg.style.cssText = "display:flex;gap:7px;"; var segBtns = [];
     function paintSeg() { segBtns.forEach(function (b) { b.style.background = bedMode() === b.dataset.bed ? "#9a7cff" : "rgba(255,255,255,.05)"; }); }
-    [["music", "Music"], ["pad", "Ambient"], ["off", "Off"]].forEach(function (o) {
+    [["pad", "Peaceful"], ["music", "Mysterious"], ["off", "Off"]].forEach(function (o) {
       var b = add(seg, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:9px 4px;font-family:var(--bub);font-weight:800;font-size:13px;cursor:pointer;color:#f0e6ef;"; segBtns.push(b);
       b.onclick = function () { S.audio.bed = o[0]; save(); paintSeg(); if (o[0] !== "music") { try { BGM.stop(); } catch (e) {} } else if (document.getElementById("breatheOv")) { try { BGM.start(); } catch (e) {} } };
     });
     paintSeg();
-    add(card, "div", null, "“Mysterious” — a deep, spacious ambient loop").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;";
+    add(card, "div", null, "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;line-height:1.4;";
     // whole-app subtle background music toggle
     var amRow = add(card, "button"); amRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:12px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
     function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">App background music</b><span style="font-size:11px;color:#b39ab0;">warm, slow chords while you browse</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
@@ -6185,13 +6185,10 @@
     var bPlay = add(btns, "button", "gp-b gp-play"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
     var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
     bar.style.visibility = "hidden";
-    // background bed — the Creative Exercise music, the soft ambient pad, or nothing (David 2026-07-01, Sound panel)
-    var drGain = null, drOscs = [], usedBGM = false, bedM = bedMode();
+    // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
+    var padCtl = null, usedBGM = false, bedM = bedMode();
     if (opts.drone !== false && bedM === "music") { try { BGM.start(); usedBGM = true; } catch (e) {} }
-    else if (opts.drone !== false && bedM === "pad" && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(bgBus() || ctx.destination);
-      [[110, "sine", 1], [164.81, "sine", 0.5], [220, "triangle", 0.2]].forEach(function (o) { var os = ctx.createOscillator(), g2 = ctx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(drGain); os.start(); drOscs.push(os); });
-      drGain.gain.linearRampToValueAtTime(0.075, ctx.currentTime + 2); // louder ambient bed (David 2026-07-01)
-    } catch (e) { drGain = null; } }
+    else if (opts.drone !== false && bedM === "pad" && ctx) { try { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.09); } catch (e) { padCtl = null; } }
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], baseCtx = 0, offset = 0, raf = 0;
@@ -6246,7 +6243,7 @@
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
-      if (drGain) { try { drGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5); drOscs.forEach(function (o) { try { o.stop(ctx.currentTime + 0.6); } catch (e) {} }); } catch (e) {} }
+      if (padCtl) { try { padCtl.stop(); } catch (e) {} }
       if (!skip) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease"; orb.style.transform = "scale(.7)"; }
       setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : 1500);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: Math.max(1, Math.round(total / 60)), catK: opts.catK || "love", color: col }); earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id); try { celebrateGated(col, curStreak() || 1); } catch (e) {} save(); renderAll(); }
