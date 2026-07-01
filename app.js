@@ -5725,41 +5725,58 @@
   // ===== WISDOM TOOLBOX (TB-*, David 2026-06-28): the cockpit 'tool' stage mode. Adopts the six already-shipping runners under David's 8-Layer Self-Help Stack with KB-EXACT 'when to use me' lines, adds Stutz's Reversal of Desire + a Blair eyes-open self-hypnosis shell + a Part-X triage front door. Reward-never-shame: using a tool on a hard day IS the win. NOT a third menu — it renders into #tfStageBody via renderStage('tool'). =====
   // The kit's single source of truth. layer = David's 8-Layer Self-Help Stack section; when = KB-EXACT verbatim 'when to use me'; fn launches the runner (the six adopted + the new ones). gateNode reserved for TB-JOURNEY-UNLOCK (all unlocked this wave). (TB-STATE)
   var TOOLS = [
-    { id: "breathe",  layer: "Steady the body",        name: "Breathe",          emoji: "🌬️", thinker: "Huberman · Johnson", when: "acute stress, a spike, or right before something hard — any transition crash", fn: function () { breathwork(4); } },
-    { id: "relax",    layer: "Steady the body",        name: "Relax all muscles", emoji: "🧘", thinker: "Maltz — Psycho-Cybernetics", when: "tension, pre-sleep, or pre-focus", fn: function () { relaxMoment(); } },
-    { id: "meditate", layer: "Clear the mind",          name: "Meditate",          emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", fn: function () { meditation(); } },
-    { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", fn: function () { tapping(); } },
-    { id: "reversal", layer: "Feel it through",         name: "Reversal of Desire",emoji: "🔥", thinker: "Stutz — Tool 1", when: "right before something you've been avoiding", fn: function () { reversalOfDesire(null); } },
-    { id: "activelove",layer: "Feel it through",        name: "Active Love",       emoji: "💗", thinker: "Stutz — Tool 2", when: "when someone's living rent-free in your head and you can't stop rehearsing the argument", fn: function () { activeLove(); } },
-    { id: "blacksun", layer: "Feel it through",         name: "Black Sun",         emoji: "🌑", thinker: "Stutz — Tool 6", when: "the pull to scroll / snack / numb — the “I deserve this” voice", fn: function () { blackSun(); } },
-    { id: "vortex",   layer: "Feel it through",         name: "The Vortex",        emoji: "🌪️", thinker: "Stutz — Tool 7", when: "lethargy, a mid-day crash, or the flat gap between tasks", fn: function () { vortex(); } },
-    { id: "jeopardy", layer: "Feel it through",         name: "Jeopardy",          emoji: "⏳", thinker: "Stutz — Tool 5", when: "demoralized and stuck — or right after a win, when the work quietly stops", fn: function () { jeopardy(); } },
-    { id: "mantra",   layer: "Become who you're being", name: "Mantra",            emoji: "🗣️", thinker: "Murphy · Goddard", when: "the morning identity step, low self-trust, or pre-performance", fn: function () { mantraPlayer(); } },
-    { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   emoji: "🦁", thinker: "Stutz — Tool 3", when: "before a hard conversation or performance, or when you freeze up", fn: function () { innerAuthority(); } },
-    { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", fn: function () { selfHypnosis(); } },
-    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", fn: function () { gratefulFlow(); } }
+    { id: "breathe",  layer: "Steady the body",        name: "Breathe",          ti: "ti-wind",           emoji: "🌬️", thinker: "Huberman · Johnson", when: "acute stress, a spike, or right before something hard — any transition crash", why: "Long exhales pull the vagal brake — your nervous system downshifts in about 90 seconds.", fn: function () { breathwork(4); } },
+    { id: "relax",    layer: "Steady the body",        name: "Relax all muscles", ti: "ti-ripple",         emoji: "🧘", thinker: "Maltz — Psycho-Cybernetics", when: "tension, pre-sleep, or pre-focus", why: "Releasing muscle tension signals the brain the threat is over — the body leads, the mind follows.", fn: function () { relaxMoment(); } },
+    { id: "meditate", layer: "Clear the mind",          name: "Meditate",          ti: "ti-atom",           emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", why: "Watching thoughts without grabbing them quiets the mind's default chatter — focus returns.", fn: function () { meditation(); } },
+    { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     ti: "ti-hand-finger",    emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", why: "Tapping pressure points while naming a feeling lowers amygdala arousal — the charge drains.", fn: function () { tapping(); } },
+    { id: "reversal", layer: "Feel it through",         name: "Reversal of Desire",ti: "ti-flame",          emoji: "🔥", thinker: "Stutz — Tool 1", when: "right before something you've been avoiding", why: "Moving toward the discomfort flips avoidance into approach — the brain learns the thing is safe.", fn: function () { reversalOfDesire(null); } },
+    { id: "activelove",layer: "Feel it through",        name: "Active Love",       ti: "ti-heart-handshake",emoji: "💗", thinker: "Stutz — Tool 2", when: "when someone's living rent-free in your head and you can't stop rehearsing the argument", why: "You can't rehearse a grudge and generate warmth at once — one overrides the other.", fn: function () { activeLove(); } },
+    { id: "blacksun", layer: "Feel it through",         name: "Black Sun",         ti: "ti-circle-half-2",  emoji: "🌑", thinker: "Stutz — Tool 6", when: "the pull to scroll / snack / numb — the “I deserve this” voice", why: "Facing the urge instead of feeding it starves the craving loop — the pull fades when you don't flinch.", fn: function () { blackSun(); } },
+    { id: "vortex",   layer: "Feel it through",         name: "The Vortex",        ti: "ti-tornado",        emoji: "🌪️", thinker: "Stutz — Tool 7", when: "lethargy, a mid-day crash, or the flat gap between tasks", why: "A jolt of imagined motion spikes arousal — enough to break a low-energy freeze.", fn: function () { vortex(); } },
+    { id: "jeopardy", layer: "Feel it through",         name: "Jeopardy",          ti: "ti-hourglass",      emoji: "⏳", thinker: "Stutz — Tool 5", when: "demoralized and stuck — or right after a win, when the work quietly stops", why: "Picturing the cost of not acting recruits loss-aversion — the strongest motivator we have.", fn: function () { jeopardy(); } },
+    { id: "mantra",   layer: "Become who you're being", name: "Mantra",            ti: "ti-message-2",      emoji: "🗣️", thinker: "Murphy · Goddard", when: "the morning identity step, low self-trust, or pre-performance", why: "A repeated phrase in a calm state seeds the subconscious — repetition is how self-image installs.", fn: function () { mantraPlayer(); } },
+    { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   ti: "ti-mountain",       emoji: "🦁", thinker: "Stutz — Tool 3", when: "before a hard conversation or performance, or when you freeze up", why: "Rehearsing your grounded self first primes the brain to actually run that version live.", fn: function () { innerAuthority(); } },
+    { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     ti: "ti-spiral",         emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", why: "A light trance quiets the critical mind so a new self-image can land — the induction is what makes it stick.", fn: function () { selfHypnosis(); } },
+    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", why: "Gratitude shifts you out of the threat network into the care network — a different brain state, on demand.", fn: function () { gratefulFlow(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
+  function suggestTool() { // the right tool for your state RIGHT NOW — so the toolbox leads with one pick, never a wall (David 2026-07-01)
+    var m = currentMood(), hr = new Date().getHours();
+    var id = (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate"; // low/spiky → steady the body · night → install/wind-down · morning → identity · else → clear the mind
+    return TOOLS.filter(function (t) { return t.id === id; })[0] || TOOLS[0];
+  }
   function toolboxStageStep(sb) { // renders the kit into #tfStageBody (the 'tool' cockpit stage). Reuses .tf-stagecard / .tf-chip material + berry palette. No new menu, no timeline touch.
     sb.innerHTML = "";
     var head = add(sb, "div", "tf-stagecard");
     var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
-    add(head, "div", "tfs-sub", "the right move for the moment you're in — sourced from your Field Guide. Using one on a hard day is the win.");
-    var sos = add(head, "button", "tf-chip"); sos.style.marginTop = "11px"; sos.innerHTML = '<i class="ti ti-urgent"></i> What\'s loud right now?'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
+    add(head, "div", "tfs-sub", "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.");
+    // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
+    var sug = suggestTool();
+    if (sug) {
+      var now = add(sb, "div", "tf-stagecard"); now.style.cssText = "border-color:#ff7ab8;box-shadow:0 3px 0 #160510,0 0 16px rgba(255,122,184,.25);";
+      add(now, "div", "tfs-sub", "FOR RIGHT NOW").style.cssText = "font-size:10px;font-weight:800;letter-spacing:1.3px;color:#ff9ec9;";
+      var nt = add(now, "div"); nt.style.cssText = "display:flex;align-items:center;gap:9px;margin-top:4px;";
+      add(nt, "span").innerHTML = '<i class="ti ' + sug.ti + '" style="font-size:24px;color:#ffb3d9"></i>';
+      add(nt, "div", "tfs-h", sug.name).style.flex = "1";
+      add(now, "div", "tfs-sub", sug.why).style.cssText = "margin-top:6px;font-size:12.5px;line-height:1.42;color:#e6cfe0;";
+      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { runTool(sug); };
+    }
+    var sos = add(sb, "button", "tf-chip"); sos.style.marginTop = "9px"; sos.innerHTML = '<i class="ti ti-urgent"></i> Something specific is loud — help me pick'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
     // Favorites / Recents pinned row
     var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
     pins = pins.slice(0, 4);
-    if (pins.length) { var pwrap = add(sb, "div"); add(pwrap, "div", "tfs-sub", "Recent"); var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = T.emoji + " " + esc(T.name); c.onclick = function () { runTool(T); }; }); }
+    if (pins.length) { var pwrap = add(sb, "div"); add(pwrap, "div", "tfs-sub", "Recent").style.marginTop = "8px"; var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + T.ti + '"></i> ' + esc(T.name); c.onclick = function () { runTool(T); }; }); }
     TOOL_LAYERS.forEach(function (layer) {
       var inLayer = TOOLS.filter(function (t) { return t.layer === layer; }); if (!inLayer.length) return;
-      add(sb, "div", "tfs-sub", layer).style.cssText = "margin-top:6px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
+      add(sb, "div", "tfs-sub", layer).style.cssText = "margin-top:9px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
       inLayer.forEach(function (t) {
         var card = add(sb, "button", "tf-stagecard"); card.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
-        var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:8px;";
-        add(top, "span", null, t.emoji).style.cssText = "font-size:20px;flex:none;";
+        var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:9px;";
+        add(top, "span").innerHTML = '<i class="ti ' + t.ti + '" style="font-size:22px;color:#ffb3d9"></i>';
         var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
         var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
-        add(card, "div", "tfs-sub", "when: " + t.when).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;";
+        add(card, "div", "tfs-sub", "Why it works: " + t.why).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;"; // the breathing-app feel: one line of real science per tool
+        add(card, "div", "tfs-sub", "Reach for it when: " + t.when).style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;";
         card.onclick = function () { runTool(t); };
       });
     });
