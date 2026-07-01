@@ -2,13 +2,18 @@
    gamified picker, Toggl multitask timers, Streaks habits, auto-adjust schedule, proactive. $0. */
 (function () {
   "use strict";
+  // ONE shared, persistent Web Audio context for the whole app (voice + tool ambient beds). Reused everywhere so we never leak/exhaust iOS's context cap (each `new AudioContext()` per tool was leaking — a likely cause of "some tools have sound, some don't"). Resumed on every gesture. (David 2026-07-01)
+  var _sharedACtx = null;
+  function sharedAudioCtx() {
+    try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; if (!_sharedACtx) _sharedACtx = new AC(); if (_sharedACtx.state === "suspended") { try { _sharedACtx.resume(); } catch (e) {} } return _sharedACtx; } catch (e) { return null; }
+  }
   // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
   //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
   //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
   var TTS = (function () {
     var synth = window.speechSynthesis || null;
     var supported = !!synth && typeof window.SpeechSynthesisUtterance === "function";
-    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null, vprimed = false;
+    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null, vprimed = false, curSrc = null, bufCache = {}, playGen = 0;
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
     function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
@@ -32,8 +37,8 @@
     }
     function unlock() {
       if (!unlocked) { unlocked = true; try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {} }
-      // prime the audio channel inside the opening gesture so pre-recorded lines can play on iOS. RE-TRY on every tool-open gesture until it succeeds — the manifest loads async, so the FIRST gesture may fire before vset exists; a later gesture (opening meditation) then primes it. Without this, timer-driven lines (meditation/relax cues) get blocked by iOS and go silent. (David 2026-07-01: "meditation has no voice")
-      try { if (!vaudio) vaudio = new Audio(); if (!vprimed && vset) { var ks = Object.keys(vset); if (ks.length) { vprimed = true; vaudio.muted = true; vaudio.src = "assets/voice/" + ks[0] + ".mp3"; var pp = vaudio.play(); if (pp && pp.catch) pp.catch(function () {}); setTimeout(function () { try { vaudio.pause(); vaudio.currentTime = 0; vaudio.muted = false; } catch (e) {} }, 40); } } } catch (e) {}
+      // Unlock Web Audio INSIDE the gesture: a resumed AudioContext can play decoded buffers at ANY time — even fired from a setInterval/setTimeout — which an HTMLAudio element CANNOT on iOS. That timer restriction was exactly why meditation/breathwork were silent while the tap-through beatRunner tools spoke. Play a 1-sample silent buffer to fully arm the channel. (David 2026-07-01)
+      try { var ctx = sharedAudioCtx(); if (ctx && !vprimed) { var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); vprimed = true; } } catch (e) {}
     }
     function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
     function chunk(text) {
@@ -59,20 +64,31 @@
       var chunks = chunk(String(text));
       setTimeout(function () { speakChunks(chunks, 0, opts); }, 60); // let cancel() settle on iOS
     }
+    // Play a pre-recorded male-voice line through Web Audio (decoded buffer → gain → destination). Works from timers, unlike HTMLAudio on iOS. No pre-recorded clip for the exact line → STAY SILENT (never the robot voice David hates). Dynamic/custom lines get on-device neural TTS later.
     function speak(text, opts) {
       if (!text) return; opts = opts || {}; stop();
-      if (vset) { var key = vhash(text); if (vset[key]) { try {
-        if (!vaudio) vaudio = new Audio();
-        vaudio.onended = function () { if (opts.onend) try { opts.onend(); } catch (e) {} };
-        vaudio.onerror = function () { if (opts.onend) try { opts.onend(); } catch (e) {} }; // David 2026-07-01: NEVER fall back to the robot Web-Speech voice — he hates it. Silence (still advance) if the pre-recorded male audio can't load.
-        vaudio.muted = false; vaudio.volume = opts.volume != null ? opts.volume : 1; vaudio.src = "assets/voice/" + key + ".mp3"; vaudio.currentTime = 0;
-        var pr = vaudio.play(); if (pr && pr.catch) pr.catch(function () { try { var p2 = vaudio.play(); if (p2 && p2.catch) p2.catch(function () {}); } catch (e) {} }); // on iOS play() can reject even though the primed element still plays — RETRY, never fall back to Web-Speech here (that caused the double male+robot voice). Genuine load failures fall back via onerror.
-        return;
-      } catch (e) {} } }
-      // David 2026-07-01: no pre-recorded audio for this exact line → STAY SILENT. Never the robot Web-Speech voice. (Dynamic/custom lines get on-device neural TTS later.)
-      if (opts.onend) try { opts.onend(); } catch (e) {}
+      function fin() { if (opts.onend) try { opts.onend(); } catch (e) {} }
+      if (!vset) { fin(); return; }                              // manifest not loaded yet → silent
+      var key = vhash(text); if (!vset[key]) { fin(); return; }  // no clip for this exact line → silent
+      var ctx = sharedAudioCtx(); if (!ctx) { fin(); return; }
+      var vol = opts.volume != null ? opts.volume : 1, myGen = ++playGen;
+      function playBuf(buf) {
+        if (myGen !== playGen) return; // a newer speak()/stop() superseded this one while it was decoding
+        try {
+          if (ctx.state === "suspended") ctx.resume();
+          var src = ctx.createBufferSource(); src.buffer = buf;
+          var g = ctx.createGain(); g.gain.value = vol; src.connect(g); g.connect(ctx.destination);
+          src.onended = function () { if (src === curSrc) curSrc = null; fin(); };
+          curSrc = src; src.start(0);
+        } catch (e) { fin(); }
+      }
+      if (bufCache[key]) { playBuf(bufCache[key]); return; }
+      fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
+        .then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); })
+        .then(function (buf) { bufCache[key] = buf; playBuf(buf); })
+        .catch(function () { fin(); });
     }
-    function stop() { if (vaudio) { try { vaudio.pause(); } catch (e) {} } clearWd(); curU = null; if (supported) { try { synth.cancel(); } catch (e) {} } }
+    function stop() { playGen++; if (curSrc) { try { curSrc.onended = null; curSrc.stop(0); } catch (e) {} curSrc = null; } clearWd(); curU = null; if (supported) { try { synth.cancel(); } catch (e) {} } }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
     return { supported: supported, unlock: unlock, speak: speak, stop: stop };
@@ -4605,7 +4621,7 @@
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-    try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 200; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
+    try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 200; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
     var done = false, tmr = null;
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
@@ -4644,7 +4660,7 @@
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     orb.style.animation = "breathe 9s ease-in-out infinite";
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-    try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; }
+    try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.03, actx.currentTime + 1.6); } } catch (e) { actx = null; }
     var done = false, i = 0, tmr = null;
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
@@ -4695,7 +4711,7 @@
       var G = GUIDES[cfg.guide];
       orb.style.animation = "breathe " + G.orb + "s ease-in-out infinite";
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-      try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
+      try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 110; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.025, actx.currentTime + 2); } } catch (e) { actx = null; }
       var seq = G.seq, tail = seq.slice(-3), ci = 0, total = cfg.mins * 60, elapsed = 0, done = false, cueT = null, tickT = null, sT = null;
       function cue() { if (done) return; var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; lab.textContent = line; say(line, VPROF.med); ci++; sub.textContent = ""; if (sT) clearTimeout(sT); sT = setTimeout(function () { if (!done) sub.textContent = "…"; }, 3500); }
       function finish(skip) { if (done) return; done = true; TTS.stop(); if (cueT) clearInterval(cueT); if (tickT) clearInterval(tickT); if (sT) clearTimeout(sT); if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.6); osc.stop(actx.currentTime + 0.75); } catch (e) {} } if (skip) { if (ov.parentNode) ov.remove(); return; } lab.textContent = "Done ✓"; sub.textContent = "well done"; orb.style.animation = ""; orb.style.transition = "transform 1.4s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Meditation · " + GUIDES[cfg.guide].who, mins: cfg.mins, catK: "love", color: "#9a5cf0" }); earn(Math.max(6, cfg.mins * 2), { catK: "love" }); tickTool("meditate"); save(); renderAll(); }, 1700); }
@@ -4727,7 +4743,7 @@
       addVoiceToggle(ov);
       var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-      try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
+      try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); } } catch (e) { actx = null; }
       function blip(freq) { if (!actx) return; var now = actx.currentTime; osc.frequency.setValueAtTime(freq, now); gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.006, now + 0.4); }
       var steps = [], setupLine = "Even though I feel " + cfg.feel[0] + ", I deeply and completely accept myself.";
       for (var s = 0; s < 3; s++) steps.push({ pt: "Setup — side of hand", say: setupLine, setup: true });
@@ -4765,7 +4781,7 @@
     var box = add(ov, "div"); box.style.cssText = "width:86%;max-width:440px;color:#f3e9ff;font-family:var(--bub);text-align:center;font-size:23px;font-weight:800;line-height:1.5;text-shadow:0 2px 12px rgba(0,0,0,.45);min-height:130px;display:flex;align-items:center;justify-content:center;transition:opacity .5s;";
     var sub = add(ov, "div", null, "say it out loud, or just read along"); sub.style.cssText = "color:#bcb0e8;font-family:var(--bub);font-size:12px;margin-top:20px;letter-spacing:.5px;";
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
-    try { if (AC) { actx = new AC(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.028, actx.currentTime + 1.8); } } catch (e) { actx = null; }
+    try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 150; gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start(); gain.gain.linearRampToValueAtTime(0.028, actx.currentTime + 1.8); } } catch (e) { actx = null; }
     var i = 0, done = false, tmr = null;
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
@@ -5994,7 +6010,7 @@
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nextB = ov.querySelector(".bw-next");
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, gain = null, oscs = [];
-    if (opts.drone !== false) { try { if (AC) { actx = new AC(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(actx.destination);
+    if (opts.drone !== false) { try { if (AC) { actx = sharedAudioCtx(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(actx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.55], [220, "triangle", 0.22]].forEach(function (o) { var os = actx.createOscillator(), g2 = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(gain); os.start(); oscs.push(os); }); // warm 3-voice pad (root + a fifth + a soft octave) — an auto "meditation-app" bed instead of a flat sine (David 2026-07-01)
       var lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 0.011; lfo.connect(lg); lg.connect(gain.gain); lfo.start(); oscs.push(lfo); // a slow breathing swell
       gain.gain.linearRampToValueAtTime(0.032, actx.currentTime + 1.8);
