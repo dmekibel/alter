@@ -144,6 +144,60 @@ David's earliest, most concrete vision: 'cleaning and chores should be… a sepa
 - Dissolving the guardian into middleware or the world into a stats page → INSTEAD: keep the angel a living character and the world a place you enter and love (loadFairy/loadWorld, #32, #243). Continuity+routing are HOW it feels alive; the body/animation/voice and the blooming night-world are WHAT the user falls for.
 - Rebuilding a worse new version of a feature that already works → INSTEAD: reuse and extend. 'You created a new version of the today… which has less features and is more broken than the original… keep that original function because it worked so perfectly well' (#59). Adopt the six shipped runners; don't rebuild.
 
+## PROFOUND LAYER — Inversion, Internalization & Identity Evidence
+
+The deepest differentiator vs. every other self-improvement app isn't a feature — it's a **reframing of what progress IS.** This layer sits above the mechanisms and unifies them:
+
+### The Core Inversion: The Catch Is The Unit of Progress
+
+The distraction-tap loop in meditation is not a meditation feature. It's the thesis of the *entire app in miniature*. Watch what it does:
+- **Moment of failure** (you drifted) = **moment of scoring** (you noticed — tap).
+- Shame polarity inverted. Noticing IS the rep.
+- The app learns you and adapts the reminder density.
+
+**Apply this inversion fractal-wide:**
+- **Drift as the highest-leverage training ground.** The user doesn't quit because streaks are hard — they quit because *returning after quitting* feels like double failure. Instead: the RETURN is the catch. Opening the app after a gap rewards *recovery speed* (not perfect adherence). A 10-day gap closed to 2 days over a month is a learnable, unbreakable metric. Nobody has ever made *bouncing back* the thing you get good at.
+  - Mechanism: track "average gap is shrinking" instead of "14 days in a row." Mathematically, one missed day can never break it — it can only be slowly earned. This IS the floor/way-out principle made operational.
+- **Replan becomes a skill you level.** Every time you return to the day to rescope it, that's a Replan rep. The follow-through stat is "times you planefully adjusted course." Drift-then-recover is not failure-then-redemption; it's practice-then-learning.
+- **Skipped tools as a compass, not a shame signal.** When a journaling node keeps sliding, the guardian doesn't nag harder — it asks "Heavy or just wrong?" Two paths: *wrong* → delete (pruning earns reward, way-out honored), *heavy* → shrink to 8s and put it FIRST tomorrow. Avoidance is data pointing at what matters. See it, not shame it.
+
+### The Endgame: Graduation & The App's Disappearance
+
+Maltz & Plotkin both warn: optimize-forever is the trap. ALTER has no business model, so it can do the thing no company dares: **openly optimize for graduation.**
+
+Skills don't just level up — they **internalize**. After enough reps with declining reminder-density (medCadence generalized across all tools), a skill graduates: the app *stops scaffolding* and marks it "yours now." The world visibly fades its reminder, but the skill never disappears — it's available forever, just independent. **The win condition is that you stop needing catching.** A guardian angel's success is invisible: you no longer open the app to be told what to do; you open it to track what you've done.
+
+- Mechanism: each tool/skill carries an internalization counter (touches to Habit, then Grace). When Grace is stable over 2 weeks, a graduation prompt: "This one's yours. Carry it with you, use it when you need it, come back anytime." The tool itself lives in the grimoire still, just no longer *scaffolding* your day.
+
+### Identity Evidence, Not Reps
+
+Maltz's core: behavior can't outrun self-image. A user who does 30 reps but believes "I'm someone who quits" will engineer a collapse to restore consistency. Every tracker logs *behavior*. **ALTER logs the identity-evidence.**
+
+The reprogramming toolkit installs the new self-image; the tracker becomes its **court evidence**. When the user hits a doubt moment (3pm drift, day-seven skip), the guardian doesn't cheerlead — it **cites the record**:
+- "You've come back from drift 9 times. The data says you're someone who returns."
+- "Meditation 12 times in a month. The claim 'I can't focus' has 12 counter-examples on record."
+- "You've rescheduled intentionally 7 times. You're someone who adapts, not someone who quits."
+
+This is the NPC→Player transition made operational: the moment you can't honestly call yourself an NPC anymore, because the log won't let you.
+
+### Time-Symmetry: The Promise That Travels Forward
+
+Most tracking is past-focused. But the psychologically potent object is the **promise** — future-you and present-you in a relationship:
+
+- **Letters across time** (PM→AM). At the AM bookend, one line to tonight's self ("what would make today a win?"). At the PM, the app *delivers it back* — you're read a message from the person you were this morning. Self-accountability without any external judge. Dispenza's mental-rehearsal, disguised as mail.
+- **The compounding view** (extrapolation as anti-akrasia). Show the user what their *current average week, repeated for a year*, builds — honestly, from their own data. Not fantasy goal-setting: "At your actual current rate you meditate 40 hours next year. What does that version of you do differently?" That single reframe (this ordinary Tuesday IS the year) is the deepest anti-akrasia device known, and no app renders it.
+
+### Alignment as The One Number
+
+**Make visible the gap Withers names: said vs. done.** One honest coherence reading:
+- Plan (the identity claim + the day's ONE thing chosen this morning) vs. Track (what actually got done).
+- The alignment score is private (never shown as a punishment grade); it determines routing (high alignment = offer growth tools; low alignment = route to replan + recovery tools).
+- High-frequency signal without judgment — it just tells the guardian where you are, so it hands you the right next move.
+
+All the mechanisms above trade in this one conserved quantity: **catches close the alignment gap, and the world blooms in proportion to closure.** That's what gives ALTER its coherence — not a soup of features, but one system with one currency.
+
+---
+
 ## TENSIONS TO RESOLVE — the real decisions only David can make
 
 **1.** INTRINSIC-ONLY vs SOFT ESCAPE HATCH (genuinely open, David's call): the AM why-chips deliberately offer no extrinsic option — lock it fully autonomy-only (strongest SDT stance) or add a soft 'something else…' free-type so it never feels coercive? GRAND-VISION openQuestions Q1. NOTE: this is spec-authored, not a David quote — and his own 'find YOUR way' law (#17) actually argues FOR a hatch while his intrinsic principle argues against. He must pick.
@@ -164,7 +218,9 @@ David's earliest, most concrete vision: 'cleaning and chores should be… a sepa
 
 ## GAME PLAN — figure it out on paper, leg by leg
 
-1. STEP 0 — Make THIS map the durable root. Fold this constitution into the newest TRACKER-HANDOFF in place (not a 17th doc, per CLAUDE.md). It is the structural fix for the named 'system failure' of dropped feedback (#170). One consolidated 'DAVID OWES / DAVID DECIDES' block lives at the top so nothing evaporates across sessions: Robbins transcript, Blair inductions, + the 8 tensions above.
+**FOUNDATION — The Profound Layer is not a feature, it's the principle that unifies every feature.** Before building anything, ensure the whole team holds the inversion (the catch is the unit, not the completion); the graduation vision (the app fades, that's the win); and the identity-evidence lens (tracking proof, not counting reps). Every mechanic that doesn't serve one of these goes OUT. This prevents the soulless-swarm aggregation that happened before.
+
+1. STEP 0 — Make THIS map the durable root. Fold this constitution (including the Profound Layer) into the newest TRACKER-HANDOFF in place (not a 17th doc, per CLAUDE.md). It is the structural fix for the named 'system failure' of dropped feedback (#170). One consolidated 'DAVID OWES / DAVID DECIDES' block lives at the top so nothing evaporates across sessions: Robbins transcript, Blair inductions, + the 8 tensions above + the Profound Layer principle statement.
 
 2. STEP 1 — Draw the body, not a list. ONE diagram: the burning timeline (spine/stage) + the cockpit (socket) + the well (grimoire) + the ledger (life-tree) + the world/angel + the life-state twin, joined by the three soul-seams (continuity, routing, reward-never-shame). This is 'it needs more legs to stand' (#215) made literal — the legs share one socket.
 
