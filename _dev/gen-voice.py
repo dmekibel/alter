@@ -32,6 +32,9 @@ for c in ["Breathe in","Hold","Breathe out"]: add(c)
 # 6) tapping steps: pt + ". " + say  AND  say alone (covers setup)
 for pt,say in re.findall(r'pt:\s*'+STR+r'\s*,\s*say:\s*'+STR, src):
     pt,say=un(pt),un(say); add(pt+". "+say); add(say)
+# 7) medEditor section pools: lines: [...]  (settle/breath/body/aware/rest/bliss/play)
+for arr in re.findall(r'lines:\s*\[([^\]]*)\]', src):
+    for s in re.findall(STR, arr): add(un(s))
 # de-dupe
 uniq=[]; seen=set()
 for l in lines:
