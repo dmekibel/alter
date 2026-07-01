@@ -608,6 +608,18 @@
         color: DOM.restore.c, done: settled, act: function () { closeJourney(); try { partXTriage(); } catch (e) { try { breathwork(2); } catch (e2) {} } } }; // _lead → the Sequencer's energy-first law: a depleted morning leads with regulation, not "go go go" (David 2026-07-01)
     }
 
+    // DRIFT RECOVERY (David 2026-07-01): when today's gone off-plan, the journey leads with a KIND way back — the right reset tool + one small thing, framed reward-never-shame (coming back IS the win, not a failure). Battle-not-fail. Only when NOT already low-energy (then Settle leads instead). Done once you've taken any reset today.
+    if (jn >= 1 && !pf.lowEnergy) {
+      var _driftLog = (logs(k) || []).some(function (l) { return domainOf(l) === "drift"; });
+      if (_driftLog || pastDiverged(k)) {
+        var _resetToday = (logs(k) || []).some(function (l) { return domainOf(l) === "restore"; }) || Object.keys((S.tools && S.tools.last) || {}).some(function (id) { return S.tools.last[id] === k; });
+        var _sug = (function () { try { return suggestTool(); } catch (e) { return null; } })();
+        nodes.push({ key: "wayback", icon: "ti-arrow-back-up", title: "One step back", _lead: true,
+          line: "Today drifted a little — no shame, that's human. Coming back IS the move." + (_sug ? " A 20-second " + _sug.name.toLowerCase() + ", then one small thing." : " One small reset, then one thing."),
+          color: DOM.restore.c, done: _resetToday, act: function () { closeJourney(); try { runTool(_sug || TOOLS[0]); } catch (e) { try { breathwork(2); } catch (e2) {} } } });
+      }
+    }
+
     // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
     if (jn >= 2 && !dormant) {
       var amNode = { key:"am", emoji:"🌅", title:"Open the morning", line: gvName ? "Who you're being today: "+gvName+". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
