@@ -2074,7 +2074,7 @@
     item("", "ti-briefcase", "My toolbox", function () { openToolbox(); }); // WISDOM TOOLBOX entry (TB-SHEET) — opens the cockpit 'tool' stage
     item("", "ti-stack-2", "Habit stacks", function () { presetsSheet(k); }); // habit-stack drop-in (was inside the old Plan day sheet)
     item("", "ti-wand", "Enhance plan", function () { enhancePlan(k); });
-    item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("🧹 cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
+    item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("cleared " + relLabel(k).toLowerCase() + " — Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
     item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
     item("", "ti-settings", "Settings", function () { settingsSheet(); }); // David 2026-07-01: the giant menu was overwhelming — the config/rare items (Goals, Guidance, Brain, Away, Redo setup, Test day) now live behind one Settings door
@@ -4780,7 +4780,7 @@
       TTS.unlock(); TTS.warm(GUIDES[cfg.guide].seq); // pre-decode this guide's lines WHILE the user is still choosing → by the time they hit Begin the clips are cached, so Begin itself starts playback in one tap (David 2026-07-01)
       var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
-      box.innerHTML = '<div style="font-size:26px;font-weight:800;">🧘 Meditate</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:12px;">even a tiny one counts</div>';
+      box.innerHTML = '<div style="font-size:26px;font-weight:800;"><i class="ti ti-moon"></i> Meditate</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:12px;">even a tiny one counts</div>';
       function row(title, opts, key) {
         var lbl = add(box, "div", null, title); lbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:13px 0 7px;text-transform:uppercase;letter-spacing:.5px;";
         var r = add(box, "div"); r.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
@@ -4813,7 +4813,7 @@
       ov.innerHTML = "";
       var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
-      box.innerHTML = '<div style="font-size:26px;font-weight:800;">👆 Tapping</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:6px;">EFT — tap the points, let it move through you</div>';
+      box.innerHTML = '<div style="font-size:26px;font-weight:800;"><i class="ti ti-hand-finger"></i> Tapping</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:6px;">EFT — tap the points, let it move through you</div>';
       var lbl = add(box, "div", null, "what's bumping you?"); lbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;";
       var r = add(box, "div"); r.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
       FEELINGS.forEach(function (f) { var b = add(r, "button", null, f[0]); b.style.cssText = "border:2.5px solid #6a5a9a;border-radius:14px;padding:9px 13px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#efeaff;background:" + (cfg.feel === f ? "#ff7ab8" : "rgba(255,255,255,.06)") + ";"; b.onclick = function () { cfg.feel = f; build(); }; });
@@ -6470,11 +6470,11 @@
     var grats = [];
     function gather() {
       var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-      add(B, "div", "sttl", "🙏 Grateful Flow");
+      add(B, "div", "sttl", "Grateful Flow");
       add(B, "div", "lbl", "Stutz & Michels' practice — name a few specific things. small is good.");
       var frm = add(B, "div", "frm"); var gi = document.createElement("input"); gi.type = "text"; gi.placeholder = "something you're grateful for…"; frm.appendChild(gi); var go = add(frm, "button", "go", "+");
       var ul = add(B, "div");
-      function redraw() { ul.innerHTML = ""; grats.forEach(function (g, i) { var r = add(ul, "div", "subi"); add(r, "div", null, "🙏 " + g).style.flex = "1"; var x = add(r, "div", "del", "✕"); x.onclick = function () { grats.splice(i, 1); redraw(); }; }); }
+      function redraw() { ul.innerHTML = ""; grats.forEach(function (g, i) { var r = add(ul, "div", "subi"); add(r, "div", null, "" . g).style.flex = "1"; var x = add(r, "div", "del", "✕"); x.onclick = function () { grats.splice(i, 1); redraw(); }; }); }
       go.onclick = function () { var v = gi.value.trim(); if (v) { grats.push(v); gi.value = ""; redraw(); } };
       var saved = (S.profile && S.profile.gratList) || ["my health", "a warm bed", "someone who loves me"];
       add(B, "div", "lbl", "or tap a familiar one"); var pc = add(B, "div", "pchips"); saved.forEach(function (g) { var x = add(pc, "div", "pchip", g); x.onclick = function () { if (grats.indexOf(g) < 0) { grats.push(g); redraw(); } }; });
@@ -6484,17 +6484,17 @@
       var n = Math.min(grats.length, 5);
       if (i >= n) { source(); return; }
       var B = el("sheetBody"); B.innerHTML = "";
-      add(B, "div", "sttl", "🙏 " + grats[i]);
+      add(B, "div", "sttl", grats[i]);
       add(B, "div", "lbl", "close your eyes. don't just think it — feel it land in your body. (" + (i + 1) + " of " + n + ")");
       add(B, "div", "breathorb");
       add(B, "button", "done2", "I feel it ▶").onclick = function () { feelCycle(i + 1); };
     }
     function source() {
       var B = el("sheetBody"); B.innerHTML = "";
-      add(B, "div", "sttl", "✨ Let it rise");
+      add(B, "div", "sttl", "Let it rise");
       add(B, "div", "lbl", "now stop naming reasons. just feel grateful — for nothing, for everything. sense it radiating from the center of your chest.");
       add(B, "div", "breathorb breathorb--slow");
-      add(B, "button", "done2", "Done 🙏").onclick = function () { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Grateful Flow", mins: 5, catK: "love", color: "#ff4fa0" }); earn(12, { catK: "love" }); tickTool("grateful"); save(); if (onDone) onDone(); else { closeSheet(); renderAll(); } };
+      add(B, "button", "done2", "Done").onclick = function () { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Grateful Flow", mins: 5, catK: "love", color: "#ff4fa0" }); earn(12, { catK: "love" }); tickTool("grateful"); save(); if (onDone) onDone(); else { closeSheet(); renderAll(); } };
     }
     gather();
   }
@@ -6527,7 +6527,7 @@
         S.habits.forEach(function (h) { var on = !!st.hab[h.id]; var r = add(B, "div", "subi"); var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = h.color; add(r, "div", null, h.e + "  " + h.l).style.flex = "1"; r.onclick = function () { st.hab[h.id] = !st.hab[h.id]; draw(); }; });
       } else {
         add(B, "div", "sttl", "🙏 Close with gratitude"); add(B, "div", "lbl", "the Stutz & Michels way — or a quick one.");
-        add(B, "button", "done2", "🙏 Grateful Flow (full)").onclick = function () { gratefulFlow(finalize); };
+        add(B, "button", "done2", "Grateful Flow (full)").onclick = function () { gratefulFlow(finalize); };
         var qb = add(B, "button", "add", "⚡ quick gratitude instead"); qb.style.cssText = "display:block;margin:12px auto 0;"; qb.onclick = function () { quickGrat(finalize); };
       }
       if (st.step < 3) {
