@@ -997,7 +997,7 @@
   var PANE_ORDER = ["planner", "journey", "game"];
   function curPaneName() { var b = document.body.classList; return b.contains("gaming") ? "game" : b.contains("journey-open") ? "journey" : "planner"; }
   function paneGroup(n) { // the element(s) that SLIDE for this pane. #nav is the ONE persistent bottom menu (fixed, on top) shared across all 3 panes — it never slides; only the page content does (David 2026-06-30).
-    if (n === "planner") return [el("pullSheet"), el("liveDock")].filter(Boolean);
+    if (n === "planner") return [el("pullSheet")].filter(Boolean); // liveDock is NOT in the slide group — it's a persistent fixed sibling (like #nav) that stays put during the drag, then CSS hides it off the planner. David 2026-07-01
     if (n === "journey") return [el("journeyPath")].filter(Boolean);
     return [el("gameMode")].filter(Boolean);
   }
@@ -1045,9 +1045,9 @@
       if (!armed || multi) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
       if (!on) {
-        if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { armed = false; return; } // vertical wins ties → it's a scroll (journey/timeline scroll must never fight the swipe). David 2026-07-01
-        if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 2) { on = true; beginDrag(dx < 0 ? -1 : 1); } // only a DECISIVELY horizontal drag (2:1) starts a pane swipe
-        else return; // not yet decisive → wait for more movement
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.3) { armed = false; return; } // clearly vertical → let it scroll
+        if (Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy) * 1.3) { on = true; beginDrag(dx < 0 ? -1 : 1); } // clearly horizontal → pane swipe. Balanced 1.3:1 so a real sideways drag commits but a scroll doesn't (David 2026-07-01)
+        else return; // still ambiguous (near-diagonal) → wait for the gesture to declare itself
       }
       e.preventDefault();
       var d = e.clientX - sx;
@@ -4683,9 +4683,9 @@
       if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "out") orb.style.transform = "scale(.5)";
       if (actx) { var now = actx.currentTime, t = dur / 1000;
         bwGain.gain.cancelScheduledValues(now); bwGain.gain.setValueAtTime(bwGain.gain.value, now);
-        if (kind === "in") bwGain.gain.linearRampToValueAtTime(0.03, now + t * 0.95);        // soft swell, like an in-breath
-        else if (kind === "out") bwGain.gain.linearRampToValueAtTime(0.008, now + t);        // fade, like an out-breath
-        else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.022 : 0.006, now + 0.5); } // hold sustains gently; rest near-silent
+        if (kind === "in") bwGain.gain.linearRampToValueAtTime(0.06, now + t * 0.95);         // soft swell, like an in-breath (louder — David 2026-07-01)
+        else if (kind === "out") bwGain.gain.linearRampToValueAtTime(0.018, now + t);        // fade, like an out-breath
+        else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.042 : 0.012, now + 0.5); } // hold sustains gently; rest near-silent
       phi++; if (phi >= PH.length) { phi = 0; cyc++; }
       tmr = setTimeout(step, dur);
     }
@@ -6016,7 +6016,7 @@
     if (opts.drone !== false) { try { if (AC) { actx = sharedAudioCtx(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(bgBus() || actx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.55], [220, "triangle", 0.22]].forEach(function (o) { var os = actx.createOscillator(), g2 = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(gain); os.start(); oscs.push(os); }); // warm 3-voice pad (root + a fifth + a soft octave) — an auto "meditation-app" bed instead of a flat sine (David 2026-07-01)
       var lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 0.011; lfo.connect(lg); lg.connect(gain.gain); lfo.start(); oscs.push(lfo); // a slow breathing swell
-      gain.gain.linearRampToValueAtTime(0.032, actx.currentTime + 1.8);
+      gain.gain.linearRampToValueAtTime(0.075, actx.currentTime + 1.8); // louder ambient bed (David 2026-07-01)
     } } catch (e) { actx = null; } }
     var i = 0, done = false;
     function finish(skip) {
@@ -6110,7 +6110,7 @@
     var drGain = null, drOscs = [];
     if (opts.drone !== false && ctx) { try { drGain = ctx.createGain(); drGain.gain.value = 0; drGain.connect(bgBus() || ctx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.5], [220, "triangle", 0.2]].forEach(function (o) { var os = ctx.createOscillator(), g2 = ctx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(drGain); os.start(); drOscs.push(os); });
-      drGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 2);
+      drGain.gain.linearRampToValueAtTime(0.075, ctx.currentTime + 2); // louder ambient bed (David 2026-07-01)
     } catch (e) { drGain = null; } }
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };

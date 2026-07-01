@@ -1407,7 +1407,7 @@
   #trashZone.on{ display:flex; }
   #trashZone.armed{ background:#ff5fa0; color:#fff; border-style:solid; transform:translateX(-50%) scale(1.28); }
   #liveDock{ display:none; }
-  body.tab-day:not(.gaming) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:74px; z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; transition:left .26s cubic-bezier(.2,.85,.3,1),right .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* slimmer dock → more timeline (David 2026-06-25); base transition so it slides both into AND out of the collapsed corner (David 2026-06-27) */
+  body.tab-day:not(.gaming):not(.journey-open) #liveDock.on{ display:block; position:fixed; left:8px; right:8px; bottom:74px; z-index:60; background:#1c0512; border:3px solid #160510; border-radius:18px 18px 14px 14px; box-shadow:0 -5px 20px rgba(0,0,0,.55),0 4px 0 #160510; padding:5px 11px 7px; font-family:"Jost",sans-serif; transition:left .26s cubic-bezier(.2,.85,.3,1),right .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* slimmer dock → more timeline (David 2026-06-25); base transition so it slides both into AND out of the collapsed corner (David 2026-06-27) */
   #liveDock .ld-grab{ width:100%; height:24px; background:transparent; margin:-4px 0 0; position:relative; cursor:grab; touch-action:none; } /* full-width tall touch zone — drag UP to expand (the visual bar is the ::before) (David 2026-06-27) */
   #liveDock .ld-grab::before{ content:""; position:absolute; top:7px; left:50%; transform:translateX(-50%); width:40px; height:5px; border-radius:3px; background:#5a2c44; }
   #liveDock .ld-main{ display:flex; align-items:center; gap:9px; margin-bottom:5px; }
@@ -1741,6 +1741,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=746"></script>
+  <script src="app.js?v=747"></script>
 </body>
 </html>
