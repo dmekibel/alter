@@ -5468,11 +5468,8 @@
         acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the front (David 2026-06-24)
         var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
         var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; view.grp = null; render(); };
-        var wrap = add(mc, "div", "bento-chips");
-        var SHOWN = 6; acts.slice(0, SHOWN).forEach(function (a) { actChip(a, wrap, false); }); // 2-column grid: show the top few + a "+N" to open the rest (David's image 1)
-        var rest = acts.length - SHOWN;
-        if (rest > 0) { var more = add(wrap, "span", "bchip more"); more.style.background = mixHex(D.c, "#160510", 0.5); more.style.color = D.light; more.textContent = "+" + rest; more.onclick = function () { view.cat = d; view.grp = null; render(); }; }
-        else { var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew; }
+        var wrap = add(mc, "div", "bento-chips"); wrap.style.cssText = "display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;padding-bottom:3px;touch-action:pan-x;"; // FULL list per category, scroll SIDEWAYS — no +N truncation, no per-item + (David 2026-07-01)
+        acts.forEach(function (a) { var c = actChip(a, wrap, false); c.style.flex = "0 0 auto"; c.style.whiteSpace = "nowrap"; });
       });
       var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
       function drawResults(q) {
@@ -5509,7 +5506,7 @@
       }
       // LEVEL 3 (or a single-group domain): the activities. Single tap = pick (commit).
       var gn = view.grp || gd.order[0], acts = gd.groups[gn] || by[d] || [];
-      var h2 = add(pane, "div", "bento-paneh"); h2.style.color = D.light; h2.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(gn);
+      if (view.grp) { var h2 = add(pane, "div", "bento-paneh"); h2.style.color = D.light; h2.innerHTML = '<i class="ti ti-folder"></i> ' + esc(gn); } // only when in a real sub-group; the breadcrumb already names the domain (kills the "energy / energy" repeat — David 2026-07-01)
       var g = add(pane, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, g, true); });
       // type-in fallback: add a niche activity right here → goes into this domain (reuses S.acts) — David 2026-06-27
       var tin = add(pane, "div", "bento-typein");
@@ -5662,9 +5659,9 @@
   function big3HeadNode(beat) {
     var wrap = document.createElement("div"); wrap.className = "big3-remind";
     var r = big3Reminder(beat);
-    var top = add(wrap, "div", "big3-rtop"); top.innerHTML = '<span class="big3-remoji"><i class="ti ' + beat.emoji + '"></i></span> <span class="big3-rlbl">' + esc(beat.label.toUpperCase()) + '</span>';
+    // (removed the redundant uppercase LABEL — the sheet header already names the beat; keep just the guiding tagline, saves space + kills the "energy / energy" repeat — David 2026-07-01)
     if (r.who) { var w = add(wrap, "div", "big3-rwho"); w.textContent = r.who; }
-    if (r.line) { var l = add(wrap, "div", "big3-rline"); l.style.color = r.vc; l.textContent = r.line; }
+    if (r.line) { var l = add(wrap, "div", "big3-rline"); l.style.cssText = "color:" + r.vc + ";font-size:14px;font-weight:800;"; l.innerHTML = '<i class="ti ' + beat.emoji + '"></i> ' + esc(r.line); }
     return wrap;
   }
   function shapeFlow(k) {

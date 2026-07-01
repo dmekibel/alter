@@ -826,7 +826,7 @@
   .bento-card{ max-height:88vh; max-height:88dvh; }
   /* COMPACT BOTTOM-SHEET picker + 4 supercategories (David 2026-07-02 v644): the activity picker is a SHORT bottom sheet (never full-screen) that opens to 4 category tiles + a Recent row — no wall of options */
   .bento-ov.bento-sheet{ align-items:flex-end; padding:0; }
-  .bento-card.bento-sheet{ width:100%; max-width:540px; max-height:74vh; max-height:74dvh; border-radius:22px 22px 0 0; border-width:3px 0 0; padding-bottom:env(safe-area-inset-bottom); animation:bentoUp .26s cubic-bezier(.2,.9,.3,1.05); }
+  .bento-card.bento-sheet{ width:100%; max-width:560px; max-height:86vh; max-height:86dvh; border-radius:22px 22px 0 0; border-width:3px 0 0; padding-bottom:env(safe-area-inset-bottom); animation:bentoUp .26s cubic-bezier(.2,.9,.3,1.05); } /* taller — less daunting (David 2026-07-01) */
   @keyframes bentoUp{ from{ transform:translateY(100%); } to{ transform:none; } }
   .bento-supergrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 4px; }
   .bento-supertile{ display:flex; flex-direction:column; align-items:flex-start; gap:5px; border:2px solid #160510; border-radius:16px; padding:14px 14px 12px; cursor:pointer; font-family:"Jost",sans-serif; color:#fff; box-shadow:0 4px 0 #160510; text-align:left; position:relative; overflow:hidden; transition:transform .08s,box-shadow .08s; }
@@ -862,11 +862,11 @@
   .habit-del:hover{ opacity:1; }
   .habit-addform{ margin-top:12px; padding:12px; border:2px dashed #9a6a86; border-radius:14px; }
   .bento-cat{ border:2px solid #160510; border-radius:13px; padding:8px 8px 9px; }
-  .bento-catl{ font-size:10px; font-weight:700; letter-spacing:.6px; margin-bottom:7px; cursor:pointer; }
+  .bento-catl{ font-size:12px; font-weight:800; letter-spacing:.6px; margin-bottom:9px; cursor:pointer; } /* bigger + clearer (David 2026-07-01) */
   /* each category scrolls horizontally — reveal all its activities by swiping the row, no full-screen expand (David 2026-06-24) */
-  .bento-chips{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(2,auto); grid-auto-columns:max-content; gap:5px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; } /* multiple rows, scroll sideways (David 2026-06-24) */
+  .bento-chips{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(2,auto); grid-auto-columns:max-content; gap:8px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; } /* multiple rows, scroll sideways (David 2026-06-24) */
   .bento-chips::-webkit-scrollbar{ display:none; }
-  .bchip{ flex:none; border:1.5px solid #160510; border-radius:8px; padding:7px 10px; font-size:12px; font-weight:700; cursor:pointer; line-height:1; user-select:none; white-space:nowrap; }
+  .bchip{ flex:none; border:1.5px solid #160510; border-radius:10px; padding:11px 15px; font-size:14.5px; font-weight:700; cursor:pointer; line-height:1; user-select:none; white-space:nowrap; } /* larger, easier to read + tap (David 2026-07-01) */
   .bchip.addc{ background:#3a1226; color:#e8b8d2; }
   .bchip.pred{ box-shadow:0 0 0 2px #ffd54a; }
   .bchip.sel{ box-shadow:0 0 0 3px #ffe3a0; transform:scale(1.05); }
@@ -1744,6 +1744,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=765"></script>
+  <script src="app.js?v=766"></script>
 </body>
 </html>
