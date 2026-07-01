@@ -613,10 +613,11 @@
       var _driftLog = (logs(k) || []).some(function (l) { return domainOf(l) === "drift"; });
       if (_driftLog || pastDiverged(k)) {
         var _resetToday = (logs(k) || []).some(function (l) { return domainOf(l) === "restore"; }) || Object.keys((S.tools && S.tools.last) || {}).some(function (id) { return S.tools.last[id] === k; });
-        var _sug = (function () { try { return suggestTool(); } catch (e) { return null; } })();
+        var _pk = (function () { try { return toolForNow(); } catch (e) { return null; } })();
+        var _pt = _pk ? (_pk.custom || _pk.tool) : null;
         nodes.push({ key: "wayback", icon: "ti-arrow-back-up", title: "One step back", _lead: true,
-          line: "Today drifted a little — no shame, that's human. Coming back IS the move." + (_sug ? " A 20-second " + _sug.name.toLowerCase() + ", then one small thing." : " One small reset, then one thing."),
-          color: DOM.restore.c, done: _resetToday, act: function () { closeJourney(); try { runTool(_sug || TOOLS[0]); } catch (e) { try { breathwork(2); } catch (e2) {} } } });
+          line: "Today drifted a little — no shame, that's human. Coming back IS the move." + (_pt ? " A 20-second " + _pt.name.toLowerCase() + ", then one small thing." : " One small reset, then one thing."),
+          color: DOM.restore.c, done: _resetToday, act: function () { closeJourney(); try { if (_pk && _pk.custom) runCustomTool(_pk.custom); else runTool((_pk && _pk.tool) || TOOLS[0]); } catch (e) { try { breathwork(2); } catch (e2) {} } } });
       }
     }
 
@@ -5769,15 +5770,18 @@
     { k: "gesture", l: "A posture", beat: { lab: "Your posture", sub: "take the shape of it — stand as the one who has it",  orb: "in" } },
     { k: "symbol",  l: "A symbol",  beat: { lab: "Your symbol",  sub: "picture the mark you chose — let it stand for this",  orb: "in" } }
   ];
+  var TB_SIGILS = ["ti-circle", "ti-triangle", "ti-square", "ti-star", "ti-spiral", "ti-wave-sine", "ti-flame", "ti-bolt", "ti-moon", "ti-sun", "ti-diamond", "ti-heart", "ti-infinity", "ti-target", "ti-eye", "ti-key", "ti-anchor", "ti-mountain", "ti-leaf", "ti-hexagon"]; // build-your-own SIGIL = pick/combine 1-3 Tabler line-marks (David 2026-07-01) — a symbol you choose, never an emoji
   function customTools() { return (S.tools && S.tools.custom) || []; }
   function runCustomTool(t) {
     var it = TB_INTENT.filter(function (x) { return x.k === t.intent; })[0] || TB_INTENT[0];
     var an = TB_ANCHOR.filter(function (x) { return x.k === t.anchor; })[0] || TB_ANCHOR[0];
+    var line = t.line || it.line;
+    var anchorBeat = (t.anchor === "symbol" && (t.sigil || []).length) ? { lab: "Your mark", sub: "picture the symbol you chose — let it stand for this, and this alone", orb: "in" } : an.beat;
     beatRunner({ id: t.id, title: t.name, logTitle: t.name, catK: "love", color: it.c, spark: 7, voiceProf: VPROF.relax,
       beats: [
         { lab: "Settle down", sub: "slow breath, longer exhale — a step calmer with each one", orb: "out" },
-        an.beat,
-        { lab: "Say it as now", sub: "“" + it.line + "” — slow, and mean it", orb: "" },
+        anchorBeat,
+        { lab: "Say it as now", sub: "“" + line + "” — slow, and mean it", orb: "" },
         { lab: "Seal it", sub: "one breath, once more… it's in. Carry it.", orb: "out" }
       ], lastLabel: "Done ✓" });
   }
@@ -5790,22 +5794,37 @@
     var foot = add(card, "div", "bento-foot"); var go = add(foot, "button", "bento-go"); go.innerHTML = '<i class="ti ti-check"></i> Create my tool';
     function sect(t) { add(body, "div", "", t).setAttribute("style", "font-weight:800;color:#ffb3d9;margin:14px 0 6px;font-family:'Jost',sans-serif;font-size:13px;"); }
     function chips(opts, key) { var row = add(body, "div"); row.setAttribute("style", "display:flex;flex-wrap:wrap;gap:8px;"); opts.forEach(function (o) { var on = st[key] === o.k; var b = add(row, "button"); b.setAttribute("style", "display:flex;align-items:center;gap:6px;background:" + (on ? (o.c || "#ff7ab8") : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:9px 12px;cursor:pointer;color:" + (on ? "#160510" : "#e6cfe0") + ";font-family:'Jost',sans-serif;font-weight:700;font-size:13px;"); b.innerHTML = (o.ti ? '<i class="ti ' + o.ti + '"></i> ' : '') + esc(o.l); b.onclick = function () { st[key] = on ? "" : o.k; draw(); }; }); }
+    var INP = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;margin-top:2px;";
     function sync() { var ok = st.intent && st.when && st.anchor && (st.name || "").trim(); go.disabled = !ok; go.style.opacity = ok ? "1" : ".5"; }
+    function sigilPicker() {
+      sect("Your mark — pick up to 3 symbols (that's your sigil)"); st.sigil = st.sigil || [];
+      var grid = add(body, "div"); grid.setAttribute("style", "display:flex;flex-wrap:wrap;gap:8px;");
+      TB_SIGILS.forEach(function (ic) {
+        var on = st.sigil.indexOf(ic) >= 0; var b = add(grid, "button");
+        b.setAttribute("style", "width:44px;height:44px;border-radius:12px;border:2px solid #160510;box-shadow:0 3px 0 #160510;cursor:pointer;display:flex;align-items:center;justify-content:center;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#ffb3d9") + ";");
+        b.innerHTML = '<i class="ti ' + ic + '" style="font-size:20px"></i>';
+        b.onclick = function () { var i = st.sigil.indexOf(ic); if (i >= 0) st.sigil.splice(i, 1); else if (st.sigil.length < 3) st.sigil.push(ic); draw(); };
+      });
+      if (st.sigil.length) { var prev = add(body, "div"); prev.setAttribute("style", "display:flex;align-items:center;gap:7px;margin-top:9px;color:#e6cfe0;font-size:12px;"); prev.innerHTML = "your mark: " + st.sigil.map(function (ic) { return '<i class="ti ' + ic + '" style="font-size:19px;color:#ffb3d9"></i>'; }).join(" "); }
+    }
     function draw() {
       body.innerHTML = "";
       add(body, "div", "tfs-sub", "Every little tool follows one shape: settle → picture it → seal. You pick the pieces.").setAttribute("style", "font-size:12px;color:#b596ad;line-height:1.4;");
       sect("1 · What's it for?"); chips(TB_INTENT, "intent");
+      if (st.intent) { var _it0 = TB_INTENT.filter(function (x) { return x.k === st.intent; })[0]; if (_it0 && !st._lineTouched) st.line = _it0.line;
+        sect("Your line — say it as already true"); var li = add(body, "input"); li.type = "text"; li.placeholder = "I am calm and clear."; li.value = st.line || ""; li.setAttribute("style", INP); li.oninput = function () { st.line = li.value; st._lineTouched = true; }; }
       sect("2 · When will you reach for it?"); chips(TB_WHEN, "when");
       sect("3 · Your anchor — the thing you hold"); chips(TB_ANCHOR, "anchor");
+      if (st.anchor === "symbol") sigilPicker();
       sect("4 · Name it");
-      var inp = add(body, "input"); inp.type = "text"; inp.placeholder = "e.g. Morning calm"; inp.value = st.name; inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;margin-top:2px;"); inp.oninput = function () { st.name = inp.value; sync(); };
+      var inp = add(body, "input"); inp.type = "text"; inp.placeholder = "e.g. Morning calm"; inp.value = st.name; inp.setAttribute("style", INP); inp.oninput = function () { st.name = inp.value; sync(); };
       sync();
     }
     go.onclick = function () {
       if (!(st.intent && st.when && st.anchor && (st.name || "").trim())) return;
       var it = TB_INTENT.filter(function (x) { return x.k === st.intent; })[0];
       S.tools = S.tools || {}; S.tools.custom = S.tools.custom || [];
-      S.tools.custom.push({ id: "custom_" + uid(), name: st.name.trim(), intent: st.intent, when: st.when, anchor: st.anchor, ti: it.ti, color: it.c, created: todayK() });
+      S.tools.custom.push({ id: "custom_" + uid(), name: st.name.trim(), intent: st.intent, when: st.when, anchor: st.anchor, line: (st.line || it.line), sigil: (st.anchor === "symbol" ? (st.sigil || []) : []), ti: it.ti, color: it.c, created: todayK() });
       save(); ov.remove(); toast("✦ “" + st.name.trim() + "” is in your toolbox"); try { renderStage("tool"); } catch (e) {}
     };
     draw();
@@ -5815,21 +5834,41 @@
     var id = (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate"; // low/spiky → steady the body · night → install/wind-down · morning → identity · else → clear the mind
     return TOOLS.filter(function (t) { return t.id === id; })[0] || TOOLS[0];
   }
+  // REAL contextual surfacing (David 2026-07-01): read the user's actual state → the states a tool's `when` can match. Drift log today = craving; low mood = low+anxious; morning hours = morning; night = night. Drives both the FOR-RIGHT-NOW pick and which CUSTOM tool auto-surfaces.
+  function nowStates() {
+    var s = [], hr = new Date().getHours(), m = currentMood(), k = todayK();
+    if ((logs(k) || []).some(function (l) { return domainOf(l) === "drift"; })) s.push("craving");
+    if (m <= 1) { s.push("low"); s.push("anxious"); }
+    if (hr < 10) s.push("morning");
+    if (hr >= 21 || hr < 5) s.push("night");
+    return s;
+  }
+  // the ONE right tool for right now — a CUSTOM tool wins if its trigger matches your state (it's yours), else the best built-in. Returns {custom} or {tool}.
+  function toolForNow() {
+    var states = nowStates(), mine = customTools();
+    for (var i = 0; i < mine.length; i++) { if (states.indexOf(mine[i].when) >= 0) return { custom: mine[i], state: mine[i].when }; }
+    var hr = new Date().getHours(), m = currentMood(), craving = states.indexOf("craving") >= 0;
+    var id = craving ? "blacksun" : (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate";
+    return { tool: TOOLS.filter(function (t) { return t.id === id; })[0] || TOOLS[0] };
+  }
   function toolboxStageStep(sb) { // renders the kit into #tfStageBody (the 'tool' cockpit stage). Reuses .tf-stagecard / .tf-chip material + berry palette. No new menu, no timeline touch.
     sb.innerHTML = "";
     var head = add(sb, "div", "tf-stagecard");
     var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
     add(head, "div", "tfs-sub", "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.");
     // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
-    var sug = suggestTool();
-    if (sug) {
+    var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
+    if (_pt) {
+      var _wl2 = _isC ? ((TB_WHEN.filter(function (x) { return x.k === _pt.when; })[0] || {}).l || _pt.when) : "";
+      var _why2 = _isC ? ("A 20-second reset you built" + (_wl2 ? " for when " + String(_wl2).toLowerCase() : "") + ".") : _pt.why;
+      var _ti2 = _isC ? (((_pt.sigil || [])[0]) || _pt.ti || "ti-sparkles") : _pt.ti;
       var now = add(sb, "div", "tf-stagecard"); now.style.cssText = "border-color:#ff7ab8;box-shadow:0 3px 0 #160510,0 0 16px rgba(255,122,184,.25);";
-      add(now, "div", "tfs-sub", "FOR RIGHT NOW").style.cssText = "font-size:10px;font-weight:800;letter-spacing:1.3px;color:#ff9ec9;";
+      add(now, "div", "tfs-sub", _isC ? "FOR RIGHT NOW · YOUR TOOL" : "FOR RIGHT NOW").style.cssText = "font-size:10px;font-weight:800;letter-spacing:1.3px;color:#ff9ec9;";
       var nt = add(now, "div"); nt.style.cssText = "display:flex;align-items:center;gap:9px;margin-top:4px;";
-      add(nt, "span").innerHTML = '<i class="ti ' + sug.ti + '" style="font-size:24px;color:#ffb3d9"></i>';
-      add(nt, "div", "tfs-h", sug.name).style.flex = "1";
-      add(now, "div", "tfs-sub", sug.why).style.cssText = "margin-top:6px;font-size:12.5px;line-height:1.42;color:#e6cfe0;";
-      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { runTool(sug); };
+      add(nt, "span").innerHTML = '<i class="ti ' + _ti2 + '" style="font-size:24px;color:#ffb3d9"></i>';
+      add(nt, "div", "tfs-h", _pt.name).style.flex = "1";
+      add(now, "div", "tfs-sub", _why2).style.cssText = "margin-top:6px;font-size:12.5px;line-height:1.42;color:#e6cfe0;";
+      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
     }
     var sos = add(sb, "button", "tf-chip"); sos.style.marginTop = "9px"; sos.innerHTML = '<i class="ti ti-urgent"></i> Something specific is loud — help me pick'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
     // Favorites / Recents pinned row
@@ -5842,7 +5881,7 @@
     _mine.forEach(function (t) {
       var mc = add(sb, "button", "tf-stagecard"); mc.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
       var mtop = add(mc, "div"); mtop.style.cssText = "display:flex;align-items:center;gap:9px;";
-      add(mtop, "span").innerHTML = '<i class="ti ' + (t.ti || "ti-sparkles") + '" style="font-size:22px;color:#ffb3d9"></i>';
+      add(mtop, "span").innerHTML = (t.sigil && t.sigil.length) ? t.sigil.map(function (ic) { return '<i class="ti ' + ic + '" style="font-size:18px;color:#ffb3d9"></i>'; }).join(" ") : '<i class="ti ' + (t.ti || "ti-sparkles") + '" style="font-size:22px;color:#ffb3d9"></i>';
       var mnm = add(mtop, "div"); mnm.style.flex = "1"; add(mnm, "div", "tfs-h", t.name).style.marginBottom = "1px";
       var _wl = (TB_WHEN.filter(function (x) { return x.k === t.when; })[0] || {}).l || t.when;
       add(mnm, "div", "tfs-sub", "your tool · for when " + String(_wl || "").toLowerCase()).style.fontSize = "11px";
