@@ -38,7 +38,11 @@
     function unlock() {
       if (!unlocked) { unlocked = true; try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {} }
       // Unlock Web Audio INSIDE the gesture: a resumed AudioContext can play decoded buffers at ANY time — even fired from a setInterval/setTimeout — which an HTMLAudio element CANNOT on iOS. That timer restriction was exactly why meditation/breathwork were silent while the tap-through beatRunner tools spoke. Play a 1-sample silent buffer to fully arm the channel. (David 2026-07-01)
-      try { var ctx = sharedAudioCtx(); if (ctx && !vprimed) { var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); vprimed = true; } } catch (e) {}
+      try { var ctx = sharedAudioCtx(); if (ctx && !vprimed) {
+        var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0);
+        try { var ko = ctx.createOscillator(), kg = ctx.createGain(); kg.gain.value = 0.0001; ko.type = "sine"; ko.frequency.value = 30; ko.connect(kg); kg.connect(ctx.destination); ko.start(); } catch (e) {} // KEEP-ALIVE: a permanent inaudible 30Hz tone so iOS never SUSPENDS the shared context between timer-driven cues. That auto-suspend was why meditation/breathwork (which advance on a setInterval/timer, not "Next" taps) stayed silent even on Web Audio, while the tap-advance beatRunner tools spoke. (David 2026-07-01)
+        vprimed = true;
+      } } catch (e) {}
     }
     function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
     function chunk(text) {
@@ -74,13 +78,16 @@
       var vol = opts.volume != null ? opts.volume : 1, myGen = ++playGen;
       function playBuf(buf) {
         if (myGen !== playGen) return; // a newer speak()/stop() superseded this one while it was decoding
-        try {
-          if (ctx.state === "suspended") ctx.resume();
-          var src = ctx.createBufferSource(); src.buffer = buf;
-          var g = ctx.createGain(); g.gain.value = vol; src.connect(g); g.connect(ctx.destination);
-          src.onended = function () { if (src === curSrc) curSrc = null; fin(); };
-          curSrc = src; src.start(0);
-        } catch (e) { fin(); }
+        function go() {
+          if (myGen !== playGen) return;
+          try {
+            var src = ctx.createBufferSource(); src.buffer = buf;
+            var g = ctx.createGain(); g.gain.value = vol; src.connect(g); g.connect(ctx.destination);
+            src.onended = function () { if (src === curSrc) curSrc = null; fin(); };
+            curSrc = src; src.start(0);
+          } catch (e) { fin(); }
+        }
+        if (ctx.state === "suspended") { var r; try { r = ctx.resume(); } catch (e) {} if (r && r.then) r.then(go, go); else go(); } else go(); // AWAIT resume before start — starting into a suspended context plays into silence (the other half of the meditation-silence bug)
       }
       if (bufCache[key]) { playBuf(bufCache[key]); return; }
       fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
