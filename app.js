@@ -8,7 +8,7 @@
   var TTS = (function () {
     var synth = window.speechSynthesis || null;
     var supported = !!synth && typeof window.SpeechSynthesisUtterance === "function";
-    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null;
+    var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null, vprimed = false;
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
     function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
@@ -30,9 +30,11 @@
       try { synth.addEventListener("voiceschanged", load); } catch (e) { synth.onvoiceschanged = load; }
       var p = setInterval(function () { load(); if (voices.length || ++polls > 12) clearInterval(p); }, 250); // ~3s
     }
-    function unlock() { if (unlocked) return; unlocked = true;
-      try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {}
-      try { if (!vaudio) vaudio = new Audio(); if (vset) { var ks = Object.keys(vset); if (ks.length) { vaudio.muted = true; vaudio.src = "assets/voice/" + ks[0] + ".mp3"; var pp = vaudio.play(); if (pp && pp.catch) pp.catch(function () {}); setTimeout(function () { try { vaudio.pause(); vaudio.currentTime = 0; vaudio.muted = false; } catch (e) {} }, 40); } } } catch (e) {} } // prime the audio channel inside the opening gesture so pre-recorded lines can play on iOS
+    function unlock() {
+      if (!unlocked) { unlocked = true; try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {} }
+      // prime the audio channel inside the opening gesture so pre-recorded lines can play on iOS. RE-TRY on every tool-open gesture until it succeeds — the manifest loads async, so the FIRST gesture may fire before vset exists; a later gesture (opening meditation) then primes it. Without this, timer-driven lines (meditation/relax cues) get blocked by iOS and go silent. (David 2026-07-01: "meditation has no voice")
+      try { if (!vaudio) vaudio = new Audio(); if (!vprimed && vset) { var ks = Object.keys(vset); if (ks.length) { vprimed = true; vaudio.muted = true; vaudio.src = "assets/voice/" + ks[0] + ".mp3"; var pp = vaudio.play(); if (pp && pp.catch) pp.catch(function () {}); setTimeout(function () { try { vaudio.pause(); vaudio.currentTime = 0; vaudio.muted = false; } catch (e) {} }, 40); } } } catch (e) {}
+    }
     function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
     function chunk(text) {
       if (text.length <= 200) return [text];
