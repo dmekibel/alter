@@ -6328,8 +6328,20 @@
   function stackTimeline(track) {
     openSessionComposer({
       title: "Your session", track: track, lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: "Add a tool", playLabel: "Begin session →",
-      onSave: function (t) { S.tools = S.tools || {}; S.tools.stack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); },
-      onPlay: function (t) { runStack(t, 0); }
+      onSave: function (t) { S.tools = S.tools || {}; S.tools.stack = t.map(function (x) { return { k: x.k, d: x.d, med: x.med }; }); save(); },
+      onPlay: function (t) { runStack(t, 0); },
+      // PLANNING-STAGE nesting (David 2026-07-01): tap a Meditate block to choose what goes inside it BEFORE the session runs.
+      onTap: function (i, render) {
+        var blk = track[i]; if (blk.k !== "meditate") return;
+        var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+        var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:86%;max-width:380px;";
+        box.innerHTML = '<div style="font-size:22px;font-weight:800;margin-bottom:6px;"><i class="ti ti-flower"></i> This meditation</div><div style="font-size:13px;color:#b39ab0;margin-bottom:18px;">' + (blk.med && blk.med.length ? "custom · " + blk.med.length + " sections" : "quick guided default") + '</div>';
+        var q = add(box, "button", "done2", "Quick guided default"); q.style.cssText = "margin:0 auto 10px;display:block;max-width:280px;";
+        q.onclick = function () { blk.med = null; if (ov.parentNode) ov.remove(); render(); };
+        var c = add(box, "button", null, "Choose the sections →"); c.style.cssText = "margin:0 auto;display:block;background:none;border:none;color:#c9a6ff;font-family:var(--bub);font-weight:700;font-size:14.5px;cursor:pointer;";
+        c.onclick = function () { if (ov.parentNode) ov.remove(); medEditor({ pick: true, title: "What's in this meditation", track: blk.med, onPick: function (mt) { blk.med = mt; render(); } }); };
+        ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
+      }
     });
   }
   function runStack(track, i) {
@@ -6340,16 +6352,9 @@
     var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:86%;max-width:400px;";
     box.innerHTML = '<div style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:#ff8fc4;font-weight:800;">Step ' + (i + 1) + ' of ' + track.length + '</div><div style="font-size:28px;font-weight:800;margin:12px 0 4px;"><i class="ti ' + m.ti + '"></i> ' + m.name + '</div><div style="font-size:12.5px;color:#b39ab0;">your session · take your time</div>';
     var nxt = function () { runStack(track, i + 1); };
-    if (m.id === "meditate") {
-      // NESTED CHOICE (David 2026-07-01): at the Meditate step, choose what goes inside it — a quick default, or build the sections yourself.
-      var quick = add(box, "button", "done2", "Quick meditation ▶"); quick.style.cssText = "margin:18px auto 0;display:block;max-width:280px;";
-      quick.onclick = function () { if (ov.parentNode) ov.remove(); try { meditationQuick(nxt, t.d); } catch (e) { nxt(); } };
-      var choose = add(box, "button", null, "Choose what's inside →"); choose.style.cssText = "margin:12px auto 0;display:block;background:none;border:none;color:#c9a6ff;font-family:var(--bub);font-weight:700;font-size:14px;cursor:pointer;";
-      choose.onclick = function () { if (ov.parentNode) ov.remove(); medEditor({ title: "What's in this meditation", playLabel: "Play ▶", onFinish: nxt }); };
-    } else {
-      var begin = add(box, "button", "done2", i === 0 ? "Begin ▶" : "Next ▶"); begin.style.cssText = "margin:20px auto 0;display:block;max-width:260px;";
-      begin.onclick = function () { if (ov.parentNode) ov.remove(); try { m.run(nxt, t.d); } catch (e) { nxt(); } }; // synchronous → stays in the gesture so the tool's audio unlocks
-    }
+    var begin = add(box, "button", "done2", i === 0 ? "Begin ▶" : "Next ▶"); begin.style.cssText = "margin:20px auto 0;display:block;max-width:260px;";
+    begin.onclick = function () { if (ov.parentNode) ov.remove(); // meditation uses the sections you set at planning time (t.med), else the quick default; every other tool runs itself
+      try { if (m.id === "meditate" && t.med && t.med.length) { medEditor({ playNow: true, track: t.med, onFinish: nxt }); } else { m.run(nxt, t.d); } } catch (e) { nxt(); } };
     ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
   }
   function stackComplete(n) {
@@ -6547,11 +6552,13 @@
       play: { name: "Play", col: "#8ad0ff", ti: "ti-confetti", adv: true, lines: ["Set down the need for any of this to make sense — no plan behind it, human or otherwise", "Existence is play, not a serious agenda. There's no goal to reach", "So you can relax, and simply look — no demand, no anger in the looking", "Watch a thought: where it begins, while it's here, and where it goes when it fades", "Don't hunt for an answer. The ache to know is just a weight — let it drop", "Don't try to find a place outside the motion. Let it move, and move with it", "Trust exactly where you are — nothing to fix about your starting point", "Let both meet: the clear seeing and the warm feeling. Ease is their balance", "You don't get rid of the seeker — the seeking just softens into ease, for no reason", "When the demand for sense falls away, insight can arise on its own — uninvited, alive"] }
     };
     var ORDER = ["settle", "breath", "body", "aware", "rest", "bliss", "play"];
-    var track = ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }]).map(function (x) { return { k: x.k, d: x.d }; });
+    function playTrack(t, onFin) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0), cad = medCadence(), segs = []; t.forEach(function (x) { var s = SEC[x.k]; if (!s) return; var n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); }
+    var track = (cfg.track && cfg.track.length ? cfg.track : ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }])).map(function (x) { return { k: x.k, d: x.d }; });
+    if (cfg.playNow) { playTrack(track, cfg.onFinish); return; } // run a pre-built inner meditation directly (no composer UI)
     openSessionComposer({
-      title: cfg.title || "Edit your meditation", track: track, lookup: function (k) { return SEC[k]; }, pool: ORDER, addDur: 60, poolLabel: "Add a section", playLabel: cfg.playLabel || "Play ▶",
-      onSave: function (t) { if (cfg.onFinish) return; S.tools = S.tools || {}; S.tools.medTrack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); }, // don't clobber the saved default when building a session's inner meditation
-      onPlay: function (t) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0); var cad = medCadence(); var segs = []; t.forEach(function (x) { var s = SEC[x.k], n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true, onFinish: function () { if (cfg.onFinish) cfg.onFinish(); } }); }
+      title: cfg.title || "Edit your meditation", track: track, lookup: function (k) { return SEC[k]; }, pool: ORDER, addDur: 60, poolLabel: "Add a section", playLabel: cfg.pick ? "Use this →" : (cfg.playLabel || "Play ▶"),
+      onSave: (cfg.pick || cfg.onFinish) ? function () { } : function (t) { S.tools = S.tools || {}; S.tools.medTrack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); },
+      onPlay: cfg.pick ? function (t) { if (cfg.onPick) cfg.onPick(t.map(function (x) { return { k: x.k, d: x.d }; })); } : function (t) { playTrack(t, cfg.onFinish); }
     });
   }
   function reprogramTool(onDone) {
