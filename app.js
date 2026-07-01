@@ -5753,6 +5753,63 @@
     { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", why: "Gratitude shifts you out of the threat network into the care network — a different brain state, on demand.", fn: function () { gratefulFlow(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
+  // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
+  var TB_INTENT = [
+    { k: "calm",       l: "Calm",       ti: "ti-ripple",   c: "#48d0e0", line: "I am calm and clear." },
+    { k: "courage",    l: "Courage",    ti: "ti-flame",    c: "#ff8a1e", line: "I move before I feel ready." },
+    { k: "focus",      l: "Focus",      ti: "ti-target",   c: "#36b3f0", line: "I am here, on this, now." },
+    { k: "letgo",      l: "Let go",     ti: "ti-wind",     c: "#9a8cc4", line: "I let it pass through me." },
+    { k: "confidence", l: "Confidence", ti: "ti-mountain", c: "#ffc83d", line: "I am someone who can." }
+  ];
+  var TB_WHEN = [{ k: "anxious", l: "Anxious" }, { k: "craving", l: "A craving" }, { k: "fear", l: "Before something hard" }, { k: "low", l: "Low energy" }, { k: "morning", l: "Each morning" }];
+  var TB_ANCHOR = [
+    { k: "breath",  l: "A breath",  beat: { lab: "Your breath",  sub: "three slow breaths — longer on the exhale",           orb: "out" } },
+    { k: "image",   l: "An image",  beat: { lab: "Your image",   sub: "hold the picture of it already true",                 orb: "in" } },
+    { k: "word",    l: "A word",    beat: { lab: "Your word",    sub: "say it, slow — let it fill you",                      orb: "" } },
+    { k: "gesture", l: "A posture", beat: { lab: "Your posture", sub: "take the shape of it — stand as the one who has it",  orb: "in" } },
+    { k: "symbol",  l: "A symbol",  beat: { lab: "Your symbol",  sub: "picture the mark you chose — let it stand for this",  orb: "in" } }
+  ];
+  function customTools() { return (S.tools && S.tools.custom) || []; }
+  function runCustomTool(t) {
+    var it = TB_INTENT.filter(function (x) { return x.k === t.intent; })[0] || TB_INTENT[0];
+    var an = TB_ANCHOR.filter(function (x) { return x.k === t.anchor; })[0] || TB_ANCHOR[0];
+    beatRunner({ id: t.id, title: t.name, logTitle: t.name, catK: "love", color: it.c, spark: 7, voiceProf: VPROF.relax,
+      beats: [
+        { lab: "Settle down", sub: "slow breath, longer exhale — a step calmer with each one", orb: "out" },
+        an.beat,
+        { lab: "Say it as now", sub: "“" + it.line + "” — slow, and mean it", orb: "" },
+        { lab: "Seal it", sub: "one breath, once more… it's in. Carry it.", orb: "out" }
+      ], lastLabel: "Done ✓" });
+  }
+  function buildToolFlow() {
+    var st = { intent: "", when: "", anchor: "", name: "" };
+    var ov = add(document.body, "div", "bento-ov"); var card = add(ov, "div", "bento-card");
+    var head = add(card, "div", "bento-head"); add(head, "div", "bento-q", "Build your own tool"); var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var body = add(card, "div", "bento-body");
+    var foot = add(card, "div", "bento-foot"); var go = add(foot, "button", "bento-go"); go.innerHTML = '<i class="ti ti-check"></i> Create my tool';
+    function sect(t) { add(body, "div", "", t).setAttribute("style", "font-weight:800;color:#ffb3d9;margin:14px 0 6px;font-family:'Jost',sans-serif;font-size:13px;"); }
+    function chips(opts, key) { var row = add(body, "div"); row.setAttribute("style", "display:flex;flex-wrap:wrap;gap:8px;"); opts.forEach(function (o) { var on = st[key] === o.k; var b = add(row, "button"); b.setAttribute("style", "display:flex;align-items:center;gap:6px;background:" + (on ? (o.c || "#ff7ab8") : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:9px 12px;cursor:pointer;color:" + (on ? "#160510" : "#e6cfe0") + ";font-family:'Jost',sans-serif;font-weight:700;font-size:13px;"); b.innerHTML = (o.ti ? '<i class="ti ' + o.ti + '"></i> ' : '') + esc(o.l); b.onclick = function () { st[key] = on ? "" : o.k; draw(); }; }); }
+    function sync() { var ok = st.intent && st.when && st.anchor && (st.name || "").trim(); go.disabled = !ok; go.style.opacity = ok ? "1" : ".5"; }
+    function draw() {
+      body.innerHTML = "";
+      add(body, "div", "tfs-sub", "Every little tool follows one shape: settle → picture it → seal. You pick the pieces.").setAttribute("style", "font-size:12px;color:#b596ad;line-height:1.4;");
+      sect("1 · What's it for?"); chips(TB_INTENT, "intent");
+      sect("2 · When will you reach for it?"); chips(TB_WHEN, "when");
+      sect("3 · Your anchor — the thing you hold"); chips(TB_ANCHOR, "anchor");
+      sect("4 · Name it");
+      var inp = add(body, "input"); inp.type = "text"; inp.placeholder = "e.g. Morning calm"; inp.value = st.name; inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;margin-top:2px;"); inp.oninput = function () { st.name = inp.value; sync(); };
+      sync();
+    }
+    go.onclick = function () {
+      if (!(st.intent && st.when && st.anchor && (st.name || "").trim())) return;
+      var it = TB_INTENT.filter(function (x) { return x.k === st.intent; })[0];
+      S.tools = S.tools || {}; S.tools.custom = S.tools.custom || [];
+      S.tools.custom.push({ id: "custom_" + uid(), name: st.name.trim(), intent: st.intent, when: st.when, anchor: st.anchor, ti: it.ti, color: it.c, created: todayK() });
+      save(); ov.remove(); toast("✦ “" + st.name.trim() + "” is in your toolbox"); try { renderStage("tool"); } catch (e) {}
+    };
+    draw();
+  }
   function suggestTool() { // the right tool for your state RIGHT NOW — so the toolbox leads with one pick, never a wall (David 2026-07-01)
     var m = currentMood(), hr = new Date().getHours();
     var id = (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate"; // low/spiky → steady the body · night → install/wind-down · morning → identity · else → clear the mind
@@ -5779,6 +5836,20 @@
     var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
     pins = pins.slice(0, 4);
     if (pins.length) { var pwrap = add(sb, "div"); add(pwrap, "div", "tfs-sub", "Recent").style.marginTop = "8px"; var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + T.ti + '"></i> ' + esc(T.name); c.onclick = function () { runTool(T); }; }); }
+    // YOURS — the custom tools you built + the builder entry (CD3 creativity endgame). Each runs the Rewire move personalised to your pick. (David 2026-07-01)
+    var _mine = customTools();
+    add(sb, "div", "tfs-sub", "Yours").style.cssText = "margin-top:9px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
+    _mine.forEach(function (t) {
+      var mc = add(sb, "button", "tf-stagecard"); mc.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
+      var mtop = add(mc, "div"); mtop.style.cssText = "display:flex;align-items:center;gap:9px;";
+      add(mtop, "span").innerHTML = '<i class="ti ' + (t.ti || "ti-sparkles") + '" style="font-size:22px;color:#ffb3d9"></i>';
+      var mnm = add(mtop, "div"); mnm.style.flex = "1"; add(mnm, "div", "tfs-h", t.name).style.marginBottom = "1px";
+      var _wl = (TB_WHEN.filter(function (x) { return x.k === t.when; })[0] || {}).l || t.when;
+      add(mnm, "div", "tfs-sub", "your tool · for when " + String(_wl || "").toLowerCase()).style.fontSize = "11px";
+      var del = add(mtop, "button"); del.innerHTML = '<i class="ti ti-trash"></i>'; del.setAttribute("style", "background:none;border:none;color:#8a5a72;cursor:pointer;flex:none;font-size:16px;padding:4px;"); del.onclick = function (e) { e.stopPropagation(); S.tools.custom = customTools().filter(function (x) { return x.id !== t.id; }); save(); try { renderStage("tool"); } catch (err) {} };
+      mc.onclick = function () { runCustomTool(t); };
+    });
+    var mk = add(sb, "button", "tf-chip"); mk.style.marginTop = "5px"; mk.innerHTML = '<i class="ti ti-plus"></i> Build your own tool'; mk.onclick = function () { buildToolFlow(); };
     TOOL_LAYERS.forEach(function (layer) {
       var inLayer = TOOLS.filter(function (t) { return t.layer === layer; }); if (!inLayer.length) return;
       add(sb, "div", "tfs-sub", layer).style.cssText = "margin-top:9px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
