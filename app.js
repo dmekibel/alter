@@ -5991,6 +5991,7 @@
     var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
     add(head, "div", "tfs-sub", "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.");
     var _stk = add(head, "button"); _stk.innerHTML = '<i class="ti ti-stack-2"></i> Build a session — stack a few in a row'; _stk.style.cssText = "margin-top:11px;width:100%;background:rgba(154,124,255,.14);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;color:#e6d8ff;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _stk.onclick = function () { try { stackBuilder(); } catch (e) {} }; // SELF-HELP STACK entry
+    var _bg = add(head, "button"); _bg.innerHTML = '<i class="ti ti-brain"></i> Sharpen the mind — a 60-second focus game'; _bg.style.cssText = "margin-top:8px;width:100%;background:rgba(99,211,201,.12);border:1.5px solid #3a6a64;border-radius:12px;padding:11px;color:#cdeeea;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _bg.onclick = function () { try { recallGame(); } catch (e) {} }; // BRAIN GYM entry (Recall)
     // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
     var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
     if (_pt) {
@@ -6336,6 +6337,41 @@
     box.innerHTML = '<div style="font-size:46px;color:#9a7cff;"><i class="ti ti-circle-check"></i></div><div style="font-size:24px;font-weight:800;margin-top:10px;">Session complete</div><div style="font-size:13px;color:#b39ab0;margin-top:6px;">' + n + ' tool' + (n === 1 ? "" : "s") + ' · carry the calm with you</div>';
     var d = add(box, "button", "done2", "Done"); d.style.cssText = "margin:20px auto 0;display:block;"; d.onclick = function () { if (ov.parentNode) ov.remove(); };
     try { earn(8, { catK: "love" }); celebrateGated("#9a7cff", curStreak() || 1); save(); renderAll(); } catch (e) {}
+  }
+  // ===== BRAIN GYM — Recall (HANDOFF-brain-gym, David 2026-07-01): a short working-memory game. HONESTY RULE: never "get smarter" — it's a focus/memory-skill warm-up. Personal-best only. Scores in S.tools.games (additive). =====
+  function recallGame(onDone) {
+    S.tools = S.tools || {}; S.tools.games = S.tools.games || {};
+    var COL = ["#ff5fa0", "#63d3c9", "#9a7cff", "#ffd24a"];
+    var seq = [], input = [], best = S.tools.games.recall || 0, showing = false;
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">close</button>'; document.body.appendChild(ov);
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+    var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:90%;max-width:340px;";
+    function shell() {
+      box.innerHTML = "";
+      add(box, "div", null, "Recall").style.cssText = "font-size:24px;font-weight:800;";
+      add(box, "div", null, "watch the sequence, then tap it back").style.cssText = "font-size:12.5px;color:#b39ab0;margin:4px 0;";
+      var status = add(box, "div"); status.style.cssText = "font-size:14px;font-weight:700;color:#ff8fc4;margin:10px 0 14px;min-height:20px;";
+      var grid = add(box, "div"); grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 auto;max-width:250px;";
+      var pads = COL.map(function (c) { var b = add(grid, "button"); b.style.cssText = "height:104px;border-radius:18px;border:3px solid rgba(0,0,0,.3);background:" + c + ";opacity:.42;transition:opacity .12s,transform .1s;cursor:pointer;"; return b; });
+      add(box, "div").innerHTML = '<div style="font-size:11px;color:#9c8fc4;margin-top:16px;line-height:1.4;"><b style="color:#c9a6ff;">Why · </b>reproducing a growing sequence exercises your working-memory span — the scratchpad attention runs on. A real skill (not a make-you-smarter claim).</div>';
+      return { status: status, pads: pads };
+    }
+    var ui = shell();
+    function flash(i, on) { ui.pads[i].style.opacity = on ? "1" : "0.42"; ui.pads[i].style.transform = on ? "scale(1.05)" : ""; }
+    function playSeq() { showing = true; ui.status.textContent = "watch…"; ui.pads.forEach(function (p, i) { p.onclick = null; }); var k = 0; var iv = setInterval(function () { if (k > 0) flash(seq[k - 1], false); if (k >= seq.length) { clearInterval(iv); showing = false; ui.status.textContent = "your turn"; arm(); return; } flash(seq[k], true); k++; }, 640); }
+    function arm() { ui.pads.forEach(function (p, i) { p.onclick = function () { tap(i); }; }); }
+    function next() { input = []; seq.push(Math.floor(Math.random() * 4)); setTimeout(playSeq, 480); }
+    function tap(i) { if (showing) return; flash(i, true); setTimeout(function () { flash(i, false); }, 150); input.push(i); var idx = input.length - 1; if (input[idx] !== seq[idx]) { endGame(); return; } if (input.length === seq.length) { var len = seq.length; if (len > best) { best = len; S.tools.games.recall = best; save(); } ui.status.textContent = "nice · " + len + " in a row"; setTimeout(next, 750); } }
+    function endGame() {
+      var got = seq.length - 1;
+      box.innerHTML = "";
+      add(box, "div", null, got >= best && got > 0 ? "New best!" : "Good run").style.cssText = "font-size:22px;font-weight:800;";
+      add(box, "div").innerHTML = '<div style="font-size:42px;font-weight:800;color:#9a7cff;margin:8px 0;">' + got + '</div><div style="font-size:12px;color:#b39ab0;">longest sequence · best ' + best + '</div>';
+      var again = add(box, "button", "done2", "Again"); again.style.cssText = "margin:16px auto 6px;display:block;max-width:200px;"; again.onclick = function () { if (ov.parentNode) ov.remove(); recallGame(onDone); };
+      var dn = add(box, "button", null, "Done"); dn.style.cssText = "background:none;border:none;color:#b39ab0;font-family:var(--bub);font-size:13px;cursor:pointer;"; dn.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+      try { earn(6, { catK: "focus" }); if (got >= best && got > 0) celebrateGated("#9a7cff", curStreak() || 1); save(); renderAll(); } catch (e) {}
+    }
+    next();
   }
   function reprogramTool(onDone) {
     beatRunner({
