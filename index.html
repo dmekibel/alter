@@ -989,7 +989,7 @@
   #trackerFull.tf-staged .tf-title.switchable{ margin:0; padding:5px 12px; font-size:13px; }
   #trackerFull.tf-staged .tf-time{ margin:0; font-size:15px; }
   #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark, #trackerFull.tf-staged .tf-say{ display:none; }
-  #trackerFull.tf-staged #tfStageBody{ display:flex; flex:1; flex-direction:column; width:100%; gap:14px; margin-top:16px; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; } /* overscroll-behavior:contain is MANDATORY — stage scroll must never bubble to the timeline's infinite-recenter watcher */
+  #trackerFull.tf-staged #tfStageBody{ display:flex; flex:1; flex-direction:column; width:100%; gap:14px; margin-top:16px; padding-bottom:calc(140px + env(safe-area-inset-bottom)); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; } /* padding-bottom clears the fixed cockpit controls (Rest now / Close) so the last tool/tab isn't hidden behind them (David 2026-07-01). overscroll-behavior:contain is MANDATORY — stage scroll must never bubble to the timeline's infinite-recenter watcher */
   .tf-stagecard{ background:#241328; border:2px solid #160510; border-radius:14px; box-shadow:0 3px 0 #160510; color:#e6cfe0; padding:16px; font-family:"Jost",sans-serif; } /* reuses the .tf-chip/.tf-b material — no new colors */
   .tf-stagecard .tfs-h{ font-weight:800; font-size:15px; color:#ffe3f1; margin-bottom:6px; }
   .tf-stagecard .tfs-sub{ font-size:13px; color:#b596ad; }
@@ -1713,6 +1713,6 @@
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
   </div>
-  <script src="app.js?v=731"></script>
+  <script src="app.js?v=732"></script>
 </body>
 </html>
