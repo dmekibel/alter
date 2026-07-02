@@ -53,9 +53,10 @@ for k, v in re.findall(STR + r'\s*:\s*' + STR, src):
     if k != v and re.search(r'[а-яА-ЯёЁ]', v): ru[k] = v
 def resolve(l):
     if l in ru: return ru[l]
-    if ", " in l:  # composed a+", "+b (stretchFloor / relax steps) — translate the halves
-        a, b = l.split(", ", 1)
-        if a in ru and b in ru: return ru[a] + ", " + ru[b]
+    for sep in [", ", ". "]:  # composed a+sep+b (stretchFloor/relax use ", "; beatRunner lab+sub uses ". ") — translate the halves
+        if sep in l:
+            a, b = l.split(sep, 1)
+            if a in ru and b in ru: return ru[a] + sep + ru[b]
     return None
 
 # ---- 3) synthesize the RU lines, extend the shared manifest ----
