@@ -1517,6 +1517,7 @@
     "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.": "маленькие проверенные инструменты — нужный в нужный момент. Воспользоваться одним в трудный день — уже победа.",
     "FOR RIGHT NOW": "ПРЯМО СЕЙЧАС",
     "FOR RIGHT NOW · YOUR TOOL": "ПРЯМО СЕЙЧАС · ТВОЙ ИНСТРУМЕНТ",
+    "Put a session into the day": "Поставить сессию в день",
     "Your daily": "Твоё ежедневное",
     "Something specific is loud — help me pick": "Что-то конкретное кричит — помоги выбрать",
     "Why it works ·": "Почему это работает ·",
@@ -2349,23 +2350,32 @@
       if (!(S.goals && S.goals.length)) add(body, "div", "goal-empty", "No goals yet — add what you're working toward.");
       var grid = add(body, "div", "goal-grid");
       (S.goals || []).forEach(function (g) {
-        var dom = DOM[g.domain || "focus"], gc = add(grid, "div", "goal-cardx" + (g.active ? " on" : ""));
-        var dl = add(gc, "div", "goal-dom"); dl.style.color = dom.c; dl.innerHTML = '<i class="ti ' + dom.ti + '"></i> ' + dom.l;
-        var tt = add(gc, "div", "goal-title"); if (g.active) { tt.style.background = dom.c; tt.style.color = dom.ink; tt.style.borderColor = "#160510"; } tt.innerHTML = (g.active ? '<i class="ti ti-player-play-filled"></i> ' : '') + tiIcon(g) + ' ' + esc(g.title);
-        var subs = g.subtasks || [];
-        if (subs.length) { // GRAND BUILD G: the QUEST LADDER lives ON the card (approved frame) — done steps dim green, THE next step glows with its bounty, rest wait
-          var lad = add(gc, "div", "quest-ladder"), nextFound = false;
-          subs.slice(0, 5).forEach(function (st, si) {
-            var isNext = !st.done && !nextFound; if (isNext) nextFound = true;
-            var r = add(lad, "div", "q-step" + (st.done ? " done" : isNext ? " next" : ""));
-            r.innerHTML = '<i class="ti ' + (st.done ? "ti-circle-check" : isNext ? "ti-player-play" : "ti-circle") + '"></i><span class="q-lab">' + esc(st.title) + '</span>' + (isNext ? '<span class="q-bounty">+15</span>' : '');
-            if (isNext) { r.onclick = function (ev) { ev.stopPropagation(); var t2 = nextFreeMin(todayK()); blocks(todayK()).push({ id: uid(), time: pad(Math.floor(t2 / 60)) + ":" + pad(t2 % 60), mins: 30, title: st.title, prio: 2, color: dom.c, catK: null, domain: g.domain || "focus", done: false }); reflow(todayK()); goalTouch(g); save(); renderToday(); toast(tr("step placed into today — it waits for you")); }; }
+        var dom = DOM[g.domain || "focus"], subs = g.subtasks || [];
+        var pct = (g.metric && g.metric.target != null && g.metric.current != null) ? metricPct(g.metric) : (subs.length ? Math.round(subs.filter(function (s) { return s.done; }).length / subs.length * 100) : 0);
+        // §12 QUEST CARD (the approved goals frame): the FOIL EDGE is the progress bar — gold fills top-down as steps land; icon well + title + pct; circle ladder; pink session door
+        var foil = add(grid, "div", "q-foil"); foil.style.background = "linear-gradient(180deg,#ffd24a 0%,#ffd24a " + pct + "%,#3a2036 " + pct + "%,#3a2036 100%)";
+        var gc = add(foil, "div", "goal-cardx" + (g.active ? " on" : ""));
+        add(gc, "div", "q-sheen");
+        var hr = add(gc, "div"); hr.style.cssText = "display:flex;align-items:center;gap:10px;position:relative;z-index:2;";
+        var well = add(hr, "div", "q-well"); well.style.background = tfStripe(dom.c); well.innerHTML = tiIcon(g);
+        var tw = add(hr, "div"); tw.style.cssText = "flex:1;min-width:0;";
+        var tt = add(tw, "div"); tt.style.cssText = "font-weight:800;font-size:16px;color:#fff2f9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"; tt.textContent = g.title;
+        var ml = add(tw, "div"); ml.style.cssText = "font-size:12px;color:#c9a6c4;"; ml.innerHTML = '<i class="ti ' + dom.ti + '" style="color:' + dom.c + '"></i> ' + tr(dom.l);
+        var pcEl = add(hr, "div"); pcEl.style.cssText = "color:#ffd24a;font-weight:800;font-size:13px;flex:none;"; pcEl.textContent = pct + "%";
+        var nextStep = null;
+        function scheduleNext(ev) { ev.stopPropagation(); if (!nextStep) return; var t2 = nextFreeMin(todayK()); blocks(todayK()).push({ id: uid(), time: pad(Math.floor(t2 / 60)) + ":" + pad(t2 % 60), mins: 30, title: nextStep.title, prio: 2, color: dom.c, catK: null, domain: g.domain || "focus", done: false }); reflow(todayK()); goalTouch(g); save(); renderToday(); toast(tr("step placed into today — it waits for you")); }
+        if (subs.length) {
+          var lad = add(gc, "div", "quest-ladder");
+          subs.slice(0, 5).forEach(function (st) {
+            var isNext = !st.done && !nextStep; if (isNext) nextStep = st;
+            var r = add(lad, "div", "q-step" + (st.done ? " done" : isNext ? " next" : " fut"));
+            r.innerHTML = '<span class="q-ic">' + (st.done ? '<i class="ti ti-check"></i>' : isNext ? '<i class="ti ti-player-play"></i>' : '') + '</span><span class="q-lab">' + esc(st.title) + '</span><span class="q-bounty">+15</span>'; // future circles stay EMPTY dashed (the frame)
+            if (isNext) r.onclick = scheduleNext;
           });
           if (subs.length > 5) add(lad, "div", "q-more", "+" + (subs.length - 5));
         }
         else add(gc, "div", "goal-tagnone", "tap to break it down →");
-        var pct = (g.metric && g.metric.target != null && g.metric.current != null) ? metricPct(g.metric) : (subs.length ? Math.round(subs.filter(function (s) { return s.done; }).length / subs.length * 100) : 0);
-        var pb = add(gc, "div", "goal-prog"); var pbf = add(pb, "i"); pbf.style.width = pct + "%"; pbf.style.background = dom.c; // the goal's growing arc — how far along (metric % or steps done)
+        if (nextStep) { var cta = add(gc, "button", "tf-door"); cta.style.cssText = "background:#ff5fa8;color:#4a1126;margin-top:12px;font-size:14px;position:relative;z-index:2;"; cta.innerHTML = '<i class="ti ti-calendar-plus"></i> Put a session into the day'; cta.onclick = scheduleNext; } // the frame's door: goal→timeline in one tap
         gc.onclick = function () { view = g; draw(); };
       });
       typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
