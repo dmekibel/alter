@@ -1925,7 +1925,7 @@
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
     var _burstQueue = []; // #5: nodes to burst-animate after the DOM is built (can't fire during build — elements aren't in viewport yet)
     var _dk = todayK();
-    function banner(state, klabel, title, ic, why) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); if (why) { var ws = add(tx, "div", "ju-why", why); ws.style.cssText = "font-size:11px;opacity:.62;margin-top:2px;line-height:1.3;"; } return u; }
+    function banner(state, klabel, title, ic, why) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); if (why) { var ws = add(tx, "div", "ju-why", why); ws.style.cssText = "font-size:13px;opacity:.78;margin-top:2px;line-height:1.35;"; } return u; } // AUDIT P1: the chapter's WHY was 11px at 62% — the meaning of the trail, unreadable
     function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.innerHTML = '<i class="ti ' + glyph + '"></i>'; return t; }
     function coin(state, n, idx) {
       var node = add(trail, "div", "jp-node " + state);
@@ -2001,7 +2001,7 @@
           };
         } else {
           var card = add(node, "div", "jp-card");
-          var _pre = jpLeadPreface(n); if (_pre) { var _pe = add(card, "div", "jc-pre", _pre); _pe.setAttribute("style", "font-size:11px;font-weight:700;color:#caa0bd;margin-bottom:5px;letter-spacing:.2px;line-height:1.3;"); }
+          var _pre = jpLeadPreface(n); if (_pre) { var _pe = add(card, "div", "jc-pre", _pre); _pe.setAttribute("style", "font-size:12.5px;font-weight:700;color:#caa0bd;margin-bottom:5px;letter-spacing:.2px;line-height:1.35;"); } // AUDIT P1
           add(card, "div", "jc-t", n.title);
           if (n.line) add(card, "div", "jc-l", n.line);
           var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : "START"; cta.style.background = n.color; cta.onclick = function () { jpStart(n); };
@@ -2963,7 +2963,7 @@
       if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
       // FOLDED BUTTON = a MINI of the big ring (David 2026-06-28): a small STRIPED activity circle (same texture/colour as #tfTile) wearing the activity icon; a thin GREEN rim when on-plan = the mini reward band. It morphs into #tfRing on open. (Tapping it still stops the timer.)
       if (st) { st.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; st.style.setProperty("background", tfStripe(D.c), "important"); st.style.setProperty("color", D.ink || "#160510", "important"); st.style.setProperty("--ldrim", on ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); } // G9 (David on device, v801): while tracking, the circle SHOWS pause so you know you can press it — and pressing it PAUSES (tfStartBreak), it no longer hard-stops; Stop lives in the seg row
-      var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ece6f2;background:' + DOM.drift.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
+      var badge = on ? '<span style="font-size:11px;font-weight:800;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:2px 7px">ON PLAN</span>' : (drift ? '<span style="font-size:11px;font-weight:800;color:#ece6f2;background:' + DOM.drift.c + ';border:1.5px solid #160510;border-radius:9px;padding:2px 7px">DRIFT</span>' : ''); // AUDIT P1: the most important status was the smallest text in the app (8px)
       if (ad) ad.innerHTML = tiIcon(t) + ' ' + esc(t.title || "Tracking") + ' ' + badge;
       var driftMin = Math.floor((Date.now() - t.start) / 60000), nudge = !on && driftMin >= 10; // off-plan (drift or no covering block) for 10+ min → a gentle "back?" offer (David 2026-06-27)
       if (su) { su.textContent = nudge ? "drifting a while — tap to get back on plan" : (on ? "matches your plan" : (drift ? "off plan — logged honestly" : "tracking · no plan")); su.classList.toggle("ld-nudge", nudge); }
@@ -6672,7 +6672,7 @@
     var tabs = add(sb, "div"); tabs.style.cssText = "display:flex;flex:none;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;"; // flex:none — an overflow-x flex-column child otherwise gets min-height:0 and collapses to a sliver (David 2026-07-01)
     TB_CATS.forEach(function (c) {
       var on = _cat === c.layer, tb = add(tabs, "button");
-      tb.setAttribute("style", "flex:none;display:flex;align-items:center;gap:5px;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;padding:8px 11px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:12px;white-space:nowrap;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#e6cfe0") + ";");
+      tb.setAttribute("style", "flex:none;display:flex;align-items:center;gap:6px;border:2px solid #160510;border-radius:12px;box-shadow:0 2px 0 #160510;padding:11px 14px;min-height:42px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:13.5px;white-space:nowrap;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#e6cfe0") + ";"); // AUDIT P1: real tap-height tabs
       tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + c.l;
       tb.onclick = function () { sb.dataset.tbcat = c.layer; try { renderStage("tool"); } catch (e) {} };
     });
@@ -6684,8 +6684,8 @@
       var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
       var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
       var _pinned = dailyTools().indexOf(t.id) >= 0; var pinB = add(top, "button"); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = "add to your daily"; pinB.setAttribute("style", "background:none;border:none;cursor:pointer;flex:none;font-size:15px;padding:4px;color:" + (_pinned ? "#ffb3d9" : "#5a3550") + ";"); pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
-      var _why = add(card, "div", "tfs-sub"); _why.style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;"; _why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> <span>' + esc(t.why) + '</span>'; // label + body as SEPARATE nodes so the display translator can key each (the old composite was untranslatable — David on device, v796)
-      var _when = add(card, "div", "tfs-sub"); _when.style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;"; _when.innerHTML = '<b>' + esc(tr("Reach for it when:")) + '</b> <span>' + esc(t.when) + '</span>';
+      var _why = add(card, "div", "tfs-sub"); _why.style.cssText = "margin-top:7px;font-size:13.5px;color:#d6b2cb;line-height:1.42;"; _why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> <span>' + esc(t.why) + '</span>'; // label + body as SEPARATE nodes so the display translator can key each (the old composite was untranslatable — David on device, v796) · AUDIT P1 sizes
+      var _when = add(card, "div", "tfs-sub"); _when.style.cssText = "margin-top:3px;font-size:13px;color:#ab82a0;line-height:1.38;"; _when.innerHTML = '<b>' + esc(tr("Reach for it when:")) + '</b> <span>' + esc(t.when) + '</span>';
       card.onclick = function () { runTool(t); };
     }
     if (_cat === "__custom") {
@@ -7474,7 +7474,7 @@
         var blk = add(lane, "div"); blk.style.cssText = "position:relative;height:" + h + "px;margin-bottom:4px;border-radius:9px;background:" + m.col + ";border:2px solid rgba(0,0,0,.3);color:#1c0f20;box-shadow:0 2px 0 rgba(0,0,0,.2);touch-action:pan-y;overflow:hidden;";
         var tl = add(blk, "div", null, mm(y)); tl.style.cssText = "position:absolute;left:-38px;top:-1px;font-size:9px;color:#8a7a9a;font-family:var(--bub);";
         var handle = add(blk, "div"); handle.innerHTML = '<i class="ti ti-grip-vertical"></i>'; handle.style.cssText = "position:absolute;left:1px;top:0;bottom:0;width:24px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,.45);cursor:grab;touch-action:none;";
-        var c = add(blk, "div"); c.style.cssText = "padding:5px 8px 5px 28px;display:flex;align-items:center;gap:8px;height:100%;box-sizing:border-box;pointer-events:none;"; c.innerHTML = '<i class="ti ' + m.ti + '" style="font-size:' + (h > 46 ? 20 : 15) + 'px;"></i><span style="font-weight:800;font-size:' + (h > 46 ? 14 : 12.5) + 'px;">' + m.name + (m.adv ? ' <span style="font-size:8px;opacity:.6;">adv</span>' : '') + '</span><span style="margin-left:auto;font-size:11px;opacity:.72;">' + mm(t.d) + '</span>';
+        var c = add(blk, "div"); c.style.cssText = "padding:5px 8px 5px 28px;display:flex;align-items:center;gap:8px;height:100%;box-sizing:border-box;pointer-events:none;"; c.innerHTML = '<i class="ti ' + m.ti + '" style="font-size:' + (h > 46 ? 20 : 15) + 'px;"></i><span style="font-weight:800;font-size:' + (h > 46 ? 14.5 : 13) + 'px;">' + m.name + (m.adv ? ' <span style="font-size:10px;opacity:.65;">adv</span>' : '') + '</span><span style="margin-left:auto;font-size:12px;opacity:.75;">' + mm(t.d) + '</span>'; // AUDIT P1
         var rm = add(blk, "div"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "position:absolute;top:3px;right:5px;font-size:13px;color:rgba(0,0,0,.5);cursor:pointer;"; rm.onclick = function (e) { e.stopPropagation(); track.splice(i, 1); persist(); render(); };
         var grip = add(blk, "div"); grip.style.cssText = "position:absolute;left:24px;right:0;bottom:0;height:14px;cursor:ns-resize;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;touch-action:none;"; grip.innerHTML = '<div style="width:34px;height:3px;border-radius:2px;background:rgba(0,0,0,.4);"></div>';
         handle.addEventListener("pointerdown", function (e) { startReorder(e, i, blk); });

@@ -203,7 +203,7 @@
   /* CHAPTER banner — FLAT, ink-bordered, app palette + Tabler symbols (matches the day-viewer language, no gloss) */
   .jp-unit{position:relative;z-index:3;margin:24px 14px 8px;border-radius:15px;border:2.5px solid var(--ink);padding:12px 15px;display:flex;align-items:center;gap:12px;}
   .jp-unit .ju-txt{flex:1;min-width:0;}
-  .jp-unit .ju-k{font-family:"Jost",sans-serif;font-size:10.5px;font-weight:800;letter-spacing:1.4px;opacity:.85;text-transform:uppercase;}
+  .jp-unit .ju-k{font-family:"Jost",sans-serif;font-size:12px;font-weight:800;letter-spacing:1.3px;opacity:.85;text-transform:uppercase;} /* AUDIT P1: 12px type floor */
   .jp-unit .ju-t{font-family:var(--bub);font-size:17px;font-weight:800;line-height:1.12;margin-top:1px;}
   .jp-unit .ju-ic{flex:none;width:34px;height:34px;border-radius:9px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:19px;}
   .jp-unit.active{background:var(--pink);color:#fff;}
@@ -219,11 +219,10 @@
   .jp-bub{position:relative;z-index:2;width:96px;height:96px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;cursor:pointer;transition:transform .12s;box-shadow:0 6px 0 var(--ink);}
   .jp-bub i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-bub:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
-  /* #4 — done node: clearly distinct from undone. Bubble dims, turns green-tinted, icon fades; cap gets strikethrough; check badge enlarges + glows. */
-  .jp-node.done .jp-bub{width:80px;height:80px;font-size:31px;opacity:.72;filter:grayscale(.25) brightness(.88);border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 3px 0 #0a4028 !important;}
-  .jp-node.done .jp-bub i{opacity:.6;}
-  .jp-node.done .jp-cap{color:#46e2a4;text-decoration:line-through;opacity:.7;}
-  .jp-node.done .jp-check{position:absolute;right:-2px;bottom:2px;width:36px;height:36px;border-radius:50%;background:#28cf86;border:3px solid var(--ink);color:#fff;font-size:19px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);}
+  /* AUDIT P1 (David 2026-07-02): done = a TROPHY, the reward inversion. No dimming, no grayscale, no strikethrough — completed things are the brightest things (the battery language: lived = shining). The ignition animation lands in the motion run. */
+  .jp-node.done .jp-bub{width:80px;height:80px;font-size:31px;border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 0 14px rgba(40,207,134,.35), 0 3px 0 #0a4028 !important;}
+  .jp-node.done .jp-cap{color:#46e2a4;font-weight:800;}
+  .jp-node.done .jp-check{position:absolute;right:50%;margin-right:-48px;bottom:6px;width:36px;height:36px;border-radius:50%;background:#28cf86;border:3px solid var(--ink);color:#fff;font-size:19px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);} /* anchored to the BUBBLE edge (right:50% − radius) — it floated loose beside the node box */
   /* #5 — node completion burst: a quick scale-pop + gold ring on the bubble */
   .jp-node.jp-just-done .jp-bub{animation:jpNodeDone .55s cubic-bezier(.3,1.6,.4,1) forwards;}
   @keyframes jpNodeDone{0%{transform:scale(1);}40%{transform:scale(1.22);}70%{transform:scale(.95);}100%{transform:scale(1);}}
@@ -240,7 +239,7 @@
   .jp-card{margin-top:13px;width:236px;max-width:84vw;background:#2c081a;border:2.5px solid var(--ink);border-radius:15px;padding:13px 15px;text-align:center;position:relative;z-index:4;}
   .jp-card:before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#2c081a;border-left:2.5px solid var(--ink);border-top:2.5px solid var(--ink);}
   .jp-card .jc-t{font-family:var(--bub);font-size:16px;font-weight:800;color:#fff2f9;line-height:1.15;}
-  .jp-card .jc-l{font-family:"Jost",sans-serif;font-size:12.5px;font-weight:600;color:#c98ca6;margin-top:4px;line-height:1.3;}
+  .jp-card .jc-l{font-family:"Jost",sans-serif;font-size:14px;font-weight:600;color:#d59cb4;margin-top:4px;line-height:1.35;} /* AUDIT P1: the step's meaning, readable at arm's length */
   .jp-card .jc-cta{margin-top:11px;width:100%;color:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:12px;font-family:var(--bub);font-size:15px;font-weight:800;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 0 var(--ink);transition:.08s;}
   .jp-card .jc-cta:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
   .jc-at-row{display:flex;gap:8px;margin-top:11px;align-items:center;}
@@ -250,7 +249,7 @@
   .goal-woop{margin:4px 0 2px;padding:10px 12px;background:#140a1a;border:1.5px solid #2a1830;border-radius:12px;display:flex;flex-direction:column;gap:6px;}
   .goal-woop .goal-hint{margin:0;}
   .goal-woop .goal-input{margin-bottom:0;}
-  .jp-cap{font-family:"Jost",sans-serif;font-size:12px;font-weight:700;color:#e8b8d2;margin-top:9px;max-width:150px;text-align:center;line-height:1.22;}
+  .jp-cap{font-family:"Jost",sans-serif;font-size:13.5px;font-weight:700;color:#e8b8d2;margin-top:9px;max-width:164px;text-align:center;line-height:1.24;} /* AUDIT P1 */
   .jp-node.locked .jp-cap{color:#7a5a6c;}
   .jp-node.cur .jp-cap{display:none;}
   .jp-trophy{position:relative;display:flex;flex-direction:column;align-items:center;margin:4px auto 2px;width:170px;}
@@ -552,7 +551,7 @@
   .moode{font-size:21px;line-height:1;} .moodl{font-size:9.5px;font-weight:700;color:var(--soft);}
   .calblk.miss{filter:grayscale(.9);opacity:.42;background-image:none;border-color:#5a5570 !important;border-left-color:#6a6580 !important;}
   .calblk.live{box-shadow:0 0 16px rgba(255,95,168,.5),0 5px 16px rgba(0,0,0,.4);}
-  .calblk .ct{font-size:10.5px;font-weight:700;opacity:.82;padding-right:22px;}
+  .calblk .ct{font-size:12px;font-weight:700;opacity:.85;padding-right:22px;} /* AUDIT P1 */
   .calblk .cn{font-size:13.5px;font-weight:600;line-height:1.2;}
   .calblk.done{opacity:.5;} .calblk.done .cn{text-decoration:line-through;}
   .nowline{position:absolute;left:42px;right:0;height:2px;background:#ff5fa8;z-index:4;box-shadow:0 0 7px #ff5fa8;}
@@ -725,7 +724,7 @@
   .calhalf{ position:absolute; left:13px; width:10px; height:0; border-top:1.5px solid rgba(176,116,146,.5); } /* minimal gutter DASH (not a full-width rule) — = the half/quarter hour (David 2026-06-25) */
   .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:800; font-size:14px; color:#dba9c2; } /* heavier, slightly larger + brighter hour numbers (David 2026-06-27) */
   .calhalfl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:12px; color:#7a4a62; }
-  .calsub{ position:absolute; left:0; width:30px; text-align:right; font-weight:700; font-size:10px; color:#8a5a72; }
+  .calsub{ position:absolute; left:0; width:34px; text-align:right; font-weight:700; font-size:12px; color:#9a6a82; } /* AUDIT P1: 12px floor */
   .calblk{ position:absolute; border:2px solid #160510; border-radius:11px; padding:5px 9px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
     transition:transform .16s cubic-bezier(.2,.85,.3,1.3),box-shadow .14s,top .2s cubic-bezier(.2,.8,.25,1),height .16s,opacity .15s,background .6s,filter .6s,border-color .5s; }
   /* while zooming (slider drag OR pinch) the timeline is repositioned by JS every frame — kill the top/height transition so bubbles SNAP and never bounce (David 2026-06-25) */
@@ -734,7 +733,7 @@
   #pullBody.zooming .calblk{ pointer-events:none !important; transform:none !important; }
   .calblk .cn{ font-weight:800; font-size:14.5px; letter-spacing:.1px; line-height:1.15; position:relative; z-index:2; } /* bolder/larger bubble titles, readable on the deep stripes (David 2026-06-27) */
   .calblk .cn .ti{ font-size:15px; }
-  .calblk .csub{ font-weight:600; font-size:10.5px; margin-top:2px; opacity:.85; position:relative; z-index:2; padding-right:18px; }
+  .calblk .csub{ font-weight:600; font-size:12px; margin-top:2px; opacity:.88; position:relative; z-index:2; padding-right:18px; } /* AUDIT P1 */
   .calblk.lift{ transform:scale(1.05); box-shadow:0 16px 34px rgba(0,0,0,.6); z-index:9; }
   .calblk.dragging{ transition:transform .14s,box-shadow .14s; }
   /* cross-lane drop hints: drag a past bubble into the OTHER lane to convert it (real = "I did it" · plan = "this was the plan") — David 2026-06-25 */
@@ -853,7 +852,7 @@
   .bento-sinput{ flex:1; min-width:0; background:#1c0512; border:2px solid #160510; border-radius:11px; padding:9px 12px; color:#fff2f9; font-family:"Jost",sans-serif; font-weight:600; font-size:14px; outline:none; }
   .bento-sinput::placeholder{ color:#9a6a86; }
   .bento-quick{ display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding-bottom:10px; }
-  .bento-qlbl{ font-family:"Jost",sans-serif; font-weight:800; font-size:10.5px; letter-spacing:1px; color:#ff8fc0; text-transform:uppercase; margin-right:2px; }
+  .bento-qlbl{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:1px; color:#ff8fc0; text-transform:uppercase; margin-right:2px; } /* AUDIT P1 */
   .bento-results{ display:flex; flex-wrap:wrap; gap:6px; padding-bottom:8px; }
   /* Habits notebook page (David 2026-06-24) */
   .habit-dh{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:.6px; text-transform:uppercase; display:flex; align-items:center; gap:5px; margin:12px 0 6px; }
@@ -915,7 +914,7 @@
   .jp-zoomin{ animation:jpZoom .26s cubic-bezier(.2,.9,.3,1.25); }
   @keyframes jpZoom{ from{ transform:scale(.42); opacity:.25; } to{ transform:scale(1); opacity:1; } }
   .jp-ckq{ font-family:var(--bub); font-size:15px; font-weight:800; color:#fff2f9; text-align:center; }
-  .jp-ckhint{ font-size:11.5px; font-weight:600; color:#c98ca6; text-align:center; max-width:240px; line-height:1.4; margin-top:-5px; }
+  .jp-ckhint{ font-size:13px; font-weight:600; color:#c98ca6; text-align:center; max-width:250px; line-height:1.42; margin-top:-5px; } /* AUDIT P1 */
   .jp-durchips{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:250px; }
   .jp-durchip{ background:#48122f; border:2.5px solid #160510; border-radius:12px; padding:11px 17px; font-family:var(--bub); font-size:16px; font-weight:800; color:#ffe3f1; cursor:pointer; box-shadow:0 4px 0 #160510; }
   .jp-durchip:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
@@ -1018,7 +1017,7 @@
   #trackerFull.tf-staged .tf-title{ margin:0; font-size:14px; font-weight:700; text-align:left; max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #trackerFull.tf-staged .tf-title.switchable{ margin:0; padding:5px 12px; font-size:13px; }
   #trackerFull.tf-staged .tf-time{ margin:0; font-size:15px; }
-  #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark, #trackerFull.tf-staged .tf-say{ display:none; }
+  #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark, #trackerFull.tf-staged .tf-say, #trackerFull.tf-staged .tf-clock{ display:none; } /* AUDIT P1: + tf-clock — the corner ring was colliding with the header clock on every staged flow (screenshot evidence) */
   #trackerFull.tf-staged #tfStageBody{ display:flex; flex:1; flex-direction:column; width:100%; gap:14px; margin-top:16px; padding-bottom:calc(140px + env(safe-area-inset-bottom)); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; } /* padding-bottom clears the fixed cockpit controls (Rest now / Close) so the last tool/tab isn't hidden behind them (David 2026-07-01). overscroll-behavior:contain is MANDATORY — stage scroll must never bubble to the timeline's infinite-recenter watcher */
   .tf-stagecard{ background:#241328; border:2px solid #160510; border-radius:14px; box-shadow:0 3px 0 #160510; color:#e6cfe0; padding:16px; font-family:"Jost",sans-serif; } /* reuses the .tf-chip/.tf-b material — no new colors */
   .tf-stagecard .tfs-h{ font-weight:800; font-size:15px; color:#ffe3f1; margin-bottom:6px; }
@@ -1041,7 +1040,7 @@
   .tf-say{ margin:30px auto 0; max-width:300px; padding:0 8px; text-align:center; font-family:"Jost",sans-serif; font-size:14px; line-height:1.45; color:#ffd9ec; opacity:.9; min-height:20px; } /* the guardian's continuity voice — soul-layer heartbeat (David 2026-06-28) */
   .tf-spark b{ color:#ffd98a; }
   .tf-switch{ margin-top:28px; max-width:420px; width:100%; display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:center; }
-  .tf-swlab{ font-size:9.5px; font-weight:800; letter-spacing:1.6px; color:#6f6080; text-transform:uppercase; }
+  .tf-swlab{ font-size:12px; font-weight:800; letter-spacing:1.4px; color:#8a7898; text-transform:uppercase; } /* AUDIT P1 */
   .tf-chip{ display:flex; align-items:center; gap:5px; background:#241328; border:1.5px solid #160510; border-radius:11px; padding:7px 11px; color:#e6cfe0; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; box-shadow:0 2px 0 #160510; }
   .tf-chip i{ font-size:14px; }
   .tf-chip:active{ transform:translateY(1px); box-shadow:0 1px 0 #160510; }
@@ -1072,9 +1071,9 @@
   #pullHead{ position:relative; flex:none; display:flex; flex-direction:column; align-items:stretch; gap:5px; background:#1c0512; border-radius:15px 15px 0 0; border-bottom:2px solid #160510; padding:7px 12px 6px; } /* slimmer chrome → more timeline (David 2026-06-25); position:relative anchors the ⋯ tools menu */
   /* Apple-Calendar-style mini week strip (David 2026-06-26): weekday letter + date number, tap a day to jump, selected highlighted */
   .pull-weekstrip{ display:flex; gap:3px; padding:1px 0 0; }
-  .pws-day{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 0 6px; border-radius:11px; cursor:pointer; background:transparent; border:none; font-family:"Jost",sans-serif; }
-  .pws-day .pws-l{ font-weight:700; font-size:10px; letter-spacing:.5px; color:#a07a96; }
-  .pws-day .pws-n{ font-weight:800; font-size:15px; color:#ffe3f1; line-height:1.05; }
+  .pws-day{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 0 9px; border-radius:11px; cursor:pointer; background:transparent; border:none; font-family:"Jost",sans-serif; } /* AUDIT P1: taller tap target */
+  .pws-day .pws-l{ font-weight:700; font-size:11.5px; letter-spacing:.5px; color:#a07a96; }
+  .pws-day .pws-n{ font-weight:800; font-size:16px; color:#ffe3f1; line-height:1.05; }
   .pws-day.today:not(.sel) .pws-n{ color:#ff5fa0; }
   .pws-day.today:not(.sel) .pws-l{ color:#ff8fbb; }
   .pws-day.sel{ background:#ff5fa0; box-shadow:0 2px 0 #160510; }
@@ -1422,13 +1421,13 @@
   /* during the FLIP morph the mini elements' big twins are flying into place — hide the originals so you don't see both (David 2026-06-28) */
   #liveDock.ld-morphing .ld-stop, #liveDock.ld-morphing .ld-act, #liveDock.ld-morphing .ld-el, #liveDock.ld-morphing .ld-seg{ opacity:0; }
   #liveDock .ld-act{ color:#ffe3f1; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  #liveDock .ld-sub{ color:#cd9bb6; font-size:10px; font-weight:600; margin-top:1px; }
+  #liveDock .ld-sub{ color:#cd9bb6; font-size:12px; font-weight:600; margin-top:1px; } /* AUDIT P1 */
   #liveDock .ld-sub.ld-nudge{ color:#ff8ac0; cursor:pointer; } /* gentle off-plan nudge — pink, no alarm/red (David 2026-06-27) */
   #liveDock .ld-el{ color:#ff8ac0; font-weight:700; font-size:14px; min-width:44px; text-align:center; }
   #liveDock .ld-sw{ width:34px; height:34px; border-radius:11px; background:#3a1430; border:2.5px solid #160510; color:#ffb8d6; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
   #liveDock .ld-seg{ display:flex; gap:6px; }
   /* secondary seg buttons (the non-primary actions of the shared matrix) — uniform compact berry style; the primary action is the play/stop circle. (David 2026-06-28) */
-  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:6px 4px; font-family:"Jost",sans-serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; background:#3a1430; color:#d2aae8; }
+  #liveDock .ld-b{ flex:1; border:2px solid #160510; border-radius:11px; padding:10px 4px; min-height:40px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; background:#3a1430; color:#d2aae8; } /* AUDIT P1: readable label + real tap height */
   @media (min-width:560px){ body.tab-day:not(.gaming) #liveDock.on{ left:50%; right:auto; width:min(508px,calc(100vw - 16px)); transform:translateX(-50%); } }
   /* Goals + You screen scaffolding */
   .screen-h{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; color:#ffe3f1; margin:2px 2px 14px; display:flex; align-items:center; gap:9px; }
@@ -1442,6 +1441,7 @@
   /* ============ v440 — bento polish: pinned favourites, dark search, no yellow, cleaner ✕ (David 2026-06-24) ============ */
   /* the delete ✕ on calendar bubbles → a crisp round sticker button (not a pale square) */
   .calblk .calx{ top:4px; right:4px; width:20px; height:20px; border-radius:50%; background:#160510; color:#ffd0e6; border:1.5px solid rgba(255,255,255,.22); font-size:10.5px; box-shadow:0 1px 3px rgba(0,0,0,.45); opacity:.95; }
+  .calblk .calx::after{ content:""; position:absolute; inset:-9px; } /* AUDIT P1: 38px effective tap target on the 20px delete — the invisible-hit pattern */
   .calblk .calx:active{ transform:scale(.9); }
   /* FULL-SCREEN CLEANUP (David 2026-06-27): kill the per-day pink outline boxes, the right symbol rail, and the day-separator bars so the timeline reads edge-to-edge and uncluttered */
   .railchip{ display:none !important; }
@@ -1750,6 +1750,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=802"></script>
+  <script src="app.js?v=803"></script>
 </body>
 </html>

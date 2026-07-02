@@ -53,7 +53,9 @@
 
 ## F. DESIGN QUESTIONS (David, on device v796)
 - [ ] F2 **Full design & usability audit delivered** (David's ask: better animation, everything larger/less intimidating): `_specs/DESIGN-AUDIT-2026-07-02.md` — 3 systemic findings (the app whispers · motion decorative not communicative · reward economy under-celebrated), surface-by-surface H/M/L, and a 4-phase roadmap (①type-scale+targets ②motion run ③flows ④game/onboarding audit). Awaiting David's greenlight on the phase order.
-- [ ] F1 **"The toolbox looks a bit overwhelming."** Architecture answer: yes, it IS one system (toolbox stage + tools + guided meditation all run on beatRunner + the cockpit stage + the session composer). The overwhelm is a presentation problem — options offered in chat 2026-07-02 (progressive door / for-right-now-first / daily-first), awaiting David's pick. No build until he picks.
+- [ ] F1 **"The toolbox looks a bit overwhelming."** Architecture answer: yes, it IS one system (beatRunner + cockpit stage + composer). **DAVID PICKED (2026-07-02): FOR-RIGHT-NOW FIRST** — opens as ONE smart suggestion card + daily pins; library/builder/triage collapse behind a single "All tools" row. Build in the flows run (Phase 3) together with G11.
+- [ ] F3 **G11 skip-time behavior — DAVID PICKED (2026-07-02): track unplanned + ONE gentle "plans earn more" line** — never blocks, never nags twice. Play → activity → time = plan+track; skip = this.
+- [x] F4 (v803) **AUDIT PHASE 1 SHIPPED — type & targets:** 12px type floor across journey/planner/dock/toolbox/bento (ON PLAN badge 8→11px; chapter-why 11px/62%→13px/78%; captions/subs/gutter numerals up), 40px+ tap targets (toolbox tabs, dock seg, week strip, calx ::after hit pad), done journey nodes = BRIGHT trophy (no dim/grayscale/strikethrough — the reward inversion), check badge anchored to the bubble, staged-cockpit clock collision fixed. Phases 2 (motion) + 3 (flows) = next dedicated sessions.
 
 ## E. PROTOCOL
 - [x] E1 David tracks versions — never blame stale builds (memory: david-tracks-versions).
