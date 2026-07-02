@@ -52,6 +52,7 @@
 - **→ G5+G6+G7+G8+G13+G14+G1 = THE MOTION RUN (one dedicated session against the timeline regression contract; Phases 2-3 of the motion system fold in here).**
 
 ## F. DESIGN QUESTIONS (David, on device v796)
+- [ ] F2 **Full design & usability audit delivered** (David's ask: better animation, everything larger/less intimidating): `_specs/DESIGN-AUDIT-2026-07-02.md` — 3 systemic findings (the app whispers · motion decorative not communicative · reward economy under-celebrated), surface-by-surface H/M/L, and a 4-phase roadmap (①type-scale+targets ②motion run ③flows ④game/onboarding audit). Awaiting David's greenlight on the phase order.
 - [ ] F1 **"The toolbox looks a bit overwhelming."** Architecture answer: yes, it IS one system (toolbox stage + tools + guided meditation all run on beatRunner + the cockpit stage + the session composer). The overwhelm is a presentation problem — options offered in chat 2026-07-02 (progressive door / for-right-now-first / daily-first), awaiting David's pick. No build until he picks.
 
 ## E. PROTOCOL
