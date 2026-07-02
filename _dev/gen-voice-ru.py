@@ -24,13 +24,13 @@ for lab, sub in re.findall(r'lab:\s*' + STR + r'\s*,\s*sub:\s*' + STR, src):
     lab, sub = un(lab), un(sub); add(lab + (". " + sub if sub.strip() else ""))
 for seq in re.findall(r'seq:\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, seq): add(un(s))
-for arr in re.findall(r'var LINES\s*=\s*\[([^\]]*)\]', src):
+for arr in re.findall(r'var (?:LINES|seq)\s*=\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, arr): add(un(s))
 for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*,\s*[\d.]+\s*\]', src):
     add(un(a) + ", " + un(b))
 for c in ["Breathe in", "Hold", "Breathe out"]: add(c)
 for pt, say in re.findall(r'pt:\s*' + STR + r'\s*,\s*say:\s*' + STR, src):
-    pt, say = un(pt), un(say); add(pt + ". " + say); add(say)
+    pt, say = un(pt), un(say); add(pt + ". " + say); add(say); add(pt)
 for arr in re.findall(r'lines:\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, arr): add(un(s))
 m = re.search(r'var RITUAL_POOLS = \{(.*?)\n  \};', src, re.S)
@@ -42,6 +42,14 @@ if m:
 m = re.search(r'var PR_ALL = \[([^\]]*)\]', src)
 if m:
     for s in re.findall(STR, m.group(1)): add(un(s))
+# tapping() runtime combinations (B3 2026-07-02) — same pieces as gen-voice.py section 9
+m = re.search(r'var FEELINGS = \[(.*?)\];', src, re.S)
+if m:
+    for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)):
+        add("Even though I feel " + un(a) + ", I deeply and completely accept myself."); add("“" + un(b) + "”")
+m = re.search(r'var PTS = \[(.*?)\];', src, re.S)
+if m:
+    for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)): add(un(a))
 uniq = []; seen = set()
 for l in lines:
     if l not in seen: seen.add(l); uniq.append(l)

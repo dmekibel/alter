@@ -21,17 +21,17 @@ for lab,sub in re.findall(r'lab:\s*'+STR+r'\s*,\s*sub:\s*'+STR, src):
 # 2) meditation guides: each seq item verbatim
 for seq in re.findall(r'seq:\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, seq): add(un(s))
-# 3) mantra LINES: verbatim
-for arr in re.findall(r'var LINES\s*=\s*\[([^\]]*)\]', src):
+# 3) mantra LINES + meditationQuick seq: verbatim (B3 2026-07-02: `var seq = [...]` was never extracted — the quick meditation had NO clips)
+for arr in re.findall(r'var (?:LINES|seq)\s*=\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, arr): add(un(s))
 # 4) relaxMoment STEPS: a + ", " + b  (["a","b",num])
 for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*,\s*\d+\s*\]', src):
     add(un(a)+", "+un(b))
 # 5) breath cues (PH labels, hardcoded — spoken for non-rest phases)
 for c in ["Breathe in","Hold","Breathe out"]: add(c)
-# 6) tapping steps: pt + ". " + say  AND  say alone (covers setup)
+# 6) tapping steps: pt + ". " + say  AND  say alone (covers setup) AND pt alone (B3: the runtime now schedules pt + say as separate clips)
 for pt,say in re.findall(r'pt:\s*'+STR+r'\s*,\s*say:\s*'+STR, src):
-    pt,say=un(pt),un(say); add(pt+". "+say); add(say)
+    pt,say=un(pt),un(say); add(pt+". "+say); add(say); add(pt)
 # 7) medEditor section pools: lines: [...]  (settle/breath/body/aware/rest/bliss/play)
 for arr in re.findall(r'lines:\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, arr): add(un(s))
@@ -48,6 +48,14 @@ for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*,\s*[\d.]+\s*\]', src):
 m = re.search(r'var PR_ALL = \[([^\]]*)\]', src)
 if m:
     for s in re.findall(STR, m.group(1)): add(un(s))
+# 9) tapping() runtime combinations (B3 2026-07-02): the setup sentence per feeling + the quoted feeling phrase + each point name — the runtime schedules these PIECES (never the old un-bankable "pt. say" composites)
+m = re.search(r'var FEELINGS = \[(.*?)\];', src, re.S)
+if m:
+    for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)):
+        add("Even though I feel " + un(a) + ", I deeply and completely accept myself."); add("“" + un(b) + "”")
+m = re.search(r'var PTS = \[(.*?)\];', src, re.S)
+if m:
+    for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)): add(un(a))
 # de-dupe
 uniq=[]; seen=set()
 for l in lines:
