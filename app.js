@@ -1191,6 +1191,7 @@
     "CROWN — every planned block, lived. Today is yours.": "КОРОНА — каждый план прожит. Этот день — твой.",
     "REFLECTION": "РЕФЛЕКСИЯ", "skip": "пропустить",
     "PROFILE": "ПРОФИЛЬ", "SOUND": "ЗВУК", "DATA": "ДАННЫЕ", "ADVANCED": "ПРОДВИНУТОЕ", "LANGUAGE": "ЯЗЫК",
+    "What now?": "Что сейчас?", "next up:": "дальше:",
     "Language": "Язык", "flat flags, all of them": "плоские флаги, все языки",
     "the collection — cards you've earned": "коллекция — добытые карты",
     "step placed into today — it waits for you": "шаг поставлен в сегодня — он ждёт тебя", "in my own words…": "своими словами…", "one honest line": "одна честная строка",
@@ -3268,8 +3269,8 @@
       return;
     }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
-      el("tfTitle").textContent = nb ? nb.title : "Nothing tracking";
-      el("tfVerdict").textContent = nb ? "ready when you are" : "";
+      el("tfTitle").textContent = tr("What now?"); // GRAND BUILD H: the mock's composition — the QUESTION is the title; the plan is the sub-line
+      el("tfVerdict").textContent = nb ? (tr("next up:") + " " + nb.title + " · " + fmt(hm(nb.time))) : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
