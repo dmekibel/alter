@@ -73,6 +73,10 @@
 - [ ] H12 Med player: pre-roll breath orb before the first spoken line + 20s ending silence.
 - [ ] H13 You-tab regrouped: Profile / Sound / Data / Advanced.
 - [ ] H14 TLM chip rides WITH the flying points (one moment, not two disconnected ones).
+- [ ] H15 **THE REWARD LANGUAGE codified** (David greenlit direction "holy moly"): `_specs/REWARD-LANGUAGE.md` — 5 tiers (Искра/Совпадение/Серия/Корона/Веха) each owning visual+sound+haptic; the `reward(tier,ctx)` router replaces scattered celebration code. = the motion run's spec.
+- [ ] H16 **Badges («Знаки»):** 6 families × ranks (Return flagship, Streak, Courage, Alignment, Depth, Gardener) — matte until earned, gold RING when earned, minted at tier 5, shelf in the game pane. Additive S.badges.
+- [ ] H17 **Sound effects:** synthesized earcons, one instrument family, C pentatonic, length-capped per tier, own Sound-panel toggle, never during sessions. Zero assets (Web Audio, existing bus infra).
+- [ ] H18 Mockup note from David: primary CTAs must never ship thin — ≥52px, fat border, hard shadow (the 20-second breathe button read small/thin in the toolbox mockup).
 
 ## E. PROTOCOL
 - [x] E1 David tracks versions — never blame stale builds (memory: david-tracks-versions).
