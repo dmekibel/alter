@@ -1518,6 +1518,18 @@
     "FOR RIGHT NOW": "ПРЯМО СЕЙЧАС",
     "FOR RIGHT NOW · YOUR TOOL": "ПРЯМО СЕЙЧАС · ТВОЙ ИНСТРУМЕНТ",
     "Put a session into the day": "Поставить сессию в день",
+    "What's closest to the truth right now?": "Что сейчас ближе к правде?",
+    "no right answers": "без правильных ответов",
+    "Burning": "Горю",
+    "things move — I want more": "дела идут — хочу больше",
+    "Flowing": "Плыву",
+    "day after day, on autopilot": "день за днём, на автопилоте",
+    "Stuck": "Застрял",
+    "I know what to do — I don't": "знаю что надо — не делаю",
+    "Drowning": "Тону",
+    "too much of everything": "слишком много всего",
+    "your pick ignites — like a matched block": "твой выбор загорается — как совпавший блок",
+    "your guardian angel": "твой ангел-хранитель",
     "Your daily": "Твоё ежедневное",
     "Something specific is loud — help me pick": "Что-то конкретное кричит — помоги выбрать",
     "Why it works ·": "Почему это работает ·",
@@ -1660,15 +1672,15 @@
     _ssShown = true;
     var has = !!(S.profile && S.profile.set);
     var prim = el("ssPrimary"), nb = el("ssNew"), ln = el("ssLangName"), lb = el("ssLang");
-    if (prim) prim.innerHTML = has ? '<i class="ti ti-player-play-filled"></i> Continue' : '<i class="ti ti-player-play-filled"></i> Start'; // BIG primary: Continue a save, or Start a fresh one (→ onboarding)
-    if (nb) { nb.style.display = ""; nb.innerHTML = '<i class="ti ti-rotate-2"></i> Start fresh'; } // not "game" — it's a life app, not a game (David v660)
+    if (prim) prim.innerHTML = has ? 'Continue' : 'Start'; // §12 frame 11: one clean word on the pink slab — no icon
+    if (nb) { nb.style.display = ""; nb.innerHTML = 'Start fresh'; } // bare word (frame 11); not "game" — it's a life app, not a game (David v660)
     ssLangLabel();
     var vEl = el("ssVer"); if (vEl) vEl.textContent = appVer(); // show the live build number (auto-synced from the app.js?v= tag preship bumps) — David 2026-07-01
     ss.classList.add("on");
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
     if (curLang() !== "en") translateTree(ss); // translate the start screen into the chosen language
-    if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = '<i class="ti ti-alert-triangle"></i> Erase &amp; start over?'; if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = '<i class="ti ti-rotate-2"></i> Start fresh'; }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: wipes everything → reload → onboarding
+    if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = 'Erase &amp; start over?'; try { if (curLang() !== "en") translateTree(nb.parentElement); } catch (e2) {} if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = 'Start fresh'; try { if (curLang() !== "en") translateTree(nb.parentElement); } catch (e3) {} }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: wipes everything → reload → onboarding
     var lf = el("ssLoad"), fi = el("ssFile");
     if (lf && fi) { // LOAD GAME = upload a backup file (the exported .json) → restore → reload into it
       lf.onclick = function () { fi.value = ""; fi.click(); };
@@ -4316,7 +4328,7 @@
     var data = { vibe: "", energy: null, messRoom: "", pactAt: null, taskDone: false, seeded: false };
     var step = 0, STEPS = 6; // 0-1 showman · 2 pact · 3 profiling (energy+room) · 4 the task · 5 the seed
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    var bar = add(card, "div", "ob-bar"), barF = add(bar, "i");
+    var bar = add(card, "div", "ob-bar"), barDs = []; for (var _bi = 0; _bi < 6; _bi++) barDs.push(add(bar, "i")); // §12 frame 12: course-style dashes, one per beat
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     function chip(p, label, on, color, ink) { var s = add(p, "span", "ob-ch" + (on ? " on" : "")); if (color) { s.style.background = on ? color : mixDark(color); s.style.color = on ? (ink || "#160510") : color; } s.innerHTML = label; return s; }
     function next() { if (step < STEPS - 1) { step++; draw(); } else finish(); }
@@ -4343,8 +4355,8 @@
       draw();
     }
     function draw() {
-      barF.style.width = Math.round((step + 1) / STEPS * 100) + "%"; body.innerHTML = ""; foot.innerHTML = "";
-      body.className = (step === 0 || step === 1 || step === 5) ? "ob-body center" : "ob-body";
+      barDs.forEach(function (d, di) { d.className = di <= step ? "on" : ""; }); body.innerHTML = ""; foot.innerHTML = "";
+      body.className = (step === 0 || step === 1 || step === 3 || step === 5) ? "ob-body center" : "ob-body";
       if (step === 0) { add(body, "i", "ti ti-sparkles ob-spk"); var f = add(body, "div", "ob-face"); add(f, "span", "ob-eye l"); add(f, "span", "ob-eye r"); add(body, "div", "ob-q", "Hi, I'm Sage."); add(body, "div", "ob-sb", "what I'm about to show you gives you real powers. this is no joke."); stdFoot("Let's go ▸", false); return; }
       if (step === 1) { add(body, "i", "ti ti-shield-star ob-spk"); add(body, "div", "ob-q", "Every real thing you do, I remember — and your world grows."); add(body, "div", "ob-sb", "small things count. let's prove it — 90 seconds."); stdFoot("Next ▸", false); return; }
       if (step === 2) {
@@ -4362,20 +4374,30 @@
         if (data.pactAt) { stdFoot("Next ▸", true); } else { var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = finish; }
         return;
       }
-      if (step === 3) {
-        add(body, "div", "ob-q", "Quick read."); add(body, "div", "ob-sb", "how's the battery?");
-        var er = add(body, "div", "ob-row");
-        [["low", "Running on empty", "ti-battery-1", "#ff7a6e"], ["mid", "Getting by", "ti-battery-2", "#ffc83d"], ["high", "Good energy", "ti-battery-4", "#34d39a"]].forEach(function (o) {
-          var on = data.energy === o[0], c = chip(er, '<i class="ti ' + o[2] + '"></i> ' + o[1], on, o[3], "#160510"); c.onclick = function () { data.energy = o[0]; if (o[0] === "low") data.vibe = "overwhelmed"; draw(); };
+      if (step === 3) { // §12 frame 12 — the VIBE BEAT: guardian circle, one big question, four element answers as the LOCKED choice-rows (v3: ghost → own-color ignition), auto-advance on pick
+        var av = add(body, "div", "ob-ava"); av.innerHTML = '<i class="ti ti-sparkles"></i>';
+        add(body, "div", "ob-q", "What's closest to the truth right now?").style.cssText = "font-size:26px;font-weight:800;text-align:center;line-height:1.2;";
+        add(body, "div", "ob-sb", "no right answers").style.cssText = "text-align:center;margin-top:6px;";
+        var vw = add(body, "div"); vw.style.cssText = "width:100%;display:flex;flex-direction:column;gap:12px;margin-top:22px;text-align:left;";
+        [["thriving", "Burning", "things move — I want more", "ti-flame", "#ff8a3a", "high"],
+         ["coasting", "Flowing", "day after day, on autopilot", "ti-ripple", "#48b8e0", "mid"],
+         ["stuck", "Stuck", "I know what to do — I don't", "ti-anchor", "#ff5fa8", "mid"],
+         ["overwhelmed", "Drowning", "too much of everything", "ti-droplet", "#7a9aff", "low"]].forEach(function (o) {
+          var on3 = data.vibe === o[0], r = add(vw, "div", "k-row" + (on3 ? " lit" : ""));
+          r.style.cssText = "--kc:" + mixHex(o[4], "#160510", 0.28) + ";--kt:" + mixHex(o[4], "#0d0410", 0.86) + ";--kA:" + o[4] + ";--kB:" + mixHex(o[4], "#160510", 0.24) + ";--ki:" + mixHex(o[4], "#0d0410", 0.76) + ";--ks:" + mixHex(o[4], "#b39ab0", 0.5) + ";";
+          r.innerHTML = '<i class="ti ' + o[3] + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o[1] + '</div><div class="kr-s">' + o[2] + '</div></div>' + (on3 ? '<i class="ti ti-check kr-chk"></i>' : '');
+          r.onclick = function () { if (data.vibe === o[0]) return; data.vibe = o[0]; data.energy = o[5]; draw(); setTimeout(next, 550); };
         });
-        add(body, "div", "ob-lbl", "WHICH ROOM IS THE MESSIEST?");
-        var rr = add(body, "div", "ob-row");
-        ["Bedroom", "Kitchen", "Living room", "Desk / office", "Bathroom"].forEach(function (r) { var c = chip(rr, r, data.messRoom === r); c.onclick = function () { data.messRoom = r; draw(); }; });
-        stdFoot("Next ▸", true); return;
+        add(body, "div", "ob-sb", "your pick ignites — like a matched block").style.cssText = "text-align:center;margin-top:16px;opacity:.65;";
+        var skip3 = add(foot, "button", "ob-skip", "skip"); skip3.onclick = finish;
+        return;
       }
       if (step === 4) {
         if (!data.taskDone) {
-          add(body, "i", "ti ti-arrow-big-down-lines ob-spk");
+          add(body, "div", "ob-lbl", "WHICH ROOM IS THE MESSIEST?"); // moved here from the vibe beat — the read stays one question per screen (frame 12)
+          var rr = add(body, "div", "ob-row");
+          ["Bedroom", "Kitchen", "Living room", "Desk / office", "Bathroom"].forEach(function (r) { var c = chip(rr, r, data.messRoom === r); c.onclick = function () { data.messRoom = r; draw(); }; });
+          add(body, "i", "ti ti-arrow-big-down-lines ob-spk").style.marginTop = "18px";
           add(body, "div", "ob-q", "Pick two things up off the floor. I'll wait.");
           add(body, "div", "ob-sb", "really — go do it, then tap Done.");
           var db = add(foot, "button", "ob-btn go", "Done ✓"); db.onclick = taskDone;

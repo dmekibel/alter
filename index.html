@@ -57,7 +57,13 @@
   .ss-langrow .ti-check{ margin-left:auto; color:#ff5fa0; }
   .ss-langrow:active{ transform:scale(.97); }
   .ss-hero{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
-  .ss-sparkles{ color:#ffd24a; font-size:30px; line-height:1; opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .15s both; }
+  .ss-stars{ position:absolute; inset:0; pointer-events:none; } /* §12 frame 11: 3 barely-alive stars in the sky */
+  .ss-stars i{ position:absolute; width:3px; height:3px; border-radius:50%; background:#e8d8ea; animation:ssTwinkle 3.4s ease-in-out infinite; }
+  .ss-stars i:nth-child(1){ top:14%; left:18%; }
+  .ss-stars i:nth-child(2){ top:24%; right:20%; animation-delay:1.2s; }
+  .ss-stars i:nth-child(3){ top:44%; left:10%; animation-delay:2.1s; width:2px; height:2px; }
+  .ss-glint{ transform-box:fill-box; transform-origin:center; animation:ssHalo 4s ease-in-out infinite, ssGlint 6s linear infinite; } /* the light that ORBITS the ring every ~6s — jewelry, not a rectangle sweep (§11 verdict) */
+  @keyframes ssGlint{ 0%{ stroke-dashoffset:0; opacity:0; } 6%{ opacity:.95; } 40%{ opacity:.95; } 52%{ stroke-dashoffset:-100; opacity:0; } 100%{ stroke-dashoffset:-100; opacity:0; } }
   .ss-guardian-wrap{ margin:2px 0 8px; animation:ssSpawn .74s var(--ease-spring) both, ssBob 3.2s ease-in-out 1.1s infinite; }
   .ss-guardian{ width:200px; height:200px; display:flex; align-items:center; justify-content:center; animation:ssGlow 2.6s ease-in-out infinite; } /* NO tile/outline — just the animated mark interior floating on the gradient (David v660) */
   .ss-mark{ width:100%; height:100%; overflow:visible; }
@@ -71,18 +77,19 @@
   @keyframes ssBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-13px); } }
   @keyframes ssSpawn{ from{ opacity:0; transform:scale(.25) rotate(-25deg); } to{ opacity:1; transform:none; } }
   @keyframes ssGlow{ 0%,100%{ filter:drop-shadow(0 6px 16px rgba(255,95,160,.22)); } 50%{ filter:drop-shadow(0 6px 32px rgba(255,95,160,.55)); } }
-  .ss-title{ font-family:"Baloo 2","Jost",sans-serif; font-weight:800; font-size:54px; letter-spacing:4px; color:#fff; text-shadow:0 4px 0 #160510, 0 0 30px rgba(255,95,160,.45); opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .3s both; }
+  .ss-title{ font-family:"Jost",sans-serif; font-weight:700; font-size:42px; letter-spacing:11px; padding-left:11px; color:#fff; text-shadow:0 0 26px rgba(255,95,160,.25); opacity:0; animation:ssPop var(--dur-enter) var(--ease-spring) .3s both; } /* §12 frame 11: clean wide-tracked wordmark — the cartoon ink-shadow leaves */
   .ss-tag{ color:#c79ab4; font-size:14px; font-weight:600; margin-top:2px; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .45s both; }
   @keyframes ssPop{ from{ opacity:0; transform:scale(.7); } to{ opacity:1; transform:none; } }
   @keyframes ssFade{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
   .ss-actions{ width:100%; display:flex; flex-direction:column; gap:11px; align-items:center; }
   .ss-btn{ font-family:"Jost",sans-serif; font-weight:800; cursor:pointer; border:3px solid #160510; border-radius:16px; box-shadow:0 5px 0 #160510; display:flex; align-items:center; justify-content:center; gap:9px; opacity:0; } /* app-theme: flat fill, ink border, hard offset shadow (David v660) */
   .ss-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510 !important; }
-  .ss-primary{ width:100%; max-width:430px; padding:20px; font-size:20px; background:#ff5fa0; color:#4a1126; animation:ssRise var(--dur-enter) var(--ease-spring) .5s both; } /* BIG primary, brand pink */
-  .ss-subrow{ width:100%; max-width:430px; display:flex; gap:10px; }
-  .ss-sub{ flex:1; padding:13px 10px; font-size:14px; background:#2a0f1e; box-shadow:0 4px 0 #160510; animation:ssRise var(--dur-enter) var(--ease-spring) .62s both; } /* smaller, secondary */
-  .ss-load{ color:#7fc6f5; }
-  .ss-new{ color:#ff9a9a; }
+  .ss-primary{ width:100%; max-width:430px; padding:20px; font-size:20px; border-radius:22px; background:#ff5fa0; color:#4a1126; animation:ssRise var(--dur-enter) var(--ease-spring) .5s both; } /* BIG primary, brand pink — frame 11's soft-rounded slab */
+  .ss-subrow{ width:100%; max-width:430px; display:flex; gap:10px; justify-content:center; }
+  .ss-sub{ flex:none; padding:8px 14px; font-size:15px; font-weight:700; background:none; border:none; box-shadow:none; animation:ssRise var(--dur-enter) var(--ease-spring) .62s both; } /* frame 11: secondaries are BARE words under the one pink button — no boxes */
+  .ss-sub:active{ transform:translateY(1px); box-shadow:none !important; opacity:.7; }
+  .ss-load{ color:#b3a0c4; }
+  .ss-new{ color:#c4a0b4; }
   @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
@@ -1413,9 +1420,13 @@
   .pull-handle{ display:block; width:42px; height:5px; border-radius:3px; background:#ffb8d8; margin:0 auto 6px; }
   /* ============ ONBOARDING (mockups 041/043, §8) ============ */
   .ob-ov{ position:fixed; inset:0; z-index:90; background:linear-gradient(165deg,#34091f,#1a0712); display:flex; align-items:center; justify-content:center; padding:16px; font-family:"Jost",sans-serif; }
-  .ob-card{ width:min(440px,96vw); max-height:94vh; background:#34091f; border:4px solid #160510; border-radius:26px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; }
-  .ob-bar{ height:6px; background:#5a1838; flex:none; }
-  .ob-bar i{ display:block; height:100%; background:linear-gradient(90deg,#ffc83d,#ff5fa0); transition:width .3s; }
+  /* §12 frame 12 («Прибытие»): the onboarding lives FULL-BLEED in the night world — no card box, no white sheets */
+  .ob-card{ width:100%; height:100%; max-height:100dvh; background:transparent; border:none; border-radius:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
+  .ob-bar{ display:flex; gap:7px; background:none; flex:none; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 0; } /* frame 12: course-style progress DASHES, gold = walked */
+  .ob-bar i{ display:block; height:6px; flex:1; max-width:36px; border-radius:3px; background:#3a1730; transition:background .3s; }
+  .ob-bar i.on{ background:#ffd24a; }
+  .ob-ava{ width:86px; height:86px; border-radius:50%; background:#ff5fa8; border:3px solid #160510; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; flex:none; box-shadow:0 0 0 7px rgba(154,92,240,.16), 0 6px 0 #160510; } /* frame 12: the guardian's pink circle above the question */
+  .ob-ava i{ font-size:34px; color:#4a1126; }
   .ob-body{ padding:18px 18px 8px; overflow:auto; flex:1; }
   .ob-body.center{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
   .ob-q{ color:#ffe3f1; font-weight:700; font-size:21px; line-height:1.2; }
@@ -1435,7 +1446,7 @@
   .ob-cell .ob-ch{ font-size:11px; padding:5px 8px; border-radius:9px; }
   .ob-extras-h{ color:#ffd24a; font-size:10px; font-weight:700; border-top:1px solid #4a2238; margin-top:12px; padding-top:10px; margin-bottom:6px; }
   .ob-world{ width:120px; height:120px; border-radius:50%; background:#5cc47a; border:4px solid #160510; display:flex; align-items:center; justify-content:center; color:#ffe06a; font-size:34px; margin-bottom:14px; }
-  .ob-foot{ padding:10px 18px max(16px,env(safe-area-inset-bottom)); border-top:2px solid #160510; display:flex; gap:8px; align-items:center; flex:none; }
+  .ob-foot{ padding:10px 18px max(16px,env(safe-area-inset-bottom)); border-top:none; display:flex; gap:8px; align-items:center; flex:none; } /* full-bleed: no seam */
   .ob-btn{ flex:1; background:#ffc83d; color:#5a3a00; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:13px; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
   .ob-btn.go{ background:#34d39a; color:#0c3d29; }
   .ob-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
@@ -1860,29 +1871,30 @@
   <div id="journeyPath"><div class="jp-head"><div class="jp-headrow"><button class="jp-x" id="jpX">✕</button><div class="jp-titles"><div class="jp-title" id="jpTitle">Your journey</div><div class="jp-sub" id="jpSub"></div></div><div class="spark-pill" id="jpSpark"><i class="ti ti-bolt"></i><b class="spark-n">0</b></div><button class="jp-goals" id="jpGoals" aria-label="Tools"><i class="ti ti-briefcase"></i></button></div><div class="jp-prog"><div class="jp-progfill" id="jpProgFill"></div></div></div><div class="jp-scroll" id="jpScroll"><div class="jp-trail" id="jpTrail"></div></div><div class="jp-nav" id="jpNav"><button class="jpn" id="jpnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn on" id="jpnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn" id="jpnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div></div>
   <div id="startScreen">
     <button class="ss-lang" id="ssLang" aria-label="Language"><span class="ss-flag" id="ssLangFlag"></span></button>
+    <div class="ss-stars"><i></i><i></i><i></i></div>
     <div class="ss-hero">
-      <div class="ss-sparkles"><i class="ti ti-sparkles"></i></div>
       <div class="ss-guardian-wrap"><div class="ss-guardian">
         <svg class="ss-mark" viewBox="0 0 120 120" aria-hidden="true">
           <ellipse class="ss-halo" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#ffd24a" stroke-width="7" stroke-linecap="round"/>
+          <ellipse class="ss-glint" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#fff3c0" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="9 91"/>
           <path class="ss-spark" fill="#ff5fa0" d="M60 22 L66 54 L98 60 L66 66 L60 98 L54 66 L22 60 L54 54 Z"/>
           <path class="ss-spk2" fill="#ffd24a" d="M88 27 L91 33 L97 36 L91 39 L88 45 L85 39 L79 36 L85 33 Z"/>
           <path class="ss-spk3" fill="#36b3f0" d="M34 74 L37 81 L44 84 L37 87 L34 94 L31 87 L24 84 L31 81 Z"/>
         </svg>
       </div></div>
       <div class="ss-title">ALTER</div>
-      <div class="ss-tag">your guardian-angel life sim</div>
+      <div class="ss-tag">your guardian angel</div>
     </div>
     <div class="ss-actions">
-      <button class="ss-btn ss-primary" id="ssPrimary"><i class="ti ti-player-play-filled"></i> Continue</button>
+      <button class="ss-btn ss-primary" id="ssPrimary">Continue</button>
       <div class="ss-subrow">
-        <button class="ss-btn ss-sub ss-load" id="ssLoad"><i class="ti ti-upload"></i> Load save</button>
-        <button class="ss-btn ss-sub ss-new" id="ssNew"><i class="ti ti-rotate-2"></i> Start fresh</button>
+        <button class="ss-btn ss-sub ss-load" id="ssLoad">Load save</button>
+        <button class="ss-btn ss-sub ss-new" id="ssNew">Start fresh</button>
       </div>
       <input type="file" id="ssFile" accept="application/json,.json" style="display:none" />
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=818"></script>
+  <script src="app.js?v=819"></script>
 </body>
 </html>
