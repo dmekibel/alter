@@ -1527,12 +1527,43 @@
     "empty — add from below": "пусто — добавь снизу",
     "adv": "прод"
   });
-  var I18N_PATTERNS = { ru: [ [/^It's been (.+)\. No guilt — seasons happen, and that you came back is the whole skill\.$/, "Тебя не было $1. Без вины — у всего свои сезоны, и то, что ты вернулся — и есть главное умение."], [/(\d+)\s+of\s+(\d+)\s+today/g, "$1 из $2 сегодня"], [/(\d+)\s+of\s+(\d+)/g, "$1 из $2"] ] };
+  // v798 (David on device, v796): the latinAudit() harvest — card labels (now separate nodes), thinker credits, the that's-like-me chip
+  Object.assign(I18N.ru, {
+    "Why it works:": "Почему это работает:",
+    "Reach for it when:": "Когда к нему тянуться:",
+    "Huberman · Johnson": "Хуберман · Джонсон",
+    "Maltz — Psycho-Cybernetics": "Мольц — «Психокибернетика»",
+    "Harris · Headspace · Blackstone · Adyashanti": "Харрис · Headspace · Блэкстоун · Адьяшанти",
+    "EFT — Craig": "ЭФТ — Крейг",
+    "Stutz — Tool 1": "Стутц — инструмент 1", "Stutz — Tool 2": "Стутц — инструмент 2", "Stutz — Tool 3": "Стутц — инструмент 3", "Stutz — Tool 4": "Стутц — инструмент 4", "Stutz — Tool 5": "Стутц — инструмент 5", "Stutz — Tool 6": "Стутц — инструмент 6", "Stutz — Tool 7": "Стутц — инструмент 7",
+    "Murphy · Goddard": "Мерфи · Годдард",
+    "Silva · Dispenza · Maltz": "Сильва · Диспенза · Мольц",
+    "Blair — eyes-open induction": "Блэр — введение с открытыми глазами",
+    "That's like me.": "Это в моём духе.",
+    "That's like me. ✦": "Это в моём духе. ✦",
+    "That's so like me.": "Это так в моём духе."
+  });
+  var I18N_PATTERNS = { ru: [ [/^It's been (.+)\. No guilt — seasons happen, and that you came back is the whole skill\.$/, "Тебя не было $1. Без вины — у всего свои сезоны, и то, что ты вернулся — и есть главное умение."], [/(\d+)\s+of\s+(\d+)\s+today/g, "$1 из $2 сегодня"], [/(\d+)\s+of\s+(\d+)/g, "$1 из $2"],
+    // v798 date/chapter/streak composites (the latinAudit harvest). replace() accepts functions, so month-day reorders properly ("Jul 2" → "2 июл").
+    [/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{1,2})\b/g, function (m, mo, d) { return d + " " + ({ Jan: "янв", Feb: "фев", Mar: "мар", Apr: "апр", May: "мая", Jun: "июн", Jul: "июл", Aug: "авг", Sep: "сен", Oct: "окт", Nov: "ноя", Dec: "дек" })[mo]; }],
+    [/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, function (m) { return ({ Monday: "Понедельник", Tuesday: "Вторник", Wednesday: "Среда", Thursday: "Четверг", Friday: "Пятница", Saturday: "Суббота", Sunday: "Воскресенье" })[m]; }],
+    [/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b(?!\p{L})/gu, function (m) { return ({ Mon: "пн", Tue: "вт", Wed: "ср", Thu: "чт", Fri: "пт", Sat: "сб", Sun: "вс" })[m]; }],
+    [/\bYesterday\b/g, "Вчера"], [/\bToday\b/g, "Сегодня"], [/\bTomorrow\b/g, "Завтра"],
+    [/\bChapter (\d+) · complete\b/g, "Глава $1 · пройдена"], [/\bChapter (\d+) · open\b/g, "Глава $1 · открыта"], [/\bChapter (\d+)\b/g, "Глава $1"],
+    [/\b(\d+) in a row\b/g, "$1 подряд"],
+    [/(\d{1,2}:\d{2}) · tap to start it now\./g, "$1 · коснись — и начнём."]
+  ] };
   function tr(s) { var L = curLang(); if (L === "en" || !I18N[L]) return s; var k = (s == null ? "" : ("" + s)).trim(); var v = I18N[L][k]; return v != null ? v : s; }
+  function latinAudit() { // RU-mode QA sweep (David 2026-07-02: "be better at figuring out what's still in English") — returns every VISIBLE text node still showing Latin script. Run window.__latinAudit() from the console after opening a surface; fix the harvest, don't wait for David to report it.
+    var out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+    while ((n = w.nextNode())) { var s = (n.textContent || "").trim(); if (s.length < 3 || !/[a-zA-Z]{3,}/.test(s)) continue; var el = n.parentElement; if (!el || !el.offsetParent || el.closest("script,style")) continue; if (out.indexOf(s) < 0) out.push(s.slice(0, 90)); }
+    return out;
+  }
+  try { window.__latinAudit = latinAudit; } catch (e) {}
   function translateTree(root) {
     var L = curLang(); if (L === "en" || !I18N[L] || !root || !root.nodeType) return;
     var dict = I18N[L], pats = I18N_PATTERNS[L] || [];
-    function tn(n) { var raw = n.nodeValue; if (!raw) return; var k = raw.trim(); if (!k) return; var v = dict[k]; if (v != null && v !== k) { n.nodeValue = raw.replace(k, v); return; } var nv = raw, hit = false; for (var pi = 0; pi < pats.length; pi++) { if (pats[pi][0].test(nv)) { nv = nv.replace(pats[pi][0], pats[pi][1]); hit = true; } } if (hit) n.nodeValue = nv; }
+    function tn(n) { var raw = n.nodeValue; if (!raw) return; var k = raw.trim(); if (!k) return; var v = dict[k]; if (v != null && v !== k) { n.nodeValue = raw.replace(k, v); return; } var nv = raw, hit = false; for (var pi = 0; pi < pats.length; pi++) { pats[pi][0].lastIndex = 0; if (pats[pi][0].test(nv)) { pats[pi][0].lastIndex = 0; nv = nv.replace(pats[pi][0], pats[pi][1]); hit = true; } } if (hit) n.nodeValue = nv; } // lastIndex reset: a /g regex's test() advances its cursor — without the reset every OTHER node skipped that pattern (latent since the first /g pattern)
     try {
       if (root.nodeType === 3) { tn(root); return; }
       var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n; while ((n = w.nextNode())) tn(n);
@@ -6623,8 +6654,8 @@
       var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
       var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
       var _pinned = dailyTools().indexOf(t.id) >= 0; var pinB = add(top, "button"); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = "add to your daily"; pinB.setAttribute("style", "background:none;border:none;cursor:pointer;flex:none;font-size:15px;padding:4px;color:" + (_pinned ? "#ffb3d9" : "#5a3550") + ";"); pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
-      add(card, "div", "tfs-sub", "Why it works: " + t.why).style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;";
-      add(card, "div", "tfs-sub", "Reach for it when: " + t.when).style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;";
+      var _why = add(card, "div", "tfs-sub"); _why.style.cssText = "margin-top:7px;font-size:12px;color:#cfa8c4;line-height:1.38;"; _why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> <span>' + esc(t.why) + '</span>'; // label + body as SEPARATE nodes so the display translator can key each (the old composite was untranslatable — David on device, v796)
+      var _when = add(card, "div", "tfs-sub"); _when.style.cssText = "margin-top:3px;font-size:11.5px;color:#9a7090;line-height:1.3;"; _when.innerHTML = '<b>' + esc(tr("Reach for it when:")) + '</b> <span>' + esc(t.when) + '</span>';
       card.onclick = function () { runTool(t); };
     }
     if (_cat === "__custom") {
