@@ -6828,7 +6828,7 @@
     sb.innerHTML = "";
     var head = add(sb, "div", "tf-stagecard");
     var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
-    add(head, "div", "tfs-sub", "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.");
+    // (the head paragraph left the room — composition law: the FOR-RIGHT-NOW card is the hero, the title is enough)
     // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
     var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
     if (_pt) {

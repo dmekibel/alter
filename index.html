@@ -141,13 +141,13 @@
   /* sheet (menu) */
   #sheet{position:fixed;inset:0;background:rgba(40,20,60,.45);display:flex;align-items:flex-end;z-index:95;opacity:0;pointer-events:none;transition:.22s;}/* z-95 > cockpit stage (#trackerFull z-90): a modal sheet opened from the toolbox (Grateful Flow, Settings…) must sit ABOVE the cockpit or it's unclickable (David 2026-07-01) */
   #sheet.on{opacity:1;pointer-events:auto;}
-  .scard{width:100%;max-width:520px;margin:0 auto;background:#fff3fb;border:3px solid var(--ink);border-bottom:none;border-radius:30px 30px 0 0;padding:14px 18px max(28px,calc(env(safe-area-inset-bottom) + 16px));transform:translateY(28px);transition:transform .26s cubic-bezier(.2,.9,.3,1.3);max-height:88vh;overflow:auto;}
+  .scard{width:100%;max-width:520px;margin:0 auto;background:#22091a;color:#f0e6ef;border:3px solid #160510;border-bottom:none;border-radius:30px 30px 0 0;padding:14px 18px max(28px,calc(env(safe-area-inset-bottom) + 16px));transform:translateY(28px);transition:transform .26s cubic-bezier(.2,.9,.3,1.3);max-height:88vh;overflow:auto;box-shadow:0 -8px 40px rgba(0,0,0,.5);} /* GRAND BUILD H2: the WHITE legacy sheet was the biggest "same old" — every sheet now wears the night (the edsheet treatment, promoted app-wide) */
   #sheet.on .scard{transform:translateY(0);}
-  .shandle{width:48px;height:5px;border-radius:3px;background:var(--ink);opacity:.3;margin:0 auto 14px;}
-  .sttl{font-family:var(--bub);font-size:20px;font-weight:800;margin-bottom:14px;}
+  .shandle{width:48px;height:5px;border-radius:3px;background:#5a4a64;margin:0 auto 14px;}
+  .sttl{font-family:var(--bub);font-size:20px;font-weight:800;margin-bottom:14px;color:#fff2f9;}
   .frm{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
   .frm input[type=text]{flex:1;min-width:120px;}
-  input[type=text],input[type=time]{background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:12px;font-size:15px;font-family:inherit;font-weight:600;color:var(--ink);}
+  input[type=text],input[type=time]{background:#3a1226;border:2px solid #6a3050;border-radius:14px;padding:12px;font-size:15px;font-family:inherit;font-weight:600;color:#ffe6f2;}
   input[type=time]{width:104px;}
   .go{background:var(--purple);color:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:0 17px;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--ink);}
   .go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
@@ -155,10 +155,10 @@
   .done2:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
   .done2:disabled{opacity:.45;box-shadow:none;}
   .pchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
-  .pchip{background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:9px 13px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);box-shadow:0 3px 0 var(--ink);transition:.08s;}
+  .pchip{background:#3a1226;border:2px solid #160510;border-radius:14px;padding:9px 13px;font-size:14px;font-weight:700;cursor:pointer;color:#ffe6f2;box-shadow:0 3px 0 #160510;transition:.08s;}
   .pchip:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink);}
-  .pchip.on{background:var(--purple);color:#fff;}
-  .lbl{font-family:var(--bub);font-size:13px;color:var(--ink);font-weight:700;margin:4px 2px 8px;}
+  .pchip.on{background:#ff5fa8;color:#4a1126;border-color:#160510;}
+  .lbl{font-family:var(--bub);font-size:13px;color:#c98ca6;font-weight:700;margin:4px 2px 8px;}
   /* EDIT SHEET — berry restyle in the app's own vibe, scoped to the activity editor only (no white pills, no chunky shadows) — David 2026-06-25 */
   #sheet.edsheet .scard{ background:#260b18 !important; border-color:#5a2942 !important; box-shadow:none !important; }
   #sheet.edsheet .frm input, #sheet.edsheet .add2:not(.swcol), #sheet.edsheet .add, #sheet.edsheet .stp, #sheet.edsheet .pchip{ background:#3a1226 !important; border:1.5px solid #6a3050 !important; color:#ffe6f2 !important; box-shadow:none !important; }
@@ -215,7 +215,7 @@
   .jp-unit.open{background:#33203a;color:#d6abc4;border-color:#6a4a78;}
   .jp-unit.open .ju-ic{background:#1c0612;color:#caa0bd;}
   /* NODE + tile — FLAT domain color, ink border, Tabler symbol (no gloss/glow); current = striped hero tile */
-  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:200px;padding:13px 0;}
+  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:200px;padding:20px 0;} /* GRAND BUILD H2: air between stones — the mock breathes */
   .jp-bub{position:relative;z-index:2;width:96px;height:96px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;cursor:pointer;transition:transform .12s;box-shadow:0 6px 0 var(--ink);}
   .jp-bub i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-bub:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
@@ -682,7 +682,7 @@
   /* saturated candy primary buttons (the two former white ones) */
   #nowBtn,#hero .hp{ background:#ff5fa8 !important; color:#fff2f9 !important; border:3px solid #3a2540 !important; }
   /* dark hot-pink BACKGROUND surfaces: sheet, nav, day header → light text */
-  .scard{ background:linear-gradient(170deg,#8a2660,#5e1540) !important; color:#ffe6f2 !important; border:3px solid #3a2540 !important; }
+  .scard{ background:#22091a !important; color:#f0e6ef !important; border:3px solid #160510 !important; box-shadow:0 -8px 40px rgba(0,0,0,.5) !important; } /* GRAND BUILD H2: night-jewel sheets (the loud magenta gradient retired) — same family as the reflection/quest cards */
   .sttl,.lbl,.qline{ color:#fff2f9 !important; }
   .shandle{ background:#ffc4e2 !important; }
   #nav{ background:#5a1138 !important; border-top:3px solid #3a2540 !important; }
@@ -1846,6 +1846,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=812"></script>
+  <script src="app.js?v=814"></script>
 </body>
 </html>
