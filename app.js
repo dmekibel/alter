@@ -6405,6 +6405,12 @@
     var box = add(ov, "div"); box.style.cssText = "width:92%;max-width:420px;color:#f0e6ef;font-family:var(--bub);margin-top:calc(env(safe-area-inset-top,0px) + 60px);";
     add(box, "div", null, "Build a session").style.cssText = "font-size:23px;font-weight:800;text-align:center;";
     add(box, "div", null, "grab a ready pack by the time you have — or build your own on the timeline.").style.cssText = "font-size:12px;color:#b39ab0;text-align:center;margin:4px 0 16px;line-height:1.4;";
+    // GUIDED RITUALS (R1, David 2026-07-02): the composed morning/evening rituals — tapping ladder + spoken beats + pre/post gauge. Beta: v0 placeholder lines until the R2 pools are approved + recorded.
+    [["am", "Morning charge", "gratitude → future → charge · tapping, ~5 min", "ti-sunrise", "#ff8a1e"], ["pm", "Evening peace", "set the day down → reflect → rest · ~5 min", "ti-moon-stars", "#9a7cff"]].forEach(function (r) {
+      var b = add(box, "button"); b.style.cssText = "display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(255,255,255,.05);border:1.5px solid #3a1730;border-radius:14px;padding:12px;margin-bottom:9px;cursor:pointer;color:#f0e6ef;";
+      b.innerHTML = '<div style="width:46px;height:46px;border-radius:12px;background:' + r[4] + ';color:#fff;display:flex;align-items:center;justify-content:center;flex:none;"><i class="ti ' + r[3] + '" style="font-size:22px;"></i></div><span style="display:flex;flex-direction:column;gap:2px;"><b style="font-size:16px;">' + r[1] + '</b><span style="font-size:11px;color:#b39ab0;">' + r[2] + '</span></span>';
+      b.onclick = function () { if (ov.parentNode) ov.remove(); runRitual(r[0], 5); };
+    });
     STACK_PACKS.forEach(function (p) {
       var names = p.track.map(function (t) { return stackTool(t.k).name; }).join(" · ");
       var b = add(box, "button"); b.style.cssText = "display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(255,255,255,.05);border:1.5px solid #3a1730;border-radius:14px;padding:12px;margin-bottom:9px;cursor:pointer;color:#f0e6ef;";
@@ -6506,6 +6512,112 @@
       tmr = setTimeout(step, Math.round(secs / PR.length * 1000)); pi++;
     }
     step();
+  }
+  // ===== R1 — THE RITUAL GRAMMAR × CHANNEL SCHEDULER (HANDOFF-stacks-and-meditation §10, David 2026-07-02) =====
+  // ONE grammar for every guided ritual: ARRIVE → RELEASE (spoken) → themed ROUNDS over the point ladder → INSTALL/SCAN → BRIDGE → LAW → FORGET.
+  // Length = rounds × dwell (the ladder is the metronome). Channels: HANDS = point-cue segments (9 reusable clips, voice names every point so eyes stay closed) · EARS = content lines · MOUTH = the spoken rounds. Rides timelinePlayer (per-segment gap = the gap-math; transport/drift-tap/logging free).
+  // POOL LINES BELOW ARE v0 PLACEHOLDERS — R2 replaces them with the approved pool texts before recording. Lines without clips stay silent (text still shows) per the no-robot-voice rule.
+  var RITUAL_POINTS = ["the side of your hand", "the eyebrow point", "the side of the eye", "under the eye", "under the nose", "under the mouth", "the collarbone", "under the arm", "the top of your head"];
+  var RITUAL_POOLS = {
+    arrive: ["Sit comfortably. Let the eyes soften.", "One slow breath — arrive here."],
+    speakHint: ["Repeat each line after me — out loud if you can. Spoken, it lands deeper."],
+    releaseAM: [
+      "Even though I'm carrying some stress about the day ahead — I see it, and I choose to soften.",
+      "Even though I don't have all the answers yet — I release the pressure, and stay open.",
+      "Even though my body is holding tension — I let it begin to unwind, right now."
+    ],
+    releasePM: [
+      "Even though the day is ending and I'm still holding some of it — I see that, and I begin to set it down.",
+      "Even though not everything went to plan — I'm open to the idea that today can still be used well.",
+      "Even though I may wish I'd done more — I choose to close the day kindly."
+    ],
+    gratitudeRound: [
+      "Think of one small moment from recently — small counts more than big here.",
+      "Step back into that moment. Through your own eyes. What was there?",
+      "Stay in it. Let it actually reach you.",
+      "Feel it in the chest — breathe right into it."
+    ],
+    futureRound: [
+      "Now bring a goal to mind. Something you actually want.",
+      "Step into the moment it's already done. What do you see? What do you hear?",
+      "Notice what it brings the people you care about.",
+      "Feel yourself pulled toward it — pulled, not pushed."
+    ],
+    installAM: [
+      "Every day, in every way, I'm getting better and better.",
+      "I have everything I need within me, now.",
+      "Today, I create a good day.",
+      "I am enough."
+    ],
+    reframePM: [
+      "My day is behind me now — and I get to say what it meant.",
+      "Whatever happened today doesn't decide how I feel tonight.",
+      "I choose how I feel.",
+      "Whatever happened — I'll use it."
+    ],
+    reflectPM: [
+      "What could you feel proud of today — if you let yourself?",
+      "What's one thing today taught you — even something tiny?",
+      "Who are you grateful for today? Picture them for a moment.",
+      "Where did life quietly work in your favor today?"
+    ],
+    scanPM: [
+      "A calming heaviness starts at the top of your head — jaw loose, neck soft.",
+      "It moves down through the shoulders… the chest… the belly.",
+      "Down the legs, into the ground. You're held.",
+      "Tonight, sleep does the repairing. You can put everything down."
+    ],
+    bridgeAM: ["Hands on your heart. One question: what's one action today that moves your most important thing forward? Hear the answer."],
+    bridgePM: ["Hands on your heart. Nothing to solve. Just breathe here a moment."],
+    law: ["Where attention goes, the day follows.", "What's wrong is always available. So is what's right.", "Small and real beats big and imagined."],
+    forget: ["Now leave it alone. It's working."]
+  };
+  function composeRitual(o) { // {timeOfDay:'am'|'pm', mins} → timelinePlayer segments. Pure function — testable headless.
+    var am = (o.timeOfDay || "am") === "am", mins = o.mins || 5, segs = [], pt = 0;
+    function line(text, gap) { segs.push({ text: text, label: text.length > 64 ? "" : text, sub: text.length > 64 ? text : "", gap: gap }); }
+    function point(gap) { var p = "Now tap " + RITUAL_POINTS[pt % RITUAL_POINTS.length] + "."; segs.push({ text: p, label: "◦ " + RITUAL_POINTS[pt % RITUAL_POINTS.length], sub: "keep tapping, gently", gap: gap != null ? gap : 1.6 }); pt++; }
+    function round(pool, dwell, spoken) { pool.forEach(function (t) { point(); line(t, spoken ? 8.5 : dwell); }); }
+    RITUAL_POOLS.arrive.forEach(function (t) { line(t, 5); });
+    line(RITUAL_POOLS.speakHint[0], 4);
+    var rel = am ? RITUAL_POOLS.releaseAM : RITUAL_POOLS.releasePM;
+    (mins <= 5 ? rel.slice(0, 2) : rel).forEach(function (t) { point(1.4); line(t, 9.5); }); // release = side-of-hand territory; ladder starts advancing after
+    var dwell = mins <= 5 ? 11 : mins <= 10 ? 14 : 18;
+    if (am) {
+      round(RITUAL_POOLS.gratitudeRound, dwell, false);
+      if (mins > 5) round(RITUAL_POOLS.futureRound, dwell, false);
+      round(mins <= 5 ? RITUAL_POOLS.installAM.slice(0, 3) : RITUAL_POOLS.installAM, 0, true);
+    } else {
+      round(RITUAL_POOLS.reframePM, 0, true);
+      if (mins > 5) round(RITUAL_POOLS.reflectPM, dwell, false);
+      round(mins <= 5 ? RITUAL_POOLS.scanPM.slice(0, 3) : RITUAL_POOLS.scanPM, dwell, false);
+    }
+    line((am ? RITUAL_POOLS.bridgeAM : RITUAL_POOLS.bridgePM)[0], 15);
+    line(RITUAL_POOLS.law[(new Date().getDate()) % RITUAL_POOLS.law.length], 6);
+    line(RITUAL_POOLS.forget[0], 4);
+    return segs;
+  }
+  function runRitual(tod, mins) { // pre-gauge → the composed ritual (drift-tap ON) → post-gauge → ledger
+    mins = mins || 5; var am = tod === "am";
+    gauge010("Where's the tension right now?", "gut answer — no wrong number", function (pre) {
+      var segs = composeRitual({ timeOfDay: tod, mins: mins });
+      try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; })); } catch (e) {}
+      timelinePlayer({
+        id: "ritual-" + tod, title: am ? "Morning charge" : "Evening peace", logTitle: am ? "Morning charge" : "Evening peace",
+        catK: am ? "energy" : "love", color: am ? "#ff8a1e" : "#9a7cff", spark: 10, vol: VPROF.relax.volume, drone: true, drift: true,
+        segments: segs,
+        onFinish: function (skip) {
+          if (skip) return;
+          gauge010("And now?", "same scale — just notice", function (post) {
+            S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "ritual-" + tod + mins, pre: pre, post: post });
+            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+            var delta = (pre != null && post != null) ? pre - post : null;
+            save();
+            toast(delta != null && delta > 0 ? "✦ " + delta + (delta === 1 ? " point" : " points") + " lighter — noted." : "✦ done — showing up IS the practice.");
+          });
+        }
+      });
+    });
   }
   // The 0-10 gauge (Tony's own pre/post mechanic): one slider, one button. Returns via cb(n).
   function gauge010(title, sub, cb) {
@@ -7346,7 +7458,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
