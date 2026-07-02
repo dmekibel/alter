@@ -146,3 +146,6 @@ Classy = **90% dark rich surface + luxury carried by METAL and FINE DETAIL** (fo
 
 ### §12 amendment — icon wells, not medallions
 Circles with metallic/foil outlines REJECTED. Icon containers = the quest card's own wells: **rounded squares (radius 12), plain ink border #160510, the meaning-finish INSIDE** (fire stripes / matte blue stripes / cosmos / ghost-dark). Foil frames stay reserved for CARD MOMENTS (binder/mints) only — never for in-flow UI chrome.
+
+### §12 final amendment — NO CONTAINERS, NO BADGES
+Icon containers rejected in all forms (foil circles, ink squares). Choice rows = dark rich card + BARE colored Tabler icon + white label + muted sub (the toolbox-card pattern, already approved twice). The gold circle check-badge rejected: selection = the row's IGNITION (pink stripes + hairline gold inset) + a BARE gold ti-check inline at the row end (the bento's own selected-chip mark). Meaning-finishes appear ONLY on the ignited row. This screen's design is now fully specified by approved precedent — next render on-device.
