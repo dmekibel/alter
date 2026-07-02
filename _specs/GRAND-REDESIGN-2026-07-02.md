@@ -128,3 +128,7 @@ Three rules extracted from what he keeps approving: ① **one HERO** per screen 
 
 ### §12 — THE APPROVED CANON (David's confirmed benchmark frames, build against THESE)
 ① **Play-first cockpit** ("way more beautiful design decisions") — the grammar source: hero + rooms + finish hierarchy. ② **Journey re-grade** ("not bad" = approved): done = brightest object w/ breathing green halo, future = matte, locked chapters = fog, ONE striped hero node. ③ **Toolbox one-door** (holy-moly batch). ④ **Pokémon-grade element cards** (prism/burst/cosmos — "more of that"). ⑤ **Cockpit-grammar onboarding/reflection** (finish-encodes-meaning, pending final nod). REJECTED SET (never repeat): pastel tiles · monochrome berry choice-tiles · all-solid chip walls · square sheen over the logo · always-visible flags · thin primary CTAs · purple-dominant cards.
+
+### §12 additions (David verdicts)
+- **STRIPE GAUGE LAW:** one gauge only — the app's chunky 9px/18px diagonals. Thin (2-4px) stripes and circular/radial ripple patterns REJECTED ("feel off"). Element-warmth B, if adopted, = tint + edge + icon well ONLY (its faint patterns die); small calendar cells use solid tints, not shrunken stripes.
+- **WARM FLOOR LAW:** night gradients settle on warm berry (#241019-ish), never near-black; a faint rose glow may rise to meet the primary CTA. (Intro v3 mocked with this — awaiting nod; intro v2's black floor rejected.)
