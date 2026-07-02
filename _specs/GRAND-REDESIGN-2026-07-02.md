@@ -132,3 +132,8 @@ Three rules extracted from what he keeps approving: ① **one HERO** per screen 
 ### §12 additions (David verdicts)
 - **STRIPE GAUGE LAW:** one gauge only — the app's chunky 9px/18px diagonals. Thin (2-4px) stripes and circular/radial ripple patterns REJECTED ("feel off"). Element-warmth B, if adopted, = tint + edge + icon well ONLY (its faint patterns die); small calendar cells use solid tints, not shrunken stripes.
 - **WARM FLOOR LAW:** night gradients settle on warm berry (#241019-ish), never near-black; a faint rose glow may rise to meet the primary CTA. (Intro v3 mocked with this — awaiting nod; intro v2's black floor rejected.)
+
+### §12 — THE JEWEL LAW + selection correction (from the reflection-screen rejections)
+- **Jewel tones only:** clean saturated hues deepened by darkness (hero pink, fire orange, СТАРТ blue, cosmos indigo). MUDDY MID-TONES REJECTED as "cheap": grey-teal, dusty mauve as a mood color (mauve stays ONLY as the timeline's drift render). Drowning mood = deep ocean indigo (cosmos family), not mauve.
+- **Gold = hairline INSET only** (the fusedbar language). Fat gold outer rings rejected. **Dashed + gold never coexist:** a selected ghost tile stops being ghost — selection = IGNITION into the hero finish (pink stripes + inset gold hairline + check). The pick becomes the hero.
+- **PROCESS LAW (constitution echo):** mockup ping-pong on fine color = diminishing returns (6 iterations on one screen today). Final color tuning happens IN THE REAL APP on device: the flows run ships choice-screens with a dev toggle cycling 2-3 approved variants; David's eye decides in context. Mockups settle STRUCTURE and grammar (done); devices settle hues.
