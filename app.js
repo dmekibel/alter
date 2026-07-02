@@ -2048,11 +2048,11 @@
 
     // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.
     // FUTURE chapters — locked, descending toward today. Tappable to preview the lesson.
-    for (var f = JP_CHAPTERS.length - 1; f > jn; f--) {
-      var _fb = banner("locked", "Chapter " + (f + 1), JP_CHAPTERS[f].t, "ti-lock", JP_CHAPTERS[f].why);
+    for (var f = JP_CHAPTERS.length - 1; f > jn; f--) { // GRAND BUILD F: FOG-OF-WAR — distant chapters are misted banners only (no padlock clutter); only the NEXT chapter keeps its trail of locked stones
+      var _far = f > jn + 1;
+      var _fb = banner("locked" + (_far ? " fog" : ""), "Chapter " + (f + 1), JP_CHAPTERS[f].t, "ti-lock", _far ? null : JP_CHAPTERS[f].why);
       (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
-      for (var z = 0; z < 3; z++) coin("locked", { emoji: "★", title: "" }, gi++);
-      trophy("locked", "ti-lock");
+      if (!_far) { for (var z = 0; z < 3; z++) coin("locked", { emoji: "★", title: "" }, gi++); trophy("locked", "ti-lock"); }
     }
     // ACTIVE chapter = TODAY. Banner on top, then today's reward summit, then today's steps ASCENDING.
     var _ab = banner("active", "Today · Chapter " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic, JP_CHAPTERS[jn].why);
@@ -4135,13 +4135,14 @@
       case "night":
         return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
-      case "idle": {
+      case "idle": { // GRAND BUILD F: the mock's DOORS — hierarchy through finish variety (solid hero / striped / ghost), 54px chunky (the approved play-first frame)
         var n = nextPlannedBlock(todayK());
-        if (n) return [{ icon: "ti-player-play-filled", label: "Start", fn: function () { startPlanned(n); renderTrackerFull(); }, primary: true },
-                       { icon: "ti-list-search", label: "Track other", fn: playFirst },
-                       { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
-        return [{ icon: "ti-player-play-filled", label: "Track now", fn: playFirst, primary: true },
-                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} } }]; // G11 play-first: the app's main verb is the hero; picking a time = the plan (tfCreatePlan folded into playFirst)
+        if (n) { var ND2 = DOM[domainOf(n)] || DOM.focus;
+          return [{ icon: "ti-player-play-filled", label: "Start", fn: function () { startPlanned(n); renderTrackerFull(); }, primary: true, finish: "solid", c: ND2.c, ink: ND2.ink },
+                  { icon: "ti-list-search", label: "Track other", fn: playFirst, finish: "striped", c: "#36b3f0", ink: "#08283c" },
+                  { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan, finish: "ghost" }]; }
+        return [{ icon: "ti-player-play-filled", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
+                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "striped", c: "#36b3f0", ink: "#08283c" }]; // G11 play-first: the app's main verb is the hero; picking a time = the plan (tfCreatePlan folded into playFirst)
       }
       case "break":
         return [{ icon: "ti-player-play-filled", label: "Resume", fn: tfResumeBreak, primary: true },
@@ -4190,7 +4191,15 @@
     }
   }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
-    var ctrls = trackerControls(state), prim = ctrls.filter(function (x) { return x.primary; }), sec = ctrls.filter(function (x) { return !x.primary; });
+    var ctrls = trackerControls(state);
+    if (ctrls.some(function (x) { return x.finish; })) { // GRAND BUILD F: door mode — stacked full-width chunky buttons, finish = hierarchy (solid -> striped -> ghost)
+      ctrls.forEach(function (x) { var bn = add(c, "button", "tf-door tf-door-" + (x.finish || "ghost")); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label;
+        if (x.finish === "solid") { bn.style.background = x.c; bn.style.color = x.ink; }
+        else if (x.finish === "striped") { bn.style.background = tfStripe(x.c); bn.style.color = x.ink; }
+        bn.onclick = x.fn; });
+      return;
+    }
+    var prim = ctrls.filter(function (x) { return x.primary; }), sec = ctrls.filter(function (x) { return !x.primary; });
     prim.forEach(function (x) { var bn = add(c, "button", "tf-b tf-done"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; });
     if (sec.length) { var row = add(c, "div", "tf-row"); sec.forEach(function (x) { var bn = add(row, "button", "tf-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; }); }
   }
