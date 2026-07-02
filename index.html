@@ -1023,14 +1023,15 @@
   .rc-ov{ position:fixed; inset:0; z-index:125; background:rgba(10,2,8,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
   .rc-card{ width:100%; max-width:340px; background:#22091a; border:2.5px solid #160510; border-radius:16px; padding:16px 15px; box-shadow:0 4px 0 #160510, 0 18px 44px rgba(0,0,0,.5); font-family:"Jost",sans-serif; }
   .rc-k{ color:#ffd24a; font-size:11.5px; font-weight:800; letter-spacing:1.2px; }
-  .rc-q{ color:#fff2f9; font-weight:800; font-size:17px; line-height:1.3; margin-top:7px; }
-  .rc-list{ display:flex; flex-direction:column; gap:9px; margin-top:13px; }
-  .rc-row{ border-radius:13px; border:2px solid #2e1224; background:linear-gradient(160deg,#241226,#1a0c1e); padding:12px 13px; color:#e8d4e2; font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:transform .16s cubic-bezier(.34,1.56,.64,1); }
+  .rc-q{ color:#fff2f9; font-weight:800; font-size:21px; line-height:1.25; margin-top:7px; } /* kit type scale */
+  .rc-list{ display:flex; flex-direction:column; gap:11px; margin-top:13px; }
+  /* choice-row v3 (LOCKED): rest = dark tint + SOLID own-color outline + bare colored icon; picked = IGNITION into its own color's stripes + ink border + bare check. NO gold. Palette per row via inline vars from JS. */
+  .rc-row{ border-radius:15px; border:2.5px solid var(--kc,#2e1224); background:var(--kt,#1a0c1e); padding:14px 15px; color:#fff2f9; font-weight:800; font-size:15.5px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:transform .16s cubic-bezier(.34,1.56,.64,1); }
   .rc-row:active{ transform:translateY(2px); }
-  .rc-row i{ font-size:17px; flex:none; }
-  .rc-row.lit{ border-color:#160510; background:repeating-linear-gradient(45deg,#ff5fa8,#ff5fa8 9px,#d14a8c 9px,#d14a8c 18px); color:#4a1126; font-weight:800; } /* choice-row v3: NO gold on selection — ignition IS the signal; gold = earned only */
-  .rc-row.lit i{ color:#4a1126 !important; }
-  .rc-chk{ margin-left:auto; color:#5a3a00 !important; }
+  .rc-row i{ font-size:22px; flex:none; }
+  .rc-row.lit{ border-color:#160510; background:repeating-linear-gradient(45deg,var(--kA,#ff5fa8),var(--kA,#ff5fa8) 9px,var(--kB,#d14a8c) 9px,var(--kB,#d14a8c) 18px); color:var(--ki,#4a1126); }
+  .rc-row.lit i{ color:var(--ki,#4a1126) !important; }
+  .rc-chk{ margin-left:auto; color:var(--ki,#4a1126) !important; font-size:18px; }
   .rc-row.own{ border-style:dashed; border-color:#3a1a2e; background:none; color:#8a6076; font-size:13px; }
   .rc-inp{ width:100%; background:none; border:none; outline:none; color:#fff2f9; font-family:"Jost",sans-serif; font-weight:700; font-size:13.5px; }
   .rc-notice{ margin-top:12px; display:flex; align-items:flex-start; gap:8px; background:#1a0612; border:1.5px solid #2c0d20; border-radius:11px; padding:9px 12px; color:#c9a0b8; font-size:12px; line-height:1.4; }
@@ -1870,6 +1871,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=816"></script>
+  <script src="app.js?v=817"></script>
 </body>
 </html>

@@ -5306,7 +5306,9 @@
       if (rep >= 3 && !noticeEl) { noticeEl = add(card, "div", "rc-notice"); noticeEl.innerHTML = '<i class="ti ti-sparkles"></i> <span>' + esc(tr("noticed — that answer keeps coming back this week. I'll adjust for it.")) + '</span>'; }
       setTimeout(function () { ov.remove(); if (onDone) onDone(true); }, rep >= 3 ? 2200 : 750);
     }
-    qDef.opts.forEach(function (o) { var r = add(listEl, "div", "rc-row"); r.innerHTML = '<i class="ti ' + o[0] + '" style="color:' + o[1] + '"></i><span class="rc-lab">' + esc(tr(o[2])) + '</span>';
+    qDef.opts.forEach(function (o) { var r = add(listEl, "div", "rc-row"); var _c = o[1]; // choice-row v3: every answer wears its OWN color — outline+tint at rest, full stripes+ink when picked (shades computed from the icon color)
+      r.style.cssText = "--kc:" + mixHex(_c, "#160510", 0.28) + ";--kt:" + mixHex(_c, "#0d0410", 0.86) + ";--kA:" + _c + ";--kB:" + mixHex(_c, "#160510", 0.24) + ";--ki:" + mixHex(_c, "#0d0410", 0.76) + ";";
+      r.innerHTML = '<i class="ti ' + o[0] + '" style="color:' + _c + '"></i><span class="rc-lab">' + esc(tr(o[2])) + '</span>';
       r.onclick = function () { if (pickedRow) return; pickedRow = r; r.classList.add("lit"); r.innerHTML += '<i class="ti ti-check rc-chk"></i>'; commit(o[2]); }; });
     var own = add(listEl, "div", "rc-row own"); own.innerHTML = '<i class="ti ti-pencil"></i><span class="rc-lab">' + esc(tr("in my own words…")) + '</span>';
     own.onclick = function () { if (pickedRow) return; own.innerHTML = ""; var inp = document.createElement("input"); inp.type = "text"; inp.className = "rc-inp"; inp.placeholder = tr("one honest line"); own.appendChild(inp); inp.focus();
