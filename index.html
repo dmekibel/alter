@@ -42,7 +42,7 @@
   .bchip:active, .tile:active, .pchip:active, .preset-row:active, .qopt:active, .subitem:active, .feat-row:active, .tool-row:active{ transform:scale(.94); }
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .dur-card, .goal-card, .mind-card, .nb-card, .ob-card, .sheetcard, .dur-ov, .goal-ov, .mind-ov, .nb-ov, .cele-ov{ animation:none !important; } }
   /* ===== START SCREEN (v652): the animated launch screen — living guardian (13-frame idle sprite) + title + language + Continue/New, Duolingo/Tuber-sim feel ===== */
-  #startScreen{ position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:space-between; background:linear-gradient(170deg,#3a0f24 0%,#1c0814 52%,#140510 100%); padding:max(env(safe-area-inset-top,0px),26px) 22px calc(env(safe-area-inset-bottom,0px) + 30px); font-family:"Jost",sans-serif; overflow:hidden; }
+  #startScreen{ position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:space-between; background:linear-gradient(170deg,#3a0f24 0%,#24091c 46%,#1e0a16 78%,#241019 100%); padding:max(env(safe-area-inset-top,0px),26px) 22px calc(env(safe-area-inset-bottom,0px) + 30px); font-family:"Jost",sans-serif; overflow:hidden; }
   #startScreen.on{ display:flex; }
   #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
   .ss-ver{ position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); left:0; right:0; text-align:center; font-family:"Jost",sans-serif; font-size:11px; letter-spacing:.5px; color:rgba(255,255,255,.28); pointer-events:none; }
@@ -1019,6 +1019,23 @@
   .binder-card .b-rank{ position:relative; z-index:3; color:#ffd24a; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:2px; }
   .binder-card .b-prog{ position:relative; z-index:3; color:#b596ad; font-family:"Jost",sans-serif; font-weight:600; font-size:11px; margin-top:2px; }
   .b-total{ text-align:center; color:#8a7898; font-family:"Jost",sans-serif; font-weight:800; font-size:13px; padding:10px 0 4px; }
+  /* ===== REFLECTION CARDS — the final choice-row spec: dark rich card, bare colored icons, ONE ignition, hairline gold, bare check ===== */
+  .rc-ov{ position:fixed; inset:0; z-index:125; background:rgba(10,2,8,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .rc-card{ width:100%; max-width:340px; background:#22091a; border:2.5px solid #160510; border-radius:16px; padding:16px 15px; box-shadow:0 4px 0 #160510, 0 18px 44px rgba(0,0,0,.5); font-family:"Jost",sans-serif; }
+  .rc-k{ color:#ffd24a; font-size:11.5px; font-weight:800; letter-spacing:1.2px; }
+  .rc-q{ color:#fff2f9; font-weight:800; font-size:17px; line-height:1.3; margin-top:7px; }
+  .rc-list{ display:flex; flex-direction:column; gap:9px; margin-top:13px; }
+  .rc-row{ border-radius:13px; border:2px solid #2e1224; background:linear-gradient(160deg,#241226,#1a0c1e); padding:12px 13px; color:#e8d4e2; font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:transform .16s cubic-bezier(.34,1.56,.64,1); }
+  .rc-row:active{ transform:translateY(2px); }
+  .rc-row i{ font-size:17px; flex:none; }
+  .rc-row.lit{ border-color:#160510; background:repeating-linear-gradient(45deg,#ff5fa8,#ff5fa8 9px,#d14a8c 9px,#d14a8c 18px); color:#4a1126; font-weight:800; box-shadow:inset 0 0 0 2px #ffd24a; }
+  .rc-row.lit i{ color:#4a1126 !important; }
+  .rc-chk{ margin-left:auto; color:#5a3a00 !important; }
+  .rc-row.own{ border-style:dashed; border-color:#3a1a2e; background:none; color:#8a6076; font-size:13px; }
+  .rc-inp{ width:100%; background:none; border:none; outline:none; color:#fff2f9; font-family:"Jost",sans-serif; font-weight:700; font-size:13.5px; }
+  .rc-notice{ margin-top:12px; display:flex; align-items:flex-start; gap:8px; background:#1a0612; border:1.5px solid #2c0d20; border-radius:11px; padding:9px 12px; color:#c9a0b8; font-size:12px; line-height:1.4; }
+  .rc-notice i{ color:#ffd24a; font-size:15px; flex:none; }
+  .rc-skip{ margin-top:12px; text-align:center; color:#8a6076; font-size:12.5px; font-weight:700; cursor:pointer; }
   @keyframes celeRise{ 0%{ transform:translateY(20px) scale(.6); opacity:0; } 25%{ transform:translateY(0) scale(1.1); opacity:1; } 80%{opacity:1;} 100%{ transform:translateY(-32px); opacity:0; } }
   .cele-combo{ position:absolute; top:58%; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; text-shadow:0 1px 5px rgba(0,0,0,.7); }
   /* ============ PLANNING suggestion bar (mockups 037/039/040) ============ */
@@ -1802,6 +1819,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=807"></script>
+  <script src="app.js?v=808"></script>
 </body>
 </html>

@@ -901,6 +901,12 @@
       }
     }
 
+    // REFLECTION STONE (GRAND BUILD E): one evening micro-reflection, worksheet-DNA — from 17:00 when today's card hasn't been answered; one tap, skippable, never a wall
+    if (new Date().getHours() >= 17 && !dormant) { var _rq = reflectDue(); if (_rq) {
+      nodes.push({ key: "reflect", icon: "ti-message-circle", title: "One small reflection", line: "A question, three taps — I learn you, you learn you.",
+        color: "#9a8cff", done: false, act: function () { reflectCard(_rq, function () { try { drawJourney(false); } catch (e) {} }); } });
+    } }
+
     // SELF-HELP ADAPT 2 — the MORNING ritual joins the trail once it's unlocked (journeyNode >= 2). A beginner never sees it; as you progress it appears as the day's opener.
     if (jn >= 2 && !dormant) {
       var amNode = { key:"am", emoji:"🌅", title:"Open the morning", line: gvName ? "Who you're being today: "+gvName+". Open the day on purpose." : "Who you're being, your one thing — open the day on purpose.",
@@ -1183,6 +1189,20 @@
     "combo — in a row on plan": "серия — подряд по плану",
     "SHINY — a rare one, just for this moment": "СИЯЮЩИЙ — редкий, только за этот момент",
     "CROWN — every planned block, lived. Today is yours.": "КОРОНА — каждый план прожит. Этот день — твой.",
+    "REFLECTION": "РЕФЛЕКСИЯ", "skip": "пропустить", "in my own words…": "своими словами…", "one honest line": "одна честная строка",
+    "noticed — that answer keeps coming back this week. I'll adjust for it.": "заметил — этот ответ повторяется всю неделю. Я подстроюсь.",
+    "What got in the way most today?": "Что сегодня мешало больше всего?",
+    "the phone pulled at me": "телефон тянул к себе", "thoughts of another task": "мысли о другом деле", "just no energy": "просто не было сил",
+    "When did you feel most alive today?": "Когда сегодня ты был(а) наиболее жив(а)?",
+    "deep in the work": "глубоко в деле", "with someone": "рядом с кем-то", "moving, outside": "в движении, на улице",
+    "What would make tomorrow a win?": "Что сделает завтра победой?",
+    "one finished thing": "одно законченное дело", "a calmer pace": "более спокойный темп", "time with my people": "время с близкими",
+    "What are you quietly avoiding?": "Чего ты тихо избегаешь?",
+    "a work thing": "рабочего дела", "a conversation": "разговора", "looking at something in me": "взгляда на что-то в себе",
+    "What fed your energy today?": "Что сегодня питало твою энергию?",
+    "rest": "отдых", "movement": "движение", "visible progress": "видимый прогресс",
+    "One small reflection": "Одна маленькая рефлексия",
+    "A question, three taps — I learn you, you learn you.": "Один вопрос, три касания — я узнаю тебя, ты узнаёшь себя.",
     "Switch activity": "Сменить занятие",
     "What are you doing right now?": "Что ты делаешь прямо сейчас?",
     "Anything real counts. Track one thing — I'll hold it.": "Считается всё настоящее. Отметь одно дело — я сохраню.",
@@ -1622,7 +1642,7 @@
     mo.observe(document.body, { childList: true, subtree: true });
   }
   function setLang(code) { var same = (curLang() === code); S.langCode = code; var m = langMeta(code); S.lang = m.name; try { save(); } catch (e) {} try { document.documentElement.lang = code; } catch (e) {} if (same) { translateTree(document.body); return; } location.replace("index.html?cb=" + Date.now()); } // CHANGING language reloads from the English source then re-translates → fixes "can't switch back from Russian" (the live translator only goes EN→target, it can't reverse already-translated text) — David v661
-  function ssLangLabel() { var fl = el("ssLangFlag"); if (fl) fl.innerHTML = flagSVG(curLang()); } // flag only — no language word (David v660)
+  function ssLangLabel() { var fl = el("ssLangFlag"); if (fl) fl.innerHTML = '<i class="ti ti-world"></i>'; } // GLOBE, not a flag (David 2026-07-02: the always-visible flag was ugly) — the flat-flag menu appears only on press
   function showLangMenu() {
     var ss = el("startScreen"); if (!ss) return; var old = el("ssLangMenu"); if (old) { old.remove(); return; }
     var ov = add(ss, "div", "ss-langmenu"); ov.id = "ssLangMenu";
@@ -5234,6 +5254,36 @@
     add(ov, "div", "mint-lab", tr("New mark earned — it lives in your world now"));
     setTimeout(function () { try { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 400); } catch (e) {} }, 3600);
   } catch (e) {} }
+  // ===== REFLECTION CARDS (GRAND BUILD E, the worksheet engine): one question, self-locating choices, typing optional, skip always legal. Every answer teaches the profile, pays tier-1, and fills the journal. Built to the FINAL choice-row spec (dark card, bare icons, ignition pick, hairline gold, bare check). =====
+  var REFLECT_QS = [
+    { id: "blocker", q: "What got in the way most today?", opts: [["ti-device-mobile", "#48d0e0", "the phone pulled at me"], ["ti-cloud", "#5ec4f5", "thoughts of another task"], ["ti-battery-2", "#ff8a3a", "just no energy"]] },
+    { id: "alive", q: "When did you feel most alive today?", opts: [["ti-brain", "#5ec4f5", "deep in the work"], ["ti-users", "#ff5fa0", "with someone"], ["ti-leaf", "#46e2a4", "moving, outside"]] },
+    { id: "tomorrow", q: "What would make tomorrow a win?", opts: [["ti-target", "#ffd24a", "one finished thing"], ["ti-wind", "#48d0e0", "a calmer pace"], ["ti-heart", "#ff5fa0", "time with my people"]] },
+    { id: "avoid", q: "What are you quietly avoiding?", opts: [["ti-briefcase", "#5ec4f5", "a work thing"], ["ti-message-2", "#ff5fa0", "a conversation"], ["ti-mirror", "#9a8cff", "looking at something in me"]] },
+    { id: "energy", q: "What fed your energy today?", opts: [["ti-moon", "#9a8cff", "rest"], ["ti-run", "#ff8a3a", "movement"], ["ti-circle-check", "#46e2a4", "visible progress"]] }
+  ];
+  function reflectState() { S.reflect = S.reflect || { log: [], lastK: null }; S.reflect.log = S.reflect.log || []; return S.reflect; }
+  function reflectNotice(qid, label) { var R = reflectState(), cut = Date.now() - 7 * 86400000, n = 0; R.log.forEach(function (e) { if (e.id === qid && e.a === label && e.ts > cut) n++; }); return n; }
+  function reflectCard(qDef, onDone) {
+    var ov = add(document.body, "div", "rc-ov"); ov.addEventListener("click", function (e) { if (e.target === ov) { ov.remove(); if (onDone) onDone(false); } });
+    var card = add(ov, "div", "rc-card");
+    add(card, "div", "rc-k", tr("REFLECTION"));
+    add(card, "div", "rc-q", tr(qDef.q));
+    var listEl = add(card, "div", "rc-list"), pickedRow = null, noticeEl = null;
+    function commit(label) { var R = reflectState(); R.log.push({ id: qDef.id, a: label, k: todayK(), ts: Date.now() }); R.lastK = todayK(); if (R.log.length > 400) R.log = R.log.slice(-300); save();
+      try { earn(3, { label: "reflection" }); rewardFx(1, { n: 3, srcEl: pickedRow }); } catch (e) {}
+      var rep = reflectNotice(qDef.id, label);
+      if (rep >= 3 && !noticeEl) { noticeEl = add(card, "div", "rc-notice"); noticeEl.innerHTML = '<i class="ti ti-sparkles"></i> <span>' + esc(tr("noticed — that answer keeps coming back this week. I'll adjust for it.")) + '</span>'; }
+      setTimeout(function () { ov.remove(); if (onDone) onDone(true); }, rep >= 3 ? 2200 : 750);
+    }
+    qDef.opts.forEach(function (o) { var r = add(listEl, "div", "rc-row"); r.innerHTML = '<i class="ti ' + o[0] + '" style="color:' + o[1] + '"></i><span class="rc-lab">' + esc(tr(o[2])) + '</span>';
+      r.onclick = function () { if (pickedRow) return; pickedRow = r; r.classList.add("lit"); r.innerHTML += '<i class="ti ti-check rc-chk"></i>'; commit(o[2]); }; });
+    var own = add(listEl, "div", "rc-row own"); own.innerHTML = '<i class="ti ti-pencil"></i><span class="rc-lab">' + esc(tr("in my own words…")) + '</span>';
+    own.onclick = function () { if (pickedRow) return; own.innerHTML = ""; var inp = document.createElement("input"); inp.type = "text"; inp.className = "rc-inp"; inp.placeholder = tr("one honest line"); own.appendChild(inp); inp.focus();
+      inp.onkeydown = function (ev) { if (ev.key === "Enter" && inp.value.trim()) { pickedRow = own; own.classList.add("lit"); commit(inp.value.trim()); } }; };
+    var skip = add(card, "div", "rc-skip", tr("skip")); skip.onclick = function () { ov.remove(); if (onDone) onDone(false); };
+  }
+  function reflectDue() { var R = reflectState(); if (R.lastK === todayK()) return null; var dormant = ((S.guide || {}).appetiteState || {}).level === "dormant"; if (dormant) return null; var used = {}; R.log.slice(-10).forEach(function (e) { used[e.id] = 1; }); var fresh = REFLECT_QS.filter(function (q) { return !used[q.id]; }); var pool = fresh.length ? fresh : REFLECT_QS; return pool[kd(todayK()).getDate() % pool.length]; }
   function binderSheet() { badgeTick();
     var ov = add(document.body, "div", "goal-ov"); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
     var card = add(ov, "div", "goal-card");
@@ -6838,6 +6888,7 @@
     S.tools.last[id] = k;
     S.tools.recents = [id].concat(S.tools.recents.filter(function (x) { return x !== id; })).slice(0, 6);
     save();
+    try { if (Math.random() < 0.3) { var _q = reflectDue(); if (_q) setTimeout(function () { reflectCard(_q); }, 900); } } catch (e) {} // sometimes, after a tool lands: one worksheet question while the state is warm
   }
   function toolRung(id) { var u = (S.tools && S.tools.use && S.tools.use[id]) || 0; return u >= 12 ? 3 : u >= 3 ? 2 : u >= 1 ? 1 : 0; } // Willingness(1) → Habit(2) → Grace(3) — Stutz's practice ladder (3-pip)
   function toolRungLabel(r) { return ({ 1: "Willingness", 2: "Habit", 3: "Grace" })[r] || ""; }
