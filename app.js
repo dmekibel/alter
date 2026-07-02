@@ -1170,6 +1170,19 @@
     "No timer — just track": "Без таймера — просто трек",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
+    "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
+    "disappeared — and returned. that IS the skill.": "исчез — и вернулся. это и есть навык.",
+    "days in a row. the flame turns blue at 21.": "дней подряд. на 21-й день пламя становится синим.",
+    "walked toward the avoided thing.": "пошёл навстречу тому, чего избегал.",
+    "planned it. lived it. crowned it.": "запланировал. прожил. корона.",
+    "minutes of real practice. the cosmos inside is real.": "минут настоящей практики. космос внутри — настоящий.",
+    "the world grows only from real things.": "мир растёт только из настоящих дел.",
+    "returns": "возвращений", "in a row": "подряд", "brave moves": "смелых шагов", "crowns": "корон", "min of practice": "мин практики", "planted": "посажено",
+    "New mark earned — it lives in your world now": "Новый знак добыт — теперь он живёт в твоём мире",
+    "Your marks": "Твои знаки", "Your marks — the collection": "Твои знаки — коллекция", "complete": "собрано",
+    "combo — in a row on plan": "серия — подряд по плану",
+    "SHINY — a rare one, just for this moment": "СИЯЮЩИЙ — редкий, только за этот момент",
+    "CROWN — every planned block, lived. Today is yours.": "КОРОНА — каждый план прожит. Этот день — твой.",
     "Switch activity": "Сменить занятие",
     "What are you doing right now?": "Что ты делаешь прямо сейчас?",
     "Anything real counts. Track one thing — I'll hold it.": "Считается всё настоящее. Отметь одно дело — я сохраню.",
@@ -2116,7 +2129,7 @@
 
     ov.onclick = function(e){ if (e.target === ov) ov.remove(); };
   }
-  function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); save(); return S.game.streak; }
+  function bumpStreak() { S.game = S.game || { spark: 0, total: 0, ups: {} }; if (S.game.streakDay !== todayK()) S.game.streak = 0; S.game.streak = (S.game.streak || 0) + 1; S.game.streakDay = todayK(); if ((S.game.streak || 0) > (S.game.bestStreak || 0)) S.game.bestStreak = S.game.streak; save(); return S.game.streak; }
   function coolStreak() { /* anti-shame law (David): drift is DATA, never punishment — a streak is never broken by drifting. No-op kept as a hook so call-sites stay meaningful. (2026-06-29: was decrementing the streak, which contradicted "never a breakable streak") */ }
   function celebrate(color, streak) {
     var tier = comboTier(streak), pts = [10, 25, 60, 150][tier - 1];
@@ -5189,6 +5202,55 @@
     sfx(tier, ctx.step); hapt(tier);
   }
   function fireHTML(streak) { var lv = streak >= 21 ? 4 : streak >= 7 ? 3 : streak >= 3 ? 2 : 1; return '<span class="fire-chip fire-l' + lv + '">' + (lv === 1 ? '<span class="fire-dot"></span>' : '<i class="ti ti-flame"></i>') + '<b>×' + streak + '</b></span>'; } // streak fire levels: 1-2 уголёк · 3-6 огонь · 7-20 пламя · 21+ синее пламя (REWARD-LANGUAGE v2)
+  // ===== THE COLLECTION (GRAND BUILD D, spec REWARD-LANGUAGE v2/v3): badges as element-typed cards, computed from HISTORY (no fragile counters), minted loudly only for NEW progress =====
+  var TOOL_TITLES = { "Meditation": 1, "Mantra": 1, "Breathe": 1, "Tapping (EFT)": 1, "Mindful moment": 1, "Gratitude": 1, "Wake the body": 1 };
+  var BADGES = [
+    { id: "return", el: "prism", ti: "ti-arrow-back-up", name: "Came back", flavor: "disappeared — and returned. that IS the skill.", ranks: [1, 2, 4, 8], unit: "returns", prog: function () { var ks = Object.keys((S.sf && S.sf.actions) || {}).filter(function (k) { return (S.sf.actions[k] || []).length; }).sort(); var n = 0; for (var i = 1; i < ks.length; i++) { if (daysBetweenK(ks[i - 1], ks[i]) >= 3) n++; } return n; } },
+    { id: "streak", el: "burst", ti: "ti-flame", name: "Fire", flavor: "days in a row. the flame turns blue at 21.", ranks: [3, 7, 21, 60], unit: "in a row", prog: function () { return Math.max((S.game && S.game.streak) || 0, (S.game && S.game.bestStreak) || 0); } },
+    { id: "courage", el: "slash", ti: "ti-sword", name: "Courage", flavor: "walked toward the avoided thing.", ranks: [1, 3, 10, 25], unit: "brave moves", prog: function () { var u = (S.tools && S.tools.use) || {}; return (u.reversal || 0) + (u.jeopardy || 0) + (u.blacksun || 0); } },
+    { id: "align", el: "lattice", ti: "ti-target", name: "Precision", flavor: "planned it. lived it. crowned it.", ranks: [1, 5, 15, 40], unit: "crowns", prog: function () { return Object.keys(S.crowns || {}).length; } },
+    { id: "depth", el: "cosmos", ti: "ti-moon-stars", name: "Depth", flavor: "minutes of real practice. the cosmos inside is real.", ranks: [10, 60, 200, 500], unit: "min of practice", prog: function () { var m = 0, L = S.log || {}; Object.keys(L).forEach(function (k) { (L[k] || []).forEach(function (e) { if (TOOL_TITLES[e.title]) m += (e.mins || 0); }); }); return m; } },
+    { id: "garden", el: "bio", ti: "ti-seeding", name: "Gardener", flavor: "the world grows only from real things.", ranks: [3, 8, 20, 40], unit: "planted", prog: function () { return ((S.game && S.game.garden) || []).length; } }
+  ];
+  function daysBetweenK(a, b) { return Math.round((kd(b) - kd(a)) / 86400000); }
+  function badgeRank(b, v) { var r = 0; b.ranks.forEach(function (t) { if (v >= t) r++; }); return r; } // 0..4
+  var _badgeTickAt = 0;
+  function badgeTick() { try {
+    var now = Date.now(); if (now - _badgeTickAt < 30000) return; _badgeTickAt = now;
+    var first = !S.badges; if (first) S.badges = { earned: {} };
+    BADGES.forEach(function (b) { var v = 0; try { v = b.prog(); } catch (e) {} var r = badgeRank(b, v);
+      for (var i = 1; i <= r; i++) { var key = b.id + "_" + i; if (!S.badges.earned[key]) { S.badges.earned[key] = now; if (!first) mintCard(b, i, v); } } }); // first run grandfathers silently — mints only for NEW progress after that
+    if (first) save();
+  } catch (e) {} }
+  function elCardBG(elName) { return ({ prism: "el-prism", burst: "el-burst", cosmos: "el-cosmos", slash: "el-slash", lattice: "el-lattice", bio: "el-bio" })[elName] || "el-prism"; }
+  function mintCard(b, rank, v) { try { save(); sfx(5); hapt(5);
+    var ov = add(document.body, "div", "mint-ov"); ov.onclick = function () { ov.remove(); };
+    var card = add(ov, "div", "mint-card " + elCardBG(b.el));
+    var sheen = add(card, "div", "mint-sheen");
+    var ic = add(card, "div", "mint-ic"); ic.innerHTML = '<i class="ti ' + b.ti + '"></i>';
+    add(card, "div", "mint-name", tr(b.name));
+    add(card, "div", "mint-flavor", tr(b.flavor));
+    var rk = add(card, "div", "mint-rank"); rk.textContent = "★".repeat(rank) + " · " + v + " " + tr(b.unit);
+    add(ov, "div", "mint-lab", tr("New mark earned — it lives in your world now"));
+    setTimeout(function () { try { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 400); } catch (e) {} }, 3600);
+  } catch (e) {} }
+  function binderSheet() { badgeTick();
+    var ov = add(document.body, "div", "goal-ov"); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var card = add(ov, "div", "goal-card");
+    var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-cards"></i> ' + tr("Your marks");
+    var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
+    var grid = add(card, "div", "binder-grid");
+    var earnedN = 0, totalN = 0;
+    BADGES.forEach(function (b) { var v = 0; try { v = b.prog(); } catch (e) {} var r = badgeRank(b, v); totalN += b.ranks.length; earnedN += r;
+      var c = add(grid, "div", "binder-card" + (r ? " " + elCardBG(b.el) : " locked"));
+      if (r) add(c, "div", "mint-sheen");
+      var ic = add(c, "div", "b-ic"); ic.innerHTML = '<i class="ti ' + b.ti + '"></i>';
+      add(c, "div", "b-name", tr(b.name));
+      add(c, "div", "b-rank", r ? "★".repeat(r) : "—");
+      var nxt = b.ranks[r]; add(c, "div", "b-prog", nxt != null ? (v + " / " + nxt + " " + tr(b.unit)) : tr("complete"));
+    });
+    add(card, "div", "b-total", earnedN + " / " + totalN);
+  }
   function renderGame() {
     var sp = el("spark"); if (!sp) return; var L = el("upgrades"); if (L) L.innerHTML = "";
     if (!(S.profile && S.profile.set)) { sp.textContent = ""; return; }
@@ -5196,6 +5258,7 @@
     sp.innerHTML = '<i class="ti ti-sparkles"></i> ' + S.game.spark.toLocaleString() + " <span style='font-size:11px;opacity:.7;font-weight:600;'>Spark</span>" + (shipped ? " <span style='font-size:12px;color:#46e2a4;'>· today grew</span>" : " <span style='font-size:11px;color:#ffc24a;'>· ship 1 thing to grow</span>");
     if (L) {
       var n = (S.game.garden || []).length, cost = 20 * (n + 1);
+      var bb2 = add(L, "button", "done2", tr("Your marks — the collection")); bb2.style.marginTop = "8px"; bb2.onclick = binderSheet;
       var pb = add(L, "button", "done2", "Plant in your world · " + cost + " Spark"); pb.style.marginTop = "8px"; pb.disabled = !shipped || S.game.spark < cost; pb.onclick = plantGarden;
       var h = add(L, "div", "lbl", shipped ? (n + " planted — your world fills as you do") : "ship one real thing today, then plant"); h.style.cssText = "font-size:12px;text-align:center;margin-top:6px;";
       var bcost = 120;
@@ -6097,7 +6160,7 @@
     var tot = 0; lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { tot += e.mins || 0; }); });
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
+  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
@@ -7858,7 +7921,11 @@
     (logs(dk) || []).slice().sort(function (a, b) { return _w(hm(a.time)) - _w(hm(b.time)); }).forEach(function (L) { var As = _w(hm(L.time)), Ae = As + (L.mins || 0); if (As < _new && Ae > _nsw) { if (As <= _nsw) _nsw = Math.min(_new, Ae); else _new = Math.max(_nsw, As); } });
     mins = Math.round(_new - _nsw);
     if (mins < 1) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ already logged — nothing new to add"); return; }
-    logs(dk).push({ id: uid(), time: pad(Math.floor((_nsw % 1440) / 60)) + ":" + pad((_nsw % 1440) % 60), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus + 2, srcEl: el("liveDock") }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } try { rewardFx(1, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); try { var _isVice = t.catK==='vice' || (S.habits||[]).some(function(h){return h.id===t.habitId&&h.type==='quit';}); if (_isVice && (S.guide&&(S.guide.unlocked||[]).indexOf(5)>=0)) { (function(_t,_m){setTimeout(function(){catalystCard(_t.title,_m);},350);})(t,mins);}  } catch(e) {} } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
+    logs(dk).push({ id: uid(), time: pad(Math.floor((_nsw % 1440) / 60)) + ":" + pad((_nsw % 1440) % 60), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { // GRAND BUILD D: combo chain + crown + shiny ride every full match
+        try { if (!S.combo || S.combo.dayK !== dk) S.combo = { dayK: dk, n: 0 }; S.combo.n++; if (S.combo.n >= 2) { rewardFx(3, { step: S.combo.n }); earn(3 * S.combo.n, { label: "combo" }); toast("\u00d7" + S.combo.n + " " + tr("combo — in a row on plan")); } } catch (e) {}
+        try { if (Math.random() < 0.05) { earn(7, { label: "shiny" }); rewardFx(5, { n: 7, srcEl: el("liveDock"), color: "#7ac8ff" }); toast(tr("SHINY — a rare one, just for this moment")); } } catch (e) {}
+        try { var _ds = dayStats(dk); if (_ds.perfect) { S.crowns = S.crowns || {}; if (!S.crowns[dk]) { S.crowns[dk] = Date.now(); rewardFx(4, { n: 25, srcEl: el("liveDock"), color: "#ffd24a" }); earn(25, { label: "crown" }); toast(tr("CROWN — every planned block, lived. Today is yours.")); } } } catch (e) {}
+        try { badgeTick(); } catch (e) {} if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus + 2, srcEl: el("liveDock") }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } try { rewardFx(1, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); try { var _isVice = t.catK==='vice' || (S.habits||[]).some(function(h){return h.id===t.habitId&&h.type==='quit';}); if (_isVice && (S.guide&&(S.guide.unlocked||[]).indexOf(5)>=0)) { (function(_t,_m){setTimeout(function(){catalystCard(_t.title,_m);},350);})(t,mins);}  } catch(e) {} } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {
     var C = el("nowCard"); if (!C) return; C.innerHTML = ""; // legacy "Tracking now" card removed — the live timer lives in the timeline (David 2026-06-23)
