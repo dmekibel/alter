@@ -1189,7 +1189,11 @@
     "combo — in a row on plan": "серия — подряд по плану",
     "SHINY — a rare one, just for this moment": "СИЯЮЩИЙ — редкий, только за этот момент",
     "CROWN — every planned block, lived. Today is yours.": "КОРОНА — каждый план прожит. Этот день — твой.",
-    "REFLECTION": "РЕФЛЕКСИЯ", "skip": "пропустить", "in my own words…": "своими словами…", "one honest line": "одна честная строка",
+    "REFLECTION": "РЕФЛЕКСИЯ", "skip": "пропустить",
+    "PROFILE": "ПРОФИЛЬ", "SOUND": "ЗВУК", "DATA": "ДАННЫЕ", "ADVANCED": "ПРОДВИНУТОЕ", "LANGUAGE": "ЯЗЫК",
+    "Language": "Язык", "flat flags, all of them": "плоские флаги, все языки",
+    "the collection — cards you've earned": "коллекция — добытые карты",
+    "step placed into today — it waits for you": "шаг поставлен в сегодня — он ждёт тебя", "in my own words…": "своими словами…", "one honest line": "одна честная строка",
     "noticed — that answer keeps coming back this week. I'll adjust for it.": "заметил — этот ответ повторяется всю неделю. Я подстроюсь.",
     "What got in the way most today?": "Что сегодня мешало больше всего?",
     "the phone pulled at me": "телефон тянул к себе", "thoughts of another task": "мысли о другом деле", "just no energy": "просто не было сил",
@@ -2348,7 +2352,16 @@
         var dl = add(gc, "div", "goal-dom"); dl.style.color = dom.c; dl.innerHTML = '<i class="ti ' + dom.ti + '"></i> ' + dom.l;
         var tt = add(gc, "div", "goal-title"); if (g.active) { tt.style.background = dom.c; tt.style.color = dom.ink; tt.style.borderColor = "#160510"; } tt.innerHTML = (g.active ? '<i class="ti ti-player-play-filled"></i> ' : '') + tiIcon(g) + ' ' + esc(g.title);
         var subs = g.subtasks || [];
-        if (subs.length) { var tg = add(gc, "div", "goal-tags"); subs.slice(0, 6).forEach(function (st) { var s = add(tg, "span", "goal-tag" + (st.done ? " done" : "")); s.textContent = (st.done ? "✓ " : "") + st.title; }); }
+        if (subs.length) { // GRAND BUILD G: the QUEST LADDER lives ON the card (approved frame) — done steps dim green, THE next step glows with its bounty, rest wait
+          var lad = add(gc, "div", "quest-ladder"), nextFound = false;
+          subs.slice(0, 5).forEach(function (st, si) {
+            var isNext = !st.done && !nextFound; if (isNext) nextFound = true;
+            var r = add(lad, "div", "q-step" + (st.done ? " done" : isNext ? " next" : ""));
+            r.innerHTML = '<i class="ti ' + (st.done ? "ti-circle-check" : isNext ? "ti-player-play" : "ti-circle") + '"></i><span class="q-lab">' + esc(st.title) + '</span>' + (isNext ? '<span class="q-bounty">+15</span>' : '');
+            if (isNext) { r.onclick = function (ev) { ev.stopPropagation(); var t2 = nextFreeMin(todayK()); blocks(todayK()).push({ id: uid(), time: pad(Math.floor(t2 / 60)) + ":" + pad(t2 % 60), mins: 30, title: st.title, prio: 2, color: dom.c, catK: null, domain: g.domain || "focus", done: false }); reflow(todayK()); goalTouch(g); save(); renderToday(); toast(tr("step placed into today — it waits for you")); }; }
+          });
+          if (subs.length > 5) add(lad, "div", "q-more", "+" + (subs.length - 5));
+        }
         else add(gc, "div", "goal-tagnone", "tap to break it down →");
         var pct = (g.metric && g.metric.target != null && g.metric.current != null) ? metricPct(g.metric) : (subs.length ? Math.round(subs.filter(function (s) { return s.done; }).length / subs.length * 100) : 0);
         var pb = add(gc, "div", "goal-prog"); var pbf = add(pb, "i"); pbf.style.width = pct + "%"; pbf.style.background = dom.c; // the goal's growing arc — how far along (metric % or steps done)
@@ -2760,12 +2773,19 @@
       b.innerHTML = '<i class="ti ' + ic + '" style="font-size:20px;color:#ff8fc4;flex:none;"></i><span style="display:flex;flex-direction:column;gap:1px;"><b style="font-size:15px;font-weight:800;">' + label + '</b><span style="font-size:11.5px;color:#b39ab0;font-weight:600;">' + desc + '</span></span>';
       b.onclick = function () { closeSheet(); setTimeout(fn, 60); };
     }
+    function room(lbl) { var h = add(list, "div"); h.style.cssText = "margin:12px 4px 4px;font-family:'Jost',sans-serif;font-weight:800;font-size:12px;letter-spacing:1.2px;color:#ffd24a;"; h.textContent = lbl; } // GRAND-REDESIGN §8: one gear, four rooms
+    room(tr("PROFILE"));
     row("ti-target", "Goals", "your longer arcs — what you're building toward", function () { try { goalsSheet(); } catch (e) {} });
     row("ti-compass", "Guidance", "how much I lead — Guided / Light / Off", function () { guidanceSheet(); });
-    if (devOn()) row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
+    row("ti-world", "Language", "flat flags, all of them", function () { var ov2 = add(document.body, "div", "rc-ov"); ov2.addEventListener("click", function (e) { if (e.target === ov2) ov2.remove(); }); var cd = add(ov2, "div", "rc-card"); add(cd, "div", "rc-k", tr("LANGUAGE")); var ls = add(cd, "div", "rc-list"); LANGS.forEach(function (L2) { var r2 = add(ls, "div", "rc-row" + (L2.code === curLang() ? " lit" : "")); r2.innerHTML = '<span style="display:inline-flex;width:26px;">' + flagSVG(L2.code) + '</span><span class="rc-lab">' + L2.name + '</span>' + (L2.code === curLang() ? '<i class="ti ti-check rc-chk"></i>' : ''); r2.onclick = function () { setLang(L2.code); ov2.remove(); }; }); });
     row(S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", "travel or off-days — your streaks are held", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} });
+    room(tr("SOUND"));
     row("ti-volume", "Sound", "voice + background volume", function () { openVolumePanel(); });
+    room(tr("DATA"));
     row("ti-send", "Send a snapshot", "share your progress file — it's also your backup", function () { shareSnapshot(); });
+    if (devOn() || (S.badges && Object.keys(S.badges.earned || {}).length)) row("ti-cards", "Your marks", "the collection — cards you've earned", function () { binderSheet(); });
+    room(tr("ADVANCED"));
+    if (devOn()) row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
     if (devOn()) row("ti-sparkles", "Redo setup", "re-run onboarding", function () { onboard(); });
     if (devOn()) row("ti-flask", "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
     if (devOn()) row(S.voiceDebug ? "ti-bug" : "ti-bug-off", S.voiceDebug ? "Voice debug: ON" : "Voice debug: OFF", "the little ♪ readout at the top — temporary", function () { S.voiceDebug = !S.voiceDebug; save(); var e = document.getElementById("voiceDbg"); if (e && !S.voiceDebug) e.remove(); toast(S.voiceDebug ? "voice debug on" : "voice debug off"); });
