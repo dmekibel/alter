@@ -143,3 +143,6 @@ David compared mockups to the LIVE v800 intro: its existing animation is better 
 
 ### §12 — THE CLASSY LAW (extracted from David's three named references: quest card / cockpit / edge inspector)
 Classy = **90% dark rich surface + luxury carried by METAL and FINE DETAIL** (foil frames, hairline insets, pips, small precise controls) — never by colored area. Meaning-finishes (fire stripes / matte blue / ghost / cosmos) live in SMALL FOIL-FRAMED MEDALLIONS (~42px) on dark cards, not full tiles. Large saturated fill budget per screen = ONE: the ignited pick (pink stripes + hairline gold inset). All prior full-tile choice designs superseded. Hue fine-tuning still lands on-device per the process law.
+
+### §12 amendment — icon wells, not medallions
+Circles with metallic/foil outlines REJECTED. Icon containers = the quest card's own wells: **rounded squares (radius 12), plain ink border #160510, the meaning-finish INSIDE** (fire stripes / matte blue stripes / cosmos / ghost-dark). Foil frames stay reserved for CARD MOMENTS (binder/mints) only — never for in-flow UI chrome.
