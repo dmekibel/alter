@@ -83,3 +83,12 @@
 
 *Status log:* created 2026-07-02 after v783.
 *2026-07-02 THE TRACKING CORE RUN (v788–v796):* C8→C9→C5/C10→C7→D2→D3→C1 all shipped in 5 commits, each preview-verified (boot + non-gesture flows + data invariants). **Gesture feel (C1 drag bump, dock morphs) is DEVICE-UNTESTED — David confirms on phone.** C6 (on-device contract re-run) = David's device pass. Still open in C: C2 (split+battery archaeology), C3 (past-lane semantics — needs David live), C4a (attach-to-now-line visual on start). B1/B2 RU sweep in progress same session.
+
+## I. THE GRAND BUILD (David: "build all of it in one go without breaking anything" — same day, v804→v808)
+- [x] I-A (v804) Reward presentation layer: rewardFx tiers, flying +N → counter pop, earcons (C-pentatonic synth, session-silent), haptic grammar, streak FIRE LEVELS (ember→blue), tier-2 ignition sweep, press physics springs. earn() ledger untouched.
+- [x] I-B (v805) Flows: playFirst (pick→time=plan+track; skip = one gentle line), idle doors (Track now / Plan my day), toolbox ONE-DOOR (hero + daily + 3 fold rows).
+- [x] I-C (v806) Crown calendar: week = 7 real-block columns + reality ribbons + crowns + fire; month = glow-by-match-rate cells, crowned, fire runs, future dimmed.
+- [x] I-D (v807) Collection+economy: 6 badge families from history (grandfathered silently, minted loudly), element card mints (holo sheen + tilt + flavor), binder in the game pane, combo chain, CROWN day-close (+25), shiny 1/20, bestStreak.
+- [x] I-E (v808) Reflection cards (worksheet engine, 5 seed Qs, notice-on-repeat, evening trail stone + post-tool), intro globe + warm floor.
+- **REMAINING (next session, isolated surfaces):** quest-card goals render + step→day scheduling · onboarding «Прибытие» 5 beats + trainer card · You-tab regroup. All specced (GRAND-REDESIGN §2/§6/§8).
+- **ALL DEVICE-UNTESTED for feel/sound/haptics** — preview verified boot, flows, data writes, RU. David's phone decides.
