@@ -140,3 +140,6 @@ Three rules extracted from what he keeps approving: ① **one HERO** per screen 
 
 ### §12 — INTRO: final direction (v800's real animation WON)
 David compared mockups to the LIVE v800 intro: its existing animation is better than both mockup variants. Decision: the real intro animation stays the base. Surviving changes only: ① globe icon top-right → flat flags on press (replaces the always-visible flag) ② floor tuned BETWEEN v2/v3 — deep berry, never black, NO rose glow (v3's glow read "cheap"). Both land as code in the flows run with a live variant toggle; no more intro mockups.
+
+### §12 — THE CLASSY LAW (extracted from David's three named references: quest card / cockpit / edge inspector)
+Classy = **90% dark rich surface + luxury carried by METAL and FINE DETAIL** (foil frames, hairline insets, pips, small precise controls) — never by colored area. Meaning-finishes (fire stripes / matte blue / ghost / cosmos) live in SMALL FOIL-FRAMED MEDALLIONS (~42px) on dark cards, not full tiles. Large saturated fill budget per screen = ONE: the ignited pick (pink stripes + hairline gold inset). All prior full-tile choice designs superseded. Hue fine-tuning still lands on-device per the process law.
