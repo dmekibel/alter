@@ -1166,6 +1166,10 @@
   Object.assign(I18N.ru, {
     "Keep going": "Продолжить", // C7 track→plan fusion button (B4 rule: new strings ship with their dict entry)
     "Make a plan": "Создать план", // G12 rename (v801 device pass)
+    "Track now": "Отследить сейчас", "Plan my day": "Спланировать день", "Track other": "Другое занятие",
+    "No timer — just track": "Без таймера — просто трек",
+    "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
+    "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Switch activity": "Сменить занятие",
     "What are you doing right now?": "Что ты делаешь прямо сейчас?",
     "Anything real counts. Track one thing — I'll hold it.": "Считается всё настоящее. Отметь одно дело — я сохраню.",
@@ -2182,6 +2186,17 @@
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
+  function playFirst() { // G11 (flows run; David's locked picks): play -> pick activity -> pick TIME = plan+track (full points); skipping the timer stays legal — one gentle line, never a wall
+    bentoPicker({ title: "What are you doing?", onPick: function (x) {
+      durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
+        blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); }); // the new plan owns now->future (replan semantics)
+        var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false, pin: true };
+        blocks(k).push(nb); reflow(k); save();
+        var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); if (t) { t.commit = mins; } maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
+      }, null, { icon: "ti-player-play", label: "No timer — just track", fn: function () {
+        var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); toast("tracking — with a plan it earns more"); } }); // the gentle line, said once, never blocks
+    } });
+  }
   function planBreak(title) { bentoPicker({ title: title || "Replan from now — what, for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
         // REPLAN (David 2026-06-25): the new plan owns NOW → the future. Any block the present line is currently splitting gets its future half ERASED (truncated to end at now → it stays as the past ghost half).
         blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
@@ -4090,10 +4105,10 @@
       case "idle": {
         var n = nextPlannedBlock(todayK());
         if (n) return [{ icon: "ti-player-play-filled", label: "Start", fn: function () { startPlanned(n); renderTrackerFull(); }, primary: true },
-                       { icon: "ti-list-search", label: "Just track", fn: function () { tfPickTrack("What are you doing?"); } },
+                       { icon: "ti-list-search", label: "Track other", fn: playFirst },
                        { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
-        return [{ icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan, primary: true },
-                { icon: "ti-list-search", label: "Just track", fn: function () { tfPickTrack("What are you doing?"); } }];
+        return [{ icon: "ti-player-play-filled", label: "Track now", fn: playFirst, primary: true },
+                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} } }]; // G11 play-first: the app's main verb is the hero; picking a time = the plan (tfCreatePlan folded into playFirst)
       }
       case "break":
         return [{ icon: "ti-player-play-filled", label: "Resume", fn: tfResumeBreak, primary: true },
@@ -6657,8 +6672,6 @@
     var head = add(sb, "div", "tf-stagecard");
     var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
     add(head, "div", "tfs-sub", "little proven tools — the right one for the moment you're in. Using one on a hard day is the win.");
-    var _stk = add(head, "button"); _stk.innerHTML = '<i class="ti ti-stack-2"></i> Build a session — stack a few in a row'; _stk.style.cssText = "margin-top:11px;width:100%;background:rgba(154,124,255,.14);border:1.5px solid #6a4a9a;border-radius:12px;padding:11px;color:#e6d8ff;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _stk.onclick = function () { try { stackBuilder(); } catch (e) {} }; // SELF-HELP STACK entry
-    var _bg = add(head, "button"); _bg.innerHTML = '<i class="ti ti-brain"></i> Sharpen the mind — a 60-second focus game'; _bg.style.cssText = "margin-top:8px;width:100%;background:rgba(99,211,201,.12);border:1.5px solid #3a6a64;border-radius:12px;padding:11px;color:#cdeeea;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"; _bg.onclick = function () { try { brainGym(); } catch (e) {} }; // BRAIN GYM entry (chooser: Recall / Focus Cross / Link)
     // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
     var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
     if (_pt) {
@@ -6671,7 +6684,7 @@
       add(nt, "span").innerHTML = '<i class="ti ' + _ti2 + '" style="font-size:24px;color:#ffb3d9"></i>';
       add(nt, "div", "tfs-h", _pt.name).style.flex = "1";
       add(now, "div", "tfs-sub", _why2).style.cssText = "margin-top:6px;font-size:12.5px;line-height:1.42;color:#e6cfe0;";
-      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
+      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;min-height:52px;font-size:15px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
     }
     // YOUR DAILY — prebuilt tools pinned as a daily 20-second practice (the REINFORCE loop) with a done-today check (David 2026-07-01)
     var _daily = dailyTools();
@@ -6680,11 +6693,18 @@
       var drow = add(sb, "div"); drow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;";
       _daily.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var doneToday = (((S.tools || {}).last) || {})[id] === todayK(); var c = add(drow, "button", "tf-chip"); if (doneToday) c.style.opacity = ".6"; c.innerHTML = '<i class="ti ' + (doneToday ? "ti-circle-check" : T.ti) + '"></i> ' + esc(T.name) + (doneToday ? " · done" : ""); c.onclick = function () { runTool(T); }; });
     }
-    var sos = add(sb, "button", "tf-chip"); sos.style.marginTop = "9px"; sos.innerHTML = '<i class="ti ti-urgent"></i> Something specific is loud — help me pick'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
+    // ONE-DOOR (F1, David's pick): everything below the daily shelf folds behind calm rows — for-right-now first, the library on request
+    var _open = sb.dataset.tbopen === "1";
+    function foldRow(icon, iconColor, label, right, fn) { var r = add(sb, "button"); r.style.cssText = "margin-top:9px;width:100%;display:flex;align-items:center;gap:10px;background:#241328;border:2px solid #160510;border-radius:13px;box-shadow:0 2px 0 #160510;padding:13px 14px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:14px;color:#e6cfe0;"; r.innerHTML = '<i class="ti ' + icon + '" style="color:' + iconColor + ';font-size:18px"></i><span style="flex:1;text-align:left;">' + label + '</span>' + (right || '') + '<i class="ti ti-chevron-right" style="color:#8a7898;font-size:15px"></i>'; r.onclick = fn; return r; }
+    foldRow("ti-layout-grid", "#c9a6ff", "All tools", '<span style="color:#8a7898;font-size:12.5px;">' + TOOLS.length + '</span>', function () { sb.dataset.tbopen = _open ? "" : "1"; try { renderStage("tool"); } catch (e) {} });
+    foldRow("ti-stack-2", "#63d3c9", "Build a session", "", function () { try { stackBuilder(); } catch (e) {} });
+    foldRow("ti-brain", "#5ec4f5", "Sharpen the mind", "", function () { try { brainGym(); } catch (e) {} });
+    var lib = add(sb, "div"); if (!_open) lib.style.display = "none"; // the folded library: triage + recents + category tabs + cards
+    var sos = add(lib, "button", "tf-chip"); sos.style.marginTop = "9px"; sos.innerHTML = '<i class="ti ti-urgent"></i> Something specific is loud — help me pick'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
     // Favorites / Recents pinned row
     var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
     pins = pins.slice(0, 4);
-    if (pins.length) { var pwrap = add(sb, "div"); add(pwrap, "div", "tfs-sub", "Recent").style.marginTop = "8px"; var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + T.ti + '"></i> ' + esc(T.name); c.onclick = function () { runTool(T); }; }); }
+    if (pins.length) { var pwrap = add(lib, "div"); add(pwrap, "div", "tfs-sub", "Recent").style.marginTop = "8px"; var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + T.ti + '"></i> ' + esc(T.name); c.onclick = function () { runTool(T); }; }); }
     // CATEGORY TABS (David 2026-07-01): the tools are already grouped into 5 layers (+ Yours). Show ONE category at a time via a tab switcher so it's never a long, overwhelming scroll.
     var TB_CATS = [
       { l: "Body",   ti: "ti-lungs",     layer: "Steady the body" },
@@ -6696,14 +6716,14 @@
     ];
     if (!sb.dataset.tbcat) sb.dataset.tbcat = (!_isC && _pt && _pt.layer) ? _pt.layer : "Steady the body"; // open on the FOR-RIGHT-NOW tool's category so it's relevant
     var _cat = sb.dataset.tbcat;
-    var tabs = add(sb, "div"); tabs.style.cssText = "display:flex;flex:none;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;"; // flex:none — an overflow-x flex-column child otherwise gets min-height:0 and collapses to a sliver (David 2026-07-01)
+    var tabs = add(lib, "div"); tabs.style.cssText = "display:flex;flex:none;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;"; // flex:none — an overflow-x flex-column child otherwise gets min-height:0 and collapses to a sliver (David 2026-07-01)
     TB_CATS.forEach(function (c) {
       var on = _cat === c.layer, tb = add(tabs, "button");
       tb.setAttribute("style", "flex:none;display:flex;align-items:center;gap:6px;border:2px solid #160510;border-radius:12px;box-shadow:0 2px 0 #160510;padding:11px 14px;min-height:42px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:13.5px;white-space:nowrap;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#e6cfe0") + ";"); // AUDIT P1: real tap-height tabs
       tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + c.l;
       tb.onclick = function () { sb.dataset.tbcat = c.layer; try { renderStage("tool"); } catch (e) {} };
     });
-    var pane = add(sb, "div"); pane.style.marginTop = "10px";
+    var pane = add(lib, "div"); pane.style.marginTop = "10px";
     function builtinCard(parent, t) {
       var card = add(parent, "button", "tf-stagecard"); card.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
       var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:9px;";
