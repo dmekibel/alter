@@ -2048,7 +2048,7 @@
     })();
     if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
     // #5: fire completion bursts after layout settles (DEVICE-UNTESTED feel — the pop + float animate on the node after it scrolls into view)
-    if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); } catch (e) {} }); }, 380); }
+    if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); rewardFx(2, { srcEl: b.el }); } catch (e) {} }); }, 380); }
     // Appetite invite: auto-surface once per offer when appetiteUpdate seeds the invite (shown once per day until accepted/declined)
     try { var _g = S.guide; if (_g&&_g.cache&&_g.cache.appetiteInvite) { var _inv=_g.cache.appetiteInvite; if (_inv.shownK!==todayK()) { _inv.shownK=todayK(); save(); (function(ii){setTimeout(function(){try{if(ii===((S.guide||{}).cache||{}).appetiteInvite)showAppetiteInvite(ii);}catch(e){}},1400);})(S.guide.cache.appetiteInvite); } } } catch(e) {}
   }
@@ -3184,7 +3184,7 @@
       el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = dur(gap);
       el("tfElabel").textContent = "away";
       el("tfCtx").textContent = "gap " + fmt(S0.gapStartMin) + "–now";
-      el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b>';
+      el("tfSpark").innerHTML = fireHTML(streak);
       setRing(1, CD.c); renderSwitchChips(""); renderTFControls("claim");
       return;
     }
@@ -3204,7 +3204,7 @@
       el("tfVerdict").textContent = nb ? "ready when you are" : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
-      el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ⏱ <b>' + dur(tfDomMinsToday(null)) + '</b>';
+      el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
       if (tile) { tile.style.background = nb ? ND.c : "#ff5fa8"; tile.style.color = nb ? ND.ink : "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // G10 (David on device, v801): idle expanded = the SAME play button as the folded dock (activity-coloured / pink), not a dimmed striped tile with the domain icon ("black button with white brain")
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
@@ -3217,7 +3217,7 @@
       el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = fmtCD(Math.max(0, _rem));
       el("tfElabel").textContent = _up ? "time's up" : "left";
       el("tfCtx").textContent = B.title ? ((_up ? "back to " : "resume ") + B.title) : (_up ? "break over" : "paused");
-      el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ☕ break';
+      el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-coffee"></i>';
       setRing(_up ? 1 : Math.max(0, Math.min(1, (Date.now() - B.start) / (B.mins * 60000))), "#e8b53a");
       renderSwitchChips(B.title); renderTFControls(_up ? "breakup" : "break");
       return;
@@ -3233,7 +3233,7 @@
     else el("tfCtx").textContent = drift ? "off your plan" : "no plan — free tracking";
     var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
     var onAct = tfDomMinsToday(S0.dom) + Math.round(elMin);
-    el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ⏱ <b>' + dur(onAct) + '</b>';
+    el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(onAct) + '</b>';
     setRing(p, onplan ? "#28cf86" : "#6a5870");
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
@@ -5147,6 +5147,33 @@
   function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; logSF(ctx); growGarden(); save(); triggerTLM(ctx);
     var jspk = el("jpSpark"); if (jspk) { var jn = jspk.querySelector(".spark-n"); if (jn) jn.textContent = (S.game.spark || 0).toLocaleString(); jspk.classList.remove("bump"); void jspk.offsetWidth; jspk.classList.add("bump"); if (document.body.classList.contains("journey-open")) { try { var jr = jspk.getBoundingClientRect(); var jf = document.createElement("div"); jf.className = "spark-float"; jf.textContent = "+" + got; jf.style.left = (jr.left + jr.width / 2 - 8) + "px"; jf.style.top = (jr.top + 4) + "px"; document.body.appendChild(jf); setTimeout(function () { try { jf.remove(); } catch (e) {} }, 950); } catch (e) {} } } // persistent Spark counter pulses + floats +N (David 2026-07-02)
     var sp = el("spark"); if (sp) { sp.style.transition = "none"; sp.style.transform = "scale(1.14)"; setTimeout(function () { sp.style.transition = "transform .3s"; sp.style.transform = "scale(1)"; renderGame(); }, 30); try { var r0 = sp.getBoundingClientRect(); var fl = document.createElement("div"); fl.className = "spark-float"; fl.textContent = "+" + got; fl.style.left = (r0.left + r0.width / 2 + (Math.random() * 26 - 13)) + "px"; fl.style.top = (r0.top + 2) + "px"; document.body.appendChild(fl); setTimeout(function () { try { fl.remove(); } catch (e) {} }, 950); } catch (e) {} } } // floating +N feedback so earning Spark feels good (David 2026-06-24 night)
+  // ===== THE REWARD LANGUAGE (spec: _specs/REWARD-LANGUAGE.md) — rewardFx = the PRESENTATION layer only (tiers: 1 Искра · 2 Совпадение · 3 Серия · 4 Корона · 5 Веха). earn() stays the untouched points ledger; this adds light/sound/touch at the moment, from its cause. =====
+  function sfx(tier, step) { try { if (S.audio && S.audio.sfx === false) return; if (document.getElementById("breatheOv")) return; /* never inside a session — the tools own their soundscape */ var ctx = sharedAudioCtx(); if (!ctx || ctx.state !== "running") return;
+    var N = { c5: 523.25, e5: 659.25, g5: 783.99, a5: 880, c6: 1046.5 };
+    function pluck(f, t0, dur, vol) { var o = ctx.createOscillator(), g = ctx.createGain(), tri = ctx.createOscillator(), g2 = ctx.createGain(); o.type = "sine"; o.frequency.value = f; tri.type = "triangle"; tri.frequency.value = f * 2; g2.gain.value = 0.16; o.connect(g); tri.connect(g2); g2.connect(g); g.connect(bgBus() || ctx.destination); var t = ctx.currentTime + (t0 || 0); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.09, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.14)); o.start(t); tri.start(t); o.stop(t + (dur || 0.14) + 0.05); tri.stop(t + (dur || 0.14) + 0.05); }
+    if (tier === 1) pluck(N.c5, 0, 0.12);
+    else if (tier === 2) { pluck(N.c5, 0, 0.13); pluck(N.e5, 0.11, 0.2, 0.1); }
+    else if (tier === 3) { var seq = [N.c5, N.e5, N.g5, N.c6], k = Math.min(seq.length - 1, Math.max(0, (step || 1) - 1)); pluck(seq[k], 0, 0.14, 0.1); pluck(seq[k] * 2, 0.02, 0.09, 0.03); }
+    else if (tier === 4) { pluck(N.c5, 0, 0.12); pluck(N.e5, 0.1, 0.12); pluck(N.g5, 0.2, 0.12); pluck(N.c6, 0.3, 0.28, 0.11); }
+    else { pluck(N.c5, 0, 0.16); pluck(N.g5, 0.14, 0.16); pluck(N.a5, 0.28, 0.16); pluck(N.e5, 0.42, 0.34, 0.11); }
+  } catch (e) {} } // one instrument family, C pentatonic, length-capped per tier — everything in the same key so rewards always harmonize
+  function hapt(tier) { try { if (navigator.vibrate) navigator.vibrate(tier === 1 ? 8 : tier === 2 ? [8, 24, 8] : tier === 3 ? 12 : tier === 4 ? [8, 40, 8, 40] : [10, 60, 10]); } catch (e) {} }
+  function rewardTarget() { var j = el("jpSpark"); if (j && document.body.classList.contains("journey-open")) return j; var s = el("spark"); if (s && s.offsetParent) return s; return null; } // the visible coin counter this pane owns
+  function flyPoints(x, y, n, color) { try {
+    var f = document.createElement("div"); f.className = "fly-n"; f.textContent = "+" + n; if (color) f.style.color = color; f.style.left = x + "px"; f.style.top = y + "px"; document.body.appendChild(f);
+    if (!f.animate) { setTimeout(function () { f.remove(); }, 700); return; }
+    var tgt = rewardTarget();
+    if (tgt) { var r = tgt.getBoundingClientRect(), dx = r.left + r.width / 2 - x, dy = r.top + r.height / 2 - y;
+      f.animate([{ transform: "translate(0,0) scale(.9)", opacity: 0 }, { transform: "translate(" + (dx * 0.15) + "px," + (dy * 0.1 - 26) + "px) scale(1.25)", opacity: 1, offset: 0.18 }, { transform: "translate(" + dx + "px," + dy + "px) scale(.55)", opacity: 0.9 }], { duration: 760, easing: "cubic-bezier(.3,.7,.4,1)" }).onfinish = function () { f.remove(); try { tgt.classList.remove("bump"); void tgt.offsetWidth; tgt.classList.add("bump"); if (tgt.id === "spark") { tgt.style.transition = "none"; tgt.style.transform = "scale(1.16)"; setTimeout(function () { tgt.style.transition = "transform .3s"; tgt.style.transform = ""; }, 30); } } catch (e) {} };
+    } else { f.animate([{ transform: "translate(0,0) scale(.9)", opacity: 0 }, { transform: "translate(6px,-22px) scale(1.2)", opacity: 1, offset: 0.25 }, { transform: "translate(10px,-64px) scale(1)", opacity: 0 }], { duration: 800, easing: "ease-out" }).onfinish = function () { f.remove(); }; }
+  } catch (e) {} } // the +N flies FROM ITS CAUSE to the coin counter, which pops to absorb it (motion law 1)
+  function rewardFx(tier, ctx) { ctx = ctx || {}; var x = ctx.x, y = ctx.y;
+    try { if (ctx.srcEl && ctx.srcEl.getBoundingClientRect) { var r = ctx.srcEl.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top; } } catch (e) {}
+    if (x == null) { x = window.innerWidth / 2; y = window.innerHeight * 0.42; }
+    if (ctx.n) flyPoints(x, y, ctx.n, ctx.color);
+    sfx(tier, ctx.step); hapt(tier);
+  }
+  function fireHTML(streak) { var lv = streak >= 21 ? 4 : streak >= 7 ? 3 : streak >= 3 ? 2 : 1; return '<span class="fire-chip fire-l' + lv + '">' + (lv === 1 ? '<span class="fire-dot"></span>' : '<i class="ti ti-flame"></i>') + '<b>×' + streak + '</b></span>'; } // streak fire levels: 1-2 уголёк · 3-6 огонь · 7-20 пламя · 21+ синее пламя (REWARD-LANGUAGE v2)
   function renderGame() {
     var sp = el("spark"); if (!sp) return; var L = el("upgrades"); if (L) L.innerHTML = "";
     if (!(S.profile && S.profile.set)) { sp.textContent = ""; return; }
@@ -5675,7 +5702,7 @@
       var dark = (status !== "ok" && (b.passed || status === "miss")) || !!partial; // a partial's BASE is a ghost (the part you planned but didn't keep)
       var _straddle = showNow && k === todayK() && bs < now && be > now && status !== "ok" && !partial; // the present line splits this block (past ghost half + matte future half) — David 2026-06-25
       var stt = (status === "ok" && !partial) ? "cele" : dark ? "ghost" : "sched";
-      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (newlyCele ? " celepop" : "") + (!b.title ? " emptyblk" : ""));
+      var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (newlyCele ? " celepop ignite" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
       if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
       if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
@@ -7797,7 +7824,7 @@
     (logs(dk) || []).slice().sort(function (a, b) { return _w(hm(a.time)) - _w(hm(b.time)); }).forEach(function (L) { var As = _w(hm(L.time)), Ae = As + (L.mins || 0); if (As < _new && Ae > _nsw) { if (As <= _nsw) _nsw = Math.min(_new, Ae); else _new = Math.max(_nsw, As); } });
     mins = Math.round(_new - _nsw);
     if (mins < 1) { S.timers.splice(i, 1); save(); renderAll(); toast("⏱ already logged — nothing new to add"); return; }
-    logs(dk).push({ id: uid(), time: pad(Math.floor((_nsw % 1440) / 60)) + ":" + pad((_nsw % 1440) % 60), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); try { var _isVice = t.catK==='vice' || (S.habits||[]).some(function(h){return h.id===t.habitId&&h.type==='quit';}); if (_isVice && (S.guide&&(S.guide.unlocked||[]).indexOf(5)>=0)) { (function(_t,_m){setTimeout(function(){catalystCard(_t.title,_m);},350);})(t,mins);}  } catch(e) {} } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
+    logs(dk).push({ id: uid(), time: pad(Math.floor((_nsw % 1440) / 60)) + ":" + pad((_nsw % 1440) % 60), title: t.title, mins: mins, habitId: t.habitId, catK: t.catK, color: t.color }); if (t.habitId) doneMap(dk)[t.habitId] = true; if (isTidy(t)) S.lastTidy = dk; earn(mins, { catK: t.catK }); var opb = onPlanBlockFor(t, dk); if (opb) { /* do NOT mark opb.done — that forced the WHOLE block to read complete (gold full-width into the future). The pushed log already records the real span; matchedSpan/partial renders exactly what was covered, leaving the untracked remainder as ghost/future. Reward staying on-plan without predicting the future. (David 2026-06-27) */ var _obs = hm(opb.time), _obe = _obs + (opb.mins || 30), _covered = mins >= (_obe - _obs) - 5; var bonus = Math.max(12, Math.round(mins * 0.4)); earn(bonus, {}); if (_covered) { if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus + 2, srcEl: el("liveDock") }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } try { rewardFx(1, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); try { var _isVice = t.catK==='vice' || (S.habits||[]).some(function(h){return h.id===t.habitId&&h.type==='quit';}); if (_isVice && (S.guide&&(S.guide.unlocked||[]).indexOf(5)>=0)) { (function(_t,_m){setTimeout(function(){catalystCard(_t.title,_m);},350);})(t,mins);}  } catch(e) {} } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {
     var C = el("nowCard"); if (!C) return; C.innerHTML = ""; // legacy "Tracking now" card removed — the live timer lives in the timeline (David 2026-06-23)
