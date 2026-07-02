@@ -1,0 +1,35 @@
+# ALTER deploy — Actions-based GitHub Pages (2026-07-02).
+# Replaces the LEGACY Pages pipeline after 4 consecutive deployment_queued timeouts stranded v801/v802
+# while David device-tested. Serves the repo root byte-identically to the legacy build (all static files
+# incl. assets/voice clips). Revert path: `gh api -X PUT repos/dmekibel/alter/pages -f build_type=legacy`.
+name: deploy-pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false # queue, never cancel — a cancelled deploy is how the "phone stuck on v787" cascade happened
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 1200000 # 20 min — the repo's voice bank makes deploys slow; never abort a queued deploy early
