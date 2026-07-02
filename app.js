@@ -4191,12 +4191,15 @@
   // expanded / the play-stop circle in the folded dock). The rest are the secondary seg/row actions.
   function trackerControls(state) {
     switch (state) {
-      case "claim":
-        return [{ icon: "ti-circle-check", label: "Claim it", fn: tfClaim, primary: true },
-                { icon: "ti-x", label: "Not mine", fn: tfClaimDismiss }];
+      case "claim": { // §12 composition law: the claim is a hero + two doors — solid wears the block's colour, the escape whispers
+        var _cbk = null; try { _cbk = trackerState().block; } catch (e) {}
+        var _cdm = _cbk ? (DOM[domainOf(_cbk)] || DOM.focus) : DOM.focus;
+        return [{ icon: "ti-circle-check", label: "Claim it", fn: tfClaim, primary: true, finish: "solid", c: _cdm.c, ink: _cdm.ink },
+                { icon: "ti-x", label: "Not mine", fn: tfClaimDismiss, finish: "ghost" }];
+      }
       case "night":
-        return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true },
-                { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
+        return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true, finish: "solid", c: "#9a8cff", ink: "#1c1030" },
+                { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, finish: "ghost" }];
       case "idle": { // §12 COCKPIT FRAME (David's upload 07): THREE FIXED DOORS — pink Track now / striped Plan+track next / ghost Plan my day; the docked time sheet handles the next block's duration
         var n = nextPlannedBlock(todayK());
         if (n) {

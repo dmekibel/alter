@@ -1106,17 +1106,23 @@
   .tf-sf{ position:absolute; top:30px; left:50%; transform:translateX(-50%); font-size:12px; color:#ffd98a; font-weight:600; letter-spacing:.02em; opacity:.92; z-index:4; white-space:nowrap; pointer-events:none; }
   .tf-sf b{ color:#fff; font-size:14px; }
   #trackerFull.tf-staged .tf-sf{ display:none; }
-  /* GRAND BUILD H (David: "I don't see it") — THE COMPOSITION LAW applied to the cockpit: at idle the mock shows FIVE elements (grab, ring hero, title, sub, doors). Everything else leaves the room. */
-  #trackerFull.st-idle .tf-ctx, #trackerFull.st-idle .tf-elabel, #trackerFull.st-idle .tf-switch, #trackerFull.st-idle .tf-sf, #trackerFull.st-idle .tf-say, #trackerFull.st-idle #tfNext, #trackerFull.st-idle .tf-spark, #trackerFull.st-idle #tfTime, #trackerFull.st-idle .tf-clock, #trackerFull.st-idle .tf-close, #trackerFull.st-idle #tfGear, #trackerFull.st-idle #tfStageChips{ display:none !important; } /* §12 literal: clock/chevron/gear/entry-chips leave the room too — the flows stay reachable from the toolbox + journey */
-  #trackerFull.st-idle .tf-stage{ flex:0 0 auto; } /* the hero group stops eating the screen — hero+question+sub+doors read as ONE centered composition (the frame's body) */
-  #trackerFull.st-idle .tf-inner{ justify-content:center; }
-  /* §12 frame-fidelity: the idle hero = the frame's exact body — compact 150px-proportion ring (#3a2540 track), solid play disc with a HARD 0-6px-0 ink shadow, breathing; kit type scale (21px question / 13px sub, normal case) */
+  /* §12 THE COMPOSITION LAW — the frame's five-element body (grab, hero, title, sub, doors) governs EVERY resting cockpit state: idle, NIGHT, CLAIM. Everything else leaves the room. */
+  #trackerFull.st-idle .tf-ctx, #trackerFull.st-idle .tf-elabel, #trackerFull.st-idle .tf-switch, #trackerFull.st-idle .tf-sf, #trackerFull.st-idle .tf-say, #trackerFull.st-idle #tfNext, #trackerFull.st-idle .tf-spark, #trackerFull.st-idle #tfTime, #trackerFull.st-idle .tf-clock, #trackerFull.st-idle .tf-close, #trackerFull.st-idle #tfGear, #trackerFull.st-idle #tfStageChips,
+  #trackerFull.st-night .tf-ctx, #trackerFull.st-night .tf-elabel, #trackerFull.st-night .tf-switch, #trackerFull.st-night .tf-sf, #trackerFull.st-night .tf-say, #trackerFull.st-night #tfNext, #trackerFull.st-night .tf-spark, #trackerFull.st-night #tfTime, #trackerFull.st-night .tf-clock, #trackerFull.st-night .tf-close, #trackerFull.st-night #tfGear, #trackerFull.st-night #tfStageChips,
+  #trackerFull.st-claim .tf-ctx, #trackerFull.st-claim .tf-elabel, #trackerFull.st-claim .tf-switch, #trackerFull.st-claim .tf-sf, #trackerFull.st-claim .tf-say, #trackerFull.st-claim #tfNext, #trackerFull.st-claim .tf-spark, #trackerFull.st-claim #tfTime, #trackerFull.st-claim .tf-clock, #trackerFull.st-claim .tf-close, #trackerFull.st-claim #tfGear, #trackerFull.st-claim #tfStageChips{ display:none !important; }
+  #trackerFull.st-idle .tf-stage, #trackerFull.st-night .tf-stage, #trackerFull.st-claim .tf-stage{ flex:0 0 auto; } /* the hero group stops eating the screen — one centered composition */
+  #trackerFull.st-idle .tf-inner, #trackerFull.st-night .tf-inner, #trackerFull.st-claim .tf-inner{ justify-content:center; }
+  /* §12 frame-fidelity: the hero body — compact ring, solid disc with a HARD 0-6px-0 ink shadow, breathing; kit type (21px title / 13px sub, normal case) */
   @keyframes tfBreathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.045); } }
-  #trackerFull.st-idle #tfRing{ width:min(50vw,195px); transform:none; margin:14px 0 0; background:conic-gradient(#3a2540 0 100%) !important; }
-  #trackerFull.st-idle .tf-tile{ width:calc(100% - 24px); border:3px solid #160510; box-shadow:0 6px 0 #160510; font-size:64px; animation:tfBreathe 3s ease-in-out infinite; } /* icon = the frame's 41%-of-disc proportion */
-  #trackerFull.st-idle #tfTitle{ font-size:21px; margin-top:16px; }
-  #trackerFull.st-idle .tf-verdict{ color:#b39ab0; font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; margin-top:4px; }
-  #trackerFull.st-idle .tf-ctrls{ margin-top:18px; }
+  #trackerFull.st-idle #tfRing, #trackerFull.st-night #tfRing, #trackerFull.st-claim #tfRing{ width:min(44vw,172px); transform:none; margin:14px 0 0; }
+  #trackerFull.st-idle #tfRing{ background:conic-gradient(#3a2540 0 100%) !important; }
+  #trackerFull.st-idle .tf-tile, #trackerFull.st-night .tf-tile, #trackerFull.st-claim .tf-tile{ width:calc(100% - 24px); border:3px solid #160510; box-shadow:0 6px 0 #160510; font-size:56px; animation:tfBreathe 3s ease-in-out infinite; }
+  #trackerFull.st-idle #tfTitle, #trackerFull.st-night #tfTitle, #trackerFull.st-claim #tfTitle{ font-size:21px; margin-top:16px; }
+  #trackerFull.st-idle .tf-verdict, #trackerFull.st-night .tf-verdict, #trackerFull.st-claim .tf-verdict{ color:#b39ab0; font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; margin-top:4px; }
+  #trackerFull.st-idle .tf-ctrls, #trackerFull.st-night .tf-ctrls, #trackerFull.st-claim .tf-ctrls{ margin-top:18px; }
+  /* the frame's finish hierarchy: door voices descend — solid speaks, striped supports, ghost whispers */
+  .tf-door-solid{ font-size:15px; }
+  .tf-door-striped{ font-size:14px; min-height:52px; }
   /* §12 cockpit frame — the docked time-commit sheet for the next planned block ("Глубокая работа — сколько?") */
   #tfNextSheet{ display:none; position:absolute; left:0; right:0; bottom:0; background:#22091a; border-top:2.5px solid #160510; padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 18px); z-index:5; font-family:"Jost",sans-serif; }
   .tns-h{ display:flex; align-items:center; gap:8px; color:#fff2f9; font-weight:800; font-size:14.5px; }
@@ -1903,6 +1909,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=820"></script>
+  <script src="app.js?v=821"></script>
 </body>
 </html>
