@@ -1,19 +1,20 @@
-# ALTER — handoff · live **v779** (2026-07-02 mega-session update; the v505 body below is historical)
+# ALTER — handoff · live **v800** (2026-07-02; the v505 body below is historical)
 
-## ⏩ PASTE TO START THE NEXT SESSION (updated 2026-07-02 night, v787)
-> Continue ALTER. **Read `alter/CLAUDE.md` first (the rules), then `_specs/FIX-LEDGER-2026-07-02.md` (the priority ledger) and `_specs/TRACKER-MATRIX.md` (David's mined tracker design — the spec for this run).** Current = **v787**. Edit only app.js/index.html/manifest.json; ship = `bash _dev/preship.sh` → commit named files → push. David tracks versions — never blame stale builds.
+## ⏩ PASTE TO START THE NEXT SESSION (updated 2026-07-02, after the tracking-core run · v800 LIVE)
+> Continue ALTER. **Read `alter/CLAUDE.md` first (the rules), then `_specs/FIX-LEDGER-2026-07-02.md` (the priority ledger — fully updated).** Current = **v800**, deployed + confirmed live. Edit only app.js/index.html/manifest.json; ship = `bash _dev/preship.sh` → commit named files → push → **watch the Pages build to green** (`gh run watch`; pushes CANCEL in-flight builds — the "phone stuck on v787" incident). David tracks versions — never blame stale builds.
 >
-> **THIS SESSION = THE TRACKING CORE RUN (David's explicit priority: "the very first step of the journey and correct tracking FIRST — then the rest"). Build, in order:**
-> 1. **C8** — the track-now picker (navTrack + journey now-node) is NOT the bento and CONTAINS EMOJIS (hard-rule violation). Replace with bentoPicker or restyle exactly to bento standard (Tabler only).
-> 2. **C9** — tracked block: never peeks below the now-line at start; elapsed timer only renders once the block has room.
-> 3. **C5+C10** — clean switch invariant: starting ANYTHING new (incl. app-offered guided flows) visibly stops the old track; past logs strictly sequential, overlaps impossible (enforce at write).
-> 4. **C7** — track→plan fusion: while tracking unplanned, one easy tap "keep going N more min" → instantly creates the forward plan block, reality+plan CONNECT (matched/wide render). Timer .commit is the seed.
-> 5. **D2** — cockpit (trackerFull): add PAUSE + restore controls/settings.
-> 6. **D3** — journey reflects live tracking: now-node shows the running activity + opens the cockpit (never re-asks); fix the dead selection-while-tracking.
-> 7. **C1** — drag a new block right up to now. (Deeper drag-into-past/split/battery = C2-C4, only if the run is going clean — device-check each step with David.)
-> Then if budget remains: **B1/B2** (toolbox+medEditor display-string RU sweep — extract FULL text-node strings, agent-translate, integrate; lesson: partial keys never match composites).
+> **DONE this session (v788→v800), all preview-verified, gesture-feel + audio playback = DEVICE-truth, awaiting David's phone pass:**
+> - **Tracking core C8·C9·C5/C10·C7·D2·D3·C1** — bento track-picker everywhere · nothing ever below the now-line (3 root causes incl. degradeCard `0||26`) · clean-switch enforced in startTimer/startTrackerNow + a no-overlap WRITE invariant in stopTimer · "Keep going" track→plan fusion (block spans timer-start→now+N, fuses wide, dock flips ON PLAN) · Pause in the off-plan cockpit + tfGear→Sound · journey now-nodes answered by any live timer + a persistent live pill → full cockpit over the journey · drag floor = now itself.
+> - **RU B1/B2 (v797·v799)** — toolbox+medEditor strings; `window.__latinAudit()` = the permanent RU-QA sweep (run it on any surface; only user data may stay Latin); date/Chapter/streak I18N_PATTERNS; /g-lastIndex translator bug fixed.
+> - **RU audio B3 (v800)** — 3 distinct voice bugs: vline now resolves composites BY HALVES (was playing EN clips); tapping schedules point+feeling PIECE clips (was total silence — un-bankable composites); `var seq` extraction gap (quick meditation never had clips). 489 clips EN+RU; every runtime string verified hash→clip.
 >
-> **Verification truth:** preview lies about gestures/scroll/rAF — say "boots clean, DEVICE-UNTESTED" for feel; re-check the 4-point timeline regression contract before each ship; David device-checks between chunks. This run is THE regression zone (rebuilt 3×) — Fable + high effort justified; batch region reads; small commits per fix-cluster.
+> **NEXT (in David's priority order):**
+> 1. **David's device pass** on all of the above (esp. drag-to-now bump, C9 first-minutes at the line, tapping/relax/quick-med audio in RU).
+> 2. **F1 — toolbox overwhelm (ledger §F):** David asked if toolbox/tools/meditation are one system (they are: beatRunner + cockpit stage + composer). Three presentation options offered in chat (one-door / your-shelf-first / triage-first) — **awaiting his pick; do NOT build until he picks.**
+> 3. **C2** — drag-into-past split + battery effect: git archaeology (find when it vanished), restore. **C3** — past-lane semantics: clarify with David live. **C4a** — plan block visually attaches to the now-line at start.
+> 4. **B5** — the drift-orb tap introduction (off at first, introduced once, toggleable).
+>
+> **Verification truth:** preview lies about gestures/scroll/rAF/audio — "boots clean, DEVICE-UNTESTED" is the only honest report for feel; re-check the 4-point timeline regression contract before each ship. New-string rule: nothing ships EN-only (run `__latinAudit()`); new SPOKEN lines = dict entry + BOTH voice batches (`_dev/gen-voice.py` + `gen-voice-ru.py`) in the same commit.
 
 ## ⚡ 2026-07-02 — the sprint + the two rebuilds (Days 1-5 shipped, R0/R1/F1 shipped)
 **Specs are the source of truth now:** `_specs/EPIC-AUDIT-GAMEPLAN-2026-07-02.md` (July-8 sister sprint) · `_specs/HANDOFF-first-day.md` (onboarding/journey day-one rebuild) · `_specs/HANDOFF-stacks-and-meditation.md` §10 (the Ritual Engine) · `_specs/POOLS-v1.md` (ritual clip texts AWAITING DAVID'S REGISTER APPROVAL before gen-voice).
