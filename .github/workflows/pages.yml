@@ -31,5 +31,13 @@ jobs:
           path: .
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true # Pages randomly drops deploys with "failed, try again later" (v816 + v820 both flaked) — retry below instead of stranding David on an old build
         with:
-          timeout: 1200000 # 20 min — the repo's voice bank makes deploys slow; never abort a queued deploy early
+          timeout: 600000
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+      - if: steps.deployment.outcome == 'failure' && steps.retry.outcome == 'failure'
+        run: exit 1 # both attempts failed → mark the run red for real
