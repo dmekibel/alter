@@ -4191,7 +4191,7 @@
         return [{ icon: "ti-circle-check", label: "Done", fn: function () { exitStage(false); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
       case "tool":
-        return [{ icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, primary: true }];
+        return [{ icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, primary: true, finish: "ghost" }]; // §12 frame: Close is an EXIT, never the big green GO — ghost door; the header's circle-X is the frame's close
       // ===== AM / PM bookend controls (David 2026-06-28): Save commits the bookend record + GENTLE gated celebrate; Close abandons (no write), ring un-corners. Added at the END so sibling-mode merges stay trivial. =====
       case "pm": // MULTI-BEAT: primary ADVANCES the beat (pmAdvance commits on the final 'close' beat); Close abandons (no write), ring un-corners
         return [{ icon: "ti-arrow-right", label: pmPrimaryLabel(), fn: pmAdvance, primary: true },
@@ -6826,29 +6826,36 @@
   }
   function toolboxStageStep(sb) { // renders the kit into #tfStageBody (the 'tool' cockpit stage). Reuses .tf-stagecard / .tf-chip material + berry palette. No new menu, no timeline touch.
     sb.innerHTML = "";
-    var head = add(sb, "div", "tf-stagecard");
-    var _tbH = add(head, "div", "tfs-h"); _tbH.innerHTML = '<i class="ti ti-briefcase"></i> Your toolbox';
-    // (the head paragraph left the room — composition law: the FOR-RIGHT-NOW card is the hero, the title is enough)
+    // §12 FRAME-FIDELITY (toolbox one-door frame): bare header row, the frame's hero-card body, 54px daily circles
+    var head = add(sb, "div"); head.style.cssText = "display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#fff2f9;padding:2px 2px 0;";
+    head.innerHTML = '<i class="ti ti-briefcase" style="color:#9a8cff"></i> Your toolbox';
+    var _hx = add(head, "button"); _hx.setAttribute("style", "margin-left:auto;width:30px;height:30px;border-radius:50%;background:#3a1430;border:2px solid #160510;color:#d2aae8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"); _hx.innerHTML = '<i class="ti ti-x" style="font-size:14px"></i>'; _hx.onclick = closeTrackerFull; // the frame's circle-X
     // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
     var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
     if (_pt) {
       var _wl2 = _isC ? ((TB_WHEN.filter(function (x) { return x.k === _pt.when; })[0] || {}).l || _pt.when) : "";
       var _why2 = _isC ? ("A 20-second reset you built" + (_wl2 ? " for when " + String(_wl2).toLowerCase() : "") + ".") : _pt.why;
       var _ti2 = _isC ? (((_pt.sigil || [])[0]) || _pt.ti || "ti-sparkles") : _pt.ti;
-      var now = add(sb, "div", "tf-stagecard"); now.style.cssText = "border-color:#ff7ab8;box-shadow:0 3px 0 #160510,0 0 16px rgba(255,122,184,.25);";
-      add(now, "div", "tfs-sub", _isC ? "FOR RIGHT NOW · YOUR TOOL" : "FOR RIGHT NOW").style.cssText = "font-size:10px;font-weight:800;letter-spacing:1.3px;color:#ff9ec9;";
-      var nt = add(now, "div"); nt.style.cssText = "display:flex;align-items:center;gap:9px;margin-top:4px;";
-      add(nt, "span").innerHTML = '<i class="ti ' + _ti2 + '" style="font-size:24px;color:#ffb3d9"></i>';
-      add(nt, "div", "tfs-h", _pt.name).style.flex = "1";
-      add(now, "div", "tfs-sub", _why2).style.cssText = "margin-top:6px;font-size:12.5px;line-height:1.42;color:#e6cfe0;";
-      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:10px;min-height:52px;font-size:15px;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
+      var now = add(sb, "div"); now.style.cssText = "border:2.5px solid #ff8fc0;border-radius:16px;padding:14px 15px;background:#2c081a;margin-top:10px;font-family:'Jost',sans-serif;"; // the frame: pink-outlined night card, NO glow
+      add(now, "div", "tfs-sub", _isC ? "FOR RIGHT NOW · YOUR TOOL" : "FOR RIGHT NOW").style.cssText = "font-size:12px;font-weight:800;letter-spacing:1.2px;color:#ff8fc0;";
+      var nt = add(now, "div"); nt.style.cssText = "display:flex;align-items:center;gap:9px;margin-top:6px;";
+      add(nt, "span").innerHTML = '<i class="ti ' + _ti2 + '" style="font-size:22px;color:#ffb3d9"></i>';
+      var _nm2 = add(nt, "div", null, _pt.name); _nm2.style.cssText = "flex:1;font-weight:800;font-size:19px;color:#fff2f9;"; // frame scale: the tool NAME is the card's voice
+      add(now, "div", "tfs-sub", _why2).style.cssText = "margin-top:5px;font-size:13.5px;line-height:1.4;color:#d6b2cb;";
+      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:11px;min-height:52px;font-size:15px;border:2.5px solid #160510;border-radius:12px;box-shadow:0 4px 0 #160510;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
     }
-    // YOUR DAILY — prebuilt tools pinned as a daily 20-second practice (the REINFORCE loop) with a done-today check (David 2026-07-01)
+    // YOUR DAILY — the frame's 54px circle shelf. Reward inversion: DONE = green ring + glow + vivid (never dimmed); pending = quiet berry (the invitation)
     var _daily = dailyTools();
     if (_daily.length) {
-      add(sb, "div", "tfs-sub", "Your daily").style.cssText = "margin-top:10px;font-weight:800;color:#ffb3d9;letter-spacing:.3px;";
-      var drow = add(sb, "div"); drow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;";
-      _daily.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var doneToday = (((S.tools || {}).last) || {})[id] === todayK(); var c = add(drow, "button", "tf-chip"); if (doneToday) c.style.opacity = ".6"; c.innerHTML = '<i class="ti ' + (doneToday ? "ti-circle-check" : T.ti) + '"></i> ' + esc(T.name) + (doneToday ? " · done" : ""); c.onclick = function () { runTool(T); }; });
+      add(sb, "div", "tfs-sub", "Your daily").style.cssText = "margin-top:12px;font-weight:800;font-size:12px;letter-spacing:1.1px;color:#b596ad;text-transform:uppercase;";
+      var drow = add(sb, "div"); drow.style.cssText = "display:flex;gap:12px;margin-top:8px;";
+      _daily.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var doneToday = (((S.tools || {}).last) || {})[id] === todayK();
+        var cell = add(drow, "div"); cell.style.cssText = "text-align:center;max-width:64px;";
+        var c = add(cell, "button"); c.setAttribute("style", "width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;" + (doneToday ? "background:#48122f;border:3px solid #28cf86;box-shadow:0 0 10px rgba(40,207,134,.3);" : "background:#2a1320;border:3px solid #4a2238;"));
+        c.innerHTML = '<i class="ti ' + T.ti + '" style="font-size:22px;color:' + (doneToday ? "#ffb3d9" : "#8a6478") + '"></i>';
+        c.onclick = function () { runTool(T); };
+        add(cell, "div", null, T.name).style.cssText = "font-size:11.5px;font-weight:700;margin-top:4px;color:" + (doneToday ? "#46e2a4" : "#9a7288") + ";overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+      });
     }
     // ONE-DOOR (F1, David's pick): everything below the daily shelf folds behind calm rows — for-right-now first, the library on request
     var _open = sb.dataset.tbopen === "1";
