@@ -1,5 +1,20 @@
 # ALTER — handoff · live **v779** (2026-07-02 mega-session update; the v505 body below is historical)
 
+## ⏩ PASTE TO START THE NEXT SESSION (updated 2026-07-02 night, v787)
+> Continue ALTER. **Read `alter/CLAUDE.md` first (the rules), then `_specs/FIX-LEDGER-2026-07-02.md` (the priority ledger) and `_specs/TRACKER-MATRIX.md` (David's mined tracker design — the spec for this run).** Current = **v787**. Edit only app.js/index.html/manifest.json; ship = `bash _dev/preship.sh` → commit named files → push. David tracks versions — never blame stale builds.
+>
+> **THIS SESSION = THE TRACKING CORE RUN (David's explicit priority: "the very first step of the journey and correct tracking FIRST — then the rest"). Build, in order:**
+> 1. **C8** — the track-now picker (navTrack + journey now-node) is NOT the bento and CONTAINS EMOJIS (hard-rule violation). Replace with bentoPicker or restyle exactly to bento standard (Tabler only).
+> 2. **C9** — tracked block: never peeks below the now-line at start; elapsed timer only renders once the block has room.
+> 3. **C5+C10** — clean switch invariant: starting ANYTHING new (incl. app-offered guided flows) visibly stops the old track; past logs strictly sequential, overlaps impossible (enforce at write).
+> 4. **C7** — track→plan fusion: while tracking unplanned, one easy tap "keep going N more min" → instantly creates the forward plan block, reality+plan CONNECT (matched/wide render). Timer .commit is the seed.
+> 5. **D2** — cockpit (trackerFull): add PAUSE + restore controls/settings.
+> 6. **D3** — journey reflects live tracking: now-node shows the running activity + opens the cockpit (never re-asks); fix the dead selection-while-tracking.
+> 7. **C1** — drag a new block right up to now. (Deeper drag-into-past/split/battery = C2-C4, only if the run is going clean — device-check each step with David.)
+> Then if budget remains: **B1/B2** (toolbox+medEditor display-string RU sweep — extract FULL text-node strings, agent-translate, integrate; lesson: partial keys never match composites).
+>
+> **Verification truth:** preview lies about gestures/scroll/rAF — say "boots clean, DEVICE-UNTESTED" for feel; re-check the 4-point timeline regression contract before each ship; David device-checks between chunks. This run is THE regression zone (rebuilt 3×) — Fable + high effort justified; batch region reads; small commits per fix-cluster.
+
 ## ⚡ 2026-07-02 — the sprint + the two rebuilds (Days 1-5 shipped, R0/R1/F1 shipped)
 **Specs are the source of truth now:** `_specs/EPIC-AUDIT-GAMEPLAN-2026-07-02.md` (July-8 sister sprint) · `_specs/HANDOFF-first-day.md` (onboarding/journey day-one rebuild) · `_specs/HANDOFF-stacks-and-meditation.md` §10 (the Ritual Engine) · `_specs/POOLS-v1.md` (ritual clip texts AWAITING DAVID'S REGISTER APPROVAL before gen-voice).
 
