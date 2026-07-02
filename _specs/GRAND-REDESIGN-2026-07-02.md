@@ -156,3 +156,8 @@ Icon containers rejected in all forms (foil circles, ink squares). Choice rows =
 **Step 2 — screens rebuilt TO THE FRAME, in order:** ① cockpit idle (geometry match pass) ② toolbox one-door ③ EDGE INSPECTOR (new) ④ quest card full layout ⑤ intro ⑥ onboarding vibe beat (the locked choice-rows) ⑦ reflection card (same rows).
 **Step 3 — THE COMPARE DISCIPLINE (the missing piece):** after each screen: preview screenshot at 390px, put side-by-side against the frame, iterate until visually equivalent BEFORE David sees it. He judges near-matches only.
 **Step 4 —** motion polish (G-items) plays on the new bodies; «Прибытие» beats use the kit.
+
+### §12 refinements (David, final)
+- **CHOICE-ROW v2 LOCKED:** unchosen outlines = SOLID (not dashed), the answer's color on its dark tinted fill. Selected = own-color stripes + INK border first + the GOLD RING OUTSIDE the ink (ring never touches the stripes: box-shadow 0 0 0 2.5px #160510, 0 0 0 5.5px #ffd24a) + bare check.
+- **THE CALM LAW (the run's governing aesthetic, David's words):** less messy on the eye, less intimidating, minimalist + LARGE + colorful + friendly, the app FULL-SCREEN. Every menu moves toward this. Concretely: one moment per screen, frame-scale type, generous air, chrome leaves the room.
+- **THE NAV QUESTION:** "no three buttons on the bottom" — the persistent 3-tab nav reads as clutter. Options for the run (decide with David on device): ① auto-hide nav (returns on edge-tap/scroll-up) ② minimal 3-dot pane indicator + swipe (tap dots → full labels, Mom-safe) ③ one floating pill. Recommend ②.
