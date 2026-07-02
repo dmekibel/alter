@@ -35,6 +35,19 @@ for pt,say in re.findall(r'pt:\s*'+STR+r'\s*,\s*say:\s*'+STR, src):
 # 7) medEditor section pools: lines: [...]  (settle/breath/body/aware/rest/bliss/play)
 for arr in re.findall(r'lines:\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, arr): add(un(s))
+# 8) THE RITUAL ENGINE (R2, 2026-07-02): RITUAL_POOLS strings + composed "Now tap X." point cues + stretchFloor/gratitudeBeat lines
+m = re.search(r'var RITUAL_POOLS = \{(.*?)\n  \};', src, re.S)
+if m:
+    for s in re.findall(STR, m.group(1)): add(un(s))
+m = re.search(r'var RITUAL_POINTS = \[([^\]]*)\]', src)
+if m:
+    for p in re.findall(STR, m.group(1)): add("Now tap " + un(p) + ".")
+# stretchFloor PH triples have a FLOAT third element (["a","b",0.3]) — extractor 4 only matches ints
+for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*,\s*[\d.]+\s*\]', src):
+    add(un(a)+", "+un(b))
+m = re.search(r'var PR_ALL = \[([^\]]*)\]', src)
+if m:
+    for s in re.findall(STR, m.group(1)): add(un(s))
 # de-dupe
 uniq=[]; seen=set()
 for l in lines:
