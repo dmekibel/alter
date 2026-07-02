@@ -5933,14 +5933,23 @@
     var _rn = railItems.length, _rf = _rn ? (railItems[0].y - 8) : 0, _rpitch = _rn > 1 ? Math.max(18, ((railItems[_rn - 1].y - 8) - _rf) / (_rn - 1)) : 18; // EVEN-distribute the rail icons across their span — pinning each to its block's y made the future (sparse, irregular times) unevenly spaced while the dense past looked even (David 2026-06-27)
     railItems.forEach(function (it, _ri) { var y = _rf + _ri * _rpitch; var chip = add(cal, "div", "railchip"); chip.style.top = y + "px"; chip.style.background = it.c; chip.style.color = it.ink; chip.innerHTML = '<i class="ti ' + it.ic + '"></i>'; if (it.open) { chip.style.pointerEvents = "auto"; chip.style.cursor = "pointer"; chip.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); }); chip.addEventListener("click", function (ev) { ev.stopPropagation(); it.open(); }); } }); // PURE even spacing: y = first + i*pitch, every gap identical (no per-block pinning, no now-dodge pile-up) — even from first chip to last across past AND future (David 2026-06-27)
   }
-  function weekGrid(L, baseK, onDay) {
+  function dayStats(dk) { var bl = (blocks(dk) || []).filter(function (b) { return b.title; }), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; }); var lg = (logs(dk) || []).length; return { planned: bl.length, done: done, tracked: lg, ratio: bl.length ? done / bl.length : 0, perfect: bl.length > 0 && done >= bl.length, active: lg > 0 || done > 0 }; } // the crown-calendar's read of a day (GRAND BUILD C)
+  function dayOnFire(dk) { return dayStats(dk).active && dayStats(keyAdd(dk, -1)).active; } // part of a streak run = this day AND yesterday lived
+  function weekGrid(L, baseK, onDay) { // GRAND BUILD C: the bridge zoom — 7 columns of the user's REAL blocks in the day view's own colors; crowns above perfect days, fire between streak days (approved mock)
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
     var d0 = startOfWeek(baseK), row = add(L, "div", "weekrow");
     for (var i = 0; i < 7; i++) { (function (dk) {
-      var col = add(row, "div", "wkcol" + (dk === todayK() ? " today" : "")), d = kd(dk);
+      var st0 = dayStats(dk), col = add(row, "div", "wkcol" + (dk === todayK() ? " today" : "") + (st0.perfect ? " crowned" : "")), d = kd(dk);
+      if (st0.perfect) { var cr = add(col, "i", "ti ti-crown wk-crown"); }
       add(col, "div", "wkh", ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()] + " " + d.getDate());
       var strip = add(col, "div", "wkstrip");
-      blocks(dk).forEach(function (b) { var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%"; bb.style.background = st === "ok" ? "#46e2a4" : st === "miss" ? "#5e2f49" : (b.color || "#ff5fa0"); });
+      blocks(dk).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2.4, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), dom = domainOf(b), D = DOM[dom] || DOM.focus, bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%";
+        if (st === "ok") { bb.style.background = D.c; bb.style.boxShadow = "0 0 5px " + D.c + "66"; } // lived = its own bright colour (solid — small cells never shrink the stripe gauge)
+        else if (st === "miss") { bb.style.background = "transparent"; bb.style.border = "1.5px dashed " + mixHex(D.c, "#160510", 0.35); } // ghost = the day view's missed language
+        else { bb.style.background = mixHex(D.c, "#160510", 0.62); } // upcoming = matte
+      });
+      (logs(dk) || []).forEach(function (e2) { var ls = hm(e2.time), y2 = Math.max(0, (ls - 360) / (18 * 60) * 100), h2 = Math.max(1.6, (e2.mins || 15) / (18 * 60) * 100), dm = domainOf(e2), DD = DOM[dm] || DOM.focus, rb = add(strip, "div", "wkb real"); rb.style.top = y2 + "%"; rb.style.height = h2 + "%"; rb.style.background = dm === "drift" ? mixHex(DD.c, "#160510", 0.4) : mixHex(DD.c, "#160510", 0.2); }); // the REAL lane as a thin right-side ribbon — reality visible at week zoom
+      if (dayOnFire(dk)) { var fl = add(col, "i", "ti ti-flame wk-fire"); }
       col.onclick = function () { onDay(dk); };
     })(keyAdd(d0, i)); }
   }
@@ -5950,9 +5959,14 @@
     ["S", "M", "T", "W", "T", "F", "S"].forEach(function (w) { add(grid, "div", "mowh", w); });
     for (var p = 0; p < startDow; p++) add(grid, "div", "mocell empty");
     for (var day = 1; day <= dim; day++) { (function (dk, day) {
-      var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "")); add(cell, "div", "mod", "" + day);
-      var bl = blocks(dk), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; });
-      if (bl.length) { var d2 = add(cell, "div", "modot"), sc = done / bl.length; d2.style.background = sc >= 1 ? "#46e2a4" : sc > 0 ? "#ffc24a" : "#5e2f49"; }
+      var st1 = dayStats(dk), fut = dk > todayK();
+      var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "") + (st1.perfect ? " crowned" : "") + (fut ? " fut" : "")); add(cell, "div", "mod", "" + day);
+      if (!fut && (st1.active || st1.planned)) { // GRAND BUILD C — the crown calendar: cells speak the battery language (quiet / shining by match-rate / crowned perfect / fire on runs). Solid tints — the stripe gauge never shrinks.
+        var glow = st1.perfect ? 1 : Math.max(st1.active ? 0.35 : 0.15, st1.ratio);
+        cell.style.background = mixHex("#d04f8f", "#241328", 1 - glow * 0.8);
+        if (st1.perfect) { cell.style.borderColor = "#ffd24a"; var mc = add(cell, "i", "ti ti-crown mo-crown"); }
+        if (dayOnFire(dk)) { var mf = add(cell, "i", "ti ti-flame mo-fire"); }
+      }
       cell.onclick = function () { onDay(dk); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
   }
