@@ -1162,6 +1162,7 @@
   });
   // F1 Five Stones strings (David 2026-07-02)
   Object.assign(I18N.ru, {
+    "Keep going": "Продолжить", // C7 track→plan fusion button (B4 rule: new strings ship with their dict entry)
     "What are you doing right now?": "Что ты делаешь прямо сейчас?",
     "Anything real counts. Track one thing — I'll hold it.": "Считается всё настоящее. Отметь одно дело — я сохраню.",
     "Tracked — that's the whole game, and you just played it.": "Отмечено — в этом вся игра, и ты уже сыграл(а).",
@@ -2072,7 +2073,7 @@
     reflow(k); save(); renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull();
     toast(added.length ? 'added ' + added.length + ' fundamental' + (added.length > 1 ? 's' : '') + ': ' + added.join(", ") : "fundamentals already covered");
   }
-  function durationSheet(label, cb) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); [15, 30, 45, 60, 90, 120].forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
+  function durationSheet(label, cb, chips) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); (chips || [15, 30, 45, 60, 90, 120]).forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
   // ---- GOALS pillar (§16, mockups 009/010): capture → decompose (guided, manual = free) → schedule steps down into the day-calendar; active goals pull into planning ----
   // §19 Tier-1 (always-on, $0): first-principles decomposition TEMPLATES — the free floor that turns any goal into steps WITHOUT a key. The brain (Tier-2/paid) tailors these later.
   var DECOMP_TEMPLATES = [
@@ -2846,6 +2847,7 @@
       if (_info) { _info.style.touchAction = "none"; _info.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // TAP or DRAG-UP the dock body → expand via the shared-element morph (tap-to-open restored — David 2026-06-28)
       if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // tap or drag the dock handle UP → expand (morph)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
+      var _tgr = el("tfGear"); if (_tgr) _tgr.onclick = function (e) { e.stopPropagation(); try { openVolumePanel(); } catch (e2) {} }; // D2: cockpit settings = the Sound panel (the one setting you want mid-track)
       var _bd = el("tfBackdrop"); if (_bd) _bd.onclick = function () { closeTrackerFull(); }; // tap the calendar peek above the sheet → close
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
       var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable,textarea,input,[contenteditable],#tfStageBody")) return; tfDrag(e, false); }); } // CKPT-3: also bail on stage inputs/scroll so a textarea tap or stage scroll isn't eaten by tfDrag(down) (the iOS-keyboard rule) // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
@@ -3920,6 +3922,18 @@
   function tfReplan() { planBreak(tfHasPlan() ? "Replan from now — what, for how long?" : "Plan now — what, for how long?"); } // pick an activity (single tap) → pick minutes → it owns now→future + starts tracking
   function tfPickTrack(title) { bentoPicker({ title: title || "Switch to?", onPick: function (x) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); } }); } // single-tap: tap an activity = start tracking it now (no second Play tap, no plan change)
   function tfCreatePlan() { bentoPicker({ title: "Plan what?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false }; blocks(k).push(nb); reflow(k); save(); renderToday(); renderTrackerFull(); toast("📅 planned " + esc(x.title) + " · " + dur(mins)); }); } }); } // NO-PLAN "Create plan": pick activity → choose minutes → a FUTURE plan block (does NOT start tracking; you tap Start when ready) — David 2026-06-27
+  function tfKeepGoing() { // C7 TRACK→PLAN FUSION (David on device, v785): while tracking unplanned, one easy tap — "I'll keep doing this N more minutes" — and reality becomes a plan INSTANTLY: a block owning now→now+N with the live timer's identity. The straddle render then fuses live track + plan into the WIDE matched bar as the line advances. "The second you decide how long, it becomes a plan."
+    var run = activeTimers(), t = run[run.length - 1]; if (!t) return;
+    durationSheet(t.title || "Keep going", function (mins) {
+      var k = todayK(), now = logicalNowMin(), dom = domainOf(t);
+      blocks(k).forEach(function (b) { if (!b.title || b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); }); // replan semantics (matrix 2d): the new plan owns now→future — a straddling block keeps only its past ghost half
+      var d0 = new Date(t.start), sm = d0.getHours() * 60 + d0.getMinutes(); if (sm < DAYSTART) sm += 1440; sm = Math.min(sm, now); // the block spans FROM THE TIMER'S START → now+N: reality and plan become ONE linked thing (the wide matched bar covers the whole lived stretch, the dock reads ON PLAN instantly — no orphaned pre-tap sliver, no boundary-minute lag)
+      blocks(k).push({ id: uid(), time: pad(Math.floor((sm % 1440) / 60)) + ":" + pad(sm % 60), mins: (now - sm) + mins, title: t.title, prio: 2, color: t.color || (DOM[dom] || DOM.focus).c, catK: t.catK || null, domain: dom, done: false });
+      t.commit = Math.round((Date.now() - t.start) / 60000) + mins; t._commitHit = false; // the 1s loop's "done — tap to claim" fires when the committed stretch elapses
+      reflow(k); save(); renderLiveTracker(); renderToday(); renderTrackerFull();
+      toast("✦ planned — yours till " + fmt((now + mins) % 1440));
+    }, [5, 10, 15, 30, 60, 120]); // keep-going asks in small honest steps — "10 more minutes" is the canonical tap
+  }
   function tfClaim() { var cb = claimableBlock(); if (!cb) { S._claimDismissed = true; renderTrackerFull(); return; } // collect the gap as a real log, reward it, then keep tracking the same activity forward (David 2026-06-27)
     var b = cb.block, dom = domainOf(b), D = DOM[dom] || DOM.focus, gapMin = Math.max(1, logicalNowMin() - cb.gapStartMin), sd = new Date(); sd.setHours(0, 0, 0, 0); sd = new Date(sd.getTime() + cb.gapStartMin * 60000);
     logs(todayK()).push({ id: uid(), time: pad(sd.getHours()) + ":" + pad(sd.getMinutes()), title: b.title, mins: gapMin, catK: b.catK, color: b.color || D.c, habitId: b.habitId || null }); // the welcome-back WRITE-PATH: heal the gap
@@ -3984,10 +3998,15 @@
       case "am":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }];
-      default: { // OFF-PLAN: no nonsensical "back on plan" — CREATE a plan (none yet) or REPLAN (change the one you have); both pick activity + minutes (David 2026-06-27)
-        var first = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan, primary: true }
-                                : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan, primary: true };
-        return [first, { icon: "ti-player-stop", label: "Stop", fn: tfDone }]; // Switch removed — the title pill is the switch (David 2026-06-27)
+      default: { // OFF-PLAN while tracking (David 2026-07-02, C7+D2): the fusion tap LEADS — "Keep going N more minutes" turns the live track into a plan in one move. Pause is table-stakes (it only existed on-plan — that's why it was never seen). Replan/Create + Stop stay. Drift keeps Replan primary (planning-the-drift makes no sense — the way back leads).
+        var _dr = false; try { _dr = !!trackerState().drift; } catch (e) {}
+        var mk = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan } : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan };
+        if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true },
+                         { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
+                         { icon: "ti-player-stop", label: "Stop", fn: tfDone }];
+        return [{ icon: "ti-clock-plus", label: "Keep going", fn: tfKeepGoing, primary: true }, mk,
+                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
+                { icon: "ti-player-stop", label: "Stop", fn: tfDone }]; // Switch stays retired — the title pill is the switch (David 2026-06-27)
       }
     }
   }
