@@ -1165,6 +1165,8 @@
   // F1 Five Stones strings (David 2026-07-02)
   Object.assign(I18N.ru, {
     "Keep going": "Продолжить", // C7 track→plan fusion button (B4 rule: new strings ship with their dict entry)
+    "Make a plan": "Создать план", // G12 rename (v801 device pass)
+    "Switch activity": "Сменить занятие",
     "What are you doing right now?": "Что ты делаешь прямо сейчас?",
     "Anything real counts. Track one thing — I'll hold it.": "Считается всё настоящее. Отметь одно дело — я сохраню.",
     "Tracked — that's the whole game, and you just played it.": "Отмечено — в этом вся игра, и ты уже сыграл(а).",
@@ -2175,7 +2177,7 @@
   function liveSpan(t) { return '<span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span>'; } // ticks every second via the 1s loop (elapsedStr = m:ss)
   function activeTimers() { return (S.timers || []).filter(function (t) { return (t.dayK || key(new Date(t.start))) === todayK(); }); }
   // SWITCH task = stop the current one (logs it) then start the new one — single current activity (David: switching is a real function)
-  function startOrSwitch() { var run = activeTimers(), pr = []; try { pr = avoidedActs(); } catch (e) {} bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", priority: pr, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} } }); } // single-tap: tap an activity = start it (one activity at a time; no multi-select confirm step) — David 2026-06-27. C8/D3 (2026-07-02): + the "been meaning to…" row, + redraw the journey when picked from there so the now-node becomes the cockpit (the old dead-selection).
+  function startOrSwitch() { var run = activeTimers(), pr = []; try { pr = avoidedActs(); } catch (e) {} bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", priority: pr, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } }); } // single-tap: tap an activity = start it (one activity at a time; no multi-select confirm step) — David 2026-06-27. C8/D3 (2026-07-02): + the "been meaning to…" row, + redraw the journey when picked from there so the now-node becomes the cockpit. G4 (David on device, v801): NO auto-scroll on that redraw — picking must not yank the trail to the next node.
   // ALWAYS OFFER NEXT (§23/§15): the earliest still-open planned block (upcoming or in-progress, not done/missed) — getting "back on plan" is one tap
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
@@ -2202,7 +2204,7 @@
     reflow(k); save(); renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull();
     toast(added.length ? 'added ' + added.length + ' fundamental' + (added.length > 1 ? 's' : '') + ': ' + added.join(", ") : "fundamentals already covered");
   }
-  function durationSheet(label, cb, chips) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); (chips || [15, 30, 45, 60, 90, 120]).forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); }
+  function durationSheet(label, cb, chips, extra) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); (chips || [15, 30, 45, 60, 90, 120]).forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); if (extra) { var xr = add(card, "button", "dur-chip"); xr.style.cssText = "width:100%;margin-top:8px;"; xr.innerHTML = '<i class="ti ' + (extra.icon || "ti-arrows-shuffle") + '"></i> ' + esc(extra.label); xr.onclick = function () { ov.remove(); extra.fn(); }; } var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); } // extra = one secondary action inside the sheet (G12: "Switch activity" lives in the make-plan menu)
   // ---- GOALS pillar (§16, mockups 009/010): capture → decompose (guided, manual = free) → schedule steps down into the day-calendar; active goals pull into planning ----
   // §19 Tier-1 (always-on, $0): first-principles decomposition TEMPLATES — the free floor that turns any goal into steps WITHOUT a key. The brain (Tier-2/paid) tailors these later.
   var DECOMP_TEMPLATES = [
@@ -2960,7 +2962,7 @@
       var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), on = false;
       if (!drift) blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom) on = true; });
       // FOLDED BUTTON = a MINI of the big ring (David 2026-06-28): a small STRIPED activity circle (same texture/colour as #tfTile) wearing the activity icon; a thin GREEN rim when on-plan = the mini reward band. It morphs into #tfRing on open. (Tapping it still stops the timer.)
-      if (st) { st.innerHTML = tiIcon(t); st.style.setProperty("background", tfStripe(D.c), "important"); st.style.setProperty("color", D.ink || "#160510", "important"); st.style.setProperty("--ldrim", on ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); }
+      if (st) { st.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; st.style.setProperty("background", tfStripe(D.c), "important"); st.style.setProperty("color", D.ink || "#160510", "important"); st.style.setProperty("--ldrim", on ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); } // G9 (David on device, v801): while tracking, the circle SHOWS pause so you know you can press it — and pressing it PAUSES (tfStartBreak), it no longer hard-stops; Stop lives in the seg row
       var badge = on ? '<span style="font-size:8px;font-weight:700;color:' + D.ink + ';background:' + D.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">ON PLAN</span>' : (drift ? '<span style="font-size:8px;font-weight:700;color:#ece6f2;background:' + DOM.drift.c + ';border:1.5px solid #160510;border-radius:9px;padding:1px 6px">DRIFT</span>' : '');
       if (ad) ad.innerHTML = tiIcon(t) + ' ' + esc(t.title || "Tracking") + ' ' + badge;
       var driftMin = Math.floor((Date.now() - t.start) / 60000), nudge = !on && driftMin >= 10; // off-plan (drift or no covering block) for 10+ min → a gentle "back?" offer (David 2026-06-27)
@@ -2969,7 +2971,7 @@
     }
     renderDockSeg(); // the folded seg row MIRRORS the expanded tracker's secondary controls (same shared matrix) — David 2026-06-28
     if (!dk._wired) { dk._wired = 1;
-      el("ldStop").onclick = function () { if (S.brk) { tfResumeBreak(); return; } var r = activeTimers(); if (r.length) { stopTimer(r[r.length - 1].id); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // on a break → resume the goal; else Play = start the plan / Stop = stop — David 2026-06-26
+      el("ldStop").onclick = function () { if (S.brk) { tfResumeBreak(); return; } var r = activeTimers(); if (r.length) { tfStartBreak(); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // on a break → resume the goal; tracking → the circle PAUSES (G9, David on device v801 — was a hard stop); idle → Play starts the plan / the bento
       el("ldSw").onclick = function () { startOrSwitch(); };
       var _info = dk.querySelector(".ld-info"), _grab = dk.querySelector(".ld-grab"), _sub = el("ldSub"); // tap the dock body/handle → expand to the full RING tracker (David 2026-06-27)
       if (_sub) { _sub.onclick = function (e) { if (!_sub.classList.contains("ld-nudge")) return; e.stopPropagation(); var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else planBreak(); }; } // nudge sub-line tap = get back on plan (1-tap), else fall through to the info-tap (David 2026-06-27)
@@ -3203,7 +3205,7 @@
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '🔥 <b>×' + streak + '</b> · ⏱ <b>' + dur(tfDomMinsToday(null)) + '</b>';
-      if (tile) { tile.style.background = tfStripe(ND.c); tile.style.filter = "saturate(.5) brightness(.78)"; tile.innerHTML = '<i class="ti ' + (nb ? tiClass(nb) : "ti-clock") + '"></i>'; }
+      if (tile) { tile.style.background = nb ? ND.c : "#ff5fa8"; tile.style.color = nb ? ND.ink : "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // G10 (David on device, v801): idle expanded = the SAME play button as the folded dock (activity-coloured / pink), not a dimmed striped tile with the domain icon ("black button with white brain")
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
       return;
@@ -4061,7 +4063,7 @@
       t.commit = Math.round((Date.now() - t.start) / 60000) + mins; t._commitHit = false; // the 1s loop's "done — tap to claim" fires when the committed stretch elapses
       reflow(k); save(); renderLiveTracker(); renderToday(); renderTrackerFull();
       toast("✦ planned — yours till " + fmt((now + mins) % 1440));
-    }, [5, 10, 15, 30, 60, 120]); // keep-going asks in small honest steps — "10 more minutes" is the canonical tap
+    }, [5, 10, 15, 30, 60, 120], { icon: "ti-arrows-shuffle", label: "Switch activity", fn: function () { tfPickTrack("Switch to?"); } }); // G12 (David on device, v801): the button reads "Make a plan" — it offers a TIME for the CURRENT activity (never a new picker); switching activities is the one secondary option inside this same menu
   }
   function tfClaim() { var cb = claimableBlock(); if (!cb) { S._claimDismissed = true; renderTrackerFull(); return; } // collect the gap as a real log, reward it, then keep tracking the same activity forward (David 2026-06-27)
     var b = cb.block, dom = domainOf(b), D = DOM[dom] || DOM.focus, gapMin = Math.max(1, logicalNowMin() - cb.gapStartMin), sd = new Date(); sd.setHours(0, 0, 0, 0); sd = new Date(sd.getTime() + cb.gapStartMin * 60000);
@@ -4133,9 +4135,9 @@
         if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true },
                          { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
                          { icon: "ti-player-stop", label: "Stop", fn: tfDone }];
-        return [{ icon: "ti-clock-plus", label: "Keep going", fn: tfKeepGoing, primary: true }, mk,
+        return [{ icon: "ti-calendar-plus", label: "Make a plan", fn: tfKeepGoing, primary: true },
                 { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
-                { icon: "ti-player-stop", label: "Stop", fn: tfDone }]; // Switch stays retired — the title pill is the switch (David 2026-06-27)
+                { icon: "ti-player-stop", label: "Stop", fn: tfDone }]; // G12 (David on device, v801): "Keep going" read wrong — it's MAKE A PLAN (a time for what you're already doing; switch-activity lives inside its menu). The separate Replan/Create button folded in.
       }
     }
   }
@@ -5737,7 +5739,7 @@
         var sy0 = ev.clientY, sx0 = ev.clientX, lastY = ev.clientY, sm0 = hm(b.time), moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, ct0 = card.querySelector(".ct"), dragMin = sm0, snapped = false, _bumpedNow = false;
         var _bpast = blockPast(k, b), _freeDrag = _bpast && showNow, _calEl = card.closest(".cal"); function overReal(cx) { if (!_calEl) return false; var r = _calEl.getBoundingClientRect(); return cx > r.left + r.width * 0.5; } // past + two lanes → the bubble can cross into the real (right) lane
         var _bs = sm0, _be = sm0 + (b.mins || 30), _onNow = showNow && k === todayK() && _bs < now && _be > now, _isPast = showNow && k === todayK() && _be <= now; // straddling-NOW = the live block (stays put); fully-past = reorderable like the future (David 2026-06-26: completed blocks must move up/down again)
-        var _started = _onNow, _floor = (showNow && k === todayK() && !_isPast) ? Math.min(sm0, now) : 0, _ceil = _isPast ? Math.floor(now / 15) * 15 : 1740; // ONLY the live straddling block is frozen now; future blocks floor at NOW ITSELF (C1, David 2026-07-02: a new block must be pullable right up to the present — the old ceil(now/15) stopped it up to 14 min short); a past block can reorder freely but stops at NOW (ceiling) so it can't slide into the future. min(sm0,…) keeps a block already inside the gap always draggable later. (regression contract #2 intact: the floor IS now — the start can never cross into the past.)
+        var _started = _onNow, _floor = (showNow && k === todayK() && !_isPast) ? Math.min(sm0, now) : 0, _ceil = 1740; // ONLY the live straddling block is frozen now; future blocks floor at NOW ITSELF (C1, David 2026-07-02: pullable right up to the present). G3 (David on device, v801): a PAST plan block may slide DOWN across now into the future — moving the past forward = replanning it (the old now-ceiling blocked it); reality-lane LOGS stay clamped to the past (the REAL lane is blank below the now-line — hard rule). min(sm0,…) keeps a block already inside the gap always draggable later. (regression contract #2 intact: the floor IS now — a future block's start can never cross into the past.)
         if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu" || _started || _pinching) return; picked = true; holdT = null; card.classList.add("lift"); card.classList.add("dragging"); card._dragBlock = function (ev) { ev.preventDefault(); }; document.addEventListener("touchmove", card._dragBlock, { passive: false }); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }, _bpast ? 460 : 280); // long-press → DRAG mode: block native scroll so the vertical drag moves the block instead of scrolling it (David 2026-06-27)
         function clean() { if (holdT) { clearTimeout(holdT); holdT = null; } if (card._dragBlock) { document.removeEventListener("touchmove", card._dragBlock, { passive: false }); card._dragBlock = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); hideTrash(); }
         function mv2(e) {
@@ -6070,7 +6072,7 @@
     var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
     var body = add(card, "div", "bento-body");
     function close() { ov.remove(); }
-    xb.onclick = close;
+    xb.onclick = function () { close(); if (opts.onCancel) opts.onCancel(); }; // G2 (David on device, v801): the X must fire onCancel too — closing via X after tap-empty-slot was leaving the empty "tap to choose" stub behind (only the backdrop tap cleaned it)
     ov.addEventListener("click", function (e) { if (e.target === ov) { close(); if (opts.onCancel) opts.onCancel(); } });
     function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } }
     function actChip(a, container, big, soft) {

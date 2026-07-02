@@ -34,6 +34,23 @@
 ## PRIORITY ORDER (DAVID, 2026-07-02 device session): "figure out the very first step of the journey and for it to work correctly and for it to track correctly what you're doing — THEN the rest of the journey and the onboarding."
 **→ THE TRACKING CORE RUN comes first: C8 (picker) + C9 (block visuals) + C5/C10 (clean switch, no overlaps) + C7 (track→plan fusion) + C1 (drag-to-now) + D2 (cockpit pause/controls) + D3 (journey knows you're tracking) — driven by TRACKER-MATRIX.md. Then B (total Russian). Then the rest of C, then the superfood cluster.**
 
+## G. DEVICE PASS (David, on device v800/801 — voice dump, all items captured)
+- [x] G2 (v802) **Cancel leaves no empty bubble:** bentoPicker's X now fires onCancel (only the backdrop tap did) — the "tap to choose" stub is removed on any dismissal.
+- [x] G3 (v802) **Past → future drag:** a past PLAN block can slide down across now into the future (move-forward = replan; also frees the path to the trash). Reality-lane logs stay clamped to the past (REAL lane blank below the now-line — hard rule).
+- [x] G4 (v802) **No auto-scroll after picking in the journey** — the trail redraws in place; it no longer yanks up to the next node ("who are you today").
+- [x] G9 (v802) **Dock circle = PAUSE while tracking** (icon + action; was a hard stop). Stop stays in the seg row. Break-resume unchanged.
+- [x] G10 (v802) **Idle expanded ring = the same pink/activity-colored PLAY** as the folded dock (was a dimmed striped tile with the domain icon — "black button with white brain").
+- [x] G12 (v802) **"Keep going" → "Make a plan" (Создать план):** offers a TIME for the current activity; "Switch activity" is the one secondary option inside that same sheet; the separate Replan/Create button folded in.
+- [ ] G1 **Zoom-in anchors to the present:** pinch-zooming in from far out should target the now-line, not wherever your fingers are. (gesture zone — motion run)
+- [ ] G5 **Journey battery concept:** done nodes = BRIGHT/special (never "crossed off"), future = grey/muted; completing a node = a visible brighten + points moment. (motion run)
+- [ ] G6 **Points fly-up animation:** the "+N" should fly from where it popped to the coin counter top-of-screen — quality animation, the gamification moment. (motion run)
+- [ ] G7 **Armed play affordance on tiny bubbles:** only render when the bubble can fit it; below that, a blinking record-style dot; too-small = nothing. (motion run)
+- [ ] G8 **Live bubble top-half glow** (activity colour) so tracking FEELS alive at every zoom — never leaking below the now-line. (motion run)
+- [ ] G11 **Cockpit idle flow (the play-first loop):** play → pick activity → pick time (= plan+track, full points); "skip time" = unplanned with a fewer-points warning; entries for "plan day" / "track + plan next". The app always encourages tracking. (design+build, next run — extends F1)
+- [ ] G13 **Zoom label handoff:** nowread ↔ on-bubble text must crossfade/fold seamlessly — no hard cut, no bounce. (motion run)
+- [ ] G14 **Right-side icon rail restore** (the smooth-animation version we spoke about — was retired for on-bubble icons; David wants it back). (motion run)
+- **→ G5+G6+G7+G8+G13+G14+G1 = THE MOTION RUN (one dedicated session against the timeline regression contract; Phases 2-3 of the motion system fold in here).**
+
 ## F. DESIGN QUESTIONS (David, on device v796)
 - [ ] F1 **"The toolbox looks a bit overwhelming."** Architecture answer: yes, it IS one system (toolbox stage + tools + guided meditation all run on beatRunner + the cockpit stage + the session composer). The overwhelm is a presentation problem — options offered in chat 2026-07-02 (progressive door / for-right-now-first / daily-first), awaiting David's pick. No build until he picks.
 
