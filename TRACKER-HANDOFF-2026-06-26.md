@@ -1,4 +1,20 @@
-# ALTER — handoff · live **v505**
+# ALTER — handoff · live **v779** (2026-07-02 mega-session update; the v505 body below is historical)
+
+## ⚡ 2026-07-02 — the sprint + the two rebuilds (Days 1-5 shipped, R0/R1/F1 shipped)
+**Specs are the source of truth now:** `_specs/EPIC-AUDIT-GAMEPLAN-2026-07-02.md` (July-8 sister sprint) · `_specs/HANDOFF-first-day.md` (onboarding/journey day-one rebuild) · `_specs/HANDOFF-stacks-and-meditation.md` §10 (the Ritual Engine) · `_specs/POOLS-v1.md` (ritual clip texts AWAITING DAVID'S REGISTER APPROVAL before gen-voice).
+
+**Shipped today (v770→v779):**
+- Sprint Day 1 (stability floor, 12 fixes) · Days 2-3 (6-beat 90-sec onboarding: pact/task/coin/seed; garden seed→grow; courage-gate killed) · Day 4 (simpleMode hides planner; track-before-plan focal node; nodeCap finally applied; gap-tier return; commit-wall unlocked + always-X; timers self-complete gold) · Day 5 (telemetry: opens/day ledger + Settings "Send a snapshot" share-export + day-3/7 nudge; RU strings for all new builds).
+- R0+F0: gauge-routed open (week+today mood, once/day) → low routes to "Got 5 minutes?" → 5-min micro-stack (stretch→breathe→settle→meditate→spoken-gratitude) with pre/post 0-10 → S.tools.gauge efficacy ledger.
+- R1: composeRitual() grammar×channel engine + "Morning charge"/"Evening peace" (tapping ladder, drift-tap on, pre/post gauge) — v0 placeholder lines, ~2:36 until R2 clips exist.
+- F1: the Five Stones first day (DO/TELL/PROPOSE/SEE/CLOSE) for brand-new saves — TELL/CLOSE write the bookends silently; PROPOSE scales 1-3 items by energy; finale = Sage recites what it learned; hatches into the adaptive trail.
+
+**DEVICE-UNTESTED (confirm on the phone, in order):** ① gauge → relief door → full micro-stack audio (breathwork cold-cache fallback + stack chaining) ② Morning charge end-to-end incl. natural-finish → post-gauge (+ the Day-6 screen-lock/visibilitychange test) ③ Five Stones touch feel (fdSheet inputs, propose card) ④ the 4-point timeline regression contract (untouched by these builds but re-check per constitution) ⑤ share-snapshot on iOS Safari (Web Share file path).
+
+**Open gates for David:** POOLS-v1.md register approval → gen-voice batch → rituals get their voice · sister seed JSON blanks (`_specs/sister-seed-profile-TEMPLATE.json`) · mic blow-out permission decision (candle, R3) · Jul 6 Day-5 leftovers: the ~120-entry journey-copy RU backlog (agent-drafted, pending integration) + old tapping-tool voice extractor.
+
+---
+*(historical v505 handoff follows)*
 
 > **Read `CLAUDE.md` first** (it's the rules — ship loop, "synthetic tests lie about gestures," the regression contract, edit `app.js`/`index.html` not the generated `server.js`). This handoff is just **current state + the open ledger**.
 
