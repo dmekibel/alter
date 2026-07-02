@@ -8,9 +8,9 @@
 - [x] A3 (v786) **Composite-string RU misses David caught on device**: "Build a session — stack a few in a row", "Sharpen the mind — a 60-second focus game", "Try it — 20 seconds", TB_CATS (Body/Mind/Feel/Become/Lift/Yours), meditation when/why ("watching thoughts…"), drift-hint line. Root cause: dict keys must match the FULL text-node string — partial keys never fire.
 
 ## B. RUSSIAN COMPLETENESS (one focused run — "in Russian mode, EVERYTHING is Russian, with audio, just like English")
-- [ ] B1 Toolbox surface: ALL TOOLS registry fields (name/when/why per ~14 tools) + any remaining chrome — agent-translate + integrate. LESSON from A3: extract FULL composed text-node strings, never fragments.
-- [ ] B2 medEditor section names (Arrival/Breath/Body/Awareness/Rest/Bliss/Play) + section first-lines ("Simply let your eyes soften…") + editor chrome.
-- [ ] B3 **Meditation guides speak ENGLISH in RU mode** (Harris/Headspace/Blackstone seq lines have EN clips but no RU dict entries → vline falls through → English audio over Russian UI — worse than silence). Translate ALL spoken seq/beat/mantra/tapping/relax lines → re-run `gen-voice-ru.py` → full RU audio parity (the remaining 68 + any EN-clip-but-untranslated lines).
+- [x] B1 (v797+v799) Toolbox surface done: tool why/when bodies + chrome + build-your-own flow + TB chips (v797); card labels split into separate text nodes + thinker credits transliterated + "That's like me" chip (v799). **NEW STANDARD: `window.__latinAudit()`** — a permanent RU-mode sweep listing every visible Latin text node; run it on any surface instead of waiting for David. v799 also added date/Chapter/streak patterns + fixed a latent /g-lastIndex bug that skipped patterns on alternating nodes.
+- [x] B2 (v797) medEditor composer chrome + section names (Прибытие/Дыхание/Осознанность/Блаженство; Body/Rest/Play were already in the dict). Section first-lines are SPOKEN lines → deliberately left for B3 (B4 rule: a dict entry without its RU clip turns English audio into silence).
+- [ ] B3 **Meditation guides speak ENGLISH in RU mode** (Harris/Headspace/Blackstone seq lines have EN clips but no RU dict entries → vline falls through → English audio over Russian UI — worse than silence). Translate ALL spoken seq/beat/mantra/tapping/relax lines → re-run `gen-voice-ru.py` → full RU audio parity (the remaining 68 + any EN-clip-but-untranslated lines). **David on device v796:** Relax-all-muscles ("Settle in…") + Meditate speak English; **Tapping plays NO audio at all** (likely missing clips, not just missing dict — diagnose the vline→clip path in the same run). Includes the medEditor section first-lines (deferred from B2).
 - [ ] B4 Rule going forward: no surface ships EN-only strings; new spoken lines = dict entry + both voice batches in the same commit.
 - [ ] B5 **Drift-tap ("press the ball") introduction design** (David on device): the orb-tap hint currently always shows (and was untranslated). It should be OFF/quiet at first, INTRODUCED deliberately once (a short explainer: what it is, why noticing is the win), easy to toggle on/off. Ties into §10c beginner rescue.
 
@@ -33,6 +33,9 @@
 
 ## PRIORITY ORDER (DAVID, 2026-07-02 device session): "figure out the very first step of the journey and for it to work correctly and for it to track correctly what you're doing — THEN the rest of the journey and the onboarding."
 **→ THE TRACKING CORE RUN comes first: C8 (picker) + C9 (block visuals) + C5/C10 (clean switch, no overlaps) + C7 (track→plan fusion) + C1 (drag-to-now) + D2 (cockpit pause/controls) + D3 (journey knows you're tracking) — driven by TRACKER-MATRIX.md. Then B (total Russian). Then the rest of C, then the superfood cluster.**
+
+## F. DESIGN QUESTIONS (David, on device v796)
+- [ ] F1 **"The toolbox looks a bit overwhelming."** Architecture answer: yes, it IS one system (toolbox stage + tools + guided meditation all run on beatRunner + the cockpit stage + the session composer). The overwhelm is a presentation problem — options offered in chat 2026-07-02 (progressive door / for-right-now-first / daily-first), awaiting David's pick. No build until he picks.
 
 ## E. PROTOCOL
 - [x] E1 David tracks versions — never blame stale builds (memory: david-tracks-versions).
