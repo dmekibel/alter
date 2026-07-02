@@ -72,3 +72,35 @@ Day-tools ⋯ = icon grid. Toasts stop carrying rewards (the tier system does). 
 6. **ECONOMY RUN:** combo/crown/chest + shiny + sinks + earcons.
 7. Onboarding polish + game-pane audit (persona sprint feeds this).
 Risk law: half-shipped-verified > fully-drafted-unverified; the timeline's physics never regress for a finish.
+
+## 5 · The four pipelines (the app in tandem — no stone unturned)
+The SAME app serves all four because three routers already exist and the redesign completes them: the APPETITE DIAL (how much course/guidance), SIMPLE MODE (which panes exist), and the ENERGY DOOR (what this open is for). Onboarding sets their defaults; the app adjusts them from behavior.
+
+**ДАВИД (power user, builder):** Entry: cockpit/planner. First 60s: AM bookend → Big-3 plan → first tracked block. Daily loop: match→combo→tools mid-day→PM chest. Weekly: crown calendar review (Sunday), quest-card session for the book/ALTER. His hooks: combo/fire, quest full-arts, the month view. Settings exposed: everything incl. AI key, voice debug, export. Risk to guard: feature-owner blindness — his flows must never gate the others'.
+
+**МАМА (RU, non-technical):** Entry: journey ONLY (simpleMode clamps panes — exists). First 60s: one warm stone → «Что ты делаешь прямо сейчас?» → track → done, garden grew. Daily loop: 1 stone + 1 tool (for-right-now Дыхание) + the PM one-liner IF offered (appetite low). Her hooks: the garden's visible growth, the guardian's RU voice, streak fire she can SEE. Reflection cards: one-tap only, never typing. Settings: one gear → 5 rows, huge type. Risk: any EN string or silent audio breaks trust instantly (B-rules + __latinAudit forever).
+
+**СЕСТРА (EN, reels-addicted, needs relief not planning):** Entry: the energy door routes her open → relief = for-right-now tool INSTANT start (20s). Session budget: ≤5 min, beauty-first. Daily loop: micro-stack ritual, maybe one journey stone. Her hooks: the HOLO CARDS (the collection is designed for her), shiny variants, Instagram-grade motion. The Вернулся card exists FOR her 5-day disappearances — the return is celebrated, never guilted. Reflection cards: the vibes format (which is closest?) — she'll answer those; she will never journal. Risk: any nag, any wall of text, any guilt = uninstall.
+
+**БРАТ (skeptic, results-oriented):** Entry: tracker/stats. First 60s: track a workout, see the number. Daily loop: track → match-rate → combo chip (his competition). Weekly: the crown calendar IS his proof (data, not vibes). His hooks: fire levels per habit, Точность badges, export. Appetite: dormant/low — course nodes suppressed (exists). Reflection cards: post-block only, 3 choices, 5 seconds. Risk: anything that smells like self-help fluff before he's earned trust in the numbers.
+
+**In tandem:** one reward language readable at every literacy (color/fire/cards need no words) · total RU parity · the journey adapts node sets per profile · every guided thing skippable · the four entries (cockpit/journey/tool/stats) are the SAME world at different zooms.
+
+## 6 · Onboarding rebuilt — «Прибытие» (The Arrival, 5 beats ≈ 90s, mocked)
+All beats live in the night-world (no white sheets, no forms). Progress = 5 course-style bars.
+1. **Встреча** — the guardian appears, 3 short lines, tap-through ("я не буду тебя чинить — я буду рядом, пока ты живёшь").
+2. **Первая карточка** (worksheet DNA, mocked): «Что сейчас ближе к правде?» — 4 element-colored answer CARDS (Горю/Плыву/Застрял/Тону); the guardian responds ALOUD to the choice. Sets appetite+door defaults.
+3. **Одно дело** — «одно дело, которое сделает сегодня победой?» — stage-based chips + optional type.
+4. **Минт карты тренера** — identity word → the trainer card mints (matte, flip+sheen) — "твоя первая карта; она растёт с тобой." The binder now exists with 1 card.
+5. **Дверь** — the energy gauge routes to the right first stone (relief tool / track / plan); lands on the journey with the first stone glowing.
+Persona defaults set silently: Мама-pattern answers → simpleMode+RU checks; Сестра-pattern → relief door default; Брат-pattern → appetite low + stats surfaced.
+
+## 7 · Reflection cards — the worksheet engine (course DNA everywhere, mocked)
+THE mechanic that fuses the 300-day-course worksheets with the app: **one question + 2-4 choice chips + optional «своими словами» (never required) + skip always visible.**
+- **Sources:** the mined course beads (engine-v1.json 82), JOURNALING-101, the PM bookend Qs, chapter test-outs.
+- **Placement (frequency-capped by appetite):** journey daily node (≤1/day) · PM bookend (the core 2-3) · post-tool («что изменилось — легче/так же/не знаю») · post-first-match · chapter transitions (a 3-question worksheet = the test-out).
+- **Every answer does three things:** writes to the profile (the app LEARNS — and shows it: «заметил: 3-й раз за неделю…») · pays tier-1 · appends to the ЖУРНАЛ — the reflections log rendered as filled worksheet pages. Over months the user has WRITTEN THE COURSE WORKBOOK ABOUT THEMSELVES — that's the genius loop and the retention moat.
+- Laws: eyes-closed law untouched (never during sessions) · Mom = tap-only · skipping costs nothing · the guardian must periodically PROVE it learned (the noticing line) or the cards feel like a survey.
+
+## 8 · Settings — one gear, four rooms, trainer card on top
+Every surface's gear → the SAME You tab: **Карта тренера** (identity, evolves) → **Профиль** (word, wake/bed, language flag, appetite dial, simpleMode) → **Звук** (voice/bg/earcons/beds) → **Данные** (backup/snapshot/export/import) → **Продвинутое** (AI key, voice debug, redo onboarding, dev). Persona-filtered: Мама sees the first four rooms as 5 total rows; Давид sees everything. No setting ever lives anywhere else — one address for control.
