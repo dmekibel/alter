@@ -1,0 +1,74 @@
+# THE GRAND REDESIGN — «Один мир, пять масштабов времени, один свет»
+*2026-07-02 · David greenlit exploring a full redesign "as long as every decision makes perfect sense, keeps established functionality and the functionality we're aiming for." PROPOSAL — nothing built. Mockups in chat: journey re-grade + ignition · cockpit play-first · toolbox one-door · reward tiers + badges · Pokémon-grade element cards · crown calendar (month+week) · quest cards. Companion specs: DESIGN-AUDIT-2026-07-02.md, REWARD-LANGUAGE.md v1-v3, FIX-LEDGER §F/G/H.*
+
+## 0 · The thesis (why every decision makes sense)
+ALTER = ONE world seen at five time-scales. **NOW** (cockpit) → **DAY** (timeline) → **WEEK/MONTH** (crown calendar) → **LIFE** (journey chapters) → **FOREVER** (world/garden — where earned light accumulates as owned things).
+One physics at every scale: **matte = potential · shining = lived · the now-line = the converter.** One reward language (5 tiers, fire levels, element cards) read identically everywhere. A matched hour = a shining month-cell = a lit journey node = garden growth: the same fact at four zooms. Navigation IS zoom: the scope segment (День/Неделя/Месяц) becomes a true time-zoom; the cockpit is the innermost zoom; the journey and world are the outermost.
+
+## 1 · The invariants (what CANNOT change)
+- The 4-point timeline regression contract (continuous scroll, past-set-in-stone, tap/drag/edit, strip+pill tracking).
+- All shipped tracking-core behavior (clean switch, no-overlap writes, track→plan fusion, drag-to-now, pause, journey-live-pill).
+- The locked palette, Jost, Tabler-only, no emojis. Berry night. The now-line = brightest.
+- The soul laws: mirror-not-price, no shame mechanics, always a way out, appetite dial governs everything, eyes-closed law in tools.
+- The Guitar-Hero physics (fuse/split/ghost/battery) — the redesign AMPLIFIES it, never replaces it.
+
+## 2 · Surface by surface
+
+### NOW — cockpit + dock (mocked)
+Play-first idle: the app's main verb is the hero (pink play, 3 doors: Отследить сейчас / План+трек следующего / Спланировать день). Pick activity → pick time = plan+track (full points); skip time = unplanned + ONE gentle line (David's locked pick). Pause on the circle (shipped v802). Mode-border when a guided flow owns the stage. All #sheet flows migrate into the cockpit stage over time (the structural debt).
+
+### DAY — the timeline (the crown jewel; touch least, amplify most)
+Keeps ALL physics. Adds: reward integration (tier-2 ignition ON the block, fire chip in the dock, a subtle crown-progress pill in the header: "3/5 по плану"), the EDGE INSPECTOR for small edits (mocked — day never leaves view), zoom-in anchors to now (G1), live-bubble top glow (G8), blinking-record affordance (G7), label fold (G13), first-touch ghost-hand hints. Empty day = one warm invitation line + the plan-day door, not blank rails.
+
+### WEEK — the bridge zoom (new view, mocked)
+7 compressed day-columns of the user's REAL blocks (same colors/finishes as day view — recognition, not abstraction). Crowns above perfect days, fire between streak days, today outlined pink. Tap column = zoom into that day. Replaces the current week scope render.
+
+### MONTH — the crown calendar (new view, mocked)
+Grid of day-cells speaking the battery language: matte quiet · striped shining (intensity = match-rate) · gold-border + crown = perfect · fire marks streak runs · dashed = away days (never shame). The month's story in one glance; tap = that day. This view IS the retention engine — the GitHub-graph effect wearing ALTER's palette.
+
+### LIFE — the journey (mocked)
+Done nodes = bright trophies (shipped v803); ignition + points-fly (motion run); chapters = SEASONS: each has a banner, milestone rewards (garden cosmetics + cards), and mastering one mints its chapter card. Locked chapters = fog-of-war, not 8 identical padlocks. The wisdom-drip (education layer, separate spec discussion) rides the journey's daily nodes when built.
+
+### FOREVER — the world/game pane
+The world = where light SETTLES: the garden grows from real actions only (law kept), plus THE BINDER (badge/quest/chapter cards, element-typed finishes: ПРИЗМА/ВСПЫШКА/КОСМОС + crimson slash/gold lattice/bio-green), the trophy shelf, and spark SINKS (garden cosmetics, world buildings, trick decks — existing). Journey earns; world displays and spends.
+
+### PLAN DAY — the Big-3 staged flow (keep, polish)
+The 3-beat guided flow stays (Energy/Work/Love + identity line). Evolves: picks lay onto a live mini-timeline preview strip as matte cards (you SEE the day forming); masterpiece-day presets = one-tap hands; finish = the day fans out onto the timeline with the cascade. No new mechanics — better staging of what exists.
+
+### GOALS — quest cards (mocked)
+Each goal = a quest card: element-tinted, foil edge fills with progress, the BREAKDOWN LADDER lives on the card (steps with spark bounties; the active step glows; sub-progress pips), "Поставить сессию в день" connects a step directly into the day plan (goal→timeline = the missing link), WOOP on the card back (flip). Completion mints the full-art card with date + story. Deep breakdown = steps can nest one level (session-sized leaves only — a leaf must fit in a day block).
+
+### HABITS
+Habit rows carry their own fire level (ember→blue). Habit done-marks use tier-1/2 rewards. A habit's card exists in the binder at rank milestones (21/60 days).
+
+### TOOLBOX + PLAYERS (mocked)
+One-door (David's pick): FOR-RIGHT-NOW card (instant-start on tap, config on long-press) + daily shelf + two folded rows (Все инструменты / Собрать сессию). Players: pre-roll breath, ending silence, depth runes feed Глубина badges. Tool completion = tier-1/2; never earcons inside sessions.
+
+### BENTO
+Peek-cut rows (3rd chip half-visible = "this scrolls"), search icon top, most-used adaptive first row. No structural change — it works.
+
+### ONBOARDING
+Existing 6 beats + mints the TRAINER CARD (identity word, matte) = the binder's first card + the reason to collect. Ghost-hand gesture beats teach the timeline on first touch.
+
+### YOU TAB
+Trainer card on top (identity = a thing you own), then Profile / Sound / Data / Advanced.
+
+### MENUS/CHROME
+Day-tools ⋯ = icon grid. Toasts stop carrying rewards (the tier system does). TLM rides the flying points. Haptic grammar (4 patterns). 12px type floor + 44pt targets everywhere (Phase 1 shipped v803).
+
+## 3 · The nuanced reward economy (the full loop)
+**Currencies & permanences:** Spark (spendable) · Fire (temporal multiplier — decays only by absence, never punished) · Cards/Badges (permanent collection, element-typed, ranked, some shiny) · Crowns (calendar permanence) · Garden/world (spatial permanence).
+**Earn map (every source, tiered):** tracked minutes T1 · matches T2 (partial = near-miss line "87% — 4 мин не хватило", reward-framed) · combos T3 · perfect day T4 (crown+chest) · chapter/badge/quest completion T5 (mint) · tool/meditation completion T1-2 + depth accrual · journaling/bookends T2 · RETURN AFTER GAP = flagship T5 card (the inversion) · courage (avoided thing done) T2+Смелость progress.
+**Sinks:** garden cosmetics, world buildings, trick decks, card frames/sleeves (cosmetic only — power is never purchasable).
+**Collection design:** 6 badge families × 4 ranks, chapter cards (8), quest full-arts (unbounded — the user's real achievements), trainer card evolutions, ~1/20 shiny variants (bonus-on-top law). Unearned always visible as matte aspiration + "next mark" progress line.
+**The want-more engine (ethical):** beauty + uniqueness + story (flavor text = user's own data) + visible next-step progress — never scarcity pressure, never loss threats, never paywalls. Pokémon model, not casino model.
+
+## 4 · Build phases (each ships alone, David device-checks between)
+1. ~~Type & targets~~ (v803 SHIPPED).
+2. **MOTION RUN** (next session): tiers 1-2 (ignition, points-fly, counter-pop, TLM rides), fire-level streak chip, G-items (glow, record-dot, label fold, zoom-anchor, icon rail), reward() router.
+3. **FLOWS RUN:** cockpit play-first + toolbox one-door + edge inspector v1.
+4. **CALENDAR RUN:** week columns + month crown calendar (pure render work on existing data — blockStatus/matchedSpan feed it).
+5. **COLLECTION RUN:** S.badges + binder + trainer card + quest cards (goals rework) + mints (element treatments, gyro tilt).
+6. **ECONOMY RUN:** combo/crown/chest + shiny + sinks + earcons.
+7. Onboarding polish + game-pane audit (persona sprint feeds this).
+Risk law: half-shipped-verified > fully-drafted-unverified; the timeline's physics never regress for a finish.
