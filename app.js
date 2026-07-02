@@ -780,7 +780,7 @@
     var evening = new Date().getHours() >= 17;
     nodes.push({ key: "fd0", emoji: "▶", icon: "ti-player-play", title: "What are you doing right now?", _lead: !s0,
       line: s0 ? "Tracked — that's the whole game, and you just played it." : "Anything real counts. Track one thing — I'll hold it.",
-      color: DOM.focus.c, done: s0, act: function () { closeJourney(); nowSheet(); } });
+      color: DOM.focus.c, done: s0, act: jpTrackNow });
     nodes.push({ key: "fd1", icon: "ti-user-star", title: "Who are you today?", locked: !s0,
       line: s1 ? "Noted. Today bends around that." : "One word — and one thing that would make today a win.",
       color: "#7c3aed", done: s1, act: function () {
@@ -872,7 +872,7 @@
       if (_gDays != null && _gDays >= 3 && _gDays <= 13) {
         nodes.push({ key: "gapreturn", icon: "ti-sparkles", emoji: "✦", title: "You came back.", _lead: true,
           line: "That IS the skill. One small thing — right now.", color: DOM.focus.c, done: false,
-          act: function () { closeJourney(); nowSheet(); } });
+          act: jpTrackNow });
         return nodes;
       }
     }
@@ -912,7 +912,7 @@
     if (S.profile && S.profile.simpleMode) {
       var trackedToday = (S.sf && S.sf.actions && S.sf.actions[k] && S.sf.actions[k].length) > 0;
       nodes.push({ key: "now", emoji: "▶", title: "What are you doing right now?", line: "Track it — that's the whole game. No plan needed.",
-        color: DOM.focus.c, done: trackedToday, act: function () { closeJourney(); nowSheet(); } });
+        color: DOM.focus.c, done: trackedToday, act: jpTrackNow });
     } else {
       nodes.push({ key: "plan", emoji: "🗺️", title: "Plan your day",
         line: planned.length ? (gvName ? "Mapped toward being " + gvName + " — tap to reshape it." : "Your day's mapped — tap to reshape it.")
@@ -1670,6 +1670,7 @@
     });
   }
   var jpHabMenuKey = null, jpCommitKey = null; // which habit circle has its 3-way menu open · which circle is in the time-commitment beat (David 2026-06-28 / 2026-07-02)
+  function jpTrackNow() { if (activeTimers().length) { openTrackerFull(); return; } startOrSwitch(); } // D3 (David 2026-07-02): the now-door NEVER re-asks while something runs — it opens the cockpit (z90, rides over the journey). Idle → the bento; picking redraws the trail (startOrSwitch), so the now-node becomes the inline cockpit.
   function jpStart(n) { // START a circle: DOING/PLAN → the cockpit blooms into the time-commitment beat (commit a time = how it tracks); HABIT → its 3-way menu
     if (n.key === "plan" || n.key === "onething" || (n.key && n.key.indexOf("blk:") === 0)) { jpCommitKey = n.key; jpHabMenuKey = null; drawJourney(true); return; }
     if (n.key && n.key.indexOf("hab:") === 0) { jpHabMenuKey = n.key; drawJourney(true); return; }
@@ -1826,6 +1827,7 @@
       if (state === "cur") {
         curEl = node;
         var runT = (S.timers || []).filter(function (x) { return x.dayK === todayK() && x.title === n.title; })[0]; // a live timer for THIS activity?
+        var _rAll = activeTimers(); if (!runT && _rAll.length && (n.key === "now" || n.key === "fd0" || n.key === "gapreturn")) runT = _rAll[_rAll.length - 1]; // D3 (David 2026-07-02): a now-node is ANSWERED by whatever is live — it becomes the running activity's cockpit, it never re-asks
         bub.onclick = function () { jpStart(n); };
         if (jpCommitKey === n.key) { // THE TIME-COMMITMENT BEAT — the circle zooms into the cockpit ring + asks how long, in place (no popup). David 2026-07-02
           bub.style.display = "none";
@@ -1841,8 +1843,9 @@
         } else if (runT) { // the now IS the cockpit — expand the circle into the live ring + timer, in place
           bub.style.display = "none";
           var ckp = add(node, "div", "jp-cockpit jp-zoomin");
-          var rg = add(ckp, "div", "jp-ring"); var ds = add(rg, "div", "jp-rdisc"); ds.style.background = tfStripe(n.color); ds.innerHTML = '<i class="ti ti-player-pause"></i>'; ds.title = "tracking"; // the icon flips to a PAUSE while it's playing (David 2026-07-02)
-          add(ckp, "div", "jp-cktitle", n.title);
+          var _cc = runT.color || n.color; // D3: the cockpit wears the RUNNING activity's identity (title+colour), not the node's ask
+          var rg = add(ckp, "div", "jp-ring"); var ds = add(rg, "div", "jp-rdisc"); ds.style.background = tfStripe(_cc); ds.innerHTML = '<i class="ti ti-player-pause"></i>'; ds.title = "tracking"; // the icon flips to a PAUSE while it's playing (David 2026-07-02)
+          add(ckp, "div", "jp-cktitle", runT.title || n.title);
           var tmw = add(ckp, "div", "jp-cktimer"); tmw.innerHTML = '<span class="live-elapsed" data-tid="' + runT.id + '">' + elapsedStr(runT) + '</span>';
           var mx = add(ckp, "div", "jp-ckmatrix");
           var dn = add(mx, "button", "jp-ckbtn done"); dn.innerHTML = '<i class="ti ti-check"></i> Done'; dn.onclick = function () { stopTimer(runT.id); if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4); (blocks(todayK()) || []).forEach(function (b) { if (b.id === bid) b.done = true; }); save(); } drawJourney(true); };
@@ -1915,6 +1918,16 @@
       })(c);
     }
 
+    // D3 (David 2026-07-02): the cockpit is ALWAYS reachable in journey mode while something runs — like liveDock on the planner. When the live activity isn't the cur node's inline cockpit (e.g. the cur node is Plan/a habit), a persistent live pill floats above the nav: icon + title + elapsed, tap → the full cockpit (z90 rides over the journey).
+    (function () { var jp = el("journeyPath"); if (!jp) return; var old = el("jpLive"); if (old) old.remove();
+      var _lt = activeTimers(), _t = _lt[_lt.length - 1]; if (!_t) return;
+      if (document.querySelector(".jp-cockpit")) return; // the cur node already IS this track's cockpit — no second surface
+      var _d = DOM[domainOf(_t)] || DOM.focus;
+      var pill = add(jp, "div"); pill.id = "jpLive";
+      pill.style.cssText = "position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);z-index:12;display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:15px;background:#22091a;border:2px solid #160510;box-shadow:0 6px 18px rgba(0,0,0,.45);font-family:'Jost',sans-serif;cursor:pointer;";
+      pill.innerHTML = '<span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:' + tfStripe(_d.c) + ';color:' + (_d.ink || "#160510") + ';border:2px solid #160510;flex:none;">' + tiIcon(_t) + '</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px;color:#ffe3f1;">' + esc(_t.title || "Tracking") + '</span><span class="live-elapsed" data-tid="' + _t.id + '" style="font-weight:800;font-size:14px;color:' + _d.light + ';">' + elapsedStr(_t) + '</span><i class="ti ti-chevron-up" style="color:#b28ba6;font-size:15px;"></i>';
+      pill.onclick = function () { openTrackerFull(); };
+    })();
     if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
     // #5: fire completion bursts after layout settles (DEVICE-UNTESTED feel — the pop + float animate on the node after it scrolls into view)
     if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); } catch (e) {} }); }, 380); }
@@ -5906,7 +5919,7 @@
     var tot = 0; lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { tot += e.mins || 0; }); });
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
-  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); }
+  function renderAll() { renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
