@@ -1522,6 +1522,10 @@
   .calblk.lbl-s .csub, .calblk.lbl-s .calx, .calblk.lbl-s .grip, .calblk.lbl-s .gript, .calblk.lbl-s .foil, .calblk.lbl-s .shine, .calblk.lbl-s .ti-sparkles, .calblk.lbl-s .step-n{ display:none !important; }
   /* BIGGER TAP TARGET (David 2026-06-28): a small bubble is hard to hit, so an INVISIBLE ::after pad extends its clickable area ~9px above and below WITHOUT changing the visual size or covering neighbours' visuals (it's transparent + sits behind the icon, z-index:0). Pseudo-element clicks count as the card, so the existing pointerdown handler fires. */
   .calblk.lbl-i::after, .calblk.lbl-s::after{ content:""; position:absolute; left:-3px; right:-3px; top:-9px; bottom:-9px; z-index:0; background:transparent; }
+  /* C9a (David 2026-07-02): a YOUNG live bar must end EXACTLY at the now-line. Even with padding:0, border-box still renders the 2+2px borders past a ~0 height, the centred icon overflows (overflow:visible), and the inline "0 3px 0" drop-shadow prints below the line. Thin LIVE bars drop all three; the pink now-line stays the only edge. */
+  .calblk.live.lbl-i, .calblk.live.lbl-s{ border-top-width:0 !important; border-bottom-width:0 !important; box-shadow:none !important; }
+  .calblk.live.lbl-s .cn{ display:none !important; } /* too thin even for the icon — the now-line readout carries the label until the bar has room */
+  .calblk.lbl-i .cn-el, .calblk.lbl-s .cn-el{ display:none !important; } /* C9b: the elapsed timer appears only once the bar is tall enough for text (lbl-c and up) — no overlapping illegible lines in a sliver */
   /* SWIPE-SELECT FOCUS (David 2026-06-28): while dragging a finger across a cluster of small bubbles, the one under the finger grows slightly and its icon enlarges so you know which you're on. Calm — no neon/glow; the now-line stays the brightest thing. */
   .calblk.swfocus{ z-index:20 !important; transform:scale(1.5) !important; transform-origin:right center; box-shadow:0 4px 0 #160510, 0 8px 18px rgba(0,0,0,.5) !important; transition:transform .1s cubic-bezier(.2,.85,.3,1.3); }
   .calblk.swfocus .cn .ti{ font-size:16px !important; }
@@ -1745,6 +1749,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=788"></script>
+  <script src="app.js?v=790"></script>
 </body>
 </html>
