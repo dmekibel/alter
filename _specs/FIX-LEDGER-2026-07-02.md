@@ -57,6 +57,23 @@
 - [ ] F3 **G11 skip-time behavior — DAVID PICKED (2026-07-02): track unplanned + ONE gentle "plans earn more" line** — never blocks, never nags twice. Play → activity → time = plan+track; skip = this.
 - [x] F4 (v803) **AUDIT PHASE 1 SHIPPED — type & targets:** 12px type floor across journey/planner/dock/toolbox/bento (ON PLAN badge 8→11px; chapter-why 11px/62%→13px/78%; captions/subs/gutter numerals up), 40px+ tap targets (toolbox tabs, dock seg, week strip, calx ::after hit pad), done journey nodes = BRIGHT trophy (no dim/grayscale/strikethrough — the reward inversion), check badge anchored to the bubble, staged-cockpit clock collision fixed. Phases 2 (motion) + 3 (flows) = next dedicated sessions.
 
+## H. GRAND AUDIT — net-new mechanics (panel proposal 2026-07-02, chat has hi-fi mockups; NOTHING built)
+*Full audit appended to `_specs/DESIGN-AUDIT-2026-07-02.md` scope: every surface. Three mockups delivered in chat: journey reward re-grade + ignition/points-fly · cockpit play-first (G11 picks baked in) · toolbox one-door (F1 pick baked in).*
+- [ ] H1 Perfect-day crown on the week strip (all planned matched); week of crowns = the meta-game.
+- [ ] H2 Near-miss flash at block completion ("87% matched — 4 min short") — matchedSpan() already computes it. Reward-framing only, never shame.
+- [ ] H3 Combo multiplier: consecutive on-plan blocks chain ×2/×3 spark with a visible chip; drift resets QUIETLY (constitution: no punishment).
+- [ ] H4 Summit chest: the trail's gift trophy OPENS into the PM reflection + loot.
+- [ ] H5 Season=chapter: chapter milestones drop garden cosmetics (journey ⟷ world tie).
+- [ ] H6 Edge inspector (Blender N-panel): right-edge slide-in block editor; retires the full-screen blockEdit for small edits; day never leaves view.
+- [ ] H7 Instant-relief: FOR-RIGHT-NOW card starts its tool ON TAP; config via long-press only.
+- [ ] H8 Haptic grammar: four named patterns (start/complete/combo/close-day) replacing ad-hoc vibrates.
+- [ ] H9 Day-arc ring in the header filling toward the evening chest — the pull is toward CLOSING WELL (ethical inversion of the casino session-shape).
+- [ ] H10 Ghost-hand gesture hints: each timeline gesture taught once at first relevance, never repeated.
+- [ ] H11 Cockpit mode-border: a thin colored frame around the screen while a guided flow owns the stage ("you're inside something").
+- [ ] H12 Med player: pre-roll breath orb before the first spoken line + 20s ending silence.
+- [ ] H13 You-tab regrouped: Profile / Sound / Data / Advanced.
+- [ ] H14 TLM chip rides WITH the flying points (one moment, not two disconnected ones).
+
 ## E. PROTOCOL
 - [x] E1 David tracks versions — never blame stale builds (memory: david-tracks-versions).
 

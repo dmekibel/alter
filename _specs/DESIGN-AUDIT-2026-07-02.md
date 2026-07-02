@@ -87,3 +87,8 @@ RU runs ~15–25% longer; several EN-tight layouts (dock sub-line, badges, chips
 | **4 — Follow-up audit** | Game/garden + onboarding, on device | — | Persona readiness |
 
 *Recommended greenlight: Phase 1 next session (one clean run, minimal regression risk), Phase 2 as its own dedicated session right after.*
+
+---
+
+# GRAND AUDIT ADDENDUM (same day, panel format)
+*Five lenses: Apple/IG (structure+polish) · Duolingo (path+habit) · Epic/casino craft (reward economy w/ ethical guardrails) · Headspace (calm) · Blender (complexity). Hi-fi mockups delivered in chat (journey re-grade + ignition, cockpit play-first, toolbox one-door). Net-new mechanics = ledger §H (H1-H14). Panel consensus: concentrate energy into MOMENTS — flat most of the time, explosive at exactly the right seconds; the now-line is world-class, make the rest as legible and rewarding as it. Casino craft adopted for celebration only — no loss-aversion, no FOMO (constitution line). Structural debt #1 confirmed: the #sheet-vs-cockpit dual modal system; edge-inspector (H6) + cockpit migration retire it. Game/onboarding surfaces still need their own on-device audit session.*
