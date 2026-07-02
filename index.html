@@ -1117,6 +1117,13 @@
   #trackerFull.st-idle #tfTitle{ font-size:21px; margin-top:16px; }
   #trackerFull.st-idle .tf-verdict{ color:#b39ab0; font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; margin-top:4px; }
   #trackerFull.st-idle .tf-ctrls{ margin-top:18px; }
+  /* §12 cockpit frame — the docked time-commit sheet for the next planned block ("Глубокая работа — сколько?") */
+  #tfNextSheet{ display:none; position:absolute; left:0; right:0; bottom:0; background:#22091a; border-top:2.5px solid #160510; padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 18px); z-index:5; font-family:"Jost",sans-serif; }
+  .tns-h{ display:flex; align-items:center; gap:8px; color:#fff2f9; font-weight:800; font-size:14.5px; }
+  .tns-h i{ font-size:17px; }
+  .tns-row{ display:flex; gap:7px; margin-top:10px; }
+  .tns-foot{ color:#9a7090; font-size:12.5px; font-weight:600; margin-top:10px; text-align:center; }
+  #trackerFull.tf-nextsheet .tf-inner{ padding-bottom:150px; }
   #tlmChip{ position:fixed; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(12px); background:rgba(138,92,240,.94); color:#fff; font-size:14px; font-weight:700; padding:9px 18px; border-radius:18px; z-index:400; opacity:0; pointer-events:none; box-shadow:0 6px 22px rgba(138,92,240,.5); transition:opacity .22s ease, transform .28s cubic-bezier(.2,.9,.3,1); white-space:nowrap; }
   #tlmChip.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   #trackerFull.tf-bg{ transition:opacity .26s linear, height .4s cubic-bezier(.2,.82,.3,1); } /* the dark sheet background fades in/out; height only animates on the finger-drag fallback */
@@ -1863,6 +1870,7 @@
     <div id="tfStageBody"></div><!-- cockpit STAGE: guided-flow workspace (CKPT-1) — empty + display:none unless #trackerFull.tf-staged -->
     <div id="tfStageChips"></div><!-- TRACK-mode stage chips (CKPT-5): calm entry doors (Journal …) — hidden once a stage is active -->
     <div class="tf-ctrls" id="tfCtrls"></div>
+    <div id="tfNextSheet"></div><!-- §12 cockpit frame: the docked next-block time sheet ("Глубокая работа — сколько?") — idle-with-plan only -->
    </div>
   </div>
   <div id="tlmChip"></div><!-- B: "that's like me" identity-ping; body-level so it fires whether the cockpit is open or not -->
@@ -1895,6 +1903,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=819"></script>
+  <script src="app.js?v=820"></script>
 </body>
 </html>

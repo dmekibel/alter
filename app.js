@@ -1530,6 +1530,11 @@
     "too much of everything": "слишком много всего",
     "your pick ignites — like a matched block": "твой выбор загорается — как совпавший блок",
     "your guardian angel": "твой ангел-хранитель",
+    "Plan + track next": "План + трек следующего",
+    "next by plan:": "дальше по плану:",
+    "how long?": "сколько?",
+    "no time — just track · a plan earns more": "без времени — просто трек · с планом очков больше",
+    "15m": "15м", "30m": "30м", "1h": "1ч", "2h": "2ч",
     "Your daily": "Твоё ежедневное",
     "Something specific is loud — help me pick": "Что-то конкретное кричит — помоги выбрать",
     "Why it works ·": "Почему это работает ·",
@@ -2236,6 +2241,12 @@
   // ALWAYS OFFER NEXT (§23/§15): the earliest still-open planned block (upcoming or in-progress, not done/missed) — getting "back on plan" is one tap
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
+  function startNextNow(nb, mins) { // §12 cockpit frame (upload 07): the next planned thing starts NOW for this long — replan-forward (pull the block to the now-line, truncate any straddler) + track, one tap
+    var k = todayK(), now = logicalNowMin();
+    blocks(k).forEach(function (b) { if (b.done || b.id === nb.id) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
+    nb.time = pad(Math.floor(now / 60)) + ":" + pad(now % 60); if (mins) nb.mins = mins;
+    save(); startPlanned(nb); renderTrackerFull();
+  }
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
   function playFirst() { // G11 (flows run; David's locked picks): play -> pick activity -> pick TIME = plan+track (full points); skipping the timer stays legal — one gentle line, never a wall
     bentoPicker({ title: "What are you doing?", onPick: function (x) {
@@ -3266,7 +3277,8 @@
     var _say = el("tfSay"); if (_say) _say.textContent = bkContinuity(); // soul-layer heartbeat: the guardian speaks what it remembers, on every open
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night");
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet");
+    var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
       if (tile) { tile.style.background = tfStripe(CD.c); tile.style.filter = ""; tile.innerHTML = '<i class="ti ' + tiClass(CB) + '"></i>'; }
@@ -3292,13 +3304,20 @@
     }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = tr("What now?"); // GRAND BUILD H: the mock's composition — the QUESTION is the title; the plan is the sub-line
-      el("tfVerdict").textContent = nb ? (tr("next up:") + " " + nb.title + " · " + fmt(hm(nb.time))) : "";
+      el("tfVerdict").textContent = nb ? (tr("next by plan:") + " " + nb.title + " · " + fmt(hm(nb.time))) : "";
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
-      if (tile) { tile.style.background = nb ? ND.c : "#ff5fa8"; tile.style.color = nb ? ND.ink : "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; } // G10 (David on device, v801): idle expanded = the SAME play button as the folded dock. §12 frame: the OUTLINE triangle at 52px, not the filled glyph
+      if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb, not the next block's colour
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
+      var _sh = el("tfNextSheet");
+      if (_sh && nb) { tf.classList.add("tf-nextsheet"); _sh.style.display = "block"; _sh.innerHTML = ""; // §12 frame 07: the docked sheet — "Глубокая работа — сколько?" + duration chips = plan+track the next block NOW in one tap
+        var _shh = add(_sh, "div", "tns-h"); _shh.innerHTML = '<i class="ti ' + ND.ti + '" style="color:' + ND.c + '"></i><b>' + esc(nb.title) + '</b><span> — </span><span>how long?</span>';
+        var _shr = add(_sh, "div", "tns-row");
+        [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var ch = add(_shr, "button", "k-dur" + ((nb.mins || 30) === dd[0] ? " on" : "")); ch.textContent = dd[1]; ch.onclick = function () { startNextNow(nb, dd[0]); }; });
+        add(_sh, "div", "tns-foot", "no time — just track · a plan earns more");
+      }
       return;
     }
     if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _bend = B.start + B.mins * 60000, _rem = _bend - Date.now(), _up = _rem <= 0;
@@ -4178,13 +4197,13 @@
       case "night":
         return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull }];
-      case "idle": { // GRAND BUILD F: the mock's DOORS — hierarchy through finish variety (solid hero / striped / ghost), 54px chunky (the approved play-first frame)
+      case "idle": { // §12 COCKPIT FRAME (David's upload 07): THREE FIXED DOORS — pink Track now / striped Plan+track next / ghost Plan my day; the docked time sheet handles the next block's duration
         var n = nextPlannedBlock(todayK());
-        if (n) { var ND2 = DOM[domainOf(n)] || DOM.focus;
-          return [{ icon: "ti-player-play-filled", label: "Start", fn: function () { startPlanned(n); renderTrackerFull(); }, primary: true, finish: "solid", c: ND2.c, ink: ND2.ink },
-                  { icon: "ti-list-search", label: "Track other", fn: playFirst, finish: "striped", c: "#36b3f0", ink: "#08283c" },
-                  { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan, finish: "ghost" }]; }
-        return [{ icon: "ti-player-play-filled", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
+        if (n) {
+          return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
+                  { icon: "ti-calendar-plus", label: "Plan + track next", fn: function () { startNextNow(n); }, finish: "striped", c: "#36b3f0", ink: "#08283c" },
+                  { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "ghost" }]; }
+        return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
                 { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "striped", c: "#36b3f0", ink: "#08283c" }]; // G11 play-first: the app's main verb is the hero; picking a time = the plan (tfCreatePlan folded into playFirst)
       }
       case "break":
