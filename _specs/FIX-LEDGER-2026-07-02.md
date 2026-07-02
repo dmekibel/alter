@@ -92,3 +92,6 @@
 - [x] I-E (v808) Reflection cards (worksheet engine, 5 seed Qs, notice-on-repeat, evening trail stone + post-tool), intro globe + warm floor.
 - **REMAINING (next session, isolated surfaces):** quest-card goals render + step→day scheduling · onboarding «Прибытие» 5 beats + trainer card · You-tab regroup. All specced (GRAND-REDESIGN §2/§6/§8).
 - **ALL DEVICE-UNTESTED for feel/sound/haptics** — preview verified boot, flows, data writes, RU. David's phone decides.
+- [x] I-F (v809) VISIBLE LAYER 1: cockpit idle = the DOORS (54px, solid/striped/ghost finish hierarchy — the approved frame); journey FOG-OF-WAR (21 padlock stones → 3; distant chapters = misted banners); bigger cur-card + 52px CTA.
+- [x] I-G (v810) VISIBLE LAYER 2: goals = QUEST LADDERS on the cards (next step glows w/ bounty, one tap → placed into today); settings = four rooms + in-app flat-flag Language picker + binder row.
+- **THE TWO REMAINING RUNS:** ① MOTION RUN (G5-ignition-at-node polish, G13 label fold, G8 glow, G7 record-dot, G1 zoom-anchor, G14 icon rail) ② «Прибытие» onboarding + trainer card (persona-critical — deserves its own fresh session + David beat-by-beat device check, per half-shipped-verified law).
