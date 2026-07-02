@@ -3274,7 +3274,7 @@
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
-      if (tile) { tile.style.background = nb ? ND.c : "#ff5fa8"; tile.style.color = nb ? ND.ink : "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // G10 (David on device, v801): idle expanded = the SAME play button as the folded dock (activity-coloured / pink), not a dimmed striped tile with the domain icon ("black button with white brain")
+      if (tile) { tile.style.background = nb ? ND.c : "#ff5fa8"; tile.style.color = nb ? ND.ink : "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; } // G10 (David on device, v801): idle expanded = the SAME play button as the folded dock. §12 frame: the OUTLINE triangle at 52px, not the filled glyph
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
       return;
@@ -4106,7 +4106,7 @@
     }
   }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
-    function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, rgba(255,255,255,.10) " + pct + "% 100%)"; }
+    function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, #3a2540 " + pct + "% 100%)"; } // §12 frame: the unfilled track = the mock's muted plum, not faint white
     if (_ringRaf) { cancelAnimationFrame(_ringRaf); _ringRaf = 0; }
     if (instant || Math.abs(target - _ringP) < 0.01) { _ringP = target; paint(target); return; }
     function step() { var d = target - _ringP; if (Math.abs(d) < 0.006) { _ringP = target; paint(target); _ringRaf = 0; return; } _ringP += d * 0.16; paint(_ringP); _ringRaf = requestAnimationFrame(step); }

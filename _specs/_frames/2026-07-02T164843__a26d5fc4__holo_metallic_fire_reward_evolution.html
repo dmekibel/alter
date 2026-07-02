@@ -1,0 +1,54 @@
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">The evolved ALTER reward visuals: a holographic badge card with animated rainbow sheen, a four-level streak fire ladder from ember to blue inferno, and rarity finishes from matte to full holo.</h2>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+@keyframes sheen{0%{background-position:-160% 0}55%{background-position:260% 0}100%{background-position:260% 0}}
+@keyframes holoshift{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(40deg)}}
+@keyframes flick{0%,100%{transform:scale(1) translateY(0);opacity:.95}30%{transform:scale(1.12,1.22) translateY(-2px);opacity:1}60%{transform:scale(.94,1.05) translateY(-1px);opacity:.85}}
+@keyframes glowpulse{0%,100%{box-shadow:0 0 10px rgba(255,140,40,.5)}50%{box-shadow:0 0 24px rgba(255,140,40,.85)}}
+@keyframes bluepulse{0%,100%{box-shadow:0 0 12px rgba(90,180,255,.6)}50%{box-shadow:0 0 30px rgba(120,200,255,.95)}}
+@keyframes shinypop{0%,78%,100%{transform:scale(1) rotate(0deg)}84%{transform:scale(1.25) rotate(-8deg)}92%{transform:scale(1.1) rotate(5deg)}}
+</style>
+<div style="background:var(--surface-1);border-radius:16px;padding:20px;font-family:'Jost',sans-serif;">
+<div style="border-radius:22px;background:linear-gradient(180deg,#2a0d1c 0%,#1c0814 60%,#160510 100%);padding:20px 16px;display:flex;flex-direction:column;gap:20px;">
+  <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:stretch;">
+    <div>
+      <div style="position:relative;width:170px;border-radius:16px;padding:3px;background:linear-gradient(135deg,#ffd24a,#fff3c0 25%,#b8860b 50%,#ffd24a 75%,#fff3c0);overflow:hidden;">
+        <div style="position:relative;border-radius:13px;background:linear-gradient(160deg,#3a0e26,#22091a);padding:14px 12px;text-align:center;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(120,255,220,.22) 42%,rgba(255,120,220,.28) 50%,rgba(120,180,255,.22) 58%,transparent 70%);background-size:300% 100%;animation:sheen 3.4s ease-in-out infinite,holoshift 6s linear infinite;pointer-events:none;"></div>
+          <div style="width:70px;height:70px;margin:4px auto 8px;border-radius:50%;background:repeating-linear-gradient(45deg,#48122f,#48122f 6px,#5d1a3c 6px,#5d1a3c 12px);border:3px solid #ffd24a;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(255,210,74,.4);"><i class="ti ti-arrow-back-up" style="color:#ffd24a;font-size:30px" aria-hidden="true"></i></div>
+          <div style="color:#fff2f9;font-weight:800;font-size:15px;">Вернулся</div>
+          <div style="color:#c9a6c4;font-size:11.5px;margin-top:2px;">исчез на 5 дней — и вернулся.<br>это и есть навык.</div>
+          <div style="margin-top:8px;display:inline-block;background:#ffd24a;color:#5a3a00;border-radius:8px;padding:2px 9px;font-weight:800;font-size:11px;letter-spacing:.8px;">ГОЛО · РЕДКИЙ</div>
+        </div>
+      </div>
+      <div style="text-align:center;color:var(--text-secondary);font-size:12.5px;margin-top:8px;max-width:170px;">The badge as a collectible card — foil frame, live holo sheen, minted with your story on it</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;justify-content:center;">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#241328;border:2.5px solid #160510;display:flex;align-items:center;justify-content:center;"><div style="width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#ffb46a,#ff7a1e);animation:flick 1.6s infinite;"></div></div>
+        <div><div style="color:#ffe3f1;font-weight:800;font-size:13.5px;">1–2 · Уголёк</div><div style="color:#9a7090;font-size:11.5px;">тихая точка тепла</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#241328;border:2.5px solid #160510;display:flex;align-items:center;justify-content:center;"><i class="ti ti-flame" style="color:#ff8a3a;font-size:22px;animation:flick 1.1s infinite" aria-hidden="true"></i></div>
+        <div><div style="color:#ffe3f1;font-weight:800;font-size:13.5px;">3–6 · Огонь</div><div style="color:#9a7090;font-size:11.5px;">живой флик на счётчике</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#2e1206;border:2.5px solid #160510;display:flex;align-items:center;justify-content:center;animation:glowpulse 1.8s infinite;"><i class="ti ti-flame" style="color:#ffb02e;font-size:24px;animation:flick .9s infinite" aria-hidden="true"></i></div>
+        <div><div style="color:#ffe3f1;font-weight:800;font-size:13.5px;">7–20 · Пламя</div><div style="color:#9a7090;font-size:11.5px;">пылающее кольцо + жар</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#0a1428;border:2.5px solid #160510;display:flex;align-items:center;justify-content:center;animation:bluepulse 1.6s infinite;"><i class="ti ti-flame" style="color:#7ac8ff;font-size:24px;animation:flick .8s infinite" aria-hidden="true"></i></div>
+        <div><div style="color:#ffe3f1;font-weight:800;font-size:13.5px;">21+ · Синее пламя</div><div style="color:#9a7090;font-size:11.5px;">самый горячий огонь — редкость видна издалека</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap;align-items:flex-end;">
+    <div style="text-align:center;"><div style="width:52px;height:52px;border-radius:12px;background:#241328;border:2.5px solid #3a2036;display:flex;align-items:center;justify-content:center;"><i class="ti ti-check" style="color:#6a4a5c;font-size:20px" aria-hidden="true"></i></div><div style="color:#8a6478;font-size:11px;font-weight:700;margin-top:4px;">матовый</div></div>
+    <div style="text-align:center;"><div style="position:relative;width:52px;height:52px;border-radius:12px;background:linear-gradient(160deg,#8a8f9a,#d8dde6 45%,#6a707c);border:2.5px solid #160510;display:flex;align-items:center;justify-content:center;overflow:hidden;"><div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);background-size:300% 100%;animation:sheen 2.8s infinite;"></div><i class="ti ti-check" style="color:#2a2e36;font-size:20px" aria-hidden="true"></i></div><div style="color:#c8ccd6;font-size:11px;font-weight:700;margin-top:4px;">металл</div></div>
+    <div style="text-align:center;"><div style="position:relative;width:52px;height:52px;border-radius:12px;background:linear-gradient(160deg,#b8860b,#ffd24a 45%,#8a6508);border:2.5px solid #160510;display:flex;align-items:center;justify-content:center;overflow:hidden;"><div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,248,200,.6) 50%,transparent 65%);background-size:300% 100%;animation:sheen 2.4s infinite;"></div><i class="ti ti-check" style="color:#4a3400;font-size:20px" aria-hidden="true"></i></div><div style="color:#ffd24a;font-size:11px;font-weight:700;margin-top:4px;">фольга</div></div>
+    <div style="text-align:center;"><div style="position:relative;width:52px;height:52px;border-radius:12px;background:linear-gradient(160deg,#3a0e26,#22091a);border:2.5px solid #ffd24a;display:flex;align-items:center;justify-content:center;overflow:hidden;"><div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 28%,rgba(120,255,220,.35) 42%,rgba(255,120,220,.4) 50%,rgba(120,180,255,.35) 58%,transparent 72%);background-size:300% 100%;animation:sheen 2.2s infinite,holoshift 5s linear infinite;"></div><i class="ti ti-check" style="color:#ffe3f1;font-size:20px" aria-hidden="true"></i></div><div style="color:#ff8fc0;font-size:11px;font-weight:700;margin-top:4px;">голо</div></div>
+    <div style="text-align:center;"><div style="position:relative;width:52px;height:52px;border-radius:12px;background:linear-gradient(160deg,#3a0e26,#0a1428);border:2.5px solid #7ac8ff;display:flex;align-items:center;justify-content:center;overflow:hidden;animation:shinypop 4s infinite,bluepulse 2s infinite;"><div style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 28%,rgba(120,255,220,.4) 40%,rgba(255,255,255,.55) 50%,rgba(120,180,255,.4) 60%,transparent 72%);background-size:300% 100%;animation:sheen 1.8s infinite,holoshift 4s linear infinite;"></div><i class="ti ti-sparkles" style="color:#fff;font-size:20px" aria-hidden="true"></i></div><div style="color:#7ac8ff;font-size:11px;font-weight:700;margin-top:4px;">сияющий</div></div>
+  </div>
+</div>
+<div style="text-align:center;color:var(--text-secondary);font-size:13px;margin-top:12px;">The rarity ladder (matte → metallic → foil → holo → shiny) and the streak fire levels — both built from CSS your app already ships (the foil sweep exists in code today)</div>
+</div>
