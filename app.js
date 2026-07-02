@@ -728,7 +728,7 @@
     if (_gapDays != null && _gapDays >= 3 && _gapDays <= 13) { try { toast("✦ You came back. That IS the skill."); } catch (e) {} }
     else if (!yesterdayActs.length) { try { earn(1, { label: "return" }); toast("✦ Today's a fresh step."); } catch (e) {} }
     // FIRST-WEEK RETENTION NUDGE (Day 4, David 2026-07-02): days 2-7 since the onboarding pact, once per day, keeps the seed narrative alive regardless of streak status.
-    if (S.profile && S.profile.pact && S.profile.pact.ts) { var _pactDays = daysSince(key(new Date(S.profile.pact.ts))); if (_pactDays >= 2 && _pactDays <= 7 && (_gapDays == null || _gapDays < 3)) { try { toast("your seed's still here — one small thing today?"); } catch (e) {} }
+    if (S.profile && S.profile.pact && S.profile.pact.ts) { var _pactDays = daysSince(key(new Date(S.profile.pact.ts))); if (_pactDays >= 2 && _pactDays <= 7 && (_gapDays == null || _gapDays < 3) && !(S.profile.muteNudgeUntilK && k <= S.profile.muteNudgeUntilK)) { try { toast("your seed's still here — one small thing today?"); } catch (e) {} } // muteNudgeUntilK: 'needed a break' at the comeback-catch buys 2 nudge-free days (2026-07-03)
       if (_pactDays === 3 || _pactDays === 7) { try { setTimeout(function () { toast("✦ Settings → Send a snapshot — it keeps your story safe (and David gets to see it grow)"); }, 4200); } catch (e) {} } } // day-3/day-7 gentle telemetry surfacing (Day 5) — the export IS her backup
     try { appetiteUpdate(); } catch (e) {}
     try { watchConfirmTick(); } catch (e) {}
@@ -756,24 +756,48 @@
     add(foot, "button", "ob-skip", "not now").onclick = function () { ov.remove(); };
     setTimeout(function () { try { inputs[0].focus(); } catch (e) {} }, 250);
   }
-  function fdFinale(fd) { // stone 5's payoff: Sage recites what it learned — the first chronicle entry, spoken back (HANDOFF-first-day §2.5)
+  function jpAsk(title, sub, rows, opts) { // shared one-tap question card (day-2 callback / drift-catch / gap-return, 2026-07-03): k-row ignition style, FIXED strings only (RU-safe), asked at the minute the answer is obvious. rows: {ti, c, label, reply, fn}. Skipping never penalizes.
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
+    var body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    add(body, "div", "ob-q", title).style.cssText = "font-size:22px;font-weight:800;text-align:center;line-height:1.25;";
+    if (sub) add(body, "div", "ob-sb", sub).style.cssText = "text-align:center;margin-top:6px;";
+    var w = add(body, "div"); w.style.cssText = "width:100%;display:flex;flex-direction:column;gap:12px;margin-top:20px;text-align:left;";
+    rows.forEach(function (o) {
+      var r = add(w, "div", "k-row");
+      r.style.cssText = "--kc:" + mixHex(o.c, "#160510", 0.28) + ";--kt:" + mixHex(o.c, "#0d0410", 0.86) + ";--kA:" + o.c + ";--kB:" + mixHex(o.c, "#160510", 0.24) + ";--ki:" + mixHex(o.c, "#0d0410", 0.76) + ";--ks:" + mixHex(o.c, "#b39ab0", 0.5) + ";";
+      r.innerHTML = '<i class="ti ' + o.ti + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o.label + '</div></div>';
+      r.onclick = function () { ov.remove(); if (o.reply) toast(o.reply); try { if (o.fn) o.fn(); } catch (e) {} };
+    });
+    var sk = add(foot, "button", "ob-skip", (opts && opts.skipLabel) || "not now"); sk.onclick = function () { ov.remove(); if (opts && opts.onSkip) try { opts.onSkip(); } catch (e) {} };
+  }
+  function fdFinale(fd) { // stone 5's payoff: Sage recites what it learned — the first chronicle entry, spoken back (HANDOFF-first-day §2.5). SKIP-READER (2026-07-03): the finale can never bounce — skipping is data (→ simpleMode), and the open-hour band is the unfakeable fallback truth.
     var P = S.profile || {}, learned = [];
     if (P.vibe === "overwhelmed" || (typeof P.weekMood === "number" && P.weekMood <= 1)) learned.push("your battery runs low — I'll lead gently");
+    if (P.vibe === "stuck") learned.push("you know your thing — we'll just make it smaller");
+    if (P.vibe === "thriving") learned.push("you've got fire — I'll match it");
+    if (P.vibe === "coasting") learned.push("you're steady — we'll aim it");
+    if (P.block && P.block.type === "fear") learned.push("there's a thing you can't look at yet — we'll take the edge");
+    if (P.block && P.block.type === "overwhelm") learned.push("there's a too-big thing — we'll take it in corners");
+    if (P.block && P.block.type === "wound") learned.push("there's an old bruise — we'll go gently");
     if (P.messRoom) learned.push("the " + P.messRoom.toLowerCase() + " needs love");
     if ((P.todayIdentity || [])[0]) learned.push("you want to be " + P.todayIdentity[0].toLowerCase());
     var am = (bk(todayK()).am || {}); if ((am.oneThing || "").trim()) learned.push("“" + am.oneThing.trim() + "” matters to you");
+    var _fb = P.openBand === "night" ? "You found me late at night — and still you came. That's day one, noted. Tomorrow I'll say less and hand you one thing."
+            : P.openBand === "early" ? "You found me before the world was up — and you stayed. That's day one, noted. Tomorrow I'll say less and hand you one thing."
+            : "You came, you looked around, you kept your cards close. Fair. Tomorrow I'll say less and hand you one thing.";
+    if (!learned.length) { P.simpleMode = true; try { save(); } catch (e) {} } // an all-skip first day is a real signal: autonomy-preferring → simpleMode (track-first, no plan pressure) — never a null
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     var body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     add(body, "i", "ti ti-sparkles ob-spk");
     add(body, "div", "ob-q", "Day one.");
-    add(body, "div", "ob-sb", learned.length ? "Here's what I learned about you: " + learned.join(" · ") + ". Tomorrow I use all of it." : "You showed up, and I was watching kindly. Tomorrow we go again.");
+    add(body, "div", "ob-sb", learned.length ? "Here's what I learned about you: " + learned.join(" · ") + ". Tomorrow I use all of it." : _fb);
     add(foot, "button", "ob-btn go", "Goodnight ▸").onclick = function () { ov.remove(); try { celebrateGated("#9a7cff", 1); } catch (e) {} };
   }
   function firstDayNodes() { // returns the stone trail while first-day is live, else null
     var fd = (S.guide || {}).fd; if (!fd || fd.done) return null;
     var k = todayK(), nodes = [];
-    var CHORE_T = "Pick two things up off the floor";
-    var s0 = !!fd.s0 || (S.timers || []).some(function (t) { return t.dayK === k; }) || (logs(k) || []).some(function (l) { return l.title !== CHORE_T && l.title !== "Gratitude" ? true : false; });
+    if (fd.k && fd.k !== k) { fd.done = true; try { save(); } catch (e) {} return null; } // the stones are a DAY-ONE trail: an unfinished first day hatches quietly at day end (no ceremony) — day 2 must open with the callback, never with stale day-1 homework (2026-07-03)
+    var s0 = !!fd.s0 || (S.timers || []).some(function (t) { return t.dayK === k; }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && l.title !== "Gratitude"; }); // exclude the (now vibe-sized: one/two/three) onboarding chore from counting as stone-0's real track
     var amB = (S.bk || {})[k] ? (S.bk[k].am || {}) : {};
     var s1 = !!fd.s1 || !!amB.done;
     var s2 = !!fd.s2, s3 = !!fd.s3;
@@ -836,8 +860,13 @@
     function paint() {
       listEl.innerHTML = "";
       items.forEach(function (it, i) {
-        var r = add(listEl, "button"); r.style.cssText = "display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px;border:2px solid " + (on[i] ? DOM.focus.c : "#3a1730") + ";background:" + (on[i] ? "rgba(122,162,247,.13)" : "rgba(255,255,255,.04)") + ";color:#f0e6ef;font-family:var(--bub);font-weight:700;font-size:14px;text-align:left;";
+        var r = add(listEl, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px;border:2px solid " + (on[i] ? DOM.focus.c : "#3a1730") + ";background:" + (on[i] ? "rgba(122,162,247,.13)" : "rgba(255,255,255,.04)") + ";color:#f0e6ef;font-family:var(--bub);font-weight:700;font-size:14px;text-align:left;cursor:pointer;";
         r.innerHTML = '<i class="ti ' + (on[i] ? "ti-circle-check" : "ti-circle") + '" style="font-size:19px;color:' + (on[i] ? DOM.focus.c : "#6a5a78") + ';flex:none;"></i><span style="flex:1;">' + esc(it.t) + '</span><span style="font-size:11.5px;color:#b39ab0;">' + it.m + 'm</span>';
+        if (on[i] && it.m > 5) { // [smaller] — the tiny-step guardian, wired (P0-b, 2026-07-03): a first-class floor-below-the-floor on every offered item; tapping it is itself data (→ appetite low)
+          var sm = document.createElement("span"); sm.textContent = "smaller"; sm.style.cssText = "flex:none;font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:9px;border:1.5px solid #6a5a78;color:#b39ab0;background:rgba(255,255,255,.05);";
+          sm.onclick = function (e) { e.stopPropagation(); it.m = Math.max(5, Math.round(it.m / 2)); try { var _a = (S.guide || {}).appetiteState; if (_a && !_a.stateLockedByUser && _a.level !== "dormant" && _a.level !== "low") { _a.level = "low"; _a.nodeCap = _appCap("low"); } } catch (e2) {} toast("smaller it is — the floor's always open here."); paint(); };
+          r.appendChild(sm);
+        }
         r.onclick = function () { on[i] = !on[i]; paint(); };
       });
     }
@@ -874,9 +903,47 @@
       if (_gDays != null && _gDays >= 3 && _gDays <= 13) {
         nodes.push({ key: "gapreturn", icon: "ti-sparkles", emoji: "✦", title: "You came back.", _lead: true,
           line: "That IS the skill. One small thing — right now.", color: DOM.focus.c, done: false,
-          act: jpTrackNow });
+          act: function () { // COMEBACK-CATCH (2026-07-03): the return is the most loaded catch in the app — ask ONE thing (the reason is trivially known to them), honor it, then straight into the micro-win. 'needed a break' mutes the retention nudges 2 days.
+            S.profile = S.profile || {};
+            jpAsk("You came back. That IS the skill.", "Before we start — where'd you go?", [
+              { ti: "ti-volume", c: "#ff8a3a", label: "Life got loud", reply: "Then it wasn't drift — it was life. We start where you are.", fn: function () { S.profile.gapReason = "loud"; save(); jpTrackNow(); } },
+              { ti: "ti-route", c: "#7a9aff", label: "Lost the thread", reply: "Then I'll hold the thread this time. One small thing.", fn: function () { S.profile.gapReason = "thread"; save(); jpTrackNow(); } },
+              { ti: "ti-moon", c: "#48b8e0", label: "Needed a break", reply: "Breaks are allowed. You don't owe me a make-up.", fn: function () { S.profile.gapReason = "break"; S.profile.muteNudgeUntilK = keyAdd(todayK(), 2); save(); jpTrackNow(); } }
+            ], { onSkip: jpTrackNow });
+          } });
         return nodes;
       }
+    }
+
+    // DAY-2 CALLBACK — THE COMEBACK (keystone, 2026-07-03): the guardian is NOT blind the next morning. Yesterday's onboarding vibe is spoken back on the first open of day 2 and the answer re-routes TODAY's door (lowStart → profile().lowEnergy at its existing gate) — the mirror runs off yesterday's one field, not readiness()'s 14-day clock. Fixed strings per vibe (RU-safe); once, day 2 only.
+    var _P2 = S.profile || {};
+    var _fdK = ((S.guide || {}).fd && S.guide.fd.k) || (_P2.pact && _P2.pact.ts ? key(new Date(_P2.pact.ts)) : null);
+    var _fdAge = _fdK ? daysSince(_fdK) : null;
+    if (_P2.vibe && _fdAge === 1 && _P2.cbK !== k) {
+      var _low2 = _P2.vibe === "overwhelmed" || _P2.vibe === "stuck";
+      var _cbT = { overwhelmed: "Yesterday you told me: Drowning.", stuck: "Yesterday you told me: Stuck.", coasting: "Yesterday you told me: Flowing.", thriving: "Yesterday you told me: Burning." }[_P2.vibe] || "Yesterday.";
+      var _cbL = _low2 ? "Did last night ease it — or is it still heavy?" : "Still moving — or did it dip?";
+      nodes.push({ key: "cb2", icon: "ti-message-circle", title: _cbT, _lead: true, line: _cbL, color: "#9a8cff", done: false,
+        act: function () {
+          function wrap(fn) { return function () { S.profile.cbK = todayK(); if (fn) fn(); save(); drawJourney(true); }; }
+          var _rows = _low2 ? [
+            { ti: "ti-sun", c: "#34d39a", label: "Lighter", reply: "Then we grow the day a little.", fn: wrap(function () { S.profile.lowStart = false; S.profile.vibeTrend = "lighter"; }) },
+            { ti: "ti-cloud", c: "#ffc83d", label: "About the same", reply: "Steady is fine. Same small shape today.", fn: wrap(function () { S.profile.vibeTrend = "same"; }) },
+            { ti: "ti-droplet", c: "#7a9aff", label: "Heavier", reply: "Then today goes smaller — one thing. I'll carry the rest.", fn: wrap(function () { S.profile.lowStart = true; S.profile.vibeTrend = "heavier"; }) }
+          ] : [
+            { ti: "ti-flame", c: "#ff8a3a", label: "Still moving", reply: "Then we keep spending it.", fn: wrap(function () { S.profile.vibeTrend = "steady"; }) },
+            { ti: "ti-cloud", c: "#7a9aff", label: "It dipped", reply: "Human. We go one size down today.", fn: wrap(function () { S.profile.lowStart = true; S.profile.vibeTrend = "dipped"; }) }
+          ];
+          jpAsk(_cbT, _cbL, _rows, { onSkip: function () { S.profile.cbK = todayK(); save(); drawJourney(false); } });
+        } });
+    }
+    // THE DOORWAY (days 2-7, 2026-07-03): cashes the blocker-blessing promise — ONE sub-fear-sized block ('just the edge / first corner / two gentle minutes'), offered until taken once, then retired. The tiny-step tactic is picked by the wall's SHAPE, never its content.
+    if (_P2.block && _P2.block.type && _fdAge != null && _fdAge >= 1 && _fdAge <= 7 && !_P2.blockDoorDone) {
+      var _DW = { fear: { line: "Just the edge: two minutes. Look — you don't have to touch it.", bt: "The edge — just look (2 min)", m: 5 },
+                  overwhelm: { line: "Just the first corner: ten minutes, then done.", bt: "The first corner (10 min)", m: 10 },
+                  wound: { line: "Two gentle minutes — the door stays open.", bt: "Two gentle minutes", m: 5 } }[_P2.block.type];
+      if (_DW) nodes.push({ key: "doorway", icon: "ti-door-enter", title: "The thing you've been circling", line: _DW.line, color: "#ff8a3a", done: false,
+        act: function () { var _t = nextFreeMin(k), _id = uid(); blocks(k).push({ id: _id, time: pad(Math.floor(_t / 60)) + ":" + pad(_t % 60), mins: _DW.m, title: _DW.bt, prio: 2, color: DOM.focus.c, done: false }); reflow(k); S.profile.blockDoorDone = 1; save(); toast("It's on your day — small enough to win."); drawJourney(true); } });
     }
 
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
@@ -897,7 +964,15 @@
         var _pt = _pk ? (_pk.custom || _pk.tool) : null;
         nodes.push({ key: "wayback", icon: "ti-arrow-back-up", title: "One step back", _lead: true,
           line: "Today drifted a little — no shame, that's human. Coming back IS the move." + (_pt ? " A 20-second " + _pt.name.toLowerCase() + ", then one small thing." : " One small reset, then one thing."),
-          color: DOM.restore.c, done: _resetToday, act: function () { closeJourney(); try { if (_pk && _pk.custom) runCustomTool(_pk.custom); else runTool((_pk && _pk.tool) || TOOLS[0]); } catch (e) { try { breathwork(2); } catch (e2) {} } } });
+          color: DOM.restore.c, done: _resetToday, act: function () { // DRIFT-CATCH INTERVIEW (2026-07-03): ask at the minute the answer is obvious — a rescue is a trophy, not a miss; the counts feed the future namedVillain read
+            var _run = function () { closeJourney(); try { if (_pk && _pk.custom) runCustomTool(_pk.custom); else runTool((_pk && _pk.tool) || TOOLS[0]); } catch (e) { try { breathwork(2); } catch (e2) {} } };
+            S.profile = S.profile || {}; var _dn = S.profile.driftN = S.profile.driftN || { rescue: 0, slip: 0, gas: 0 };
+            jpAsk("Today drifted off the plan.", "Which was it?", [
+              { ti: "ti-flag", c: "#34d39a", label: "A rescue — something realer came up", reply: "Good call. That WAS the move — not a miss.", fn: function () { _dn.rescue++; save(); drawJourney(false); } },
+              { ti: "ti-wind", c: "#7a9aff", label: "A slip — it just slid", reply: "Human. Twenty seconds back, then one small thing.", fn: function () { _dn.slip++; save(); _run(); } },
+              { ti: "ti-battery-1", c: "#c4607f", label: "Out of gas", reply: "Then we stop pushing. Five soft minutes instead.", fn: function () { _dn.gas++; S.profile.lowStart = true; save(); _run(); } }
+            ], { onSkip: _run });
+          } });
       }
     }
 
@@ -1138,6 +1213,77 @@
     "🌱 Plant": "🌱 Посадить",
     "planted — your world grows with you now.": "посажено — теперь твой мир растёт вместе с тобой.",
     "Start ▸": "Начать ▸"
+  });
+  // FIRST-DAY REWIRE strings (2026-07-03): vibe-answered-aloud · sized task · room re-home · blocker blessing · pact-after-the-gift · day-2 callback · doorway · drift/comeback catches · skip-reader finale
+  Object.assign(I18N.ru, {
+    "Good. Let's spend some of that — right now.": "Хорошо. Давай потратим немного этого — прямо сейчас.",
+    "Steady. One real thing on purpose — that changes a day.": "Ровно. Одно настоящее дело — осознанно. Это меняет день.",
+    "I know that one. Knowing isn't the problem — we'll just move one small thing.": "Знакомо. Знать — не проблема. Мы просто сдвинем одну маленькую вещь.",
+    "Okay. Then we go small today — I'll carry the rest.": "Ладно. Сегодня идём по-маленькому — остальное я возьму на себя.",
+    "Pick ONE thing up off the floor. That's the whole ask.": "Подними с пола ОДНУ вещь. Это вся просьба.",
+    "Three things off the floor — beat thirty seconds. Go.": "Три вещи с пола — быстрее тридцати секунд. Вперёд.",
+    "Pick one thing up off the floor": "Подними одну вещь с пола",
+    "Pick two things up off the floor": "Подними две вещи с пола",
+    "Pick three things up off the floor": "Подними три вещи с пола",
+    "Where were you just standing?": "Где ты сейчас стоял?",
+    "Noted. That corner's on my list for you now.": "Запомнил. Этот уголок теперь в моём списке для тебя.",
+    "One real thing you've been circling.": "Одно настоящее дело, вокруг которого ты кружишь.",
+    "I don't need to know what it is — just the shape of the wall.": "Мне не нужно знать, что это — только форму стены.",
+    "It scares me to even look": "Страшно даже смотреть",
+    "Too big — I don't know where it starts": "Слишком большое — не знаю, с чего начать",
+    "An old bad time with it": "С этим связано что-то старое и плохое",
+    "Nothing like that — I'm just here": "Ничего такого — я просто здесь",
+    "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.": "Тогда мы не будем смотреть на всё целиком — только на край. Завтра я принесу его таким маленьким, что он не сможет напугать.",
+    "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.": "Тогда мы не будем начинать с целого — только с первого уголка. Завтра я принесу тебе один.",
+    "Then we go gently — with a way out at every step. You set the pace.": "Тогда идём бережно — с выходом на каждом шагу. Темп задаёшь ты.",
+    "Good. Then we build forward.": "Хорошо. Тогда строим вперёд.",
+    "One rule — now that you've seen it's real.": "Одно правило — теперь, когда ты видишь, что это по-настоящему.",
+    "smaller": "меньше",
+    "smaller it is — the floor's always open here.": "хорошо, меньше — нижняя ступенька здесь всегда открыта.",
+    "Yesterday you told me: Drowning.": "Вчера ты сказал мне: Тону.",
+    "Yesterday you told me: Stuck.": "Вчера ты сказал мне: Застрял.",
+    "Yesterday you told me: Flowing.": "Вчера ты сказал мне: По течению.",
+    "Yesterday you told me: Burning.": "Вчера ты сказал мне: Горю.",
+    "Did last night ease it — or is it still heavy?": "Ночь отпустила — или всё ещё тяжело?",
+    "Still moving — or did it dip?": "Всё ещё движется — или подсело?",
+    "Lighter": "Легче", "About the same": "Примерно так же", "Heavier": "Тяжелее", "Still moving": "Всё ещё движется", "It dipped": "Подсело",
+    "Then we grow the day a little.": "Тогда немного растим день.",
+    "Steady is fine. Same small shape today.": "Ровно — это нормально. Сегодня та же маленькая форма.",
+    "Then today goes smaller — one thing. I'll carry the rest.": "Тогда сегодня ещё меньше — одно дело. Остальное я возьму на себя.",
+    "Then we keep spending it.": "Тогда продолжаем тратить.",
+    "Human. We go one size down today.": "По-человечески. Сегодня на размер меньше.",
+    "The thing you've been circling": "То, вокруг чего ты кружишь",
+    "Just the edge: two minutes. Look — you don't have to touch it.": "Только край: две минуты. Посмотри — трогать не обязательно.",
+    "Just the first corner: ten minutes, then done.": "Только первый уголок: десять минут — и всё.",
+    "Two gentle minutes — the door stays open.": "Две бережные минуты — дверь остаётся открытой.",
+    "The edge — just look (2 min)": "Край — просто посмотри (2 мин)",
+    "The first corner (10 min)": "Первый уголок (10 мин)",
+    "Two gentle minutes": "Две бережные минуты",
+    "It's on your day — small enough to win.": "Это в твоём дне — достаточно маленькое, чтобы победить.",
+    "Today drifted off the plan.": "Сегодня день ушёл от плана.",
+    "Which was it?": "Что это было?",
+    "A rescue — something realer came up": "Спасение — случилось что-то более настоящее",
+    "A slip — it just slid": "Соскользнуло — просто уплыло",
+    "Out of gas": "Кончился заряд",
+    "Good call. That WAS the move — not a miss.": "Верное решение. Это и БЫЛ правильный ход — не промах.",
+    "Human. Twenty seconds back, then one small thing.": "По-человечески. Двадцать секунд обратно в колею — и одно маленькое дело.",
+    "Then we stop pushing. Five soft minutes instead.": "Тогда перестаём давить. Вместо этого — пять мягких минут.",
+    "Before we start — where'd you go?": "Прежде чем начнём — куда ты пропадал?",
+    "Life got loud": "Жизнь стала громкой",
+    "Lost the thread": "Потерял нить",
+    "Needed a break": "Нужен был перерыв",
+    "Then it wasn't drift — it was life. We start where you are.": "Значит, это был не дрейф — это была жизнь. Начинаем оттуда, где ты есть.",
+    "Then I'll hold the thread this time. One small thing.": "Тогда в этот раз нить подержу я. Одно маленькое дело.",
+    "Breaks are allowed. You don't owe me a make-up.": "Перерывы разрешены. Ты ничего не должен навёрстывать.",
+    "you know your thing — we'll just make it smaller": "ты знаешь своё дело — мы просто сделаем его меньше",
+    "you've got fire — I'll match it": "в тебе есть огонь — я подхвачу",
+    "you're steady — we'll aim it": "ты ровный — мы это направим",
+    "there's a thing you can't look at yet — we'll take the edge": "есть вещь, на которую пока страшно смотреть — возьмём только край",
+    "there's a too-big thing — we'll take it in corners": "есть слишком большая вещь — будем брать её по уголкам",
+    "there's an old bruise — we'll go gently": "есть старый ушиб — пойдём бережно",
+    "You found me late at night — and still you came. That's day one, noted. Tomorrow I'll say less and hand you one thing.": "Ты нашёл меня поздней ночью — и всё равно пришёл. Это первый день, я запомнил. Завтра скажу меньше и дам одно дело.",
+    "You found me before the world was up — and you stayed. That's day one, noted. Tomorrow I'll say less and hand you one thing.": "Ты нашёл меня, пока мир ещё спал — и остался. Это первый день, я запомнил. Завтра скажу меньше и дам одно дело.",
+    "You came, you looked around, you kept your cards close. Fair. Tomorrow I'll say less and hand you one thing.": "Ты пришёл, осмотрелся и не стал раскрывать карты. Честно. Завтра скажу меньше и дам одно дело."
   });
   // R0+F0 relief door + micro-stack strings (David 2026-07-02)
   Object.assign(I18N.ru, {
@@ -4312,55 +4458,31 @@
     homemaker: [["Meal prep", "nourish"], ["Clean", "upkeep"], ["Laundry", "upkeep"], ["Errands", "upkeep"]],
     figuring: [["Journal", "restore"], ["Explore", "play"], ["Study", "focus"]]
   };
-  // ===== PLACEMENT QUESTIONS (Decision A, Synthesis §VIII): 3 one-tap yes/no questions shown once after onboarding, before the journey opens. "Yes" seeds a Path C watchConfirm entry verified by watchConfirmTick() after 7 days. =====
-  function placementQuestions(onDone) {
-    var g = S.guide||{}; var unlocked = g.unlocked||[];
-    var QUESTIONS = [
-      {skill:3, label:"Morning routine?",   hint:"you open your day on purpose — even a brief one"},
-      {skill:4, label:"Closing your day?",  hint:"you end with at least one honest thought"},
-      {skill:5, label:"Active daily habit?",hint:"something you run every day, building on purpose"}
-    ].filter(function(q){ return unlocked.indexOf(q.skill)<0; });
-    if (!QUESTIONS.length) { onDone(); return; }
-    var answers = {};
-    var ob = add(document.body, "div", "hs-ov");
-    ob.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:#1c0f20;z-index:10000;display:flex;flex-direction:column;justify-content:center;padding:32px 20px;";
-    add(ob,"div","","One quick check.").style.cssText="font-size:20px;font-weight:800;color:#e6cfe0;margin-bottom:6px;font-family:'Jost',sans-serif;";
-    add(ob,"div","","Do any of these already describe you?").style.cssText="font-size:13px;color:#9a7090;margin-bottom:28px;font-family:'Jost',sans-serif;";
-    var qRows = add(ob,"div",""); qRows.style.cssText="display:flex;flex-direction:column;gap:20px;margin-bottom:32px;";
-    QUESTIONS.forEach(function(q){
-      var row=add(qRows,"div",""); row.style.cssText="display:flex;flex-direction:column;gap:6px;";
-      add(row,"div","",q.label).style.cssText="font-size:15px;font-weight:700;color:#e6cfe0;font-family:'Jost',sans-serif;";
-      add(row,"div","",q.hint).style.cssText="font-size:11px;color:#9a7090;font-family:'Jost',sans-serif;";
-      var chips=add(row,"div",""); chips.style.cssText="display:flex;gap:8px;margin-top:2px;";
-      var yes=add(chips,"button","jp-durchip"); yes.textContent="Yes, already";
-      var no =add(chips,"button","jp-durchip"); no.textContent="Not yet";
-      function setAns(v){ answers[q.skill]=v; yes.style.background=v===true?DOM.move.c:""; yes.style.color=v===true?"#fff":""; no.style.background=v===false?"#4a2d40":""; no.style.color=v===false?"#c89ab4":""; }
-      yes.onclick=function(){setAns(true);}; no.onclick=function(){setAns(false);};
-    });
-    var cont=add(ob,"button","jc-cta"); cont.innerHTML='<i class="ti ti-arrow-right"></i> Continue'; cont.style.cssText="background:"+DOM.focus.c+";color:#fff;";
-    cont.onclick=function(){
-      var wc=S.guide.watchConfirm=S.guide.watchConfirm||[];
-      QUESTIONS.forEach(function(q){ if(answers[q.skill]===true&&!wc.some(function(e){return e.skill===q.skill;})) wc.push({skill:q.skill,seededAt:todayK(),type:'onboard'}); });
-      save(); ob.remove(); onDone();
-    };
-  }
+  // (placementQuestions removed 2026-07-03 — orphaned survey, zero call sites; behavior-evidence chapterUnlockCheck() already places practicing users without self-report. watchConfirmTick keeps handling any legacy seeded entries.)
   // FRONT-DOOR REWRITE (David 2026-07-02, EPIC-AUDIT Day 2-3): 6 beats, ~90 seconds — showman → pact → one profiling beat → the task → the coin → the seed.
   // Cut: gender/age/roles/rhythm/goal-picker screens (founder hand-loads those for the sister launch). Kept: ob-ov/ob-card scaffold, chip machinery, progress bar.
   function onboard() {
-    var data = { vibe: "", energy: null, messRoom: "", pactAt: null, taskDone: false, seeded: false };
-    var step = 0, STEPS = 6; // 0-1 showman · 2 pact · 3 profiling (energy+room) · 4 the task · 5 the seed
+    var data = { vibe: "", energy: null, messRoom: "", block: "", pactAt: null, taskDone: false, seeded: false };
+    var step = 0, STEPS = 7, advT = null; // 0-1 showman · 2 vibe (answered aloud) · 3 the task (sized by vibe) + room re-home · 4 blocker blessing · 5 pact (after the gift) · 6 the seed — FIRST-DAY REWIRE (David 2026-07-03: every answer must visibly change the next beat; the clipboard is dead)
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    var bar = add(card, "div", "ob-bar"), barDs = []; for (var _bi = 0; _bi < 6; _bi++) barDs.push(add(bar, "i")); // §12 frame 12: course-style dashes, one per beat
+    var bar = add(card, "div", "ob-bar"), barDs = []; for (var _bi = 0; _bi < STEPS; _bi++) barDs.push(add(bar, "i")); // §12 frame 12: course-style dashes, one per beat
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     function chip(p, label, on, color, ink) { var s = add(p, "span", "ob-ch" + (on ? " on" : "")); if (color) { s.style.background = on ? color : mixDark(color); s.style.color = on ? (ink || "#160510") : color; } s.innerHTML = label; return s; }
-    function next() { if (step < STEPS - 1) { step++; draw(); } else finish(); }
+    function next() { clearTimeout(advT); advT = null; if (step < STEPS - 1) { step++; draw(); } else finish(); } // clearTimeout: a pick's auto-advance timer must never double-fire past a beat when the user taps Next first
     function finish() {
       S.profile = S.profile || {}; var P = S.profile;
       P.vibe = data.vibe || P.vibe || ""; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck") || !!P.lowStart;
       P.messRoom = data.messRoom || P.messRoom || ""; if (data.pactAt) P.pact = { ts: data.pactAt }; P.set = true;
+      if (data.block && data.block !== "none") P.block = { type: data.block, ts: Date.now() }; // the blocker blessing (P0-a): shape only, never content — cashed by the Doorway node on days 2-7
+      var _hr = new Date().getHours(); P.openBand = P.openBand || ((_hr >= 22 || _hr < 4) ? "night" : _hr < 9 ? "early" : _hr < 17 ? "day" : "evening"); // unfakeable first-open truth — the finale's skip-proof fallback
       if (!S.habits || !S.habits.length) S.habits = DEFAULT_HABITS.slice();
       S.guide = S.guide || { mode: "guided", seedTier: 0, unlocked: [], cache: {}, offeredK: null };
       S.guide.mode = "guided"; S.guide.unlocked = (S.guide.unlocked && S.guide.unlocked.length) ? S.guide.unlocked : [0];
+      if (data.vibe) { // placement-by-attempt seed: the vibe answer warm-starts the appetite dial (appetiteUpdate keeps a seeded level while completionRate7d===null, then real data takes over)
+        var _lv = data.vibe === "thriving" ? "high" : data.vibe === "coasting" ? "floor" : "low";
+        var _as = S.guide.appetiteState = S.guide.appetiteState || { level: _lv, nodeCap: 2, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0, lastDeclineK: null, lastInviteSentK: null };
+        if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); }
+      }
       if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = { k: todayK() }; // FIVE STONES (F1, David 2026-07-02): a brand-new save gets the hand-authored first-day trail; a Redo-setup on a real save (spark total > 60) never does
       save(); ov.remove();
       try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
@@ -4372,17 +4494,18 @@
     }
     function taskDone() {
       if (data.taskDone) return; data.taskDone = true;
-      try { choreMark({ id: "declutter", l: "Pick two things up off the floor" }); } catch (e) {} // choreMark already grants earn(10) — top up to land in the 15-20 first-win range the spec calls for, not double-stack a second full earn
+      var _chL = data.vibe === "overwhelmed" ? "Pick one thing up off the floor" : data.vibe === "thriving" ? "Pick three things up off the floor" : "Pick two things up off the floor"; // sized by the vibe read — the log title matches what was actually asked
+      try { choreMark({ id: "declutter", l: _chL }); } catch (e) {} // choreMark already grants earn(10) — top up to land in the 15-20 first-win range the spec calls for, not double-stack a second full earn
       try { earn(8, { label: "onboard-task-bonus" }); } catch (e) {}
       draw();
     }
     function draw() {
       barDs.forEach(function (d, di) { d.className = di <= step ? "on" : ""; }); body.innerHTML = ""; foot.innerHTML = "";
-      body.className = (step === 0 || step === 1 || step === 3 || step === 5) ? "ob-body center" : "ob-body";
+      body.className = (step === 0 || step === 1 || step === 2 || step === 4 || step === 6) ? "ob-body center" : "ob-body";
       if (step === 0) { add(body, "i", "ti ti-sparkles ob-spk"); var f = add(body, "div", "ob-face"); add(f, "span", "ob-eye l"); add(f, "span", "ob-eye r"); add(body, "div", "ob-q", "Hi, I'm Sage."); add(body, "div", "ob-sb", "what I'm about to show you gives you real powers. this is no joke."); stdFoot("Let's go ▸", false); return; }
       if (step === 1) { add(body, "i", "ti ti-shield-star ob-spk"); add(body, "div", "ob-q", "Every real thing you do, I remember — and your world grows."); add(body, "div", "ob-sb", "small things count. let's prove it — 90 seconds."); stdFoot("Next ▸", false); return; }
-      if (step === 2) {
-        add(body, "div", "ob-q", "One rule."); add(body, "div", "ob-sb", "I will never lie to you. Hold to promise the same back.");
+      if (step === 5) { // PACT — moved AFTER the first win (2026-07-03): give-before-take made true; the promise is now backed by evidence, not a salesman's check
+        add(body, "div", "ob-q", "One rule — now that you've seen it's real."); add(body, "div", "ob-sb", "I will never lie to you. Hold to promise the same back.");
         var pactWrap = add(body, "div"); pactWrap.style.cssText = "margin-top:22px;";
         var pb = add(pactWrap, "button", "ob-btn"); pb.style.cssText = "position:relative;overflow:hidden;width:100%;";
         var fill = add(pb, "span"); fill.style.cssText = "position:absolute;left:0;top:0;bottom:0;width:" + (data.pactAt ? "100" : "0") + "%;background:rgba(255,255,255,.32);z-index:0;";
@@ -4396,7 +4519,7 @@
         if (data.pactAt) { stdFoot("Next ▸", true); } else { var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = finish; }
         return;
       }
-      if (step === 3) { // §12 frame 12 — the VIBE BEAT: guardian circle, one big question, four element answers as the LOCKED choice-rows (v3: ghost → own-color ignition), auto-advance on pick
+      if (step === 2) { // §12 frame 12 — the VIBE BEAT, now ANSWERED ALOUD (2026-07-03): Sage replies to the exact pick, sized — the four states stop collapsing to one silent boolean; the reply IS the proof the answer landed
         var av = add(body, "div", "ob-ava"); av.innerHTML = '<i class="ti ti-sparkles"></i>';
         add(body, "div", "ob-q", "What's closest to the truth right now?").style.cssText = "font-size:26px;font-weight:800;text-align:center;line-height:1.2;";
         add(body, "div", "ob-sb", "no right answers").style.cssText = "text-align:center;margin-top:6px;";
@@ -4408,30 +4531,52 @@
           var on3 = data.vibe === o[0], r = add(vw, "div", "k-row" + (on3 ? " lit" : ""));
           r.style.cssText = "--kc:" + mixHex(o[4], "#160510", 0.28) + ";--kt:" + mixHex(o[4], "#0d0410", 0.86) + ";--kA:" + o[4] + ";--kB:" + mixHex(o[4], "#160510", 0.24) + ";--ki:" + mixHex(o[4], "#0d0410", 0.76) + ";--ks:" + mixHex(o[4], "#b39ab0", 0.5) + ";";
           r.innerHTML = '<i class="ti ' + o[3] + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o[1] + '</div><div class="kr-s">' + o[2] + '</div></div>' + (on3 ? '<i class="ti ti-check kr-chk"></i>' : '');
-          r.onclick = function () { if (data.vibe === o[0]) return; data.vibe = o[0]; data.energy = o[5]; draw(); setTimeout(next, 550); };
+          r.onclick = function () { if (data.vibe === o[0]) return; data.vibe = o[0]; data.energy = o[5]; draw(); clearTimeout(advT); advT = setTimeout(next, 1700); };
         });
-        add(body, "div", "ob-sb", "your pick ignites — like a matched block").style.cssText = "text-align:center;margin-top:16px;opacity:.65;";
+        var VR = { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." };
+        if (data.vibe) { add(body, "div", "ob-sb", VR[data.vibe]).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;"; }
+        else add(body, "div", "ob-sb", "your pick ignites — like a matched block").style.cssText = "text-align:center;margin-top:16px;opacity:.65;";
         var skip3 = add(foot, "button", "ob-skip", "skip"); skip3.onclick = finish;
         return;
       }
-      if (step === 4) {
+      if (step === 3) { // THE TASK, SIZED BY THE READ (placement-by-attempt, 2026-07-03): Drowning = one thing, Burning = three-against-the-clock — the same state-question finally has teeth on the very next screen. Room grid is dead; the room is asked AFTER the win, from the body ("where were you just standing?"), so messRoom is revealed, not surveyed.
         if (!data.taskDone) {
-          add(body, "div", "ob-lbl", "WHICH ROOM IS THE MESSIEST?"); // moved here from the vibe beat — the read stays one question per screen (frame 12)
-          var rr = add(body, "div", "ob-row");
-          ["Bedroom", "Kitchen", "Living room", "Desk / office", "Bathroom"].forEach(function (r) { var c = chip(rr, r, data.messRoom === r); c.onclick = function () { data.messRoom = r; draw(); }; });
           add(body, "i", "ti ti-arrow-big-down-lines ob-spk").style.marginTop = "18px";
-          add(body, "div", "ob-q", "Pick two things up off the floor. I'll wait.");
+          add(body, "div", "ob-q", data.vibe === "overwhelmed" ? "Pick ONE thing up off the floor. That's the whole ask." : data.vibe === "thriving" ? "Three things off the floor — beat thirty seconds. Go." : "Pick two things up off the floor. I'll wait.");
           add(body, "div", "ob-sb", "really — go do it, then tap Done.");
           var db = add(foot, "button", "ob-btn go", "Done ✓"); db.onclick = taskDone;
           var skip4 = add(foot, "button", "ob-skip", "skip"); skip4.onclick = finish;
         } else {
           add(body, "i", "ti ti-sparkles ob-spk"); add(body, "div", "ob-q", "+18 Spark.");
           add(body, "div", "ob-sb", "that's it. that's the whole game — real things, remembered.");
+          add(body, "div", "ob-sb", "Where were you just standing?").style.cssText = "margin-top:20px;font-weight:700;color:#f0e6ef;";
+          var rr = add(body, "div", "ob-row");
+          ["Bedroom", "Kitchen", "Living room", "Desk / office", "Bathroom"].forEach(function (r) { var c = chip(rr, r, data.messRoom === r); c.onclick = function () { data.messRoom = r; draw(); }; });
+          if (data.messRoom) add(body, "div", "ob-sb", "Noted. That corner's on my list for you now.").style.cssText = "margin-top:10px;opacity:.85;";
           stdFoot("Next ▸", false);
         }
         return;
       }
-      if (step === 5) {
+      if (step === 4) { // THE BLOCKER BLESSING (P0-a, 2026-07-03): the shape of the wall, never the content — three fixed chips (RU-safe), the reply is a promise the Doorway node cashes on days 2-7
+        var av4 = add(body, "div", "ob-ava"); av4.innerHTML = '<i class="ti ti-sparkles"></i>';
+        add(body, "div", "ob-q", "One real thing you've been circling.").style.cssText = "font-size:24px;font-weight:800;text-align:center;line-height:1.2;";
+        add(body, "div", "ob-sb", "I don't need to know what it is — just the shape of the wall.").style.cssText = "text-align:center;margin-top:6px;";
+        var bw = add(body, "div"); bw.style.cssText = "width:100%;display:flex;flex-direction:column;gap:12px;margin-top:22px;text-align:left;";
+        [["fear", "It scares me to even look", "ti-flame", "#ff8a3a"],
+         ["overwhelm", "Too big — I don't know where it starts", "ti-mountain", "#7a9aff"],
+         ["wound", "An old bad time with it", "ti-anchor", "#c4607f"],
+         ["none", "Nothing like that — I'm just here", "ti-cloud", "#48b8e0"]].forEach(function (o) {
+          var on4 = data.block === o[0], r = add(bw, "div", "k-row" + (on4 ? " lit" : ""));
+          r.style.cssText = "--kc:" + mixHex(o[3], "#160510", 0.28) + ";--kt:" + mixHex(o[3], "#0d0410", 0.86) + ";--kA:" + o[3] + ";--kB:" + mixHex(o[3], "#160510", 0.24) + ";--ki:" + mixHex(o[3], "#0d0410", 0.76) + ";--ks:" + mixHex(o[3], "#b39ab0", 0.5) + ";";
+          r.innerHTML = '<i class="ti ' + o[2] + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o[1] + '</div></div>' + (on4 ? '<i class="ti ti-check kr-chk"></i>' : '');
+          r.onclick = function () { if (data.block === o[0]) return; data.block = o[0]; draw(); clearTimeout(advT); advT = setTimeout(next, 1900); };
+        });
+        var BR = { fear: "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.", overwhelm: "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.", wound: "Then we go gently — with a way out at every step. You set the pace.", none: "Good. Then we build forward." };
+        if (data.block) { add(body, "div", "ob-sb", BR[data.block]).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;"; stdFoot("Next ▸", false); }
+        else { var skipB = add(foot, "button", "ob-skip", "skip"); skipB.onclick = finish; }
+        return;
+      }
+      if (step === 6) {
         add(body, "div", "ob-world").innerHTML = '<i class="ti ti-sparkles"></i>';
         add(body, "div", "ob-q", "Plant your first seed."); add(body, "div", "ob-sb", "free — you already earned it.");
         if (!data.seeded) {
