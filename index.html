@@ -247,11 +247,11 @@
   .jp-unit.locked .ju-ic{background:#1c0612;}
   .jp-unit.open{background:#33203a;color:#d6abc4;border-color:#6a4a78;}
   .jp-unit.open .ju-ic{background:#1c0612;color:#caa0bd;}
-  /* ===== JOURNEY WORLDS v2 (David device 2026-07-03): PRISM-framed BRIGHT pokemon-card gates — holographic, never dark, ink text always legible ===== */
-  .jp-unit.gate{ overflow:visible; animation:gateHoloPan 4.5s linear infinite; }
-  @keyframes gateHoloPan{ 0%{ background-position:0 0, 0 50%; } 100%{ background-position:0 0, 300% 50%; } } /* pans ONLY the prism border layer; the world inner stays put */
-  .jp-unit.gate .ju-k{ opacity:.72; }
-  .jp-unit.gate .ju-why{ color:#160510 !important; opacity:.82; }
+  /* ===== JOURNEY WORLDS v3 (David device 2026-07-03): binder-grammar WILD-pattern gates — sunburst/starfield/slashes/lattice/rainbow, hue border, gold-ring disc ===== */
+  .jp-unit.gate{ overflow:visible; }
+  .jp-unit.gate .ju-k{ font-weight:800; letter-spacing:1.6px; }
+  .jp-unit.gate .ju-t{ text-shadow:0 1px 0 rgba(10,3,8,.55); }
+  .jp-unit.gate .ju-why{ color:#f0dcea; opacity:.85; text-shadow:0 1px 0 rgba(10,3,8,.5); }
   .jp-unit.gate::after{ content:""; position:absolute; left:-10px; right:-10px; top:100%; height:110px; background:radial-gradient(60% 100% at 50% 0%, var(--wglow,transparent), transparent); pointer-events:none; z-index:0; } /* the world's glow spills down over its sealed sparks */
   .jp-unit.gate .gatefoil{ position:absolute; inset:0; border-radius:12px; overflow:hidden; pointer-events:none; }
   .jp-unit.gate .gatefoil::before{ content:""; position:absolute; top:-25%; bottom:-25%; left:0; width:45%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 3.6s linear infinite; } /* bright holo sweep across EVERY gate */
@@ -1261,12 +1261,13 @@
   .mint-ov.out{ opacity:0; transition:opacity .4s; }
   .mint-card{ position:relative; width:198px; border-radius:16px; padding:22px 16px 18px; text-align:center; border:3px solid #ffd24a; overflow:hidden; animation:mintIn .55s cubic-bezier(.3,1.5,.4,1), mintTilt 5s .6s ease-in-out infinite; transform-style:preserve-3d; box-shadow:0 0 34px rgba(255,210,74,.35); }
   .mint-sheen{ position:absolute; inset:0; background:linear-gradient(115deg,transparent 30%,rgba(120,255,220,.22) 42%,rgba(255,120,220,.26) 50%,rgba(120,180,255,.22) 58%,transparent 70%); background-size:300% 100%; animation:cardSheen 3.2s ease-in-out infinite, holoHue 6s linear infinite; pointer-events:none; z-index:2; }
-  .el-prism{ background:linear-gradient(160deg,#2a0a2e,#12041a 70%); }
-  .el-burst{ background:radial-gradient(120% 100% at 50% 100%,#3a0e02 0%,#1c0500 60%); border-color:#ffb02e; }
-  .el-cosmos{ background:radial-gradient(100% 80% at 30% 20%,#141450 0%,#0a0a2e 45%,#04041a 100%); border-color:#8ac8e8; }
-  .el-slash{ background:linear-gradient(160deg,#38060e,#1a0206 70%); border-color:#ff5a5a; }
-  .el-lattice{ background:linear-gradient(160deg,#2e2408,#171203 70%); border-color:#ffd24a; }
-  .el-bio{ background:linear-gradient(160deg,#062e1a,#02160c 70%); border-color:#46e2a4; }
+  /* WILD ELEMENT PATTERNS (David 2026-07-03: "wild colors and patterns, not one solid color" — matched to his binder screenshot; STANDING design language for special surfaces) */
+  .el-prism{ background:repeating-linear-gradient(90deg,#c44a6e 0 4px,#c4884a 4px 8px,#b0b04e 8px 12px,#4eb072 12px 16px,#4a8ec4 16px 20px,#7a5ac4 20px 24px,#b04a9e 24px 28px); } /* «Вернулся» rainbow barcode */
+  .el-burst{ background:repeating-conic-gradient(from 0deg at 50% 58%,#2a0e02 0deg 9deg,#7a4a10 9deg 18deg), radial-gradient(100% 90% at 50% 58%,#5a2a06 0%,#1c0500 80%); border-color:#ffb02e; } /* «Вспышка» sunburst rays */
+  .el-cosmos{ background:radial-gradient(1.5px 1.5px at 22% 18%,#fff 99%,transparent), radial-gradient(1px 1px at 68% 32%,#cfe6ff 99%,transparent), radial-gradient(1.5px 1.5px at 42% 66%,#fff 99%,transparent), radial-gradient(1px 1px at 82% 74%,#cfe6ff 99%,transparent), radial-gradient(100% 80% at 30% 20%,#1c2a7a 0%,#0e1450 45%,#04041a 100%); border-color:#8ac8e8; } /* «Космос» starfield */
+  .el-slash{ background:repeating-linear-gradient(-55deg,#38060e 0 10px,#6e0e1e 10px 14px,#38060e 14px 26px,rgba(255,90,90,.13) 26px 28px), linear-gradient(160deg,#38060e,#1a0206 70%); border-color:#ff5a5a; }
+  .el-lattice{ background:repeating-linear-gradient(0deg,transparent 0 11px,rgba(255,210,74,.13) 11px 12px), repeating-linear-gradient(90deg,transparent 0 11px,rgba(255,210,74,.13) 11px 12px), linear-gradient(160deg,#2e2408,#171203 70%); border-color:#ffd24a; }
+  .el-bio{ background:repeating-linear-gradient(115deg,#062e1a 0 9px,#0a4a2a 9px 13px,#062e1a 13px 22px,rgba(70,226,164,.13) 22px 24px), linear-gradient(160deg,#062e1a,#02160c 70%); border-color:#46e2a4; }
   .mint-ic{ position:relative; z-index:3; width:74px; height:74px; margin:0 auto 10px; border-radius:50%; background:rgba(22,5,16,.55); border:3px solid rgba(255,255,255,.35); display:flex; align-items:center; justify-content:center; font-size:34px; color:#fff; }
   .mint-name{ position:relative; z-index:3; color:#fff; font-family:"Jost",sans-serif; font-weight:800; font-size:18px; text-shadow:0 0 12px rgba(255,255,255,.35); }
   .mint-flavor{ position:relative; z-index:3; color:rgba(255,240,250,.85); font-family:"Jost",sans-serif; font-size:12.5px; margin-top:4px; line-height:1.35; }
@@ -2496,6 +2497,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=868"></script>
+  <script src="app.js?v=869"></script>
 </body>
 </html>

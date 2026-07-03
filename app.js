@@ -2422,20 +2422,28 @@
     }
 
     // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.
-    // FUTURE = WORLDS v2 (David device 2026-07-03: "crazy pokemon colors, holographic vibes; SEE the future circles"): every gate = a PRISM-framed BRIGHT world card (the binder/Return holo border, animated) with ink text; EVERY future chapter shows its sealed-spark stones + chest — visible-locked, never collapsed.
+    // FUTURE = WORLDS v3 (David device 2026-07-03: "WILD colors and PATTERNS like the binder cards, not one solid color"): every gate = a binder-grammar foil card — its own WILD pattern (sunburst / starfield / slashes / lattice / rainbow barcode) in the world hue, bright hue border, dark-circle gold-ring icon disc, light text. EVERY future chapter shows its sealed sparks + chest.
+    function worldPattern(i, w) {
+      var c = w.c, g = w.g;
+      if (i === 7) return "repeating-linear-gradient(90deg,#c44a6e 0 4px,#c4884a 4px 8px,#b0b04e 8px 12px,#4eb072 12px 16px,#4a8ec4 16px 20px,#7a5ac4 20px 24px,#b04a9e 24px 28px)"; // Radiance = the «Вернулся» rainbow barcode
+      if (i === 0 || i === 4) return "repeating-conic-gradient(from 0deg at 50% 62%," + g + " 0deg 9deg," + mixHex(c, "#160510", 0.5) + " 9deg 18deg), radial-gradient(110% 95% at 50% 62%," + mixHex(c, "#160510", 0.3) + " 0%," + g + " 82%)"; // Ember/Crown = «Вспышка» sunburst rays
+      if (i === 1) return "radial-gradient(1.5px 1.5px at 20% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 62% 18%,#e8d9ff 99%,transparent), radial-gradient(1.5px 1.5px at 44% 70%,#fff 99%,transparent), radial-gradient(1px 1px at 84% 55%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%," + mixHex(c, "#160510", 0.35) + " 0%," + g + " 55%,#0c0418 100%)"; // Starlight = «Космос» starfield
+      if (i === 5) return "repeating-linear-gradient(0deg,transparent 0 11px," + c + "22 11px 12px), repeating-linear-gradient(90deg,transparent 0 11px," + c + "22 12px 13px), linear-gradient(160deg," + mixHex(c, "#160510", 0.55) + "," + g + " 75%)"; // Circuits = lattice grid
+      if (i === 3) return "repeating-linear-gradient(0deg," + g + " 0 9px," + mixHex(c, "#160510", 0.42) + " 9px 13px," + g + " 13px 24px," + c + "26 24px 26px)"; // Lakes = water bands
+      return "repeating-linear-gradient(115deg," + g + " 0 9px," + mixHex(c, "#160510", 0.4) + " 9px 13px," + g + " 13px 22px," + c + "26 22px 24px)"; // Shield/Roots = slash weave
+    }
     for (var f = JP_CHAPTERS.length - 1; f > jn; f--) {
       var _far = f > jn + 1, _w = JP_WORLDS[f] || JP_WORLDS[0];
       var _fb = banner("gate" + (_far ? " fargate" : ""), tr("World") + " " + (f + 1) + (_far ? "" : " · " + tr("soon")), JP_CHAPTERS[f].t, JP_CHAPTERS[f].ic, _far ? null : JP_CHAPTERS[f].why);
-      // PRISM BORDER (jpHoloPan holo, border-box) over a BRIGHT world inner (padding-box) — pokemon-card grammar, ink text = always legible
-      _fb.style.border = "3px solid transparent";
-      _fb.style.background = "linear-gradient(135deg," + mixHex(_w.c, "#ffffff", _far ? 0.1 : 0.24) + "," + (_far ? mixHex(_w.c, "#160510", 0.22) : _w.c) + ") padding-box, linear-gradient(115deg,#ffb3d9,#a3d9ff,#b8ffd9,#ffe9a3,#d9a3ff,#ffb3d9) border-box";
-      _fb.style.backgroundSize = "100% 100%, 300% 100%";
-      _fb.style.color = "#160510"; _fb.style.boxShadow = "0 4px 0 #160510"; _fb.style.setProperty("--wglow", _w.c + "33");
-      var _fi = _fb.querySelector(".ju-ic"); if (_fi) { _fi.style.background = "rgba(22,5,16,.16)"; _fi.style.borderColor = "#160510"; _fi.style.color = "#160510"; }
-      if (_far) { var _lk = add(_fb, "div", "gate-lock"); _lk.innerHTML = '<i class="ti ti-lock"></i>'; } // far worlds: visibly LOCKED (a small ink chip), still full color
-      add(_fb, "div", "gatefoil"); // holo sweep on every gate
+      _fb.style.background = worldPattern(f, _w);
+      _fb.style.borderColor = _w.c; _fb.style.color = "#fff2f9"; _fb.style.boxShadow = "0 4px 0 #160510, 0 0 18px " + _w.c + "2e"; _fb.style.setProperty("--wglow", _w.c + "33");
+      var _fk = _fb.querySelector(".ju-k"); if (_fk) _fk.style.color = f === 7 ? "#160510" : _w.c; // the eyebrow speaks the world hue (barcode world: ink for contrast)
+      if (f === 7) { var _ft = _fb.querySelector(".ju-t"); if (_ft) { _ft.style.color = "#160510"; } } // rainbow barcode is bright — ink title there
+      var _fi = _fb.querySelector(".ju-ic"); if (_fi) { _fi.style.background = "rgba(10,3,8,.72)"; _fi.style.border = "2px solid #ffd24a"; _fi.style.borderRadius = "50%"; _fi.style.color = "#ffd24a"; } // binder disc: dark circle, gold ring, gold icon
+      if (_far) { var _lk = add(_fb, "div", "gate-lock"); _lk.innerHTML = '<i class="ti ti-lock"></i>'; } // far worlds: visibly LOCKED, still full pattern
+      add(_fb, "div", "gatefoil"); // the mint-sheen sweep rides the pattern
       (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
-      for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c }, gi++); // the future circles — SEALED SPARKS in the world hue, visible for EVERY world
+      for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c }, gi++);
       trophy("locked", "ti-treasure-chest").querySelector(".jt-b").style.cssText = "background:" + mixHex(_w.c, "#160510", 0.5) + ";border-color:" + mixHex(_w.c, "#160510", 0.15) + ";color:" + _w.c + ";box-shadow:0 4px 0 #160510,0 0 14px " + _w.c + "44;";
     }
     // ACTIVE chapter = TODAY — wears ITS world's hue as the BRIGHT striped hero banner (door stripes, ink text legible — never the dark stripe).
