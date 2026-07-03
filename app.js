@@ -1954,7 +1954,6 @@
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
-    try { if (document.body.classList.contains("compass")) compassFace(); else compassFold(); } catch (e) {} // COMPASS: refresh the pill icon / re-fold after any pane switch
   }
   var _paneAnim = false;
   function initPaneCarousel() {
@@ -6487,7 +6486,7 @@
       var stt = (status === "ok" && !partial) ? "cele" : dark ? "ghost" : "sched";
       var card = add(cal, "div", "calblk lane " + stt + (b.pin ? " pin" : "") + (newlyPassed ? " burning" : "") + (newlyCele ? " celepop ignite" : "") + (!b.title ? " emptyblk" : ""));
       place(card, bs, b.mins || 30, "P");
-      if (stt === "sched" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // future plan = ONE full-width bar — no real lane exists yet (David 2026-06-25)
+      if (stt !== "cele" && (k > todayK() || (k === todayK() && bs >= now))) { card.style.right = "4px"; card.classList.add("futurebar"); } // ANY future block = ONE full-width bar — no real lane exists in the future (David 2026-06-25; broadened 2026-07-03: "in the future, something should fill up both sides") — cele already fuses full-width
       if (status === "ok" && !partial) { card.style.right = "4px"; card.classList.add("fusedbar"); } // FULLY matched = ONE connected full-width bar (plan + real fused) (David 2026-06-25)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
@@ -6572,7 +6571,16 @@
             else { if (mi >= 0) logs(k).splice(mi, 1); b.done = false; reflow(k); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e2) {} toast("marked not done — just a plan"); }
           }
           else if (fling && dxEnd > 0) { var dmv = domainOf(b), tnow = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); logs(k).push({ id: uid(), time: tnow, mins: b.mins || 30, title: b.title, domain: dmv, color: b.color || (DOM[dmv] || DOM.focus).c, catK: b.catK || null, prio: b.prio || 2 }); var a3 = blocks(k), bi3 = a3.indexOf(b); if (bi3 >= 0) a3.splice(bi3, 1); reflow(k); reflowLogs(k); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e2) {} toast("moved to real"); } // a plan flung all the way RIGHT RELOCATES into the real lane (it doesn't fuse to the middle — fusing is a side-stretch) (David 2026-06-25)
-          else if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); reflow(k); save(); renderToday(); }
+          else if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60);
+            // FREE DRAG INTO THE FUTURE (David device 2026-07-03): the dropped block OWNS its window — any other undone block overlapping it (pin or not) gets pushed forward past its end, cascading via reflow. Past blocks never move backward; same-title neighbours then fuse in reflow's merge pass.
+            (function () { var ds = dragMin, de = dragMin + (b.mins || 30), arr = blocks(k), g3 = 0, moved3 = true;
+              while (moved3 && g3++ < 40) { moved3 = false;
+                for (var i = 0; i < arr.length; i++) { var o = arr[i]; if (o === b || o.done || !o.title) continue; var os = hm(o.time), oe = os + (o.mins || 30);
+                  if (os < de && oe > ds && os >= ds) { o.time = pad(Math.floor((de % 1440) / 60)) + ":" + pad(de % 60); moved3 = true; de = Math.max(de, hm(o.time) + (o.mins || 30)); } // starts inside the dropped window → push forward (cascade extends the frontier)
+                }
+              }
+            })();
+            reflow(k); save(); renderToday(); }
           else if (!wasScroll && e && Math.abs(e.clientX - sx0) < 12 && Math.abs(e.clientY - sy0) < 12) editBlk(b); } // bin → delete · fling → convert · moved → reorder · only a near-STATIONARY tap edits (a swipe across the bubble pages the day instead) — David 2026-06-26
         function cancel() { clean(); }
         document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
@@ -6899,7 +6907,7 @@
       })();
     }
     // MARK DONE (plan only)
-    if (!isLog) {
+    if (!isLog && !(k >= todayK() && (k > todayK() || hm(o.time) >= logicalNowMin()) && !o.done)) { // FUTURE blocks carry NO done/undone control (David device 2026-07-03: "something can't be done or undone in the future") — the button appears only once the block's start has arrived (or it was already marked)
       var didit = add(B, "button", "ed-didit" + (o.done ? " on" : "")); function ddTxt() { didit.innerHTML = o.done ? '<i class="ti ti-circle-check"></i> did it · tap to undo' : '<i class="ti ti-circle"></i> mark done'; } ddTxt();
       didit.onclick = function () { o.done = !o.done; didit.classList.toggle("on"); ddTxt(); if (o.done) { var _st = bumpStreak(); if (o.plannedAhead) { /* planned-then-done tier — block was planted before today */ celebrate(D().c, _st); try { earn(2, { label: "planned-then-done" }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game."); } else { /* Tracking tier — done without pre-plan: quiet earn(8) + standard celebrate */ try { earn(8, { label: "tracking" }); } catch (e) {} celebrate(D().c, _st); } } else coolStreak(); commit(); };
     }
@@ -7388,6 +7396,17 @@
   // module-scope bounding span of same-domain real coverage over a plan block (the in-render matchedSpan is closure-scoped; this mirrors it for pastDiverged) — David 2026-06-27
   function matchedSpanFor(k, b, dom) { var lgs = logs(k), s = null, e = null, bs = hm(b.time), be = bs + (b.mins || 30); for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs && domainOf(lgs[i]) === dom) { var cs = Math.max(bs, ls), ce = Math.min(be, le); if (s === null || cs < s) s = cs; if (e === null || ce > e) e = ce; } } return s === null ? null : { start: s, end: e, cov: e - s }; }
   function reflow(k) {
+    // SAME ACTIVITY = ONE BLOCK, everywhere (David device 2026-07-03: "timeline doesn't combine … even if it's the same activity"): two undone blocks of the same title that touch/overlap (≤1min gap) fuse into one — heals old truncate+twin splits and makes drag-past-onto-future-twin merge naturally.
+    (function () { var arr = blocks(k), changed2 = true, guard2 = 0;
+      while (changed2 && guard2++ < 20) { changed2 = false;
+        var und = arr.filter(function (b) { return !b.done && b.title; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
+        for (var i = 0; i < und.length - 1; i++) { var a = und[i], c = und[i + 1];
+          if ((a.title || "").toLowerCase() !== (c.title || "").toLowerCase()) continue;
+          var ae = hm(a.time) + (a.mins || 30);
+          if (hm(c.time) <= ae + 1) { a.mins = Math.max(ae, hm(c.time) + (c.mins || 30)) - hm(a.time); if (c.pin) a.pin = true; arr.splice(arr.indexOf(c), 1); changed2 = true; break; }
+        }
+      }
+    })();
     var all = blocks(k).slice();
     var pins = all.filter(function (b) { return b.pin; }).map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
     var flex = all.filter(function (b) { return !b.pin; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
@@ -9164,10 +9183,11 @@
     initPaneCarousel(); // 3-PANE CAROUSEL (David 2026-06-30): one global finger-following slider across Planner | Journey | Game
     (function () { // the PERSISTENT bottom menu (#nav) is shared across all 3 panes — tapping a button switches panes cleanly (closes the others), matching the swipe. (Overrides the older per-tab handlers.)
       var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (S.profile && S.profile.simpleMode) { if (curPaneName() !== "journey") setPaneRest("journey"); return; } if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "planner") setPaneRest("planner"); }; // FIX #1: when nav is collapsed, the Today-pill tap MUST re-expand it (the old per-tab handler did this but was overwritten by the carousel pane handler — David 2026-06-30). simpleMode (Day 4, David 2026-07-02): hide the planner behind the journey — the button itself is display:none (see applySimpleMode()) but this guards against any stray tap reaching it.
-      var jr = el("navJourney"); if (jr) jr.onclick = function () { if (curPaneName() !== "journey") setPaneRest("journey"); };
+      var jr = el("navJourney"); if (jr) jr.onclick = function () { if (document.body.classList.contains("nav-collapsed") && document.body.classList.contains("journey-open")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "journey") setPaneRest("journey"); }; // journey corner pill tap = EXPAND (same as the planner's Today pill)
       var gm = document.querySelector('#nav .nb[data-tab="self"]'); if (gm) gm.onclick = function () { if (curPaneName() !== "game") setPaneRest("game"); };
       try { applySimpleMode(); } catch (e) {}
-      try { compassInit(); } catch (e) {} // COMPASS NAV boot: the bar rests folded
+      // compassInit() RETIRED (David device 2026-07-03): the centered auto-fold pill lost to the planner's own system — the bar now folds LEFT into the corner pill on scroll, identically on planner AND journey (one design, one model). compass* functions kept dormant.
+      (function () { var js = el("jpScroll"); if (js) js.addEventListener("scroll", function () { if (!_navLock && js.scrollTop > 24 && document.body.classList.contains("journey-open")) document.body.classList.add("nav-collapsed"); }); })(); // JOURNEY FOLD (David device 2026-07-03): scrolling the trail folds the bar into the left corner pill — the exact planner behavior, one system
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.

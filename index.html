@@ -1975,20 +1975,8 @@
   #nav .nb.on{ color:#ff5fa0 !important; background:none !important; }
   #nav .nb.on .ne{ filter:drop-shadow(0 0 7px rgba(255,95,160,.45)); }
   #nav .nb:active{ transform:scale(.92); }
-  /* ============ COMPASS NAV (chrome widget #21) — the bottom bar rests as a pill (active icon + 2 dots) and blooms on touch into Планер/Путь/Игра, auto-folding ~2.5s. A pure DISPLAY SHELL over #nav (one nav model — never combined with nav-collapsed: every rule requires :not(.nav-collapsed)). ============ */
-  #compassDots{ display:none; }
-  body.compass:not(.nav-collapsed) #nav{
-    left:0 !important; right:0 !important; margin:0 auto !important; width:fit-content !important; /* margin-auto centering — immune to the left/right cascade fights that pinned a translateX pill to the edge */
-    bottom:max(10px,calc(env(safe-area-inset-bottom,0px) + 4px)) !important;
-    border:3px solid #160510 !important; border-radius:22px !important; padding:0 !important; gap:0 !important;
-    justify-content:center !important; box-shadow:0 5px 0 #160510,0 10px 26px rgba(0,0,0,.5) !important;
-    transition:width .26s var(--ease-spring),border-radius .22s; }
-  body.compass:not(.nav-collapsed) #nav .nb{
-    max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important;
-    padding:0 !important; pointer-events:none !important; overflow:hidden; transition:max-width .2s,opacity .16s; }
-  body.compass:not(.nav-collapsed) #compassDots{ display:flex !important; align-items:center; gap:9px; padding:11px 18px; cursor:pointer; font-family:"Jost",sans-serif; }
-  body.compass:not(.nav-collapsed) #compassDots .cd-ic{ font-size:22px; color:#ff5fa0; line-height:1; filter:drop-shadow(0 0 7px rgba(255,95,160,.45)); }
-  body.compass:not(.nav-collapsed) #compassDots .cd-dot{ width:6px; height:6px; border-radius:50%; background:#9a6a86; }
+  /* COMPASS NAV RETIRED (David device 2026-07-03): the centered pill lost to the planner's own LEFT-corner fold, now unified across planner + journey (see nav-collapsed journey rules below). */
+  #compassDots{ display:none !important; }
   /* ============ «ТЫ» — the trainer/You surface (chrome widget #21) ============ */
   .you-wrap{ display:flex; flex-direction:column; gap:12px; padding:2px 0 4px; }
   .you-trainer{ position:relative; overflow:hidden; border:3px solid #160510; border-radius:20px; background:linear-gradient(150deg,#4a0f2c,#2c081a 70%); box-shadow:0 6px 0 #160510; padding:16px 16px 14px; }
@@ -2037,11 +2025,18 @@
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
   #nav .nb[data-tab="self"], #nav #navJourney{ overflow:hidden; transition:opacity .2s ease, transform .22s cubic-bezier(.2,.85,.3,1), max-width .26s cubic-bezier(.2,.85,.3,1); max-width:200px; }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="self"], body.nav-collapsed.tab-day #nav #navJourney{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="day"]{ flex:none !important; width:62px !important; height:62px !important; border-radius:13px !important; padding:0 !important; position:relative; } /* match the dock's height so the corner button + dock sit at the same height (David 2026-06-27) */
-  body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .nl2{ display:none !important; }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
-  body.nav-collapsed.tab-day #nav .nb[data-tab="day"]::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; } /* two faint bars on the right edge = "Goals & You are tucked behind, tap to open" */
+  body.nav-collapsed.tab-day:not(.journey-open) #nav .nb[data-tab="self"], body.nav-collapsed.tab-day:not(.journey-open) #nav #navJourney{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
+  body.nav-collapsed.tab-day:not(.journey-open) #nav .nb[data-tab="day"]{ flex:none !important; width:62px !important; height:62px !important; border-radius:13px !important; padding:0 !important; position:relative; } /* match the dock's height so the corner button + dock sit at the same height (David 2026-06-27) */
+  body.nav-collapsed.tab-day:not(.journey-open) #nav .nb[data-tab="day"] .nl2{ display:none !important; }
+  body.nav-collapsed.tab-day:not(.journey-open) #nav .nb[data-tab="day"] .ne{ font-size:25px !important; }
+  body.nav-collapsed.tab-day:not(.journey-open) #nav .nb[data-tab="day"]::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; } /* two faint bars on the right edge = "Goals & You are tucked behind, tap to open" */
+  /* ===== JOURNEY FOLD = the SAME planner system (David device 2026-07-03): scroll the trail → the bar folds LEFT into the journey corner pill; the live pill (#jpLive) drops beside it at the SAME 62px height; tap the pill → expands. One design, one model, equal-height bottom panel. ===== */
+  body.nav-collapsed.journey-open #nav .nb[data-tab="self"], body.nav-collapsed.journey-open #nav .nb[data-tab="day"]{ max-width:0 !important; min-width:0 !important; flex:0 0 0 !important; opacity:0 !important; padding-left:0 !important; padding-right:0 !important; pointer-events:none; transform:scale(.7); }
+  body.nav-collapsed.journey-open #nav #navJourney{ flex:none !important; width:62px !important; height:62px !important; border-radius:13px !important; padding:0 !important; position:relative; }
+  body.nav-collapsed.journey-open #nav #navJourney .nl2{ display:none !important; }
+  body.nav-collapsed.journey-open #nav #navJourney .ne{ font-size:25px !important; }
+  body.nav-collapsed.journey-open #nav #navJourney::after{ content:""; position:absolute; right:7px; top:9px; bottom:9px; width:3px; border-radius:2px; background:#6a3050; box-shadow:5px 0 0 -1px #4a2238; }
+  body.nav-collapsed.journey-open #jpLive{ left:80px !important; right:8px !important; bottom:max(9px,calc(env(safe-area-inset-bottom,0px) - 19px)) !important; height:62px !important; box-sizing:border-box !important; z-index:70 !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* +3px = the nav's border, so pill + player bottoms align pixel-equal */
   body.nav-collapsed.tab-day #liveDock.on{ left:80px !important; right:8px !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; position:fixed !important; z-index:70 !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); } /* FIX #2: explicit position:fixed + raised z-index so the folded dock stays pinned during planner scroll and can't be occluded — DEVICE-UNTESTED (David 2026-06-30) */
   body.nav-collapsed.tab-day #liveDock .ld-seg{ display:none !important; } /* narrow row = play/info/elapsed only; expand the nav for the Replan/Drift row */
   /* COLLAPSED DOCK = EXACTLY the Today pill's height (62px) — one compact even row beside it (David 2026-06-28). Drop the grab handle + the .ld-main bottom margin, slim the padding, vertically centre. */
@@ -2426,6 +2421,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=861"></script>
+  <script src="app.js?v=862"></script>
 </body>
 </html>
