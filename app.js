@@ -1325,7 +1325,7 @@
     "clean slate — where do we start?": "чистый лист — с чего начнём?", "open afternoon — pick a thread": "свободный день — с чего начнём?", "evening — one gentle thing?": "вечер — одно спокойное дело?", "late — one small win, then rest": "поздно — одна маленькая победа, потом отдых",
     "YESTERDAY NOW": "ВЧЕРА СЕЙЧАС", "again?": "повторить?", "one tap — plan and track at once": "один тап — план и трек сразу", "3 tasks — 60 seconds": "3 дела — 60 секунд",
     "on plan": "по плану", "left": "осталось", "min": "мин", "over by": "перебор", "ends": "конец", "free tracking": "свободный трек", "min tracked": "мин затрекано", "a plan doubles points": "план удвоит очки",
-    "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести",
+    "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
@@ -4393,10 +4393,11 @@
   // expanded / the play-stop circle in the folded dock). The rest are the secondary seg/row actions.
   function trackerControls(state) {
     switch (state) {
-      case "claim": { // §12 composition law: the claim is a hero + two doors — solid wears the block's colour, the escape whispers
+      case "claim": { // §12 composition law: a planned block's window is open + nothing tracking → LEAD with "start tracking it now" (David device 2026-07-03: the app must offer to instantly track what you planned, not only claim it retroactively); "Did it already" = the old retroactive claim; "Not mine" whispers
         var _cbk = null; try { _cbk = trackerState().block; } catch (e) {}
         var _cdm = _cbk ? (DOM[domainOf(_cbk)] || DOM.focus) : DOM.focus;
-        return [{ icon: "ti-circle-check", label: "Claim it", fn: tfClaim, primary: true, finish: "solid", c: _cdm.c, ink: _cdm.ink },
+        return [{ icon: "ti-player-play", label: "Track now", fn: function () { if (_cbk) { startPlanned(_cbk); renderTrackerFull(); } }, primary: true, finish: "solid", c: _cdm.c, ink: _cdm.ink },
+                { icon: "ti-circle-check", label: "Did it already", fn: tfClaim, finish: "striped", c: _cdm.c, ink: _cdm.ink },
                 { icon: "ti-x", label: "Not mine", fn: tfClaimDismiss, finish: "ghost" }];
       }
       case "night":
