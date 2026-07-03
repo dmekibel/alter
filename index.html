@@ -573,6 +573,7 @@
   .calblk.done{opacity:.5;} .calblk.done .cn{text-decoration:line-through;}
   .nowline{position:absolute;left:42px;right:0;height:2px;background:#ff5fa8;z-index:4;box-shadow:0 0 7px #ff5fa8;}
   .nowline::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ff5fa8;}
+  .nowline::after{content:"";position:absolute;right:-2px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ff5fa8;box-shadow:0 0 6px #ff5fa8;} /* RUN-1 mock 5: the now-line has a dot at BOTH ends */
   /* de-white + game + sheet close */
   .panel,#hero,#hero .hp,#hero .chip,#moveBtn,.add,.add2,.pchip,.tile,.gtile,.subcat,.qopt,.subi,.subitem,.bigcat,.nb.center,.done2,.go,.sheetcard,.ck,.bar,.meta,.handle,input[type=text],input[type=time],input[type=number]{border-color:#4a4068 !important;}
   #hero .hp{background:rgba(255,255,255,.16);color:#fff;}
@@ -1949,6 +1950,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=829"></script>
+  <script src="app.js?v=830"></script>
 </body>
 </html>
