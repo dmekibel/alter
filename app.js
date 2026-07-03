@@ -8053,7 +8053,7 @@
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
+    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } /* ref: the cell gaps live only INSIDE the filled battery — the empty track is clean */ tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
