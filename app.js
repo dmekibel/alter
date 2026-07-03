@@ -1332,6 +1332,7 @@
     "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
     "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
     "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "The rest": "Остальное", "You're today —": "Ты сегодня —", "been meaning to": "давно собирался",
+    "Return": "Вернуться", "day": "день", "together": "вместе", "saved": "запись", "Restore": "Восстановить", "your save": "твоё сохранение", "Erase everything and start over?": "Стереть всё и начать заново?", "profile · plan · garden — all of it": "профиль · план · сад — всё", "Erase everything": "Стереть всё", "Break": "Перерыв",
     "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
@@ -1837,26 +1838,65 @@
     _ssShown = true;
     var has = !!(S.profile && S.profile.set);
     var prim = el("ssPrimary"), nb = el("ssNew"), ln = el("ssLangName"), lb = el("ssLang");
-    if (prim) prim.innerHTML = has ? 'Continue' : 'Start'; // §12 frame 11: one clean word on the pink slab — no icon
+    var liveT = has ? ssLiveBlock() : null; // intro #17
+    if (prim) { prim.classList.toggle("ss-go", !!liveT); if (liveT) prim.innerHTML = '<i class="ti ti-player-play-filled"></i> ' + tr("Return") + ' · ' + esc(liveT); else prim.innerHTML = has ? 'Continue' : 'Start'; }
     if (nb) { nb.style.display = ""; nb.innerHTML = 'Start fresh'; } // bare word (frame 11); not "game" — it's a life app, not a game (David v660)
     ssLangLabel();
+    var tagEl = document.querySelector("#startScreen .ss-tag"); // intro #17: ember day-tag under ALTER
+    if (tagEl) { if (has) { tagEl.classList.add("ss-ember"); tagEl.innerHTML = '<i class="ti ti-flame"></i> ' + tr("day") + ' <b>' + ssDaysTogether() + '</b> ' + tr("together"); } else { tagEl.classList.remove("ss-ember"); tagEl.textContent = "your guardian angel"; } }
     var vEl = el("ssVer"); if (vEl) vEl.textContent = appVer(); // show the live build number (auto-synced from the app.js?v= tag preship bumps) — David 2026-07-01
     ss.classList.add("on");
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
     if (curLang() !== "en") translateTree(ss); // translate the start screen into the chosen language
-    if (nb) { var armed = false, t = null; nb.onclick = function () { if (!armed) { armed = true; nb.innerHTML = 'Erase &amp; start over?'; try { if (curLang() !== "en") translateTree(nb.parentElement); } catch (e2) {} if (t) clearTimeout(t); t = setTimeout(function () { armed = false; nb.innerHTML = 'Start fresh'; try { if (curLang() !== "en") translateTree(nb.parentElement); } catch (e3) {} }, 4000); return; } if (t) clearTimeout(t); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); }; } // two-tap: wipes everything → reload → onboarding
+    if (nb) { nb.onclick = function () { ssShowEraseCard(); }; } // intro #17: erase is a real armed door with a 4s un-arm drain, not an in-place relabel
     var lf = el("ssLoad"), fi = el("ssFile");
-    if (lf && fi) { // LOAD GAME = upload a backup file (the exported .json) → restore → reload into it
-      lf.onclick = function () { fi.value = ""; fi.click(); };
+    if (lf && fi) { // intro #17: LOAD previews the life inside the file first — never restores blind
+      lf.onclick = function () { ssShowLoadCard(); };
       fi.onchange = function () {
         var f = fi.files && fi.files[0]; if (!f) return;
         var r = new FileReader();
-        r.onload = function () { var d = parseBackup(String(r.result || "")); if (!d) { try { alert("That doesn't look like an ALTER backup file."); } catch (e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { try { alert("Couldn't load — storage may be full."); } catch (e2) {} return; } location.replace("index.html?cb=" + Date.now()); };
+        r.onload = function () { var d = parseBackup(String(r.result || "")); if (!d) return; ssRenderLoadPreview(d); };
         r.onerror = function () { try { alert("Couldn't read that file."); } catch (e) {} };
         r.readAsText(f);
       };
     }
+  }
+  // ===== intro verdict #17 helpers =====
+  function ssDaysTogether() { try { var p = S.profile && S.profile.pact && S.profile.pact.ts; if (!p) return 1; return Math.max(1, daysSince(key(new Date(p))) + 1); } catch (e) { return 1; } }
+  function ssLiveBlock() { try { var st = trackerState(); if (st.id === "onplan" && st.block) return st.block.title; if (st.id === "break") return tr("Break"); if ((st.id === "off" || st.id === "onplan") && st.t) return st.t.title; return null; } catch (e) { return null; } }
+  var _ssPend = null, _ssEraseTO = null;
+  function ssCardHost() { var ss = el("startScreen"); if (!ss) return null; var h = el("ssCard"); if (h) return h; h = add(ss, "div", "ss-cardov"); h.id = "ssCard"; h.style.cssText = "position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(10,3,10,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"; h.onclick = function (e) { if (e.target === h) ssCloseCard(); }; return h; }
+  function ssCloseCard() { var h = el("ssCard"); if (h) h.remove(); _ssPend = null; if (_ssEraseTO) { clearTimeout(_ssEraseTO); _ssEraseTO = null; } }
+  function ssShowLoadCard() { var fi = el("ssFile"); if (fi) { fi.value = ""; fi.click(); } }
+  function ssHumanDate(k) { try { var d = new Date(k + "T00:00:00"); return d.toLocaleDateString(curLang() === "en" ? [] : "ru-RU", { day: "numeric", month: "long" }); } catch (e) { return k; } }
+  function ssRenderLoadPreview(d) {
+    _ssPend = d; var h = ssCardHost(); if (!h) return; h.innerHTML = "";
+    var c = add(h, "div", "ss-card");
+    add(c, "div", "ss-card-cap", "ЗАГРУЗИТЬ · НАЙДЕНА ЖИЗНЬ");
+    var nm = (d.profile && d.profile.name) || tr("your save"), days = 1, lastK = null;
+    try { var pk = d.profile && d.profile.pact && d.profile.pact.ts; if (pk) days = Math.max(1, daysSince(key(new Date(pk))) + 1); } catch (e) {}
+    try { var lk = Object.keys(d.log || {}).sort(); lastK = lk[lk.length - 1] || null; } catch (e) {}
+    var row = add(c, "div", "ss-profrow"); add(row, "i", "ti ti-user-circle");
+    var col = add(row, "div"); add(col, "div", "ss-profname", esc(nm));
+    add(col, "div", "ss-profmeta").innerHTML = days + " " + tr("days") + " · " + tr("saved") + " " + (lastK ? ssHumanDate(lastK) : "—");
+    var go = add(c, "button", "ss-restore"); go.innerHTML = tr("Restore");
+    go.onclick = function () { if (!_ssPend) return; try { localStorage.setItem(KEY, JSON.stringify(_ssPend)); } catch (e) { try { alert("Couldn't load — storage may be full."); } catch (e2) {} return; } location.replace("index.html?cb=" + Date.now()); };
+    add(c, "button", "ss-cancel", tr("cancel")).onclick = ssCloseCard;
+    if (curLang() !== "en") { try { translateTree(c); } catch (e) {} }
+  }
+  function ssShowEraseCard() {
+    var h = ssCardHost(); if (!h) return; h.innerHTML = "";
+    var c = add(h, "div", "ss-card");
+    add(c, "div", "ss-card-cap warn", "НАЧАТЬ ЗАНОВО · 1-Й ТАП");
+    var row = add(c, "div", "ss-eraserow"); add(row, "i", "ti ti-alert-triangle");
+    add(row, "div", "ss-erasettl", tr("Erase everything and start over?"));
+    add(c, "div", "ss-erasescope", tr("profile · plan · garden — all of it"));
+    var drain = add(c, "div", "ss-drain"); add(drain, "i");
+    add(c, "button", "ss-restore", tr("Erase everything")).onclick = function () { if (_ssEraseTO) clearTimeout(_ssEraseTO); try { localStorage.clear(); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} location.replace("index.html?cb=" + Date.now()); };
+    add(c, "button", "ss-cancel", tr("cancel")).onclick = ssCloseCard;
+    if (_ssEraseTO) clearTimeout(_ssEraseTO); _ssEraseTO = setTimeout(function () { ssCloseCard(); }, 4000); // un-arms in lockstep with the drain bar; only CLOSES, never erases
+    if (curLang() !== "en") { try { translateTree(c); } catch (e) {} }
   }
   function ssEnter(has) {
     var ss = el("startScreen");

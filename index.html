@@ -90,6 +90,32 @@
   .ss-sub:active{ transform:translateY(1px); box-shadow:none !important; opacity:.7; }
   .ss-load{ color:#b3a0c4; }
   .ss-new{ color:#c4a0b4; }
+  /* ===== intro verdict #17 ===== */
+  .ss-tag.ss-ember{ display:inline-flex; align-items:center; gap:7px; color:#e9b9cf; font-size:15px; font-weight:700; letter-spacing:.2px; }
+  .ss-tag.ss-ember .ti-flame{ color:#ff8a3d; font-size:17px; filter:drop-shadow(0 0 6px rgba(255,138,61,.55)); animation:ssFlick 2.6s ease-in-out infinite; }
+  @keyframes ssFlick{ 0%,100%{ transform:translateY(0) rotate(-1deg); opacity:1; } 50%{ transform:translateY(-1px) rotate(1.5deg); opacity:.82; } }
+  .ss-tag.ss-ember b{ font-weight:800; color:#ffe3f1; }
+  .ss-primary.ss-go{ background:#28cf86; color:#0a3a24; }
+  .ss-primary.ss-go .ti-player-play-filled{ font-size:20px; }
+  .ss-card{ width:100%; max-width:430px; background:#2c081a; border:3px solid #160510; border-radius:22px; box-shadow:0 6px 0 #160510; padding:18px 18px 16px; margin:0 auto; animation:ssRise .5s cubic-bezier(.2,.9,.3,1.02) both; }
+  @keyframes ssRise{ from{ transform:translateY(14px) scale(.96); opacity:0; } to{ transform:none; opacity:1; } }
+  .ss-card-cap{ font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; letter-spacing:1.4px; text-transform:uppercase; color:#c78ab0; margin-bottom:12px; }
+  .ss-card-cap.warn{ color:#e79a84; }
+  .ss-profrow{ display:flex; align-items:center; gap:13px; margin-bottom:14px; }
+  .ss-profrow .ti{ font-size:26px; color:#ff4fa0; flex:none; }
+  .ss-profname{ font-family:"Jost",sans-serif; font-weight:800; font-size:21px; color:#ffe3f1; line-height:1.1; }
+  .ss-profmeta{ font-family:"Jost",sans-serif; font-weight:600; font-size:13.5px; color:#b58aa6; margin-top:2px; }
+  .ss-restore{ width:100%; font-family:"Jost",sans-serif; font-weight:800; font-size:18px; cursor:pointer; border:3px solid #160510; border-radius:16px; box-shadow:0 5px 0 #160510; background:#ff4fa0; color:#4a1126; padding:16px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .ss-restore:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510 !important; }
+  .ss-cancel{ display:block; width:100%; text-align:center; margin-top:11px; background:none; border:none; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; letter-spacing:.4px; color:#9a7f92; cursor:pointer; }
+  .ss-cancel:active{ opacity:.6; }
+  .ss-eraserow{ display:flex; align-items:flex-start; gap:11px; margin-bottom:9px; }
+  .ss-eraserow .ti-alert-triangle{ font-size:22px; color:#e79a84; flex:none; margin-top:2px; }
+  .ss-erasettl{ font-family:"Jost",sans-serif; font-weight:800; font-size:18px; color:#ffe3f1; line-height:1.15; }
+  .ss-erasescope{ font-family:"Jost",sans-serif; font-weight:600; font-size:13.5px; color:#b58aa6; margin:0 0 14px 33px; }
+  .ss-drain{ height:6px; border-radius:6px; background:rgba(255,79,160,.16); overflow:hidden; }
+  .ss-drain > i{ display:block; height:100%; width:100%; border-radius:6px; background:linear-gradient(90deg,#ff4fa0,#ff8ac0); transform-origin:left center; animation:ssDrain 4s linear forwards; }
+  @keyframes ssDrain{ from{ transform:scaleX(1); } to{ transform:scaleX(0); } }
   @keyframes ssRise{ from{ opacity:0; transform:translateY(18px) scale(.96); } to{ opacity:1; transform:none; } }
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .ss-lang,.ss-sparkles,.ss-guardian-wrap,.ss-guardian,.ss-halo,.ss-spark,.ss-spk2,.ss-spk3,.ss-title,.ss-tag,.ss-btn{ animation:none !important; opacity:1 !important; } }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
@@ -2116,6 +2142,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=840"></script>
+  <script src="app.js?v=841"></script>
 </body>
 </html>
