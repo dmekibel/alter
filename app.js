@@ -2392,7 +2392,7 @@
   function startOrSwitch() { var run = activeTimers(), pr = []; try { pr = avoidedActs(); } catch (e) {} bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", priority: pr, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } }); } // single-tap: tap an activity = start it (one activity at a time; no multi-select confirm step) — David 2026-06-27. C8/D3 (2026-07-02): + the "been meaning to…" row, + redraw the journey when picked from there so the now-node becomes the cockpit. G4 (David on device, v801): NO auto-scroll on that redraw — picking must not yank the trail to the next node.
   // ALWAYS OFFER NEXT (§23/§15): the earliest still-open planned block (upcoming or in-progress, not done/missed) — getting "back on plan" is one tap
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
-  function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: matches the block's domain → gold + streak
+  function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK, domain: b.domain || domainOf(b) }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: carry the block's domain so it MATCHES → gold + streak + green ring
   function startNextNow(nb, mins) { // §12 cockpit frame (upload 07): the next planned thing starts NOW for this long — replan-forward (pull the block to the now-line, truncate any straddler) + track, one tap
     var k = todayK(), now = logicalNowMin();
     blocks(k).forEach(function (b) { if (b.done || b.id === nb.id) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
@@ -2406,7 +2406,7 @@
         blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); }); // the new plan owns now->future (replan semantics)
         var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false, pin: true };
         blocks(k).push(nb); reflow(k); save();
-        var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK }); if (t) { t.commit = mins; } maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
+        var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK, domain: dom }); if (t) { t.commit = mins; } maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
       }, null, { icon: "ti-player-play", label: "No timer — just track", fn: function () {
         var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); toast("tracking — with a plan it earns more"); } }); // the gentle line, said once, never blocks
     } });
@@ -3394,10 +3394,11 @@
     }
     var dom = domainOf(t); if (dom === "drift") return { id: "off", t: t, dom: dom, drift: true };
     var d0 = new Date(t.start), s0 = d0.getHours() * 60 + d0.getMinutes(), e0 = nowMin(), onb = null;
-    blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 > bs && domainOf(b) === dom && !b.done) onb = b; });
+    blocks(todayK()).forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (s0 < be && e0 >= bs && domainOf(b) === dom && !b.done) onb = b; }); // e0>=bs (not >): a plan pulled to exactly now — its start == the just-started track's edge — still counts as on-plan (David device 2026-07-03: "Plan+track next" read off for the first minute)
     return { id: onb ? "onplan" : "off", t: t, dom: dom, block: onb };
   }
   function tfStripe(C) { return "repeating-linear-gradient(45deg," + C + "," + C + " 9px," + mixHex(C, "#160510", 0.42) + " 9px," + mixHex(C, "#160510", 0.42) + " 18px)"; } // vivid striped activity tile (matches the timeline-bubble texture, brighter for the hero)
+  function tfStripeDoor(C) { var lite = mixHex(C, "#ffffff", 0.13); return "repeating-linear-gradient(45deg," + lite + "," + lite + " 9px," + C + " 9px," + C + " 18px)"; } // BRIGHT striped DOOR (canon mock 1/4): light+base alternation, not base+near-black — keeps the dark ink label readable (David device 2026-07-03: the door read too dark)
   function nextUpBlock(afterMin) { var best = null; blocks(todayK()).forEach(function (b) { if (!b.title) return; var bs = hm(b.time); if (bs >= afterMin && blockStatus(todayK(), b) === "plan") { if (!best || bs < hm(best.time)) best = b; } }); return best; } // the next still-to-do planned block after a given minute → the "what's next" pointer
   function setTFNext(afterMin) { var nx = el("tfNext"); if (!nx) return; var nu = nextUpBlock(afterMin); if (nu) { nx.style.display = ""; nx.innerHTML = '<i class="ti ti-arrow-right"></i> next <b>' + esc(nu.title) + '</b> · ' + fmt(hm(nu.time)); nx.onclick = function () { startPlanned(nu); renderTrackerFull(); }; } else { nx.style.display = "none"; nx.onclick = null; } }
   function tfDomMinsToday(dom) { var s = 0; (logs(todayK()) || []).forEach(function (l) { if (!dom || domainOf(l) === dom) s += (l.mins || 0); }); return s; } // minutes logged today (optionally for one domain) — the "accumulation" glance
@@ -3427,7 +3428,7 @@
     blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
     var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: e.title, prio: 2, color: e.color, catK: e.catK, domain: e.dom, done: false, pin: true };
     blocks(k).push(nb); reflow(k); save();
-    var t = startTrackerNow(); assignTimer(t, { title: e.title, color: e.color, catK: e.catK }); if (t) t.commit = mins; maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
+    var t = startTrackerNow(); assignTimer(t, { title: e.title, color: e.color, catK: e.catK, domain: e.dom }); if (t) t.commit = mins; maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
   }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
@@ -3450,7 +3451,7 @@
     var _say = el("tfSay"); if (_say) _say.textContent = bkContinuity(); // soul-layer heartbeat: the guardian speaks what it remembers, on every open
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
-    if (tile) tile.style.border = ""; // reset any off-plan colored border before a state re-paints the disc
+    if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; } // reset off-plan border + any prior tap wiring before a state re-paints the disc
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet");
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
@@ -3485,7 +3486,7 @@
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
-      if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb, not the next block's colour
+      if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb; the big play button now actually TRACKS (David device 2026-07-03)
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
       var _sh = el("tfNextSheet");
@@ -4468,7 +4469,7 @@
         else if (x.sub) { bn.innerHTML = '<span class="tf-door-lead"><i class="ti ' + x.icon + '"></i><span>' + x.label + '</span></span><span class="tf-door-sub">' + esc(x.sub) + '</span>'; }
         else { bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; }
         if (x.finish === "solid") { bn.style.background = x.c; bn.style.color = x.ink; }
-        else if (x.finish === "striped") { bn.style.background = tfStripe(x.c); bn.style.color = x.ink; }
+        else if (x.finish === "striped") { bn.style.background = tfStripeDoor(x.c); bn.style.color = x.ink; }
         bn.onclick = x.fn;
       });
       if (halves.length) { var row = add(c, "div", "tf-row"); halves.forEach(function (x) { var bn = add(row, "button", "tf-door tf-door-ghost"); bn.style.flex = "1"; bn.style.minHeight = "48px"; bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; }); }
@@ -6012,7 +6013,7 @@
   }
   function pickOne(cb) { pickerSheet({ title: function () { return "What is it?"; }, frequent: true, custom: true, onTask: function (t) { closeSheet(); cb(t); } }); }
   function assignBlock(b, m, k) { pushUndo(); b.title = m.title; b.color = m.color || b.color; b.catK = m.catK || b.catK; save(); reflow(k); renderToday(); }
-  function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = emojiFor(m); t.habitId = m.habitId || null; save(); renderToday(); renderNow(); }
+  function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = emojiFor(m); t.habitId = m.habitId || null; if (m.domain) t.domain = m.domain; save(); renderToday(); renderNow(); } // carry the block's domain onto the timer so on-plan detection (domainOf(timer)===domainOf(block)) actually matches — else non-focus plans (workouts, meals, art) resolved to "focus" and read OFF-plan (David device, 2026-07-03)
   function assignTimerMulti(t, metas) { if (!metas || !metas.length) return; t.title = metas.map(function (m) { return m.title; }).join(" + "); t.emoji = metas.map(function (m) { return emojiFor(m); }).join(""); t.catK = metas[0].catK; t.color = metas[0].color || t.color; t.habitId = metas[0].habitId || null; t.tags = metas.map(function (m) { return m.title; }); save(); renderToday(); renderNow(); }
   function startTrackerNow() { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); /* C5/C10: same clean-switch choke point as startTimer — callers that already stopped are a no-op here */ S.timers.push({ id: uid(), title: "Tracking…", catK: null, emoji: "", color: "#ff5fa8", start: Date.now(), dayK: todayK() }); save(); return S.timers[S.timers.length - 1]; }
   function layoutLane(items) {
