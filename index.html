@@ -259,6 +259,9 @@
   .jp-node.done .jp-cap{color:#46e2a4;font-weight:800;}
   .jp-node.done .jp-mins{font-family:"Jost",sans-serif;font-size:11.5px;font-weight:700;color:#ffd24a;margin-top:1px;} /* verdict #11 keep: minutes on done stones */
   .jp-node.done .jp-check{position:absolute;right:50%;margin-right:-48px;top:2px;width:32px;height:32px;border-radius:50%;background:#28cf86;border:3px solid var(--ink);color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);} /* TOP-right of the bubble (David device: bottom pos overlapped the caption text below) */
+  /* FIRST LIGHT — the day's first done-node ignites with a gold ring flare (once per day) */
+  @keyframes jpFirstLight{ 0%{ box-shadow:0 0 0 0 rgba(255,196,31,.9), 0 0 0 0 rgba(255,196,31,.5); } 60%{ box-shadow:0 0 0 7px rgba(255,196,31,.35), 0 0 26px 9px rgba(255,196,31,.32); } 100%{ box-shadow:0 0 0 3px rgba(255,196,31,0), 0 0 0 0 rgba(255,196,31,0); } }
+  .jp-firstlight{ animation:jpFirstLight 1.8s var(--ease-settle) 1; }
   /* #5 — node completion burst: a quick scale-pop + gold ring on the bubble */
   .jp-node.jp-just-done .jp-bub{animation:jpNodeDone .55s cubic-bezier(.3,1.6,.4,1) forwards;}
   @keyframes jpNodeDone{0%{transform:scale(1);}40%{transform:scale(1.22);}70%{transform:scale(.95);}100%{transform:scale(1);}}
@@ -2386,6 +2389,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=856"></script>
+  <script src="app.js?v=857"></script>
 </body>
 </html>
