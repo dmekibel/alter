@@ -4527,7 +4527,12 @@
   }
   function tfDone() { var run = activeTimers(); closeTrackerFull(); if (run.length) stopTimer(run[run.length - 1].id); } // finish the activity → close, then log it + fire the on-plan reward (stopTimer)
   function fmtCD(ms) { var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); } // countdown m:ss (or h:mm:ss)
-  function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; durationSheet("Break", function (mins) { if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: mins }; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); }); } // declared break: log what you did so far, then hold a timed pause with the goal waiting
+  function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; durationSheet("Break", function (mins) { if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: mins };
+    // ALSO place the break as a real block at now→now+mins so it SHOWS in the timeline future (David device: picking 15m did nothing visible). Truncate any straddler so nothing overlaps.
+    var k = todayK(), now = logicalNowMin();
+    blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
+    blocks(k).push({ id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: tr("Break"), domain: "restore", color: DOM.restore.c, catK: null, done: false, pin: true, brk: true }); reflow(k);
+    save(); renderLiveTracker(); renderToday(); renderTrackerFull(); }); } // declared break: hold a timed pause with the goal waiting AND drop a rest block on the timeline
   function tfResumeBreak() { var B = S.brk; S.brk = null; save(); if (B && B.title) startTimer({ title: B.title, catK: B.catK, color: B.color }); renderLiveTracker(); renderToday(); renderTrackerFull(); } // come back → restart the paused goal
   function tfEndBreak() { S.brk = null; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); } // end the break without resuming → idle
   function tfBreakPlus(m) { if (S.brk) { S.brk.mins += m; save(); renderTrackerFull(); } }
