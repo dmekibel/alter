@@ -7970,10 +7970,11 @@
     ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div>';
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
+    var _xb0 = ov.querySelector(".bw-x"); if (_xb0) _xb0.innerHTML = '<i class="ti ti-x"></i>'; // ref: bare ✕ top-left
     orb.style.animation = "breathe 9s ease-in-out infinite";
     ov.style.setProperty("--gp-c", col); // PLAYER 1:1 (mock #20): element-tint everything (map pips, catch dots, ripple) to this session's color
-    orb.style.background = "radial-gradient(circle," + mixHex(col, "#ffffff", 0.55) + " 0%," + mixHex(col, "#160510", 0.10) + " 55%,rgba(0,0,0,0) 74%)"; // tinted orb — light core → session color → transparent
-    orb.style.boxShadow = "0 0 80px " + mixHex(col, "#160510", 0.15);
+    orb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(col, "#ffffff", 0.26) + " 0%," + col + " 55%," + mixHex(col, "#160510", 0.26) + " 100%)"; // ref: a SOLID element sphere with soft top-light, not a white-core glow
+    orb.style.boxShadow = "0 0 60px " + mixHex(col, "#160510", 0.2) + ", 0 0 120px " + mixHex(col, "#160510", 0.5);
     var waves = add(ov, "div", "gp-waves"); waves.innerHTML = "<span></span><span></span><span></span>"; // slow-drifting Headspace-style depth bands behind the orb (David 2026-07-01)
     if (opts.title) { var tb = add(ov, "div", "gp-title", opts.title); } // pinned session title, Headspace-style
     // BEAT-PIP SESSION MAP (mock #20): one pip per cue segment, fills as playback passes each
@@ -7990,7 +7991,7 @@
     paintCatch();
     if (opts.drift) {
       orb.style.cursor = "pointer";
-      var dhint = add(ov, "div", null, tr("tap the orb the moment you notice you've drifted")); dhint.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);left:0;right:0;text-align:center;font-size:11.5px;color:rgba(240,230,239,.42);z-index:4;pointer-events:none;";
+      var dhint = add(ov, "div", null, tr("tap the orb the moment you notice you've drifted")); dhint.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 196px);left:0;right:0;text-align:center;font-size:11.5px;color:rgba(240,230,239,.42);z-index:4;pointer-events:none;";
       orb.addEventListener("click", function (e) { e.stopPropagation(); driftCount++; try { medChime(); } catch (er) {} paintCatch(); catchWrap.classList.remove("ripple"); void catchWrap.offsetWidth; catchWrap.classList.add("ripple"); var was = lab.textContent; lab.textContent = tr("good catch — back to it"); setTimeout(function () { if (lab.textContent === tr("good catch — back to it")) lab.textContent = was; }, 1500); });
     } else { catchWrap.style.display = "none"; } // mantra/non-drift players don't show the catch row
     function dbg2(m) { try { if (!(typeof S !== "undefined" && S && S.voiceDebug)) return; var e = document.getElementById("voiceDbg"); if (!e) { e = document.createElement("div"); e.id = "voiceDbg"; e.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 2px);left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.75);color:#8fffa8;font:600 10px ui-monospace,monospace;padding:2px 9px;border-radius:9px;pointer-events:none;max-width:94vw;white-space:nowrap;"; document.body.appendChild(e); } e.textContent = "♪ " + m; } catch (e2) {} }
@@ -8001,12 +8002,11 @@
     // BATTERY SCRUB (mock #20): cue ticks at each segment start + a dim H12 silence tail zone
     var ticks = add(scrub, "div", "gp-ticks"), tailEl = add(scrub, "div", "gp-tail");
     var silenceSec = (opts.silenceTailSec != null) ? opts.silenceTailSec : (opts.drone !== false ? 20 : 0); // 20s «тишина в конце» default for droned sessions
-    var times = add(bar, "div", "gp-times"); var tCur = add(times, "span", null, "0:00"); var tTot = add(times, "span", null, "0:00");
-    var silCap = add(bar, "div", "gp-silence"); silCap.style.visibility = "hidden";
+    var times = add(bar, "div", "gp-times"); var tCur = add(times, "span", null, "0:00"); var silCap = add(times, "span", "gp-silence"); silCap.style.visibility = "hidden"; var tTot = add(times, "span", null, "0:00"); // ref: elapsed · ☾ тишина в конце · −remaining, ONE row
     silCap.innerHTML = '<i class="ti ti-moon" style="font-size:13px;"></i> ' + tr("silence at the end") + ' · 0:' + pad(silenceSec);
     var btns = add(bar, "div", "gp-btns");
     var bBack = add(btns, "button", "gp-b gp-side"); bBack.innerHTML = '<i class="ti ti-rewind-backward-15"></i>';
-    var bPlay = add(btns, "button", "gp-b gp-play"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
+    var bPlay = add(btns, "button", "gp-b gp-play"); bPlay.style.background = col; bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // ref: the pause disc wears the session element color
     var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
     bar.style.visibility = "hidden";
     // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
@@ -8022,7 +8022,7 @@
       var t = 0;
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
-      ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = "";
+      ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
       // battery cue ticks (one per segment start) + silence tail sized to silenceSec
       ticks.innerHTML = "";
       segs.forEach(function (sg) { if (sg.start <= 0 || sg.start >= total) return; var tk = add(ticks, "i"); tk.style.left = (sg.start / total * 100) + "%"; });
@@ -8053,7 +8053,7 @@
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = fmtT(e); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
+    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
