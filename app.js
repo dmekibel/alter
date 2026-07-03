@@ -1324,6 +1324,8 @@
     "in": "через", "now": "сейчас", "no time — just track": "без времени — просто трек", "a plan earns more": "с планом очков больше",
     "clean slate — where do we start?": "чистый лист — с чего начнём?", "open afternoon — pick a thread": "свободный день — с чего начнём?", "evening — one gentle thing?": "вечер — одно спокойное дело?", "late — one small win, then rest": "поздно — одна маленькая победа, потом отдых",
     "YESTERDAY NOW": "ВЧЕРА СЕЙЧАС", "again?": "повторить?", "one tap — plan and track at once": "один тап — план и трек сразу", "3 tasks — 60 seconds": "3 дела — 60 секунд",
+    "on plan": "по плану", "left": "осталось", "min": "мин", "over by": "перебор", "ends": "конец", "free tracking": "свободный трек", "min tracked": "мин затрекано", "a plan doubles points": "план удвоит очки",
+    "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
@@ -3448,6 +3450,7 @@
     var _say = el("tfSay"); if (_say) _say.textContent = bkContinuity(); // soul-layer heartbeat: the guardian speaks what it remembers, on every open
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
+    if (tile) tile.style.border = ""; // reset any off-plan colored border before a state re-paints the disc
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet");
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
@@ -3517,20 +3520,34 @@
     }
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
     tf.classList.add(onplan ? "st-onplan" : "st-off");
-    if (tile) { tile.style.background = tfStripe(D.c); tile.style.filter = ""; tile.innerHTML = tiIcon(t); }
+    // RUN-1 mocks 3/4: on-plan disc = striped (winning); off-plan disc = MATTE (dark tint + colored border + colored icon, no stripe, no filter)
+    if (tile) { if (onplan) { tile.style.background = tfStripe(D.c); tile.style.border = ""; tile.style.color = ""; tile.style.filter = ""; } else { tile.style.background = mixHex(D.c, "#0a0308", 0.8); tile.style.border = "3px solid " + D.c; tile.style.color = D.light; tile.style.filter = "none"; } tile.innerHTML = tiIcon(t); }
     var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#160510", 0.5); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // the activity name IS a colored pill = the switch button (David 2026-06-27)
-    el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan");
+    el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan"); // kept for a11y — hidden by CSS in the five-element live body
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
-    // context = pacing: how long is left in the planned block, and when it ends
-    if (S0.block) { var bs = hm(S0.block.time), be = bs + (S0.block.mins || 30), rem = be - nowMin(); el("tfCtx").textContent = (rem > 0 ? rem + "m left" : "over by " + (-rem) + "m") + " · ends " + fmt(be); }
-    else el("tfCtx").textContent = drift ? "off your plan" : "no plan — free tracking";
-    var elMin = (Date.now() - t.start) / 60000, target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
-    var onAct = tfDomMinsToday(S0.dom) + Math.round(elMin);
-    el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(onAct) + '</b>';
-    setRing(p, onplan ? "#28cf86" : "#6a5870");
+    var elMin = (Date.now() - t.start) / 60000;
+    // RUN-1: the ONE sub-line — on-plan pacing (green "по плану · осталось N мин · конец HH:MM"); off-plan the plan-pitch (blue "план удвоит очки")
+    if (onplan && S0.block) { var bs = hm(S0.block.time), be = bs + (S0.block.mins || 30), rem = be - nowMin(), _beS = pad(Math.floor(be / 60) % 24) + ":" + pad(be % 60);
+      el("tfCtx").innerHTML = '<span style="color:#28cf86;font-weight:800">' + tr("on plan") + '</span> · ' + (rem > 0 ? (tr("left") + " " + rem + " " + tr("min")) : (tr("over by") + " " + (-rem) + " " + tr("min"))) + ' · ' + tr("ends") + ' ' + _beS; }
+    else if (onplan) { el("tfCtx").innerHTML = '<span style="color:#28cf86;font-weight:800">' + tr("on plan") + '</span> · ' + tr("free tracking"); }
+    else { el("tfCtx").innerHTML = Math.round(elMin) + ' ' + tr("min tracked") + ' · <span style="color:#5ec4f5;font-weight:700">' + tr("a plan doubles points") + '</span>'; }
+    var target = (S0.block && S0.block.mins) || 60, p = Math.max(0, Math.min(1, elMin / target));
+    el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(S0.dom) + Math.round(elMin)) + '</b>'; // kept — hidden by CSS in live body
+    if (onplan) setRing(p, "#28cf86"); else { var _r = el("tfRing"); if (_r) _r.style.background = "none"; } // off-plan: the empty (dashed) ring is the pitch — no progress arc
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
+    var _os = el("tfNextSheet"); // RUN-1 mock 4: off-plan docks a "{activity} — сколько ещё?" sheet (chips → plan the current track forward; foot = switch activity)
+    if (_os && !onplan) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
+      var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr("how much more?") + '</span>';
+      var _or = add(_os, "div", "tns-row");
+      [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var ch = add(_or, "button", "k-dur"); ch.textContent = dd[1]; ch.onclick = function () { tfMoreMins(t, dd[0]); }; });
+      var _of = add(_os, "button", "tns-escape"); _of.innerHTML = '<i class="ti ti-switch-horizontal"></i>' + tr("switch activity"); _of.onclick = function () { tfPickTrack("Switch to?"); };
+    }
+  }
+  function tfMoreMins(t, mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(t); // "сколько ещё" → the current track becomes a plan owning now→now+mins (off-plan → on-plan in one tap)
+    blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
+    blocks(k).push({ id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: t.title, prio: 2, color: t.color, catK: t.catK, domain: dom, done: false, pin: true }); reflow(k); if (t) t.commit = mins; save(); renderLiveTracker(); renderToday(); renderTrackerFull();
   }
   // ===== COCKPIT FUNNELS (CKPT-2, David 2026-06-28): one door in (enterStage), one out (exitStage), one dispatcher (renderStage), one pure router (stageModeFor). Wired to NOTHING that auto-triggers this wave — defaults keep TF_MODE null. =====
   function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", sleepmath: "Sleep Math", rx: "Rx", track: "" })[mode] || ""; }
@@ -4330,7 +4347,8 @@
     }
   }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
-    function paint(f) { var pct = (Math.max(0, Math.min(1, f)) * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, #3a2540 " + pct + "% 100%)"; } // §12 frame: the unfilled track = the mock's muted plum, not faint white
+    function paint(f) { var cf = Math.max(0, Math.min(1, f)), pct = (cf * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, #3a2540 " + pct + "% 100%)"; // §12 frame: the unfilled track = the mock's muted plum, not faint white
+      var dot = el("tfConvDot"); if (dot) { var th = 2 * Math.PI * cf; dot.style.left = (50 + 43.5 * Math.sin(th)) + "%"; dot.style.top = (50 - 43.5 * Math.cos(th)) + "%"; } } // RUN-1 mock 3: the converter dot rides the arc end (CSS keeps the translate(-50%,-50%) in its keyframes)
     if (_ringRaf) { cancelAnimationFrame(_ringRaf); _ringRaf = 0; }
     if (instant || Math.abs(target - _ringP) < 0.01) { _ringP = target; paint(target); return; }
     function step() { var d = target - _ringP; if (Math.abs(d) < 0.006) { _ringP = target; paint(target); _ringRaf = 0; return; } _ringP += d * 0.16; paint(_ringP); _ringRaf = requestAnimationFrame(step); }
@@ -4400,10 +4418,10 @@
         return [{ icon: "ti-arrow-back-up", label: "Back to it", fn: tfResumeBreak, primary: true },
                 { icon: "ti-plus", label: "+5 min", fn: function () { tfBreakPlus(5); } },
                 { icon: "ti-x", label: "End", fn: tfEndBreak }];
-      case "onplan": // Switch removed — the colored title pill IS the switch now (David 2026-06-27)
-        return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true },
-                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
-                { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan }];
+      case "onplan": // RUN-1 mock 3: green solid door + ghost 2-up row. The colored title pill IS the switch (David 2026-06-27)
+        return [{ icon: "ti-check", label: "Done — count it", fn: tfDone, primary: true, finish: "solid", c: "#28cf86", ink: "#07351f" },
+                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
+                { icon: "ti-refresh", label: "Reschedule", fn: tfReplan, half: true }];
       // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
@@ -4429,12 +4447,12 @@
       default: { // OFF-PLAN while tracking (David 2026-07-02, C7+D2): the fusion tap LEADS — "Keep going N more minutes" turns the live track into a plan in one move. Pause is table-stakes (it only existed on-plan — that's why it was never seen). Replan/Create + Stop stay. Drift keeps Replan primary (planning-the-drift makes no sense — the way back leads).
         var _dr = false; try { _dr = !!trackerState().drift; } catch (e) {}
         var mk = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan } : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan };
-        if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true },
-                         { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
-                         { icon: "ti-player-stop", label: "Stop", fn: tfDone }];
-        return [{ icon: "ti-calendar-plus", label: "Make a plan", fn: tfKeepGoing, primary: true },
-                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak },
-                { icon: "ti-player-stop", label: "Stop", fn: tfDone }]; // G12 (David on device, v801): "Keep going" read wrong — it's MAKE A PLAN (a time for what you're already doing; switch-activity lives inside its menu). The separate Replan/Create button folded in.
+        if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true, finish: "striped", c: "#36b3f0", ink: "#08283c" },
+                         { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
+                         { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }];
+        return [{ icon: "ti-calendar-plus", label: "Make a plan", fn: tfKeepGoing, primary: true, finish: "striped", c: "#36b3f0", ink: "#08283c" },
+                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
+                { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }]; // RUN-1 mock 4: striped-blue "Составить план" fusion door + ghost 2-up [Пауза | Стоп]. G12 (v801): "Make a plan" = a time for what you're already doing.
       }
     }
   }

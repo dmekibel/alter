@@ -1130,6 +1130,7 @@
   .tns-row{ display:flex; gap:7px; margin-top:10px; }
   .tns-foot{ color:#9a7090; font-size:12.5px; font-weight:600; margin-top:10px; text-align:center; }
   #trackerFull.tf-nextsheet .tf-inner{ padding-bottom:150px; }
+  #trackerFull.st-off.tf-nextsheet .tf-inner{ padding-bottom:210px; } /* off-plan docks a taller sheet (header+chips+switch) under a door+ghost-row — extra clearance so the row never tucks behind it */
   /* ===== RUN-1 1:1 IDLE COCKPIT (David 2026-07-03 — mocks 1 & 2): the sub-line becomes a mini timeline block; empty day = warm invite + yesterday echo; doors carry a block tag / a cost sub-line ===== */
   #trackerFull.st-idle .tf-verdict{ display:inline-flex; }
   .tf-subblock{ display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:#0f2b3a; border:2px solid #160510; border-radius:8px; padding:8px 12px; box-shadow:0 3px 0 #160510, inset 2px 0 0 #ff5fa8; font-family:"Jost",sans-serif; }
@@ -1221,7 +1222,23 @@
   /* verdict palettes by state */
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
-  #trackerFull.st-off .tf-tile{ filter:saturate(.3) brightness(.72); }
+  /* ===== RUN-1 1:1 LIVE COCKPIT (David 2026-07-03 — mocks 3 & 4): the five-element winning body — chrome leaves; even green annulus + converter dot; off-plan = dashed ring + matte disc ===== */
+  #trackerFull.st-onplan .tf-clock, #trackerFull.st-onplan .tf-spark, #trackerFull.st-onplan .tf-say, #trackerFull.st-onplan .tf-sf, #trackerFull.st-onplan .tf-verdict, #trackerFull.st-onplan .tf-elabel, #trackerFull.st-onplan .tf-switch, #trackerFull.st-onplan #tfStageChips, #trackerFull.st-onplan #tfGear, #trackerFull.st-onplan .tf-close,
+  #trackerFull.st-off .tf-clock, #trackerFull.st-off .tf-spark, #trackerFull.st-off .tf-say, #trackerFull.st-off .tf-sf, #trackerFull.st-off .tf-verdict, #trackerFull.st-off .tf-elabel, #trackerFull.st-off .tf-switch, #trackerFull.st-off #tfStageChips, #trackerFull.st-off #tfGear, #trackerFull.st-off .tf-close{ display:none; } /* 12 chrome elements leave — only ring / pill / time / sub-line / doors remain */
+  #trackerFull.st-onplan .tf-title.switchable, #trackerFull.st-off .tf-title.switchable{ margin-top:16px; padding:7px 15px; font-size:15px; border-radius:22px; } /* the pill = the switch (rounded, mock 3/4) */
+  #trackerFull.st-onplan .tf-time, #trackerFull.st-off .tf-time{ margin-top:8px; font-size:44px; }
+  #trackerFull.st-onplan .tf-time{ animation:tfMinPop 4s ease-in-out infinite; } /* minute-earn pop */
+  @keyframes tfMinPop{ 0%,88%,100%{ transform:scale(1); } 93%{ transform:scale(1.06); } }
+  #trackerFull.st-onplan .tf-ctx, #trackerFull.st-off .tf-ctx{ margin-top:2px; font-size:13.5px; color:#b39ab0; }
+  /* even green annulus: a symmetric ink ring on the disc (no asymmetric bottom drop-shadow eating the bottom band) */
+  #trackerFull.st-onplan .tf-tile{ box-shadow:0 0 0 3px #160510, inset 0 2px 0 rgba(255,255,255,.10); }
+  .tf-endpip{ position:absolute; left:50%; top:1px; width:4px; height:11px; margin-left:-2px; background:#160510; border-radius:2px; display:none; z-index:2; pointer-events:none; }
+  .tf-convdot{ position:absolute; width:9px; height:9px; border-radius:50%; background:#fff; box-shadow:0 0 5px 1px rgba(255,255,255,.65); display:none; z-index:2; pointer-events:none; animation:tfConvDot 3s ease-in-out infinite; }
+  @keyframes tfConvDot{ 0%,100%{ transform:translate(-50%,-50%) scale(1); box-shadow:0 0 5px 1px rgba(255,255,255,.65); } 50%{ transform:translate(-50%,-50%) scale(1.4); box-shadow:0 0 12px 3px rgba(255,255,255,.95); } }
+  #trackerFull.st-onplan .tf-endpip, #trackerFull.st-onplan .tf-convdot{ display:block; }
+  /* off-plan: the empty ring IS the pitch (dashed), the disc is matte (colored border + icon, no stripe, no filter) */
+  #trackerFull.st-off .tf-ring{ border:2px dashed #3a2540; box-sizing:border-box; }
+  #trackerFull.st-off .tf-tile{ filter:none; }
   /* welcome-back CLAIM: the verdict reads warm, the primary button is the reward-green Done style (reused) */
   #trackerFull.st-claim .tf-verdict{ color:#ffc8e0; }
   /* 2AM / OFF-HOURS: calmest + darkest; dim violet ring that slowly breathes, no streak pressure */
@@ -1886,6 +1903,8 @@
     <div class="tf-stage">
       <div class="tf-ring" id="tfRing"><!-- conic green reward band (set in JS) hugging a STRIPED activity tile = #14 album-in-reward-ring -->
         <div class="tf-tile" id="tfTile"><i class="ti ti-brain"></i></div>
+        <div class="tf-endpip"></div><!-- RUN-1 mock 3: block-end notch at 12 o'clock -->
+        <div class="tf-convdot" id="tfConvDot"></div><!-- RUN-1 mock 3: the converter dot rides the arc end (on-plan only) -->
       </div>
       <div class="tf-title" id="tfTitle">—</div>
       <div class="tf-verdict" id="tfVerdict"></div>
@@ -1930,6 +1949,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=824"></script>
+  <script src="app.js?v=826"></script>
 </body>
 </html>
