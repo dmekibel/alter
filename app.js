@@ -1328,6 +1328,7 @@
     "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
     "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
     "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
+    "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
@@ -2544,6 +2545,11 @@
     var bar = add(box, "div", "gm-bar"); var fill = add(bar, "i"); fill.style.width = metricPct(m) + "%";
     var row = add(box, "div", "gm-row"); var lg = add(row, "button", "gm-log"); lg.innerHTML = '<i class="ti ti-plus"></i> log today'; lg.onclick = function () { logMetric(g, redraw); }; add(row, "span", "gm-pct", metricPct(m) + "%");
   }
+  function staleDays(g) { var lk = goalLastK(g); if (!lk) return 0; try { return Math.max(0, Math.round((kd(todayK()) - kd(lk)) / 86400000)); } catch (e) { return 0; } } // days since this quest was last worked
+  function nextSessionLabel(g) { var want = (g.title || "").toLowerCase();
+    for (var d = 0; d < 4; d++) { var k = keyAdd(todayK(), d); var b = blocks(k).filter(function (x) { return !x.done && ((x.domain === (g.domain || "focus")) || (x.title || "").toLowerCase().indexOf(want.slice(0, 6)) !== -1); })[0]; if (b) return (d === 0 ? tr("today") : d === 1 ? tr("tomorrow") : relLabel(k).toLowerCase()) + " " + b.time; }
+    return tr("tomorrow") + " 15:00";
+  }
   function goalsSheet() {
     ensureGoalDefaults();
     var ov = add(document.body, "div", "goal-ov"); var card = add(ov, "div", "goal-card"); var view = null;
@@ -2551,75 +2557,108 @@
     function header(title, withBack) { var head = add(card, "div", "goal-head"); if (withBack) { var bk = add(head, "button", "goal-back"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; draw(); }; } var h = add(head, "div", "goal-q"); h.innerHTML = title; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); }; return head; }
     function draw() { card.innerHTML = ""; if (!view) drawMap(); else drawGoal(view); }
     function drawMap() {
-      var head = header('<i class="ti ti-target"></i> Your goals', false);
-      var chip = document.createElement("span"); chip.className = "goal-audit"; chip.innerHTML = '<i class="ti ti-chart-line"></i> ' + activeGoals().length + ' active'; head.insertBefore(chip, head.lastChild);
+      var head = header('<i class="ti ti-map-2"></i> ' + tr("Quests"), false);
+      var sparkN = (S.spark != null) ? S.spark : activeGoals().length;
+      var chip = document.createElement("span"); chip.className = "q-spark"; chip.innerHTML = '<i class="ti ti-bolt"></i> ' + sparkN; head.insertBefore(chip, head.lastChild);
       var body = add(card, "div", "goal-body");
-      if (!(S.goals && S.goals.length)) add(body, "div", "goal-empty", "No goals yet — add what you're working toward.");
+      if (!activeGoals().length && !(S.goals && S.goals.length)) add(body, "div", "goal-empty", tr("No quests yet — add what you're building toward."));
       var grid = add(body, "div", "goal-grid");
-      (S.goals || []).forEach(function (g) {
-        var dom = DOM[g.domain || "focus"], subs = g.subtasks || [];
-        var pct = (g.metric && g.metric.target != null && g.metric.current != null) ? metricPct(g.metric) : (subs.length ? Math.round(subs.filter(function (s) { return s.done; }).length / subs.length * 100) : 0);
-        // §12 QUEST CARD (the approved goals frame): the FOIL EDGE is the progress bar — gold fills top-down as steps land; icon well + title + pct; circle ladder; pink session door
-        var foil = add(grid, "div", "q-foil"); foil.style.background = "linear-gradient(180deg,#ffd24a 0%,#ffd24a " + pct + "%,#3a2036 " + pct + "%,#3a2036 100%)";
-        var gc = add(foil, "div", "goal-cardx" + (g.active ? " on" : ""));
-        add(gc, "div", "q-sheen");
-        var hr = add(gc, "div"); hr.style.cssText = "display:flex;align-items:center;gap:10px;position:relative;z-index:2;";
-        var well = add(hr, "div", "q-well"); well.style.background = tfStripe(dom.c); well.innerHTML = tiIcon(g);
-        var tw = add(hr, "div"); tw.style.cssText = "flex:1;min-width:0;";
-        var tt = add(tw, "div"); tt.style.cssText = "font-weight:800;font-size:16px;color:#fff2f9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"; tt.textContent = g.title;
-        var ml = add(tw, "div"); ml.style.cssText = "font-size:12px;color:#c9a6c4;"; ml.innerHTML = '<i class="ti ' + dom.ti + '" style="color:' + dom.c + '"></i> ' + tr(dom.l);
-        var pcEl = add(hr, "div"); pcEl.style.cssText = "color:#ffd24a;font-weight:800;font-size:13px;flex:none;"; pcEl.textContent = pct + "%";
-        var nextStep = null;
-        function scheduleNext(ev) { ev.stopPropagation(); if (!nextStep) return; var t2 = nextFreeMin(todayK()); blocks(todayK()).push({ id: uid(), time: pad(Math.floor(t2 / 60)) + ":" + pad(t2 % 60), mins: 30, title: nextStep.title, prio: 2, color: dom.c, catK: null, domain: g.domain || "focus", done: false }); reflow(todayK()); goalTouch(g); save(); renderToday(); toast(tr("step placed into today — it waits for you")); }
-        if (subs.length) {
-          var lad = add(gc, "div", "quest-ladder");
-          subs.slice(0, 5).forEach(function (st) {
-            var isNext = !st.done && !nextStep; if (isNext) nextStep = st;
-            var r = add(lad, "div", "q-step" + (st.done ? " done" : isNext ? " next" : " fut"));
-            r.innerHTML = '<span class="q-ic">' + (st.done ? '<i class="ti ti-check"></i>' : isNext ? '<i class="ti ti-player-play"></i>' : '') + '</span><span class="q-lab">' + esc(st.title) + '</span><span class="q-bounty">+15</span>'; // future circles stay EMPTY dashed (the frame)
-            if (isNext) r.onclick = scheduleNext;
-          });
-          if (subs.length > 5) add(lad, "div", "q-more", "+" + (subs.length - 5));
-        }
-        else add(gc, "div", "goal-tagnone", "tap to break it down →");
-        if (nextStep) { var cta = add(gc, "button", "tf-door"); cta.style.cssText = "background:#ff5fa8;color:#4a1126;margin-top:12px;font-size:14px;position:relative;z-index:2;"; cta.innerHTML = '<i class="ti ti-calendar-plus"></i> Put a session into the day'; cta.onclick = scheduleNext; } // the frame's door: goal→timeline in one tap
-        gc.onclick = function () { view = g; draw(); };
-      });
-      typeAdd(body, "a goal you're working toward…", function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); }); // auto-break on add too (David 2026-06-29 Wave B)
-      add(body, "div", "goal-foot", "hold as many as you like — I rotate the stalest onto your journey so none gets forgotten");
+      var actives = staleGoals(); var hero = actives[0] || null;
+      if (hero) drawHero(grid, hero);
+      actives.slice(1).forEach(function (g) { drawStaleRow(body, g); });
+      var mint = add(body, "div", "q-mint");
+      var mc = add(mint, "div", "q-mint-card"); mc.innerHTML = '<i class="ti ti-cards"></i>';
+      add(mint, "div", "q-mint-tx").innerHTML = tr("finish a quest — it mints as a full-art card");
+      var released = (S.goals || []).filter(function (g) { return g.released; });
+      var shelf = add(body, "div", "q-shelf");
+      var sh = add(shelf, "div", "q-shelf-head"); sh.innerHTML = '<i class="ti ti-archive q-shelf-lead"></i> ' + tr("Released") + ' · ' + released.length + '<i class="ti ti-chevron-down q-shelf-caret"></i>';
+      var shb = add(shelf, "div", "q-shelf-body");
+      released.forEach(function (g) { var dom = DOM[g.domain || "focus"], r = add(shb, "div", "q-shelf-row"); var ic = add(r, "i", "ti " + tiClass(g) + " q-shelf-ic"); ic.style.color = dom.c; add(r, "div", "q-shelf-t", g.title); add(r, "div", "q-shelf-restore", tr("return")); r.onclick = function () { g.released = false; g.active = true; save(); draw(); }; });
+      sh.onclick = function () { shelf.classList.toggle("open"); };
+      typeAdd(body, tr("a quest you're building toward…"), function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); });
+    }
+    function drawHero(grid, g) {
+      var dom = DOM[g.domain || "focus"], subs = g.subtasks || [];
+      var doneN = subs.filter(function (s) { return s.done; }).length;
+      var pct = (g.metric && g.metric.target != null && g.metric.current != null) ? metricPct(g.metric) : (subs.length ? Math.round(doneN / subs.length * 100) : 0);
+      var foil = add(grid, "div", "q-foil"); foil.style.background = "linear-gradient(180deg,#ffd24a 0%,#ffd24a " + pct + "%,#3a2036 " + pct + "%,#3a2036 100%)";
+      var gc = add(foil, "div", "goal-cardx on"); add(gc, "div", "q-sheen");
+      var hr = add(gc, "div"); hr.style.cssText = "display:flex;align-items:flex-start;gap:11px;position:relative;z-index:2;";
+      var well = add(hr, "div", "q-well"); well.style.background = tfStripe(dom.c); well.innerHTML = tiIcon(g);
+      var tw = add(hr, "div"); tw.style.cssText = "flex:1;min-width:0;";
+      var tt = add(tw, "div"); tt.style.cssText = "font-weight:800;font-size:18px;color:#fff2f9;line-height:1.12;"; tt.textContent = g.title;
+      var chapN = g.chapters || subs.length || 5, curChap = Math.min(chapN, doneN + 1);
+      add(tw, "div", "q-sub").innerHTML = tr("chapter") + ' ' + curChap + ' ' + tr("of") + ' ' + chapN + ' · <span style="color:#ffd24a;font-weight:700">' + tr("foil filling") + '</span>';
+      var pcEl = add(hr, "div"); pcEl.style.cssText = "color:#ffd24a;font-weight:800;font-size:15px;flex:none;font-family:'Jost',sans-serif;"; pcEl.textContent = pct + "%";
+      var nextStep = null;
+      function bountyFor(i) { return 12 + i * 18; }
+      function scheduleNext(ev) { if (ev) ev.stopPropagation(); if (!nextStep) return; var t2 = nextFreeMin(todayK()); blocks(todayK()).push({ id: uid(), time: pad(Math.floor(t2 / 60)) + ":" + pad(t2 % 60), mins: 30, title: nextStep.title, prio: 2, color: dom.c, catK: null, domain: g.domain || "focus", done: false }); reflow(todayK()); goalTouch(g); save(); renderToday(); toast(tr("session placed into today — it waits for you")); }
+      if (subs.length) {
+        var lad = add(gc, "div", "quest-ladder");
+        subs.slice(0, 5).forEach(function (st, i) {
+          var isNext = !st.done && !nextStep; if (isNext) nextStep = st;
+          var r = add(lad, "div", "q-step" + (st.done ? " done" : isNext ? " next" : " fut"));
+          r.innerHTML = '<span class="q-ic">' + (st.done ? '<i class="ti ti-check"></i>' : isNext ? '<i class="ti ti-player-play"></i>' : '') + '</span><span class="q-lab' + (isNext ? '' : ' q-wrap') + '">' + esc(st.title) + '</span><span class="q-bounty">+' + bountyFor(i) + '</span>';
+          if (isNext) r.onclick = scheduleNext;
+          if (isNext) { var totS = st.sessions || 4, doneS = st.sessionsDone || 0; var pipwrap = document.createElement("div"); pipwrap.className = "q-pips"; var pipset = document.createElement("div"); pipset.className = "q-pipset"; for (var p = 0; p < totS; p++) { var pip = document.createElement("div"); pip.className = "q-pip" + (p < doneS ? " on" : ""); pipset.appendChild(pip); } pipwrap.appendChild(pipset); var fact = document.createElement("div"); fact.className = "q-pipfact"; fact.innerHTML = doneS + "/" + totS + " · " + tr("next") + " = <b>" + nextSessionLabel(g) + "</b>"; pipwrap.appendChild(fact); lad.appendChild(pipwrap); }
+        });
+        if (subs.length > 5) { var mr = add(lad, "div", "q-step fut"); mr.innerHTML = '<span class="q-ic"></span><span class="q-lab q-wrap">' + esc(subs[5].title) + '</span><span class="q-bounty">+' + bountyFor(5) + '</span>'; }
+      } else add(gc, "div", "goal-tagnone", tr("tap to break it down →"));
+      if (nextStep) { var cta = add(gc, "button", "tf-door"); cta.style.cssText = "background:#ff5fa8;color:#4a1126;margin-top:14px;font-size:15px;position:relative;z-index:2;"; cta.innerHTML = '<i class="ti ti-calendar-plus"></i> ' + tr("Put a session into the day"); cta.onclick = scheduleNext; }
+      gc.onclick = function (e) { if (e.target.closest(".tf-door") || e.target.closest(".q-step.next")) return; view = g; draw(); };
+    }
+    function drawStaleRow(body, g) {
+      var dom = DOM[g.domain || "focus"], days = staleDays(g);
+      var row = add(body, "div", "q-stale");
+      var w = add(row, "div", "q-stale-well"); w.style.background = tfStripe(dom.c); w.innerHTML = tiIcon(g);
+      var tx = add(row, "div", "q-stale-tx"); add(tx, "div", "q-stale-t", g.title);
+      add(tx, "div", "q-stale-s").innerHTML = (days > 0 ? (tr("quiet") + " " + days + " " + tr("days") + " · ") : "") + tr("I'll bring it back into the path");
+      row.onclick = function () { view = g; draw(); };
     }
     function drawGoal(g) {
       var dom = DOM[g.domain || "focus"];
-      header('<i class="ti ' + dom.ti + '"></i> ' + esc(g.title), true);
-      var body = add(card, "div", "goal-body");
-      var ab = add(body, "button", "goal-active-btn" + (g.active ? " on" : "")); ab.innerHTML = g.active ? '<i class="ti ti-star-filled"></i> Active — pulls into your days' : '<i class="ti ti-star"></i> On hold — tap to activate'; ab.onclick = function () { g.active = !g.active; save(); draw(); renderSuggest(todayK()); };
-      metricSection(g, body, draw); // trackable number (weight / bank / followers) — auto-detected, logged with a tap (David 2026-06-29)
-      // WOOP — Obstacle + Plan fields (always available; Decision D rec (a): the STRUCTURE is a core feature, the TEACHING is chapter-gated). Fills g.woop → chapterMastered(2) becomes true.
-      var woop = g.woop || {};
-      var ws = add(body, "div", "goal-woop");
-      var wl1 = add(ws, "div", "goal-hint"); wl1.innerHTML = '<i class="ti ti-barrier-block"></i> Main obstacle';
-      var obsInp = add(ws, "input", "goal-input"); obsInp.type="text"; obsInp.placeholder="the inner block that gets in the way…"; obsInp.value=woop.obstacle||"";
-      var wl2 = add(ws, "div", "goal-hint"); wl2.innerHTML = '<i class="ti ti-arrow-right"></i> If that hits, I\'ll…';
-      var planInp = add(ws, "input", "goal-input"); planInp.type="text"; planInp.placeholder="my if-then plan…"; planInp.value=woop.plan||"";
-      function saveWoop(){var ob=obsInp.value.trim(),pl=planInp.value.trim();if(ob||pl){g.woop={obstacle:ob,plan:pl};save();}}
-      obsInp.addEventListener("blur",saveWoop); planInp.addEventListener("blur",saveWoop);
-      planInp.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();saveWoop();}});
-      var hint = add(body, "div", "goal-hint"); hint.innerHTML = '<i class="ti ti-subtask"></i> break it into steps → schedule them into your days';
-      var brow = add(body, "div", "goal-brow");
-      var bd = add(brow, "button", "goal-breakdown"); bd.innerHTML = '<i class="ti ti-wand"></i> Break it down for me'; bd.onclick = function () { var have = {}; (g.subtasks || []).forEach(function (s) { have[s.title.toLowerCase()] = 1; }); decomposeGoal(g).forEach(function (st) { if (!have[st.toLowerCase()]) (g.subtasks = g.subtasks || []).push({ title: st, done: false }); }); save(); draw(); };
-      var tb = add(brow, "button", "goal-toobig"); tb.innerHTML = '😰 Feels too big?'; tb.onclick = function () { tooBigSheet(g); };
-      add(body, "div", "goal-tier", "free: first-principles starter · 🧠 brain tailors it to you");
-      var sl = add(body, "div", "goal-steps");
+      var head = add(card, "div", "qb-head");
+      var bk = add(head, "button", "qb-nav"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; draw(); };
+      var well = add(head, "div", "qb-well"); well.style.background = tfStripe(dom.c); well.innerHTML = tiIcon(g);
+      var tw = add(head, "div", "qb-titlewrap"); add(tw, "div", "qb-title", g.title); add(tw, "div", "qb-sub").innerHTML = tr("card back") + " · WOOP";
+      var xw = add(head, "button", "qb-nav"); xw.innerHTML = '<i class="ti ti-x"></i>'; xw.onclick = function () { ov.remove(); };
+      var body = add(card, "div", "goal-body"); body.style.padding = "10px 0 14px";
+      var woop = g.woop || {}, metric = g.metric || {};
+      var insc = add(body, "div", "qb-body");
+      function inscription(label, val) { var b = add(insc, "div", "qb-insc"); add(b, "div", "qb-label", label); var v = add(b, "div", "qb-val" + (val ? "" : " empty")); v.textContent = val || tr("tap the plan below to fill this in"); }
+      inscription(tr("WISH"), g.title);
+      inscription(tr("OUTCOME"), woop.outcome || (metric.target != null ? (tr("reach") + " " + metric.target + (metric.unit ? " " + metric.unit : "")) : ""));
+      inscription(tr("OBSTACLE"), woop.obstacle);
+      var pb = add(insc, "div", "qb-insc"); add(pb, "div", "qb-label", tr("PLAN"));
+      var plan = add(pb, "div", "qb-plan"); var sent = add(plan, "div", "qb-plan-sent");
+      function renderSentence() { var ob = (g.woop && g.woop.obstacle) || "", pl = (g.woop && g.woop.plan) || ""; if (ob || pl) sent.innerHTML = '<span class="qb-if">' + tr("If") + " " + esc(ob || "…") + " — " + tr("I") + '</span> <span class="qb-then">' + esc(pl || "…") + '</span>'; else sent.innerHTML = '<span class="qb-if" style="font-style:italic">' + tr("If [obstacle] — I [my move]") + '</span>'; }
+      renderSentence();
+      var ed = add(plan, "button", "qb-plan-edit"); ed.innerHTML = '<i class="ti ti-pencil"></i>';
+      ed.onclick = function () {
+        plan.innerHTML = "";
+        var r1 = add(plan, "div", "goal-hint"); r1.style.margin = "0 0 6px"; r1.innerHTML = '<i class="ti ti-barrier-block"></i> ' + tr("Main obstacle");
+        var obsInp = add(plan, "input", "goal-input"); obsInp.type = "text"; obsInp.placeholder = tr("the inner block that gets in the way…"); obsInp.value = (g.woop && g.woop.obstacle) || ""; obsInp.style.marginBottom = "8px";
+        var r2 = add(plan, "div", "goal-hint"); r2.style.margin = "0 0 6px"; r2.innerHTML = '<i class="ti ti-arrow-right"></i> ' + tr("If that hits, I'll…");
+        var planInp = add(plan, "input", "goal-input"); planInp.type = "text"; planInp.placeholder = tr("my if-then plan…"); planInp.value = (g.woop && g.woop.plan) || "";
+        function saveWoop() { var o = obsInp.value.trim(), p = planInp.value.trim(); g.woop = g.woop || {}; g.woop.obstacle = o; g.woop.plan = p; save(); draw(); }
+        planInp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveWoop(); } });
+        obsInp.addEventListener("blur", saveWoop); planInp.addEventListener("blur", saveWoop);
+        setTimeout(function () { try { obsInp.focus(); } catch (e) {} }, 60);
+      };
+      metricSection(g, body, draw);
+      var sl = add(body, "div", "goal-steps"); sl.style.margin = "0 12px";
       (g.subtasks || []).forEach(function (st, i) {
         var row = add(sl, "div", "goal-step" + (st.done ? " done" : ""));
         var ck = add(row, "button", "gs-check"); ck.innerHTML = st.done ? '<i class="ti ti-circle-check-filled"></i>' : '<i class="ti ti-circle"></i>'; ck.onclick = function () { st.done = !st.done; if (st.done) goalTouch(g); save(); draw(); };
         add(row, "div", "gs-title", st.title);
-        if (st.schedK) { var sd = add(row, "span", "gs-on"); sd.innerHTML = '<i class="ti ti-calendar-check"></i>'; }
         var sc = add(row, "button", "gs-sched"); sc.innerHTML = '<i class="ti ti-calendar-plus"></i>'; sc.onclick = function () { scheduleSubtask(g, st); };
         var dd = add(row, "button", "gs-del"); dd.innerHTML = '<i class="ti ti-x"></i>'; dd.onclick = function () { g.subtasks.splice(i, 1); save(); draw(); };
       });
-      typeAdd(body, "add a step or milestone…", function (v) { (g.subtasks = g.subtasks || []).push({ title: v, done: false }); save(); draw(); });
-      var dg = add(body, "button", "goal-delete", "✕ delete this goal"); dg.onclick = function () { var i = S.goals.indexOf(g); if (i >= 0) S.goals.splice(i, 1); save(); view = null; draw(); };
+      var st2 = add(body, "div"); st2.style.margin = "0 12px";
+      typeAdd(st2, tr("add a step or milestone…"), function (v) { (g.subtasks = g.subtasks || []).push({ title: v, done: false }); save(); draw(); });
+      var rel = add(body, "button", "qb-release");
+      rel.innerHTML = '<i class="ti ti-feather"></i><div class="qb-release-tx"><div class="qb-release-t">' + tr("Release with honor") + '</div><div class="qb-release-s">' + tr("the story is kept · you can always return it") + '</div></div>';
+      rel.onclick = function () { g.released = true; g.active = false; g.releasedAt = Date.now(); save(); view = null; draw(); toast(tr("released with honor — kept on the shelf")); };
     }
     draw();
   }
