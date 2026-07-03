@@ -29,10 +29,11 @@ Invariant: **gift before every ask, ask at the desire spike, answer used within 
 *The halo-spark mark floats in the dark theater (v879 visuals stay). No name-pet, no mascot.*
 
 > **«Привет. Я — Альтер.»** (Hi. I'm Alter.)
-> sub: **«вторая версия тебя. та, у которой получилось.»** (the other version of you. the one it worked out for.)
+> *(no tagline — David redlined «вторая версия тебя» as cheesy-EN/bad-RU. The greeting stands alone; the BOND comes from reciprocity, not copy:)*
+> beat 0b — **RECIPROCAL NAMING** (Finch's single best move): **«Меня ты теперь знаешь. А как звать тебя?»** (You know me now. What do I call you?) — one text field with a playful **shuffle** of warm defaults (никнеймы, not passport names) so a blank field never stalls. The name is then SPENT: the mint card carries it, the day-1 finale says it, the day-2 callback opens with it.
 
-- *Lint:* under-promise follows in beat 3, so this one big claim is paid for (§10). "Could a stranger write it?" — no: it's the app's own name doing the work.
-- Button: «Поехали ▸» / ghost «пропустить» (skip always visible, never argued with).
+- *Lint:* introduce-first-then-ask = give-before-take at the identity level.
+- Button: «Поехали ▸» / ghost «пропустить» (skip always visible, never argued with; skip = «друг» default).
 
 ### Beat 1 — THE TRUTH (vibe, answered aloud — David's kept beat, old words restored)
 > **«Если честно — как ты сейчас?»** (Honestly — how are you right now?)
@@ -87,7 +88,8 @@ Invariant: **gift before every ask, ask at the desire spike, answer used within 
 > button: hold-to-fill 1.2s → «✓ обещание»
 
 - *Lint fix:* old sub said "Hold to promise the same back" — clunky. New: two clean clauses.
-- *Data:* `pactAt` → the **honesty-callback** template (§0b, un-deferred): `«Ты обещал в первый день. Сегодня день [N]. Я держу своё.»` — armed for day 2+.
+- **Beat 5b — THE DAYS COMMIT (Finch steal #2):** after the hold lands: **«На сколько дней подряд придёшь — для начала?»** → 2 / 5 / 7 / 14, labeled «Первые шаги · Крепкий старт · Серьёзно · Без остановки». Framed as a promise TO Альтер, not a settings field. The number is REAL AMMUNITION: the honesty-callback cites it verbatim.
+- *Data:* `pactAt` + `pactDays` → the **honesty-callback** (§0b): `«Ты сказал: пять дней. Сегодня — третий. Я держу своё.»` — armed for day 2+.
 
 ### Beat 6 — THE CARD + THE SEED (kept beats, run as one breath)
 - Mint: the trainer card ignites — matte = potential, the vibe word engraved on it: «На подъёме · день 1».
@@ -176,6 +178,19 @@ Two axes decide everything (both already captured, zero extra questions):
 
 ---
 
+## 4b. THE FINCH LAYER (2026-07-04, from the teardown — what V2 now steals that V1 didn't)
+
+| Finch mechanic (teardown ref) | ALTER form in this script |
+|---|---|
+| **Reciprocal naming** ("My name is Tiger, what's yours?") | Beat 0b — Альтер introduces itself, then asks your name; playful shuffle defaults; the name is spent in the mint, finale, day-2 |
+| **Commitment = promise to the companion** (2/5/7/14 days) | Beat 5b — «На сколько дней придёшь?»; the number arms the honesty-callback with a real cite |
+| **Co-authored trait** ("Tiger cares about…") | Beat 6b (NEW): after the mint — **«Каким мне быть с тобой?» → Мягче · Прямо · Жёстче** — one tap seeds the guardian's register (this ALSO answers gameplan §9.4 prescription-aggressiveness: the USER sets the dial, Альтер earns the right to move it later) |
+| **UI as theater** (the bird poses per screen) | The MARK poses per beat — pure CSS states: tilted-curious during questions (halo tips 12°), swelling during the breath (shipped), a quill-glint during the write, still+bright at the pact. No new assets, one class per beat |
+| **Gate at peak anticipation** ("Almost ready to hatch!" + wiggling egg) | The notifications ask moves to AFTER the mint, BEFORE the seed reveal — «Пустить меня будить день?» routed through the bond, with the seed visibly waiting behind the sheet. Never at app-open |
+| **Zero-consequence first choice** (7 eggs → same bird) | DEFERRED (David call): a spark-color pick at beat 0 would be pure ownership ritual — but it touches the locked palette; parked |
+| **Survey → visible artifact** (spiral notebook plan) | Already ours: the chronicle line (beat 3) + the mint card + PROPOSE's offer are the artifacts — kept |
+| **Stateful praise / dormant zzZ / daily quests** | Day-2+ layer: grimoire-drip (planned) + comeback = the BIGGEST celebration (drift-recovery law) — outside onboarding scope |
+
 ## 5. BUILD DELTA (when David approves — small, because the skeleton is shipped)
 1. Delete beat 1 (showman-thesis) → thesis moves into beat 3's typed line. *(−1 beat, STEPS 8→7.)*
 2. Beat 3: add the typewriter chronicle line + the one thesis line after the flight.
@@ -186,4 +201,4 @@ Two axes decide everything (both already captured, zero extra questions):
 7. Day-2: honesty-callback cite() + doorway decline-twice-goes-quiet guard.
 All strings EN+RU same-commit; no SCHEMA bump (additive).
 
-**Open for David:** ① beat-0 sub — «вторая версия тебя. та, у которой получилось.» — approve or redline; ② seed stage names (Искра/Росток/Сад); ③ does the thriving evening-opener (A′) deserve its own sprint copy or reuse B′.
+**Open for David:** ① ~~beat-0 sub~~ REDLINED (2026-07-04: cheesy EN / bad RU) → replaced by reciprocal naming, no tagline; ② seed stage names (Искра/Росток/Сад); ③ thriving evening-opener (A′) — own copy or reuse B′; ④ the guardian-register question (Мягче/Прямо/Жёстче) — approve wording; ⑤ spark-color ownership pick — parked or in.
