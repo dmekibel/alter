@@ -256,6 +256,44 @@
   .jp-node.mystery .jp-bub{ animation:jpMystPulse 3.2s ease-in-out infinite; }
   .jp-node.mystery .jp-bub i{ font-size:24px; filter:drop-shadow(0 0 6px var(--mglow,rgba(176,122,255,.3))); }
   @keyframes jpMystPulse{ 0%,100%{ box-shadow:0 4px 0 var(--ink), 0 0 0 0 var(--mglow,transparent); } 50%{ box-shadow:0 4px 0 var(--ink), 0 0 16px 4px var(--mglow,transparent); } }
+  /* ===== GUIDED WORKSHEETS (epic, 2026-07-03): one beat per screen · chunky choices · spring beats · THE-MARK finish ===== */
+  .ws-ov{ position:fixed; inset:0; z-index:96; background:linear-gradient(180deg,#2a0d1c,#160510 70%); display:flex; flex-direction:column; animation:bentoIn .3s var(--ease-spring) both; }
+  .ws-head{ flex:none; display:flex; align-items:center; gap:11px; padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 10px; }
+  .ws-x{ flex:none; width:36px; height:36px; border-radius:11px; background:#2a1320; border:2px solid #160510; color:#c9a0b8; font-size:16px; cursor:pointer; }
+  .ws-ht{ flex:1; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; color:#ffe3f1; display:flex; align-items:center; gap:7px; }
+  .ws-ht i{ color:var(--wsc,#ff5fa8); }
+  .ws-pips{ flex:none; display:flex; gap:5px; }
+  .ws-pip{ width:16px; height:6px; border-radius:3px; background:#3a1730; transition:background .3s; }
+  .ws-pip.on{ background:var(--wsc,#ff5fa8); box-shadow:0 0 8px var(--wsc,#ff5fa8); }
+  .ws-pip.done{ background:#6a4a66; }
+  .ws-stage{ flex:1; display:flex; align-items:center; justify-content:center; padding:12px 18px calc(env(safe-area-inset-bottom,0px) + 26px); overflow-y:auto; }
+  .ws-card{ width:100%; max-width:420px; }
+  @keyframes wsIn{ from{ transform:translateX(46px); opacity:0; } to{ transform:none; opacity:1; } }
+  .ws-card.ws-in{ animation:wsIn .34s cubic-bezier(.34,1.56,.64,1) both; }
+  .ws-say{ font-family:"Jost",sans-serif; font-weight:800; font-size:24px; line-height:1.2; color:#fff2f9; }
+  .ws-sub{ margin-top:7px; font-family:"Jost",sans-serif; font-weight:600; font-size:14px; color:#b596ad; line-height:1.4; }
+  .ws-opts{ display:flex; flex-direction:column; gap:10px; margin-top:20px; }
+  .ws-opts.wrap{ flex-direction:row; flex-wrap:wrap; }
+  .ws-opt{ min-height:54px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background:#241328; color:#f0dcea; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; padding:0 16px; transition:transform .14s var(--ease-spring); }
+  .ws-opt i{ color:var(--wsc,#ff5fa8); font-size:19px; }
+  .ws-opt.chip{ flex:0 0 auto; min-height:46px; font-size:14.5px; }
+  .ws-opt.picked{ background:var(--wsc,#ff5fa8); color:#160510; box-shadow:0 0 0 3px #ffc41f, 0 4px 0 #160510; transform:translateY(-2px); }
+  .ws-opt.picked i{ color:#160510; }
+  .ws-opt:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .ws-text{ width:100%; margin-top:20px; min-height:96px; border-radius:15px; border:2.5px solid #160510; background:#1c0512; box-shadow:inset 0 2px 0 rgba(0,0,0,.3); color:#fff2f9; font-family:"Jost",sans-serif; font-weight:700; font-size:17px; padding:13px 15px; outline:none; resize:none; }
+  .ws-text:focus{ border-color:var(--wsc,#ff5fa8); }
+  .ws-scale{ display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+  .ws-num{ width:52px; height:52px; border-radius:14px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background:#241328; color:#f0dcea; font-family:"Jost",sans-serif; font-weight:800; font-size:18px; cursor:pointer; }
+  .ws-num.picked{ background:var(--wsc,#ff5fa8); color:#160510; box-shadow:0 0 0 3px #ffc41f,0 4px 0 #160510; }
+  .ws-go{ margin-top:22px; width:100%; min-height:54px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background:var(--wsc,#ff5fa8); color:#160510; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .ws-go:disabled{ opacity:.4; }
+  .ws-go:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .ws-sealk{ font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:1.6px; color:var(--wsc,#ff5fa8); }
+  .ws-seallines{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+  @keyframes wsEngrave{ from{ opacity:0; transform:translateY(7px); } to{ opacity:1; transform:none; } }
+  .ws-line{ display:flex; align-items:flex-start; gap:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:16.5px; color:#ffe3f1; line-height:1.35; opacity:0; animation:wsEngrave .5s var(--ease-settle) both; }
+  .ws-line i{ color:var(--wsc,#ff5fa8); margin-top:2px; }
+  .ws-guard{ margin-top:20px; font-family:"Jost",sans-serif; font-weight:700; font-size:15.5px; color:#c9a6bf; line-height:1.45; animation:wsEngrave .6s var(--ease-settle) both; }
   /* NODE + tile — FLAT domain color, ink border, Tabler symbol (no gloss/glow); current = striped hero tile */
   .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:210px;padding:11px 0;} /* verdict #11: tighter vertical rhythm (20px→11px) so stones read connected */
   .jp-trail{position:relative;}
@@ -2442,6 +2480,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=864"></script>
+  <script src="app.js?v=865"></script>
 </body>
 </html>
