@@ -1238,7 +1238,7 @@
   #trackerFull.st-onplan .tf-endpip, #trackerFull.st-onplan .tf-convdot{ display:block; }
   /* off-plan: the empty ring IS the pitch (dashed), the disc is matte (colored border + icon, no stripe, no filter) */
   #trackerFull.st-off .tf-ring{ border:2px dashed #3a2540; box-sizing:border-box; }
-  #trackerFull.st-off .tf-tile{ filter:none; }
+  #trackerFull.st-off .tf-tile{ filter:none; box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.10); } /* keep the chunky game-piece drop-shadow (component-language: hard shadows), matte disc, no filter — matches canon mock 4 */
   /* welcome-back CLAIM: the verdict reads warm, the primary button is the reward-green Done style (reused) */
   #trackerFull.st-claim .tf-verdict{ color:#ffc8e0; }
   /* 2AM / OFF-HOURS: calmest + darkest; dim violet ring that slowly breathes, no streak pressure */
@@ -1949,6 +1949,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=826"></script>
+  <script src="app.js?v=827"></script>
 </body>
 </html>

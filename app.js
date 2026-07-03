@@ -3479,7 +3479,7 @@
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = tr("What now?"); // GRAND BUILD H: the mock's composition — the QUESTION is the title; the plan is the sub-line
       // RUN-1 mocks 1&2: the sub-line IS a mini timeline block (pink hairline + countdown) with a plan; a warm invite line without one
-      if (nb) { var _cd = hm(nb.time) - nowMin(), _cdL = _cd > 1 ? (tr("in") + " " + durLoc(_cd)) : tr("now");
+      if (nb) { var _cd = hm(nb.time) - nowMin(), _cdL = _cd > 1 ? (tr("in") + " " + (_cd < 60 ? (_cd + " " + tr("min")) : durLoc(_cd))) : tr("now"); // canon spells "через 12 мин" under an hour
         el("tfVerdict").innerHTML = '<span class="tf-subblock"><i class="ti ' + ND.ti + '" style="color:' + ND.light + '"></i><span class="sb-t">' + esc(nb.title) + '</span><span class="sb-dot">·</span><span class="sb-cd">' + esc(_cdL) + '</span></span>'; }
       else { var _iv = tfIdleInvite(); el("tfVerdict").innerHTML = '<span class="tf-invite"><i class="ti ' + _iv.ti + '"></i>' + tr(_iv.t) + '</span>'; }
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
