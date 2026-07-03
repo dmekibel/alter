@@ -2333,11 +2333,13 @@
 
     // D3 (David 2026-07-02): the cockpit is ALWAYS reachable in journey mode while something runs — like liveDock on the planner. When the live activity isn't the cur node's inline cockpit (e.g. the cur node is Plan/a habit), a persistent live pill floats above the nav: icon + title + elapsed, tap → the full cockpit (z90 rides over the journey).
     (function () { var jp = el("journeyPath"); if (!jp) return; var old = el("jpLive"); if (old) old.remove();
-      var _lt = activeTimers(), _t = _lt[_lt.length - 1]; if (!_t) return;
-      if (document.querySelector(".jp-cockpit")) return; // the cur node already IS this track's cockpit — no second surface
+      var _sc0 = el("jpScroll"); // Batch 4.3: only reserve extra scroll clearance while the pill is actually up — reset otherwise so the trail isn't padded for a dock that isn't there
+      var _lt = activeTimers(), _t = _lt[_lt.length - 1]; if (!_t) { if (_sc0) _sc0.style.paddingBottom = ""; return; }
+      if (document.querySelector(".jp-cockpit")) { if (_sc0) _sc0.style.paddingBottom = ""; return; } // the cur node already IS this track's cockpit — no second surface
       var _d = DOM[domainOf(_t)] || DOM.focus;
       var pill = add(jp, "div"); pill.id = "jpLive";
-      pill.style.cssText = "position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);z-index:12;display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:15px;background:#22091a;border:2px solid #160510;box-shadow:0 6px 18px rgba(0,0,0,.45);font-family:'Jost',sans-serif;cursor:pointer;";
+      pill.style.cssText = "position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 62px);z-index:12;display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:15px;background:#22091a;border:2px solid #160510;box-shadow:0 6px 18px rgba(0,0,0,.45);font-family:'Jost',sans-serif;cursor:pointer;"; // Batch 4.2: 74→62px so it sits snug above the nav, no floating gap
+      if (_sc0) _sc0.style.paddingBottom = "138px"; // Batch 4.3: lift the trail's bottom clearance above the pill so the first-activity node can scroll fully into view (was covered)
       pill.innerHTML = '<span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:' + tfStripe(_d.c) + ';color:' + (_d.ink || "#160510") + ';border:2px solid #160510;flex:none;">' + tiIcon(_t) + '</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px;color:#ffe3f1;">' + esc(_t.title || "Tracking") + '</span><span class="live-elapsed" data-tid="' + _t.id + '" style="font-weight:800;font-size:14px;color:' + _d.light + ';">' + elapsedStr(_t) + '</span><i class="ti ti-chevron-up" style="color:#b28ba6;font-size:15px;"></i>';
       pill.onclick = function () { openTrackerFull(); };
     })();
@@ -2910,7 +2912,7 @@
   function setHourPx(delta) { animateHourPx(pullHourPx + delta); }
   // Smooth hour-zoom that rebuilds ONLY the day-card timelines — the header (and the zoom slider you're dragging) stay intact, so a slider/pinch never destroys itself mid-gesture (David 2026-06-25)
   function zoomTimeline(nv, curOnly) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(520, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(720, Math.round(nv))); var old = pullHourPx; if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, fy = vh * 0.42, anchor = prevTop + fy;
     pullHourPx = nv;
     var cards = pb.querySelectorAll(curOnly ? ".day-card.cur" : ".day-card");
@@ -2936,7 +2938,7 @@
   var _zoomRaf = 0, _zoomPending = 0, _zoomAnchor = null, _zoomScroll = null, _zoomEndedAt = 0; // _zoomEndedAt = when the last pinch ended → suppress an accidental bubble-open from a finger that was resting on a bubble during rapid micro-zooms (David 2026-06-27)
   // LIVE zoom (slider drag + pinch): reposition the EXISTING nodes by their cached minute — no DOM teardown, no transition → past bubbles snap into place; anchorY (pinch thumb-midpoint) keeps the time under your fingers put (David 2026-06-25)
   function relayoutHourPx(nv, anchorY, scrollTop) {
-    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(520, Math.round(nv)));
+    var pb = el("pullBody"); if (!pb) return; nv = Math.max(20, Math.min(720, Math.round(nv)));
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0, old = pullHourPx;
     if (nv === old && scrollTop == null) return; // nothing to do (no zoom, no pan)
     pb.classList.add("zooming");
@@ -2958,7 +2960,7 @@
   // Hour-density zoom = a CRISP re-layout (the hours redistribute, bubbles stay their natural shape) — NOT a pixel-stretch. Anchored so the time under the focus point stays put. (David 2026-06-24)
   function animateHourPx(nv, focusScreenY) { // crisp re-layout zoom — anchored to the CURRENT day-card's scroll (paged view) so the time under your focus stays put (David 2026-06-24)
     var pb = el("pullBody"); if (!pb) return; var old = pullHourPx;
-    nv = Math.max(20, Math.min(520, Math.round(nv))); if (nv === old) return;
+    nv = Math.max(20, Math.min(720, Math.round(nv))); if (nv === old) return;
     var sc = pb.querySelector(".day-card.cur .day-cardscroll"), vh = sc ? sc.clientHeight : 0, prevTop = sc ? sc.scrollTop : 0;
     var fy = (focusScreenY == null) ? vh * 0.42 : (focusScreenY - (sc ? sc.getBoundingClientRect().top : 0));
     var anchor = prevTop + fy;
@@ -3286,7 +3288,7 @@
       });
       pb.addEventListener("pointermove", function (e) {
         if (ptrs[e.pointerId]) { ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY; }
-        if (!single && pVD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { var vd = Math.max(8, pvdist()); pHPLast = Math.max(20, Math.min(520, Math.round(pHP0 * (vd / pVD0)))); var mid = pmidY(); zoomLive(pHPLast, null, { dk: pAnchorSecDk, min: pAnchorMin, startH: pAnchorStartH, calOff: pAnchorCalOff, fy: mid - pContTop }); e.preventDefault(); return; } // pinch (vertical) zooms + midpoint pans, together; minute-anchored so the exact time under your fingers stays put at every zoom level (David 2026-06-26)
+        if (!single && pVD0 > 0 && Object.keys(ptrs).length >= 2 && pullZoom === "day") { var vd = Math.max(8, pvdist()); pHPLast = Math.max(20, Math.min(720, Math.round(pHP0 * (vd / pVD0)))); var mid = pmidY(); zoomLive(pHPLast, null, { dk: pAnchorSecDk, min: pAnchorMin, startH: pAnchorStartH, calOff: pAnchorCalOff, fy: mid - pContTop }); e.preventDefault(); return; } // pinch (vertical) zooms + midpoint pans, together; minute-anchored so the exact time under your fingers stays put at every zoom level (David 2026-06-26)
         if (single && swPgr && pullZoom === "day") { if (document.querySelector(".calblk.dragging")) { swPgr = null; return; } /* a bubble is being dragged (long-press) → the page must NOT also swipe to prev/next day at the same time (David 2026-06-27) */ if (Object.keys(ptrs).length >= 2) { swPgr = null; return; } var dx = e.clientX - sX, dy = e.clientY - sY;
           if (swOn) { swPrevX = swLastX; swLastX = e.clientX; e.preventDefault(); swPgr.style.transform = "translateX(" + (-33.3333 + (dx / swW) * (100 / 3)) + "%)"; setStripSel((Math.abs(dx) > swW * 0.33) ? keyAdd(pullFocusK || todayK(), dx < 0 ? 1 : -1) : (pullFocusK || todayK())); return; } // horizontal swipe follows the finger AND the week-strip highlight moves LIVE to the day you're heading toward (David 2026-06-26); track finger motion so a flick at release pages the way it's ACTUALLY moving
           if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.4) { swOn = true; swPrevX = swLastX = e.clientX; swPgr.style.transition = "none"; e.preventDefault(); return; } // commit to a horizontal page
@@ -3694,13 +3696,17 @@
       [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); }; })(mm); });
     }
   }
+  function clearStaleCommit(k, from, to, keep) { // Batch 3 #2 (David device 2026-07-03): a new track-commit OWNS [from,to] → cancel any OTHER undone COMMIT block (pin:true = a previous "keep-going" that was abandoned) overlapping it, so nothing overlaps. A pin block that started before `from` keeps its past ghost (end cut to `from`); one fully inside the window is removed. DELIBERATE plans (non-pin, e.g. a 3pm meeting) are never touched — reflow shuffles those.
+    var arr = blocks(k); for (var i = arr.length - 1; i >= 0; i--) { var b = arr[i]; if (b === keep || b.done || !b.pin) continue; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < to && be > from) { if (bs < from) b.mins = Math.max(5, from - bs); else arr.splice(i, 1); } }
+  }
   function tfMoreMins(t, mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(t); // "сколько ещё" → the current track becomes a plan owning now→now+mins (off-plan → on-plan in one tap)
     blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
+    clearStaleCommit(k, now, now + mins, null); // cancel any abandoned prior commit in this window (no overlap)
     blocks(k).push({ id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: t.title, prio: 2, color: t.color, catK: t.catK, domain: dom, done: false, pin: true }); reflow(k); if (t) t.commit = mins; save(); renderLiveTracker(); renderToday(); renderTrackerFull();
   }
   function tfExtendPlan(mins) { // ON-PLAN extend (Batch 2 item 6): grow the CURRENT planned block's end to now+mins so "keep going 30 more" needs no re-planning. Block stays on plan; the countdown just gets longer.
     var st = null; try { st = trackerState(); } catch (e) {} var b = st && st.block; var k = todayK(), now = logicalNowMin();
-    if (b) { var bs = hm(b.time); b.mins = Math.max(b.mins || 30, (now - bs) + mins); } // end = max(current end, now+mins) — extending never shrinks
+    if (b) { var bs = hm(b.time); b.mins = Math.max(b.mins || 30, (now - bs) + mins); clearStaleCommit(k, now, bs + b.mins, b); } // end = max(current end, now+mins) — extending never shrinks; clear any stale commit the longer end now overlaps (keep THIS block)
     var run = activeTimers(), t = run[run.length - 1]; if (t) { t.commit = Math.round((Date.now() - t.start) / 60000) + mins; t._commitHit = false; }
     reflow(k); save(); renderLiveTracker(); renderToday(); renderTrackerFull(); toast("✦ " + tr("extended to") + " " + fmt((now + mins) % 1440));
   }
@@ -6368,6 +6374,12 @@
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = ((now - startH * 60) / 60 * HP); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = "#ff5fa8"; nl.style.boxShadow = "0 0 13px #ff5fa8"; nl.dataset.mn = now; nowLineEl = nl; nowRightBand = [_ny - 6, _ny + 30]; /* now-line stays the brightest thing on the timeline (David 2026-06-27) */ var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 8) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.dataset.mn = now; nc.dataset.off = -8; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; if (_lv) { var _ls = toWin(new Date(_lv.start).getHours() * 60 + new Date(_lv.start).getMinutes()); if ((logicalNowMin() - _ls) / 60 * HP < 22) { var nr = add(cal, "div", "nowread"); nr.style.top = (_ny + 7) + "px"; nr.style.color = _lc; nr.dataset.mn = now; nr.dataset.off = 7; nr.innerHTML = tiIcon(_lv) + ' <span class="cn-t">' + esc(_lv.title || "Tracking") + '</span> · <span class="live-elapsed" data-tid="' + _lv.id + '">' + elapsedStr(_lv) + '</span>'; } } else { var np = add(cal, "div", "nowtime"); np.style.top = (_ny + 5) + "px"; np.dataset.mn = now; np.dataset.off = 5; np.style.left = "auto"; np.style.right = "6px"; np.innerHTML = '<b style="letter-spacing:.5px">NOW</b> ' + fmt(now); } } // now-line + icon circle (no label under it) + a right-side readout: current activity in its colour + elapsed (David 2026-06-25)
+    if (showNow) { // Batch 3 #4: TAP THE NOW-LINE (or its circle) → zoom into the present. Toggles zoomed-in ⇄ default, anchored at the line, then recenters on now. Replaces the removed double-tap.
+      (function () { var _nl2 = cal.querySelector(".nowline"), _nc2 = cal.querySelector(".nowcirc"); if (!_nl2) return;
+        var _zoomNow = function (e2) { if (e2) e2.stopPropagation(); if (pullZoom !== "day") return; var _y = _nl2.getBoundingClientRect().top; animateHourPx(pullHourPx < 150 ? 240 : 64, _y); setTimeout(scrollToNow, 40); };
+        [_nl2, _nc2].forEach(function (_t2) { if (!_t2) return; _t2.style.pointerEvents = "auto"; _t2.style.cursor = "pointer"; _t2.addEventListener("pointerdown", function (e3) { e3.stopPropagation(); }); _t2.addEventListener("click", _zoomNow); });
+      })();
+    }
     // temporal anchors so you're never lost in time: midnight · wake · noon · bed (David 2026-06-24)
     function hrToMin(s, pm) { if (!s) return null; var m = ("" + s).match(/\d+/); if (!m) return null; var n = +m[0]; if (pm && n < 12) n += 12; if (n >= 24) n -= 24; return n * 60; }
     var _nowBand = Math.max(12, 26 / Math.max(20, HP) * 60); // minutes within which the NOW marker visually overlaps a temporal anchor (≈26px tall now-circle/label) — David 2026-06-28
@@ -6611,9 +6623,7 @@
         if (holdT) { clearTimeout(holdT); holdT = null; }
         document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
         if (done || moved) return; // created on the hold, or it was a scroll
-        var now = Date.now(); if (now - t0 > 360) { _ttapT = 0; return; } // a long hold that didn't fire → ignore
-        if (_ttapT && now - _ttapT < 320 && Math.abs(ev.clientX - _ttapX) < 44 && Math.abs(ev.clientY - _ttapY) < 44) { _ttapT = 0; if (pullZoom === "day") animateHourPx(pullHourPx < 110 ? 150 : 64, ev.clientY); } // DOUBLE-TAP → zoom in/out one-handed (replaces the two-finger pinch) — David 2026-07-02
-        else { _ttapT = now; _ttapX = ev.clientX; _ttapY = ev.clientY; }
+        // Batch 3 #4 (David device 2026-07-03): double-tap-to-zoom was unreliable → REMOVED. Zoom-into-present now lives on the NOW-LINE tap (wired at the now-line render). A plain empty-slot tap does nothing (create = the long-press).
       }
       document.addEventListener("pointermove", mv, { passive: true }); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
     });
@@ -6876,7 +6886,7 @@
     var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
     var _isPlan = !!(opts.domains && opts.domains.length); // scoped plan sheet → chips get the pd-lit striped selected-fill (canon)
     var ov = add(document.body, "div", "bento-ov bento-sheet");
-    var card = add(ov, "div", "bento-card bento-sheet");
+    var card = add(ov, "div", "bento-card bento-sheet" + (_isPlan ? " bento-plan" : "")); // Batch 4: the plan-day flow gets a FIXED-height sheet so switching Energy/Work/Love (different activity counts) never bounces the frame
     var head = add(card, "div", "bento-head");
     if (opts.onBack) { var bb0 = add(head, "button", "bento-x"); bb0.innerHTML = '<i class="ti ti-chevron-left"></i>'; bb0.style.marginRight = "8px"; bb0.onclick = function () { close(); opts.onBack(); }; }
     add(head, "div", "bento-q", opts.title || "What are you doing?");

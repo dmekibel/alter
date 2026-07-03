@@ -935,6 +935,7 @@
   /* COMPACT BOTTOM-SHEET picker + 4 supercategories (David 2026-07-02 v644): the activity picker is a SHORT bottom sheet (never full-screen) that opens to 4 category tiles + a Recent row — no wall of options */
   .bento-ov.bento-sheet{ align-items:flex-end; padding:0; }
   .bento-card.bento-sheet{ width:100%; max-width:560px; max-height:86vh; max-height:86dvh; border-radius:22px 22px 0 0; border-width:3px 0 0; padding-bottom:env(safe-area-inset-bottom); animation:bentoUp .26s cubic-bezier(.2,.9,.3,1.05); } /* taller — less daunting (David 2026-07-01) */
+  .bento-card.bento-sheet.bento-plan{ height:86vh; height:86dvh; } /* Batch 4: FIXED height for the plan-day flow → Energy/Work/Love beats never bounce the frame regardless of activity count (body scrolls inside) */
   @keyframes bentoUp{ from{ transform:translateY(100%); } to{ transform:none; } }
   .bento-supergrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 4px; }
   .bento-supertile{ display:flex; flex-direction:column; align-items:flex-start; gap:5px; border:2px solid #160510; border-radius:16px; padding:14px 14px 12px; cursor:pointer; font-family:"Jost",sans-serif; color:#fff; box-shadow:0 4px 0 #160510; text-align:left; position:relative; overflow:hidden; transition:transform .08s,box-shadow .08s; }
@@ -2321,6 +2322,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=850"></script>
+  <script src="app.js?v=851"></script>
 </body>
 </html>
