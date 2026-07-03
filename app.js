@@ -1332,6 +1332,7 @@
     "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
     "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
     "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "The rest": "Остальное", "You're today —": "Ты сегодня —", "been meaning to": "давно собирался",
+    "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
@@ -6420,40 +6421,89 @@
   }
   function dayStats(dk) { var bl = (blocks(dk) || []).filter(function (b) { return b.title; }), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; }); var lg = (logs(dk) || []).length; return { planned: bl.length, done: done, tracked: lg, ratio: bl.length ? done / bl.length : 0, perfect: bl.length > 0 && done >= bl.length, active: lg > 0 || done > 0 }; } // the crown-calendar's read of a day (GRAND BUILD C)
   function dayOnFire(dk) { return dayStats(dk).active && dayStats(keyAdd(dk, -1)).active; } // part of a streak run = this day AND yesterday lived
-  function weekGrid(L, baseK, onDay) { // GRAND BUILD C: the bridge zoom — 7 columns of the user's REAL blocks in the day view's own colors; crowns above perfect days, fire between streak days (approved mock)
+  function wkAB() { try { return localStorage.getItem("alter_wkab") === "a" ? "a" : "b"; } catch (e) { return "b"; } }
+  function weekGrid(L, baseK, onDay) { // 1:1 calendar.jpg — verdict #9 ships BOTH A (bare blobs) + B (day-track outline) behind a dev toggle
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
-    var d0 = startOfWeek(baseK), row = add(L, "div", "weekrow");
-    for (var i = 0; i < 7; i++) { (function (dk) {
-      var st0 = dayStats(dk), col = add(row, "div", "wkcol" + (dk === todayK() ? " today" : "") + (st0.perfect ? " crowned" : "")), d = kd(dk);
-      if (st0.perfect) { var cr = add(col, "i", "ti ti-crown wk-crown"); }
-      add(col, "div", "wkh", ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()] + " " + d.getDate());
+    var d0 = startOfWeek(baseK), variant = wkAB();
+    var hs = add(L, "div", "cal-stat"), lived = 0, crowns = 0;
+    var abw = add(L, "div", "wk-abwrap"), ab = add(abw, "div", "wk-abtoggle");
+    var bA = add(ab, "button", variant === "a" ? "on" : "", "A"), bB = add(ab, "button", variant === "b" ? "on" : "", "B");
+    bA.onclick = function () { try { localStorage.setItem("alter_wkab", "a"); } catch (e) {} renderToday(); };
+    bB.onclick = function () { try { localStorage.setItem("alter_wkab", "b"); } catch (e) {} renderToday(); };
+    var row = add(L, "div", "weekrow " + (variant === "a" ? "wk-a" : "wk-b"));
+    var DAY_START = 360, DAY_SPAN = 18 * 60, liveByCol = [];
+    for (var i = 0; i < 7; i++) { (function (dk, idx) {
+      var st0 = dayStats(dk), isToday = dk === todayK();
+      var col = add(row, "div", "wkcol" + (isToday ? " today" : "") + (st0.perfect ? " crowned" : ""));
+      if (st0.perfect) { crowns++; add(col, "i", "ti ti-crown wk-crown"); }
+      liveByCol[idx] = st0.active; if (st0.active) lived++;
       var strip = add(col, "div", "wkstrip");
-      blocks(dk).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), y = Math.max(0, (bs - 360) / (18 * 60) * 100), h = Math.max(2.4, (b.mins || 30) / (18 * 60) * 100), st = blockStatus(dk, b), dom = domainOf(b), D = DOM[dom] || DOM.focus, bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%";
-        if (st === "ok") { bb.style.background = D.c; bb.style.boxShadow = "0 0 5px " + D.c + "66"; } // lived = its own bright colour (solid — small cells never shrink the stripe gauge)
-        else if (st === "miss") { bb.style.background = "transparent"; bb.style.border = "1.5px dashed " + mixHex(D.c, "#160510", 0.35); } // ghost = the day view's missed language
-        else { bb.style.background = mixHex(D.c, "#160510", 0.62); } // upcoming = matte
-      });
-      (logs(dk) || []).forEach(function (e2) { var ls = hm(e2.time), y2 = Math.max(0, (ls - 360) / (18 * 60) * 100), h2 = Math.max(1.6, (e2.mins || 15) / (18 * 60) * 100), dm = domainOf(e2), DD = DOM[dm] || DOM.focus, rb = add(strip, "div", "wkb real"); rb.style.top = y2 + "%"; rb.style.height = h2 + "%"; rb.style.background = dm === "drift" ? mixHex(DD.c, "#160510", 0.4) : mixHex(DD.c, "#160510", 0.2); }); // the REAL lane as a thin right-side ribbon — reality visible at week zoom
-      if (dayOnFire(dk)) { var fl = add(col, "i", "ti ti-flame wk-fire"); }
+      var drawn = blocks(dk).filter(function (b) { return b.title; });
+      if (variant === "a" && drawn.length) {
+        var mn = 1e9, mx = -1e9, domC = null;
+        drawn.forEach(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < mn) mn = bs; if (be > mx) mx = be; if (blockStatus(dk, b) === "ok" && !domC) domC = (DOM[domainOf(b)] || DOM.focus).c; });
+        var anyOk = drawn.some(function (b) { return blockStatus(dk, b) === "ok"; });
+        var y = Math.max(0, (mn - DAY_START) / DAY_SPAN * 100), h = Math.max(6, (mx - mn) / DAY_SPAN * 100);
+        var bb = add(strip, "div", "wkb" + (anyOk ? " striped" : " matte")); bb.style.top = y + "%"; bb.style.height = h + "%";
+        bb.style.background = anyOk ? (domC || DOM.focus.c) : mixHex((domC || DOM.focus.c), "#160510", 0.62);
+      } else if (variant === "b") {
+        drawn.forEach(function (b) {
+          var bs = hm(b.time), y = Math.max(0, (bs - DAY_START) / DAY_SPAN * 100), h = Math.max(3.2, (b.mins || 30) / DAY_SPAN * 100);
+          var st = blockStatus(dk, b), D = DOM[domainOf(b)] || DOM.focus, bb = add(strip, "div", "wkb"); bb.style.top = y + "%"; bb.style.height = h + "%";
+          if (st === "ok") { bb.style.background = D.c; bb.classList.add("striped"); }
+          else if (st === "miss") { bb.classList.add("miss"); bb.style.borderColor = mixHex(D.c, "#160510", 0.3); }
+          else { bb.style.background = mixHex(D.c, "#160510", 0.6); bb.classList.add("matte"); }
+        });
+      }
+      if (isToday) { var nm = logicalNowMin(); if (nm >= DAY_START && nm <= DAY_START + DAY_SPAN) { var ny = (nm - DAY_START) / DAY_SPAN * 100; var nl = add(strip, "div", "wk-nowline"); nl.style.top = ny + "%"; var nd = add(strip, "div", "wk-nowdot"); nd.style.top = ny + "%"; nd.style.left = "6px"; } }
       col.onclick = function () { onDay(dk); };
-    })(keyAdd(d0, i)); }
+    })(keyAdd(d0, i), i); }
+    add(L, "div", "wk-mirror");
+    var bestS = -1, bestL = 0, curS = -1, curL = 0;
+    for (var j = 0; j < 7; j++) { if (liveByCol[j]) { if (curL === 0) curS = j; curL++; if (curL > bestL) { bestL = curL; bestS = curS; } } else curL = 0; }
+    var frun = add(L, "div", "wk-firerun");
+    if (bestL >= 2) { var seg = 100 / 7, bar = add(frun, "div", "wk-firebar"); bar.style.left = "calc(" + (bestS * seg) + "% + 4px)"; bar.style.width = "calc(" + (bestL * seg) + "% - 8px)"; var fl = add(frun, "i", "ti ti-flame wk-fireflame"); fl.style.left = "calc(" + ((bestS + bestL) * seg) + "% - 12px)"; }
+    var dow = add(L, "div", "wkdow"), NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    for (var w = 0; w < 7; w++) { (function (dk) { var d = kd(dk); add(dow, "div", "wkd" + (dk === todayK() ? " today" : ""), tr(NAMES[d.getDay()])); })(keyAdd(d0, w)); }
+    var a = kd(d0), b2 = kd(keyAdd(d0, 6)); hs.textContent = a.getDate() + "—" + b2.getDate();
+    var foot = add(L, "div", "cal-foot");
+    foot.innerHTML = esc(lived) + " " + esc(tr("lived days")) + " · " + esc(crowns) + ' <i class="ti ti-crown cs-crown" style="font-size:13px"></i> · ' + esc(tr("streak")) + " " + esc(bestL);
+    var hint = add(L, "div", "cal-hint"); hint.innerHTML = '<i class="ti ti-zoom-scan"></i> ' + esc(tr("tap — the week folds into a day"));
   }
+  var MO_RAMP = ["#5a2440", "#8a2e5c", "#b53d77", "#d04f8f"]; // jewel-step 4 SOLID pinks — verdict #10
   function monthGrid(L, baseK, onDay) {
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
-    var f = kd(baseK); f.setDate(1); var startDow = f.getDay(), y = f.getFullYear(), mo = f.getMonth(), dim = new Date(y, mo + 1, 0).getDate(), grid = add(L, "div", "mogrid");
-    ["S", "M", "T", "W", "T", "F", "S"].forEach(function (w) { add(grid, "div", "mowh", w); });
+    var f = kd(baseK); f.setDate(1); var startDow = f.getDay(), y = f.getFullYear(), mo = f.getMonth(), dim = new Date(y, mo + 1, 0).getDate();
+    var lit = 0, crowns = 0, bestRun = 0, curRun = 0;
+    for (var d1 = 1; d1 <= dim; d1++) { var dk1 = y + "-" + pad(mo + 1) + "-" + pad(d1); var s1 = dayStats(dk1); if (dk1 <= todayK() && s1.active) { lit++; curRun++; if (curRun > bestRun) bestRun = curRun; if (s1.perfect) crowns++; } else curRun = 0; }
+    var hs = add(L, "div", "cal-stat"); hs.innerHTML = esc(lit) + " " + esc(tr("days shone")) + ' · ' + esc(crowns) + ' <i class="ti ti-crown cs-crown" style="font-size:13px"></i> · ' + esc(tr("best streak —")) + " " + esc(bestRun);
+    var grid = add(L, "div", "mogrid");
+    var MOWH = (typeof curLang === "function" && curLang() === "ru") ? ["В", "П", "В", "С", "Ч", "П", "С"] : ["S", "M", "T", "W", "T", "F", "S"];
+    MOWH.forEach(function (w) { add(grid, "div", "mowh", w); });
     for (var p = 0; p < startDow; p++) add(grid, "div", "mocell empty");
     for (var day = 1; day <= dim; day++) { (function (dk, day) {
-      var st1 = dayStats(dk), fut = dk > todayK();
-      var cell = add(grid, "div", "mocell" + (dk === todayK() ? " today" : "") + (st1.perfect ? " crowned" : "") + (fut ? " fut" : "")); add(cell, "div", "mod", "" + day);
-      if (!fut && (st1.active || st1.planned)) { // GRAND BUILD C — the crown calendar: cells speak the battery language (quiet / shining by match-rate / crowned perfect / fire on runs). Solid tints — the stripe gauge never shrinks.
-        var glow = st1.perfect ? 1 : Math.max(st1.active ? 0.35 : 0.15, st1.ratio);
-        cell.style.background = mixHex("#d04f8f", "#241328", 1 - glow * 0.8);
-        if (st1.perfect) { cell.style.borderColor = "#ffd24a"; var mc = add(cell, "i", "ti ti-crown mo-crown"); }
-        if (dayOnFire(dk)) { var mf = add(cell, "i", "ti ti-flame mo-fire"); }
+      var st1 = dayStats(dk), isT = dk === todayK(), fut = dk > todayK();
+      var cell = add(grid, "div", "mocell" + (isT ? " today" : "") + (st1.perfect ? " crowned" : "") + (fut ? " fut" : ""));
+      var lit1 = !fut && (st1.active || st1.planned);
+      if (lit1 && !isT) {
+        var rung = st1.perfect ? 3 : st1.ratio >= 0.66 ? 2 : st1.ratio >= 0.33 ? 1 : 0;
+        cell.style.background = MO_RAMP[rung]; cell.classList.add("lit");
+        if (st1.perfect) { cell.style.borderColor = "#ffd24a"; add(cell, "i", "ti ti-crown mo-crown"); }
+        if (dayOnFire(dk)) add(cell, "i", "ti ti-flame mo-fire");
+        if (st1.active && !dayStats(keyAdd(dk, -1)).active) add(cell, "i", "ti ti-sparkles mo-glint");
       }
+      add(cell, "div", "mod", "" + day); // DATE NUMBER — verdict #10 fix
       cell.onclick = function () { onDay(dk); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
+    var hint = add(L, "div", "cal-hint"); hint.innerHTML = '<i class="ti ti-zoom-scan"></i> ' + esc(tr("tap — the day grows from its cell"));
+    var lg = add(L, "div", "mo-legend");
+    function leg(html, label) { var r = add(lg, "div", "mo-leg"); r.innerHTML = html + '<span>' + esc(tr(label)) + '</span>'; }
+    leg('<span class="lgsw" style="background:#1c0616"></span>', "quiet");
+    leg('<span class="lgramp"><span style="background:' + MO_RAMP[0] + '"></span><span style="background:' + MO_RAMP[1] + '"></span><span style="background:' + MO_RAMP[2] + '"></span><span style="background:' + MO_RAMP[3] + '"></span></span>', "shining");
+    leg('<i class="ti ti-crown lg-crown"></i>', "crown");
+    leg('<span class="lgsw" style="background:' + MO_RAMP[3] + ';border-color:#ffd24a"></span>', "charge");
+    leg('<span class="lgsw" style="background:transparent;border-style:dashed;border-color:rgba(255,95,168,.4)"></span>', "away");
+    leg('<i class="ti ti-sparkles lg-glint"></i>', "return");
   }
   function timelineIsHome() { return document.body.classList.contains("tab-day") && !document.body.classList.contains("gaming"); } // Today tab in the normal app = the always-open rich pull-timeline (David 2026-06-24)
   function renderToday() {
