@@ -1326,6 +1326,7 @@
     "YESTERDAY NOW": "ВЧЕРА СЕЙЧАС", "again?": "повторить?", "one tap — plan and track at once": "один тап — план и трек сразу", "3 tasks — 60 seconds": "3 дела — 60 секунд",
     "on plan": "по плану", "left": "осталось", "min": "мин", "over by": "перебор", "ends": "конец", "free tracking": "свободный трек", "min tracked": "мин затрекано", "a plan doubles points": "план удвоит очки",
     "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
+    "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
@@ -2747,7 +2748,7 @@
     var items = [
       { ic: "ti-calendar", l: "Today", sub: "plan & track your day", c: "#36b3f0", fn: function () { ov.remove(); openPull(); } },
       { ic: "ti-player-play-filled", l: cur ? "Switch activity" : "Start tracking", sub: cur ? ("now: " + esc(cur.title || "tracking")) : "what are you doing?", c: "#ff5fa0", fn: function () { ov.remove(); startOrSwitch(); } },
-      { ic: "ti-checkup-list", l: "Habits", sub: "add or remove your activities", c: "#ff8a3d", fn: function () { ov.remove(); habitsSheet(); } },
+      { ic: "ti-checkup-list", l: "Habits", sub: "your daily thread", c: "#ff8a3d", fn: function () { ov.remove(); habitPathSheet(); } },
       { ic: "ti-stack-2", l: "Habit stacks", sub: "build & apply day presets", c: "#ff5fa0", fn: function () { ov.remove(); presetsSheet(todayK()); } },
       { ic: "ti-target", l: "Goals", sub: "break down & schedule", c: "#34d39a", fn: function () { ov.remove(); goalsSheet(); } },
       { ic: "ti-affiliate", l: "Your life", sub: "see who you're being", c: "#b07aff", fn: function () { ov.remove(); mindmapSheet(); } },
@@ -6479,19 +6480,46 @@
   }
   function blockEdit(b, k) { editorSheet(b, k, false); }
   function logEdit(e, k) { editorSheet(e, k, true); }
-  function renderHabits() {
-    var L = el("habitList"); if (!L) return; L.innerHTML = ""; var dm = doneMap(todayK()), done = 0; // Habits menu removed — same thing as the bento (David 2026-06-23)
-    S.habits.forEach(function (hb) {
-      var on = !!dm[hb.id]; if (on) done++;
-      var r = add(L, "div", "hab" + (on ? " done" : "")); var _he = add(r, "div", "he"); _he.innerHTML = hb.e && hb.e.indexOf("ti-") === 0 ? '<i class="ti ' + hb.e + '"></i>' : hb.e; add(r, "div", "hn", hb.l);
-      if (hb.type === "quit") { var tag = add(r, "span", "htag", "quit"); tag.style.background = "#c4607f"; tag.style.marginRight = "6px"; }
-      if (hb.per > 0) { var wk = weekDone(hb.id); var wd = add(r, "div", "wkdots"); for (var i = 0; i < hb.per; i++) { var di = add(wd, "i"); if (i < wk) di.style.background = hb.color; } }
-      else { var sk = streak(hb.id); if (sk > 1) { var s = add(r, "div"); s.innerHTML = '<i class="ti ti-flame"></i> ' + sk; s.style.cssText = "font-family:var(--bub);font-size:13px;color:#e0791c;font-weight:800;margin-right:4px;"; } }
-      var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = hb.color;
-      var del = add(r, "div", "del", "✕"); del.onclick = function (e) { e.stopPropagation(); var i = S.habits.indexOf(hb); if (i >= 0) S.habits.splice(i, 1); save(); renderHabits(); };
-      r.onclick = function () { toggleHabit(hb.id); };
+  function renderHabits() { /* stone path is a modal (habitPathSheet); nothing to draw inline. Kept so renderAll() never throws. */ }
+  // ---- HABITS STONE PATH (mock 14 · verdict #14: white icons + dense rhythm) ----
+  function habTier(n) { if (n >= 21) return "blue"; if (n >= 7) return "flame"; return "ember"; }
+  function habMirror(hb, sk, dom) { var D = DOM[dom];
+    if (hb.per > 0) { var wk = weekDone(hb.id); return { txt: hb.per + tr("× в неделю") + " · " + wk + " " + tr("из") + " " + hb.per, col: D.light }; }
+    if (sk >= 21) return { txt: "×" + sk + " — " + tr("огонь стал синим"), col: D.light };
+    if (sk >= 12) return { txt: tr("день") + " " + sk + " " + tr("этой нити — один тап держит её"), col: D.light };
+    if (sk >= 2) return { txt: "×" + sk + " — " + tr("уголёк тлеет"), col: D.light };
+    return { txt: tr("новая нить — начни сегодня"), col: mixHex(D.light, "#160510", 0.35) };
+  }
+  function habStripe(dom) { var D = DOM[dom], a = D.c, b = mixHex(D.c, "#ffffff", 0.28); return "repeating-linear-gradient(135deg," + a + " 0 14px," + b + " 14px 28px)"; } // bright DONE stripes = domain ↔ lighter tint
+  function habitPathSheet() {
+    var dm = doneMap(todayK()), done = 0; S.habits.forEach(function (hb) { if (dm[hb.id]) done++; });
+    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var head = add(card, "div", "bento-head");
+    var htl = add(head, "div"); add(htl, "div", "hp-title", tr("Привычки")); add(htl, "div", "hp-sub", done + " " + tr("из") + " " + S.habits.length + " " + tr("сегодня"));
+    var hr = add(head, "div"); hr.style.cssText = "display:flex;align-items:center;gap:8px;";
+    var spk = add(hr, "span", "hp-sparkpill"); spk.innerHTML = '<i class="ti ti-bolt"></i> ' + ((S.game && S.game.spark) || 0);
+    var edit = add(hr, "button", "hp-edit"); edit.innerHTML = '<i class="ti ti-pencil"></i>'; edit.onclick = function () { ov.remove(); habitsSheet(); };
+    var xb = add(hr, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
+    var pw = add(card, "div", "hp-headwrap"), pr = add(pw, "div", "hp-progwrap"), bar = add(pr, "div", "hp-prog"), fill = add(bar, "i"); fill.style.width = (S.habits.length ? Math.round(done / S.habits.length * 100) : 0) + "%";
+    var body = add(card, "div", "bento-body hp-body"), path = add(body, "div", "hp-path");
+    S.habits.forEach(function (hb, idx) {
+      var on = !!dm[hb.id], dom = domainOf({ title: hb.l, habitId: hb.id }), D = DOM[dom], sk = streak(hb.id), tier = habTier(sk);
+      var w = add(path, "div", "hp-stonewrap");
+      var stone = add(w, "div", "hp-stone" + (on ? " done" : " undone"));
+      if (on) { stone.style.background = habStripe(dom); }
+      else { stone.style.background = mixHex(D.c, "#160510", 0.72); stone.style.borderColor = "#160510"; stone.style.boxShadow = "0 6px 0 #160510, inset 0 0 0 4px " + D.c; }
+      var ic = add(stone, "i", "hp-ic ti " + tiClass({ title: hb.l, habitId: hb.id })); ic.style.color = on ? "#ffffff" : D.light;
+      if (on) { var ck = add(stone, "div", "hp-check"); ck.innerHTML = '<i class="ti ti-check"></i>'; }
+      if (hb.per === 0 && sk >= 2) { var pip = add(stone, "div", "hp-pip " + tier); pip.innerHTML = '<i class="ti ti-flame"></i>'; }
+      stone.onclick = function () { toggleHabit(hb.id); ov.remove(); habitPathSheet(); };
+      add(w, "div", "hp-label", esc(hb.l));
+      if (hb.per > 0) { var wk = weekDone(hb.id), wd = add(w, "div", "hp-wk"); for (var i = 0; i < hb.per; i++) { var d = add(wd, "i"); if (i < wk) { d.style.background = D.c; d.style.borderColor = "#160510"; } } }
+      var m = habMirror(hb, sk, dom), ml = add(w, "div", "hp-mirror", m.txt); ml.style.color = m.col;
+      if (idx < S.habits.length - 1) add(path, "div", "hp-spine");
     });
-    el("habitProg").textContent = done + "/" + S.habits.length;
+    var lg = add(body, "div", "hp-legend");
+    lg.innerHTML = '<b>' + tr("нить") + ':</b><span><i class="ti ti-flame lg-ember"></i> 2–6</span><span><i class="ti ti-flame lg-flame"></i> 7–20</span><span><i class="ti ti-flame lg-blue"></i> 21+</span>';
   }
   function toggleHabit(id) { var dm = doneMap(todayK()); dm[id] = !dm[id]; if (id === "tidy" && dm[id]) S.lastTidy = todayK(); if (dm[id]) earn(12, {}); save(); renderHabits(); renderHero(); renderChar(); renderGame(); }
 
@@ -8604,7 +8632,7 @@
     var og = el("openGoals"); if (og) og.onclick = goalsSheet;
     var _gg = el("goGoals"); if (_gg) _gg.onclick = goalsSheet;                       // Goals tab → goals
     var _gp = el("goPresets"); if (_gp) _gp.onclick = function () { presetsSheet(todayK()); }; // Goals tab → masterpiece days / presets
-    var _gh = el("goHabits"); if (_gh) _gh.onclick = habitsSheet;                     // Goals tab → habits manager
+    var _gh = el("goHabits"); if (_gh) _gh.onclick = habitPathSheet;                     // Goals tab → habits stone path (manager reachable via its pencil)
     var _gb2 = el("goBrain2"); if (_gb2) _gb2.onclick = brainSheet;                    // You tab → brain (free AI)
     var _gr2 = el("goRedo2"); if (_gr2) _gr2.onclick = onboard;                        // You tab → redo onboarding
     var _ah = el("addHabit"); if (_ah) _ah.onclick = habitSheet;
