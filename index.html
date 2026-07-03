@@ -930,6 +930,27 @@
   .cal .calblk.seamnew::before{ content:""; position:absolute; left:0; right:0; top:-1px; height:3px; z-index:5; pointer-events:none; border-radius:3px; background:linear-gradient(90deg,transparent,rgba(255,140,196,.9),rgba(255,255,255,.7),rgba(255,140,196,.9),transparent); background-size:220% 100%; animation:seamShimmer 2.6s linear infinite; }
   @keyframes seamShimmer{ 0%{ background-position:120% 0; } 100%{ background-position:-120% 0; } }
   .cal .calblk .wayback{ position:absolute; right:9px; bottom:6px; z-index:4; pointer-events:none; font-size:14px; line-height:1; color:rgba(255,240,249,.42); }
+  /* ===== RUN-1 slice 6 · EDGE INSPECTOR (opt-in behind window.__edgeInsp — edits PLAN lane only) ===== */
+  .edgeinsp{ position:absolute; z-index:40; right:0; width:58%; max-width:230px; background:#231018; border:2.5px solid #160510; border-left:2.5px solid #ff5fa0; border-radius:16px 0 0 16px; box-shadow:-6px 0 0 #160510, -10px 10px 26px rgba(0,0,0,.5); padding:13px 14px 15px; transform-origin:right center; animation:edgeRise .34s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes edgeRise{ from{ opacity:0; transform:translateX(14px) scale(.94); } to{ opacity:1; transform:none; } }
+  .edgeinsp .ei-head{ display:flex; align-items:center; gap:7px; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; margin-bottom:11px; }
+  .edgeinsp .ei-lab{ font-family:"Jost",sans-serif; font-weight:800; font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:#9a8fb5; margin:9px 0 6px; }
+  .edgeinsp .ei-step{ display:flex; align-items:center; gap:10px; }
+  .edgeinsp .ei-step button{ width:34px; height:34px; border-radius:11px; background:#160510; border:2px solid #3a1f2e; color:#ffd7ea; font-size:19px; font-weight:800; cursor:pointer; box-shadow:0 3px 0 #0b0308; display:flex; align-items:center; justify-content:center; }
+  .edgeinsp .ei-step button:active{ transform:translateY(2px); box-shadow:0 1px 0 #0b0308; }
+  .edgeinsp .ei-time{ font-family:"Jost",sans-serif; font-weight:800; font-size:23px; color:#fff2f9; min-width:66px; text-align:center; letter-spacing:.5px; } /* Jost 800 HEAVY, never mono */
+  .edgeinsp .ei-chips{ display:flex; gap:8px; }
+  .edgeinsp .ei-chip{ flex:1 1 0; height:38px; border-radius:12px; background:#160510; border:2px solid #3a1f2e; color:#e7c9dc; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 3px 0 #0b0308; }
+  .edgeinsp .ei-chip.on{ background:#ff5fa0; color:#4a1126; border-color:#160510; box-shadow:0 0 0 2px #ffd24a,0 3px 0 #160510; } /* selected = pink chip, gold ring */
+  .edgeinsp .ei-dots{ display:flex; gap:10px; align-items:center; margin-top:4px; }
+  .edgeinsp .ei-dot{ width:26px; height:26px; border-radius:50%; border:2px solid #160510; cursor:pointer; box-shadow:0 2px 0 #160510; }
+  .edgeinsp .ei-dot.more{ background:#160510; color:#9a8fb5; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .edgeinsp .ei-dot.sel{ box-shadow:0 0 0 2px #ffd24a,0 2px 0 #160510; }
+  .edgeinsp .ei-more{ width:100%; margin-top:13px; height:42px; border-radius:13px; background:#2b1622; border:2px solid #4a2b3a; color:#ffd7ea; font-family:"Jost",sans-serif; font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 3px 0 #160510; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .edgeinsp .ei-del{ width:100%; margin-top:11px; background:none; border:none; color:#ff7ab0; font-family:"Jost",sans-serif; font-weight:800; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; position:relative; overflow:hidden; padding:6px; }
+  .edgeinsp .ei-del .ei-fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:rgba(255,95,160,.22); z-index:0; } /* hold-to-fill drain */
+  .edgeinsp .ei-del span,.edgeinsp .ei-del i{ position:relative; z-index:1; }
+  .cal .calblk.ei-editing{ box-shadow:0 0 0 3px #ff5fa0,0 0 20px rgba(255,95,160,.55),0 4px 0 #160510 !important; z-index:7; } /* the edited block wears a PINK halo (never gold) and stays LIVE */
   .nowread{ position:absolute; right:6px; z-index:8; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:5px; background:rgba(28,5,18,.8); border:1.5px solid #160510; border-radius:9px; padding:2px 8px; max-width:64%; white-space:nowrap; overflow:hidden; }
   #liveDock.idle .ld-el{ display:none; }
   #liveDock.idle .ld-el[data-brk]{ display:block; } /* but the break countdown stays visible on the idle-style break bar (David 2026-06-27) */
@@ -2403,6 +2424,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=858"></script>
+  <script src="app.js?v=859"></script>
 </body>
 </html>
