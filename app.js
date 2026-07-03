@@ -1231,7 +1231,7 @@
     "Pick three things up off the floor": "Подними три вещи с пола",
     "Where were you just standing?": "Где ты сейчас стоял?",
     "Noted. That corner's on my list for you now.": "Запомнил. Этот уголок теперь в моём списке для тебя.",
-    "One real thing you've been circling.": "Одно настоящее дело, вокруг которого ты кружишь.",
+    "Is there something you keep putting off?": "Есть что-то, что ты всё откладываешь?",
     "I don't need to know what it is — just the shape of the wall.": "Мне не нужно знать, что это — только форму стены.",
     "It scares me to even look": "Страшно даже смотреть",
     "Too big — I don't know where it starts": "Слишком большое — не знаю, с чего начать",
@@ -5046,7 +5046,7 @@
       }
       if (step === 4) { // THE BLOCKER BLESSING (P0-a, 2026-07-03): the shape of the wall, never the content — three fixed chips (RU-safe), the reply is a promise the Doorway node cashes on days 2-7
         obMark(body, 110);
-        add(body, "div", "ob-q", "One real thing you've been circling.").style.cssText = "font-size:24px;font-weight:800;text-align:center;line-height:1.2;";
+        add(body, "div", "ob-q", "Is there something you keep putting off?").style.cssText = "font-size:24px;font-weight:800;text-align:center;line-height:1.2;";
         add(body, "div", "ob-sb", "I don't need to know what it is — just the shape of the wall.").style.cssText = "text-align:center;margin-top:6px;";
         var bw = add(body, "div"); bw.style.cssText = "width:100%;display:flex;flex-direction:column;gap:12px;margin-top:22px;text-align:left;";
         [["fear", "It scares me to even look", "ti-flame", "#ff8a3a"],
