@@ -2340,9 +2340,9 @@
       var node = add(trail, "div", "jp-node " + state);
       node.style.transform = "translateX(" + (state === "cur" ? 0 : Math.sin(idx * 0.72) * 46).toFixed(0) + "px)"; // verdict #11: tighter lateral offset (72→46) so stones cluster on the center thread; cur stays centered
       var bub = add(node, "div", "jp-bub");
-      var icon = state === "mystery" ? "ti-question-mark" : state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
+      var icon = state === "mystery" ? "ti-sparkles" : state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
-      if (state === "mystery") { bub.style.background = mixHex(n.color || "#b07aff", "#160510", 0.72); bub.style.borderColor = mixHex(n.color || "#b07aff", "#160510", 0.35); bub.style.color = n.color || "#b07aff"; bub.style.setProperty("--mglow", (n.color || "#b07aff") + "3d"); } // MYSTERY EGG (worlds epic): a glowing hue-tinted "?" stone — the future is exciting, not gray
+      if (state === "mystery") { bub.style.background = mixHex(n.color || "#b07aff", "#160510", 0.72); bub.style.borderColor = mixHex(n.color || "#b07aff", "#160510", 0.35); bub.style.color = n.color || "#b07aff"; bub.style.setProperty("--mglow", (n.color || "#b07aff") + "3d"); } // SEALED STONE (worlds epic, renamed per David — no "eggs"): a dim SPARK in the world's hue, waiting to be lit — the battery language (matte → shining) applied to the path itself
       else if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
       if (state === "cur") { var _gh = (n.color || "#ff5fa0").replace("#", ""); if (_gh.length === 3) _gh = _gh.replace(/(.)/g, "$1$1"); bub.style.setProperty("--glow", "rgba(" + parseInt(_gh.substr(0, 2), 16) + "," + parseInt(_gh.substr(2, 2), 16) + "," + parseInt(_gh.substr(4, 2), 16) + ",.5)"); } // color-matched glow → jpAlive breathes the node's OWN colour, never an off-brand smudge (David 2026-07-01)
       if (state === "done") {
