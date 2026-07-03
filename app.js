@@ -1953,6 +1953,7 @@
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
+    try { if (document.body.classList.contains("compass")) compassFace(); else compassFold(); } catch (e) {} // COMPASS: refresh the pill icon / re-fold after any pane switch
   }
   var _paneAnim = false;
   function initPaneCarousel() {
@@ -3041,7 +3042,7 @@
   function attachInfinite(sc) { // CONTINUOUS timeline: the day-buffer recenters on whatever day you've scrolled to and the week-strip tracks it — so you just keep scrolling into yesterday/tomorrow with NO edge and NO cut (David 2026-06-26)
     if (sc._inf) return; sc._inf = 1; var raf = 0;
     sc.addEventListener("scroll", function () {
-      if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day")) document.body.classList.add("nav-collapsed"); // Apple-Music: the moment you actually scroll the timeline, Goals/You tuck behind the Today pill and the live tracker drops beside it (David 2026-06-26)
+      if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day") && !document.body.classList.contains("journey-open") && !document.body.classList.contains("gaming")) document.body.classList.add("nav-collapsed"); // Apple-Music: the moment you actually scroll the timeline, Goals/You tuck behind the Today pill (David 2026-06-26). PLANNER-ONLY: tab-day lingers under journey/game panes, so without these guards a background timeline scroll re-added the corner pill on the wrong pane (the two-nav-models fight — regression landmine).
       if (raf || _infRebuild || _paging || _pinching) return; // never recenter mid-page-turn or mid-pinch (that was the old bounce / the pinch snap-to-today) — David 2026-06-26
       raf = requestAnimationFrame(function () { raf = 0;
         var cy = sc.scrollTop + sc.clientHeight * 0.4, secs = sc.querySelectorAll(".day-sec"), centerDk = null, centerIdx = -1;
@@ -5611,6 +5612,20 @@
   }
   // ---- game-as-home: tap the character → diegetic action hub ----
   function goTab(t) { document.body.classList.add("overworld"); if (!gameOn) openGame(); var nb = document.querySelector('#nav .nb[data-tab="' + t + '"]'); if (nb) nb.click(); if (t === "day") { pendingScrollNow = true; renderToday(); } }
+  // ===== COMPASS NAV (chrome widget #21): the bottom bar rests as a pill and blooms on touch, auto-folding ~2.5s. Pure shell over #nav — the three real buttons + handlers untouched; ONE nav model (never active while nav-collapsed, enforced in CSS + the fold guard).
+  var _compassFoldT = null;
+  function compassFace() {
+    var nav = el("nav"); if (!nav) return null;
+    var f = el("compassDots");
+    if (!f) { f = document.createElement("div"); f.id = "compassDots"; nav.insertBefore(f, nav.firstChild); }
+    var b = document.body.classList, ic = b.contains("gaming") ? "ti-device-gamepad-2" : b.contains("journey-open") ? "ti-route" : "ti-calendar-month"; // active-tab icon
+    f.innerHTML = '<i class="ti ' + ic + ' cd-ic"></i><span class="cd-dot"></span><span class="cd-dot"></span>';
+    f.onclick = function (e) { e.stopPropagation(); compassBloom(); };
+    return f;
+  }
+  function compassFold() { if (document.body.classList.contains("nav-collapsed")) return; compassFace(); document.body.classList.add("compass"); if (_compassFoldT) { clearTimeout(_compassFoldT); _compassFoldT = null; } }
+  function compassBloom() { document.body.classList.remove("compass"); if (_compassFoldT) clearTimeout(_compassFoldT); _compassFoldT = setTimeout(compassFold, 2500); }
+  function compassInit() { compassFace(); document.body.classList.add("compass"); } // rest state = folded
   function closeFeature() { document.body.classList.remove("overworld"); if (!gameOn) openGame(); }
   function heroMenu() { mindmapSheet(); } // tap the fairy → identity "see your life" mindmap (§13: center = who am I; the pull-down day-hub lives on the top tracker strip).
   var worldTapWired = false;
@@ -9112,6 +9127,7 @@
       var jr = el("navJourney"); if (jr) jr.onclick = function () { if (curPaneName() !== "journey") setPaneRest("journey"); };
       var gm = document.querySelector('#nav .nb[data-tab="self"]'); if (gm) gm.onclick = function () { if (curPaneName() !== "game") setPaneRest("game"); };
       try { applySimpleMode(); } catch (e) {}
+      try { compassInit(); } catch (e) {} // COMPASS NAV boot: the bar rests folded
     })();
     var ntk = el("navTrack"); if (ntk) ntk.onclick = nowSheet;
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
