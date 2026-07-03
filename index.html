@@ -1159,6 +1159,45 @@
   .binder-card .b-rank{ position:relative; z-index:3; color:#ffd24a; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; letter-spacing:2px; }
   .binder-card .b-prog{ position:relative; z-index:3; color:#b596ad; font-family:"Jost",sans-serif; font-weight:600; font-size:11px; margin-top:2px; }
   .b-total{ text-align:center; color:#8a7898; font-family:"Jost",sans-serif; font-weight:800; font-size:13px; padding:10px 0 4px; }
+  /* ===== PLANTING CEREMONY (canon game.jpg left) — night garden ===== */
+  .pc-ov{ position:fixed; inset:0; z-index:80; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; background:radial-gradient(120% 62% at 50% 128%, #0e3a6e 0%, #0e3a6e 30%, transparent 31%), radial-gradient(150% 70% at 50% 96%, #1f6a3a 0%, #1f6a3a 44%, transparent 45%), linear-gradient(180deg, #1a0a24 0%, #2a0f38 58%, #34123f 100%); animation:ovFade .28s cubic-bezier(.2,.8,.25,1) both; overflow:hidden; }
+  @keyframes ovFade{ from{ opacity:0; } to{ opacity:1; } }
+  .pc-moon{ position:absolute; top:11%; right:19%; width:74px; height:74px; border-radius:50%; background:radial-gradient(circle at 38% 34%, #fff 0%, #ffe9f4 46%, #f6b8dd 100%); box-shadow:0 0 34px 10px rgba(255,210,236,.32); }
+  .pc-star{ position:absolute; width:3px; height:3px; border-radius:50%; background:#fff; opacity:.85; animation:pcTwinkle 3.4s ease-in-out infinite; }
+  @keyframes pcTwinkle{ 0%,100%{ opacity:.3; } 50%{ opacity:.9; } }
+  .pc-pip{ position:absolute; transform:translate(-50%,0); text-align:center; }
+  .pc-pip .pc-stem{ width:3px; height:34px; margin:0 auto; background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.12)); border-radius:2px; }
+  .pc-pip .pc-bulb{ width:17px; height:17px; border-radius:50%; margin:0 auto -6px; box-shadow:0 0 12px 2px currentColor; }
+  .pc-pip .pc-soil{ width:26px; height:9px; border-radius:50%; margin:2px auto 0; background:radial-gradient(circle,#20140d 0%,#3a2415 70%,transparent 72%); }
+  .pc-tether{ position:absolute; width:2px; background:rgba(255,180,220,.55); transform:translateX(-50%); }
+  .pc-cap{ position:absolute; transform:translate(-50%,-100%); max-width:230px; background:rgba(60,14,42,.92); border:2px solid #ff6fb0; border-radius:15px; box-shadow:0 5px 0 #160510; padding:11px 14px; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; line-height:1.3; text-align:center; }
+  .pc-cap b{ color:#ff8fc4; font-weight:800; }
+  .pc-foot{ position:relative; z-index:3; margin:0 0 max(22px,env(safe-area-inset-bottom)); display:flex; align-items:center; gap:9px; background:#2c081a; border:3px solid #160510; border-radius:16px; box-shadow:0 5px 0 #160510; padding:14px 20px; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
+  .pc-foot i{ color:#ff5fa0; font-size:19px; }
+  /* ===== BINDER canon (game.jpg right) ===== */
+  .bnd-count{ display:inline-flex; align-items:center; gap:7px; align-self:flex-start; margin:2px 0 12px; background:#160510; border:2px solid #ffd24a; border-radius:13px; padding:7px 14px; color:#ffd24a; font-family:"Jost",sans-serif; font-weight:800; font-size:14px; letter-spacing:.4px; }
+  .bnd-count i{ font-size:16px; }
+  .bnd-tabs{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .bnd-tab{ border:2.5px solid #160510; border-radius:15px; padding:14px 0; text-align:center; cursor:pointer; background:#241328; color:#b596ad; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; letter-spacing:2px; box-shadow:0 4px 0 #160510; transition:transform .1s; }
+  .bnd-tab:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .bnd-tab.on{ color:#2a0d1c; background:repeating-linear-gradient(115deg,#ff6fb0 0 12px,#ff8fc4 12px 24px); }
+  .evo-row{ position:relative; z-index:3; display:flex; gap:5px; justify-content:center; margin-top:7px; }
+  .evo-pip{ width:11px; height:11px; border-radius:3px; border:1.5px solid #160510; background:rgba(0,0,0,.35); }
+  .evo-pip.on{ background:#ffd24a; box-shadow:0 0 6px rgba(255,210,74,.6); }
+  .binder-card.locked .evo-pip.on{ background:#ff5fa0; box-shadow:none; }
+  .binder-card .b-sub{ position:relative; z-index:3; color:#c78fbf; font-family:"Jost",sans-serif; font-weight:800; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; margin-top:1px; }
+  .binder-card .b-lockmsg{ position:relative; z-index:3; color:#8a7898; font-family:"Jost",sans-serif; font-weight:600; font-size:11px; line-height:1.25; margin-top:3px; }
+  .binder-card .b-bar{ position:relative; z-index:3; height:6px; border-radius:4px; background:rgba(0,0,0,.4); margin:8px 10px 0; overflow:hidden; }
+  .binder-card .b-bar > i{ display:block; height:100%; background:#ff5fa0; border-radius:4px; }
+  .binder-card .b-disc{ position:relative; z-index:3; width:52px; height:52px; margin:2px auto 6px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.34); border:2.5px solid currentColor; }
+  .binder-card .b-disc i{ font-size:24px; }
+  .bnd-trhead{ color:#ffd24a; font-family:"Jost",sans-serif; font-weight:800; font-size:14px; letter-spacing:2px; margin:16px 2px 8px; }
+  .bnd-trophy{ display:flex; align-items:center; gap:14px; padding:3px; border-radius:16px; background:linear-gradient(120deg,#ffd24a,#c08a22); box-shadow:0 4px 0 #160510; }
+  .bnd-trophy > .tr-in{ flex:1; display:flex; align-items:center; gap:14px; background:linear-gradient(160deg,#3a2a08,#241a04); border-radius:13px; padding:13px 15px; }
+  .bnd-trophy .tr-ic{ font-size:30px; color:#ffd24a; }
+  .bnd-trophy .tr-body{ flex:1; }
+  .bnd-trophy .tr-name{ color:#fff4d6; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
+  .bnd-trophy .tr-meta{ color:#e0c98a; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; margin-top:2px; }
   /* ===== REFLECTION CARDS — the final choice-row spec: dark rich card, bare colored icons, ONE ignition, hairline gold, bare check ===== */
   .rc-ov{ position:fixed; inset:0; z-index:125; background:rgba(10,2,8,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
   .rc-card{ width:100%; max-width:340px; background:#22091a; border:2.5px solid #160510; border-radius:16px; padding:16px 15px; box-shadow:0 4px 0 #160510, 0 18px 44px rgba(0,0,0,.5); font-family:"Jost",sans-serif; }
@@ -2231,6 +2270,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=844"></script>
+  <script src="app.js?v=845"></script>
 </body>
 </html>

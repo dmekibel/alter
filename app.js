@@ -1335,6 +1335,7 @@
     "Return": "Вернуться", "day": "день", "together": "вместе", "saved": "запись", "Restore": "Восстановить", "your save": "твоё сохранение", "Erase everything and start over?": "Стереть всё и начать заново?", "profile · plan · garden — all of it": "профиль · план · сад — всё", "Erase everything": "Стереть всё", "Break": "Перерыв",
     "first win": "первая победа", "Spark": "Искр", "a real thing — a real reward": "настоящее дело — настоящая награда", "One thing off the floor": "Одна вещь с пола", "Two things off the floor": "Две вещи с пола", "Three things off the floor": "Три вещи с пола", "in your space": "в твоём пространстве", "done": "сделано", "Did it": "Сделал", "the spark flew to your count — I remembered": "искры улетели в твой счёт — я запомнил", "Your first card": "Твоя первая карта", "matte — that's potential. it lights up as you live": "матовая — это потенциал. она зажигается, пока ты живёшь", "TRAINER CARD": "КАРТА ТРЕНЕРА", "THE GATHERED": "СОБРАННЫЙ", "day one. everything ahead.": "день первый. всё впереди.", "ON THE BACK — PACT": "НА ОБОРОТЕ — ПАКТ", "promised honesty": "обещал честность", "showed up:": "пришёл:", "scared": "страшно", "overwhelmed": "завалило", "carrying an old one": "со старой раной", "stuck": "застрял", "GROWS WITH YOU": "РАСТЁТ С ТОБОЙ", "7 days": "7 дней", "crown": "корона", "return": "возвращение", "collection": "коллекция", "it's yours — forever": "она твоя — навсегда",
     "add to your daily": "добавить в ежедневные",
+    "Collection": "Коллекция", "collected": "собрано", "MARKS": "МЕТКИ", "TROPHIES": "ТРОФЕИ", "the day you came back": "день, когда ты вернулся", "grown from a real day": "выросло из настоящего дня", "King of the week": "Король недели", "more perfect days": "идеальных дня", "still": "ещё", "sessions": "сессий", "First goal": "Первая цель", "no trophies yet — keep going": "трофеев пока нет — продолжай",
     "Here's the day you lived": "Вот день, который ты прожил", "not a grade — a reflection": "не оценка — отражение", "now": "сейчас", "DRIFT": "ДРЕЙФ", "MISSED": "МИМО", "lived": "прожито", "you held the line": "ты держал линию", "and that's enough": "и этого достаточно", "A free-form day — rest is part of the work.": "Свободный день — отдых тоже часть работы.", "What did it taste like?": "Каким он был на вкус?", "To re-storying the day": "К пере-сборке дня", "noticed": "подмечено", "silence at the end": "тишина в конце",
     "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
@@ -5587,7 +5588,25 @@
     if (!hasEarnedToday()) { toast("do one real thing today — then your world grows"); return; }
     var n = (S.game.garden || []).length, cost = n === 0 ? 0 : 20 * n;
     if (S.game.spark < cost) { toast("not enough Spark yet — earn a little more"); return; }
-    S.game.spark -= cost; S.game.garden.push({ t: n % 5, stage: 0, plantedK: todayK() }); save(); renderGame(); toast(n === 0 ? "planted your first seed — welcome" : "planted — your world grew");
+    S.game.spark -= cost; S.game.garden.push({ t: n % 5, stage: 0, plantedK: todayK() }); save(); renderGame();
+    try { plantCeremony(); } catch (e) { toast(n === 0 ? "planted your first seed — welcome" : "planted — your world grew"); }
+  }
+  // ===== PLANTING CEREMONY (canon game.jpg): a night garden — moon, stars, green hill, blue water; seeds appear as colored pips, the newest captioned with the day it grew from. Pure presentation over S.game.garden. =====
+  function plantCeremony() {
+    var ov = add(document.body, "div", "pc-ov"); add(ov, "div", "pc-moon");
+    [[9, 8], [30, 14], [58, 6], [78, 20], [16, 27], [46, 30], [88, 11], [12, 42]].forEach(function (p, i) { var s = add(ov, "div", "pc-star"); s.style.left = p[0] + "%"; s.style.top = p[1] + "%"; s.style.animationDelay = (i * 0.4) + "s"; });
+    var COLORS = ["#36b3f0", "#ff5fa0", "#46e2a4", "#ffd24a", "#b07aff"];
+    var g = (S.game.garden || []).slice(-5), N = g.length, baseY = 62;
+    var xs = []; for (var i = 0; i < N; i++) xs.push(22 + (i * (56 / Math.max(1, (N - 1) || 1)))); if (N === 1) xs = [50];
+    var newest = N - 1;
+    g.forEach(function (seed, i) { var col = COLORS[(seed.t != null ? seed.t : i) % COLORS.length]; var pip = add(ov, "div", "pc-pip"); pip.style.left = xs[i] + "%"; pip.style.top = (baseY + (i % 2 ? 4 : 0)) + "%"; pip.style.color = col; add(pip, "div", "pc-bulb").style.background = col; add(pip, "div", "pc-stem"); add(pip, "div", "pc-soil"); });
+    var capX = xs[newest] != null ? xs[newest] : 50, capTop = baseY - 24;
+    var tether = add(ov, "div", "pc-tether"); tether.style.left = capX + "%"; tether.style.top = capTop + "%"; tether.style.height = "22%";
+    var cap = add(ov, "div", "pc-cap"); cap.style.left = capX + "%"; cap.style.top = capTop + "%";
+    var dLabel = kd(todayK()).toLocaleDateString(curLang() === "ru" ? "ru-RU" : [], { day: "numeric", month: "long" });
+    cap.innerHTML = tr("planted") + " <b>" + esc(dLabel) + "</b> — " + esc(tr("the day you came back"));
+    var foot = add(ov, "div", "pc-foot"); foot.innerHTML = '<i class="ti ti-seeding"></i> ' + tr("grown from a real day");
+    ov.addEventListener("click", function () { ov.remove(); });
   }
   // SEED→GROW (David 2026-07-02): a plot advances one stage the first time a LATER day shows real activity — day-2 return = visible growth. Legacy plots (no plantedK) already render full-grown, so this never touches existing gardens.
   function growGarden() {
@@ -5769,22 +5788,51 @@
     var skip = add(card, "div", "rc-skip", tr("skip")); skip.onclick = function () { ov.remove(); if (onDone) onDone(false); };
   }
   function reflectDue() { var R = reflectState(); if (R.lastK === todayK()) return null; var dormant = ((S.guide || {}).appetiteState || {}).level === "dormant"; if (dormant) return null; var used = {}; R.log.slice(-10).forEach(function (e) { used[e.id] = 1; }); var fresh = REFLECT_QS.filter(function (q) { return !used[q.id]; }); var pool = fresh.length ? fresh : REFLECT_QS; return pool[kd(todayK()).getDate() % pool.length]; }
+  function binderTrophies() {
+    var g = (S.game && S.game.garden) || [], acts = (S.sf && S.sf.actions) || {}, sessN = 0;
+    Object.keys(acts).forEach(function (k) { sessN += (acts[k] || []).length; });
+    var firstK = Object.keys(acts).sort()[0] || todayK(), out = [];
+    out.push({ id: "firstgoal", ti: "ti-trophy", name: "First goal", have: g.length >= 1 || sessN >= 12, meta: (sessN || 12) + " " + tr("sessions") + " · " + kd(firstK).toLocaleDateString(curLang() === "ru" ? "ru-RU" : [], { day: "numeric", month: "long" }) });
+    return out.filter(function (t) { return t.have; });
+  }
   function binderSheet() { badgeTick();
     var ov = add(document.body, "div", "goal-ov"); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
     var card = add(ov, "div", "goal-card");
-    var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-cards"></i> ' + tr("Your marks");
+    var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = tr("Collection");
     var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
-    var grid = add(card, "div", "binder-grid");
     var earnedN = 0, totalN = 0;
-    BADGES.forEach(function (b) { var v = 0; try { v = b.prog(); } catch (e) {} var r = badgeRank(b, v); totalN += b.ranks.length; earnedN += r;
-      var c = add(grid, "div", "binder-card" + (r ? " " + elCardBG(b.el) : " locked"));
-      if (r) add(c, "div", "mint-sheen");
-      var ic = add(c, "div", "b-ic"); ic.innerHTML = '<i class="ti ' + b.ti + '"></i>';
-      add(c, "div", "b-name", tr(b.name));
-      add(c, "div", "b-rank", r ? "★".repeat(r) : "—");
-      var nxt = b.ranks[r]; add(c, "div", "b-prog", nxt != null ? (v + " / " + nxt + " " + tr(b.unit)) : tr("complete"));
-    });
-    add(card, "div", "b-total", earnedN + " / " + totalN);
+    BADGES.forEach(function (b) { var v = 0; try { v = b.prog(); } catch (e) {} totalN += b.ranks.length; earnedN += badgeRank(b, v); });
+    var pill = add(card, "div", "bnd-count"); pill.innerHTML = '<i class="ti ti-cards"></i> ' + earnedN + " / " + totalN + " " + tr("collected");
+    var tabs = add(card, "div", "bnd-tabs");
+    var tMarks = add(tabs, "div", "bnd-tab on", tr("MARKS")), tTrophy = add(tabs, "div", "bnd-tab", tr("TROPHIES"));
+    var body = add(card, "div", "bnd-body");
+    function drawMarks() {
+      body.innerHTML = ""; var grid = add(body, "div", "binder-grid"); grid.style.gridTemplateColumns = "1fr 1fr";
+      BADGES.forEach(function (b) { var v = 0; try { v = b.prog(); } catch (e) {} var r = badgeRank(b, v);
+        var c = add(grid, "div", "binder-card" + (r ? " " + elCardBG(b.el) : " locked"));
+        if (r) add(c, "div", "mint-sheen");
+        var disc = add(c, "div", "b-disc"); disc.style.color = r ? "#ffd24a" : "#8a5cf0"; disc.innerHTML = '<i class="ti ' + b.ti + '"></i>';
+        add(c, "div", "b-name", tr(b.name));
+        add(c, "div", "b-sub", tr(b.flavorTag || b.unit));
+        var evo = add(c, "div", "evo-row"); b.ranks.forEach(function (_, i) { add(evo, "div", "evo-pip" + (i < r ? " on" : "")); });
+      });
+      var need = 3, have = Math.min(need, ((S.game && S.game.streak) || 0));
+      var lc = add(grid, "div", "binder-card locked");
+      var ld = add(lc, "div", "b-disc"); ld.style.color = "#8a5cf0"; ld.innerHTML = '<i class="ti ti-crown"></i>';
+      add(lc, "div", "b-name", tr("King of the week"));
+      add(lc, "div", "b-lockmsg", tr("still") + " " + (need - have) + " " + tr("more perfect days"));
+      var bar = add(lc, "div", "b-bar"); add(bar, "i").style.width = Math.round(have / need * 100) + "%";
+      var evo2 = add(lc, "div", "evo-row"); for (var i = 0; i < 4; i++) add(evo2, "div", "evo-pip" + (i < have ? " on" : ""));
+    }
+    function drawTrophies() {
+      body.innerHTML = ""; add(body, "div", "bnd-trhead", tr("TROPHIES"));
+      var t2 = binderTrophies();
+      if (!t2.length) { add(body, "div", "b-lockmsg", tr("no trophies yet — keep going")).style.textAlign = "center"; return; }
+      t2.forEach(function (t) { var row = add(body, "div", "bnd-trophy"), inr = add(row, "div", "tr-in"); add(inr, "div", "tr-ic").innerHTML = '<i class="ti ' + t.ti + '"></i>'; var bd = add(inr, "div", "tr-body"); add(bd, "div", "tr-name", tr(t.name)); add(bd, "div", "tr-meta", t.meta); });
+    }
+    function sel(which) { tMarks.classList.toggle("on", which === "m"); tTrophy.classList.toggle("on", which === "t"); if (which === "m") drawMarks(); else drawTrophies(); }
+    tMarks.onclick = function () { sel("m"); }; tTrophy.onclick = function () { sel("t"); };
+    sel("m");
   }
   function renderGame() {
     var sp = el("spark"); if (!sp) return; var L = el("upgrades"); if (L) L.innerHTML = "";
