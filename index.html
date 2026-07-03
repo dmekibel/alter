@@ -1938,17 +1938,17 @@
   #pullGrab{ flex:none; text-align:center; color:#ffb8d8; font-size:11px; font-weight:700; padding:9px 0 13px; cursor:grab; background:#1c0512; border-top:2px solid #160510; touch-action:none; }
   .pull-handle{ display:block; width:42px; height:5px; border-radius:3px; background:#ffb8d8; margin:0 auto 6px; }
   /* ============ ONBOARDING (mockups 041/043, §8) ============ */
-  .ob-ov{ position:fixed; inset:0; z-index:90; background:linear-gradient(165deg,#34091f,#1a0712); display:flex; align-items:center; justify-content:center; padding:16px; font-family:"Jost",sans-serif; }
+  .ob-ov{ position:fixed; inset:0; z-index:90; background:radial-gradient(90% 55% at 50% 30%, #3a1128 0%, transparent 60%), linear-gradient(175deg,#2a0d1c,#160510 75%); display:flex; align-items:center; justify-content:center; padding:16px; font-family:"Jost",sans-serif; } /* FINCH RESKIN 2026-07-04: a dark theater with one warm spotlight — the guardian is on stage */
   /* §12 frame 12 («Прибытие»): the onboarding lives FULL-BLEED in the night world — no card box, no white sheets */
   .ob-card{ width:100%; height:100%; max-height:100dvh; background:transparent; border:none; border-radius:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
   .ob-bar{ display:flex; gap:7px; background:none; flex:none; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 0; } /* frame 12: course-style progress DASHES, gold = walked */
-  .ob-bar i{ display:block; height:6px; flex:1; max-width:36px; border-radius:3px; background:#3a1730; transition:background .3s; }
+  .ob-bar i{ display:block; height:8px; flex:1; max-width:42px; border-radius:5px; background:#3a1730; transition:background .3s, box-shadow .3s; } .ob-bar i.on{ box-shadow:0 0 8px rgba(255,210,74,.5); }
   .ob-bar i.on{ background:#ffd24a; }
-  .ob-ava{ width:86px; height:86px; border-radius:50%; background:#ff5fa8; border:3px solid #160510; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; flex:none; box-shadow:0 0 0 7px rgba(154,92,240,.16), 0 6px 0 #160510; } /* frame 12: the guardian's pink circle above the question */
-  .ob-ava i{ font-size:34px; color:#4a1126; }
+  .ob-ava{ width:108px; height:108px; border-radius:50%; background:radial-gradient(circle at 36% 30%, #ff9ec6 0%, #ff5fa8 58%, #c23578 100%); border:4px solid #160510; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; flex:none; box-shadow:0 0 0 5px rgba(255,210,74,.35), 0 0 34px rgba(255,95,168,.35), 0 6px 0 #160510; animation:tfBreathe 3.4s ease-in-out infinite; } /* the guardian is a CHARACTER: element-sphere shading + gold halo, breathing */ /* frame 12: the guardian's pink circle above the question */
+  .ob-ava i{ font-size:44px; color:#4a1126; }
   .ob-body{ padding:18px 18px 8px; overflow:auto; flex:1; }
   .ob-body.center{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-  .ob-q{ color:#ffe3f1; font-weight:700; font-size:21px; line-height:1.2; }
+  .ob-q{ color:#fff2f9; font-weight:800; font-size:27px; line-height:1.18; font-family:"Jost",sans-serif; }
   .ob-sb{ color:#cd9bb6; font-weight:600; font-size:13px; margin-top:4px; }
   .ob-lbl{ color:#d6abc4; font-size:10.5px; font-weight:700; margin:13px 0 6px; letter-spacing:.5px; }
   .ob-row{ display:flex; flex-wrap:wrap; gap:7px; }
@@ -1969,8 +1969,8 @@
   .ob-row .ob-ch:nth-child(7){ animation-delay:.34s; } .ob-row .ob-ch:nth-child(n+8){ animation-delay:.38s; }
   .ob-ava{ animation:obPop .5s var(--ease-spring) both; }
   .ob-spk{ color:#ffe06a; font-size:22px; margin-bottom:4px; }
-  .ob-face{ width:74px; height:74px; border-radius:50%; background:#ff8ac0; border:3px solid #160510; position:relative; margin:6px 0 16px; }
-  .ob-eye{ position:absolute; top:30px; width:8px; height:8px; border-radius:50%; background:#160510; } .ob-eye.l{ left:20px; } .ob-eye.r{ right:20px; }
+  .ob-face{ width:104px; height:104px; border-radius:50%; background:radial-gradient(circle at 36% 30%, #ffb6d6 0%, #ff8ac0 55%, #d45a94 100%); border:4px solid #160510; position:relative; margin:6px 0 18px; box-shadow:0 0 0 5px rgba(255,210,74,.32), 0 0 36px rgba(255,138,192,.4), 0 6px 0 #160510; animation:tfBreathe 3.4s ease-in-out infinite; } /* FINCH RESKIN: the guardian face is a CHARACTER — element-sphere shading, ink ring, gold halo, breathing */
+  .ob-eye{ position:absolute; top:42px; width:11px; height:11px; border-radius:50%; background:#160510; animation:obBlink 4.6s ease-in-out infinite; } .ob-eye.l{ left:28px; } .ob-eye.r{ right:28px; } @keyframes obBlink{ 0%,93%,100%{ transform:scaleY(1); } 96%{ transform:scaleY(.12); } } /* she blinks */
   .ob-hero{ background:#b88cff; border:2px solid #160510; border-radius:14px; box-shadow:0 0 14px #b88cff; padding:13px; margin:14px 0 6px; text-align:center; color:#241548; font-weight:700; font-size:18px; }
   .ob-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:11px; }
   .ob-dh{ font-size:9px; font-weight:700; margin-bottom:4px; letter-spacing:.4px; }
@@ -1978,8 +1978,8 @@
   .ob-extras-h{ color:#ffd24a; font-size:10px; font-weight:700; border-top:1px solid #4a2238; margin-top:12px; padding-top:10px; margin-bottom:6px; }
   .ob-world{ width:120px; height:120px; border-radius:50%; background:#5cc47a; border:4px solid #160510; display:flex; align-items:center; justify-content:center; color:#ffe06a; font-size:34px; margin-bottom:14px; }
   .ob-foot{ padding:10px 18px max(16px,env(safe-area-inset-bottom)); border-top:none; display:flex; gap:8px; align-items:center; flex:none; } /* full-bleed: no seam */
-  .ob-btn{ flex:1; background:#ffc83d; color:#5a3a00; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:13px; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
-  .ob-btn.go{ background:#34d39a; color:#0c3d29; }
+  .ob-btn{ flex:1; background:#ff5fa8; color:#160510; border:3px solid #160510; border-radius:15px; box-shadow:0 5px 0 #160510; padding:15px; min-height:56px; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; cursor:pointer; transition:transform .12s; } .ob-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 #160510; }
+  .ob-btn.go{ background:#3ad07f; color:#08321f; }
   .ob-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
   /* ===== ONBOARDING PAYOFF + TRAINER-CARD MINT (verdict #18, 1:1 widget) ===== */
   .ob-scorechip{ position:absolute; top:0; right:0; display:inline-flex; align-items:center; gap:7px; background:#3a1730; border:2.5px solid #160510; border-radius:13px; box-shadow:0 4px 0 #160510; padding:7px 14px; font-family:"Jost",sans-serif; font-weight:800; font-size:20px; color:#ffd24a; }
@@ -2524,6 +2524,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=876"></script>
+  <script src="app.js?v=878"></script>
 </body>
 </html>
