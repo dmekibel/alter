@@ -6496,14 +6496,7 @@
       cell.onclick = function () { onDay(dk); };
     })(y + "-" + pad(mo + 1) + "-" + pad(day), day); }
     var hint = add(L, "div", "cal-hint"); hint.innerHTML = '<i class="ti ti-zoom-scan"></i> ' + esc(tr("tap — the day grows from its cell"));
-    var lg = add(L, "div", "mo-legend");
-    function leg(html, label) { var r = add(lg, "div", "mo-leg"); r.innerHTML = html + '<span>' + esc(tr(label)) + '</span>'; }
-    leg('<span class="lgsw" style="background:#1c0616"></span>', "quiet");
-    leg('<span class="lgramp"><span style="background:' + MO_RAMP[0] + '"></span><span style="background:' + MO_RAMP[1] + '"></span><span style="background:' + MO_RAMP[2] + '"></span><span style="background:' + MO_RAMP[3] + '"></span></span>', "shining");
-    leg('<i class="ti ti-crown lg-crown"></i>', "crown");
-    leg('<span class="lgsw" style="background:' + MO_RAMP[3] + ';border-color:#ffd24a"></span>', "charge");
-    leg('<span class="lgsw" style="background:transparent;border-style:dashed;border-color:rgba(255,95,168,.4)"></span>', "away");
-    leg('<i class="ti ti-sparkles lg-glint"></i>', "return");
+    // legend removed per David device 2026-07-03 (the key felt like clutter)
   }
   function timelineIsHome() { return document.body.classList.contains("tab-day") && !document.body.classList.contains("gaming"); } // Today tab in the normal app = the always-open rich pull-timeline (David 2026-06-24)
   function renderToday() {
