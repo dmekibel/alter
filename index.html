@@ -1969,6 +1969,56 @@
   .ob-row .ob-ch:nth-child(7){ animation-delay:.34s; } .ob-row .ob-ch:nth-child(n+8){ animation-delay:.38s; }
   .ob-ava{ animation:obPop .5s var(--ease-spring) both; }
   .ob-spk{ color:#ffe06a; font-size:22px; margin-bottom:4px; }
+  /* ===== ONBOARDING V2 (2026-07-04): the Finch-typed survey in ALTER's brand grammar — per-hue option tiles (mood-jewel law), biome section gates, battery progress, prism starter-plan ===== */
+  /* V2 BIOME ROOMS — the whole overlay shifts per section (candy refs: starfield / sunburst / slash) */
+  .ob-ov[data-sec="0"]{ background:radial-gradient(1.5px 1.5px at 20% 20%,rgba(255,255,255,.5) 99%,transparent), radial-gradient(1px 1px at 75% 35%,rgba(232,217,255,.4) 99%,transparent), radial-gradient(90% 55% at 50% 28%, #2c1244 0%, transparent 62%), linear-gradient(175deg,#1c0e2e,#160510 78%); }
+  .ob-ov[data-sec="1"]{ background:radial-gradient(90% 55% at 50% 28%, #3a1a08 0%, transparent 62%), linear-gradient(175deg,#2a1206,#160510 78%); }
+  .ob-ov[data-sec="2"]{ background:radial-gradient(90% 55% at 50% 28%, #0e2240 0%, transparent 62%), linear-gradient(175deg,#0e1830,#160510 78%); }
+  .ob-ov[data-sec="burst"]{ background:repeating-conic-gradient(from 0deg at 50% 46%, rgba(122,66,18,.28) 0deg 9deg, transparent 9deg 18deg), radial-gradient(100% 80% at 50% 42%, #3a1a08 0%, #160510 75%); } /* the ВСПЫШКА moment — the +18 rides real sunburst rays */
+  .obv-bar{ display:flex; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 0; align-items:center; }
+  .obv-seg{ flex:1; display:flex; flex-direction:column; gap:5px; }
+  .obv-seglbl{ font-family:"Jost",sans-serif; font-weight:800; font-size:9.5px; letter-spacing:1.1px; color:#7a5e72; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .obv-seg.on .obv-seglbl{ color:var(--sc,#ff8fc0); }
+  .obv-cells{ display:flex; gap:3px; }
+  .obv-cell{ flex:1; height:7px; border-radius:3px; background:#3a1730; transition:background .3s, box-shadow .3s; }
+  .obv-cell.on{ background:var(--sc,#ffd24a); box-shadow:0 0 7px var(--sc,#ffd24a); }
+  /* option TILES — the mood-jewel grammar: every option wears ITS hue on border+icon+label; picked = own-hue striped fill + ink + check */
+  .obv-tiles{ display:flex; flex-wrap:wrap; gap:11px; margin-top:22px; justify-content:center; }
+  .obv-tile{ flex:1 1 40%; min-width:130px; max-width:180px; display:flex; flex-direction:column; align-items:center; gap:8px; background:#241328; border:2.5px solid var(--oc,#8a7898); border-radius:16px; box-shadow:0 4px 0 #160510; padding:16px 10px 13px; cursor:pointer; font-family:"Jost",sans-serif; transition:transform .15s var(--ease-spring), box-shadow .15s; position:relative; }
+  .obv-tile i.oi{ font-size:27px; color:var(--oc,#c9a0b8); }
+  .obv-tile .ol{ font-weight:800; font-size:14.5px; color:var(--oc,#f0dcea); text-align:center; line-height:1.2; }
+  .obv-tile.on{ background:var(--ost,#ff5fa8); color:#160510; transform:translateY(-3px); box-shadow:0 6px 0 #160510; }
+  .obv-tile.on i.oi, .obv-tile.on .ol{ color:#160510; }
+  .obv-tile.on .ock{ position:absolute; top:8px; right:9px; color:#160510; font-size:15px; }
+  .obv-tile:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .obv-tile .oplus{ position:absolute; top:8px; right:9px; width:20px; height:20px; border-radius:7px; background:rgba(22,5,16,.5); color:var(--oc,#c9a0b8); display:flex; align-items:center; justify-content:center; font-size:13px; } /* the Finch «+» — flips to the check when picked */
+  /* vertical ROWS for long-label options (k-row cousin, per-hue) */
+  .obv-rows{ display:flex; flex-direction:column; gap:11px; margin-top:22px; width:100%; }
+  .obv-row{ display:flex; align-items:center; gap:12px; background:#241328; border:2.5px solid var(--oc,#8a7898); border-radius:15px; box-shadow:0 4px 0 #160510; padding:14px 15px; cursor:pointer; font-family:"Jost",sans-serif; text-align:left; transition:transform .15s var(--ease-spring); position:relative; }
+  .obv-row i.oi{ font-size:22px; color:var(--oc,#c9a0b8); flex:none; }
+  .obv-row .ol{ flex:1; font-weight:800; font-size:15.5px; color:#f0dcea; line-height:1.25; }
+  .obv-row .os{ display:block; font-weight:600; font-size:12px; color:#b596ad; margin-top:2px; }
+  .obv-row.on{ background:var(--ost,#ff5fa8); transform:translateY(-2px); box-shadow:0 6px 0 #160510; }
+  .obv-row.on i.oi, .obv-row.on .ol, .obv-row.on .os{ color:#160510; }
+  .obv-row:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  /* SECTION GATE — a biome card sweeps in (worlds-v3 grammar: wild pattern + foil + gold-ring disc) */
+  .obv-gate{ width:100%; max-width:400px; border:3px solid var(--sc,#ff5fa8); border-radius:20px; padding:26px 20px; text-align:center; position:relative; overflow:hidden; box-shadow:0 6px 0 #160510, 0 0 30px color-mix(in srgb, var(--sc,#ff5fa8) 25%, transparent); animation:bentoIn .4s var(--ease-spring) both; font-family:"Jost",sans-serif; }
+  .obv-gate .gic{ width:64px; height:64px; border-radius:50%; margin:0 auto 12px; background:rgba(10,3,8,.72); border:2.5px solid #ffd24a; color:#ffd24a; display:flex; align-items:center; justify-content:center; font-size:30px; position:relative; z-index:1; }
+  .obv-gate .gk{ font-weight:800; font-size:11px; letter-spacing:2px; color:#fff2f9; opacity:.75; position:relative; z-index:1; }
+  .obv-gate .gt{ font-weight:800; font-size:23px; color:#fff2f9; margin-top:3px; text-shadow:0 1px 0 rgba(10,3,8,.55); position:relative; z-index:1; }
+  .obv-gate .gfoil{ position:absolute; inset:0; pointer-events:none; }
+  .obv-gate .gfoil::before{ content:""; position:absolute; top:-25%; bottom:-25%; left:0; width:45%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 2.6s linear infinite; }
+  /* THE STARTER PLAN — prism-framed minted gift (Return-card grammar) */
+  .obv-plan{ padding:3px; border-radius:18px; background:linear-gradient(115deg,#ffb3d9,#a3d9ff,#b8ffd9,#ffe9a3,#d9a3ff,#ffb3d9); background-size:300% 100%; animation:jpHoloPan 4.5s linear infinite; box-shadow:0 5px 0 #160510; width:100%; max-width:400px; margin-top:18px; }
+  .obv-plan-in{ background:#22091a; border-radius:15px; padding:16px 15px; font-family:"Jost",sans-serif; }
+  .obv-plan-k{ font-weight:800; font-size:11px; letter-spacing:1.8px; color:#ffd24a; text-align:center; }
+  .obv-plan-t{ font-weight:800; font-size:19px; color:#fff2f9; text-align:center; margin-top:3px; }
+  .obv-plan-rows{ display:flex; flex-direction:column; gap:9px; margin-top:14px; }
+  .obv-plan-row{ display:flex; align-items:flex-start; gap:10px; opacity:0; animation:wsEngrave .5s var(--ease-settle) both; }
+  .obv-plan-row i.pi{ flex:none; width:26px; height:26px; border-radius:9px; border:2px solid #160510; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 0 #160510; margin-top:1px; }
+  .obv-plan-row .pt{ flex:1; font-weight:800; font-size:14.5px; color:#ffe3f1; line-height:1.25; }
+  .obv-plan-row .ptr{ display:block; font-weight:600; font-size:11px; color:#9a7ea8; margin-top:2px; } /* the trace: "because you said: …" */
+  .obv-plan-row.done i.pi{ background:#28cf86; color:#07351f; }
   .ob-mark{ width:190px; height:190px; margin:0 auto 6px; animation:ssBob 3.2s ease-in-out infinite; filter:drop-shadow(0 0 26px rgba(255,95,160,.35)); } /* the guardian mark floats + glows like the splash */
   .ob-mark svg{ width:100%; height:100%; }
   .ob-mark.ob-breathe{ animation:obBreathCycle 8.4s ease-in-out 1; } /* one guided cycle: swell on the inhale, settle on the exhale */
@@ -2528,6 +2578,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=881"></script>
+  <script src="app.js?v=882"></script>
 </body>
 </html>

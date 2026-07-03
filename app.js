@@ -1653,6 +1653,31 @@
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
   Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь" });
+  Object.assign(I18N.ru, { // ONBOARDING V2 (B4) — survey, options, plan, beats
+    "ABOUT YOU": "О ТЕБЕ", "ENERGY": "ЭНЕРГИЯ", "WHAT'S IN THE WAY": "ЧТО МЕШАЕТ", "PART": "ЧАСТЬ", "OF": "ИЗ",
+    "Hi. I'm Alter.": "Привет. Я — Альтер.", "You know me now. What do I call you?": "Меня ты теперь знаешь. А как звать тебя?", "your name": "твоё имя", "friend": "друг",
+    "How should I address you?": "Как к тебе обращаться?", "He": "Он", "She": "Она", "Doesn't matter": "Не важно",
+    "How old are you?": "Сколько тебе?", "Under 20": "До 20", "20s": "20-е", "30s": "30-е", "40+": "40+",
+    "What's your life mostly about right now?": "Чем занята жизнь сейчас?", "Studying": "Учусь", "Office job": "Офис", "Freelance": "Свободный график", "My own thing": "Своё дело", "Home & family": "Дом и семья", "Figuring it out": "Ищу себя",
+    "Honestly — how are you right now?": "Если честно — как ты сейчас?",
+    "How easy is it for you to get out of bed?": "Как тебе даётся утро?", "Easy": "Встаю легко", "Takes some creaking": "Со скрипом", "Every morning is a battle": "Каждое утро — битва",
+    "When are you strongest?": "Когда ты сильнее всего?", "Night": "Ночь",
+    "Which of these are you carrying right now?": "Что из этого сейчас про тебя?", "Procrastination": "Прокрастинация", "Anxiety": "Тревожность", "Burnout": "Выгорание", "Scattered attention": "Разбросанность", "Phone eats my hours": "Телефон съедает часы", "Tired all the time": "Усталость всё время", "Bad sleep": "Сплю плохо", "None of these": "Ничего из этого",
+    "What overwhelms you the most?": "Что накрывает чаще всего?", "Too many tasks": "Слишком много задач", "Making decisions": "Принятие решений", "Taking care of others": "Забота о других", "Big life changes": "Большие перемены", "Money & work": "Деньги и работа", "Nothing really": "Не накрывает",
+    "What do you want more of?": "Чего хочешь больше?", "Focus": "Фокуса", "Movement": "Движения", "Creativity": "Творчества", "Order": "Порядка",
+    "out… let a little go": "выдох… отпусти чуть-чуть",
+    "first win": "первая победа", "day 1": "день 1", "one conscious breath. written.": "один осознанный вдох. записано.", "That's what I do. Every real thing — I write down. Your world grows from this.": "Вот что я делаю. Каждое настоящее дело — записываю. Из этого растёт твой мир.",
+    "MADE FROM YOUR ANSWERS": "СОБРАН ИЗ ТВОИХ ОТВЕТОВ", "A starter plan for": "Стартовый план для", "you": "тебя", "I'll take it": "Забираю",
+    "already done — it counts": "уже сделано — засчитано", "Glass of water right after waking": "Стакан воды сразу после подъёма", "First 10 minutes without the phone": "Первые 10 минут без телефона", "One 5-minute break ritual": "Один перерыв-ритуал на 5 минут", "One honest line before bed": "Одна честная строка перед сном", "A 10-minute walk": "Прогулка 10 минут", "One 25-minute deep block": "Один глубокий блок 25 минут", "One small thing on purpose": "Одно маленькое дело по своей воле", "a day changes from one": "день меняется с одного",
+    "because you said: every morning is a battle": "потому что ты сказал: каждое утро — битва", "because you said: takes some creaking": "потому что ты сказал: со скрипом", "because you said: phone eats my hours": "потому что ты сказал: телефон съедает часы", "because you said: burnout": "потому что ты сказал: выгорание", "because you said: overwhelmed": "потому что ты сказал: накрывает", "because you want: calm": "потому что ты хочешь: спокойствия", "because you want: movement": "потому что ты хочешь: движения", "because you want: focus": "потому что ты хочешь: фокуса",
+    "I don't need to know what it is — just the shape of the wall.": "Мне не нужно знать, что это — только форму стены.", "It scares me to even look": "Страшно даже смотреть", "Too big — I don't know where it starts": "Слишком большое — не знаю, где начало", "An old bad time with it": "С этим связано старое плохое", "Nothing like that — I'm just here": "Такого нет — я просто здесь",
+    "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.": "Тогда мы никогда не смотрим на всё целиком — только на край. Завтра принесу такой маленький, что он не сможет напугать.", "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.": "Тогда никогда не начинаем с целого — только с первого угла. Завтра принесу один.", "Then we go gently — with a way out at every step. You set the pace.": "Тогда идём мягко — с выходом на каждом шаге. Темп задаёшь ты.", "Good. Then we build forward.": "Хорошо. Тогда строим вперёд.",
+    "One rule — now that you've seen it's real.": "Одно правило — теперь ты видел, что это по-настоящему.", "I will never lie to you. Hold — and promise the same.": "Я никогда не совру тебе. Подержи — и пообещай то же.", "hold to promise": "подержи — и обещание дано", "promised": "обещание дано",
+    "How many days in a row will you come — to start?": "На сколько дней подряд придёшь — для начала?", "Baby steps": "Первые шаги", "Strong start": "Крепкий старт", "Serious": "Серьёзно", "Unstoppable": "Без остановки",
+    "YOUR FIRST CARD": "ТВОЯ ПЕРВАЯ КАРТА", "matte now — it ignites as you live": "пока матовая — зажжётся, когда начнёшь жить", "Thriving": "На подъёме", "Coasting": "По течению", "Stuck": "Застрял", "Overwhelmed": "Накрывает", "Day one": "Первый день",
+    "STAGE 1 · THE SPARK": "СТУПЕНЬ 1 · ИСКРА", "Your world is born.": "Твой мир родился.", "It grows only from real things. I can't water it. Only you can.": "Он растёт только от настоящего. Поливать его могу не я — только ты.", "Done. No more questions — let's go make the day.": "Всё. Больше никаких вопросов — идём делать день.", "Open my world": "Открыть мой мир",
+    "Let's go": "Поехали", "Next": "Далее", "skip": "пропустить"
+  });
   Object.assign(I18N.ru, { "One slow breath with me. Right now.": "Один медленный вдох со мной. Прямо сейчас.", "in through the nose… four counts": "вдох через нос… на четыре счёта", "out through the mouth… slowly": "выдох через рот… медленно", "that's the whole ask — I'll feel it land.": "это вся просьба — я почувствую, как он ляжет.", "One conscious breath": "Один осознанный вдох", "right here": "прямо здесь" });
   Object.assign(I18N.ru, { "EVENING RITUAL": "ВЕЧЕРНИЙ РИТУАЛ", "PRISM · SHINING": "ПРИЗМА · СИЯЮЩИЙ", "FLARE": "ВСПЫШКА", "THE BLADE": "КЛИНОК", "THE LATTICE": "РЕШЁТКА", "COSMOS": "КОСМОС", "BLOOM": "ЦВЕТЕНИЕ" }); // audit TOP-fix batch 1 strings (B4)
   Object.assign(I18N.ru, { // GUIDED WORKSHEETS (B4) — engine + all six course-mined sheets
@@ -4929,7 +4954,198 @@
     w.innerHTML = '<svg class="ss-mark" viewBox="0 0 120 120" aria-hidden="true"><ellipse class="ss-halo" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#ffd24a" stroke-width="7" stroke-linecap="round"/><ellipse class="ss-glint" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#fff3c0" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="9 91"/><path class="ss-spark" fill="#ff5fa0" d="M60 22 L66 54 L98 60 L66 66 L60 98 L54 66 L22 60 L54 54 Z"/><path class="ss-spk2" fill="#ffd24a" d="M88 27 L91 33 L97 36 L91 39 L88 45 L85 39 L79 36 L85 33 Z"/><path class="ss-spk3" fill="#36b3f0" d="M30 82 L33 88 L39 91 L33 94 L30 100 L27 94 L21 91 L27 88 Z"/></svg>';
     return w;
   }
-  function onboard() {
+  // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
+  function onboardV2() {
+    var d2 = { name: "", gender: "", age: "", stage: "", vibe: "", bed: "", peak: "", struggles: [], overwhelm: "", wants: [], block: "", pactAt: null, pactDays: 0, taskDone: false };
+    var SECTIONS = [
+      { id: "you", l: "ABOUT YOU", c: "#b07aff", ic: "ti-user-star", pat: "radial-gradient(1.5px 1.5px at 22% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 72% 40%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%, #3a2358 0%, #241038 55%, #0c0418 100%)" },
+      { id: "energy", l: "ENERGY", c: "#ff8a3a", ic: "ti-bolt", pat: "repeating-conic-gradient(from 0deg at 50% 62%, #3a1a08 0deg 9deg, #7a4212 9deg 18deg), radial-gradient(110% 95% at 50% 62%, #5a2a06 0%, #3a1a08 82%)" },
+      { id: "way", l: "WHAT'S IN THE WAY", c: "#5fa8ff", ic: "ti-shield-bolt", pat: "repeating-linear-gradient(115deg, #0e2240 0 9px, #1a3a66 9px 13px, #0e2240 13px 22px, #5fa8ff26 22px 24px)" }
+    ];
+    var QS = [
+      { sec: 0, key: "gender", q: "How should I address you?", opts: [["m", "He", "ti-user", "#5fa8ff"], ["f", "She", "ti-user", "#ff5fa8"], ["x", "Doesn't matter", "ti-sparkles", "#ffd24a"]] },
+      { sec: 0, key: "age", q: "How old are you?", opts: [["teens", "Under 20", "ti-seeding", "#46e2a4"], ["20s", "20s", "ti-rocket", "#5fa8ff"], ["30s", "30s", "ti-flame", "#ff8a3a"], ["40s", "40+", "ti-crown", "#ffd24a"]] },
+      { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["office", "Office job", "ti-briefcase", "#7f9bc4"], ["free", "Freelance", "ti-device-laptop", "#34d39a"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["figuring", "Figuring it out", "ti-compass", "#ff8a3a"]] },
+      { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
+        reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
+      { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
+      { sec: 1, key: "peak", q: "When are you strongest?", opts: [["am", "Morning", "ti-sunrise", "#ffd24a"], ["day", "Afternoon", "ti-sun", "#ff8a3a"], ["eve", "Evening", "ti-moon-stars", "#b07aff"], ["night", "Night", "ti-moon", "#5fa8ff"]] },
+      { sec: 2, key: "struggles", q: "Which of these are you carrying right now?", multi: true, opts: [["procr", "Procrastination", "ti-hourglass-low", "#ff8a3a"], ["anx", "Anxiety", "ti-heart-rate-monitor", "#ff5fa8"], ["burn", "Burnout", "ti-battery-off", "#c4607f"], ["scat", "Scattered attention", "ti-arrows-shuffle", "#48b8e0"], ["phone", "Phone eats my hours", "ti-device-mobile", "#b07aff"], ["tired", "Tired all the time", "ti-zzz", "#7f9bc4"], ["sleep", "Bad sleep", "ti-moon-off", "#5fa8ff"], ["none", "None of these", "ti-cloud", "#46e2a4"]] },
+      { sec: 2, key: "overwhelm", q: "What overwhelms you the most?", rows: 1, opts: [["tasks", "Too many tasks", "ti-stack-3", "#ff8a3a"], ["decide", "Making decisions", "ti-arrows-split", "#48b8e0"], ["others", "Taking care of others", "ti-users", "#ff5fa8"], ["change", "Big life changes", "ti-tornado", "#b07aff"], ["money", "Money & work", "ti-coin", "#ffd24a"], ["none", "Nothing really", "ti-cloud", "#46e2a4"]] },
+      { sec: 2, key: "wants", q: "What do you want more of?", multi: true, max: 3, opts: [["energy", "Energy", "ti-bolt", "#ffd24a"], ["focus", "Focus", "ti-target", "#36b3f0"], ["calm", "Calm", "ti-wind", "#46e2a4"], ["move", "Movement", "ti-run", "#ff8a3a"], ["create", "Creativity", "ti-palette", "#b07aff"], ["order", "Order", "ti-layout-grid", "#ff5fa8"]] }
+    ];
+    // beat list: meet · name · [gate/questions interleaved, breath+write after ENERGY] · plan · wall · pact · mint · seed
+    var BEATS = [{ t: "meet" }, { t: "name" }];
+    var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); if (si === 1) { BEATS.push({ t: "breath" }); BEATS.push({ t: "write" }); } });
+    BEATS.push({ t: "plan" }, { t: "wall" }, { t: "pact" }, { t: "mint" }, { t: "seed" });
+    var bi2 = 0, advT = null;
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
+    // BATTERY PROGRESS — 3 labeled section segments, cells = that section's questions
+    var bar = add(card, "div", "obv-bar"), segEls = [];
+    SECTIONS.forEach(function (sec, si) { var sg = add(bar, "div", "obv-seg"); sg.style.setProperty("--sc", sec.c); add(sg, "div", "obv-seglbl", tr(sec.l)); var cw = add(sg, "div", "obv-cells"); var qn = QS.filter(function (q) { return q.sec === si; }).length; for (var ci = 0; ci < qn; ci++) add(cw, "div", "obv-cell"); segEls.push(sg); });
+    var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
+    function paintBar() { var counted = {}; QS.forEach(function (q) { counted[q.key] = (q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key]); });
+      SECTIONS.forEach(function (sec, si) { var qs = QS.filter(function (q) { return q.sec === si; }); var cells = segEls[si].querySelectorAll(".obv-cell"); var curSec = (BEATS[bi2] && ((BEATS[bi2].t === "q" && BEATS[bi2].q.sec === si) || (BEATS[bi2].t === "gate" && BEATS[bi2].sec === si)));
+        segEls[si].classList.toggle("on", !!curSec); qs.forEach(function (q, qi2) { if (cells[qi2]) cells[qi2].classList.toggle("on", !!counted[q.key]); }); }); }
+    function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } draw(); }
+    function stdFoot(label, canSkip) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; if (canSkip !== false) { var sk = add(foot, "button", "ob-skip", tr("skip")); sk.onclick = finishV2; } return b; }
+    function finishV2() {
+      S.profile = S.profile || {}; var P = S.profile;
+      if (d2.name) P.name = d2.name;
+      if (d2.gender) P.gender = d2.gender;
+      if (d2.age) P.ageBand = d2.age;
+      if (d2.stage) P.stage = d2.stage;
+      P.vibe = d2.vibe || P.vibe || ""; P.lowStart = (d2.vibe === "overwhelmed" || d2.vibe === "stuck") || !!P.lowStart;
+      if (d2.bed) P.bed = d2.bed; if (d2.peak) { P.peak = d2.peak === "am" ? "lark" : d2.peak === "night" ? "owl" : "mixed"; P.peakBand = d2.peak; }
+      if (d2.struggles.length) P.struggles = d2.struggles.slice();
+      if (d2.overwhelm) P.overwhelm = d2.overwhelm;
+      if (d2.wants.length) P.wants = d2.wants.slice();
+      if (d2.pactAt) P.pact = { ts: d2.pactAt, days: d2.pactDays || 0 };
+      if (d2.block && d2.block !== "none") P.block = { type: d2.block, ts: Date.now() };
+      var _hr = new Date().getHours(); P.openBand = P.openBand || ((_hr >= 22 || _hr < 4) ? "night" : _hr < 9 ? "early" : _hr < 17 ? "day" : "evening");
+      P.set = true;
+      if (!S.habits || !S.habits.length) S.habits = DEFAULT_HABITS.slice();
+      // STARTER PLAN → real habits (guarded, additive)
+      (P.starter || []).forEach(function (it) { if (!S.habits.some(function (h) { return h.title === it.t; })) S.habits.push({ id: uid(), title: it.t, type: "build", per: 0, icon: it.ic }); });
+      S.guide = S.guide || { mode: "guided", seedTier: 0, unlocked: [], cache: {}, offeredK: null };
+      S.guide.mode = "guided"; S.guide.unlocked = (S.guide.unlocked && S.guide.unlocked.length) ? S.guide.unlocked : [0];
+      if (d2.vibe) { var _lv = d2.vibe === "thriving" ? "high" : d2.vibe === "coasting" ? "floor" : "low";
+        var _as = S.guide.appetiteState = S.guide.appetiteState || { level: _lv, nodeCap: 2, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0, lastDeclineK: null, lastInviteSentK: null };
+        if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); } }
+      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = { k: todayK() };
+      save(); ov.remove();
+      try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
+    }
+    function planItems() { // each item TRACEABLY born from an answer
+      var items = [{ t: "One conscious breath", ic: "ti-wind", c: "#46e2a4", trace: "already done — it counts", done: true }];
+      if (d2.bed === "battle" || d2.bed === "creaky") items.push({ t: "Glass of water right after waking", ic: "ti-droplet", c: "#5fa8ff", trace: "because you said: " + (d2.bed === "battle" ? "every morning is a battle" : "takes some creaking") });
+      if (d2.struggles.indexOf("phone") >= 0) items.push({ t: "First 10 minutes without the phone", ic: "ti-device-mobile-off", c: "#b07aff", trace: "because you said: phone eats my hours" });
+      if (d2.struggles.indexOf("burn") >= 0 || d2.vibe === "overwhelmed") items.push({ t: "One 5-minute break ritual", ic: "ti-coffee", c: "#ff8a3a", trace: "because you said: " + (d2.struggles.indexOf("burn") >= 0 ? "burnout" : "overwhelmed") });
+      if (d2.wants.indexOf("calm") >= 0 || d2.struggles.indexOf("anx") >= 0) items.push({ t: "One honest line before bed", ic: "ti-feather", c: "#ff5fa8", trace: "because you want: calm" });
+      if (d2.wants.indexOf("move") >= 0 && items.length < 5) items.push({ t: "A 10-minute walk", ic: "ti-walk", c: "#46e2a4", trace: "because you want: movement" });
+      if (d2.wants.indexOf("focus") >= 0 && items.length < 5) items.push({ t: "One 25-minute deep block", ic: "ti-target", c: "#36b3f0", trace: "because you want: focus" });
+      if (items.length < 3) items.push({ t: "One small thing on purpose", ic: "ti-star", c: "#ffd24a", trace: "a day changes from one" });
+      return items.slice(0, 5);
+    }
+    function draw() {
+      paintBar(); body.innerHTML = ""; foot.innerHTML = "";
+      var B = BEATS[bi2];
+      var _sc3 = (B.t === "q") ? B.q.sec : (B.t === "gate") ? B.sec : -1; ov.setAttribute("data-sec", _sc3 >= 0 ? String(_sc3) : ""); // the whole ROOM shifts biome per section (Pokemon region feel)
+      body.className = "ob-body center";
+      if (B.t === "meet") { obMark(body, 190); add(body, "div", "ob-q", tr("Hi. I'm Alter.")); stdFoot(tr("Let's go") + " ▸"); return; }
+      if (B.t === "name") { obMark(body, 110);
+        add(body, "div", "ob-q", tr("You know me now. What do I call you?"));
+        var nw = add(body, "div"); nw.style.cssText = "display:flex;gap:9px;width:100%;max-width:340px;margin-top:20px;align-items:center;";
+        var ni = document.createElement("input"); ni.type = "text"; ni.className = "ws-text"; ni.style.cssText = "min-height:0;height:54px;flex:1;margin-top:0;text-align:center;font-size:18px;"; ni.placeholder = tr("your name"); ni.value = d2.name; nw.appendChild(ni);
+        var names = ["Ray", "Sky", "Nova", "Alex", "Sam", "Kai"]; var sh = add(nw, "button", "ws-x"); sh.style.cssText = "width:54px;height:54px;flex:none;font-size:18px;"; sh.innerHTML = '<i class="ti ti-arrows-shuffle"></i>'; sh.onclick = function () { ni.value = names[Math.floor((Date.now() / 100) % names.length)]; };
+        var b = stdFoot(); b.onclick = function () { d2.name = ni.value.trim() || tr("friend"); next(); };
+        setTimeout(function () { try { ni.focus(); } catch (e) {} }, 400); return; }
+      if (B.t === "gate") { var sec = SECTIONS[B.sec];
+        var g = add(body, "div", "obv-gate"); g.style.setProperty("--sc", sec.c); g.style.background = sec.pat;
+        add(g, "div", "gfoil"); var gi2 = add(g, "div", "gic"); gi2.innerHTML = '<i class="ti ' + sec.ic + '"></i>';
+        add(g, "div", "gk", tr("PART") + " " + (B.sec + 1) + " " + tr("OF") + " 3"); add(g, "div", "gt", tr(sec.l));
+        advT = setTimeout(next, 1500); return; }
+      if (B.t === "q") { var q = B.q;
+        add(body, "div", "ob-q", tr(q.q));
+        var wrap = add(body, "div", q.rows ? "obv-rows" : "obv-tiles");
+        q.opts.forEach(function (o) {
+          var el2 = add(wrap, "button", (q.rows ? "obv-row" : "obv-tile"));
+          el2.style.setProperty("--oc", o[3]); el2.style.setProperty("--ost", tfStripeDoor(o[3]));
+          var picked = q.multi ? (d2[q.key].indexOf(o[0]) >= 0) : d2[q.key] === o[0];
+          if (picked) el2.classList.add("on");
+          el2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + (o[4] ? '<span class="os">' + esc(tr(o[4])) + '</span>' : '') + '</span>' + (picked ? '<i class="ti ti-check ock"></i>' : (q.multi ? '<span class="oplus"><i class="ti ti-plus"></i></span>' : ''));
+          el2.style.background = picked ? tfStripeDoor(o[3]) : "";
+          el2.onclick = function () {
+            if (q.multi) { var arr = d2[q.key], ix = arr.indexOf(o[0]);
+              if (o[0] === "none") { d2[q.key] = ix >= 0 ? [] : ["none"]; }
+              else { if (ix >= 0) arr.splice(ix, 1); else { if (q.max && arr.length >= q.max) return; var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); arr.push(o[0]); } }
+              draw(); return; }
+            d2[q.key] = o[0]; draw();
+            if (q.reply) { clearTimeout(advT); advT = setTimeout(next, 1700); } else { clearTimeout(advT); advT = setTimeout(next, 520); }
+          };
+        });
+        if (q.reply && d2[q.key]) { add(body, "div", "ob-sb", tr(q.reply[d2[q.key]])).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;"; }
+        if (q.multi) { var gb = stdFoot(); gb.disabled = !(d2[q.key] && d2[q.key].length); }
+        else { var sk2 = add(foot, "button", "ob-skip", tr("skip")); sk2.onclick = next; }
+        return; }
+      if (B.t === "breath") {
+        var _bm = obMark(body, 150); _bm.classList.add("ob-breathe");
+        add(body, "div", "ob-q", tr("One slow breath with me. Right now."));
+        var _bcap = add(body, "div", "ob-sb", tr("in through the nose… four counts")); _bcap.style.cssText = "text-align:center;margin-top:10px;font-weight:700;color:#f0e6ef;";
+        setTimeout(function () { if (_bcap && _bcap.isConnected) _bcap.textContent = tr(d2.vibe === "overwhelmed" ? "out… let a little go" : "out through the mouth… slowly"); }, 4200);
+        advT = setTimeout(function () { if (!d2.taskDone) { d2.taskDone = true;
+          try { logs(todayK()).push({ id: uid(), time: pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()), title: "One conscious breath", mins: 1, catK: null, domain: "restore", color: DOM.restore.c }); } catch (e) {}
+          try { earn(10, { label: "first-breath" }); } catch (e) {} try { earn(8, { label: "onboard-task-bonus" }); } catch (e) {} }
+          next(); }, 9200);
+        var sk3 = add(foot, "button", "ob-skip", tr("skip")); sk3.onclick = finishV2; return; }
+      if (B.t === "write") { ov.setAttribute("data-sec", "burst"); // payoff + thesis — the reward plays on the ВСПЫШКА sunburst (binder-card language, full-screen)
+        var wrap2 = add(body, "div"); wrap2.style.cssText = "position:relative;width:100%;";
+        var chipEl = add(wrap2, "div", "ob-scorechip"); chipEl.innerHTML = '<i class="ti ti-sparkles"></i><b class="obn">18</b>';
+        add(wrap2, "div", "ob-kick", tr("first win"));
+        add(wrap2, "div", "ob-big", "+18 " + tr("Spark"));
+        var tw = add(body, "div", "ob-sb"); tw.style.cssText = "text-align:center;margin-top:18px;font-weight:700;color:#ffe3f1;min-height:20px;";
+        var line = tr("day 1") + ", " + pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()) + ": " + tr("one conscious breath. written.");
+        var i2 = 0; var twv = setInterval(function () { if (!tw.isConnected) { clearInterval(twv); return; } i2++; tw.textContent = line.slice(0, i2); if (i2 >= line.length) clearInterval(twv); }, 34);
+        setTimeout(function () { if (tw.isConnected) add(body, "div", "ob-sb", tr("That's what I do. Every real thing — I write down. Your world grows from this.")).style.cssText = "text-align:center;margin-top:12px;"; }, line.length * 34 + 500);
+        stdFoot(); return; }
+      if (B.t === "plan") { // THE STARTER PLAN — the survey's visible gift
+        add(body, "div", "ob-kick", tr("MADE FROM YOUR ANSWERS"));
+        add(body, "div", "ob-q", tr("A starter plan for") + " " + esc(d2.name || tr("you")));
+        var pw = add(body, "div", "obv-plan"), pin = add(pw, "div", "obv-plan-in");
+        var rows = add(pin, "div", "obv-plan-rows"); var items = planItems(); S.profile = S.profile || {}; S.profile.starter = items.filter(function (it) { return !it.done; }).map(function (it) { return { t: it.t, ic: it.ic }; });
+        items.forEach(function (it, ii) { var r = add(rows, "div", "obv-plan-row" + (it.done ? " done" : "")); r.style.animationDelay = (0.25 + ii * 0.4) + "s";
+          r.innerHTML = '<i class="ti ' + (it.done ? "ti-check" : it.ic) + ' pi" style="background:' + (it.done ? "#28cf86" : mixHex(it.c, "#160510", 0.6)) + ';color:' + (it.done ? "#07351f" : it.c) + '"></i><span class="pt">' + esc(tr(it.t)) + '<span class="ptr">' + esc(tr(it.trace)) + '</span></span>'; });
+        stdFoot(tr("I'll take it") + " ✓"); return; }
+      if (B.t === "wall") { obMark(body, 110);
+        add(body, "div", "ob-q", tr("Is there something you keep putting off?"));
+        add(body, "div", "ob-sb", tr("I don't need to know what it is — just the shape of the wall.")).style.cssText = "text-align:center;margin-top:6px;";
+        var bw2 = add(body, "div", "obv-rows");
+        [["fear", "It scares me to even look", "ti-flame", "#ff8a3a"], ["overwhelm", "Too big — I don't know where it starts", "ti-mountain", "#7a9aff"], ["wound", "An old bad time with it", "ti-anchor", "#c4607f"], ["none", "Nothing like that — I'm just here", "ti-cloud", "#48b8e0"]].forEach(function (o) {
+          var r2 = add(bw2, "button", "obv-row" + (d2.block === o[0] ? " on" : "")); r2.style.setProperty("--oc", o[3]); r2.style.setProperty("--ost", tfStripeDoor(o[3])); if (d2.block === o[0]) r2.style.background = tfStripeDoor(o[3]);
+          r2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>' + (d2.block === o[0] ? '<i class="ti ti-check ock"></i>' : '');
+          r2.onclick = function () { if (d2.block === o[0]) return; d2.block = o[0]; draw(); clearTimeout(advT); advT = setTimeout(next, 1900); }; });
+        var BR2 = { fear: "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.", overwhelm: "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.", wound: "Then we go gently — with a way out at every step. You set the pace.", none: "Good. Then we build forward." };
+        if (d2.block) add(body, "div", "ob-sb", tr(BR2[d2.block])).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;";
+        var sk5 = add(foot, "button", "ob-skip", tr("skip")); sk5.onclick = next; return; }
+      if (B.t === "pact") {
+        add(body, "div", "ob-q", tr("One rule — now that you've seen it's real."));
+        add(body, "div", "ob-sb", tr("I will never lie to you. Hold — and promise the same.")).style.cssText = "text-align:center;margin-top:6px;";
+        var pactWrap = add(body, "div"); pactWrap.style.cssText = "margin-top:22px;width:100%;max-width:340px;";
+        var pb = add(pactWrap, "button", "ob-btn"); pb.style.cssText = "position:relative;overflow:hidden;width:100%;";
+        var fill2 = add(pb, "span"); fill2.style.cssText = "position:absolute;left:0;top:0;bottom:0;width:" + (d2.pactAt ? "100" : "0") + "%;background:rgba(255,255,255,.32);z-index:0;";
+        add(pb, "span", null, d2.pactAt ? "✓ " + tr("promised") : tr("hold to promise")).style.cssText = "position:relative;z-index:1;";
+        var holdT2 = null, holdDone2 = !!d2.pactAt;
+        function rel2() { if (holdDone2) return; clearTimeout(holdT2); fill2.style.transition = "width .25s ease"; fill2.style.width = "0%"; }
+        if (!d2.pactAt) { pb.addEventListener("pointerdown", function () { holdDone2 = false; fill2.style.transition = "width 1.2s linear"; requestAnimationFrame(function () { fill2.style.width = "100%"; }); holdT2 = setTimeout(function () { holdDone2 = true; d2.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} draw(); }, 1200); });
+          pb.addEventListener("pointerup", rel2); pb.addEventListener("pointercancel", rel2); pb.addEventListener("pointerleave", rel2); }
+        if (d2.pactAt) { // THE DAYS COMMIT (Finch): a promise TO Alter, with a number the callback can cite
+          add(body, "div", "ob-sb", tr("How many days in a row will you come — to start?")).style.cssText = "text-align:center;margin-top:22px;font-weight:800;color:#ffe3f1;font-size:16px;";
+          var dw2 = add(body, "div", "obv-tiles");
+          [[2, "Baby steps", "#48b8e0"], [5, "Strong start", "#46e2a4"], [7, "Serious", "#ffd24a"], [14, "Unstoppable", "#ff5fa8"]].forEach(function (o) {
+            var t2 = add(dw2, "button", "obv-tile" + (d2.pactDays === o[0] ? " on" : "")); t2.style.setProperty("--oc", o[2]); t2.style.setProperty("--ost", tfStripeDoor(o[2])); if (d2.pactDays === o[0]) t2.style.background = tfStripeDoor(o[2]);
+            t2.innerHTML = '<span class="ol" style="font-size:22px">' + o[0] + '</span><span class="ol">' + esc(tr(o[1])) + '</span>' + (d2.pactDays === o[0] ? '<i class="ti ti-check ock"></i>' : '');
+            t2.onclick = function () { d2.pactDays = o[0]; draw(); clearTimeout(advT); advT = setTimeout(next, 700); }; });
+          var sk6 = add(foot, "button", "ob-skip", tr("skip")); sk6.onclick = next; }
+        else { var sk7 = add(foot, "button", "ob-skip", tr("skip")); sk7.onclick = finishV2; }
+        return; }
+      if (B.t === "mint") {
+        add(body, "div", "ob-kick", tr("YOUR FIRST CARD"));
+        var mc = add(body, "div", "binder-card el-burst"); mc.style.cssText = "width:100%;max-width:300px;margin-top:14px;padding:18px 14px;border-width:3px;"; add(mc, "div", "mint-sheen"); var mi2 = add(mc, "div"); mi2.style.cssText = "text-align:center;position:relative;z-index:1;";
+        var vibeL = { thriving: "Thriving", coasting: "Coasting", stuck: "Stuck", overwhelmed: "Overwhelmed" }[d2.vibe] || "Day one";
+        mi2.innerHTML = '<div style="width:64px;height:64px;border-radius:50%;margin:6px auto 10px;background:rgba(10,3,8,.72);border:2.5px solid #ffd24a;color:#ffd24a;display:flex;align-items:center;justify-content:center;font-size:30px;"><i class="ti ti-user-star"></i></div><div class="obv-plan-t">' + esc(d2.name || tr("you")) + '</div><div class="obv-plan-k" style="margin-top:5px">' + esc(tr(vibeL)) + ' · ' + tr("day 1") + '</div><div class="ob-sb" style="margin-top:10px">' + tr("matte now — it ignites as you live") + '</div>';
+        stdFoot(); return; }
+      if (B.t === "seed") {
+        obMark(body, 150);
+        add(body, "div", "ob-kick", tr("STAGE 1 · THE SPARK"));
+        add(body, "div", "ob-q", tr("Your world is born."));
+        add(body, "div", "ob-sb", tr("It grows only from real things. I can't water it. Only you can.")).style.cssText = "text-align:center;margin-top:8px;";
+        add(body, "div", "ob-sb", tr("Done. No more questions — let's go make the day.")).style.cssText = "text-align:center;margin-top:16px;font-weight:800;color:#ffe3f1;";
+        stdFoot(tr("Open my world") + " ▸", false).onclick = finishV2; return; }
+    }
+    draw();
+  }
+  function onboard() { return onboardV2(); }
+  function onboardV1() {
     var data = { vibe: "", energy: null, messRoom: "", block: "", pactAt: null, taskDone: false, seeded: false };
     var step = 0, STEPS = 8, advT = null; // 0-1 showman · 2 vibe · 3 task+payoff · 4 blocker · 5 pact · 6 trainer-card MINT · 7 seed — verdict #18 inserts the mint beat before the seed
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
