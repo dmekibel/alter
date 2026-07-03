@@ -1230,8 +1230,8 @@
   #trackerFull.st-onplan .tf-time{ animation:tfMinPop 4s ease-in-out infinite; } /* minute-earn pop */
   @keyframes tfMinPop{ 0%,88%,100%{ transform:scale(1); } 93%{ transform:scale(1.06); } }
   #trackerFull.st-onplan .tf-ctx, #trackerFull.st-off .tf-ctx{ margin-top:2px; font-size:13.5px; color:#b39ab0; }
-  /* even green annulus: a symmetric ink ring on the disc (no asymmetric bottom drop-shadow eating the bottom band) */
-  #trackerFull.st-onplan .tf-tile{ box-shadow:0 0 0 3px #160510, inset 0 2px 0 rgba(255,255,255,.10); }
+  /* EVEN + CHUNKY (David 2026-07-03): keep the hard game-piece drop-shadow AND an even green band — nudge the disc up 3px so the disc+6px-shadow mass is centered in the ring → visible green reads equal top & bottom */
+  #trackerFull.st-onplan .tf-tile{ box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.10); transform:translateY(-3px); }
   .tf-endpip{ position:absolute; left:50%; top:1px; width:4px; height:11px; margin-left:-2px; background:#160510; border-radius:2px; display:none; z-index:2; pointer-events:none; }
   .tf-convdot{ position:absolute; width:9px; height:9px; border-radius:50%; background:#fff; box-shadow:0 0 5px 1px rgba(255,255,255,.65); display:none; z-index:2; pointer-events:none; animation:tfConvDot 3s ease-in-out infinite; }
   @keyframes tfConvDot{ 0%,100%{ transform:translate(-50%,-50%) scale(1); box-shadow:0 0 5px 1px rgba(255,255,255,.65); } 50%{ transform:translate(-50%,-50%) scale(1.4); box-shadow:0 0 12px 3px rgba(255,255,255,.95); } }
@@ -1949,6 +1949,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=828"></script>
+  <script src="app.js?v=829"></script>
 </body>
 </html>
