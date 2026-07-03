@@ -917,6 +917,8 @@
   .nowcirc{ position:absolute; left:2px; width:16px; height:16px; border-radius:50%; border:2.5px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:8.5px; z-index:9; box-shadow:0 0 8px #ff5fa8; } /* sits just inside the left edge — fully visible, no longer clipped by the scroll container (was left:-3px = cut off + a stray border edge) — David 2026-06-27 */
   /* PER-SECOND LIVE CHARGE glide: the now-anchored elements creep/grow/shrink smoothly between the per-minute rebuilds (tickCharge nudges top/height each second; the ~1s linear transition fills the gap → the battery reads as MOVING, not snapping). Suppressed while zooming so a pinch can't animate → no bounce. */
   .nowline, .nowcirc, .nowread, .nowtime, .calblk.live, .matchseg.chgseg, .committedfut{ transition: top .98s linear, height .98s linear; }
+  .matchseg.chgseg.sliver{ border:none !important; border-radius:3px !important; box-shadow:none !important; } /* newborn charge (<10px) = a clean color line — no border-soup up close (David device 2026-07-03) */
+  .calblk.committedfut{ border-top:none !important; } /* the now-line IS the seam — a dashed top edge under it read as a glitch */
   #pullBody.zooming .nowline, #pullBody.zooming .nowcirc, #pullBody.zooming .nowread, #pullBody.zooming .nowtime, #pullBody.zooming .calblk.live, #pullBody.zooming .matchseg.chgseg, #pullBody.zooming .committedfut{ transition:none !important; }
   .calblk.dragging{ transition:none !important; }
   /* STRADDLING-NOW block split by the present line: future (matte) · past ghost (failed) · tracked stretch (matched stripes) — David 2026-06-25 */
@@ -2424,6 +2426,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=860"></script>
+  <script src="app.js?v=861"></script>
 </body>
 </html>
