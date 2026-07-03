@@ -1334,6 +1334,7 @@
     "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "The rest": "Остальное", "You're today —": "Ты сегодня —", "been meaning to": "давно собирался",
     "Return": "Вернуться", "day": "день", "together": "вместе", "saved": "запись", "Restore": "Восстановить", "your save": "твоё сохранение", "Erase everything and start over?": "Стереть всё и начать заново?", "profile · plan · garden — all of it": "профиль · план · сад — всё", "Erase everything": "Стереть всё", "Break": "Перерыв",
     "first win": "первая победа", "Spark": "Искр", "a real thing — a real reward": "настоящее дело — настоящая награда", "One thing off the floor": "Одна вещь с пола", "Two things off the floor": "Две вещи с пола", "Three things off the floor": "Три вещи с пола", "in your space": "в твоём пространстве", "done": "сделано", "Did it": "Сделал", "the spark flew to your count — I remembered": "искры улетели в твой счёт — я запомнил", "Your first card": "Твоя первая карта", "matte — that's potential. it lights up as you live": "матовая — это потенциал. она зажигается, пока ты живёшь", "TRAINER CARD": "КАРТА ТРЕНЕРА", "THE GATHERED": "СОБРАННЫЙ", "day one. everything ahead.": "день первый. всё впереди.", "ON THE BACK — PACT": "НА ОБОРОТЕ — ПАКТ", "promised honesty": "обещал честность", "showed up:": "пришёл:", "scared": "страшно", "overwhelmed": "завалило", "carrying an old one": "со старой раной", "stuck": "застрял", "GROWS WITH YOU": "РАСТЁТ С ТОБОЙ", "7 days": "7 дней", "crown": "корона", "return": "возвращение", "collection": "коллекция", "it's yours — forever": "она твоя — навсегда",
+    "add to your daily": "добавить в ежедневные",
     "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
@@ -7374,7 +7375,7 @@
     foldRow("ti-stack-2", "#63d3c9", "Build a session", "", function () { try { stackBuilder(); } catch (e) {} });
     foldRow("ti-brain", "#5ec4f5", "Sharpen the mind", "", function () { try { brainGym(); } catch (e) {} });
     var lib = add(sb, "div"); if (!_open) lib.style.display = "none"; // the folded library: triage + recents + category tabs + cards
-    var sos = add(lib, "button", "tf-chip"); sos.style.marginTop = "9px"; sos.innerHTML = '<i class="ti ti-urgent"></i> Something specific is loud — help me pick'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
+    var sos = add(lib, "button", "tb-sos"); sos.innerHTML = '<span class="tb-sosic"><i class="ti ti-urgent"></i></span><span class="tb-sostx">' + esc(tr("Something specific is loud — help me pick")) + '</span><span class="tb-soschev"><i class="ti ti-chevron-right"></i></span>'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
     // Favorites / Recents pinned row
     var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
     pins = pins.slice(0, 4);
@@ -7390,24 +7391,30 @@
     ];
     if (!sb.dataset.tbcat) sb.dataset.tbcat = (!_isC && _pt && _pt.layer) ? _pt.layer : "Steady the body"; // open on the FOR-RIGHT-NOW tool's category so it's relevant
     var _cat = sb.dataset.tbcat;
-    var tabs = add(lib, "div"); tabs.style.cssText = "display:flex;flex:none;gap:6px;overflow-x:auto;margin-top:11px;padding-bottom:3px;-webkit-overflow-scrolling:touch;"; // flex:none — an overflow-x flex-column child otherwise gets min-height:0 and collapses to a sliver (David 2026-07-01)
+    var tabs = add(lib, "div", "tb-tabrow"); // TOOLBOX 1:1: chunky layer tabs w/ gold-ring selection
     TB_CATS.forEach(function (c) {
-      var on = _cat === c.layer, tb = add(tabs, "button");
-      tb.setAttribute("style", "flex:none;display:flex;align-items:center;gap:6px;border:2px solid #160510;border-radius:12px;box-shadow:0 2px 0 #160510;padding:11px 14px;min-height:42px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:13.5px;white-space:nowrap;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#e6cfe0") + ";"); // AUDIT P1: real tap-height tabs
-      tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + c.l;
+      var on = _cat === c.layer, tb = add(tabs, "button", "tb-tab" + (on ? " on" : ""));
+      tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + esc(tr(c.l)) + (c.layer === "Feel it through" ? ' <i class="ti ti-chevron-down" style="font-size:13px;opacity:.7"></i>' : '');
       tb.onclick = function () { sb.dataset.tbcat = c.layer; try { renderStage("tool"); } catch (e) {} };
     });
     var pane = add(lib, "div"); pane.style.marginTop = "10px";
-    function builtinCard(parent, t) {
-      var card = add(parent, "button", "tf-stagecard"); card.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
-      var top = add(card, "div"); top.style.cssText = "display:flex;align-items:center;gap:9px;";
-      add(top, "span").innerHTML = '<i class="ti ' + t.ti + '" style="font-size:22px;color:#ffb3d9"></i>';
-      var nm = add(top, "div"); nm.style.flex = "1"; add(nm, "div", "tfs-h", t.name).style.marginBottom = "1px"; add(nm, "div", "tfs-sub", t.thinker).style.fontSize = "11px";
-      var pips = add(top, "span"); pips.style.cssText = "display:flex;gap:3px;flex:none;"; var rung = toolRung(t.id); for (var p = 0; p < 3; p++) { var dt = add(pips, "i"); dt.style.cssText = "width:7px;height:7px;border-radius:50%;background:" + (p < rung ? "#ff8a3a" : "#3a2230") + ";display:block;"; } if (rung) { var rl = add(top, "span"); rl.textContent = toolRungLabel(rung); rl.style.cssText = "font-size:9px;color:#b596ad;flex:none;"; }
-      var _pinned = dailyTools().indexOf(t.id) >= 0; var pinB = add(top, "button"); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = "add to your daily"; pinB.setAttribute("style", "background:none;border:none;cursor:pointer;flex:none;font-size:15px;padding:4px;color:" + (_pinned ? "#ffb3d9" : "#5a3550") + ";"); pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
-      var _why = add(card, "div", "tfs-sub"); _why.style.cssText = "margin-top:7px;font-size:13.5px;color:#d6b2cb;line-height:1.42;"; _why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> <span>' + esc(t.why) + '</span>'; // label + body as SEPARATE nodes so the display translator can key each (the old composite was untranslatable — David on device, v796) · AUDIT P1 sizes
-      var _when = add(card, "div", "tfs-sub"); _when.style.cssText = "margin-top:3px;font-size:13px;color:#ab82a0;line-height:1.38;"; _when.innerHTML = '<b>' + esc(tr("Reach for it when:")) + '</b> <span>' + esc(t.when) + '</span>';
-      card.onclick = function () { runTool(t); };
+    function builtinCard(parent, t) { // TOOLBOX 1:1 (verdict #19): one when-line + why-fold + Stutz ladder + outcome label + 44pt pin
+      var rung = toolRung(t.id), isGrace = rung >= 3;
+      var card = add(parent, "button", "tb-card" + (isGrace ? " tb-grace" : ""));
+      var top = add(card, "div", "tbc-top");
+      add(top, "span", "tbc-ic").innerHTML = '<i class="ti ' + t.ti + '"></i>';
+      var nm = add(top, "div", "tbc-nm"); add(nm, "div", "tbc-name", t.name); add(nm, "div", "tbc-thk", t.thinker);
+      var _pinned = dailyTools().indexOf(t.id) >= 0;
+      var pinB = add(top, "button", "tbc-pin" + (_pinned ? " on" : "")); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = tr("add to your daily");
+      pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
+      add(card, "div", "tbc-when", esc(t.when));
+      var foot = add(card, "div", "tbc-foot");
+      var pips = add(foot, "span", "tbc-pips"); for (var p = 0; p < 3; p++) { add(pips, "i", "tbc-pip" + (p < rung ? " lit" : "")); }
+      add(foot, "span", "tbc-out", tr(toolRungLabel(Math.max(1, rung))));
+      var chev = add(foot, "i", "tbc-chev"); chev.innerHTML = '<i class="ti ti-chevron-down"></i>';
+      var why = add(card, "div", "tbc-why"); why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> ' + esc(t.why);
+      chev.onclick = function (e) { e.stopPropagation(); var o = why.classList.toggle("open"); chev.innerHTML = '<i class="ti ti-chevron-' + (o ? "up" : "down") + '"></i>'; };
+      card.onclick = function (e) { if (e.target.closest(".tbc-chev") || e.target.closest(".tbc-pin")) return; runTool(t); };
     }
     if (_cat === "__custom") {
       var _mine = customTools();

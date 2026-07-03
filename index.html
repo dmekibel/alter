@@ -1412,6 +1412,36 @@
   .tf-b:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
   .tf-b.tf-done{ flex-direction:row; gap:8px; font-size:15px; padding:14px; background:#28cf86; color:#08321f; }
   .tf-b.tf-done i{ font-size:20px; }
+  /* ===== TOOLBOX 1:1 (verdict #19) — library cards, layer tabs, SOS door ===== */
+  .tb-sos{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; margin-top:9px; background:linear-gradient(135deg,#3a0f1c,#2a0812); border:2.5px solid #ff4d5e; border-radius:16px; box-shadow:0 4px 0 #160510; padding:15px 16px; cursor:pointer; font-family:"Jost",sans-serif; }
+  .tb-sos .tb-sosic{ flex:none; width:30px; height:30px; display:flex; align-items:center; justify-content:center; color:#ff6b78; font-size:24px; }
+  .tb-sos .tb-sostx{ flex:1; font-weight:800; font-size:15.5px; line-height:1.25; color:#ffd9de; }
+  .tb-sos .tb-soschev{ flex:none; color:#ff6b78; font-size:16px; }
+  .tb-tabrow{ display:flex; gap:8px; overflow-x:auto; margin-top:12px; padding:2px 2px 4px; -webkit-overflow-scrolling:touch; }
+  .tb-tab{ flex:none; display:flex; align-items:center; gap:6px; border:2.5px solid #160510; border-radius:13px; box-shadow:0 3px 0 #160510; padding:11px 15px; min-height:44px; cursor:pointer; font-family:"Jost",sans-serif; font-weight:800; font-size:14px; white-space:nowrap; background:#241328; color:#e6cfe0; }
+  .tb-tab i{ font-size:17px; }
+  .tb-tab.on{ box-shadow:0 0 0 3px #ffc41f, 0 3px 0 #160510; }
+  .tb-tab:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .tb-card{ text-align:left; cursor:pointer; width:100%; display:block; background:#1e0f22; border:2px solid #160510; border-radius:16px; box-shadow:0 4px 0 #160510; color:#e6cfe0; padding:15px 16px; font-family:"Jost",sans-serif; margin-top:11px; }
+  .tb-card .tbc-top{ display:flex; align-items:flex-start; gap:10px; }
+  .tb-card .tbc-ic{ flex:none; width:26px; text-align:center; color:#ff8a3a; font-size:22px; margin-top:1px; }
+  .tb-card .tbc-nm{ flex:1; min-width:0; }
+  .tb-card .tbc-name{ font-weight:800; font-size:18px; color:#fff2f9; line-height:1.15; }
+  .tb-card .tbc-thk{ font-size:11.5px; color:#a07fa0; font-weight:700; margin-top:2px; }
+  .tb-card .tbc-pin{ flex:none; background:none; border:none; cursor:pointer; color:#c78bff; font-size:44px; line-height:1; padding:0; margin:-4px -2px 0 0; }
+  .tb-card .tbc-pin.on{ color:#ffb3d9; }
+  .tb-card .tbc-when{ margin-top:9px; font-size:14px; color:#d6b2cb; line-height:1.4; }
+  .tb-card .tbc-foot{ display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .tb-card .tbc-pips{ display:flex; gap:5px; flex:none; }
+  .tb-card .tbc-pip{ width:26px; height:6px; border-radius:3px; background:#3a2230; display:block; }
+  .tb-card .tbc-pip.lit{ background:#ff8a3a; }
+  .tb-card .tbc-out{ flex:1; text-align:right; font-size:13px; font-weight:800; color:#d8a06a; }
+  .tb-card .tbc-chev{ flex:none; color:#8a7898; font-size:16px; }
+  .tb-card.tb-grace{ position:relative; overflow:hidden; }
+  .tb-card.tb-grace:before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,#ffc41f 30%,#ffe08a 50%,#ffc41f 70%,transparent); }
+  .tb-card .tbc-why{ margin-top:11px; font-size:13px; color:#c9a6bf; line-height:1.45; display:none; }
+  .tb-card .tbc-why.open{ display:block; }
+  .tb-card .tbc-why b{ color:#ff9fce; }
   /* verdict palettes by state */
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
@@ -2177,6 +2207,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=842"></script>
+  <script src="app.js?v=843"></script>
 </body>
 </html>
