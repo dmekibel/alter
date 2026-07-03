@@ -6346,6 +6346,10 @@
       if (moonAt < 0) for (var h2 = startH; h2 < endH; h2++) { var c2 = ((h2 % 24) + 24) % 24; if (c2 >= 20 || c2 < 5) { moonAt = h2; break; } }
       if (moonAt >= 0) { var _mn = add(sky, "div", "skymoon"); _mn.style.cssText = "position:absolute;right:16px;top:calc(" + ((moonAt - startH) / span * 100).toFixed(1) + "% + 10px);width:18px;height:18px;border-radius:50%;background:transparent;box-shadow:inset -6px -2px 0 0 #e6ecff;"; }
     })();
+    // A-1 THERMOGRAPH HEAT (RUN-1 slice 5): hours you actually LIVED hold a rose heat band over the sky (pointer-events:none, never touches physics)
+    (function () { if (!(showNow || k < todayK())) return; var s0h = startH * 60;
+      lgs.forEach(function (lg) { var ls = hm(lg.time), le = ls + (lg.mins || 0); if (le <= s0h || ls >= endH * 60) return; ls = Math.max(ls, s0h); le = Math.min(le, endH * 60); var hb = add(cal, "div", "heatband"); hb.style.top = ((ls - s0h) / 60 * HP) + "px"; hb.style.height = ((le - ls) / 60 * HP) + "px"; });
+    })();
     var railItems = [], nowRightBand = null; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order; nowRightBand = the Y-band the NOW readout occupies on the right so rail chips dodge it (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = ((mm - startH * 60) / 60 * HP), _hh = Math.floor(mm / 60), _mn = mm % 60;
@@ -6404,7 +6408,7 @@
       if (status === "ok" && !partial) { // DONE = deep-jewel diagonal STRIPES (the old metallic look, darkened for night) + ink edge — NO neon glow, NO shine; the now-line stays the brightest thing (David 2026-06-27)
         var _ji = jewelInk(dom); card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, _ji, 0.5) + "," + mixHex(D.c, _ji, 0.5) + " 9px," + mixHex(D.c, _ji, 0.62) + " 9px," + mixHex(D.c, _ji, 0.62) + " 18px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 3px 0 #160510"; // verdict #8: deepen toward cool jewel ink, not #160510 (which browns warm hues)
       } else if (dark) { // missed/ghost — domain-tinted-dark hollow + a clear domain OUTLINE (kept — David likes this close up)
-        card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";
+        card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderStyle = "dashed"; card.style.boxShadow = "none"; // verdict #5: ghost reads DASHED like the widget
       } else { // future = planned: DIMMER deep stripes, fainter the further ahead, ink edge (David 2026-06-27)
         card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.74) + "," + mixHex(D.c, "#160510", 0.74) + " 9px," + mixHex(D.c, "#160510", 0.82) + " 9px," + mixHex(D.c, "#160510", 0.82) + " 18px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 2px 0 #160510";
         var _ahead = (bs - now) / 60; card.style.opacity = String(showNow ? Math.max(0.6, 0.95 - Math.max(0, _ahead) * 0.05) : 0.82);
@@ -6438,6 +6442,7 @@
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "") + amVirtueGlyph(b)); /* AM FLOW-DOWN (c): dim today's-virtue glyph — PURE additive concat, no geometry */
       if (status === "miss") { var ms = add(card, "div", "csub", b.plannedAhead ? "want to Replan it?" : "want to log it?"); ms.style.color = "rgba(255,240,249,.45)"; } // Blizzard-invert (SCHEMA 3): no "missed" label — forward-only framing per Design Principles Law 7
+      if ((status === "miss" || dark) && b.title) { var wb = add(card, "div", "wayback"); wb.innerHTML = '<i class="ti ti-arrow-back-up"></i>'; } // A-6 wayback: a missed/ghost block is walkable-back (widget's Обед glyph); pointer-events:none so taps fall through
       // ARMED AT PRESENT (David 2026-06-27): a FUTURE plan slid UP until its start bumps the now-line → a round Play affordance appears ON the bubble. Tap = startPlanned(b): tracking begins charging from now, so it "prints in both lanes" (plan stays left, the tracked half flows down the right via the existing straddle/matched render). Shows only when the block sits at/just-after now, is still a plan (not done/matched), isn't the live straddling block, and nothing of its own domain is already tracking. Render-driven (not a transient flag) so it survives the full-DOM rebuild a drop triggers. (regression contract #2: bs >= now means it never crossed into the past)
       var _nowFloor = Math.ceil(now / 15) * 15, _trkDom = !!(_liveT && domainOf(_liveT) === dom);
       var _armed = showNow && k === todayK() && b.title && status === "plan" && !partial && !_straddle && !_trkDom && bs >= now && bs <= _nowFloor + 1;

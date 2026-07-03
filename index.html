@@ -852,6 +852,8 @@
   /* empty bubble pulled out by press-hold-drag — dashed candy placeholder you tap to choose (David 2026-06-24) */
   .calblk.emptyblk{ background:repeating-linear-gradient(45deg,rgba(255,95,160,.17),rgba(255,95,160,.17) 7px,rgba(255,95,160,.05) 7px,rgba(255,95,160,.05) 14px) !important; border:2px dashed #ff5fa0 !important; box-shadow:none !important; filter:none !important; opacity:1 !important; }
   .calblk.emptyblk .cn{ color:#ff9dc6 !important; display:flex; align-items:center; gap:5px; }
+  /* verdict #5: ghost bubble content must breathe — icon/name never kiss the border */
+  .cal .calblk.ghost .cn, .cal .calblk.emptyblk .cn{ display:flex; align-items:center; gap:6px; line-height:1.25; padding:1px 0; }
   .calblk.newghost{ z-index:10; box-shadow:0 0 0 3px rgba(255,95,160,.28) !important; transition:none; }
   /* past / burnt plan = DARK */
   .calblk.ghost{ opacity:.62; filter:saturate(.5) brightness(.78); }
@@ -901,6 +903,11 @@
   .calblk.convbar .convghost{ position:absolute; left:0; right:0; top:0; z-index:1; } /* PAST half not done = ghost bone (fill + outline set inline to match the established miss-ghost) */
   .calblk.convbar .convmatch{ position:absolute; left:0; right:0; z-index:2; overflow:hidden; } /* TRACKED stretch = connected matched stripes */
   .calblk.convbar .cn{ position:relative; z-index:3; }
+  /* ===== RUN-1 slice 5 · thermograph HEAT bands + wayback (additive, pointer-events:none) ===== */
+  .cal .heatband{ position:absolute; left:0; right:0; z-index:0; pointer-events:none; background:linear-gradient(90deg,rgba(255,95,160,.16),rgba(255,95,160,.07) 60%,transparent); mix-blend-mode:screen; }
+  .cal .calblk.seamnew::before{ content:""; position:absolute; left:0; right:0; top:-1px; height:3px; z-index:5; pointer-events:none; border-radius:3px; background:linear-gradient(90deg,transparent,rgba(255,140,196,.9),rgba(255,255,255,.7),rgba(255,140,196,.9),transparent); background-size:220% 100%; animation:seamShimmer 2.6s linear infinite; }
+  @keyframes seamShimmer{ 0%{ background-position:120% 0; } 100%{ background-position:-120% 0; } }
+  .cal .calblk .wayback{ position:absolute; right:9px; bottom:6px; z-index:4; pointer-events:none; font-size:14px; line-height:1; color:rgba(255,240,249,.42); }
   .nowread{ position:absolute; right:6px; z-index:8; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:5px; background:rgba(28,5,18,.8); border:1.5px solid #160510; border-radius:9px; padding:2px 8px; max-width:64%; white-space:nowrap; overflow:hidden; }
   #liveDock.idle .ld-el{ display:none; }
   #liveDock.idle .ld-el[data-brk]{ display:block; } /* but the break countdown stays visible on the idle-style break bar (David 2026-06-27) */
@@ -2314,6 +2321,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=846"></script>
+  <script src="app.js?v=847"></script>
 </body>
 </html>
