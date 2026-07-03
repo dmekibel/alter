@@ -1226,7 +1226,7 @@
   #trackerFull.st-onplan .tf-clock, #trackerFull.st-onplan .tf-spark, #trackerFull.st-onplan .tf-say, #trackerFull.st-onplan .tf-sf, #trackerFull.st-onplan .tf-verdict, #trackerFull.st-onplan .tf-elabel, #trackerFull.st-onplan .tf-switch, #trackerFull.st-onplan #tfStageChips, #trackerFull.st-onplan #tfGear, #trackerFull.st-onplan .tf-close,
   #trackerFull.st-off .tf-clock, #trackerFull.st-off .tf-spark, #trackerFull.st-off .tf-say, #trackerFull.st-off .tf-sf, #trackerFull.st-off .tf-verdict, #trackerFull.st-off .tf-elabel, #trackerFull.st-off .tf-switch, #trackerFull.st-off #tfStageChips, #trackerFull.st-off #tfGear, #trackerFull.st-off .tf-close{ display:none; } /* 12 chrome elements leave — only ring / pill / time / sub-line / doors remain */
   #trackerFull.st-onplan .tf-title.switchable, #trackerFull.st-off .tf-title.switchable{ margin-top:16px; padding:7px 15px; font-size:15px; border-radius:22px; } /* the pill = the switch (rounded, mock 3/4) */
-  #trackerFull.st-onplan .tf-time, #trackerFull.st-off .tf-time{ margin-top:8px; font-size:44px; }
+  #trackerFull.st-onplan .tf-time, #trackerFull.st-off .tf-time{ margin-top:8px; font-size:44px; font-family:"Jost",sans-serif; font-weight:800; letter-spacing:1px; font-variant-numeric:tabular-nums; } /* canon 3/4: the timer is Jost 800 heavy — NOT the thin DM-Mono; tabular-nums keeps it from jittering as seconds tick */
   #trackerFull.st-onplan .tf-time{ animation:tfMinPop 4s ease-in-out infinite; } /* minute-earn pop */
   @keyframes tfMinPop{ 0%,88%,100%{ transform:scale(1); } 93%{ transform:scale(1.06); } }
   #trackerFull.st-onplan .tf-ctx, #trackerFull.st-off .tf-ctx{ margin-top:2px; font-size:13.5px; color:#b39ab0; }
@@ -1949,6 +1949,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=827"></script>
+  <script src="app.js?v=828"></script>
 </body>
 </html>

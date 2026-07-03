@@ -3522,7 +3522,7 @@
     tf.classList.add(onplan ? "st-onplan" : "st-off");
     // RUN-1 mocks 3/4: on-plan disc = striped (winning); off-plan disc = MATTE (dark tint + colored border + colored icon, no stripe, no filter)
     if (tile) { if (onplan) { tile.style.background = tfStripe(D.c); tile.style.border = ""; tile.style.color = ""; tile.style.filter = ""; } else { tile.style.background = mixHex(D.c, "#0a0308", 0.8); tile.style.border = "3px solid " + D.c; tile.style.color = D.light; tile.style.filter = "none"; } tile.innerHTML = tiIcon(t); }
-    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#160510", 0.5); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // the activity name IS a colored pill = the switch button (David 2026-06-27)
+    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#0a0510", 0.8); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // canon 3/4: near-black domain-tinted pill (#0e2033 navy / #2b1408 brown) — was too light at 0.5
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan"); // kept for a11y — hidden by CSS in the five-element live body
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
     var elMin = (Date.now() - t.start) / 60000;
