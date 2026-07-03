@@ -1327,6 +1327,7 @@
     "on plan": "по плану", "left": "осталось", "min": "мин", "over by": "перебор", "ends": "конец", "free tracking": "свободный трек", "min tracked": "мин затрекано", "a plan doubles points": "план удвоит очки",
     "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
     "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
+    "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
@@ -2099,6 +2100,28 @@
     }
   ];
   var _jpDoneSetSeeded = false; // #5: on first drawJourney call, pre-seed _jpDoneSet with already-done nodes so the burst only fires for NEW completions this session, not on app open
+  function fmtDayMon(d) { var mo = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]; return pad(d.getDate()) + " " + tr(mo[d.getMonth()]); } // "02 июл"
+  function jpNodeMins(n) { try { var t = (n.title || "").toLowerCase(), k = todayK(), sum = 0; (logs(k) || []).forEach(function (e) { if ((e.title || "").toLowerCase() === t) sum += (e.mins || 0); }); return sum > 0 ? Math.round(sum) : 0; } catch (e) { return 0; } } // verdict #11: minutes logged today for this node's activity
+  function jpRenderReturn(trail, n) { // VERDICT #12: the canon Return frame — dashed pause-stone + quiet-sea line + HOLO prism reward card + firing prism return-stone
+    var days = 0; try { if (S.awaySince) days = daysSince(key(new Date(S.awaySince))) || 0; } catch (e) {}
+    var returnN = ((((S.guide || {}).cache || {}).returnCount) || 0) + 1, reward = Math.max(3, Math.min(9, days + 2));
+    var ps = add(trail, "div", "jp-pausestone"); var psb = add(ps, "div", "jps-b"); psb.innerHTML = '<i class="ti ti-plane-inflight"></i>'; add(ps, "div", "jps-l", tr("пауза · серии сохранены"));
+    add(trail, "div", "jp-quietsea", days + " " + tr("дн.") + " · " + tr("мир ждал, ничего не сломалось"));
+    var pc = add(trail, "div", "jp-prismcard"); pc.style.margin = "6px auto 0"; pc.style.width = "fit-content";
+    var pi = add(pc, "div", "jp-prisminner"); add(pi, "div", "jpp-k", tr("НАГРАДА · ПРИЗМА"));
+    var pih = add(pi, "div", ""); pih.innerHTML = '<i class="ti ti-sparkles" style="font-size:26px;color:#fff;margin-top:4px;"></i>';
+    add(pi, "div", "jpp-t", tr("Вернулся")); add(pi, "div", "jpp-sub", returnN + tr("-й возврат") + " · " + fmtDayMon(new Date()));
+    var rs = add(trail, "div", "jp-returnstone");
+    var r1 = add(rs, "div", "jrs-ring"); r1.style.border = "3px solid #46e2a4";
+    var r2 = add(rs, "div", "jrs-ring"); r2.style.border = "2px solid #ffd24a"; r2.style.animationDelay = ".15s";
+    var core = add(rs, "div", "jrs-core"); core.innerHTML = '<i class="ti ti-sparkles"></i>';
+    var chk = add(rs, "div", "jrs-check"); chk.innerHTML = '<i class="ti ti-check"></i>';
+    add(rs, "div", "jrs-fly", "+" + reward);
+    var d1 = add(rs, "div", "jrs-dust"); d1.style.cssText += "left:12px;top:40px;--dx:-36px;--dy:-24px;";
+    rs.style.cursor = "pointer"; rs.onclick = n.act || function () {};
+    add(trail, "div", "jp-returncap", tr("Возвращение — засчитано")); add(trail, "div", "jp-returnsub", tr("20 секунд — и ты снова в пути"));
+    return true;
+  }
   function drawJourney(autoScroll) {
     var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
     var jn = Math.max(0, Math.min(JP_CHAPTERS.length - 1, journeyNode()));
@@ -2138,11 +2161,17 @@
     var gi = 0, curEl = null; // gi = continuous coin index → the winding S-curve flows across chapters
     var _burstQueue = []; // #5: nodes to burst-animate after the DOM is built (can't fire during build — elements aren't in viewport yet)
     var _dk = todayK();
+    if (real.length === 1 && (real[0].key === "away" || real[0].key === "gapreturn")) { // VERDICT #12: render the canon holo Return frame instead of a plain coin
+      if (sub) sub.textContent = tr("ты вернулся — это главное");
+      jpRenderReturn(trail, real[0]);
+      if (autoScroll) { try { var _sc = el("jpScroll"); if (_sc) _sc.scrollTop = 0; } catch (e) {} }
+      return;
+    }
     function banner(state, klabel, title, ic, why) { var u = add(trail, "div", "jp-unit " + state); var ix = add(u, "div", "ju-ic"); ix.innerHTML = '<i class="ti ' + ic + '"></i>'; var tx = add(u, "div", "ju-txt"); add(tx, "div", "ju-k", klabel); add(tx, "div", "ju-t", title); if (why) { var ws = add(tx, "div", "ju-why", why); ws.style.cssText = "font-size:13px;opacity:.78;margin-top:2px;line-height:1.35;"; } return u; } // AUDIT P1: the chapter's WHY was 11px at 62% — the meaning of the trail, unreadable
     function trophy(state, glyph) { var t = add(trail, "div", "jp-trophy " + state); var b = add(t, "div", "jt-b"); b.innerHTML = '<i class="ti ' + glyph + '"></i>'; return t; }
     function coin(state, n, idx) {
       var node = add(trail, "div", "jp-node " + state);
-      node.style.transform = "translateX(" + (state === "cur" ? 0 : Math.sin(idx * 0.72) * 72).toFixed(0) + "px)"; // winding path; the CURRENT node stays CENTERED (the focal point — fixes the "shifted right" look) (David 2026-07-02)
+      node.style.transform = "translateX(" + (state === "cur" ? 0 : Math.sin(idx * 0.72) * 46).toFixed(0) + "px)"; // verdict #11: tighter lateral offset (72→46) so stones cluster on the center thread; cur stays centered
       var bub = add(node, "div", "jp-bub");
       var icon = state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
@@ -2219,7 +2248,9 @@
           if (n.line) add(card, "div", "jc-l", n.line);
           var cta = add(card, "button", "jc-cta"); cta.textContent = n.key === "plan" ? "PLAN IT" : "START"; cta.style.background = n.color; cta.onclick = function () { jpStart(n); };
         }
-      } else if (n.title) { add(node, "div", "jp-cap" + (state === "locked" ? " locked" : ""), n.title); }
+      } else if (n.title) { add(node, "div", "jp-cap" + (state === "locked" ? " locked" : ""), n.title);
+        if (state === "done") { var _dm = jpNodeMins(n); if (_dm) add(node, "div", "jp-mins", _dm + tr("м")); } // verdict #11: minutes logged today on the ignited stone
+      }
     }
 
     // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.

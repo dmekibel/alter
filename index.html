@@ -222,13 +222,16 @@
   .jp-unit.open{background:#33203a;color:#d6abc4;border-color:#6a4a78;}
   .jp-unit.open .ju-ic{background:#1c0612;color:#caa0bd;}
   /* NODE + tile — FLAT domain color, ink border, Tabler symbol (no gloss/glow); current = striped hero tile */
-  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:200px;padding:20px 0;} /* GRAND BUILD H2: air between stones — the mock breathes */
+  .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:210px;padding:11px 0;} /* verdict #11: tighter vertical rhythm (20px→11px) so stones read connected */
+  .jp-trail{position:relative;}
+  .jp-trail:before{content:"";position:absolute;top:0;bottom:120px;left:50%;width:3px;transform:translateX(-50%);background:linear-gradient(180deg,#3a1a2e,#2a0d1c);border-radius:2px;z-index:0;opacity:.6;} /* verdict #11: the winding thread the stones ride — behind everything (z0) */
   .jp-bub{position:relative;z-index:2;width:96px;height:96px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;cursor:pointer;transition:transform .12s;box-shadow:0 6px 0 var(--ink);}
   .jp-bub i{filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));}
   .jp-bub:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
   /* AUDIT P1 (David 2026-07-02): done = a TROPHY, the reward inversion. No dimming, no grayscale, no strikethrough — completed things are the brightest things (the battery language: lived = shining). The ignition animation lands in the motion run. */
-  .jp-node.done .jp-bub{width:80px;height:80px;font-size:31px;border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 0 14px rgba(40,207,134,.35), 0 3px 0 #0a4028 !important;}
+  .jp-node.done .jp-bub{width:88px;height:88px;font-size:34px;border-color:#28cf86 !important;box-shadow:0 0 0 2.5px #28cf86, 0 0 14px rgba(40,207,134,.35), 0 3px 0 #0a4028 !important;} /* verdict #11: bigger ignited stone */
   .jp-node.done .jp-cap{color:#46e2a4;font-weight:800;}
+  .jp-node.done .jp-mins{font-family:"Jost",sans-serif;font-size:11.5px;font-weight:700;color:#ffd24a;margin-top:1px;} /* verdict #11 keep: minutes on done stones */
   .jp-node.done .jp-check{position:absolute;right:50%;margin-right:-48px;bottom:6px;width:36px;height:36px;border-radius:50%;background:#28cf86;border:3px solid var(--ink);color:#fff;font-size:19px;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 8px rgba(40,207,134,.55);} /* anchored to the BUBBLE edge (right:50% − radius) — it floated loose beside the node box */
   /* #5 — node completion burst: a quick scale-pop + gold ring on the bubble */
   .jp-node.jp-just-done .jp-bub{animation:jpNodeDone .55s cubic-bezier(.3,1.6,.4,1) forwards;}
@@ -236,8 +239,8 @@
   /* floating ✦ spark that pops from the node on completion */
   .jp-node-spark{position:fixed;z-index:99;pointer-events:none;font-family:"Jost",sans-serif;font-weight:900;font-size:17px;color:#ffd54a;text-shadow:0 1px 6px rgba(0,0,0,.5);animation:jpNodeSpark .85s cubic-bezier(.2,.9,.3,1) forwards;}
   @keyframes jpNodeSpark{0%{opacity:0;transform:translate(-50%,0) scale(.7);}20%{opacity:1;transform:translate(-50%,-8px) scale(1.18);}100%{opacity:0;transform:translate(-50%,-52px) scale(1);}}
-  .jp-node.up .jp-bub{width:86px;height:86px;font-size:35px;}
-  .jp-node.locked .jp-bub{width:76px;height:76px;font-size:30px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 5px 0 #2a0d1c;}
+  .jp-node.up .jp-bub{width:92px;height:92px;font-size:38px;} /* verdict #11: bigger matte-future stone */
+  .jp-node.locked .jp-bub{width:82px;height:82px;font-size:32px;background:#2a1320 !important;border-color:#4a2238;color:#6a4a5c;box-shadow:0 5px 0 #2a0d1c;} /* verdict #11: bigger locked stone (proportion) */
   .jp-node.cur{margin:18px auto 20px;}
   .jp-node.cur .jp-bub{width:120px;height:120px;font-size:52px;box-shadow:0 7px 0 var(--ink);animation:jpAlive 2.8s var(--ease-settle) infinite;}
   @keyframes jpPulse{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
@@ -263,6 +266,28 @@
   .jp-trophy .jt-b{width:64px;height:64px;border-radius:15px;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:30px;color:#160510;box-shadow:0 5px 0 var(--ink);}
   .jp-trophy.done .jt-b{background:#ffcf4a;}
   .jp-trophy.locked .jt-b{background:#2a1320;border-color:#4a2238;color:#6a4a5c;box-shadow:0 4px 0 #2a0d1c;}
+  /* ===== VERDICT #12: Pokémon-HOLO Return prism (NOT a white outline) ===== */
+  @keyframes jpHoloPan{0%{background-position:0 50%}100%{background-position:300% 50%}}
+  @keyframes jpHoloRing{0%,55%{transform:scale(.55);opacity:0}60%{opacity:.9}100%{transform:scale(1.9);opacity:0}}
+  @keyframes jpHoloFly{0%,55%{transform:translate(0,0) scale(.8);opacity:0}61%{opacity:1;transform:translate(6px,-26px) scale(1.2)}90%{opacity:1}100%{transform:translate(64px,-250px) scale(.6);opacity:0}}
+  @keyframes jpHoloDust{0%,58%{transform:translate(0,0) scale(1);opacity:0}63%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+  .jp-prismcard{padding:3px;border-radius:15px;background:linear-gradient(115deg,#ffb3d9,#a3d9ff,#b8ffd9,#ffe9a3,#d9a3ff,#ffb3d9);background-size:300% 100%;box-shadow:0 4px 0 #160510;animation:jpHoloPan 4.5s linear infinite;}
+  .jp-prismcard .jp-prisminner{background:#22091a;border-radius:12px;padding:12px 18px;text-align:center;}
+  .jp-prismcard .jpp-k{color:#ffd24a;font-size:10px;font-weight:800;letter-spacing:1.8px;}
+  .jp-prismcard .jpp-t{color:#fff2f9;font-weight:800;font-size:15.5px;font-family:var(--bub);}
+  .jp-prismcard .jpp-sub{color:#a3768c;font-size:11.5px;}
+  .jp-returnstone{position:relative;width:88px;height:88px;margin:20px auto 0;}
+  .jp-returnstone .jrs-ring{position:absolute;inset:-14px;border-radius:50%;animation:jpHoloRing 3.4s ease-out infinite;}
+  .jp-returnstone .jrs-core{position:absolute;inset:0;border-radius:50%;border:3px solid #28cf86;background:conic-gradient(from 30deg,#ffb3d929,#a3d9ff29,#b8ffd929,#ffe9a329,#d9a3ff29,#ffb3d929),#ff5fa8;display:grid;place-items:center;color:#fff;font-size:34px;}
+  .jp-returnstone .jrs-check{position:absolute;right:-6px;bottom:-4px;width:28px;height:28px;border-radius:50%;background:#28cf86;border:3px solid #160510;color:#fff;display:grid;place-items:center;font-size:14px;}
+  .jp-returnstone .jrs-fly{position:absolute;right:-14px;top:-8px;color:#ffd24a;font-weight:800;font-size:18px;font-family:"Jost",sans-serif;animation:jpHoloFly 3.4s cubic-bezier(.2,.8,.3,1) infinite;}
+  .jp-returnstone .jrs-dust{position:absolute;width:6px;height:6px;border-radius:50%;background:#ffd24a;animation:jpHoloDust 3.4s ease-out infinite;}
+  .jp-pausestone{display:flex;flex-direction:column;align-items:center;margin-top:8px;}
+  .jp-pausestone .jps-b{width:56px;height:56px;border-radius:50%;border:3px dashed #8a6bb8;background:#1d1226;display:grid;place-items:center;font-size:22px;color:#8a6bb8;}
+  .jp-pausestone .jps-l{color:#8a6bb8;font-weight:700;font-size:12px;margin-top:5px;}
+  .jp-quietsea{margin:12px 24px;padding:8px 0;border-top:1px solid #ff8fc029;border-bottom:1px solid #ff8fc029;text-align:center;color:#a3768c;font-size:12.5px;font-weight:600;}
+  .jp-returncap{color:#46e2a4;font-weight:800;font-size:13.5px;margin-top:10px;font-family:var(--bub);}
+  .jp-returnsub{color:#c98ca6;font-size:12px;}
   /* IN-JOURNEY COCKPIT — the now-circle, once STARTED, expands into the live ring + timer right on the path (David 2026-06-28) */
   .jp-cockpit{display:flex;flex-direction:column;align-items:center;gap:11px;margin:8px 0 4px;}
   .jp-ring{width:216px;height:216px;border-radius:50%;border:16px solid #34d39a;background:#160510;display:flex;align-items:center;justify-content:center;}/* the tracking cockpit is the HERO — clearly bigger than the plan nodes (David 2026-07-01) */
@@ -1981,6 +2006,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=834"></script>
+  <script src="app.js?v=835"></script>
 </body>
 </html>
