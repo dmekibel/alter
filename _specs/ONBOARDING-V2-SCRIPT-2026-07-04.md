@@ -100,6 +100,49 @@ Invariant: **gift before every ask, ask at the desire spike, answer used within 
 
 ---
 
+## 1b. THE SURVEY (2026-07-04 second rewrite — David: "literally take the TYPES of questions Finch asks, and the types of multiple choice")
+
+**THE OPTION-FORMAT LAW (Finch's five moves, now ours):**
+1. **Icon per option, always** — Tabler line-icons, whimsy allowed (non-literal is fine; the form must feel like play).
+2. **The opt-out is a styled equal option inside the grid** («Ничего из этого» / «Не важно») — never a skip link.
+3. **Multi-select = visible «+» chips that flip to a check** — additive "add to my picture" feel; struggle lists stay LONG (7+, unsanitized) — length = seriousness.
+4. **No bare numbers** — every magnitude wears a nickname.
+5. **Options are lived sentences** («Телефон съедает часы»), never categories («цифровая зависимость»).
+6. Selection visual = the ignition law (component memory): ghost row → own-color stripes + check.
+
+**Labeled section bar (Finch's segmented dots):** «О ТЕБЕ → ЭНЕРГИЯ → ЧТО МЕШАЕТ» — the user always knows where they are and that it ends.
+
+### Раздел «О ТЕБЕ»
+**Q1 «Как к тебе обращаться?»** — single, auto-advance
+· ti-user «Он» · ti-user «Она» · ti-sparkles «Не важно» *(opt-out in-grid; RU grammar conjugates every guardian line — functional, not demographic)*
+**Q2 «Сколько тебе?»** — single
+· ti-seedling «до 20» · ti-rocket «20-е» · ti-flame «30-е» · ti-crown «40+» *(register + defaults)*
+**Q3 «Чем занята жизнь сейчас?»** — single (rich options, LIFESTAGES exists)
+· ti-backpack «Учусь» · ti-briefcase «Офис» · ti-device-laptop «Свободный график» · ti-rocket «Своё дело» · ti-home-heart «Дом и семья» · ti-compass «Ищу себя» *(→ prefills the activity bento via STAGE_EXTRA)*
+
+### Раздел «ЭНЕРГИЯ»
+**Q4 THE VIBE (kept router)** «Если честно — как ты сейчас?» — single, answered aloud (see §1 Beat 1).
+**Q5 «Как тебе даётся утро?»** — single *(Finch's bed question, verbatim-typed)*
+· ti-sunrise «Встаю легко» · ti-alarm-snooze «Со скрипом» · ti-swords «Каждое утро — битва» *(→ seeds wake time + the morning ritual offer; battle-answer = the AM ritual leads day 2)*
+**Q6 «Когда ты сильнее всего?»** — single
+· ti-sunrise «Утро» · ti-sun «День» · ti-moon-stars «Вечер» · ti-moon «Ночь» *(→ PROPOSE places the one-thing at peak)*
+
+### Раздел «ЧТО МЕШАЕТ»
+**Q7 «Что из этого сейчас про тебя?»** — MULTI with «+» chips, long list, serious
+· ti-hourglass-low «Прокрастинация» · ti-heart-rate-monitor «Тревожность» · ti-battery-off «Выгорание» · ti-arrows-shuffle «Разбросанность» · ti-device-mobile «Телефон съедает часы» · ti-zzz «Усталость всё время» · ti-moon-off «Сплю плохо» · ti-cloud «Ничего из этого» *(each maps to a REAL tool prescription: прокрастинация→Разворот желания · тревожность→дыхание+RELEASE · выгорание→relief-door default · телефон→10-мин-без-телефона стартовый пункт · сон→Sleep Math)*
+**Q8 «Что накрывает чаще всего?»** — single *(Finch's overwhelm question, verbatim-typed)*
+· ti-stack-3 «Слишком много задач» · ti-arrows-split «Принятие решений» · ti-users «Забота о других» · ti-tornado «Большие перемены» · ti-coin «Деньги и работа» · ti-cloud «Не накрывает» *(→ flavors the Doorway + the PROPOSE size)*
+**Q9 «Чего хочешь больше?»** — MULTI «+», max 3
+· ti-bolt «Энергии» · ti-target «Фокуса» · ti-wind «Спокойствия» · ti-run «Движения» · ti-palette «Творчества» · ti-layout-grid «Порядка» *(→ GOAL_SEED → the starter plan)*
+
+### → THE STARTER PLAN (the survey's visible gift — Finch's spiral-notebook moment)
+> **«Стартовый план для [имя]»** — 4–5 tiny goals, EACH TRACEABLY BORN from an answer (the trace shows: «потому что ты сказал: со скрипом»):
+> «со скрипом» → *Стакан воды сразу после подъёма* · «телефон съедает» → *10 минут утра без телефона* · «выгорание» → *Один перерыв-ритуал днём* · «спокойствия» → *Вечером — одна честная строка* · always: *Один осознанный вдох* (already done — pre-checked ✓, the plan starts 1/5 complete — endowed progress)
+> Button: **«Забираю»** → they land as day-1 habits/blocks. Alter: «Это не список дел. Это первые кирпичи.»
+
+**Revised beat order:** Meeting+Naming → О ТЕБЕ (3) → ЭНЕРГИЯ (3, incl. vibe) → THE BREATH → THE WRITE → ЧТО МЕШАЕТ (3) → STARTER PLAN → THE WALL → PACT+DAYS → MINT+SEED. The breath splits the survey in half (a live win mid-form — no fatigue), and the struggles section comes AFTER the app has already given twice.
+**Cost: ~2.5 minutes.** Finch's own survey is longer; the section bar + icons + mid-form breath carry it.
+
 ## 2. THE ROUTING MATRIX (onboarding → which Day 1 you get)
 
 Two axes decide everything (both already captured, zero extra questions):
@@ -201,4 +244,4 @@ Two axes decide everything (both already captured, zero extra questions):
 7. Day-2: honesty-callback cite() + doorway decline-twice-goes-quiet guard.
 All strings EN+RU same-commit; no SCHEMA bump (additive).
 
-**Open for David:** ① ~~beat-0 sub~~ REDLINED (2026-07-04: cheesy EN / bad RU) → replaced by reciprocal naming, no tagline; ② seed stage names (Искра/Росток/Сад); ③ thriving evening-opener (A′) — own copy or reuse B′; ④ the guardian-register question (Мягче/Прямо/Жёстче) — approve wording; ⑤ spark-color ownership pick — parked or in.
+**Open for David (updated after the survey rewrite):** ⓪ the §1b question list + option sets — redline any question/option/icon; ① ~~beat-0 sub~~ REDLINED (2026-07-04: cheesy EN / bad RU) → replaced by reciprocal naming, no tagline; ② seed stage names (Искра/Росток/Сад); ③ thriving evening-opener (A′) — own copy or reuse B′; ④ the guardian-register question (Мягче/Прямо/Жёстче) — approve wording; ⑤ spark-color ownership pick — parked or in.
