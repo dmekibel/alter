@@ -1877,6 +1877,50 @@
   #nav .nb.on{ color:#ff5fa0 !important; background:none !important; }
   #nav .nb.on .ne{ filter:drop-shadow(0 0 7px rgba(255,95,160,.45)); }
   #nav .nb:active{ transform:scale(.92); }
+  /* ============ «ТЫ» — the trainer/You surface (chrome widget #21) ============ */
+  .you-wrap{ display:flex; flex-direction:column; gap:12px; padding:2px 0 4px; }
+  .you-trainer{ position:relative; overflow:hidden; border:3px solid #160510; border-radius:20px; background:linear-gradient(150deg,#4a0f2c,#2c081a 70%); box-shadow:0 6px 0 #160510; padding:16px 16px 14px; }
+  .you-trainer::before{ content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(120deg,transparent 38%,rgba(255,255,255,.10) 50%,transparent 62%); }
+  .you-tr-top{ display:flex; align-items:center; gap:13px; }
+  .you-tr-badge{ width:52px; height:52px; flex:none; border-radius:15px; border:3px solid #160510; background:#ff5fa0; color:#4a1126; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 3px 0 #160510; }
+  .you-tr-name{ font-family:"Jost",sans-serif; font-weight:800; font-size:26px; color:#fff; line-height:1; letter-spacing:.2px; }
+  .you-tr-facts{ font-family:"Jost",sans-serif; font-weight:800; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:#ffc41f; margin-top:8px; text-shadow:0 1px 0 rgba(0,0,0,.35); }
+  .you-tr-div{ height:2px; background:linear-gradient(90deg,transparent,#ff5fa0,transparent); opacity:.5; margin:12px 0 10px; border-radius:2px; }
+  .you-tr-evrow{ display:flex; align-items:baseline; justify-content:space-between; font-family:"Jost",sans-serif; font-weight:700; }
+  .you-tr-evlbl{ font-size:12.5px; color:#e8b8d2; }
+  .you-tr-evleft{ font-size:12.5px; color:#ffd0e6; font-weight:800; }
+  .you-tr-bar{ height:7px; border-radius:5px; background:rgba(255,255,255,.10); margin-top:8px; overflow:hidden; border:1px solid #160510; }
+  .you-tr-fill{ height:100%; border-radius:5px; background:linear-gradient(90deg,#ff7ab0,#ff5fa0); box-shadow:0 0 8px rgba(255,95,160,.5); transition:width .5s cubic-bezier(.2,.8,.25,1); }
+  .you-room{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; border:3px solid #160510; border-radius:18px; background:#2c081a; box-shadow:0 4px 0 #160510; padding:14px 15px; font-family:"Jost",sans-serif; color:#fff; transition:transform .08s,box-shadow .08s; }
+  .you-room:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .you-room > i.you-rico{ font-size:23px; flex:none; }
+  .you-room .you-rtx{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .you-room .you-rt{ font-weight:800; font-size:17px; line-height:1.05; }
+  .you-room .you-rs{ font-weight:600; font-size:12.5px; color:#c98aa8; }
+  .you-room .you-rchev{ font-size:18px; color:#7a4a68; flex:none; }
+  .you-room .you-rpips{ display:flex; gap:5px; flex:none; align-items:center; }
+  .you-room .you-rpip{ width:16px; height:6px; border-radius:3px; background:#5a2a48; }
+  .you-room .you-rpip.on{ background:#34d39a; box-shadow:0 0 6px rgba(52,211,154,.5); }
+  .you-away{ display:flex; align-items:center; gap:13px; border:3px solid #160510; border-radius:18px; background:#2ab8c4; box-shadow:0 4px 0 #160510; padding:13px 15px; overflow:hidden; position:relative; cursor:pointer; }
+  .you-away::before{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(135deg, rgba(255,255,255,.16) 0 10px, transparent 10px 20px); }
+  .you-away > i.you-awico{ font-size:22px; color:#06343a; flex:none; position:relative; }
+  .you-away .you-awtx{ flex:1 1 auto; min-width:0; position:relative; font-family:"Jost",sans-serif; color:#06343a; }
+  .you-away .you-awt{ font-weight:800; font-size:16px; line-height:1.1; }
+  .you-away .you-aws{ font-weight:700; font-size:12px; opacity:.85; }
+  .you-away.off{ background:#241b28; box-shadow:0 4px 0 #160510; }
+  .you-away.off::before{ opacity:0; }
+  .you-away.off .you-awico, .you-away.off .you-awtx{ color:#c98aa8; }
+  .you-toggle{ width:52px; height:30px; border-radius:16px; border:2px solid #160510; background:rgba(6,52,58,.35); flex:none; position:relative; transition:background .15s; }
+  .you-toggle .you-knob{ position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 2px 0 rgba(0,0,0,.3); transition:left .18s cubic-bezier(.34,1.56,.64,1); }
+  .you-away.off .you-toggle{ background:#160510; }
+  .you-away.off .you-toggle .you-knob{ left:2px; }
+  .you-away:not(.off) .you-toggle .you-knob{ left:24px; }
+  .you-adv{ display:flex; align-items:center; gap:13px; width:100%; text-align:left; cursor:pointer; border:2px dashed #7a4a68; border-radius:18px; background:transparent; padding:14px 15px; font-family:"Jost",sans-serif; color:#c98aa8; font-weight:700; font-size:16px; transition:transform .08s; }
+  .you-adv:active{ transform:scale(.98); }
+  .you-adv > i:first-child{ font-size:21px; flex:none; }
+  .you-adv .you-advlbl{ flex:1 1 auto; }
+  .you-adv .you-advchev{ font-size:18px; transition:transform .2s; }
+  .you-adv.open .you-advchev{ transform:rotate(180deg); }
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
@@ -2270,6 +2314,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=845"></script>
+  <script src="app.js?v=846"></script>
 </body>
 </html>

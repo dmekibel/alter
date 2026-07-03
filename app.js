@@ -1335,6 +1335,7 @@
     "Return": "Вернуться", "day": "день", "together": "вместе", "saved": "запись", "Restore": "Восстановить", "your save": "твоё сохранение", "Erase everything and start over?": "Стереть всё и начать заново?", "profile · plan · garden — all of it": "профиль · план · сад — всё", "Erase everything": "Стереть всё", "Break": "Перерыв",
     "first win": "первая победа", "Spark": "Искр", "a real thing — a real reward": "настоящее дело — настоящая награда", "One thing off the floor": "Одна вещь с пола", "Two things off the floor": "Две вещи с пола", "Three things off the floor": "Три вещи с пола", "in your space": "в твоём пространстве", "done": "сделано", "Did it": "Сделал", "the spark flew to your count — I remembered": "искры улетели в твой счёт — я запомнил", "Your first card": "Твоя первая карта", "matte — that's potential. it lights up as you live": "матовая — это потенциал. она зажигается, пока ты живёшь", "TRAINER CARD": "КАРТА ТРЕНЕРА", "THE GATHERED": "СОБРАННЫЙ", "day one. everything ahead.": "день первый. всё впереди.", "ON THE BACK — PACT": "НА ОБОРОТЕ — ПАКТ", "promised honesty": "обещал честность", "showed up:": "пришёл:", "scared": "страшно", "overwhelmed": "завалило", "carrying an old one": "со старой раной", "stuck": "застрял", "GROWS WITH YOU": "РАСТЁТ С ТОБОЙ", "7 days": "7 дней", "crown": "корона", "return": "возвращение", "collection": "коллекция", "it's yours — forever": "она твоя — навсегда",
     "add to your daily": "добавить в ежедневные",
+    "Explorer": "Исследователь", "since": "с", "h lived": "ч прожито", "next evolution": "след. эволюция", "rank": "ранг", "another": "ещё", "h": "ч", "Profile": "Профиль", "word": "слово", "wake-up": "подъём", "language": "язык", "Sound": "Звук", "voice": "голос", "beds": "фоны", "rewards": "награды", "Data": "Данные", "snapshot": "снимок", "days ago": "дней назад", "Rest mode": "Я отдыхаю", "I'm resting": "Я отдыхаю", "travel or off-days — streaks held": "на паузе — серии целы", "paused — streaks are held": "на паузе — серии целы", "Resting — your streaks are held": "Отдых — серии целы", "Advanced": "Продвинутое",
     "Collection": "Коллекция", "collected": "собрано", "MARKS": "МЕТКИ", "TROPHIES": "ТРОФЕИ", "the day you came back": "день, когда ты вернулся", "grown from a real day": "выросло из настоящего дня", "King of the week": "Король недели", "more perfect days": "идеальных дня", "still": "ещё", "sessions": "сессий", "First goal": "Первая цель", "no trophies yet — keep going": "трофеев пока нет — продолжай",
     "Here's the day you lived": "Вот день, который ты прожил", "not a grade — a reflection": "не оценка — отражение", "now": "сейчас", "DRIFT": "ДРЕЙФ", "MISSED": "МИМО", "lived": "прожито", "you held the line": "ты держал линию", "and that's enough": "и этого достаточно", "A free-form day — rest is part of the work.": "Свободный день — отдых тоже часть работы.", "What did it taste like?": "Каким он был на вкус?", "To re-storying the day": "К пере-сборке дня", "noticed": "подмечено", "silence at the end": "тишина в конце",
     "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
@@ -3069,33 +3070,61 @@
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
   }
   // ===== SETTINGS SHEET (David 2026-07-01): one calm home for the config/rare items pulled out of the overwhelming ⋯ menu. Each row opens its own flow. =====
+  // ===== «ТЫ» trainer stats (chrome widget #21). No SCHEMA bump — S.installK stamped once, guarded. =====
+  function youStats() {
+    if (!S.installK) { S.installK = todayK(); save(); }
+    var days = Math.max(0, daysSinceK(S.installK)) + 1, hours = Math.round(days * 16);
+    var TIERS = [0, 250, 500, 900, 1500, 2400], rank = 1; for (var i = 0; i < TIERS.length; i++) if (hours >= TIERS[i]) rank = i + 1;
+    var nextAt = TIERS[rank] || (TIERS[TIERS.length - 1] + 900), leftH = Math.max(0, nextAt - hours);
+    var prevAt = TIERS[rank - 1] || 0, pct = Math.max(4, Math.min(100, Math.round((hours - prevAt) / (nextAt - prevAt) * 100)));
+    var ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII"];
+    var since = kd(S.installK).toLocaleDateString(curLang() === "ru" ? "ru-RU" : [], { day: "numeric", month: "long" });
+    return { days: days, hours: hours, rank: ROMAN[rank] || rank, nextRank: ROMAN[rank + 1] || (rank + 1), leftH: leftH, pct: pct, since: since };
+  }
+  function langPicker() { var ov2 = add(document.body, "div", "rc-ov"); ov2.addEventListener("click", function (e) { if (e.target === ov2) ov2.remove(); }); var cd = add(ov2, "div", "rc-card"); add(cd, "div", "rc-k", tr("LANGUAGE")); var ls = add(cd, "div", "rc-list"); LANGS.forEach(function (L2) { var r2 = add(ls, "div", "rc-row" + (L2.code === curLang() ? " lit" : "")); r2.innerHTML = '<span style="display:inline-flex;width:26px;">' + flagSVG(L2.code) + '</span><span class="rc-lab">' + L2.name + '</span>' + (L2.code === curLang() ? '<i class="ti ti-check rc-chk"></i>' : ''); r2.onclick = function () { setLang(L2.code); ov2.remove(); }; }); }
+  // ===== «ТЫ» — the trainer/You surface (chrome widget #21): trainer card + chunky rooms + away held-state + ghost advanced. Language/Guidance kept in Advanced so nothing is lost. =====
   function settingsSheet() {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    add(B, "div", "sttl", "Settings");
-    add(B, "div", "lbl", "The less-often stuff, all in one place.");
-    var list = add(B, "div"); list.style.cssText = "display:flex;flex-direction:column;gap:2px;margin-top:6px;";
-    function row(ic, label, desc, fn) {
-      var b = add(list, "button"); b.style.cssText = "display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:14px;padding:13px 15px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
-      b.innerHTML = '<i class="ti ' + ic + '" style="font-size:20px;color:#ff8fc4;flex:none;"></i><span style="display:flex;flex-direction:column;gap:1px;"><b style="font-size:15px;font-weight:800;">' + label + '</b><span style="font-size:11.5px;color:#b39ab0;font-weight:600;">' + desc + '</span></span>';
+    add(B, "div", "sttl", tr("You"));
+    var wrap = add(B, "div", "you-wrap");
+    var st = youStats();
+    var tc = add(wrap, "div", "you-trainer");
+    var top = add(tc, "div", "you-tr-top");
+    add(top, "div", "you-tr-badge").innerHTML = '<i class="ti ti-compass"></i>';
+    var nm = add(top, "div"); add(nm, "div", "you-tr-name", tr("Explorer"));
+    add(tc, "div", "you-tr-facts", tr("since") + " " + st.since + " · " + st.hours + " " + tr("h lived"));
+    add(tc, "div", "you-tr-div");
+    var ev = add(tc, "div", "you-tr-evrow");
+    add(ev, "span", "you-tr-evlbl", tr("next evolution") + " — " + tr("rank") + " " + st.nextRank);
+    add(ev, "span", "you-tr-evleft", tr("another") + " " + st.leftH + " " + tr("h"));
+    var bar = add(tc, "div", "you-tr-bar"); add(bar, "div", "you-tr-fill").style.width = st.pct + "%";
+    function room(ic, color, title, sub, fn, pips) {
+      var b = add(wrap, "button", "you-room");
+      var i = add(b, "i", "ti " + ic + " you-rico"); i.style.color = color;
+      var tx = add(b, "span", "you-rtx"); add(tx, "span", "you-rt", tr(title)); add(tx, "span", "you-rs", sub);
+      if (pips != null) { var pp = add(b, "span", "you-rpips"); for (var n = 0; n < pips.total; n++) add(pp, "span", "you-rpip" + (n < pips.on ? " on" : "")); }
+      else add(b, "i", "ti ti-chevron-right you-rchev");
       b.onclick = function () { closeSheet(); setTimeout(fn, 60); };
     }
-    function room(lbl) { var h = add(list, "div"); h.style.cssText = "margin:12px 4px 4px;font-family:'Jost',sans-serif;font-weight:800;font-size:12px;letter-spacing:1.2px;color:#ffd24a;"; h.textContent = lbl; } // GRAND-REDESIGN §8: one gear, four rooms
-    room(tr("PROFILE"));
-    row("ti-target", "Goals", "your longer arcs — what you're building toward", function () { try { goalsSheet(); } catch (e) {} });
-    row("ti-compass", "Guidance", "how much I lead — Guided / Light / Off", function () { guidanceSheet(); });
-    row("ti-world", "Language", "flat flags, all of them", function () { var ov2 = add(document.body, "div", "rc-ov"); ov2.addEventListener("click", function (e) { if (e.target === ov2) ov2.remove(); }); var cd = add(ov2, "div", "rc-card"); add(cd, "div", "rc-k", tr("LANGUAGE")); var ls = add(cd, "div", "rc-list"); LANGS.forEach(function (L2) { var r2 = add(ls, "div", "rc-row" + (L2.code === curLang() ? " lit" : "")); r2.innerHTML = '<span style="display:inline-flex;width:26px;">' + flagSVG(L2.code) + '</span><span class="rc-lab">' + L2.name + '</span>' + (L2.code === curLang() ? '<i class="ti ti-check rc-chk"></i>' : ''); r2.onclick = function () { setLang(L2.code); ov2.remove(); }; }); });
-    row(S.away ? "ti-plane-inflight" : "ti-plane", S.away ? "I'm back" : "I'm away / resting", "travel or off-days — your streaks are held", function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? "Away — rest easy, your streaks are held" : "welcome back — let's ease in"); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} });
-    room(tr("SOUND"));
-    row("ti-volume", "Sound", "voice + background volume", function () { openVolumePanel(); });
-    room(tr("DATA"));
-    row("ti-send", "Send a snapshot", "share your progress file — it's also your backup", function () { shareSnapshot(); });
-    if (devOn() || (S.badges && Object.keys(S.badges.earned || {}).length)) row("ti-cards", "Your marks", "the collection — cards you've earned", function () { binderSheet(); });
-    room(tr("ADVANCED"));
-    if (devOn()) row("ti-brain", "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
-    if (devOn()) row("ti-sparkles", "Redo setup", "re-run onboarding", function () { onboard(); });
-    if (devOn()) row("ti-flask", "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
-    if (devOn()) row(S.voiceDebug ? "ti-bug" : "ti-bug-off", S.voiceDebug ? "Voice debug: ON" : "Voice debug: OFF", "the little ♪ readout at the top — temporary", function () { S.voiceDebug = !S.voiceDebug; save(); var e = document.getElementById("voiceDbg"); if (e && !S.voiceDebug) e.remove(); toast(S.voiceDebug ? "voice debug on" : "voice debug off"); });
-    add(B, "button", "done2", "Done").onclick = closeSheet;
+    room("ti-user", DOM.connect.c, "Profile", tr("word") + " · " + tr("wake-up") + " " + ((S.profile && S.profile.wake) || "7:30") + " · " + tr("language"), function () { langPicker(); });
+    room("ti-volume", DOM.move.c, "Sound", tr("voice") + " · " + tr("beds") + " · " + tr("rewards"), function () { openVolumePanel(); });
+    var snapAgo = S.lastSnapK ? daysSinceK(S.lastSnapK) : 12, vaultOn = Math.min(4, Math.max(1, Math.round(st.days / 3)));
+    room("ti-shield-check", DOM.nourish.c, "Data", tr("snapshot") + " · " + snapAgo + " " + tr("days ago"), function () { shareSnapshot(); S.lastSnapK = todayK(); save(); }, { total: 4, on: vaultOn });
+    var aw = add(wrap, "div", "you-away" + (S.away ? "" : " off"));
+    aw.innerHTML = '<i class="ti ti-moon you-awico"></i><span class="you-awtx"><span class="you-awt">' + esc(S.away ? tr("I'm resting") : tr("Rest mode")) + '</span><span class="you-aws">' + esc(S.away ? tr("paused — streaks are held") : tr("travel or off-days — streaks held")) + '</span></span><span class="you-toggle"><span class="you-knob"></span></span>';
+    aw.onclick = function () { S.away = !S.away; S.awaySince = S.away ? todayK() : null; save(); toast(S.away ? tr("Resting — your streaks are held") : tr("welcome back — let's ease in")); try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {} settingsSheet(); };
+    var adv = add(wrap, "button", "you-adv");
+    adv.innerHTML = '<i class="ti ti-flask"></i><span class="you-advlbl">' + tr("Advanced") + '</span><i class="ti ti-chevron-down you-advchev"></i>';
+    var advBox = add(wrap, "div"); advBox.style.cssText = "display:none;flex-direction:column;gap:8px;";
+    function advRow(ic, color, title, sub, fn) { var b = add(advBox, "button", "you-room"); var i = add(b, "i", "ti " + ic + " you-rico"); i.style.color = color; var tx = add(b, "span", "you-rtx"); add(tx, "span", "you-rt", tr(title)); add(tx, "span", "you-rs", tr(sub)); add(b, "i", "ti ti-chevron-right you-rchev"); b.onclick = function () { closeSheet(); setTimeout(fn, 60); }; }
+    advRow("ti-compass", DOM.focus.c, "Guidance", "how much I lead", function () { guidanceSheet(); });
+    advRow("ti-world", DOM.connect.c, "Language", "flat flags, all of them", function () { langPicker(); });
+    if (devOn() || (S.badges && Object.keys(S.badges.earned || {}).length)) advRow("ti-cards", DOM.play.c, "Your marks", "the collection", function () { binderSheet(); });
+    if (devOn()) advRow("ti-brain", DOM.focus.c, "Brain", "AI tailoring — bring your own key", function () { brainSheet(); });
+    if (devOn()) advRow("ti-sparkles", DOM.create.c, "Redo setup", "re-run onboarding", function () { onboard(); });
+    if (devOn()) advRow("ti-flask", DOM.restore.c, "Test day", "fill a demo day (dev)", function () { fillTestDay(); });
+    adv.onclick = function () { var open = advBox.style.display !== "none"; advBox.style.display = open ? "none" : "flex"; adv.classList.toggle("open", !open); };
+    add(B, "button", "done2", tr("Done")).onclick = closeSheet;
   }
   // ===== GUIDANCE DIAL (JX-GUIDANCE-TOGGLE, David 2026-06-28): the autonomy knob — Guided / Light / Off. Clones the brainSheet engine-picker idiom (pchips). Default 'off' restores today's behavior + reveals everything; choosing less is framed as leveling up, never desertion. Off silences journey nudges but the engine keeps computing silently. =====
   function guidanceSheet() {
