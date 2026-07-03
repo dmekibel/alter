@@ -242,6 +242,7 @@
   function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
   function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
+  function durLoc(m) { var s = dur(m); try { if (curLang() === "ru") s = s.replace(/h/g, "ч").replace(/m/g, "м"); } catch (e) {} return s; } // countdown units localized (avoids latin leak in the RU cockpit sub-line)
   function daysSince(k) { if (!k) return 999; return Math.round((new Date(todayK() + "T00:00:00") - new Date(k + "T00:00:00")) / 86400000); }
   function lastDays(n) { var o = [], d = new Date(); for (var i = 0; i < n; i++) { o.push(key(d)); d.setDate(d.getDate() - 1); } return o; }
   function kd(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -1320,6 +1321,9 @@
     "Make a plan": "Создать план", // G12 rename (v801 device pass)
     "Track now": "Отследить сейчас", "Plan my day": "Спланировать день", "Track other": "Другое занятие",
     "No timer — just track": "Без таймера — просто трек",
+    "in": "через", "now": "сейчас", "no time — just track": "без времени — просто трек", "a plan earns more": "с планом очков больше",
+    "clean slate — where do we start?": "чистый лист — с чего начнём?", "open afternoon — pick a thread": "свободный день — с чего начнём?", "evening — one gentle thing?": "вечер — одно спокойное дело?", "late — one small win, then rest": "поздно — одна маленькая победа, потом отдых",
+    "YESTERDAY NOW": "ВЧЕРА СЕЙЧАС", "again?": "повторить?", "one tap — plan and track at once": "один тап — план и трек сразу", "3 tasks — 60 seconds": "3 дела — 60 секунд",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
     "Came back": "Вернулся", "Fire": "Огонь", "Courage": "Смелость", "Precision": "Точность", "Depth": "Глубина", "Gardener": "Садовник",
@@ -3402,6 +3406,27 @@
   }
   function tfSwitchTo(item) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); if (item.block) { startPlanned(item.block); } else { startTimer({ title: item.title, catK: (item.act && item.act.catK) || null, color: (DOM[item.dom] || DOM.focus).c }); var r = activeTimers(); if (r.length) maybeCelebrateTrack(r[r.length - 1]); renderLiveTracker(); renderToday(); } renderTrackerFull(); }
   function renderSwitchChips(curTitle) { var w = el("tfSwitch"); if (!w) return; w.innerHTML = ""; var tg = tfSwitchTargets(curTitle); if (!tg.length) { w.style.display = "none"; return; } w.style.display = ""; add(w, "span", "tf-swlab", "SWITCH TO"); tg.forEach(function (o) { var D = DOM[o.dom] || DOM.focus, c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + (o.block ? tiClass(o.block) : (o.act ? tiClass(o.act) : D.ti)) + '" style="color:' + D.light + '"></i> ' + esc(o.title); c.onclick = (function (it) { return function () { tfSwitchTo(it); }; })(o); }); }
+  function tfIdleInvite() { var h = new Date().getHours(); // RUN-1 mock 2: one warm time-of-day invitation line for the empty day
+    if (h < 5) return { ti: "ti-moon", t: "late — one small win, then rest" };
+    if (h < 11) return { ti: "ti-sunrise", t: "clean slate — where do we start?" };
+    if (h < 17) return { ti: "ti-sun", t: "open afternoon — pick a thread" };
+    if (h < 22) return { ti: "ti-sunset-2", t: "evening — one gentle thing?" };
+    return { ti: "ti-moon", t: "late — one small win, then rest" };
+  }
+  function tfYesterdayEcho() { // RUN-1 mock 2: "ВЧЕРА СЕЙЧАС" — what were you doing around this hour yesterday? one-tap replan+track
+    var yk = logicalK(new Date(Date.now() - 864e5)), L = (S.log && S.log[yk]) || []; if (!L.length) return null;
+    var nowH = new Date().getHours(), best = null, bestD = 999;
+    L.forEach(function (l) { if (!l.title || !l.start) return; var d = Math.abs(new Date(l.start).getHours() - nowH); if (d < bestD || (d === bestD && best && (l.mins || 0) > (best.mins || 0))) { best = l; bestD = d; } });
+    if (!best || bestD > 3) return null;
+    var dom = domainOf(best); return { title: best.title, dom: dom, mins: best.mins || 30, catK: best.catK || null, color: best.color || (DOM[dom] || DOM.focus).c };
+  }
+  function tfTrackNoTime(item) { var dom = domainOf(item), t = startTrackerNow(); assignTimer(t, { title: item.title, color: item.color || (DOM[dom] || DOM.focus).c, catK: item.catK }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); toast("tracking — with a plan it earns more"); } // the honest escape: track the next thing now, no time set, no plan
+  function tfEchoStart(e, mins) { var k = todayK(), now = logicalNowMin(); // yesterday-echo chip → create a block at now for `mins` + track it (playFirst's committed path, for an ad-hoc activity)
+    blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
+    var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: e.title, prio: 2, color: e.color, catK: e.catK, domain: e.dom, done: false, pin: true };
+    blocks(k).push(nb); reflow(k); save();
+    var t = startTrackerNow(); assignTimer(t, { title: e.title, color: e.color, catK: e.catK }); if (t) t.commit = mins; maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
+  }
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
     var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
@@ -3450,7 +3475,10 @@
     }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = tr("What now?"); // GRAND BUILD H: the mock's composition — the QUESTION is the title; the plan is the sub-line
-      el("tfVerdict").textContent = nb ? (tr("next by plan:") + " " + nb.title + " · " + fmt(hm(nb.time))) : "";
+      // RUN-1 mocks 1&2: the sub-line IS a mini timeline block (pink hairline + countdown) with a plan; a warm invite line without one
+      if (nb) { var _cd = hm(nb.time) - nowMin(), _cdL = _cd > 1 ? (tr("in") + " " + durLoc(_cd)) : tr("now");
+        el("tfVerdict").innerHTML = '<span class="tf-subblock"><i class="ti ' + ND.ti + '" style="color:' + ND.light + '"></i><span class="sb-t">' + esc(nb.title) + '</span><span class="sb-dot">·</span><span class="sb-cd">' + esc(_cdL) + '</span></span>'; }
+      else { var _iv = tfIdleInvite(); el("tfVerdict").innerHTML = '<span class="tf-invite"><i class="ti ' + _iv.ti + '"></i>' + tr(_iv.t) + '</span>'; }
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
@@ -3458,11 +3486,20 @@
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
       var _sh = el("tfNextSheet");
-      if (_sh && nb) { tf.classList.add("tf-nextsheet"); _sh.style.display = "block"; _sh.innerHTML = ""; // §12 frame 07: the docked sheet — "Глубокая работа — сколько?" + duration chips = plan+track the next block NOW in one tap
-        var _shh = add(_sh, "div", "tns-h"); _shh.innerHTML = '<i class="ti ' + ND.ti + '" style="color:' + ND.c + '"></i><b>' + esc(nb.title) + '</b><span> — </span><span>how long?</span>';
+      if (_sh && nb) { tf.classList.add("tf-nextsheet"); _sh.style.display = "block"; _sh.innerHTML = ""; // §12 frame 07: the docked sheet — "<block> — сколько?" + duration chips = plan+track the next block NOW in one tap
+        var _shh = add(_sh, "div", "tns-h"); _shh.innerHTML = '<i class="ti ' + ND.ti + '" style="color:' + ND.c + '"></i><b>' + esc(nb.title) + '</b><span> — </span><span>' + tr("how long?") + '</span>';
         var _shr = add(_sh, "div", "tns-row");
-        [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var ch = add(_shr, "button", "k-dur" + ((nb.mins || 30) === dd[0] ? " on" : "")); ch.textContent = dd[1]; ch.onclick = function () { startNextNow(nb, dd[0]); }; });
-        add(_sh, "div", "tns-foot", "no time — just track · a plan earns more");
+        [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var _on = (nb.mins || 30) === dd[0]; var ch = add(_shr, "button", "k-dur" + (_on ? " on" : "")); ch.innerHTML = (_on ? '<i class="ti ti-calendar-check" style="font-size:11px"></i> ' : "") + dd[1]; ch.onclick = function () { startNextNow(nb, dd[0]); }; }); // active chip wears ti-calendar-check = "this is the plan"
+        var _esc = add(_sh, "button", "tns-escape"); _esc.innerHTML = '<i class="ti ti-player-play"></i>' + tr("no time — just track"); _esc.onclick = function () { tfTrackNoTime(nb); }; // real 44pt ghost escape row
+        add(_sh, "div", "tns-foot", tr("a plan earns more"));
+      } else if (_sh) { var _echo = tfYesterdayEcho();
+        if (_echo) { tf.classList.add("tf-nextsheet"); _sh.style.display = "block"; _sh.innerHTML = ""; var _ED = DOM[_echo.dom] || DOM.focus; // RUN-1 mock 2: yesterday's echo docks as the suggestion sheet
+          add(_sh, "div", "tns-eyebrow", tr("YESTERDAY NOW"));
+          var _eh = add(_sh, "div", "tns-h"); _eh.style.marginTop = "7px"; _eh.innerHTML = '<i class="ti ' + _ED.ti + '" style="color:' + _ED.c + '"></i><b>' + esc(_echo.title) + '</b><span> — </span><span>' + tr("again?") + '</span>';
+          var _er = add(_sh, "div", "tns-row");
+          [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var _on = _echo.mins >= dd[0] && (dd[0] === 120 || _echo.mins < dd[0] * 2) && Math.abs(_echo.mins - dd[0]) <= 30; var ch = add(_er, "button", "k-dur" + (_on ? " on" : "")); ch.innerHTML = (_on ? '<i class="ti ti-history" style="font-size:11px"></i> ' : "") + dd[1]; ch.onclick = function () { tfEchoStart(_echo, dd[0]); }; });
+          add(_sh, "div", "tns-foot", tr("one tap — plan and track at once"));
+        } else { _sh.style.display = "none"; }
       }
       return;
     }
@@ -4350,10 +4387,10 @@
         var n = nextPlannedBlock(todayK());
         if (n) {
           return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
-                  { icon: "ti-calendar-plus", label: "Plan + track next", fn: function () { startNextNow(n); }, finish: "striped", c: "#36b3f0", ink: "#08283c" },
+                  { icon: "ti-calendar-plus", label: "Plan + track next", fn: function () { startNextNow(n); }, finish: "striped", c: "#36b3f0", ink: "#08283c", tag: n.title }, // RUN-1 mock 1: the striped door NAMES its block
                   { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "ghost" }]; }
         return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
-                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "striped", c: "#36b3f0", ink: "#08283c" }]; // G11 play-first: the app's main verb is the hero; picking a time = the plan (tfCreatePlan folded into playFirst)
+                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "striped", c: "#36b3f0", ink: "#08283c", sub: "3 tasks — 60 seconds" }]; // RUN-1 mock 2: Plan-my-day sells its real cost. G11 play-first: the app's main verb is the hero
       }
       case "break":
         return [{ icon: "ti-player-play-filled", label: "Resume", fn: tfResumeBreak, primary: true },
@@ -4403,11 +4440,20 @@
   }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     var ctrls = trackerControls(state);
-    if (ctrls.some(function (x) { return x.finish; })) { // GRAND BUILD F: door mode — stacked full-width chunky buttons, finish = hierarchy (solid -> striped -> ghost)
-      ctrls.forEach(function (x) { var bn = add(c, "button", "tf-door tf-door-" + (x.finish || "ghost")); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label;
+    if (ctrls.some(function (x) { return x.finish; })) { // GRAND BUILD F: door mode — stacked full-width chunky buttons, finish = hierarchy (solid -> striped -> ghost). RUN-1: optional right-tag (names the block), optional cost sub-line, and a ghost half-row (x.half)
+      var halves = [];
+      ctrls.forEach(function (x) {
+        if (x.half) { halves.push(x); return; }
+        var cls = "tf-door tf-door-" + (x.finish || "ghost") + (x.tag ? " has-tag" : "") + (x.sub ? " has-sub" : "");
+        var bn = add(c, "button", cls);
+        if (x.tag) { bn.innerHTML = '<span class="tf-door-lead"><i class="ti ' + x.icon + '"></i><span>' + x.label + '</span></span><span class="tf-door-tag" style="color:' + (x.ink || "#08283c") + '">' + esc(x.tag) + '</span>'; }
+        else if (x.sub) { bn.innerHTML = '<span class="tf-door-lead"><i class="ti ' + x.icon + '"></i><span>' + x.label + '</span></span><span class="tf-door-sub">' + esc(x.sub) + '</span>'; }
+        else { bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; }
         if (x.finish === "solid") { bn.style.background = x.c; bn.style.color = x.ink; }
         else if (x.finish === "striped") { bn.style.background = tfStripe(x.c); bn.style.color = x.ink; }
-        bn.onclick = x.fn; });
+        bn.onclick = x.fn;
+      });
+      if (halves.length) { var row = add(c, "div", "tf-row"); halves.forEach(function (x) { var bn = add(row, "button", "tf-door tf-door-ghost"); bn.style.flex = "1"; bn.style.minHeight = "48px"; bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; }); }
       return;
     }
     var prim = ctrls.filter(function (x) { return x.primary; }), sec = ctrls.filter(function (x) { return !x.primary; });
@@ -8507,7 +8553,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
