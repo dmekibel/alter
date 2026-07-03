@@ -6524,7 +6524,7 @@
   function habStripe(dom) { var D = DOM[dom], a = D.c, b = mixHex(D.c, "#ffffff", 0.28); return "repeating-linear-gradient(135deg," + a + " 0 14px," + b + " 14px 28px)"; } // bright DONE stripes = domain ↔ lighter tint
   function habitPathSheet() {
     var dm = doneMap(todayK()), done = 0; S.habits.forEach(function (hb) { if (dm[hb.id]) done++; });
-    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card");
+    var ov = add(document.body, "div", "bento-ov"), card = add(ov, "div", "bento-card hp-card");
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
     var head = add(card, "div", "bento-head");
     var htl = add(head, "div"); add(htl, "div", "hp-title", tr("Привычки")); add(htl, "div", "hp-sub", done + " " + tr("из") + " " + S.habits.length + " " + tr("сегодня"));
