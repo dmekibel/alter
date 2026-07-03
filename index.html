@@ -650,7 +650,7 @@
   .breathorb--slow{animation-duration:11s;background:radial-gradient(circle,rgba(255,220,120,.55),rgba(255,200,80,0) 70%);box-shadow:0 0 52px rgba(255,210,110,.4);}
   @keyframes breathe{0%,100%{transform:scale(.68);opacity:.55;}50%{transform:scale(1.12);opacity:1;}}
   /* guided breathwork overlay (first self-help module) */
-  #breatheOv{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
+  #breatheOv{position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
   @keyframes toolIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
   .vol-ov,.dur-ov{animation:toolIn .24s ease both;}
   .bento-ov .bento-card{animation:sheetUp .3s cubic-bezier(.2,.9,.3,1.02) both;}
@@ -694,7 +694,7 @@
   #breatheOv .gp-ticks i{position:absolute;top:-3px;width:2px;height:12px;border-radius:1px;background:rgba(240,230,239,.30);transform:translateX(-1px);}
   #breatheOv .gp-tail{position:absolute;top:0;bottom:0;right:0;border-radius:0 6px 6px 0;background:repeating-linear-gradient(90deg,rgba(240,230,239,.10),rgba(240,230,239,.10) 3px,transparent 3px,transparent 7px);border-left:2px dashed rgba(240,230,239,.35);}
   #breatheOv .gp-silence{width:100%;max-width:440px;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:-6px;font-family:var(--bub);font-size:11.5px;font-weight:700;color:rgba(188,176,232,.75);}
-  #breatheOv.gp-playing .gp-title,#breatheOv.gp-playing .gp-cog{opacity:0;} /* chrome leaves the room */
+  #breatheOv.gp-playing .gp-title{opacity:0;} #breatheOv.gp-playing .gp-cog{opacity:.3;} /* chrome leaves the room — but the sound cog stays faintly visible + tappable (visual audit 2026-07-04: it dissolved to 0 with no way back) */
   #breatheOv .gp-title,#breatheOv .gp-cog{transition:opacity .6s;}
   @keyframes gpWave1{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-8%) scale(1.09);}}
   @keyframes gpWave2{0%,100%{transform:translateY(0) scale(1.05);}50%{transform:translateY(7%) scale(1);}}
@@ -2503,6 +2503,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=871"></script>
+  <script src="app.js?v=872"></script>
 </body>
 </html>

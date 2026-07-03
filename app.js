@@ -240,7 +240,7 @@
   function bedHour() { var b = (S.profile && S.profile.sleep) || "", m = { "before 10": 22, "10–11": 23, "11–12": 24, "12–1": 25, "1–2": 26, "later": 27, "varies": 24 }; return m[b] != null ? m[b] : 24; }
   function dayWindow() { var s = Math.max(4, wakeHour() - 3); return { startH: s, endH: s + 24 }; } // FULL 24h window starting ~3h before wake → each day TILES seamlessly into the next (bottom hour == next day's top hour), so there's no 2am–4am hole at the boundary (the "missing 3" + background break). You still LAND on now/wake; scroll up reveals the quiet early hours. (David 2026-06-27)
   function hm(t) { if (!t) return 0; var p = t.split(":"); return (+p[0]) * 60 + (+p[1]); }
-  function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60), m = min % 60; var ap = h < 12 ? "am" : "pm"; h = h % 12 || 12; return h + ":" + pad(m) + ap; }
+  function fmt(min) { min = Math.round(min) % 1440; var h = Math.floor(min / 60) % 24, m = min % 60; return h + ":" + pad(m); } // 24h EVERYWHERE (visual audit 2026-07-04: 7:42pm/12:33pm/6:41pm leaked en-US am/pm all over the RU app; canon = 24h)
   function dur(m) { if (m < 60) return m + "m"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? " " + mm + "m" : ""); }
   function durLoc(m) { var s = dur(m); try { if (curLang() === "ru") s = s.replace(/h/g, "ч").replace(/m/g, "м"); } catch (e) {} return s; } // countdown units localized (avoids latin leak in the RU cockpit sub-line)
   function daysSince(k) { if (!k) return 999; return Math.round((new Date(todayK() + "T00:00:00") - new Date(k + "T00:00:00")) / 86400000); }
@@ -1652,6 +1652,7 @@
   Object.assign(I18N.ru, { "start": "начало", "length": "длина", "More": "Ещё", "Block": "Блок" }); // edge-inspector strings (B4; "delete" already in the dict)
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
+  Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь" });
   Object.assign(I18N.ru, { "EVENING RITUAL": "ВЕЧЕРНИЙ РИТУАЛ", "PRISM · SHINING": "ПРИЗМА · СИЯЮЩИЙ", "FLARE": "ВСПЫШКА", "THE BLADE": "КЛИНОК", "THE LATTICE": "РЕШЁТКА", "COSMOS": "КОСМОС", "BLOOM": "ЦВЕТЕНИЕ" }); // audit TOP-fix batch 1 strings (B4)
   Object.assign(I18N.ru, { // GUIDED WORKSHEETS (B4) — engine + all six course-mined sheets
     "WRITTEN INTO YOUR RECORD": "ЗАПИСАНО В ТВОЮ ЛЕТОПИСЬ", "Written. This is yours now.": "Записано. Теперь это твоё.", "Lesson": "Урок", "Lessons": "Уроки", "Small guided sits — 60 seconds each.": "Короткие ведомые практики — по 60 секунд.",
@@ -4098,8 +4099,8 @@
   function jrMoodRow(card, sb) { // optional mood faces — same as the original journal
     var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;margin-top:2px;");
     MOODS.forEach(function (m, i) {
-      var f = add(moodWrap, "button", "jr-mood"); f.setAttribute("style", "flex:1;background:#241328;border:2px solid " + (sb.dataset.mood === String(i) ? DOM.restore.light : "#160510") + ";border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
-      f.textContent = m.e; f.title = m.l;
+      var f = add(moodWrap, "button", "jr-mood"); f.setAttribute("style", "flex:1;background:#241328;border:2px solid " + (sb.dataset.mood === String(i) ? m.c : "#160510") + ";border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
+      f.innerHTML = '<i class="ti ' + m.e + '" style="color:' + m.c + '"></i>'; f.title = tr(m.l); // visual audit 2026-07-04: m.e is a Tabler CLASS — textContent printed literal "ti-cloud-fog"
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
   }
@@ -4543,7 +4544,7 @@
     MOODS.forEach(function (m, i) {
       var f = add(moodWrap, "button", "jr-mood");
       f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
-      f.textContent = m.e; f.title = m.l;
+      f.innerHTML = '<i class="ti ' + m.e + '" style="color:' + m.c + '"></i>'; f.title = tr(m.l); // visual audit 2026-07-04: same literal-class fix
       if ((prev && prev.mood === i) || sb.dataset.mood === String(i)) { f.style.borderColor = DOM.restore.light; }
       f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
@@ -7933,28 +7934,28 @@
     S.audio = S.audio || { voice: 1, bg: 1 };
     var ov = add(document.body, "div", "vol-ov"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(10,4,14,.55);display:flex;align-items:center;justify-content:center;";
     var card = add(ov, "div"); card.style.cssText = "width:82%;max-width:340px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;";
-    add(card, "div", null, "Sound").style.cssText = "font-size:19px;font-weight:800;";
-    add(card, "div", null, "adjust anytime — even while it plays").style.cssText = "font-size:12px;color:#b39ab0;margin-bottom:8px;";
+    add(card, "div", null, tr("Sound")).style.cssText = "font-size:19px;font-weight:800;";
+    add(card, "div", null, tr("adjust anytime — even while it plays")).style.cssText = "font-size:12px;color:#b39ab0;margin-bottom:8px;";
     function slider(label, kind) {
       var row = add(card, "div"); row.style.cssText = "margin:16px 0 4px;";
       var lr = add(row, "div"); lr.style.cssText = "display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:7px;"; add(lr, "span", null, label); var pct = add(lr, "span", null, Math.round(S.audio[kind] * 100) + "%"); pct.style.color = "#ff8fc4";
       var s = add(row, "input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round(S.audio[kind] * 100); s.style.cssText = "width:100%;accent-color:#9a7cff;height:26px;";
       s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
     }
-    slider("Voice", "voice"); slider("Background", "bg");
+    slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
     // which background bed plays under the guided tools
-    var bl = add(card, "div", null, "Background sound"); bl.style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 8px;";
+    var bl = add(card, "div", null, tr("Background sound")); bl.style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 8px;";
     var seg = add(card, "div"); seg.style.cssText = "display:flex;gap:7px;"; var segBtns = [];
     function paintSeg() { segBtns.forEach(function (b) { b.style.background = bedMode() === b.dataset.bed ? "#9a7cff" : "rgba(255,255,255,.05)"; }); }
-    [["pad", "Peaceful"], ["music", "Mysterious"], ["off", "Off"]].forEach(function (o) {
+    [["pad", tr("Peaceful")], ["music", tr("Mysterious")], ["off", tr("Off")]].forEach(function (o) {
       var b = add(seg, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:9px 4px;font-family:var(--bub);font-weight:800;font-size:13px;cursor:pointer;color:#f0e6ef;"; segBtns.push(b);
       b.onclick = function () { S.audio.bed = o[0]; save(); paintSeg(); if (o[0] !== "music") { try { BGM.stop(); } catch (e) {} } else if (document.getElementById("breatheOv")) { try { BGM.start(); } catch (e) {} } };
     });
     paintSeg();
-    add(card, "div", null, "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop").style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;line-height:1.4;";
+    add(card, "div", null, tr("Peaceful — a warm drifting drone · Mysterious — a deep ambient loop")).style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;line-height:1.4;";
     // whole-app subtle background music toggle
     var amRow = add(card, "button"); amRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:12px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
-    function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">App background music</b><span style="font-size:11px;color:#b39ab0;">warm, slow chords while you browse</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
+    function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("App background music") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("warm, slow chords while you browse") + '</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
     amPaint();
     amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
     var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { ov.remove(); };
