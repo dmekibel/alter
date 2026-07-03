@@ -440,6 +440,9 @@
     return "focus";
   }
   function domColor(it) { return DOM[domainOf(it)].c; }
+  // JEWEL INK per domain — the cool deepener a lived/matched block darkens TOWARD (never #160510, which browns warm hues). Verdict #8 (David 2026-07-03).
+  var DOM_JEWEL = { move: "#2a0e10", nourish: "#052a1f", focus: "#04202f", create: "#180a30", connect: "#2a0716", play: "#241400", restore: "#032428", upkeep: "#0e1626", drift: "#160510" };
+  function jewelInk(dom) { return DOM_JEWEL[dom] || "#160510"; }
   var GOLD = "#ffd54a", CORAL = "#c4607f"; // GOLD = on-plan match (inset ring) · drift = mauve (honest, never hidden)
   function esc(s) { return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function mixHex(a, b, t) { a = a.replace("#", ""); b = b.replace("#", ""); function p(h, i) { return parseInt(h.substr(i, 2), 16); } function m(i) { return Math.round(p(a, i) * (1 - t) + p(b, i) * t); } return "rgb(" + m(0) + "," + m(2) + "," + m(4) + ")"; }
@@ -1328,6 +1331,7 @@
     "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
     "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
     "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
+    "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "The rest": "Остальное", "You're today —": "Ты сегодня —", "been meaning to": "давно собирался",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
     "All tools": "Все инструменты", "Build a session": "Собрать сессию", "Sharpen the mind": "Заточить ум",
@@ -6208,7 +6212,7 @@
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (bb) { return function () { editBlk(bb); }; })(b); } // small bubble → carries its open-fn so the swipe-select cluster gesture can open it (David 2026-06-28)
       if (status === "ok" && !partial) { // DONE = deep-jewel diagonal STRIPES (the old metallic look, darkened for night) + ink edge — NO neon glow, NO shine; the now-line stays the brightest thing (David 2026-06-27)
-        card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 3px 0 #160510";
+        var _ji = jewelInk(dom); card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, _ji, 0.5) + "," + mixHex(D.c, _ji, 0.5) + " 9px," + mixHex(D.c, _ji, 0.62) + " 9px," + mixHex(D.c, _ji, 0.62) + " 18px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 3px 0 #160510"; // verdict #8: deepen toward cool jewel ink, not #160510 (which browns warm hues)
       } else if (dark) { // missed/ghost — domain-tinted-dark hollow + a clear domain OUTLINE (kept — David likes this close up)
         card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.boxShadow = "none";
       } else { // future = planned: DIMMER deep stripes, fainter the further ahead, ink edge (David 2026-06-27)
@@ -6223,7 +6227,7 @@
           if (_tsm > bs + 0.5) { card.style.height = barH(_tsm - bs, HP) + "px"; card.dataset.mn = bs; card.dataset.dur = (_tsm - bs); card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderRadius = _R; card.style.boxShadow = "0 3px 0 #160510"; } // GHOST = untracked past (bs → _tsm) = the CARD, now a standalone FULLY-rounded narrow plan-lane bubble (keeps the plan name)
           else { card.style.height = "0px"; card.style.border = "none"; card.style.background = "none"; card.style.boxShadow = "none"; } // started exactly at the block top → no ghost head
           var _hasTrk = now > _tsm + 0.5;
-          if (_hasTrk) { var _segH = (now - _tsm) / 60 * HP, _seg = add(cal, "div", "matchseg"); _seg.style.top = topFor(_tsm) + "px"; _seg.style.height = _segH + "px"; _seg.style.left = "26px"; _seg.style.right = "4px"; _seg.dataset.mn = _tsm; _seg.dataset.dur = (now - _tsm); _seg.style.borderRadius = _R + " " + _R + " 0 0"; _seg.style.borderBottom = "none"; _seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)"; _seg.style.borderColor = "#160510"; _seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09)"; if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = D.light; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:#fff2f9;"; } } // (2a) TRACKED stretch = bright activity-colour, rounded TOP, SQUARE bottom (flows into the future — no gap); thin sliver → emoji only, no pink
+          if (_hasTrk) { var _segH = (now - _tsm) / 60 * HP, _seg = add(cal, "div", "matchseg"); _seg.style.top = topFor(_tsm) + "px"; _seg.style.height = _segH + "px"; _seg.style.left = "26px"; _seg.style.right = "4px"; _seg.dataset.mn = _tsm; _seg.dataset.dur = (now - _tsm); _seg.style.borderRadius = _R + " " + _R + " 0 0"; _seg.style.borderBottom = "none"; _seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, jewelInk(dom), 0.5) + "," + mixHex(D.c, jewelInk(dom), 0.5) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 18px)"; _seg.style.borderColor = "#160510"; _seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09)"; if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = D.light; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:#fff2f9;"; } } // (2a) TRACKED stretch = bright activity-colour, rounded TOP, SQUARE bottom (flows into the future — no gap); thin sliver → emoji only, no pink
           // (2b) While TRACKING, render NOTHING below the now-line — no outline, no shadow, no hint; printing goes ONLY into the past. The faint hollow future-outline that showed during the first 30s of tracking regressed this hard rule (C9a/C4b, David 2026-07-02) — removed. The not-yet-tracking hint lives in the else-branch below.
         } else { // NOT tracking → ONE continuous bar in the plan lane: ghost-dark top + matte future-bottom, split ONLY by the now-line crossing it. It was correct this way before — the bubble separates only on Play (David 2026-06-27)
           card.style.background = "none"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 3px 0 #160510"; var _ch = Math.max(5, (be - bs) / 60 * HP - 4);
@@ -6235,7 +6239,7 @@
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
         var _mh = barH(_pm.end - _pm.start, HP); // same floor/margin/clamp → no bounce
         var seg = add(cal, "div", "matchseg"); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "26px"; seg.style.right = "4px";
-        seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)"; seg.style.borderColor = "#160510"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 2px 0 #160510";
+        seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, jewelInk(dom), 0.5) + "," + mixHex(D.c, jewelInk(dom), 0.5) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 18px)"; seg.style.borderColor = "#160510"; seg.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 2px 0 #160510";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
         var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 15 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : '') + '<i class="ti ti-circle-check"></i>'; // matched span: icon + name + ✓ (no shine — David disliked the internal reflections)
       }
@@ -6324,7 +6328,7 @@
       card.style.left = "calc(50% + 4px)"; card.style.right = "4px"; card.style.width = "auto"; // one activity at a time — real lane is always full width, never split into multitasking columns (David 2026-06-23)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.background = drift ? mixHex(D.c, "#160510", 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
+        card.style.background = drift ? mixHex(D.c, "#160510", 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, jewelInk(dom), 0.5) + "," + mixHex(D.c, jewelInk(dom), 0.5) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510,0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>' + (onp ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "");
         card.dataset.dur = it.e - it.s; card.dataset.ic = tiClass(e); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card);
@@ -6357,7 +6361,7 @@
         });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.background = drift ? mixHex(D.c, "#160510", 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, "#160510", 0.62) + "," + mixHex(D.c, "#160510", 0.62) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 9px," + mixHex(D.c, "#160510", 0.73) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
+        card.style.background = drift ? mixHex(D.c, "#160510", 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, jewelInk(dom), 0.5) + "," + mixHex(D.c, jewelInk(dom), 0.5) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 9px," + mixHex(D.c, jewelInk(dom), 0.62) + " 18px)") : mixHex(D.c, "#160510", 0.84); card.style.borderColor = onp ? "#160510" : mixHex(D.c, "#160510", 0.34); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #160510"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span><span class="cn-el"> · <span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span></span>'; // C9b (David 2026-07-02): the elapsed rides inside .cn-el so a thin bar can hide it as ONE unit (separator included) — timer text appears only once the block has room
         card.dataset.ic = tiClass(t); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card); // density by height: a short sliver hides its text (the now-line readout shows it); once tall enough the title+elapsed live ON the bubble (David 2026-06-27)
@@ -6628,6 +6632,7 @@
     // preselect: titles already picked (e.g. stepping Back into a beat) → seed sel from the matching activity objects so chips show as on (David 2026-06-28)
     if (multi && opts.preselect && opts.preselect.length) { var pset = {}; opts.preselect.forEach(function (t) { pset[(t || "").toLowerCase()] = 1; }); ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (pset[(a.title || "").toLowerCase()] && sel.indexOf(a) < 0) sel.push(a); }); }); }
     var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
+    var _isPlan = !!(opts.domains && opts.domains.length); // scoped plan sheet → chips get the pd-lit striped selected-fill (canon)
     var ov = add(document.body, "div", "bento-ov bento-sheet");
     var card = add(ov, "div", "bento-card bento-sheet");
     var head = add(card, "div", "bento-head");
@@ -6641,7 +6646,7 @@
     function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } }
     function actChip(a, container, big, soft) {
       var D = DOM[a.domain], on = sel.indexOf(a) >= 0, pin = isPinned(a);
-      var s = add(container, "span", "bchip" + (big ? " big" : "") + (soft ? " soft" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : ""));
+      var s = add(container, "span", "bchip" + (big ? " big" : "") + (soft ? " soft" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : "") + (_isPlan ? " pd-lit" : ""));
       // SOFT = welcoming muted tile (colored ICON accent + light text on a dark-tinted bg) — kills the "wall of solid orange" in a category list (David 2026-07-02). Solid fill stays for short varied rows (Recent/Pinned/search) and the selected state.
       var iconStyle = "";
       if (a.domain !== "drift") {
@@ -6658,6 +6663,7 @@
     }
     function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
     function renderScoped() {
+      if (opts.headNode) body.appendChild(opts.headNode); // CANON plan-day: beat-pips + identity hero pinned at the top of the scoped picker
       // reminder card removed (no redundant "second energy text" / emoji) + search moved BELOW the categories (David 2026-07-01). Build search detached; append after the grid.
       var sb = document.createElement("div"); sb.className = "bento-search"; var _sic = add(sb, "span", "bento-sicon"); _sic.innerHTML = '<i class="ti ti-search"></i>';
       var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
@@ -6666,7 +6672,7 @@
       if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
       else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
       // "you've been meaning to…" — the inferred procrastination list, surfaced prominently right under the pins (David 2026-06-28). actOf() maps each to a real activity obj so chips colour by domain + toggle-select like any other.
-      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); var _bmt = add(pr, "span", "bento-qlbl"); _bmt.innerHTML = '<i class="ti ti-clock-hour-3"></i> been meaning to'; opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
+      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); var _bmt = add(pr, "span", "bento-qlbl pd-ember-lbl"); _bmt.innerHTML = '<i class="ti ti-flame"></i> ' + tr("been meaning to"); opts.priority.forEach(function (m) { var _c = actChip(actOf(m), pr, true); _c.classList.add("pd-ember"); }); } // CANON: ember courage row
       var results = document.createElement("div"); results.className = "bento-results"; results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
       ORDER.forEach(function (d) {
@@ -6740,6 +6746,7 @@
       foot.innerHTML = "";
       if (opts.onSkip) { var sk = add(foot, "button", "bento-skip"); sk.innerHTML = 'Skip <i class="ti ti-player-skip-forward"></i>'; sk.onclick = function () { close(); opts.onSkip(); }; }
       var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length && !opts.allowEmptyGo;
+      if (opts.domains && opts.domains.length) { b.style.background = "#36b3f0"; b.style.color = "#08283c"; } // CANON plan-day: beat-advance door is BLUE (plan), green stays for tracking-start
       b.onclick = function () { if (!sel.length && !opts.allowEmptyGo) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
     }
     // OVERVIEW (David v647): the ORIGINAL beautiful striped bento cards — but SPLIT INTO 4 TABS (Energy/Work/Love/Other) so you only ever see one category's cards at a time (not overwhelming, still the bento box we designed). Each card's chips SCROLL. Recent + search on top. (Plan beats still use renderScoped.)
@@ -6863,12 +6870,18 @@
     return { who: who, line: line, vc: v ? v.c : "#ffb3d9" };
   }
   // a beat's title card pushed into the bento body — light, one line. (rendered via opts.headNode)
-  function big3HeadNode(beat) {
-    var wrap = document.createElement("div"); wrap.className = "big3-remind";
+  function big3HeadNode(beat, idx) { // CANON plan-day: beat-pips + identity hero (David 2026-07-03)
+    var wrap = document.createElement("div"); wrap.className = "big3-remind pd-headwrap"; wrap.style.cssText = "background:none;border:none;padding:0;margin:0 0 4px;";
+    var STEPS = [tr("Energy"), tr("Work"), tr("Love"), tr("The rest")], ci = (typeof idx === "number") ? idx : 0;
+    var pips = add(wrap, "div", "pd-pips");
+    STEPS.forEach(function (s, i) { var p = add(pips, "div", "pd-pip" + (i < ci ? " done" : "") + (i === ci ? " on" : "")); add(p, "div", "pd-pbar"); add(p, "div", "pd-plbl", s); });
     var r = big3Reminder(beat);
-    // (removed the redundant uppercase LABEL — the sheet header already names the beat; keep just the guiding tagline, saves space + kills the "energy / energy" repeat — David 2026-07-01)
-    if (r.who) { var w = add(wrap, "div", "big3-rwho"); w.textContent = r.who; }
-    if (r.line) { var l = add(wrap, "div", "big3-rline"); l.style.cssText = "color:" + r.vc + ";font-size:14px;font-weight:800;"; l.innerHTML = '<i class="ti ' + beat.emoji + '"></i> ' + esc(r.line); }
+    var idents = ((((S.bk || {})[todayK()] || {}).am || {}).identity) || ((S.profile && S.profile.todayIdentity) || []);
+    var word = idents.length ? idents[0] : null, jewel = r.vc || "#8fd4f7";
+    var hero = add(wrap, "div", "pd-hero"); add(hero, "div", "pd-h1", tr("You're today —"));
+    if (word) { var h2 = add(hero, "div", "pd-h2 glow"); h2.textContent = word; h2.style.color = jewel; }
+    else if (r.line) { var h2b = add(hero, "div", "pd-h2 glow"); h2b.style.color = jewel; h2b.innerHTML = '<i class="ti ' + beat.emoji + '"></i> ' + esc(r.line.replace(/^\S+\s/, "")); }
+    setTimeout(function () { var g = hero.querySelector(".glow"); if (g) g.classList.remove("glow"); }, 950);
     return wrap;
   }
   function shapeFlow(k) {
@@ -6885,7 +6898,7 @@
       var beat = BIG3[i];
       bentoPicker({
         title: beat.label,
-        multi: true, domains: beat.domains, headNode: big3HeadNode(beat), preselect: accTitlesFor(beat.domains),
+        multi: true, domains: beat.domains, headNode: big3HeadNode(beat, i), preselect: accTitlesFor(beat.domains),
         // surface the "been meaning to…" items that belong to THIS beat's domains
         priority: avoided.filter(function (m) { return beat.domains.indexOf(domainOf(m)) >= 0; }),
         goLabel: (i < BIG3.length - 1 ? "Next: " + BIG3[i + 1].label : "Next: everything else"), goIcon: '<i class="ti ti-arrow-right"></i>',
@@ -6898,7 +6911,7 @@
     function runElse() {
       bentoPicker({
         title: "Everything else",
-        multi: true, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: (function () { var w = document.createElement("div"); w.className = "big3-remind"; var t = add(w, "div", "big3-rtop"); t.innerHTML = '<span class="big3-remoji"><i class="ti ti-sparkles"></i></span> <span class="big3-rlbl">EVERYTHING ELSE</span>'; add(w, "div", "big3-rline").textContent = "anything that doesn't fit the Big 3."; return w; })(),
+        multi: true, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: big3HeadNode({ emoji: "ti-sparkles", virtue: "zest" }, 3),
         priority: avoided.filter(function (m) { var d = domainOf(m); return BIG3.every(function (b) { return b.domains.indexOf(d) < 0; }); }),
         goLabel: "Arrange them", goIcon: '<i class="ti ti-adjustments-horizontal"></i>',
         allowEmptyGo: true,

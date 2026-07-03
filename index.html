@@ -973,6 +973,23 @@
   .big3-remoji{ font-size:18px; }
   .big3-rlbl{ color:#ff8fc0; font-weight:800; font-size:11px; letter-spacing:1.2px; }
   .big3-rwho{ color:#ffe3f1; font-size:14px; font-weight:700; margin-top:5px; }
+  /* PLAN-DAY beat pips + identity hero + ember row (canon plan-day.jpg) */
+  .pd-pips{ display:flex; align-items:flex-start; gap:7px; padding:2px 2px 9px; }
+  .pd-pip{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .pd-pip .pd-pbar{ height:5px; border-radius:3px; background:#3a1730; transition:background .28s cubic-bezier(.2,.8,.25,1); }
+  .pd-pip.done .pd-pbar{ background:#2c6f9e; }
+  .pd-pip.on .pd-pbar{ background:#36b3f0; box-shadow:0 0 0 1px #160510 inset; }
+  .pd-pip .pd-plbl{ font-family:"Jost",sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.3px; color:#7a5e72; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pd-pip.on .pd-plbl{ color:#8fd4f7; font-weight:800; }
+  .pd-pip.done .pd-plbl{ color:#b9a3b4; }
+  .pd-hero{ background:#2a0d1e; border:2px solid #160510; border-radius:14px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.03),0 3px 0 #160510; padding:15px 16px; margin:2px 0 13px; text-align:center; }
+  .pd-hero .pd-h1{ font-family:"Jost",sans-serif; font-weight:800; font-size:19px; line-height:1.15; color:#ffe3f1; }
+  .pd-hero .pd-h2{ font-family:"Jost",sans-serif; font-weight:800; font-size:22px; line-height:1.1; margin-top:2px; }
+  @keyframes pdWordGlow{ 0%{ filter:brightness(1); } 40%{ filter:brightness(1.5); } 100%{ filter:brightness(1); } }
+  .pd-hero .pd-h2.glow{ animation:pdWordGlow .9s cubic-bezier(.2,.8,.25,1) 1; }
+  .pd-ember-lbl{ color:#ff8a3a !important; }
+  .bchip.pd-ember{ background:#2c1608 !important; color:#ffcf9a !important; border:1.5px solid #160510 !important; box-shadow:inset 0 0 0 1px rgba(255,138,58,.55), 0 3px 0 #160510; }
+  .bento-card.bento-sheet .bchip.sel.pd-lit{ background-image:repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 5px, transparent 5px 11px); }
   .big3-rline{ font-size:12.5px; font-weight:600; margin-top:3px; line-height:1.35; }
   /* ORDER STEP — drag-reorder the chosen activities (David 2026-06-28) */
   .bento-orderhint{ color:#e6cfe0; font-size:12.5px; line-height:1.4; padding:4px 2px 12px; }
@@ -2067,6 +2084,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=837"></script>
+  <script src="app.js?v=838"></script>
 </body>
 </html>
