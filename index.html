@@ -1517,6 +1517,33 @@
   .tb-card .tbc-why{ margin-top:11px; font-size:13px; color:#c9a6bf; line-height:1.45; display:none; }
   .tb-card .tbc-why.open{ display:block; }
   .tb-card .tbc-why b{ color:#ff9fce; }
+  /* ===== TOOLBOX BUILD-A-SESSION 1:1 (verdict #19, phone 2): Full-Stack pink hero + battery strips + time-first packs + ghost door ===== */
+  .tb-batt{ display:flex; gap:4px; margin-top:10px; }
+  .tb-batt .tb-cell{ flex:1; height:8px; border-radius:3px; }
+  .tb-batt.mini .tb-cell{ height:6px; }
+  .tb-hero{ border:2.5px solid #ff5fa8; border-radius:18px; padding:15px 16px; margin-bottom:14px; background:linear-gradient(150deg,#3a1030,#2a0a1e); font-family:"Jost",sans-serif; box-shadow:0 5px 0 #160510; }
+  .tb-hero .tbh-kick{ font-size:12px; font-weight:800; letter-spacing:1.4px; color:#ff8fc0; }
+  .tb-hero .tbh-title{ display:flex; align-items:center; gap:9px; margin-top:5px; font-weight:800; font-size:22px; color:#fff2f9; }
+  .tb-hero .tbh-title i{ font-size:24px; color:#c9a6ff; }
+  .tb-hero .tbh-flow{ margin-top:6px; font-size:13.5px; color:#d6b2cb; line-height:1.4; }
+  .tb-hero .tbh-chips{ display:flex; gap:9px; margin-top:12px; }
+  .tb-hero .tbh-chip{ flex:1; padding:11px 0; border-radius:13px; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; background:#241328; color:#e6cfe0; font-family:"Jost",sans-serif; font-weight:800; font-size:14.5px; cursor:pointer; }
+  .tb-hero .tbh-chip.on{ background:#ff5fa8; color:#160510; }
+  .tb-hero .tbh-chip:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .tb-hero .tbh-play{ width:100%; margin-top:13px; min-height:54px; border:2.5px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; background:#3ad07f; color:#08321f; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+  .tb-hero .tbh-play i{ font-size:20px; }
+  .tb-hero .tbh-play:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .tb-secttl{ margin-top:16px; font-weight:800; font-size:12.5px; letter-spacing:1.3px; color:#b596ad; text-transform:uppercase; font-family:"Jost",sans-serif; }
+  .tb-packs{ display:flex; gap:11px; margin-top:11px; }
+  .tb-pack{ flex:1; background:#1e0f22; border:2px solid #160510; border-radius:16px; box-shadow:0 4px 0 #160510; padding:14px 12px 13px; cursor:pointer; font-family:"Jost",sans-serif; text-align:left; color:#e6cfe0; }
+  .tb-pack .tbp-min{ font-weight:800; font-size:30px; color:#fff2f9; line-height:1; } /* Jost 800 HEAVY numeral */
+  .tb-pack .tbp-min span{ font-size:12px; font-weight:800; color:#a07fa0; margin-left:2px; }
+  .tb-pack .tbp-nm{ margin-top:6px; font-size:13px; font-weight:800; color:#e6cfe0; line-height:1.2; }
+  .tb-pack.tb-lived{ box-shadow:0 0 0 3px #ffc41f, 0 4px 0 #160510; background:repeating-linear-gradient(135deg,#2a0f26 0 9px,#241026 9px 18px); }
+  .tb-pack.tb-lived .tbp-nm i{ color:#ffc41f; margin-left:4px; font-size:14px; }
+  .tb-ghost{ width:100%; margin-top:12px; border:2px dashed #6a4a66; border-radius:15px; background:transparent; color:#c9a6bf; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; padding:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; }
+  .tb-ghost i{ font-size:18px; color:#c9a6bf; }
+  .tb-ghost:active{ background:rgba(255,255,255,.03); }
   /* verdict palettes by state */
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
@@ -2326,6 +2353,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=853"></script>
+  <script src="app.js?v=854"></script>
 </body>
 </html>
