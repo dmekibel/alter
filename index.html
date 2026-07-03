@@ -247,6 +247,15 @@
   .jp-unit.locked .ju-ic{background:#1c0612;}
   .jp-unit.open{background:#33203a;color:#d6abc4;border-color:#6a4a78;}
   .jp-unit.open .ju-ic{background:#1c0612;color:#caa0bd;}
+  /* ===== JOURNEY WORLDS (David 2026-07-03 epic): the future = colorful gates + mystery, never gray ===== */
+  .jp-unit.gate{ overflow:visible; }
+  .jp-unit.gate::after{ content:""; position:absolute; left:-10px; right:-10px; top:100%; height:110px; background:radial-gradient(60% 100% at 50% 0%, var(--wglow,transparent), transparent); pointer-events:none; z-index:0; } /* the world's glow spills down over its mystery stones */
+  .jp-unit.gate .gatefoil{ position:absolute; inset:0; border-radius:12px; overflow:hidden; pointer-events:none; }
+  .jp-unit.gate .gatefoil::before{ content:""; position:absolute; top:-25%; bottom:-25%; left:0; width:45%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 4.4s linear infinite; } /* holo shimmer on the NEXT world's gate (the binder foil language) */
+  .jp-unit.gate.fog::after{ height:60px; }
+  .jp-node.mystery .jp-bub{ animation:jpMystPulse 3.2s ease-in-out infinite; }
+  .jp-node.mystery .jp-bub i{ font-size:24px; filter:drop-shadow(0 0 6px var(--mglow,rgba(176,122,255,.3))); }
+  @keyframes jpMystPulse{ 0%,100%{ box-shadow:0 4px 0 var(--ink), 0 0 0 0 var(--mglow,transparent); } 50%{ box-shadow:0 4px 0 var(--ink), 0 0 16px 4px var(--mglow,transparent); } }
   /* NODE + tile — FLAT domain color, ink border, Tabler symbol (no gloss/glow); current = striped hero tile */
   .jp-node{position:relative;display:flex;flex-direction:column;align-items:center;margin:0 auto;width:210px;padding:11px 0;} /* verdict #11: tighter vertical rhythm (20px→11px) so stones read connected */
   .jp-trail{position:relative;}
@@ -2433,6 +2442,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=863"></script>
+  <script src="app.js?v=864"></script>
 </body>
 </html>
