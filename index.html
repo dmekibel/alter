@@ -257,9 +257,10 @@
   .jp-unit.gate .gatefoil::before{ content:""; position:absolute; top:-25%; bottom:-25%; left:0; width:45%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 3.6s linear infinite; } /* bright holo sweep across EVERY gate */
   .jp-unit.gate .gate-lock{ flex:none; width:28px; height:28px; border-radius:9px; background:#160510; color:#ffd24a; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 0 rgba(0,0,0,.4); } /* far world = visibly LOCKED, still full color */
   .jp-unit.gate.fargate::after{ height:70px; }
-  .jp-node.mystery .jp-bub{ animation:jpMystPulse 3.2s ease-in-out infinite; }
-  .jp-node.mystery .jp-bub i{ font-size:24px; filter:drop-shadow(0 0 6px var(--mglow,rgba(176,122,255,.3))); }
-  @keyframes jpMystPulse{ 0%,100%{ box-shadow:0 4px 0 var(--ink), 0 0 0 0 var(--mglow,transparent); } 50%{ box-shadow:0 4px 0 var(--ink), 0 0 16px 4px var(--mglow,transparent); } }
+  /* Duolingo-grammar locked stones (David device 2026-07-03): muted pressable 3D jelly buttons — static, friendly, no glow, icon variety */
+  .jp-node.mystery .jp-bub{ transition:transform .14s var(--ease-spring); }
+  .jp-node.mystery .jp-bub:active{ transform:translateY(4px); }
+  .jp-node.mystery .jp-bub i{ font-size:26px; opacity:.85; }
   /* ===== GUIDED WORKSHEETS (epic, 2026-07-03): one beat per screen · chunky choices · spring beats · THE-MARK finish ===== */
   .ws-ov{ position:fixed; inset:0; z-index:96; background:linear-gradient(180deg,#2a0d1c,#160510 70%); display:flex; flex-direction:column; animation:bentoIn .3s var(--ease-spring) both; }
   .ws-head{ flex:none; display:flex; align-items:center; gap:11px; padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 10px; }
@@ -2497,6 +2498,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=869"></script>
+  <script src="app.js?v=870"></script>
 </body>
 </html>

@@ -2340,9 +2340,12 @@
       var node = add(trail, "div", "jp-node " + state);
       node.style.transform = "translateX(" + (state === "cur" ? 0 : Math.sin(idx * 0.72) * 46).toFixed(0) + "px)"; // verdict #11: tighter lateral offset (72→46) so stones cluster on the center thread; cur stays centered
       var bub = add(node, "div", "jp-bub");
-      var icon = state === "mystery" ? "ti-sparkles" : state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
+      var icon = state === "mystery" ? (n.icon || "ti-star") : state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
-      if (state === "mystery") { var _mc = n.color || "#b07aff"; bub.style.background = "radial-gradient(circle at 34% 30%," + mixHex(_mc, "#ffffff", 0.18) + "," + mixHex(_mc, "#160510", 0.5) + " 70%)"; bub.style.borderColor = mixHex(_mc, "#160510", 0.2); bub.style.color = mixHex(_mc, "#ffffff", 0.35); bub.style.setProperty("--mglow", _mc + "55"); } // SEALED SPARK (worlds v2 — brighter per David): a lit-from-within orb in the world's hue, waiting to be walked — colorful, never dim
+      if (state === "mystery") { var _mc = n.color || "#b07aff"; // DUOLINGO-GRAMMAR locked stone (David device 2026-07-03): a MUTED-hue chunky 3D pressable jelly button — friendly, not glowing. (mixHex can't nest — single mixes only.)
+        bub.style.background = mixHex(_mc, "#453a4a", 0.58); bub.style.borderColor = mixHex(_mc, "#160510", 0.55);
+        bub.style.boxShadow = "0 7px 0 " + mixHex(_mc, "#160510", 0.72) + ", inset 0 4px 0 rgba(255,255,255,.10)"; // the Duolingo bottom LIP + soft top light
+        bub.style.color = mixHex(_mc, "#160510", 0.45); }
       else if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
       if (state === "cur") { var _gh = (n.color || "#ff5fa0").replace("#", ""); if (_gh.length === 3) _gh = _gh.replace(/(.)/g, "$1$1"); bub.style.setProperty("--glow", "rgba(" + parseInt(_gh.substr(0, 2), 16) + "," + parseInt(_gh.substr(2, 2), 16) + "," + parseInt(_gh.substr(4, 2), 16) + ",.5)"); } // color-matched glow → jpAlive breathes the node's OWN colour, never an off-brand smudge (David 2026-07-01)
       if (state === "done") {
@@ -2443,7 +2446,8 @@
       if (_far) { var _lk = add(_fb, "div", "gate-lock"); _lk.innerHTML = '<i class="ti ti-lock"></i>'; } // far worlds: visibly LOCKED, still full pattern
       add(_fb, "div", "gatefoil"); // the mint-sheen sweep rides the pattern
       (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
-      for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c }, gi++);
+      var _mIcons = ["ti-star", JP_CHAPTERS[f].ic, "ti-flag-2"]; // Duolingo variety: star · the world's own glyph · a milestone flag
+      for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c, icon: _mIcons[z] }, gi++);
       trophy("locked", "ti-treasure-chest").querySelector(".jt-b").style.cssText = "background:" + mixHex(_w.c, "#160510", 0.5) + ";border-color:" + mixHex(_w.c, "#160510", 0.15) + ";color:" + _w.c + ";box-shadow:0 4px 0 #160510,0 0 14px " + _w.c + "44;";
     }
     // ACTIVE chapter = TODAY — wears ITS world's hue as the BRIGHT striped hero banner (door stripes, ink text legible — never the dark stripe).
