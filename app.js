@@ -1652,6 +1652,7 @@
   Object.assign(I18N.ru, { "start": "начало", "length": "длина", "More": "Ещё", "Block": "Блок" }); // edge-inspector strings (B4; "delete" already in the dict)
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
+  Object.assign(I18N.ru, { "EVENING RITUAL": "ВЕЧЕРНИЙ РИТУАЛ", "PRISM · SHINING": "ПРИЗМА · СИЯЮЩИЙ", "FLARE": "ВСПЫШКА", "THE BLADE": "КЛИНОК", "THE LATTICE": "РЕШЁТКА", "COSMOS": "КОСМОС", "BLOOM": "ЦВЕТЕНИЕ" }); // audit TOP-fix batch 1 strings (B4)
   Object.assign(I18N.ru, { // GUIDED WORKSHEETS (B4) — engine + all six course-mined sheets
     "WRITTEN INTO YOUR RECORD": "ЗАПИСАНО В ТВОЮ ЛЕТОПИСЬ", "Written. This is yours now.": "Записано. Теперь это твоё.", "Lesson": "Урок", "Lessons": "Уроки", "Small guided sits — 60 seconds each.": "Короткие ведомые практики — по 60 секунд.",
     "Why you're here": "Зачем ты здесь", "Energy follows clarity.": "Энергия идёт за ясностью.", "60 seconds. No wrong answers — only true ones.": "60 секунд. Неправильных ответов нет — только честные.", "What's calling loudest right now?": "Что сейчас зовёт громче всего?", "Calm & quiet": "Спокойствие", "A year from now it worked. What changed first?": "Через год всё получилось. Что изменилось первым?", "one honest sentence…": "одно честное предложение…", "How much do you want it?": "Насколько сильно ты этого хочешь?", "That's your flame. I wrote it down — I'll remind you when it matters.": "Это твой огонь. Я записал — напомню, когда будет важно.",
@@ -3447,7 +3448,11 @@
       if (pendingScrollNow || !pullFocusK) pullFocusK = pullK || todayK();
       var focus = pullFocusK, R = 3; // ±3 days of buffer → you can scroll several days smoothly before any rebuild (no mid-day jitter) — David 2026-06-26
       var pager = add(pb, "div", "day-pager");
-      function dayHeadInfo(hd, dk) { if (dk > todayK()) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; } else if (blocks(dk).length) { var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; }); var db = add(hd, "span", "day-done" + (_dn >= _bl.length ? " all" : "")); db.innerHTML = '<i class="ti ti-circle-check-filled"></i> ' + _dn + '/' + _bl.length + ' done'; } }
+      function dayHeadInfo(hd, dk) { if (dk > todayK()) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; } else if (blocks(dk).length) { // AUDIT TOP-5 (canon timeline A-4): the day band reads «ЧТ · 2 июля 👑 ▮▮▮▮» — crown for a fully-lived day + a 4-pip day battery (the old day-done chip was CSS-hidden dead code)
+        var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; });
+        if (_dn >= _bl.length && _bl.length) add(hd, "i", "ti ti-crown dss-crown");
+        var _on2 = Math.round((_bl.length ? _dn / _bl.length : 0) * 4), _dbat = add(hd, "span", "dss-bat");
+        for (var _p2 = 0; _p2 < 4; _p2++) { var _pp = add(_dbat, "i"); if (_p2 < _on2) _pp.className = "on"; } } }
       [-1, 0, 1].forEach(function (off) {
         var dk = keyAdd(focus, off), isT = (dk === todayK());
         var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
@@ -4434,10 +4439,12 @@
     var k = todayK(), mr = bookendMirror(k), beat = pmBeatName(sb);
     sb.innerHTML = "";
     var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
-    // beat dots — soft progress, never a counter you can fail
+    // AUDIT TOP-7 (canon mock #20): the «ВЕЧЕРНИЙ РИТУАЛ» eyebrow + beat dots with the CURRENT pip in GOLD
+    var _hdrow = add(card, "div"); _hdrow.setAttribute("style", "display:flex;align-items:center;justify-content:space-between;gap:10px;");
+    var _eyeb = add(_hdrow, "div", null, tr("EVENING RITUAL")); _eyeb.setAttribute("style", "font-family:'Jost',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:1.8px;color:#b596ad;");
     var live = PM_BEATS.filter(function (b) { return b !== "restory" || pmHasDrift(mr); });
-    var dots = add(card, "div"); dots.setAttribute("style", "display:flex;gap:6px;align-items:center;");
-    live.forEach(function (b) { var d = add(dots, "div"); var on = (b === beat); d.setAttribute("style", "width:" + (on ? 18 : 7) + "px;height:7px;border-radius:4px;background:" + (on ? DOM.restore.light : "#3a2640") + ";transition:all .2s;"); });
+    var dots = add(_hdrow, "div"); dots.setAttribute("style", "display:flex;gap:6px;align-items:center;");
+    live.forEach(function (b) { var d = add(dots, "div"); var on = (b === beat); d.setAttribute("style", "width:" + (on ? 18 : 7) + "px;height:7px;border-radius:4px;background:" + (on ? "#ffd24a" : "#3a2640") + ";transition:all .2s;"); });
     if (beat === "mirror") pmBeatMirror(card, sb, mr, k);
     else if (beat === "restory") pmBeatRestory(card, sb, mr, k);
     else if (beat === "ask") pmBeatAsk(card, sb, mr, k);
@@ -4474,8 +4481,9 @@
     MOODS.forEach(function (m, i) {
       var sel = (sb.dataset.mood === String(i)) || (!sb.dataset.mood && prev && prev.mood === i);
       var j = add(jewels, "button", "pm-jewel" + (sel ? " on" : ""));
-      j.innerHTML = '<i class="ti ' + m.e + '" style="color:' + (sel ? "#160510" : DOM.restore.light) + '"></i><span>' + tr(m.l) + '</span>';
-      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (b, bi) { var s = (!on && bi === idx); b.className = "pm-jewel" + (s ? " on" : ""); b.querySelector("i").style.color = s ? "#160510" : DOM.restore.light; }); }; })(i);
+      j.style.borderColor = m.c; // AUDIT TOP-7 (canon): each mood tile wears ITS jewel hue as the border (blue/blue/teal/gold/pink)
+      j.innerHTML = '<i class="ti ' + m.e + '" style="color:' + (sel ? "#160510" : m.c) + '"></i><span>' + tr(m.l) + '</span>';
+      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (b, bi) { var s = (!on && bi === idx); b.className = "pm-jewel" + (s ? " on" : ""); b.style.borderColor = MOODS[bi].c; b.querySelector("i").style.color = s ? "#160510" : MOODS[bi].c; }); }; })(i);
     });
     var door = add(card, "button", "pm-door");
     door.innerHTML = tr("To re-storying the day") + ' <i class="ti ti-arrow-right"></i>';
@@ -5873,7 +5881,7 @@
     var g = (S.game && S.game.garden) || []; if (!g.length) return; var tk = todayK();
     g.forEach(function (p) { if (p.stage != null && p.stage < 2 && p.plantedK != null && p.plantedK !== tk && hasEarnedToday()) p.stage++; });
   }
-  var MOODS = [{ e: "ti-cloud-fog", l: "Foggy" }, { e: "ti-cloud", l: "Heavy" }, { e: "ti-cloud-sun", l: "Okay" }, { e: "ti-sun", l: "Clear" }, { e: "ti-sparkles", l: "Radiant" }];
+  var MOODS = [{ e: "ti-cloud-fog", l: "Foggy", c: "#7f9bc4" }, { e: "ti-cloud", l: "Heavy", c: "#5f8dd6" }, { e: "ti-cloud-sun", l: "Okay", c: "#2ab8c4" }, { e: "ti-sun", l: "Clear", c: "#ffd24a" }, { e: "ti-sparkles", l: "Radiant", c: "#ff5fa8" }]; // AUDIT TOP-7: per-mood jewel hue (canon: blue/blue/teal/gold/pink)
   function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
     if (!gctx) { requestAnimationFrame(drawGuardian); return; }
@@ -5987,12 +5995,12 @@
   // ===== THE COLLECTION (GRAND BUILD D, spec REWARD-LANGUAGE v2/v3): badges as element-typed cards, computed from HISTORY (no fragile counters), minted loudly only for NEW progress =====
   var TOOL_TITLES = { "Meditation": 1, "Mantra": 1, "Breathe": 1, "Tapping (EFT)": 1, "Mindful moment": 1, "Gratitude": 1, "Wake the body": 1 };
   var BADGES = [
-    { id: "return", el: "prism", ti: "ti-arrow-back-up", name: "Came back", flavor: "disappeared — and returned. that IS the skill.", ranks: [1, 2, 4, 8], unit: "returns", prog: function () { var ks = Object.keys((S.sf && S.sf.actions) || {}).filter(function (k) { return (S.sf.actions[k] || []).length; }).sort(); var n = 0; for (var i = 1; i < ks.length; i++) { if (daysBetweenK(ks[i - 1], ks[i]) >= 3) n++; } return n; } },
-    { id: "streak", el: "burst", ti: "ti-flame", name: "Fire", flavor: "days in a row. the flame turns blue at 21.", ranks: [3, 7, 21, 60], unit: "in a row", prog: function () { return Math.max((S.game && S.game.streak) || 0, (S.game && S.game.bestStreak) || 0); } },
-    { id: "courage", el: "slash", ti: "ti-sword", name: "Courage", flavor: "walked toward the avoided thing.", ranks: [1, 3, 10, 25], unit: "brave moves", prog: function () { var u = (S.tools && S.tools.use) || {}; return (u.reversal || 0) + (u.jeopardy || 0) + (u.blacksun || 0); } },
-    { id: "align", el: "lattice", ti: "ti-target", name: "Precision", flavor: "planned it. lived it. crowned it.", ranks: [1, 5, 15, 40], unit: "crowns", prog: function () { return Object.keys(S.crowns || {}).length; } },
-    { id: "depth", el: "cosmos", ti: "ti-moon-stars", name: "Depth", flavor: "minutes of real practice. the cosmos inside is real.", ranks: [10, 60, 200, 500], unit: "min of practice", prog: function () { var m = 0, L = S.log || {}; Object.keys(L).forEach(function (k) { (L[k] || []).forEach(function (e) { if (TOOL_TITLES[e.title]) m += (e.mins || 0); }); }); return m; } },
-    { id: "garden", el: "bio", ti: "ti-seeding", name: "Gardener", flavor: "the world grows only from real things.", ranks: [3, 8, 20, 40], unit: "planted", prog: function () { return ((S.game && S.game.garden) || []).length; } }
+    { id: "return", el: "prism", ti: "ti-arrow-back-up", name: "Came back", flavorTag: "PRISM · SHINING",  flavor: "disappeared — and returned. that IS the skill.", ranks: [1, 2, 4, 8], unit: "returns", prog: function () { var ks = Object.keys((S.sf && S.sf.actions) || {}).filter(function (k) { return (S.sf.actions[k] || []).length; }).sort(); var n = 0; for (var i = 1; i < ks.length; i++) { if (daysBetweenK(ks[i - 1], ks[i]) >= 3) n++; } return n; } },
+    { id: "streak", el: "burst", ti: "ti-flame", name: "Fire", flavorTag: "FLARE",  flavor: "days in a row. the flame turns blue at 21.", ranks: [3, 7, 21, 60], unit: "in a row", prog: function () { return Math.max((S.game && S.game.streak) || 0, (S.game && S.game.bestStreak) || 0); } },
+    { id: "courage", el: "slash", ti: "ti-sword", name: "Courage", flavorTag: "THE BLADE",  flavor: "walked toward the avoided thing.", ranks: [1, 3, 10, 25], unit: "brave moves", prog: function () { var u = (S.tools && S.tools.use) || {}; return (u.reversal || 0) + (u.jeopardy || 0) + (u.blacksun || 0); } },
+    { id: "align", el: "lattice", ti: "ti-target", name: "Precision", flavorTag: "THE LATTICE",  flavor: "planned it. lived it. crowned it.", ranks: [1, 5, 15, 40], unit: "crowns", prog: function () { return Object.keys(S.crowns || {}).length; } },
+    { id: "depth", el: "cosmos", ti: "ti-moon-stars", name: "Depth", flavorTag: "COSMOS",  flavor: "minutes of real practice. the cosmos inside is real.", ranks: [10, 60, 200, 500], unit: "min of practice", prog: function () { var m = 0, L = S.log || {}; Object.keys(L).forEach(function (k) { (L[k] || []).forEach(function (e) { if (TOOL_TITLES[e.title]) m += (e.mins || 0); }); }); return m; } },
+    { id: "garden", el: "bio", ti: "ti-seeding", name: "Gardener", flavorTag: "BLOOM",  flavor: "the world grows only from real things.", ranks: [3, 8, 20, 40], unit: "planted", prog: function () { return ((S.game && S.game.garden) || []).length; } }
   ];
   function daysBetweenK(a, b) { return Math.round((kd(b) - kd(a)) / 86400000); }
   function badgeRank(b, v) { var r = 0; b.ranks.forEach(function (t) { if (v >= t) r++; }); return r; } // 0..4
@@ -6585,7 +6593,7 @@
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = ((mm - startH * 60) / 60 * HP), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (mm === endH * 60) continue; // BOUNDARY HOUR (David 2026-06-28): the bottom tick == startH (e.g. 28:00 == 4am) repeats the SAME hour the NEXT stacked day-section draws at its top → drawing it here printed "4am" twice + doubled the hour-line. Skip it; tiling stays seamless because the next day-section provides that row. (also fixes the reported 2–4am background break.)
-      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 8) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -8; }
+      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + (_hh % 24)); _hl.style.top = (_t - 8) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -8; } // AUDIT: canon gutter = 24h (no am/pm ambiguity, no latin leak)
       else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }
@@ -6645,7 +6653,7 @@
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (bb) { return function () { editBlk(bb); }; })(b); } // small bubble → carries its open-fn so the swipe-select cluster gesture can open it (David 2026-06-28)
       if (status === "ok" && !partial) { // DONE = deep-jewel diagonal STRIPES (the old metallic look, darkened for night) + ink edge — NO neon glow, NO shine; the now-line stays the brightest thing (David 2026-06-27)
-        var _ji = jewelInk(dom); card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, _ji, 0.5) + "," + mixHex(D.c, _ji, 0.5) + " 9px," + mixHex(D.c, _ji, 0.62) + " 9px," + mixHex(D.c, _ji, 0.62) + " 18px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 3px 0 #160510"; // verdict #8: deepen toward cool jewel ink, not #160510 (which browns warm hues)
+        var _ji = jewelInk(dom); card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, _ji, 0.5) + "," + mixHex(D.c, _ji, 0.5) + " 9px," + mixHex(D.c, _ji, 0.62) + " 9px," + mixHex(D.c, _ji, 0.62) + " 18px)"; card.style.borderColor = "#160510"; card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.09),0 3px 0 #160510, 0 0 0 2px #ffd24a"; // verdict #8 jewel stripes + AUDIT TOP-2: the canon GOLD RING on earned/done blocks (gold = earned law) — a crisp 2px ring, not a glow
       } else if (dark) { // missed/ghost — domain-tinted-dark hollow + a clear domain OUTLINE (kept — David likes this close up)
         card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderStyle = "dashed"; card.style.boxShadow = "none"; // verdict #5: ghost reads DASHED like the widget
       } else { // future = planned: DIMMER deep stripes, fainter the further ahead, ink edge (David 2026-06-27)
