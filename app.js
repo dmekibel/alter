@@ -1653,6 +1653,7 @@
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
   Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь" });
+  Object.assign(I18N.ru, { "One slow breath with me. Right now.": "Один медленный вдох со мной. Прямо сейчас.", "in through the nose… four counts": "вдох через нос… на четыре счёта", "out through the mouth… slowly": "выдох через рот… медленно", "that's the whole ask — I'll feel it land.": "это вся просьба — я почувствую, как он ляжет.", "One conscious breath": "Один осознанный вдох", "right here": "прямо здесь" });
   Object.assign(I18N.ru, { "EVENING RITUAL": "ВЕЧЕРНИЙ РИТУАЛ", "PRISM · SHINING": "ПРИЗМА · СИЯЮЩИЙ", "FLARE": "ВСПЫШКА", "THE BLADE": "КЛИНОК", "THE LATTICE": "РЕШЁТКА", "COSMOS": "КОСМОС", "BLOOM": "ЦВЕТЕНИЕ" }); // audit TOP-fix batch 1 strings (B4)
   Object.assign(I18N.ru, { // GUIDED WORKSHEETS (B4) — engine + all six course-mined sheets
     "WRITTEN INTO YOUR RECORD": "ЗАПИСАНО В ТВОЮ ЛЕТОПИСЬ", "Written. This is yours now.": "Записано. Теперь это твоё.", "Lesson": "Урок", "Lessons": "Уроки", "Small guided sits — 60 seconds each.": "Короткие ведомые практики — по 60 секунд.",
@@ -4961,8 +4962,8 @@
     }
     function taskDone() {
       if (data.taskDone) return; data.taskDone = true;
-      var _chL = data.vibe === "overwhelmed" ? "Pick one thing up off the floor" : data.vibe === "thriving" ? "Pick three things up off the floor" : "Pick two things up off the floor"; // sized by the vibe read — the log title matches what was actually asked
-      try { choreMark({ id: "declutter", l: _chL }); } catch (e) {} // choreMark already grants earn(10) — top up to land in the 15-20 first-win range the spec calls for, not double-stack a second full earn
+      try { logs(todayK()).push({ id: uid(), time: pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()), title: "One conscious breath", mins: 1, catK: null, domain: "restore", color: DOM.restore.c }); } catch (e) {} // the breath becomes the FIRST REAL ENTRY in the record — the thesis, proven in minute one
+      try { earn(10, { label: "first-breath" }); } catch (e) {}
       try { earn(8, { label: "onboard-task-bonus" }); } catch (e) {}
       draw();
     }
@@ -4991,10 +4992,10 @@
         add(body, "div", "ob-q", "What's closest to the truth right now?").style.cssText = "font-size:26px;font-weight:800;text-align:center;line-height:1.2;";
         add(body, "div", "ob-sb", "no right answers").style.cssText = "text-align:center;margin-top:6px;";
         var vw = add(body, "div"); vw.style.cssText = "width:100%;display:flex;flex-direction:column;gap:12px;margin-top:22px;text-align:left;";
-        [["thriving", "Burning", "things move — I want more", "ti-flame", "#ff8a3a", "high"],
-         ["coasting", "Flowing", "day after day, on autopilot", "ti-ripple", "#48b8e0", "mid"],
+        [["thriving", "Thriving", "things move — I want more", "ti-flame", "#ff8a3a", "high"],
+         ["coasting", "Coasting", "day after day, on autopilot", "ti-windmill", "#48b8e0", "mid"],
          ["stuck", "Stuck", "I know what to do — I don't", "ti-anchor", "#ff5fa8", "mid"],
-         ["overwhelmed", "Drowning", "too much of everything", "ti-droplet", "#7a9aff", "low"]].forEach(function (o) {
+         ["overwhelmed", "Overwhelmed", "too much of everything", "ti-urgent", "#7a9aff", "low"]].forEach(function (o) {
           var on3 = data.vibe === o[0], r = add(vw, "div", "k-row" + (on3 ? " lit" : ""));
           r.style.cssText = "--kc:" + mixHex(o[4], "#160510", 0.28) + ";--kt:" + mixHex(o[4], "#0d0410", 0.86) + ";--kA:" + o[4] + ";--kB:" + mixHex(o[4], "#160510", 0.24) + ";--ki:" + mixHex(o[4], "#0d0410", 0.76) + ";--ks:" + mixHex(o[4], "#b39ab0", 0.5) + ";";
           r.innerHTML = '<i class="ti ' + o[3] + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o[1] + '</div><div class="kr-s">' + o[2] + '</div></div>' + (on3 ? '<i class="ti ti-check kr-chk"></i>' : '');
@@ -5007,11 +5008,13 @@
         return;
       }
       if (step === 3) { // THE TASK, SIZED BY THE READ (placement-by-attempt, 2026-07-03): Drowning = one thing, Burning = three-against-the-clock — the same state-question finally has teeth on the very next screen. Room grid is dead; the room is asked AFTER the win, from the body ("where were you just standing?"), so messRoom is revealed, not surveyed.
-        if (!data.taskDone) {
-          add(body, "i", "ti ti-arrow-big-down-lines ob-spk").style.marginTop = "18px";
-          add(body, "div", "ob-q", data.vibe === "overwhelmed" ? "Pick ONE thing up off the floor. That's the whole ask." : data.vibe === "thriving" ? "Three things off the floor — beat thirty seconds. Go." : "Pick two things up off the floor. I'll wait.");
-          add(body, "div", "ob-sb", "really — go do it, then tap Done.");
-          var db = add(foot, "button", "ob-btn go", "Done ✓"); db.onclick = taskDone;
+        if (!data.taskDone) { // THE FIRST WIN = ONE BREATH (David 2026-07-04: the floor-pickup was wrong for a first meeting) — dignified, works anywhere, still REAL: the app watches you do one true thing and remembers it
+          var _bm = obMark(body, 150); _bm.classList.add("ob-breathe");
+          add(body, "div", "ob-q", "One slow breath with me. Right now.");
+          var _bcap = add(body, "div", "ob-sb", "in through the nose… four counts"); _bcap.style.cssText = "text-align:center;margin-top:10px;font-weight:700;color:#f0e6ef;";
+          add(body, "div", "ob-sb", "that's the whole ask — I'll feel it land.").style.cssText = "text-align:center;margin-top:6px;opacity:.65;";
+          setTimeout(function () { if (_bcap && _bcap.isConnected) _bcap.textContent = tr("out through the mouth… slowly"); }, 4200);
+          advT = setTimeout(function () { if (_bcap && _bcap.isConnected) taskDone(); }, 9200); // one full cycle → the win lands on its own (Finch: it happens WITH you)
           var skip4 = add(foot, "button", "ob-skip", "skip"); skip4.onclick = finish;
         } else {
           // PAYOFF BEAT (verdict #18, 1:1 widget): the reward plays its own reward
@@ -5020,8 +5023,8 @@
           add(wrap, "div", "ob-kick", tr("first win"));
           var bigEl = add(wrap, "div", "ob-big", "+18 " + tr("Spark"));
           add(wrap, "div", "ob-sb", tr("a real thing — a real reward")).style.cssText = "text-align:center;margin-top:8px;";
-          var _taskT = data.vibe === "overwhelmed" ? tr("One thing off the floor") : data.vibe === "thriving" ? tr("Three things off the floor") : tr("Two things off the floor");
-          var _room = data.messRoom ? esc(tr(data.messRoom)) : tr("in your space");
+          var _taskT = tr("One conscious breath");
+          var _room = tr("right here");
           var q = add(body, "div", "ob-quest");
           q.innerHTML = '<div class="qi"><i class="ti ti-hand-stop"></i></div><div class="qt"><b>' + esc(_taskT) + '</b><span>' + _room + ' · ' + tr("done") + '</span></div><i class="ti ti-check qk"></i>';
           var db2 = add(foot, "button", "ob-btn go", "✓ " + tr("Did it")); db2.style.pointerEvents = "none";
@@ -5042,7 +5045,7 @@
         return;
       }
       if (step === 4) { // THE BLOCKER BLESSING (P0-a, 2026-07-03): the shape of the wall, never the content — three fixed chips (RU-safe), the reply is a promise the Doorway node cashes on days 2-7
-        var av4 = add(body, "div", "ob-ava"); av4.innerHTML = '<i class="ti ti-sparkles"></i>';
+        obMark(body, 110);
         add(body, "div", "ob-q", "One real thing you've been circling.").style.cssText = "font-size:24px;font-weight:800;text-align:center;line-height:1.2;";
         add(body, "div", "ob-sb", "I don't need to know what it is — just the shape of the wall.").style.cssText = "text-align:center;margin-top:6px;";
         var bw = add(body, "div"); bw.style.cssText = "width:100%;display:flex;flex-direction:column;gap:12px;margin-top:22px;text-align:left;";
