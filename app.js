@@ -7685,22 +7685,39 @@
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     orb.style.animation = "breathe 9s ease-in-out infinite";
+    ov.style.setProperty("--gp-c", col); // PLAYER 1:1 (mock #20): element-tint everything (map pips, catch dots, ripple) to this session's color
+    orb.style.background = "radial-gradient(circle," + mixHex(col, "#ffffff", 0.55) + " 0%," + mixHex(col, "#160510", 0.10) + " 55%,rgba(0,0,0,0) 74%)"; // tinted orb — light core → session color → transparent
+    orb.style.boxShadow = "0 0 80px " + mixHex(col, "#160510", 0.15);
     var waves = add(ov, "div", "gp-waves"); waves.innerHTML = "<span></span><span></span><span></span>"; // slow-drifting Headspace-style depth bands behind the orb (David 2026-07-01)
     if (opts.title) { var tb = add(ov, "div", "gp-title", opts.title); } // pinned session title, Headspace-style
+    // BEAT-PIP SESSION MAP (mock #20): one pip per cue segment, fills as playback passes each
+    var mapWrap = add(ov, "div", "gp-map"), mapPips = [];
+    opts.segments.forEach(function () { mapPips.push(add(mapWrap, "i")); });
+    function paintMap(e) { for (var mi = 0; mi < mapPips.length; mi++) { var on = opts.segments[mi] && opts.segments[mi].start != null && opts.segments[mi].start <= e; mapPips[mi].className = on ? "on" : ""; } }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
     var driftCount = 0;
     function medChime() { var c = TTS.ctx && TTS.ctx(); if (!c) return; var t = c.currentTime, out = (typeof bgBus === "function" && bgBus()) || c.destination; [528, 792].forEach(function (f, i) { var o = c.createOscillator(), g = c.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.04); g.gain.linearRampToValueAtTime(0.13 - i * 0.06, t + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); o.connect(g); g.connect(out); o.start(t); o.stop(t + 1.6); }); }
+    // CATCH = THE UNIT (mock #20): a pip row + ripple every time you notice a drift; label spells «подмечено · N». Same driftCount/medChime/label semantics as before — just made visible.
+    var catchWrap = add(ov, "div", "gp-catch");
+    function paintCatch() { catchWrap.innerHTML = ""; for (var ci = 0; ci < driftCount; ci++) add(catchWrap, "span", "cd"); add(catchWrap, "span", "cl", tr("noticed") + " · " + driftCount); catchWrap.style.visibility = driftCount ? "" : "hidden"; }
+    paintCatch();
     if (opts.drift) {
       orb.style.cursor = "pointer";
-      var dhint = add(ov, "div", null, "tap the orb the moment you notice you've drifted"); dhint.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);left:0;right:0;text-align:center;font-size:11.5px;color:rgba(240,230,239,.42);z-index:4;pointer-events:none;";
-      orb.addEventListener("click", function (e) { e.stopPropagation(); driftCount++; try { medChime(); } catch (er) {} var was = lab.textContent; lab.textContent = "good catch — back to it"; setTimeout(function () { if (lab.textContent === "good catch — back to it") lab.textContent = was; }, 1500); });
-    }
+      var dhint = add(ov, "div", null, tr("tap the orb the moment you notice you've drifted")); dhint.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);left:0;right:0;text-align:center;font-size:11.5px;color:rgba(240,230,239,.42);z-index:4;pointer-events:none;";
+      orb.addEventListener("click", function (e) { e.stopPropagation(); driftCount++; try { medChime(); } catch (er) {} paintCatch(); catchWrap.classList.remove("ripple"); void catchWrap.offsetWidth; catchWrap.classList.add("ripple"); var was = lab.textContent; lab.textContent = tr("good catch — back to it"); setTimeout(function () { if (lab.textContent === tr("good catch — back to it")) lab.textContent = was; }, 1500); });
+    } else { catchWrap.style.display = "none"; } // mantra/non-drift players don't show the catch row
     function dbg2(m) { try { if (!(typeof S !== "undefined" && S && S.voiceDebug)) return; var e = document.getElementById("voiceDbg"); if (!e) { e = document.createElement("div"); e.id = "voiceDbg"; e.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 2px);left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.75);color:#8fffa8;font:600 10px ui-monospace,monospace;padding:2px 9px;border-radius:9px;pointer-events:none;max-width:94vw;white-space:nowrap;"; document.body.appendChild(e); } e.textContent = "♪ " + m; } catch (e2) {} }
     // transport bar (built now, wired after decode)
     var bar = add(ov, "div", "gp-bar");
     var scrub = add(bar, "div", "gp-scrub"); var fill = add(scrub, "div", "gp-fill"); var knob = add(scrub, "div", "gp-knob");
+    fill.style.background = "linear-gradient(90deg," + mixHex(col, "#ffffff", 0.4) + "," + col + ")"; // battery fill tinted to the session color (canon)
+    // BATTERY SCRUB (mock #20): cue ticks at each segment start + a dim H12 silence tail zone
+    var ticks = add(scrub, "div", "gp-ticks"), tailEl = add(scrub, "div", "gp-tail");
+    var silenceSec = (opts.silenceTailSec != null) ? opts.silenceTailSec : (opts.drone !== false ? 20 : 0); // 20s «тишина в конце» default for droned sessions
     var times = add(bar, "div", "gp-times"); var tCur = add(times, "span", null, "0:00"); var tTot = add(times, "span", null, "0:00");
+    var silCap = add(bar, "div", "gp-silence"); silCap.style.visibility = "hidden";
+    silCap.innerHTML = '<i class="ti ti-moon" style="font-size:13px;"></i> ' + tr("silence at the end") + ' · 0:' + pad(silenceSec);
     var btns = add(bar, "div", "gp-btns");
     var bBack = add(btns, "button", "gp-b gp-side"); bBack.innerHTML = '<i class="ti ti-rewind-backward-15"></i>';
     var bPlay = add(btns, "button", "gp-b gp-play"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
@@ -7719,7 +7736,13 @@
       var t = 0;
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
-      ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = ""; paintNow(0);
+      ready = true; lab.textContent = ""; tTot.textContent = fmtT(total); bar.style.visibility = "";
+      // battery cue ticks (one per segment start) + silence tail sized to silenceSec
+      ticks.innerHTML = "";
+      segs.forEach(function (sg) { if (sg.start <= 0 || sg.start >= total) return; var tk = add(ticks, "i"); tk.style.left = (sg.start / total * 100) + "%"; });
+      if (silenceSec > 0 && total > silenceSec) { tailEl.style.left = ((total - silenceSec) / total * 100) + "%"; tailEl.style.display = ""; silCap.style.visibility = ""; }
+      else { tailEl.style.display = "none"; }
+      paintMap(0); paintNow(0);
       if (autoplay) { startFrom(0); } // clips were pre-warmed → we're still inside the Begin tap, so we can start right now
       else { playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; dbg2("ready · tap play"); }
       tick();
@@ -7732,7 +7755,7 @@
     function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; }
     function startFrom(sec) { // schedule every remaining clip up front, relative to now
       if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
-      stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>';
+      stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade)
       segs.forEach(function (sg) {
         if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
         try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); g.gain.value = opts.vol != null ? opts.vol : 1; src.connect(g); g.connect(voiceBus() || ctx.destination);
@@ -7742,9 +7765,9 @@
       });
       dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
     }
-    function pause() { if (!playing) return; offset = curElapsed(); playing = false; stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
+    function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    function paintNow(e) { var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = fmtT(e); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
+    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = fmtT(e); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
