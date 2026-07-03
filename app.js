@@ -2342,7 +2342,7 @@
       var bub = add(node, "div", "jp-bub");
       var icon = state === "mystery" ? "ti-sparkles" : state === "locked" ? "ti-lock" : (n.icon || JP_ICON[n.key] || tiClass({ title: n.title, color: n.color }));
       bub.innerHTML = '<i class="ti ' + icon + '"></i>';
-      if (state === "mystery") { bub.style.background = mixHex(n.color || "#b07aff", "#160510", 0.72); bub.style.borderColor = mixHex(n.color || "#b07aff", "#160510", 0.35); bub.style.color = n.color || "#b07aff"; bub.style.setProperty("--mglow", (n.color || "#b07aff") + "3d"); } // SEALED STONE (worlds epic, renamed per David — no "eggs"): a dim SPARK in the world's hue, waiting to be lit — the battery language (matte → shining) applied to the path itself
+      if (state === "mystery") { var _mc = n.color || "#b07aff"; bub.style.background = "radial-gradient(circle at 34% 30%," + mixHex(_mc, "#ffffff", 0.18) + "," + mixHex(_mc, "#160510", 0.5) + " 70%)"; bub.style.borderColor = mixHex(_mc, "#160510", 0.2); bub.style.color = mixHex(_mc, "#ffffff", 0.35); bub.style.setProperty("--mglow", _mc + "55"); } // SEALED SPARK (worlds v2 — brighter per David): a lit-from-within orb in the world's hue, waiting to be walked — colorful, never dim
       else if (state !== "locked") { bub.style.background = (state === "cur") ? tfStripe(n.color) : n.color; bub.style.borderColor = mixHex(n.color, "#160510", 0.45); } // current = striped hero tile (timeline language); others = flat domain color
       if (state === "cur") { var _gh = (n.color || "#ff5fa0").replace("#", ""); if (_gh.length === 3) _gh = _gh.replace(/(.)/g, "$1$1"); bub.style.setProperty("--glow", "rgba(" + parseInt(_gh.substr(0, 2), 16) + "," + parseInt(_gh.substr(2, 2), 16) + "," + parseInt(_gh.substr(4, 2), 16) + ",.5)"); } // color-matched glow → jpAlive breathes the node's OWN colour, never an off-brand smudge (David 2026-07-01)
       if (state === "done") {
@@ -2422,20 +2422,26 @@
     }
 
     // Assembled TOP→BOTTOM = a climb UP: future (aspiration) on top → TODAY → past (foundation) at the bottom.
-    // FUTURE = WORLDS (David 2026-07-03 epic): every coming chapter is a colorful WORLD GATE in its own biome hue — holo shimmer on the next one, hue-tinted mystery on the far ones; the stones toward the next gate are glowing MYSTERY EGGS, never gray locks. The future should look FUN.
+    // FUTURE = WORLDS v2 (David device 2026-07-03: "crazy pokemon colors, holographic vibes; SEE the future circles"): every gate = a PRISM-framed BRIGHT world card (the binder/Return holo border, animated) with ink text; EVERY future chapter shows its sealed-spark stones + chest — visible-locked, never collapsed.
     for (var f = JP_CHAPTERS.length - 1; f > jn; f--) {
       var _far = f > jn + 1, _w = JP_WORLDS[f] || JP_WORLDS[0];
-      var _fb = banner("locked gate" + (_far ? " fog" : ""), tr("World") + " " + (f + 1) + (_far ? "" : " · " + tr("soon")), JP_CHAPTERS[f].t, JP_CHAPTERS[f].ic, _far ? null : JP_CHAPTERS[f].why);
-      _fb.style.background = "linear-gradient(135deg," + _w.g + "," + mixHex(_w.c, "#160510", 0.78) + ")"; _fb.style.borderColor = mixHex(_w.c, "#160510", _far ? 0.55 : 0.3); _fb.style.color = _far ? mixHex(_w.c, "#8a7898", 0.45) : "#f4e9f2"; _fb.style.setProperty("--wglow", _w.c + "26");
-      var _fi = _fb.querySelector(".ju-ic"); if (_fi) { _fi.style.background = mixHex(_w.c, "#160510", 0.68); _fi.style.borderColor = mixHex(_w.c, "#160510", 0.3); _fi.style.color = _w.c; }
-      if (!_far) { var _gf = add(_fb, "div", "gatefoil"); } // holo sweep on the NEXT world's gate only
+      var _fb = banner("gate" + (_far ? " fargate" : ""), tr("World") + " " + (f + 1) + (_far ? "" : " · " + tr("soon")), JP_CHAPTERS[f].t, JP_CHAPTERS[f].ic, _far ? null : JP_CHAPTERS[f].why);
+      // PRISM BORDER (jpHoloPan holo, border-box) over a BRIGHT world inner (padding-box) — pokemon-card grammar, ink text = always legible
+      _fb.style.border = "3px solid transparent";
+      _fb.style.background = "linear-gradient(135deg," + mixHex(_w.c, "#ffffff", _far ? 0.1 : 0.24) + "," + (_far ? mixHex(_w.c, "#160510", 0.22) : _w.c) + ") padding-box, linear-gradient(115deg,#ffb3d9,#a3d9ff,#b8ffd9,#ffe9a3,#d9a3ff,#ffb3d9) border-box";
+      _fb.style.backgroundSize = "100% 100%, 300% 100%";
+      _fb.style.color = "#160510"; _fb.style.boxShadow = "0 4px 0 #160510"; _fb.style.setProperty("--wglow", _w.c + "33");
+      var _fi = _fb.querySelector(".ju-ic"); if (_fi) { _fi.style.background = "rgba(22,5,16,.16)"; _fi.style.borderColor = "#160510"; _fi.style.color = "#160510"; }
+      if (_far) { var _lk = add(_fb, "div", "gate-lock"); _lk.innerHTML = '<i class="ti ti-lock"></i>'; } // far worlds: visibly LOCKED (a small ink chip), still full color
+      add(_fb, "div", "gatefoil"); // holo sweep on every gate
       (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
-      if (!_far) { for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c }, gi++); trophy("locked", "ti-treasure-chest").querySelector(".jt-b").style.cssText = "background:" + mixHex(_w.c, "#160510", 0.62) + ";border-color:" + mixHex(_w.c, "#160510", 0.25) + ";color:" + _w.c + ";box-shadow:0 4px 0 #160510,0 0 14px " + _w.c + "33;"; }
+      for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c }, gi++); // the future circles — SEALED SPARKS in the world hue, visible for EVERY world
+      trophy("locked", "ti-treasure-chest").querySelector(".jt-b").style.cssText = "background:" + mixHex(_w.c, "#160510", 0.5) + ";border-color:" + mixHex(_w.c, "#160510", 0.15) + ";color:" + _w.c + ";box-shadow:0 4px 0 #160510,0 0 14px " + _w.c + "44;";
     }
-    // ACTIVE chapter = TODAY — wears ITS world's hue as the striped hero banner (you're IN this biome now).
+    // ACTIVE chapter = TODAY — wears ITS world's hue as the BRIGHT striped hero banner (door stripes, ink text legible — never the dark stripe).
     var _wA = JP_WORLDS[jn] || JP_WORLDS[0];
     var _ab = banner("active", "Today · Chapter " + (jn + 1), JP_CHAPTERS[jn].t, JP_CHAPTERS[jn].ic, JP_CHAPTERS[jn].why);
-    _ab.style.background = tfStripe(_wA.c); _ab.style.color = "#160510"; _ab.style.boxShadow = "0 4px 0 #160510";
+    _ab.style.background = tfStripeDoor(_wA.c); _ab.style.color = "#160510"; _ab.style.boxShadow = "0 4px 0 #160510";
     var _ai = _ab.querySelector(".ju-ic"); if (_ai) { _ai.style.background = "rgba(22,5,16,.18)"; _ai.style.color = "#160510"; }
     _ab.style.cursor = "pointer"; _ab.title = "Tap to see chapter guide";
     (function(idx){ _ab.onclick = function(){ try{chapterSheet(idx);}catch(e){}; }; })(jn);
