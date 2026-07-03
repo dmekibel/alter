@@ -1333,6 +1333,7 @@
     "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
     "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "The rest": "Остальное", "You're today —": "Ты сегодня —", "been meaning to": "давно собирался",
     "Return": "Вернуться", "day": "день", "together": "вместе", "saved": "запись", "Restore": "Восстановить", "your save": "твоё сохранение", "Erase everything and start over?": "Стереть всё и начать заново?", "profile · plan · garden — all of it": "профиль · план · сад — всё", "Erase everything": "Стереть всё", "Break": "Перерыв",
+    "first win": "первая победа", "Spark": "Искр", "a real thing — a real reward": "настоящее дело — настоящая награда", "One thing off the floor": "Одна вещь с пола", "Two things off the floor": "Две вещи с пола", "Three things off the floor": "Три вещи с пола", "in your space": "в твоём пространстве", "done": "сделано", "Did it": "Сделал", "the spark flew to your count — I remembered": "искры улетели в твой счёт — я запомнил", "Your first card": "Твоя первая карта", "matte — that's potential. it lights up as you live": "матовая — это потенциал. она зажигается, пока ты живёшь", "TRAINER CARD": "КАРТА ТРЕНЕРА", "THE GATHERED": "СОБРАННЫЙ", "day one. everything ahead.": "день первый. всё впереди.", "ON THE BACK — PACT": "НА ОБОРОТЕ — ПАКТ", "promised honesty": "обещал честность", "showed up:": "пришёл:", "scared": "страшно", "overwhelmed": "завалило", "carrying an old one": "со старой раной", "stuck": "застрял", "GROWS WITH YOU": "РАСТЁТ С ТОБОЙ", "7 days": "7 дней", "crown": "корона", "return": "возвращение", "collection": "коллекция", "it's yours — forever": "она твоя — навсегда",
     "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
@@ -4645,7 +4646,7 @@
   // Cut: gender/age/roles/rhythm/goal-picker screens (founder hand-loads those for the sister launch). Kept: ob-ov/ob-card scaffold, chip machinery, progress bar.
   function onboard() {
     var data = { vibe: "", energy: null, messRoom: "", block: "", pactAt: null, taskDone: false, seeded: false };
-    var step = 0, STEPS = 7, advT = null; // 0-1 showman · 2 vibe (answered aloud) · 3 the task (sized by vibe) + room re-home · 4 blocker blessing · 5 pact (after the gift) · 6 the seed — FIRST-DAY REWIRE (David 2026-07-03: every answer must visibly change the next beat; the clipboard is dead)
+    var step = 0, STEPS = 8, advT = null; // 0-1 showman · 2 vibe · 3 task+payoff · 4 blocker · 5 pact · 6 trainer-card MINT · 7 seed — verdict #18 inserts the mint beat before the seed
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     var bar = add(card, "div", "ob-bar"), barDs = []; for (var _bi = 0; _bi < STEPS; _bi++) barDs.push(add(bar, "i")); // §12 frame 12: course-style dashes, one per beat
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
@@ -4683,7 +4684,7 @@
     }
     function draw() {
       barDs.forEach(function (d, di) { d.className = di <= step ? "on" : ""; }); body.innerHTML = ""; foot.innerHTML = "";
-      body.className = (step === 0 || step === 1 || step === 2 || step === 4 || step === 6) ? "ob-body center" : "ob-body";
+      body.className = (step === 0 || step === 1 || step === 2 || step === 4 || step === 6 || step === 7) ? "ob-body center" : "ob-body";
       if (step === 0) { add(body, "i", "ti ti-sparkles ob-spk"); var f = add(body, "div", "ob-face"); add(f, "span", "ob-eye l"); add(f, "span", "ob-eye r"); add(body, "div", "ob-q", "Hi, I'm Sage."); add(body, "div", "ob-sb", "what I'm about to show you gives you real powers. this is no joke."); stdFoot("Let's go ▸", false); return; }
       if (step === 1) { add(body, "i", "ti ti-shield-star ob-spk"); add(body, "div", "ob-q", "Every real thing you do, I remember — and your world grows."); add(body, "div", "ob-sb", "small things count. let's prove it — 90 seconds."); stdFoot("Next ▸", false); return; }
       if (step === 5) { // PACT — moved AFTER the first win (2026-07-03): give-before-take made true; the promise is now backed by evidence, not a salesman's check
@@ -4729,13 +4730,30 @@
           var db = add(foot, "button", "ob-btn go", "Done ✓"); db.onclick = taskDone;
           var skip4 = add(foot, "button", "ob-skip", "skip"); skip4.onclick = finish;
         } else {
-          add(body, "i", "ti ti-sparkles ob-spk"); add(body, "div", "ob-q", "+18 Spark.");
-          add(body, "div", "ob-sb", "that's it. that's the whole game — real things, remembered.");
-          add(body, "div", "ob-sb", "Where were you just standing?").style.cssText = "margin-top:20px;font-weight:700;color:#f0e6ef;";
-          var rr = add(body, "div", "ob-row");
-          ["Bedroom", "Kitchen", "Living room", "Desk / office", "Bathroom"].forEach(function (r) { var c = chip(rr, r, data.messRoom === r); c.onclick = function () { data.messRoom = r; draw(); }; });
-          if (data.messRoom) add(body, "div", "ob-sb", "Noted. That corner's on my list for you now.").style.cssText = "margin-top:10px;opacity:.85;";
+          // PAYOFF BEAT (verdict #18, 1:1 widget): the reward plays its own reward
+          var wrap = add(body, "div"); wrap.style.cssText = "position:relative;width:100%;";
+          var chipEl = add(wrap, "div", "ob-scorechip"); chipEl.innerHTML = '<i class="ti ti-sparkles"></i><b class="obn">0</b>';
+          add(wrap, "div", "ob-kick", tr("first win"));
+          var bigEl = add(wrap, "div", "ob-big", "+18 " + tr("Spark"));
+          add(wrap, "div", "ob-sb", tr("a real thing — a real reward")).style.cssText = "text-align:center;margin-top:8px;";
+          var _taskT = data.vibe === "overwhelmed" ? tr("One thing off the floor") : data.vibe === "thriving" ? tr("Three things off the floor") : tr("Two things off the floor");
+          var _room = data.messRoom ? esc(tr(data.messRoom)) : tr("in your space");
+          var q = add(body, "div", "ob-quest");
+          q.innerHTML = '<div class="qi"><i class="ti ti-hand-stop"></i></div><div class="qt"><b>' + esc(_taskT) + '</b><span>' + _room + ' · ' + tr("done") + '</span></div><i class="ti ti-check qk"></i>';
+          var db2 = add(foot, "button", "ob-btn go", "✓ " + tr("Did it")); db2.style.pointerEvents = "none";
+          add(body, "div", "ob-sb", tr("the spark flew to your count — I remembered")).style.cssText = "text-align:center;margin-top:18px;";
           stdFoot("Next ▸", false);
+          if (!data._payoffFlew) { data._payoffFlew = true; setTimeout(function () {
+            try {
+              var br = bigEl.getBoundingClientRect(), cr = chipEl.getBoundingClientRect();
+              var f = document.createElement("div"); f.className = "fly-n"; f.textContent = "+18";
+              f.style.left = (br.left + br.width / 2 - 18) + "px"; f.style.top = (br.top + 4) + "px"; document.body.appendChild(f);
+              var dx = cr.left + cr.width / 2 - (br.left + br.width / 2), dy = cr.top + cr.height / 2 - (br.top + br.height / 2);
+              var done = function () { f.remove(); var n = chipEl.querySelector(".obn"); if (n) n.textContent = "18"; chipEl.classList.remove("pop"); void chipEl.offsetWidth; chipEl.classList.add("pop"); };
+              if (f.animate) { f.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: "translate(" + (dx * .3) + "px," + (dy * .3 - 20) + "px) scale(1.15)", opacity: 1, offset: .4 }, { transform: "translate(" + dx + "px," + dy + "px) scale(.5)", opacity: .8 }], { duration: 720, easing: "cubic-bezier(.3,.7,.4,1)" }).onfinish = done; }
+              else done();
+            } catch (e) { var n = chipEl.querySelector(".obn"); if (n) n.textContent = "18"; }
+          }, 260); }
         }
         return;
       }
@@ -4758,7 +4776,38 @@
         else { var skipB = add(foot, "button", "ob-skip", "skip"); skipB.onclick = finish; }
         return;
       }
-      if (step === 6) {
+      if (step === 6) { // TRAINER-CARD MINT (verdict #18, 1:1 widget): the matte card is your potential — it ignites as you live
+        add(body, "div", "ob-q", tr("Your first card")).style.cssText = "font-size:26px;font-weight:800;text-align:center;";
+        add(body, "div", "ob-sb", tr("matte — that's potential. it lights up as you live")).style.cssText = "text-align:center;margin-top:6px;";
+        var tc = add(body, "div", "ob-tcard");
+        var _cls = tr("THE GATHERED");
+        var _est = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+        tc.innerHTML = '<div class="tc-head"><span>' + tr("TRAINER CARD") + '</span><span>№001</span></div>'
+          + '<i class="ti ti-sparkles tc-spk"></i>'
+          + '<div class="tc-name">' + _cls + '</div>'
+          + '<div class="tc-rule"></div>'
+          + '<div class="tc-est">EST · ' + esc(_est) + '</div>'
+          + '<div class="tc-sub">' + tr("day one. everything ahead.") + '</div>';
+        var pl = add(body, "div", "ob-pactlbl"); pl.innerHTML = '<i class="ti ti-refresh"></i>' + tr("ON THE BACK — PACT");
+        var pbx = add(body, "div", "ob-pactbox");
+        var _blk = data.block === "fear" ? tr("scared") : data.block === "overwhelm" ? tr("overwhelmed") : data.block === "wound" ? tr("carrying an old one") : tr("stuck");
+        pbx.innerHTML = '<b>' + tr("promised honesty") + '</b><span>' + tr("showed up:") + ' ' + esc(_blk) + '</span>';
+        add(body, "div", "ob-pips-h", tr("GROWS WITH YOU"));
+        var pips = add(body, "div", "ob-pips");
+        pips.innerHTML = '<div class="ob-pip p1"><i></i><span>' + tr("7 days") + '</span></div><div class="ob-pip p2"><i></i><span>' + tr("crown") + '</span></div><div class="ob-pip p3"><i></i><span>' + tr("return") + '</span></div>';
+        var coll = add(body, "div", "ob-collchip"); coll.innerHTML = '<i class="ti ti-cards"></i>' + tr("collection") + ' · 1'; coll.style.margin = "26px auto 0";
+        add(body, "div", "ob-forever", tr("it's yours — forever"));
+        if (!data._cardFlew) { data._cardFlew = true; setTimeout(function () {
+          try {
+            var tr1 = tc.getBoundingClientRect(), cr = coll.getBoundingClientRect();
+            var dx = cr.left + cr.width / 2 - (tr1.left + tr1.width / 2), dy = cr.top + cr.height / 2 - (tr1.top + tr1.height / 2);
+            tc.classList.add("fly"); requestAnimationFrame(function () { tc.style.transform = "translate(" + dx + "px," + dy + "px) scale(.12)"; tc.style.opacity = ".25"; });
+            setTimeout(function () { coll.classList.add("pop"); tc.style.transform = ""; tc.style.opacity = ""; tc.classList.remove("fly"); }, 640);
+          } catch (e) {}
+        }, 900); }
+        stdFoot("Next ▸", false); return;
+      }
+      if (step === 7) {
         add(body, "div", "ob-world").innerHTML = '<i class="ti ti-sparkles"></i>';
         add(body, "div", "ob-q", "Plant your first seed."); add(body, "div", "ob-sb", "free — you already earned it.");
         if (!data.seeded) {

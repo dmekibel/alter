@@ -1694,6 +1694,41 @@
   .ob-btn{ flex:1; background:#ffc83d; color:#5a3a00; border:3px solid #160510; border-radius:14px; box-shadow:0 4px 0 #160510; padding:13px; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
   .ob-btn.go{ background:#34d39a; color:#0c3d29; }
   .ob-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  /* ===== ONBOARDING PAYOFF + TRAINER-CARD MINT (verdict #18, 1:1 widget) ===== */
+  .ob-scorechip{ position:absolute; top:0; right:0; display:inline-flex; align-items:center; gap:7px; background:#3a1730; border:2.5px solid #160510; border-radius:13px; box-shadow:0 4px 0 #160510; padding:7px 14px; font-family:"Jost",sans-serif; font-weight:800; font-size:20px; color:#ffd24a; }
+  .ob-scorechip i{ font-size:16px; color:#ffd24a; }
+  .ob-scorechip.pop{ animation:sparkBump .42s cubic-bezier(.2,.9,.3,1.45); }
+  .ob-kick{ color:#ff5fa8; font-weight:800; font-size:13px; letter-spacing:1.6px; text-transform:uppercase; text-align:center; margin:2px 0 4px; }
+  .ob-big{ font-family:"Jost",sans-serif; font-weight:800; font-size:52px; line-height:1; color:#ffc41f; text-align:center; text-shadow:0 3px 0 #160510; }
+  .ob-quest{ display:flex; align-items:center; gap:14px; width:100%; margin-top:22px; background:#2a0f22; border:3px solid #ffc83d; border-radius:18px; box-shadow:0 5px 0 #160510; padding:16px 18px; }
+  .ob-quest .qi{ width:52px; height:52px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:14px; background:#34d39a; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; color:#0c3d29; font-size:24px; }
+  .ob-quest .qt{ flex:1; min-width:0; }
+  .ob-quest .qt b{ display:block; color:#fff2f9; font-weight:800; font-size:18px; line-height:1.15; }
+  .ob-quest .qt span{ display:block; color:#cd9bb6; font-weight:600; font-size:13px; margin-top:2px; }
+  .ob-quest .qk{ flex:none; color:#ffc83d; font-size:22px; }
+  .ob-tcard{ position:relative; width:100%; margin-top:20px; background:linear-gradient(160deg,#2c1024,#3a1226); border:2.5px solid #6b2a48; border-radius:20px; box-shadow:0 6px 0 #160510; padding:20px 20px 22px; text-align:center; }
+  .ob-tcard .tc-head{ display:flex; justify-content:space-between; align-items:center; }
+  .ob-tcard .tc-head span{ color:#ff5fa8; font-weight:800; font-size:12px; letter-spacing:1.4px; }
+  .ob-tcard .tc-spk{ color:#ff5fa8; font-size:26px; margin:14px 0 8px; display:block; }
+  .ob-tcard .tc-name{ font-family:"Jost",sans-serif; font-weight:800; font-size:34px; letter-spacing:1px; color:#fff2f9; text-shadow:0 2px 0 #160510; }
+  .ob-tcard .tc-rule{ height:2px; background:#6b2a48; margin:16px auto; width:78%; border-radius:2px; }
+  .ob-tcard .tc-est{ color:#e0b0c8; font-weight:800; font-size:14px; letter-spacing:1.2px; }
+  .ob-tcard .tc-sub{ color:#b98aa6; font-weight:600; font-size:13px; margin-top:6px; }
+  .ob-tcard.fly{ transition:transform .6s cubic-bezier(.4,.7,.4,1), opacity .6s; }
+  .ob-pactlbl{ display:flex; align-items:center; gap:8px; color:#ff5fa8; font-weight:800; font-size:13px; letter-spacing:1.2px; margin:22px 0 8px; }
+  .ob-pactbox{ width:100%; background:#241019; border:2.5px solid #ffc83d; border-radius:14px; padding:13px 16px; text-align:left; }
+  .ob-pactbox b{ display:block; color:#fff2f9; font-weight:700; font-size:15px; }
+  .ob-pactbox span{ display:block; color:#cd9bb6; font-weight:600; font-size:13px; margin-top:3px; }
+  .ob-pips-h{ color:#ff5fa8; font-weight:800; font-size:13px; letter-spacing:1.4px; text-align:center; margin:24px 0 12px; }
+  .ob-pips{ display:flex; justify-content:center; gap:34px; }
+  .ob-pip{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .ob-pip i{ width:18px; height:18px; border-radius:50%; border:2.5px solid #160510; background:#4a1f38; }
+  .ob-pip.p2 i{ background:#ffc41f; } .ob-pip.p3 i{ background:#c4607f; }
+  .ob-pip span{ color:#cd9bb6; font-weight:700; font-size:12px; }
+  .ob-collchip{ display:inline-flex; align-items:center; gap:9px; background:linear-gradient(135deg,#8a1f52,#5a1236); border:2.5px solid #160510; border-radius:15px; box-shadow:0 4px 0 #160510; padding:11px 20px; color:#ffd9ec; font-weight:800; font-size:16px; }
+  .ob-collchip i{ color:#ff8ac0; font-size:18px; }
+  .ob-collchip.pop{ animation:sparkBump .42s cubic-bezier(.2,.9,.3,1.45); }
+  .ob-forever{ color:#cd9bb6; font-weight:600; font-size:13px; text-align:center; margin-top:14px; }
   .ob-back{ background:#48122f; color:#ffd9ec; border:2px solid #160510; border-radius:12px; padding:13px 14px; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; cursor:pointer; flex:none; }
   .ob-skip{ background:none; border:none; color:#8a5a72; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; cursor:pointer; flex:none; }
   .ob-libsec{ margin-bottom:11px; }
@@ -2142,6 +2177,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=841"></script>
+  <script src="app.js?v=842"></script>
 </body>
 </html>
