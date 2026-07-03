@@ -4246,7 +4246,7 @@
       var row = add(mir, "div", "pm-mrow");
       add(row, "div", "pm-mtime", fmt(hm(b.time)).replace(/(am|pm)$/, ""));
       var blk = add(row, "div", "pm-mblk" + (st === "miss" ? " miss" : dom === "drift" ? " drift" : ""));
-      if (st === "ok" && dom !== "drift") blk.style.background = tfStripe(D.c);
+      if (st === "ok" && dom !== "drift") blk.style.background = tfStripeDoor(D.c); // BRIGHT stripes (both shades light) so the dark ink text stays readable (David device: dark-on-dark)
       else if (dom !== "drift" && st !== "miss") blk.style.background = D.c;
       var _ink = st === "miss" ? "#7a6a80" : dom === "drift" ? "#e6e8ec" : (D.ink || "#160510");
       blk.innerHTML = '<i class="ti ' + tiClass(b) + '" style="color:' + (st === "miss" ? "#7a6a80" : dom === "drift" ? "#b8bcc6" : (D.ink || "#160510")) + '"></i><span class="pm-mttl" style="color:' + _ink + '">' + esc(b.title) + '</span>' + (dom === "drift" ? '<span class="pm-mtag">' + tr("DRIFT") + '</span>' : st === "miss" ? '<span class="pm-mtag">' + tr("MISSED") + '</span>' : '');
@@ -6618,13 +6618,9 @@
   function wkAB() { try { return localStorage.getItem("alter_wkab") === "a" ? "a" : "b"; } catch (e) { return "b"; } }
   function weekGrid(L, baseK, onDay) { // 1:1 calendar.jpg — verdict #9 ships BOTH A (bare blobs) + B (day-track outline) behind a dev toggle
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
-    var d0 = startOfWeek(baseK), variant = wkAB();
+    var d0 = startOfWeek(baseK), variant = "b"; // A/B dev toggle removed (David device: confusing) — keep the containing day-track columns
     var hs = add(L, "div", "cal-stat"), lived = 0, crowns = 0;
-    var abw = add(L, "div", "wk-abwrap"), ab = add(abw, "div", "wk-abtoggle");
-    var bA = add(ab, "button", variant === "a" ? "on" : "", "A"), bB = add(ab, "button", variant === "b" ? "on" : "", "B");
-    bA.onclick = function () { try { localStorage.setItem("alter_wkab", "a"); } catch (e) {} renderToday(); };
-    bB.onclick = function () { try { localStorage.setItem("alter_wkab", "b"); } catch (e) {} renderToday(); };
-    var row = add(L, "div", "weekrow " + (variant === "a" ? "wk-a" : "wk-b"));
+    var row = add(L, "div", "weekrow wk-b");
     var DAY_START = 360, DAY_SPAN = 18 * 60, liveByCol = [];
     for (var i = 0; i < 7; i++) { (function (dk, idx) {
       var st0 = dayStats(dk), isToday = dk === todayK();
