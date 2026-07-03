@@ -1335,6 +1335,7 @@
     "Return": "Вернуться", "day": "день", "together": "вместе", "saved": "запись", "Restore": "Восстановить", "your save": "твоё сохранение", "Erase everything and start over?": "Стереть всё и начать заново?", "profile · plan · garden — all of it": "профиль · план · сад — всё", "Erase everything": "Стереть всё", "Break": "Перерыв",
     "first win": "первая победа", "Spark": "Искр", "a real thing — a real reward": "настоящее дело — настоящая награда", "One thing off the floor": "Одна вещь с пола", "Two things off the floor": "Две вещи с пола", "Three things off the floor": "Три вещи с пола", "in your space": "в твоём пространстве", "done": "сделано", "Did it": "Сделал", "the spark flew to your count — I remembered": "искры улетели в твой счёт — я запомнил", "Your first card": "Твоя первая карта", "matte — that's potential. it lights up as you live": "матовая — это потенциал. она зажигается, пока ты живёшь", "TRAINER CARD": "КАРТА ТРЕНЕРА", "THE GATHERED": "СОБРАННЫЙ", "day one. everything ahead.": "день первый. всё впереди.", "ON THE BACK — PACT": "НА ОБОРОТЕ — ПАКТ", "promised honesty": "обещал честность", "showed up:": "пришёл:", "scared": "страшно", "overwhelmed": "завалило", "carrying an old one": "со старой раной", "stuck": "застрял", "GROWS WITH YOU": "РАСТЁТ С ТОБОЙ", "7 days": "7 дней", "crown": "корона", "return": "возвращение", "collection": "коллекция", "it's yours — forever": "она твоя — навсегда",
     "add to your daily": "добавить в ежедневные",
+    "Here's the day you lived": "Вот день, который ты прожил", "not a grade — a reflection": "не оценка — отражение", "now": "сейчас", "DRIFT": "ДРЕЙФ", "MISSED": "МИМО", "lived": "прожито", "you held the line": "ты держал линию", "and that's enough": "и этого достаточно", "A free-form day — rest is part of the work.": "Свободный день — отдых тоже часть работы.", "What did it taste like?": "Каким он был на вкус?", "To re-storying the day": "К пере-сборке дня", "noticed": "подмечено", "silence at the end": "тишина в конце",
     "Su": "Вс", "Mo": "Пн", "Tu": "Вт", "We": "Ср", "Th": "Чт", "Fr": "Пт", "Sa": "Сб", "lived days": "жилых дней", "streak": "серия", "tap — the week folds into a day": "тап — неделя складывается в день", "days shone": "дней сияли", "best streak —": "лучшая серия —", "tap — the day grows from its cell": "тап — день вырастает из своей клетки", "quiet": "тихий", "shining": "сияние", "crown": "корона", "charge": "заряд", "away": "в пути", "return": "возвращение",
     "Quests": "Квесты", "No quests yet — add what you're building toward.": "Квестов пока нет — добавь, что ты создаёшь.", "a quest you're building toward…": "квест, который ты создаёшь…", "chapter": "глава", "foil filling": "фольга заполняется", "Put a session into the day": "Поставить сессию в день", "session placed into today — it waits for you": "сессия поставлена на сегодня — она ждёт тебя", "tap to break it down →": "коснись, чтобы разбить на шаги →", "quiet": "тихо", "days": "дней", "I'll bring it back into the path": "верну его в путь", "finish a quest — it mints as a full-art card": "заверши квест — и он чеканится полноартовой картой в коллекцию, с датой и историей", "Released": "Отпущенные", "return": "вернуть", "card back": "оборот карты", "WISH": "ЖЕЛАНИЕ", "OUTCOME": "РЕЗУЛЬТАТ", "OBSTACLE": "ПРЕПЯТСТВИЕ", "PLAN": "ПЛАН", "reach": "достичь", "tap the plan below to fill this in": "заполни через план ниже", "If": "Если", "I": "я", "If [obstacle] — I [my move]": "Если [препятствие] — я [мой ход]", "Main obstacle": "Главное препятствие", "the inner block that gets in the way…": "внутренний блок, который мешает…", "If that hits, I'll…": "Если это случится, я…", "my if-then plan…": "мой план «если — то»…", "add a step or milestone…": "добавь шаг или веху…", "Release with honor": "Отпустить с честью", "the story is kept · you can always return it": "история сохранится · вернуть можно всегда", "released with honor — kept on the shelf": "отпущено с честью — на полке",
     "tracking — with a plan it earns more": "отслеживаю — с планом очков больше",
@@ -4201,19 +4202,40 @@
     try { renderTFControls("pm"); } catch (e) {} // refresh the primary label ("Continue" → "Rest now")
   }
   // ---- BEAT 1: MIRROR (richer) — kept/drifted/missed, domain minutes, streak, a standout note. Pure read, no timeline touch.
+  // ---- BEAT 1: MIRROR (mock #20 1:1) — the DAY ITSELF as mini time-blocks (kept striped / DRIFT / MIMO-ghost) + a now-line, spelled tally, jewel mood row + narrated pink door.
   function pmBeatMirror(card, sb, mr, k) {
-    var DOMl = function (d) { return (DOM[d] && DOM[d].l) || d; };
-    add(card, "div", "tfs-h", "Let's close the day.");
-    var mir = add(card, "div", "tfs-sub"); mir.textContent = bookendMirrorLine(mr);
-    mir.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:11px 13px;line-height:1.45;");
-    // a second warm beat: time invested + a standout win OR a quiet-day note (never a zero, never shame)
-    var extra = "";
-    if (mr.totMin >= 30) extra = "About " + dur(mr.totMin) + " of real, chosen time" + (mr.strong && (mr.domMin[mr.strong] || 0) > 0 ? " — your " + DOMl(mr.strong) + " stood out." : ".");
-    else if (mr.kept >= 1) extra = "Even one thing kept is a vote for who you're becoming.";
-    else extra = "A soft day — and rest is part of the work, not a gap in it.";
-    var ex = add(card, "div", "tfs-sub"); ex.textContent = extra; ex.style.lineHeight = "1.45";
-    if (mr.streak >= 2) { var stk = add(card, "div", "tfs-sub"); stk.innerHTML = '<i class="ti ti-flame"></i> ' + mr.streak + "-day thread, still going."; stk.style.color = DOM.restore.light; stk.style.fontSize = "13px"; }
-    if (pmHasDrift(mr)) { var note = add(card, "div", "tfs-sub"); note.textContent = (mr.drift ? "The day drifted for a bit" : "A plan or two slid by") + " — just information, not a verdict. We'll re-story it next."; note.style.color = DRIFT_GRAY; note.style.fontSize = "13px"; }
+    add(card, "div", "tfs-h", tr("Here's the day you lived"));
+    add(card, "div", "tfs-sub", tr("not a grade — a reflection")).style.opacity = ".8";
+    var day = (blocks(k) || []).filter(function (b) { return b.title; }).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    var mir = add(card, "div", "pm-mir");
+    var nowM = (k === todayK()) ? logicalNowMin() : 24 * 60, nowDrawn = false;
+    function drawNowLine() { if (nowDrawn || k !== todayK()) return; nowDrawn = true; var nr = add(mir, "div", "pm-nowrow"); nr.innerHTML = '<span class="dot"></span><span class="ln"></span><span class="lbl">' + tr("now") + ' · ' + esc(fmt(nowM)) + '</span>'; }
+    day.forEach(function (b) {
+      if (hm(b.time) >= nowM) drawNowLine();
+      var st = blockStatus(k, b), dom = domainOf(b), D = DOM[dom] || DOM.focus;
+      var row = add(mir, "div", "pm-mrow");
+      add(row, "div", "pm-mtime", fmt(hm(b.time)).replace(/(am|pm)$/, ""));
+      var blk = add(row, "div", "pm-mblk" + (st === "miss" ? " miss" : dom === "drift" ? " drift" : ""));
+      if (st === "ok" && dom !== "drift") blk.style.background = tfStripe(D.c);
+      else if (dom !== "drift" && st !== "miss") blk.style.background = D.c;
+      var _ink = st === "miss" ? "#7a6a80" : dom === "drift" ? "#e6e8ec" : (D.ink || "#160510");
+      blk.innerHTML = '<i class="ti ' + tiClass(b) + '" style="color:' + (st === "miss" ? "#7a6a80" : dom === "drift" ? "#b8bcc6" : (D.ink || "#160510")) + '"></i><span class="pm-mttl" style="color:' + _ink + '">' + esc(b.title) + '</span>' + (dom === "drift" ? '<span class="pm-mtag">' + tr("DRIFT") + '</span>' : st === "miss" ? '<span class="pm-mtag">' + tr("MISSED") + '</span>' : '');
+    });
+    drawNowLine();
+    var tally = add(card, "div", "pm-tally");
+    tally.textContent = mr.planned ? (mr.kept + " " + tr("of") + " " + mr.planned + " " + tr("lived") + " — " + (mr.kept >= Math.ceil(mr.planned * 0.6) ? tr("you held the line") : tr("and that's enough"))) : tr("A free-form day — rest is part of the work.");
+    add(card, "div", "pm-moodq", tr("What did it taste like?"));
+    var jewels = add(card, "div", "pm-jewels");
+    var prev = ((S.bk || {})[k] || {}).pm;
+    MOODS.forEach(function (m, i) {
+      var sel = (sb.dataset.mood === String(i)) || (!sb.dataset.mood && prev && prev.mood === i);
+      var j = add(jewels, "button", "pm-jewel" + (sel ? " on" : ""));
+      j.innerHTML = '<i class="ti ' + m.e + '" style="color:' + (sel ? "#160510" : DOM.restore.light) + '"></i><span>' + tr(m.l) + '</span>';
+      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (b, bi) { var s = (!on && bi === idx); b.className = "pm-jewel" + (s ? " on" : ""); b.querySelector("i").style.color = s ? "#160510" : DOM.restore.light; }); }; })(i);
+    });
+    var door = add(card, "button", "pm-door");
+    door.innerHTML = tr("To re-storying the day") + ' <i class="ti ti-arrow-right"></i>';
+    door.onclick = function () { try { pmAdvance(); } catch (e) {} };
   }
   // ---- BEAT 2: RE-STORY DRIFT (PM-RESTORY) — three calm taps per missed/drifted block. Drift in cool-gray, never red, never guilt.
   function pmBeatRestory(card, sb, mr, k) {

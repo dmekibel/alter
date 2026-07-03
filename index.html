@@ -1373,6 +1373,30 @@
   .tf-stagecard{ background:#241328; border:2px solid #160510; border-radius:14px; box-shadow:0 3px 0 #160510; color:#e6cfe0; padding:16px; font-family:"Jost",sans-serif; } /* reuses the .tf-chip/.tf-b material — no new colors */
   .tf-stagecard .tfs-h{ font-weight:800; font-size:15px; color:#ffe3f1; margin-bottom:6px; }
   .tf-stagecard .tfs-sub{ font-size:13px; color:#b596ad; }
+  /* ===== PM MIRROR 1:1 (mock #20 right): the day as mini time-blocks + now-line + jewel mood mini-rows ===== */
+  .pm-mir{display:flex;flex-direction:column;gap:9px;margin:4px 0 2px;}
+  .pm-mrow{display:flex;align-items:stretch;gap:10px;}
+  .pm-mtime{flex:none;width:44px;font-family:var(--bub);font-weight:700;font-size:13px;color:#9a8098;display:flex;align-items:center;}
+  .pm-mblk{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:10px 12px;color:#fff;font-family:'Jost',sans-serif;font-weight:800;font-size:14.5px;}
+  .pm-mblk i{font-size:16px;flex:none;}
+  .pm-mblk .pm-mttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pm-mblk .pm-mtag{flex:none;font-family:var(--bub);font-weight:800;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;opacity:.85;}
+  .pm-mblk.drift{background:#2a2d34;border-color:#160510;color:#b8bcc6;box-shadow:0 3px 0 #0c0d10;}
+  .pm-mblk.miss{background:transparent;border-style:dashed;border-color:#4a3550;box-shadow:none;color:#7a6a80;}
+  .pm-nowrow{display:flex;align-items:center;gap:8px;padding-left:54px;margin-top:1px;}
+  .pm-nowrow .dot{width:9px;height:9px;border-radius:50%;background:var(--pink);flex:none;box-shadow:0 0 8px var(--pink);}
+  .pm-nowrow .ln{flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--pink),rgba(255,95,160,.15));}
+  .pm-nowrow .lbl{flex:none;font-family:var(--bub);font-weight:800;font-size:12px;color:#ff9ec6;}
+  .pm-tally{font-family:'Jost',sans-serif;font-weight:800;font-size:16px;color:#ffe3f1;text-align:center;line-height:1.35;margin:6px 2px 2px;}
+  .pm-moodq{font-weight:800;font-size:15px;color:#ffe3f1;margin:4px 0 8px;}
+  .pm-jewels{display:flex;gap:8px;}
+  .pm-jewel{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;background:#241328;border:2px solid #160510;border-radius:14px;box-shadow:0 3px 0 #160510;padding:11px 4px 9px;cursor:pointer;transition:transform .16s cubic-bezier(.34,1.56,.64,1),box-shadow .16s;}
+  .pm-jewel i{font-size:22px;line-height:1;}
+  .pm-jewel span{font-family:var(--bub);font-weight:800;font-size:11px;color:#c9a6c0;}
+  .pm-jewel.on{transform:translateY(-2px);box-shadow:0 0 0 3px var(--yellow),0 5px 0 #160510;}
+  .pm-jewel.on span{color:#160510;}
+  .pm-door{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--pink);color:#160510;border:3px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:15px;font-family:'Jost',sans-serif;font-weight:800;font-size:17px;cursor:pointer;margin-top:12px;transition:transform .1s,box-shadow .1s;}
+  .pm-door:active{transform:translateY(4px);box-shadow:0 1px 0 #160510;}
   #tfStageChips{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; width:100%; margin-top:2px; }
   #trackerFull.tf-staged #tfStageChips{ display:none; } /* a stage is open → its own controls own the bottom; don't double up the entry chips */
   /* #14 album-in-reward-ring: a flat conic reward band (no glow) hugging a STRIPED activity tile (matches the timeline bubbles) */
@@ -2207,6 +2231,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=843"></script>
+  <script src="app.js?v=844"></script>
 </body>
 </html>
