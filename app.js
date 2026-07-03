@@ -1328,7 +1328,7 @@
     "clean slate — where do we start?": "чистый лист — с чего начнём?", "open afternoon — pick a thread": "свободный день — с чего начнём?", "evening — one gentle thing?": "вечер — одно спокойное дело?", "late — one small win, then rest": "поздно — одна маленькая победа, потом отдых",
     "YESTERDAY NOW": "ВЧЕРА СЕЙЧАС", "again?": "повторить?", "one tap — plan and track at once": "один тап — план и трек сразу", "3 tasks — 60 seconds": "3 дела — 60 секунд",
     "on plan": "по плану", "left": "осталось", "min": "мин", "over by": "перебор", "ends": "конец", "free tracking": "свободный трек", "min tracked": "мин затрекано", "a plan doubles points": "план удвоит очки",
-    "how much more?": "сколько ещё?", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
+    "how much more?": "сколько ещё?", "keep going?": "продолжаем?", "extended to": "продлено до", "switch activity": "сменить занятие", "Done — count it": "Готово — засчитать", "Reschedule": "Перенести", "Did it already": "Уже сделал", "Not mine": "Не моё",
     "your daily thread": "твоя ежедневная нить", "нить": "нить", "× в неделю": "× в неделю", "огонь стал синим": "огонь стал синим", "этой нити — один тап держит её": "этой нити — один тап держит её", "уголёк тлеет": "уголёк тлеет", "новая нить — начни сегодня": "новая нить — начни сегодня",
     "ты вернулся — это главное": "ты вернулся — это главное", "пауза · серии сохранены": "пауза · серии сохранены", "дн.": "дн.", "мир ждал, ничего не сломалось": "мир ждал, ничего не сломалось", "НАГРАДА · ПРИЗМА": "НАГРАДА · ПРИЗМА", "Вернулся": "Вернулся", "-й возврат": "-й возврат", "Возвращение — засчитано": "Возвращение — засчитано", "20 секунд — и ты снова в пути": "20 секунд — и ты снова в пути",
     "Energy": "Энергия", "Work": "Работа", "Love": "Любовь", "The rest": "Остальное", "You're today —": "Ты сегодня —", "been meaning to": "давно собирался",
@@ -2516,7 +2516,7 @@
     reflow(k); save(); renderToday(); if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull();
     toast(added.length ? 'added ' + added.length + ' fundamental' + (added.length > 1 ? 's' : '') + ': ' + added.join(", ") : "fundamentals already covered");
   }
-  function durationSheet(label, cb, chips, extra) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); (chips || [15, 30, 45, 60, 90, 120]).forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); if (extra) { var xr = add(card, "button", "dur-chip"); xr.style.cssText = "width:100%;margin-top:8px;"; xr.innerHTML = '<i class="ti ' + (extra.icon || "ti-arrows-shuffle") + '"></i> ' + esc(extra.label); xr.onclick = function () { ov.remove(); extra.fn(); }; } var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); } // extra = one secondary action inside the sheet (G12: "Switch activity" lives in the make-plan menu)
+  function durationSheet(label, cb, chips, extra) { var ov = add(document.body, "div", "dur-ov"); var card = add(ov, "div", "dur-card"); var q = add(card, "div", "dur-q"); q.innerHTML = '<i class="ti ti-clock"></i> ' + esc(label) + ' — how long?'; var row = add(card, "div", "dur-row"); (chips || [5, 15, 30, 45, 60, 90, 120]).forEach(function (m) { var c = add(row, "button", "dur-chip", m < 60 ? m + "m" : (m % 60 ? (m / 60).toFixed(1) : (m / 60)) + "h"); c.onclick = function () { ov.remove(); cb(m); }; }); if (extra) { var xr = add(card, "button", "dur-chip"); xr.style.cssText = "width:100%;margin-top:8px;"; xr.innerHTML = '<i class="ti ' + (extra.icon || "ti-arrows-shuffle") + '"></i> ' + esc(extra.label); xr.onclick = function () { ov.remove(); extra.fn(); }; } var x = add(card, "button", "dur-x", "cancel"); x.onclick = function () { ov.remove(); }; ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); }); } // extra = one secondary action inside the sheet (G12: "Switch activity" lives in the make-plan menu)
   // ---- GOALS pillar (§16, mockups 009/010): capture → decompose (guided, manual = free) → schedule steps down into the day-calendar; active goals pull into planning ----
   // §19 Tier-1 (always-on, $0): first-principles decomposition TEMPLATES — the free floor that turns any goal into steps WITHOUT a key. The brain (Tier-2/paid) tailors these later.
   var DECOMP_TEMPLATES = [
@@ -3687,17 +3687,22 @@
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
-    var _os = el("tfNextSheet"); // RUN-1 mock 4: off-plan docks a "{activity} — сколько ещё?" sheet (chips → plan the current track forward; foot = switch activity)
-    if (_os && !onplan) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
-      var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr("how much more?") + '</span>';
+    var _os = el("tfNextSheet"); // docked "{activity} — how much more?" sheet: off-plan = commit the live track into a plan forward; ON-PLAN = EXTEND the current block into the future (Batch 2 item 6 — on-plan finally has the same easy extend off-plan always had). Short chips added (item 5); switch-activity footer removed (redundant with the title-pill switch, item 3).
+    if (_os) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
+      var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "keep going?" : "how much more?") + '</span>';
       var _or = add(_os, "div", "tns-row");
-      [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var ch = add(_or, "button", "k-dur"); ch.textContent = dd[1]; ch.onclick = function () { tfMoreMins(t, dd[0]); }; });
-      var _of = add(_os, "button", "tns-escape"); _of.innerHTML = '<i class="ti ti-switch-horizontal"></i>' + tr("switch activity"); _of.onclick = function () { tfPickTrack("Switch to?"); };
+      [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); }; })(mm); });
     }
   }
   function tfMoreMins(t, mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(t); // "сколько ещё" → the current track becomes a plan owning now→now+mins (off-plan → on-plan in one tap)
     blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
     blocks(k).push({ id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: t.title, prio: 2, color: t.color, catK: t.catK, domain: dom, done: false, pin: true }); reflow(k); if (t) t.commit = mins; save(); renderLiveTracker(); renderToday(); renderTrackerFull();
+  }
+  function tfExtendPlan(mins) { // ON-PLAN extend (Batch 2 item 6): grow the CURRENT planned block's end to now+mins so "keep going 30 more" needs no re-planning. Block stays on plan; the countdown just gets longer.
+    var st = null; try { st = trackerState(); } catch (e) {} var b = st && st.block; var k = todayK(), now = logicalNowMin();
+    if (b) { var bs = hm(b.time); b.mins = Math.max(b.mins || 30, (now - bs) + mins); } // end = max(current end, now+mins) — extending never shrinks
+    var run = activeTimers(), t = run[run.length - 1]; if (t) { t.commit = Math.round((Date.now() - t.start) / 60000) + mins; t._commitHit = false; }
+    reflow(k); save(); renderLiveTracker(); renderToday(); renderTrackerFull(); toast("✦ " + tr("extended to") + " " + fmt((now + mins) % 1440));
   }
   // ===== COCKPIT FUNNELS (CKPT-2, David 2026-06-28): one door in (enterStage), one out (exitStage), one dispatcher (renderStage), one pure router (stageModeFor). Wired to NOTHING that auto-triggers this wave — defaults keep TF_MODE null. =====
   function stageLabel(mode) { return ({ am: "Morning", pm: "Reflection", journal: "Journal", journey: "Your next step", tool: "Toolbox", sleepmath: "Sleep Math", rx: "Rx", track: "" })[mode] || ""; }
@@ -4627,9 +4632,8 @@
         if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true, finish: "striped", c: "#36b3f0", ink: "#08283c" },
                          { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
                          { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }];
-        return [{ icon: "ti-calendar-plus", label: "Make a plan", fn: tfKeepGoing, primary: true, finish: "striped", c: "#36b3f0", ink: "#08283c" },
-                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
-                { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }]; // RUN-1 mock 4: striped-blue "Составить план" fusion door + ghost 2-up [Пауза | Стоп]. G12 (v801): "Make a plan" = a time for what you're already doing.
+        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#6b5a78", ink: "#f2ecf7" },
+                { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true }]; // Batch 2 (David device 2026-07-03): the "Make a plan" door was the SAME function as the docked «сколько ещё?» chips (item 2) → removed; keep-going lives ONLY in that docked sheet. Stop promoted to the clear solid primary (item 4).
       }
     }
   }
