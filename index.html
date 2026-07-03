@@ -1616,10 +1616,20 @@
   #trackerFull.st-onplan .tf-ctx, #trackerFull.st-off .tf-ctx{ margin-top:11px; font-size:13.5px; color:#b39ab0; } /* room so the pulsing timer never covers the «по плану» line (David device) */
   /* EVEN + CHUNKY (David 2026-07-03): keep the hard game-piece drop-shadow AND an even green band — nudge the disc up 3px so the disc+6px-shadow mass is centered in the ring → visible green reads equal top & bottom */
   #trackerFull.st-onplan .tf-tile{ box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.10); transform:translateY(-3px); }
-  .tf-endpip{ position:absolute; left:50%; top:1px; width:4px; height:11px; margin-left:-2px; background:#160510; border-radius:2px; display:none; z-index:2; pointer-events:none; }
-  .tf-convdot{ position:absolute; width:9px; height:9px; border-radius:50%; background:#fff; box-shadow:0 0 5px 1px rgba(255,255,255,.65); display:none; z-index:2; pointer-events:none; animation:tfConvDot 3s ease-in-out infinite; }
-  @keyframes tfConvDot{ 0%,100%{ transform:translate(-50%,-50%) scale(1); box-shadow:0 0 5px 1px rgba(255,255,255,.65); } 50%{ transform:translate(-50%,-50%) scale(1.4); box-shadow:0 0 12px 3px rgba(255,255,255,.95); } }
-  #trackerFull.st-onplan .tf-endpip, #trackerFull.st-onplan .tf-convdot{ display:block; }
+  .tf-endpip{ display:none !important; } /* RETIRED (David device 2026-07-03): the 12-o'clock notch read as a stray circular shadow */
+  .tf-convdot{ position:absolute; width:13px; height:13px; border-radius:50%; background:#ffd24a; box-shadow:0 0 6px 1px rgba(255,210,74,.7); display:none; z-index:2; pointer-events:none; animation:tfConvDot 3s ease-in-out infinite; } /* the PRESENT MOMENT BURNING — gold, sized to the band so it fully covers the green leading edge (David device 2026-07-03) */
+  @keyframes tfConvDot{ 0%,100%{ transform:translate(-50%,-50%) scale(1); box-shadow:0 0 6px 1px rgba(255,210,74,.7); } 50%{ transform:translate(-50%,-50%) scale(1.35); box-shadow:0 0 13px 4px rgba(255,210,74,.95); } }
+  #trackerFull.st-onplan .tf-convdot{ display:block; }
+  /* LIVE META (streak · Spark) + NEXT-UP — only in the live cockpit states, tasteful and dim (David device 2026-07-03) */
+  .tf-livemeta{ display:none; position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:20px; right:20px; z-index:3; align-items:center; justify-content:space-between; font-family:"Jost",sans-serif; font-weight:800; font-size:13.5px; color:#c9a0b8; pointer-events:none; }
+  .tf-livemeta .tf-lm-spark{ display:flex; align-items:center; gap:4px; color:#ffd24a; }
+  .tf-livemeta .tf-lm-spark i{ font-size:14px; }
+  #trackerFull.st-onplan .tf-livemeta, #trackerFull.st-off .tf-livemeta{ display:flex; }
+  #trackerFull.tf-morphing .tf-livemeta{ opacity:0; }
+  .tf-nextup{ display:none; margin-top:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; color:#8a6f84; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:82vw; }
+  .tf-nextup i{ font-size:12px; }
+  #trackerFull.st-onplan .tf-nextup, #trackerFull.st-off .tf-nextup{ display:block; }
+  #trackerFull.tf-morphing .tf-nextup{ opacity:0; }
   /* off-plan: the empty ring IS the pitch (dashed), the disc is matte (colored border + icon, no stripe, no filter) */
   #trackerFull.st-off .tf-ring{ border:2px dashed #3a2540; box-sizing:border-box; }
   #trackerFull.st-off .tf-tile{ filter:none; box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.10); } /* keep the chunky game-piece drop-shadow (component-language: hard shadows), matte disc, no filter — matches canon mock 4 */
@@ -2383,8 +2393,10 @@
       <div class="tf-time live-elapsed" id="tfTime" data-tid="">0:00</div>
       <div class="tf-elabel" id="tfElabel">elapsed</div>
       <div class="tf-ctx" id="tfCtx"></div>
+      <div class="tf-nextup" id="tfNextUp"></div><!-- what's coming next, tastefully — one dim line (David device 2026-07-03) -->
       <div class="tf-switch" id="tfSwitch"></div>
     </div>
+    <div class="tf-livemeta" id="tfLiveMeta"></div><!-- streak + Spark points, visible in the live cockpit (David device 2026-07-03: "you still see your points") -->
     <div id="tfStageBody"></div><!-- cockpit STAGE: guided-flow workspace (CKPT-1) — empty + display:none unless #trackerFull.tf-staged -->
     <div id="tfStageChips"></div><!-- TRACK-mode stage chips (CKPT-5): calm entry doors (Journal …) — hidden once a stage is active -->
     <div class="tf-ctrls" id="tfCtrls"></div>
@@ -2421,6 +2433,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=862"></script>
+  <script src="app.js?v=863"></script>
 </body>
 </html>
