@@ -83,6 +83,20 @@
   }
   function appMusicPoke() { if (_amTO) clearTimeout(_amTO); _amTO = setTimeout(appMusicSync, 250); }
   try { if (typeof document !== "undefined" && document.body) { new MutationObserver(appMusicPoke).observe(document.body, { childList: true }); document.addEventListener("visibilitychange", appMusicSync); } } catch (e) {} // watch overlay open/close → pause/resume app music
+  // ===== THE ENTRY SIGNATURE (SPEC-FIRST-RUN §7, P1): the SAME 3 notes open every ceremony — the constant sensory signature that conditions faster gates (§0 law 4). Composed once, Web Audio, rides the TTS.unlock gesture. Later: called at the head of every room/ceremony. =====
+  function entrySignature(vol) {
+    try {
+      var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
+      var out = bgBus() || ctx.destination, t0 = ctx.currentTime + 0.04, V = (vol == null ? 0.15 : vol);
+      // a rising fifth-then-octave motif (A4 · E5 · A5) — hopeful, unhurried, unmistakable
+      [[440.0, 0.0, 1.2], [659.25, 0.40, 1.3], [880.0, 0.80, 1.9]].forEach(function (n) {
+        var o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), g2 = ctx.createGain(), t = t0 + n[1];
+        o.type = "sine"; o.frequency.value = n[0]; o2.type = "triangle"; o2.frequency.value = n[0] * 2; g2.gain.value = 0.11; o2.connect(g2); g2.connect(g);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(V, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + n[2]);
+        o.connect(g); g.connect(out); o.start(t); o2.start(t); o.stop(t + n[2] + 0.12); o2.stop(t + n[2] + 0.12);
+      });
+    } catch (e) {}
+  }
   // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
   //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
   //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
@@ -5392,6 +5406,9 @@
         iline("My whole job is keeping yours lit.");
         iline("I'm Alter — your guardian.", true);
         var ib = stdFoot(tr("Let's go") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen (punch-list #3) — the intro IS the app's handshake
+        ib.onclick = function () { // P1 · THE OPEN (SPEC-FIRST-RUN): serve first, ask after — the threshold + first Stack runs BEFORE the survey, once per fresh install
+          if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} theOpen(function () { next(); }); }
+          else next(); };
         var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
         return; }
@@ -10033,6 +10050,85 @@
         try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Good", true, function () { c.remove(); toGauge(); }); } else { c.remove(); toGauge(); } } catch (e) { toGauge(); } } // → deal an am-open card (why the morning switch mattered), then the gauge = the day's voice gate
     });
   }
+  // ===== THE OPEN — first-run Phases 0-1 (SPEC-FIRST-RUN §2, P1): threshold → before-dial → the Stack (5 voiced moves) → the anchor → after-dial → the delta. "Serve first, ask after" — this runs BEFORE the survey. Writes THE RECORD's first entry (S.tools.gauge) + seeds S.anchor. Zero new toys: the orb, hold-ring, VPROF voice, entry signature, gauge ledger are all reused. Register law: mythic lines ≤12 words, sober; no line admires the app's role. =====
+  var OPEN_C = "#ffd24a";
+  function theOpen(onDone) {
+    try { TTS.unlock(); if (TTS.warmAll) TTS.warmAll(); } catch (e) {}
+    var ov = add(document.body, "div"), done = false, pre = null, post = null;
+    ov.style.cssText = "position:fixed;inset:0;z-index:135;background:radial-gradient(120% 100% at 50% 22%,#170b1e,#0a0410 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;color:#ffe9f4;font-family:var(--bub);";
+    var stage = add(ov, "div"); stage.style.cssText = "position:relative;z-index:1;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;";
+    var hint = add(ov, "div"); hint.style.cssText = "position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:13px;font-weight:700;color:#8a7898;z-index:1;";
+    var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:3;background:none;border:none;color:#6a5a78;font-size:20px;padding:8px;cursor:pointer;";
+    function speak(t) { try { say(tr(t), VPROF.mantra); } catch (e) {} }
+    function lineIn(host, t, big) { var d = add(host, "div"); d.style.cssText = "font-weight:800;line-height:1.45;color:#ffe9f4;font-size:" + (big ? "26px" : "21px") + ";";
+      var words = tr(t).split(" "); words.forEach(function (w, wi) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", (wi * 0.13) + "s"); sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); });
+      return words.length * 130 + 500; }
+    function orbEl(sz) { var o = add(stage, "div"); o.style.cssText = "flex:none;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:radial-gradient(circle at 40% 35%," + mixHex(OPEN_C, "#ffffff", 0.35) + "," + OPEN_C + " 60%," + mixHex(OPEN_C, "#160510", 0.3) + ");box-shadow:0 0 34px " + OPEN_C + "66;animation:breathe 9s ease-in-out infinite;"; return o; }
+    function armTap(after) { hint.textContent = tr("tap to continue"); ov.onclick = function () { ov.onclick = null; hint.textContent = ""; (after || function () {})(); }; }
+    function finishOpen() { if (done) return; done = true; try { TTS.stop(); } catch (e) {} ov.remove(); if (onDone) onDone(); } // skip/close still proceeds to the survey — never trap a fresh user
+    xb.onclick = function (e) { e.stopPropagation(); finishOpen(); };
+    function dial(title, sub, cb) { // the 0-10 state dial, dark, one thumb (charge, not tension: after should read HIGHER)
+      stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
+      lineIn(stage, title, true); speak(title);
+      var read = add(stage, "div"); read.style.cssText = "font-size:52px;font-weight:800;color:" + OPEN_C + ";margin:2px 0;text-shadow:0 0 22px " + OPEN_C + "66;"; read.textContent = "5";
+      var sl = document.createElement("input"); sl.type = "range"; sl.min = "0"; sl.max = "10"; sl.value = "5"; sl.style.cssText = "width:86%;max-width:300px;accent-color:" + OPEN_C + ";touch-action:none;"; stage.appendChild(sl);
+      add(stage, "div", null, tr(sub)).style.cssText = "font-size:13px;font-weight:700;color:#8a7898;";
+      sl.oninput = function () { read.textContent = sl.value; };
+      var b = add(stage, "button", "ob-btn go", tr("Mark it")); b.style.marginTop = "6px"; b.onclick = function (e) { e.stopPropagation(); cb(+sl.value); };
+    }
+    var STACK = [ // the five moves (§0 law 5): posture · breath · hand-on-heart + appreciation · the word · the anchor
+      { t: "Sit up. Shoulders back — once.", orb: 0 },
+      { t: "One long breath out. Let the day off your chest.", orb: 1, secs: 10 },
+      { t: "Hand on your heart. One real thing you're glad of — even small.", orb: 0, secs: 8 },
+      { t: "Now breathe in the one word you want more of.", orb: 1, secs: 7 }
+    ];
+    function runStackStep(n) {
+      if (done) return;
+      if (n >= STACK.length) { anchorStep(); return; }
+      stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
+      var s = STACK[n]; if (s.orb) orbEl(64);
+      var ms = lineIn(stage, s.t, false); speak(s.t);
+      if (s.secs) setTimeout(function () { if (done) return; runStackStep(n + 1); }, Math.max(ms + 1200, s.secs * 1000));
+      else setTimeout(function () { if (done) return; armTap(function () { runStackStep(n + 1); }); }, ms);
+    }
+    function seedAnchor() { S.anchor = S.anchor || { reps: 0, firstTs: Date.now() }; S.anchor.reps = (S.anchor.reps || 0) + 1; S.anchor.lastK = todayK(); try { save(); } catch (e) {} }
+    function anchorStep() { // the anchor introduced + fired at peak (mudra + hold-ring)
+      if (done) return;
+      stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
+      lineIn(stage, "Press your thumb to your first finger. Hold.", true); speak("Press your thumb to your first finger. Hold. Remember this — we're going to wire it.");
+      add(stage, "div", null, tr("hold the ring while you hold the mudra")).style.cssText = "font-size:13px;font-weight:700;color:#c8a6d8;";
+      var pw = add(stage, "div", "ob-pwrap"); pw.style.touchAction = "none";
+      pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + OPEN_C + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-hand-finger"></i></span>';
+      var arc = pw.querySelector(".parc"), hT = null, held = false;
+      function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset 2s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} seedAnchor(); afterDial(); }, 2000); });
+      pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+      hint.textContent = tr("or tap here to carry it"); hint.style.pointerEvents = "auto";
+      hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; seedAnchor(); afterDial(); };
+    }
+    function afterDial() { if (done) return; entrySignature(0.09); dial("And now — where's your charge?", "0 = flat · 10 = fully lit", function (v) { post = v; deltaBeat(); }); }
+    function deltaBeat() {
+      if (done) return;
+      var delta = (pre != null && post != null) ? (post - pre) : null;
+      stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null; orbEl(54);
+      var big = add(stage, "div"); big.style.cssText = "font-size:64px;font-weight:800;color:" + OPEN_C + ";text-shadow:0 0 26px " + OPEN_C + "88;";
+      big.textContent = (delta == null) ? "✓" : (delta > 0 ? "+" : "") + delta;
+      var line = (delta != null && delta > 0) ? "Ninety seconds. Remember that number — I didn't raise it. You did." : (delta === 0 ? "Same number — and you showed up anyway. That counts." : "You showed up. That's the whole move.");
+      var ms = lineIn(stage, line, false); speak((delta != null && delta > 0 ? "Plus " + delta + ". " : "") + line);
+      try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "first-stack", pre: pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+        var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: tr("The Stack"), mins: 2, catK: "restore", color: OPEN_C });
+        earn(5, { catK: "restore" }); save(); } catch (e) {} // THE RECORD's first entry
+      try { celebrateGated(OPEN_C, 1); } catch (e) {}
+      setTimeout(function () { if (done) return; armTap(finishOpen); }, ms + 400);
+    }
+    (function threshold() { // Phase 0: entry signature + mark + prescription + before-dial
+      entrySignature();
+      obMark(stage, 118);
+      var ms = lineIn(stage, "Before I ask you anything — ninety seconds. Let me show you what I do.", false);
+      speak("Before I ask you anything — ninety seconds. Let me show you what I do. Sit up.");
+      setTimeout(function () { if (done) return; armTap(function () { dial("First — where's your charge right now?", "0 = flat · 10 = fully lit", function (v) { pre = v; runStackStep(0); }); }); }, ms);
+    })();
+  }
   function reprogramTool(onDone) {
     beatRunner({
       onFinish: function (skipped) { if (onDone) onDone(); if (!skipped) setTimeout(function () { offerKeepMantra(); }, 450); }, // ORGAN I: a completed Rewire → keep the line as your nightly mantra
@@ -10668,7 +10764,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
