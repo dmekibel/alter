@@ -803,37 +803,196 @@
     if (fd.k && fd.k !== k) { fd.done = true; try { save(); } catch (e) {} return null; } // an unfinished first day hatches quietly at day end — day 2 opens with the callback, never stale homework
     var s0 = !!fd.s0; // L1 · the Switch (morningDoor completion marks it)
     var s1 = !!fd.s1 || (((S.profile || {}).words) || []).length >= 5; // L2 · Your Words (the tournament)
-    var s2 = !!fd.s2 || (S.timers || []).some(function (t) { return t.dayK === k && !/morning switch|reflection|the gap/i.test(t.title || ""); }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath|morning switch|the gap/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // L3 · one REAL tracked thing (lesson logs excluded — a lesson isn't the rep)
-    var s3 = !!fd.s3; // L4 · the Gap
+    var sp = !!fd.sp || !!(S.profile && S.profile.pact && S.profile.pact.ts); // L3 · THE PACT (Initiate & Celebrate — moved here from onboarding)
+    var s2 = !!fd.s2 || (S.timers || []).some(function (t) { return t.dayK === k && !/morning switch|reflection|the gap/i.test(t.title || ""); }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath|morning switch|the gap/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // L4 · one REAL tracked thing (lesson logs excluded — a lesson isn't the rep)
+    var s3 = !!fd.s3; // L5 · the Gap
     var pmB = (S.bk || {})[k] ? (S.bk[k].pm || {}) : {};
-    var s4 = !!fd.s4 || !!pmB.done; // L5 · the Close (PM Close v2, floor dose — taps only)
-    if (s4 && !fd.done) { fd.s4 = 1; fd.done = true; try { save(); } catch (e) {} } // lesson five closes day one; tomorrow the adaptive path takes over — same voice, no ceremony
+    var s4 = !!fd.s4 || !!pmB.done; // L6 · the Close (PM Close v2, floor dose — taps only)
+    if (s4 && !fd.done) { fd.s4 = 1; fd.done = true; try { save(); } catch (e) {} } // the close ends day one; tomorrow the adaptive path takes over — same voice, no ceremony
     var evening = new Date().getHours() >= 17;
     var _leadSet = false; function lead(done, locked) { if (done || locked || _leadSet) return false; _leadSet = true; return true; }
+    function gate(ok, fn) { return function () { if (!ok) { toast(tr("one lesson at a time — the glowing one first")); return; } fn(); }; } // sequential Duolingo locks
     nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Lesson 1 · The Switch"), _lead: lead(s0, false),
-      line: s0 ? tr("Switched on. The body leads the mind — and you led the body.") : tr("60 seconds. Wake the body, breathe your word, step into the day."),
-      color: "#ffc83d", done: s0, act: function () { morningDoor(); } });
+      line: s0 ? tr("Switched on. The body leads the mind — and you led the body.") : tr("Never exonerated — and never unarmed. Learn the hero's first move."),
+      color: "#ffc83d", done: s0, act: gate(true, function () { runLesson(DAY1_LESSONS.fd0); }) });
     nodes.push({ key: "fd1", icon: "ti-cards", title: tr("Lesson 2 · Your Words"), locked: !s0, _lead: lead(s1, !s0),
-      line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Eight taps — find the five words you're becoming."),
-      color: "#b07aff", done: s1, act: function () {
-        if (!s0) { toast(tr("one lesson at a time — the glowing one first")); return; }
-        wordsTournament(function () { S.guide.fd.s1 = 1; save(); try { earn(6, { label: "lesson-words" }); } catch (e) {} try { drawJourney(true); } catch (e) {} });
-      } });
-    nodes.push({ key: "fd2", icon: "ti-player-play", title: tr("Lesson 3 · One Real Thing"), locked: !s1, _lead: lead(s2, !s1),
-      line: s2 ? tr("Tracked. Real beats planned — every time.") : tr("Not a plan — a rep. Pick one small true thing; I'll hold the clock."),
-      color: "#36b3f0", done: s2, act: function () { if (!s1) { toast(tr("one lesson at a time — the glowing one first")); return; } fdOneThing(); } });
-    nodes.push({ key: "fd3", icon: "ti-wave-sine", title: tr("Lesson 4 · The Gap"), locked: !s2, _lead: lead(s3, !s2),
-      line: s3 ? tr("You found it. Every use widens it.") : tr("The one skill under everything — 90 seconds, eyes open."),
-      color: "#46e2a4", done: s3, act: function () { if (!s2) { toast(tr("one lesson at a time — the glowing one first")); return; } theGapLesson(); } });
-    nodes.push({ key: "fd4", icon: "ti-moon-stars", title: tr("Lesson 5 · The Close"), locked: !evening && !s4, _lead: lead(s4, !evening && !s4),
-      line: s4 ? tr("Day one, closed. This is the shape of every day — see you tomorrow.") : evening ? tr("Close the day the way it deserves — taps, not typing.") : tr("tonight — it'll glow when it's time"),
+      line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Areté — the gap between who you are and who you could be."),
+      color: "#b07aff", done: s1, act: gate(s0, function () { runLesson(DAY1_LESSONS.fd1); }) });
+    nodes.push({ key: "fdp", icon: "ti-shield-check", title: tr("Lesson 3 · The Pact"), locked: !s1, _lead: lead(sp, !s1),
+      line: sp ? tr("Committed — and celebrated. That's how returns are wired.") : tr("Initiate & Celebrate — the most underrated move in any journey."),
+      color: "#ff8a3a", done: sp, act: gate(s1, function () { runLesson(DAY1_LESSONS.fdp); }) });
+    nodes.push({ key: "fd2", icon: "ti-player-play", title: tr("Lesson 4 · One Real Thing"), locked: !sp, _lead: lead(s2, !sp),
+      line: s2 ? tr("Tracked. A real vote, cast and counted.") : tr("Identity is a thermostat — learn what actually resets it."),
+      color: "#36b3f0", done: s2, act: gate(sp, function () { runLesson(DAY1_LESSONS.fd2); }) });
+    nodes.push({ key: "fd3", icon: "ti-wave-sine", title: tr("Lesson 5 · The Gap"), locked: !s2, _lead: lead(s3, !s2),
+      line: s3 ? tr("You found it. Every use widens it.") : tr("Frankl's space between stimulus and response — felt, not read."),
+      color: "#46e2a4", done: s3, act: gate(s2, function () { runLesson(DAY1_LESSONS.fd3); }) });
+    nodes.push({ key: "fd4", icon: "ti-moon-stars", title: tr("Lesson 6 · The Close"), locked: (!evening && !s4) || !s3, _lead: lead(s4, (!evening && !s4) || !s3),
+      line: s4 ? tr("Day one, closed. This is the shape of every day — see you tomorrow.") : evening ? tr("Masterpiece days are framed — and the frame is the evening.") : tr("tonight — it'll glow when it's time"),
       color: "#ff5fa8", done: s4, act: function () {
         if (!evening && !s4) { toast(tr("tonight — I'll be here")); return; }
-        enterStage("pm", { trackTitle: "Reflection", byTap: true }); // Lesson 5 = the real PM Close v2 (win chips → rating → deal) — floor dose is pure taps; the typed fdSheet is retired (no typing, ever)
+        if (!s3) { toast(tr("one lesson at a time — the glowing one first")); return; }
+        runLesson(DAY1_LESSONS.fd4); // Lesson 6 = teach Win-or-Learn → check → the real PM Close v2 (floor dose, pure taps)
       } });
     return nodes;
   }
-  function fdOneThing() { // LESSON 3 · ONE REAL THING (Day-1 rebuild): no bento-first (punch-list #21 — the box intimidated) — three solid chips grown from YOUR onboarding answers; the full picker only if you ask. Tap → the clock starts → the rep is live.
+  // ===== THE LESSON ENGINE (Day-1 v2, David 2026-07-04: "draw the nuance from the 300-day course — clever, deep, functional, educational, epic"): ONE Duolingo-grade grammar that converts any course session into a mini lesson. HOOK (epic line on a spinning-ray card, per-lesson palette) → TEACH (2 dense course-faithful cards) → CHECK (a real forced-choice test, warm retry — the moment it FEELS like a lesson) → REP (launch the organ; doing is the skill) → the organ's completion lights the stone + deals the card. Tap-only forever. This engine is the conversion pipeline for the whole 300-day course (25 sessions → chapters of lessons). =====
+  function runLesson(L) {
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    var step = -1; // -1 hook · 0..n teach · n+1 check · n+2 rep door
+    function render() {
+      body.innerHTML = ""; foot.innerHTML = "";
+      if (step === -1) { // HOOK — the lesson card, alive
+        add(body, "div", "ob-kick", tr(L.kicker));
+        var hc = add(body, "div"); hc.style.cssText = "position:relative;overflow:hidden;width:302px;padding:26px 18px 22px;border:3px solid #160510;border-radius:20px;background:#1a0b26;box-shadow:0 7px 0 #160510;";
+        var hs = add(hc, "div", "gspin"); hs.style.background = "repeating-conic-gradient(from 0deg at 50% 50%," + L.c + "26 0deg 10deg, transparent 10deg 20deg)";
+        var hin = add(hc, "div"); hin.style.cssText = "position:relative;z-index:1;text-align:center;";
+        hin.innerHTML = '<i class="ti ' + L.ic + '" style="font-size:46px;color:' + L.c + '"></i><div style="font-family:var(--bub);font-weight:800;font-size:24px;color:#fff2f9;margin-top:8px;line-height:1.2">' + esc(tr(L.title)) + '</div>';
+        add(body, "div", "ob-sb", tr(L.hook)).style.cssText = "text-align:center;margin-top:15px;font-size:16px;line-height:1.55;font-weight:700;color:#ffe3f1;max-width:330px;";
+        add(foot, "button", "ob-btn go", tr("Teach me ▸")).onclick = function () { step = 0; render(); };
+        add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
+        return;
+      }
+      if (step < L.teach.length) { // TEACH — one dense idea per card, guardian voice, course-faithful
+        add(body, "div", "ob-kick", tr(L.kicker));
+        var tc = add(body, "div"); tc.style.cssText = "width:100%;max-width:360px;padding:19px 18px;border:2.5px solid #160510;border-radius:16px;background:" + mixHex(L.c, "#160510", 0.85) + ";box-shadow:0 4px 0 #160510;";
+        tc.innerHTML = '<i class="ti ' + L.ic + '" style="font-size:20px;color:' + L.c + '"></i><div style="font-family:var(--bub);font-size:15.5px;line-height:1.6;color:#f4e9f2;margin-top:8px">' + esc(tr(L.teach[step])) + '</div>';
+        add(body, "div", "ob-sb", (step + 1) + " / " + L.teach.length).style.cssText = "text-align:center;margin-top:10px;color:#9a7cae;font-size:12px;";
+        add(foot, "button", "ob-btn go", tr(step < L.teach.length - 1 ? "Next ▸" : "Got it — test me ▸")).onclick = function () { step++; render(); };
+        return;
+      }
+      if (step === L.teach.length) { // CHECK — the Duolingo moment: prove it landed; wrong answers get a warm retry, never a wall
+        add(body, "div", "ob-kick", tr("QUICK CHECK"));
+        add(body, "div", "ob-q", tr(L.check.q));
+        var w = add(body, "div", "obv-rows"); w.style.maxWidth = "400px"; w.style.marginTop = "12px";
+        var fb = add(body, "div", "ob-sb", ""); fb.style.cssText = "text-align:center;margin-top:14px;font-weight:700;min-height:24px;line-height:1.45;";
+        L.check.opts.forEach(function (o, i) {
+          var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", L.c); r.style.setProperty("--ost", tfStripeDoor(L.c));
+          r.innerHTML = '<span class="ol">' + esc(tr(o)) + '</span>';
+          r.onclick = function () {
+            if (i === L.check.right) { r.classList.add("on"); r.style.background = tfStripeDoor(L.c); fb.style.color = "#46e2a4"; fb.textContent = tr(L.check.why); try { earn(2, { label: "lesson-check" }); } catch (e) {} setTimeout(function () { step++; render(); }, 1700); }
+            else { fb.style.color = "#ff9ec9"; fb.textContent = tr(L.check.nope || "Not quite — read it again with the body in mind."); r.style.opacity = ".45"; r.disabled = true; }
+          };
+        });
+        return;
+      }
+      if (L.install && step === L.teach.length + 1) { // INSTALL — the reverse-hypnosis beat (David 2026-07-04 / Psycho-Cybernetics): the lesson's core line, present tense, sealed with a HELD thumb while the room dims — taught, checked, and now INSTALLED. One lesson at a time, the self-image updates.
+        ov.style.background = "linear-gradient(180deg,#0c0510,#160a1c)"; // candle-dark — the pre-sleep doorway, borrowed for 20 seconds
+        add(body, "div", "ob-kick", tr("INSTALL IT"));
+        var orb = add(body, "div"); orb.style.cssText = "width:54px;height:54px;border-radius:50%;margin:6px auto;background:radial-gradient(circle at 40% 35%," + mixHex(L.c, "#ffffff", 0.3) + "," + L.c + " 60%," + mixHex(L.c, "#160510", 0.3) + ");box-shadow:0 0 26px " + L.c + "66;animation:breathe 9s ease-in-out infinite;";
+        add(body, "div", null, "“" + esc(tr(L.install)) + "”").style.cssText = "text-align:center;font-family:var(--bub);font-size:20px;font-weight:800;color:#ffe3f1;line-height:1.4;max-width:320px;margin-top:6px;";
+        add(body, "div", "ob-sb", tr("one slow breath — say it as if it's already true. Hold to keep it.")).style.cssText = "text-align:center;margin-top:8px;";
+        try { say(tr(L.install), VPROF.mantra); } catch (e) {}
+        var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
+        pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
+        var arc = pw.querySelector(".parc"), holdT = null, held = false;
+        function rel() { if (held) return; clearTimeout(holdT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.6s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-install" }); } catch (e) {} step++; render(); }, 1600); });
+        pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+        var carry = add(foot, "button", "ob-skip", tr("carry it without the hold")); carry.onclick = function () { step++; render(); }; // never a dead-end
+        return;
+      }
+      // REP DOOR — knowing isn't the skill
+      ov.style.background = "";
+      add(body, "div", "ob-kick", tr("NOW THE REP"));
+      add(body, "div", "ob-q", tr(L.repLine));
+      add(body, "div", "ob-sb", tr("knowing isn't the skill — doing is. This is the part that counts.")).style.cssText = "text-align:center;margin-top:8px;";
+      add(foot, "button", "ob-btn go", tr(L.repBtn || "Do it ▸")).onclick = function () { ov.remove(); try { L.rep(); } catch (e) {} };
+      add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
+    }
+    render();
+  }
+  // ===== DAY-1 LESSON CONTENT — each lesson carries real course DNA (COURSE-MAP.md): the concept names, the science, the exact moves. =====
+  function firstCommit() { // THE PACT as a journey lesson (moved OUT of onboarding, David 2026-07-04) — the course's 'Initiate and Celebrate' (Module O): commit, then CELEBRATE committing (celebration wires the return). Days first, thumb-seal second, confetti third.
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    var days = 0;
+    function render() {
+      body.innerHTML = ""; foot.innerHTML = "";
+      add(body, "div", "ob-kick", tr("LESSON 3 · THE PACT"));
+      add(body, "div", "ob-q", tr("How many days in a row will you come — to start?"));
+      add(body, "div", "ob-sb", tr("small is honest — pick the promise you'll actually keep")).style.cssText = "text-align:center;margin-top:6px;";
+      var dw = add(body, "div", "obv-tiles"), tiles = [];
+      function paintD(t2, o) { var on = days === o[0]; t2.classList.toggle("on", on); t2.style.background = on ? tfStripeDoor(o[2]) : ""; t2.innerHTML = '<span class="ol" style="font-size:22px">' + o[0] + '</span><span class="ol">' + esc(tr(o[1])) + '</span>'; }
+      var sealZone = add(body, "div"); sealZone.style.cssText = "width:100%;display:flex;flex-direction:column;align-items:center;";
+      function buildSeal() {
+        sealZone.innerHTML = ""; if (!days) return;
+        add(sealZone, "div", "ob-sb", tr("One rule between us: I will never lie to you. Hold — and promise the same, for") + " " + days + " " + tr("days.")).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#ffe3f1;";
+        var pw = add(sealZone, "div", "ob-pwrap"); pw.style.touchAction = "none";
+        pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffd24a" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
+        var arc = pw.querySelector(".parc"), holdT = null, done = false;
+        function rel() { if (done) return; clearTimeout(holdT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT = setTimeout(function () { done = true;
+          S.profile = S.profile || {}; S.profile.pact = { ts: Date.now(), days: days };
+          if (S.guide && S.guide.fd) S.guide.fd.sp = 1;
+          try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {}
+          try { earn(10, { label: "first-commit" }); celebrateGated("#ffd24a", 1); } catch (e) {}
+          save(); ov.remove();
+          try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else { c.remove(); try { drawJourney(true); } catch (e) {} } } catch (e) { try { drawJourney(true); } catch (e2) {} } // Initiate AND Celebrate — the campfire card (SN-239) names why re-committing daily is the design
+        }, 1300); });
+        pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+        add(sealZone, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
+      }
+      [[2, "Baby steps", "#48b8e0"], [5, "Strong start", "#46e2a4"], [7, "Serious", "#ffd24a"], [14, "Unstoppable", "#ff5fa8"]].forEach(function (o) {
+        var t2 = add(dw, "button", "obv-tile"); t2.style.setProperty("--oc", o[2]); t2.style.setProperty("--ost", tfStripeDoor(o[2]));
+        paintD(t2, o); tiles.push([t2, o]);
+        t2.onclick = function () { days = (days === o[0]) ? 0 : o[0]; tiles.forEach(function (p) { paintD(p[0], p[1]); }); buildSeal(); };
+      });
+      buildSeal();
+      add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
+    }
+    render();
+  }
+  var DAY1_LESSONS = {
+    fd0: { kicker: "LESSON 1 · THE SWITCH", title: "Flip the Switch", ic: "ti-sun", c: "#ffc83d",
+      hook: "Every hero's story starts the same way: they stop waiting to feel ready.",
+      teach: [
+        "Rule one of the whole game: you are never exonerated. Challenges will come today, tomorrow, always — that's not a flaw in the plan, that IS the plan. The only real question each time: respond as a victim, or as a hero?",
+        "And the hero's first move is never the task. It's the SWITCH: shoulders back, one slow breath with a longer exhale, choose the state on purpose. The body leads — the mind follows it. Sixty seconds, every morning, before the world gets a vote."
+      ],
+      check: { q: "Tomorrow hits before you feel ready. The hero's first move?", opts: ["Grab the phone — ease into it", "Switch the body on — breath, posture, choose", "Wait until the feeling shows up"], right: 1, why: "Feelings follow the body. Switch first — readiness arrives after you move.", nope: "That's the victim's opening move — comfortable, and it hands the morning away." },
+      install: "I move first. The feeling follows.", repLine: "Do the Switch — 60 seconds, right now.", repBtn: "Switch on ▸", rep: function () { morningDoor(); } },
+    fd1: { kicker: "LESSON 2 · YOUR WORDS", title: "Areté", ic: "ti-cards", c: "#b07aff",
+      hook: "The Greeks had one word for a life well lived: areté — excellence. Closing the gap between who you are and who you could be.",
+      teach: [
+        "Science caught up with Aristotle: a flourishing life runs on VIRTUES in action — and your virtues aren't traits you have, they're stats you train. Used on purpose, they level. Ignored, they idle.",
+        "So every hero starts by naming their strengths. Researchers built a whole assessment for it — we'll play it as a game of eight taps. The words you pick become the words I speak back to you when you live them."
+      ],
+      check: { q: "What actually levels a virtue up?", opts: ["Believing in it deeply", "Acting it out — even small", "Reading about it daily"], right: 1, why: "A virtue only counts in motion. One small act beats a hundred intentions.", nope: "Belief and books prime it — but a virtue levels only when it moves." },
+      install: "I choose who I'm being.", repLine: "Find your five words — eight taps.", repBtn: "Play ▸", rep: function () { wordsTournament(function () { if (S.guide && S.guide.fd) { S.guide.fd.s1 = 1; } save(); try { earn(6, { label: "lesson-words" }); } catch (e) {} try { drawJourney(true); } catch (e) {} }); } },
+    fdp: { kicker: "LESSON 3 · THE PACT", title: "Initiate & Celebrate", ic: "ti-shield-check", c: "#ff8a3a",
+      hook: "The most underrated move in any journey: deciding — out loud — that you're in.",
+      teach: [
+        "The course calls it Initiate and Celebrate: first you commit, then you immediately CELEBRATE committing. That's not fluff — celebration is how the brain tags a behavior as worth returning to.",
+        "And know this going in: motivation is a campfire, not a furnace. It goes out overnight, every night, by design. A streak promise isn't 'never miss' — it's agreeing to re-light the fire each morning."
+      ],
+      check: { q: "You wake up and yesterday's motivation is gone. What does that mean?", opts: ["You failed already", "Nothing — it's biology; re-light it", "The plan was too ambitious"], right: 1, why: "The fire dies nightly for everyone. Re-lighting it IS the practice — that's the whole streak.", nope: "No verdicts here — the fire going out is the design, not the failure." },
+      install: "I re-light the fire. Every morning.", repLine: "Make the pact — pick your days, seal it with your thumb.", repBtn: "Commit ▸", rep: function () { firstCommit(); } },
+    fd2: { kicker: "LESSON 4 · ONE REAL THING", title: "Votes & Evidence", ic: "ti-player-play", c: "#36b3f0",
+      hook: "Your self-image is a thermostat: it quietly pulls your behavior back to whatever 'someone like me' does.",
+      teach: [
+        "So the game was never willpower — it's EVIDENCE. Every real act is a vote for the person you're becoming. Cast enough votes and the thermostat itself resets; then the behavior runs without a fight.",
+        "And the pros collect data, not judgment — 'an artistic archer in a lab coat.' You track what you actually do, kindly, like arrows on a target. No grades. Just arrows, and where they landed."
+      ],
+      check: { q: "What resets the thermostat?", opts: ["One big decision", "Small real acts, repeated — votes", "A perfect day"], right: 1, why: "Identity is accumulated, not declared. You just learned the app's favorite law.", nope: "Big moments fade — the thermostat only listens to repetition." },
+      install: "Small and real — that's how I vote.", repLine: "Cast a vote — one small real thing, tracked.", repBtn: "Pick it ▸", rep: function () { fdOneThing(); } },
+    fd3: { kicker: "LESSON 5 · THE GAP", title: "Response-Ability", ic: "ti-wave-sine", c: "#46e2a4",
+      hook: "“Between stimulus and response there is a space. In that space is our power to choose.” — Viktor Frankl",
+      teach: [
+        "The course calls it Response-Ability — literally the ABILITY to choose your response. The victim reacts on autopilot; the hero finds the gap between the trigger and the reaction, and chooses inside it.",
+        "It's not a metaphor — it's a few hundred milliseconds of real neurology, and it trains like a muscle. Everything in this app, every tool, every ritual, is a rep of this one skill in a different costume."
+      ],
+      check: { q: "Someone cuts you off mid-sentence. Where does the hero live?", opts: ["In the sharp comeback", "In the instant before the reaction", "In never feeling anger at all"], right: 1, why: "Heroes feel everything — they just choose inside the gap. Now go feel it once, for real.", nope: "Feelings aren't the enemy and wit isn't the skill — look between the trigger and the reply." },
+      install: "There is a space — and it's mine.", repLine: "Feel the gap once — 90 seconds, eyes open.", repBtn: "Find it ▸", rep: function () { theGapLesson(); } },
+    fd4: { kicker: "LESSON 6 · THE CLOSE", title: "Win or Learn", ic: "ti-moon-stars", c: "#ff5fa8",
+      hook: "Masterpiece days aren't found. They're framed — and the frame is the evening.",
+      teach: [
+        "'Today starts the night before.' The evening close isn't a diary — it seeds tomorrow: name the day's real win, harvest one lesson, aim one thing. Three taps that decide how tomorrow opens.",
+        "And the scoring is upside down on purpose: every day ends a WIN or a LESSON — both count. A rough day closed well scores like a victory here, because 'playing badly well' is the professional's skill."
+      ],
+      check: { q: "A rough day is ending. The masterpiece move?", opts: ["Write the day off", "Close it anyway: one win, one lesson, one aim", "Stay up late to make up for it"], right: 1, why: "A day closed kindly is a day that worked — and tomorrow opens aimed.", nope: "That's the day winning twice. The close is how you take the day back." },
+      install: "I close my days kindly. Win or learn.", repLine: "Close day one the way it deserves.", repBtn: "Close it ▸", rep: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }
+  };
+  function fdOneThing() { // LESSON · ONE REAL THING (Day-1 rebuild): no bento-first (punch-list #21 — the box intimidated) — three solid chips grown from YOUR onboarding answers; the full picker only if you ask. Tap → the clock starts → the rep is live.
     var P = S.profile || {}, opts = [];
     (P.starter || []).slice(0, 3).forEach(function (it) { opts.push({ t: it.t, ic: it.ic || "ti-star", c: "#36b3f0" }); });
     if (!opts.length) opts = [{ t: "A 10-minute walk", ic: "ti-walk", c: "#46e2a4" }, { t: "One glass of water", ic: "ti-droplet", c: "#5fa8ff" }, { t: "Two minutes of tidying", ic: "ti-sparkles", c: "#ff8a3a" }];
@@ -5121,7 +5280,7 @@
     d2.voice = "";
     var BEATS = [{ t: "intro" }]; // name beat REMOVED (punch-list #5, David device 2026-07-04: "no typing" — the app addresses you as "you"; a name can come later, never typed in onboarding)
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); if (si === 1) { BEATS.push({ t: "breath" }); BEATS.push({ t: "write" }); } });
-    BEATS.push({ t: "constel" }, { t: "plan" }, { t: "wall" }, { t: "voice" }, { t: "pact" }, { t: "mint" }, { t: "seed" });
+    BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
     var bi2 = 0, advT = null, _justPicked = false;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     // BATTERY PROGRESS — 3 labeled section segments, cells = that section's questions
@@ -6521,6 +6680,63 @@
     "you asked for movement — ten minutes is enough to count": "ты просил движения — десяти минут достаточно, чтобы засчитать",
     "you asked for focus — one protected block beats a busy day": "ты просил фокуса — один защищённый блок сильнее занятого дня",
     "a day changes from one chosen thing — any one": "день меняется от одного выбранного дела — любого одного"
+  });
+  Object.assign(I18N.ru, { // THE LESSON ENGINE + Day-1 course lessons + INSTALL beat (B4 law)
+    "Teach me ▸": "Научи меня ▸", "Got it — test me ▸": "Понял — проверь меня ▸", "QUICK CHECK": "БЫСТРАЯ ПРОВЕРКА", "NOW THE REP": "ТЕПЕРЬ ПОВТОР", "Do it ▸": "Сделать ▸", "Not quite — read it again with the body in mind.": "Не совсем — перечитай, держа в уме тело.",
+    "INSTALL IT": "УСТАНОВИ ЭТО", "one slow breath — say it as if it's already true. Hold to keep it.": "один медленный вдох — скажи это как уже правду. Удержи, чтобы оставить.", "carry it without the hold": "унести без удержания",
+    "LESSON 1 · THE SWITCH": "УРОК 1 · ПЕРЕКЛЮЧЕНИЕ", "Flip the Switch": "Щёлкни переключателем",
+    "Every hero's story starts the same way: they stop waiting to feel ready.": "Каждая история героя начинается одинаково: он перестаёт ждать готовности.",
+    "Rule one of the whole game: you are never exonerated. Challenges will come today, tomorrow, always — that's not a flaw in the plan, that IS the plan. The only real question each time: respond as a victim, or as a hero?": "Правило номер один всей игры: тебя никогда не освободят. Испытания придут сегодня, завтра, всегда — это не изъян плана, это И ЕСТЬ план. Единственный настоящий вопрос каждый раз: ответить как жертва — или как герой?",
+    "And the hero's first move is never the task. It's the SWITCH: shoulders back, one slow breath with a longer exhale, choose the state on purpose. The body leads — the mind follows it. Sixty seconds, every morning, before the world gets a vote.": "И первый ход героя — никогда не задача. Это ПЕРЕКЛЮЧЕНИЕ: плечи назад, один медленный вдох с долгим выдохом, состояние выбрано нарочно. Тело ведёт — ум идёт следом. Шестьдесят секунд каждое утро, прежде чем мир получит право голоса.",
+    "Tomorrow hits before you feel ready. The hero's first move?": "Завтра наступает раньше, чем ты готов. Первый ход героя?",
+    "Grab the phone — ease into it": "Взять телефон — мягко въехать", "Switch the body on — breath, posture, choose": "Включить тело — дыхание, осанка, выбор", "Wait until the feeling shows up": "Ждать, пока придёт чувство",
+    "Feelings follow the body. Switch first — readiness arrives after you move.": "Чувства идут за телом. Сначала переключись — готовность приходит после движения.", "That's the victim's opening move — comfortable, and it hands the morning away.": "Это дебют жертвы — удобно, и утро отдано.",
+    "I move first. The feeling follows.": "Я двигаюсь первым. Чувство идёт следом.", "Do the Switch — 60 seconds, right now.": "Сделай Переключение — 60 секунд, прямо сейчас.", "Switch on ▸": "Включиться ▸",
+    "LESSON 2 · YOUR WORDS": "УРОК 2 · ТВОИ СЛОВА", "Areté": "Арете",
+    "The Greeks had one word for a life well lived: areté — excellence. Closing the gap between who you are and who you could be.": "У греков было одно слово для хорошо прожитой жизни: арете — совершенство. Закрытие зазора между тем, кто ты есть, и тем, кем мог бы быть.",
+    "Science caught up with Aristotle: a flourishing life runs on VIRTUES in action — and your virtues aren't traits you have, they're stats you train. Used on purpose, they level. Ignored, they idle.": "Наука догнала Аристотеля: цветущая жизнь работает на ДОБРОДЕТЕЛЯХ в действии — и твои добродетели не черты, что у тебя есть, а характеристики, что ты качаешь. Используешь нарочно — растут. Игнорируешь — простаивают.",
+    "So every hero starts by naming their strengths. Researchers built a whole assessment for it — we'll play it as a game of eight taps. The words you pick become the words I speak back to you when you live them.": "Поэтому каждый герой начинает с называния своих сил. Учёные построили для этого целый тест — мы сыграем его игрой в восемь касаний. Слова, что выберешь, станут словами, которые я буду возвращать тебе, когда ты их живёшь.",
+    "What actually levels a virtue up?": "Что на самом деле прокачивает добродетель?",
+    "Believing in it deeply": "Глубоко верить в неё", "Acting it out — even small": "Действовать ею — даже мало", "Reading about it daily": "Читать о ней каждый день",
+    "A virtue only counts in motion. One small act beats a hundred intentions.": "Добродетель считается только в движении. Одно малое действие бьёт сто намерений.", "Belief and books prime it — but a virtue levels only when it moves.": "Вера и книги её заряжают — но растёт она только в движении.",
+    "I choose who I'm being.": "Я выбираю, кем быть.", "Find your five words — eight taps.": "Найди свои пять слов — восемь касаний.", "Play ▸": "Играть ▸",
+    "LESSON 3 · THE PACT": "УРОК 3 · ПАКТ", "Initiate & Celebrate": "Начни и отпразднуй",
+    "The most underrated move in any journey: deciding — out loud — that you're in.": "Самый недооценённый ход любого пути: решить — вслух — что ты в деле.",
+    "The course calls it Initiate and Celebrate: first you commit, then you immediately CELEBRATE committing. That's not fluff — celebration is how the brain tags a behavior as worth returning to.": "Курс называет это «Начни и отпразднуй»: сначала ты обязуешься, потом сразу ПРАЗДНУЕШЬ само обязательство. Это не мишура — праздник и есть то, чем мозг помечает поведение как стоящее возвращения.",
+    "And know this going in: motivation is a campfire, not a furnace. It goes out overnight, every night, by design. A streak promise isn't 'never miss' — it's agreeing to re-light the fire each morning.": "И знай заранее: мотивация — костёр, а не печь. Она гаснет за ночь, каждую ночь, по замыслу. Обещание серии — не «никогда не пропущу», а согласие заново зажигать огонь каждое утро.",
+    "You wake up and yesterday's motivation is gone. What does that mean?": "Ты просыпаешься — вчерашней мотивации нет. Что это значит?",
+    "You failed already": "Ты уже провалился", "Nothing — it's biology; re-light it": "Ничего — это биология; зажги снова", "The plan was too ambitious": "План был слишком амбициозным",
+    "The fire dies nightly for everyone. Re-lighting it IS the practice — that's the whole streak.": "Огонь гаснет ночью у всех. Зажигать заново — И ЕСТЬ практика; в этом вся серия.", "No verdicts here — the fire going out is the design, not the failure.": "Здесь нет приговоров — гаснущий огонь это замысел, а не провал.",
+    "I re-light the fire. Every morning.": "Я заново зажигаю огонь. Каждое утро.", "Make the pact — pick your days, seal it with your thumb.": "Заключи пакт — выбери дни, скрепи большим пальцем.", "Commit ▸": "Обязуюсь ▸",
+    "Committed — and celebrated. That's how returns are wired.": "Обязался — и отпраздновал. Так прошивается возвращение.", "Initiate & Celebrate — the most underrated move in any journey.": "«Начни и отпразднуй» — самый недооценённый ход любого пути.",
+    "LESSON 4 · ONE REAL THING": "УРОК 4 · ОДНО НАСТОЯЩЕЕ ДЕЛО", "Votes & Evidence": "Голоса и доказательства",
+    "Your self-image is a thermostat: it quietly pulls your behavior back to whatever 'someone like me' does.": "Твой образ себя — термостат: он тихо стягивает поведение обратно к тому, что делает «такой, как я».",
+    "So the game was never willpower — it's EVIDENCE. Every real act is a vote for the person you're becoming. Cast enough votes and the thermostat itself resets; then the behavior runs without a fight.": "Так что игра никогда не была про силу воли — она про ДОКАЗАТЕЛЬСТВА. Каждое настоящее действие — голос за того, кем ты становишься. Отдай достаточно голосов — и термостат сам сбросится; дальше поведение идёт без борьбы.",
+    "And the pros collect data, not judgment — 'an artistic archer in a lab coat.' You track what you actually do, kindly, like arrows on a target. No grades. Just arrows, and where they landed.": "И профи собирают данные, а не приговоры — «лучник-художник в лабораторном халате». Ты отслеживаешь, что реально делаешь, по-доброму, как стрелы на мишени. Без оценок. Только стрелы — и куда они легли.",
+    "What resets the thermostat?": "Что сбрасывает термостат?",
+    "One big decision": "Одно большое решение", "Small real acts, repeated — votes": "Малые настоящие действия, повторённые — голоса", "A perfect day": "Один идеальный день",
+    "Identity is accumulated, not declared. You just learned the app's favorite law.": "Личность накапливается, а не объявляется. Ты только что выучил любимый закон этого приложения.", "Big moments fade — the thermostat only listens to repetition.": "Большие моменты гаснут — термостат слушает только повторение.",
+    "Small and real — that's how I vote.": "Мало и по-настоящему — так я голосую.", "Cast a vote — one small real thing, tracked.": "Отдай голос — одно малое настоящее дело, записанное.", "Pick it ▸": "Выбрать ▸",
+    "Tracked. A real vote, cast and counted.": "Записано. Настоящий голос — отдан и засчитан.", "Identity is a thermostat — learn what actually resets it.": "Личность — термостат; узнай, что его на самом деле сбрасывает.",
+    "LESSON 5 · THE GAP": "УРОК 5 · ЗАЗОР",
+    "“Between stimulus and response there is a space. In that space is our power to choose.” — Viktor Frankl": "«Между стимулом и реакцией есть пространство. В этом пространстве — наша сила выбирать.» — Виктор Франкл",
+    "The course calls it Response-Ability — literally the ABILITY to choose your response. The victim reacts on autopilot; the hero finds the gap between the trigger and the reaction, and chooses inside it.": "Курс называет это Response-Ability — буквально СПОСОБНОСТЬЮ выбирать свой ответ. Жертва реагирует на автопилоте; герой находит зазор между толчком и реакцией — и выбирает внутри него.",
+    "It's not a metaphor — it's a few hundred milliseconds of real neurology, and it trains like a muscle. Everything in this app, every tool, every ritual, is a rep of this one skill in a different costume.": "Это не метафора — это доли секунды настоящей нейрологии, и они тренируются как мышца. Всё в этом приложении, каждый инструмент, каждый ритуал — повтор этого одного навыка в другом костюме.",
+    "Someone cuts you off mid-sentence. Where does the hero live?": "Кто-то перебивает тебя на полуслове. Где живёт герой?",
+    "In the sharp comeback": "В остром ответе", "In the instant before the reaction": "В миге перед реакцией", "In never feeling anger at all": "В том, чтобы вовсе не злиться",
+    "Heroes feel everything — they just choose inside the gap. Now go feel it once, for real.": "Герои чувствуют всё — они просто выбирают внутри зазора. Теперь иди и почувствуй его раз, по-настоящему.", "Feelings aren't the enemy and wit isn't the skill — look between the trigger and the reply.": "Чувства не враг, а остроумие не навык — смотри между толчком и ответом.",
+    "There is a space — and it's mine.": "Есть пространство — и оно моё.", "Feel the gap once — 90 seconds, eyes open.": "Почувствуй зазор раз — 90 секунд, глаза открыты.", "Find it ▸": "Найти ▸",
+    "LESSON 6 · THE CLOSE": "УРОК 6 · ЗАКРЫТИЕ", "Win or Learn": "Победа или урок",
+    "Masterpiece days aren't found. They're framed — and the frame is the evening.": "Дни-шедевры не находят. Их обрамляют — и рама это вечер.",
+    "'Today starts the night before.' The evening close isn't a diary — it seeds tomorrow: name the day's real win, harvest one lesson, aim one thing. Three taps that decide how tomorrow opens.": "«Сегодня начинается накануне вечером.» Вечернее закрытие — не дневник, это посев завтрашнего: назови настоящую победу дня, собери один урок, наведи одно дело. Три касания, решающие, каким откроется завтра.",
+    "And the scoring is upside down on purpose: every day ends a WIN or a LESSON — both count. A rough day closed well scores like a victory here, because 'playing badly well' is the professional's skill.": "И счёт здесь перевёрнут нарочно: каждый день кончается ПОБЕДОЙ или УРОКОМ — считаются оба. Тяжёлый день, закрытый хорошо, засчитывается как победа, потому что «играть плохо хорошо» — навык профессионала.",
+    "A rough day is ending. The masterpiece move?": "Тяжёлый день заканчивается. Ход мастера?",
+    "Write the day off": "Списать день", "Close it anyway: one win, one lesson, one aim": "Всё равно закрыть: одна победа, один урок, одна цель", "Stay up late to make up for it": "Сидеть допоздна, навёрстывая",
+    "A day closed kindly is a day that worked — and tomorrow opens aimed.": "День, закрытый по-доброму, — день, который сработал; и завтра открывается нацеленным.", "That's the day winning twice. The close is how you take the day back.": "Так день побеждает дважды. Закрытие — то, как ты забираешь день себе.",
+    "I close my days kindly. Win or learn.": "Я закрываю свои дни по-доброму. Победа или урок.", "Close day one the way it deserves.": "Закрой первый день так, как он заслуживает.", "Close it ▸": "Закрыть ▸",
+    "Lesson 3 · The Pact": "Урок 3 · Пакт", "Lesson 4 · One Real Thing": "Урок 4 · Одно настоящее дело", "Lesson 5 · The Gap": "Урок 5 · Зазор", "Lesson 6 · The Close": "Урок 6 · Закрытие",
+    "Never exonerated — and never unarmed. Learn the hero's first move.": "Тебя не освободят — но ты и не безоружен. Выучи первый ход героя.", "Masterpiece days are framed — and the frame is the evening.": "Дни-шедевры обрамляют — и рама это вечер.", "Areté — the gap between who you are and who you could be.": "Арете — зазор между тем, кто ты есть, и кем мог бы быть.",
+    "Committed — and celebrated. That's how returns are wired. ": "Обязался — и отпраздновал. Так прошивается возвращение."
   });
   Object.assign(I18N.ru, { // DAY-1 REBUILD — THE FIRST LESSON: five lessons, five colors, zero typing (B4 law)
     "Lesson 1 · The Switch": "Урок 1 · Переключение", "Switched on. The body leads the mind — and you led the body.": "Включился. Тело ведёт ум — а ты повёл тело.", "60 seconds. Wake the body, breathe your word, step into the day.": "60 секунд. Разбуди тело, вдохни своё слово, шагни в день.",
@@ -10377,7 +10593,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
