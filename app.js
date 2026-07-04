@@ -811,10 +811,19 @@
     add(body, "div", "ob-sb", learned.length ? "Here's what I learned about you: " + learned.join(" · ") + ". Tomorrow I use all of it." : _fb);
     add(foot, "button", "ob-btn go", "Goodnight ▸").onclick = function () { ov.remove(); try { celebrateGated("#9a7cff", 1); } catch (e) {} };
   }
-  function firstDayNodes() { // ===== DAY 1 = THE FIRST LESSON (rebuilt ground-up, David device notes 2026-07-04): five lessons, five color worlds, ZERO typing — only taps. Each lesson is one real REP of a built organ at starter dose, and each ends by NAMING the mechanism (the deck card deals AFTER it worked — Conway-Smith: reps first, theory after). The arc IS the whole app in miniature: switch the body → choose who you're becoming → do one real thing → find the GAP (the one skill under everything, taught explicitly) → close the day. First impressions carry the journey. =====
+  // ===== THE LITURGY SHELL (SPEC-FIRST-RUN §1, P2b): OPEN → AIM → LIVE → LESSON → CLOSE as a PURE-derived spine over the existing trail engine — beats read real signals (THE RECORD / blocks / bk.pm), never a parallel day-state machine (the v488/v496 lesson: two day-models fight). S.lit holds only the day's ephemera (sealed line, queued lesson) and rolls at the logical day. =====
+  function litState() { var k = todayK(); if (!S.lit || S.lit.k !== k) S.lit = { k: k }; return S.lit; }
+  function litGapDue() { var fd = (S.guide || {}).fd; return !!(fd && fd.done && !fd.s3); } // §3: the Gap moves to day 2's lesson slot — it deserves a fresh morning; persists until felt once (Duolingo path, not stale homework)
+  function firstDayNodes() { // ===== DAY 1 = THE FIRST LESSON (rebuilt ground-up, David device notes 2026-07-04): five lessons, five color worlds, ZERO typing — only taps. Each lesson is one real REP of a built organ at starter dose, and each ends by NAMING the mechanism (the deck card deals AFTER it worked — Conway-Smith: reps first, theory after). The arc IS the whole app in miniature: switch the body → choose who you're becoming → do one real thing → close the day. (The GAP moved to day 2's lesson slot — SPEC-FIRST-RUN §3.) First impressions carry the journey. =====
     var fd = (S.guide || {}).fd; if (!fd || fd.done) return null;
     var k = todayK(), nodes = [];
-    if (fd.k && fd.k !== k) { fd.done = true; try { save(); } catch (e) {} return null; } // an unfinished first day hatches quietly at day end — day 2 opens with the callback, never stale homework
+    if (fd.k && fd.k > k) { // TIME-OF-DAY (§2): an evening first-run armed the stones for TOMORROW — tonight the trail is one node: the floor close. "We start properly tomorrow."
+      var pmT = ((S.bk || {})[k] || {}).pm || {};
+      return [{ key: "fdeve", icon: "ti-moon-stars", title: tr("The Close"), _lead: !pmT.done,
+        line: pmT.done ? tr("Sealed. See you in the morning.") : tr("We start properly tomorrow. Tonight — just the close."),
+        color: "#ff5fa8", done: !!pmT.done, act: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }];
+    }
+    if (fd.k && fd.k < k) { fd.done = true; try { save(); } catch (e) {} return null; } // an unfinished first day hatches quietly at day end — day 2 opens with the callback, never stale homework (guard: only a PAST fd hatches — a tomorrow-armed fd waits)
     var s0 = !!fd.s0; // L1 · the Switch (morningDoor completion marks it)
     var s1 = !!fd.s1 || (((S.profile || {}).words) || []).length >= 5; // L2 · Your Words (the tournament)
     var sp = !!fd.sp || !!(S.profile && S.profile.pact && S.profile.pact.ts); // L3 · THE PACT (Initiate & Celebrate — moved here from onboarding)
@@ -838,15 +847,13 @@
     nodes.push({ key: "fd2", icon: "ti-player-play", title: tr("Lesson 4 · One Real Thing"), locked: !sp, _lead: lead(s2, !sp),
       line: s2 ? tr("Tracked. A real vote, cast and counted.") : tr("Identity is a thermostat — learn what actually resets it."),
       color: "#36b3f0", done: s2, act: gate(sp, function () { runLesson(DAY1_LESSONS.fd2); }) });
-    nodes.push({ key: "fd3", icon: "ti-wave-sine", title: tr("Lesson 5 · The Gap"), locked: !s2, _lead: lead(s3, !s2),
-      line: s3 ? tr("You found it. Every use widens it.") : tr("Frankl's space between stimulus and response — felt, not read."),
-      color: "#46e2a4", done: s3, act: gate(s2, function () { runLesson(DAY1_LESSONS.fd3); }) });
-    nodes.push({ key: "fd4", icon: "ti-moon-stars", title: tr("Lesson 6 · The Close"), locked: (!evening && !s4) || !s3, _lead: lead(s4, (!evening && !s4) || !s3),
+    // fd3 · THE GAP left day 1 (SPEC-FIRST-RUN §3): it's day 2's lesson slot now — jpNodes surfaces it via litGapDue(). s3 stays the done-flag; theGapLesson still sets it.
+    nodes.push({ key: "fd4", icon: "ti-moon-stars", title: tr("Lesson 5 · The Close"), locked: (!evening && !s4) || !s2, _lead: lead(s4, (!evening && !s4) || !s2),
       line: s4 ? tr("Day one, closed. This is the shape of every day — see you tomorrow.") : evening ? tr("Masterpiece days are framed — and the frame is the evening.") : tr("tonight — it'll glow when it's time"),
       color: "#ff5fa8", done: s4, act: function () {
         if (!evening && !s4) { toast(tr("tonight — I'll be here")); return; }
-        if (!s3) { toast(tr("one lesson at a time — the glowing one first")); return; }
-        runLesson(DAY1_LESSONS.fd4); // Lesson 6 = teach Win-or-Learn → check → the real PM Close v2 (floor dose, pure taps)
+        if (!s2) { toast(tr("one lesson at a time — the glowing one first")); return; }
+        runLesson(DAY1_LESSONS.fd4); // Lesson 5 = teach Win-or-Learn → check → the real PM Close v2 (floor dose, pure taps)
       } });
     return nodes;
   }
@@ -898,10 +905,10 @@
         pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
         var arc = pw.querySelector(".parc"), hT = null, held = false;
         function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset 1.6s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-seal" }); } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }, 1600); });
+        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset 1.6s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-seal" }); } catch (e) {} try { litState().seal = b.line; } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }, 1600); }); // seal capture → S.lit.seal: today's sealed line, for the Close's install replay (rooms pass)
         pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
         hint.textContent = tr("or tap here to carry it without the hold"); hint.style.pointerEvents = "auto";
-        hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; if (b.onSeal) { try { b.onSeal(ctx); } catch (er) {} } next(); };
+        hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; try { litState().seal = b.line; } catch (er) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (er) {} } next(); };
         return; }
       if (b.k === "door") { lineIn(stage, b.t, false); speak(b.t);
         var db = add(stage, "button", "ob-btn go", tr(b.btn || "Do it \u25b8")); db.style.marginTop = "12px";
@@ -1161,6 +1168,13 @@
         act: function () { var _t = nextFreeMin(k), _id = uid(); blocks(k).push({ id: _id, time: pad(Math.floor(_t / 60)) + ":" + pad(_t % 60), mins: _DW.m, title: _DW.bt, prio: 2, color: DOM.focus.c, done: false }); reflow(k); S.profile.blockDoorDone = 1; save(); toast("It's on your day — small enough to win."); drawJourney(true); } });
     }
 
+    // ===== LITURGY SHELL · THE OPEN (SPEC-FIRST-RUN §1, P2b): every day past day 1 opens with the same beat — the daily Stack + delta dial (theOpen daily door). PURE done-read: today's THE-RECORD entry. The liturgy floats to real wake — no clock gate, no "late". dormant/simpleMode untouched (their floor dose comes with rooms, P4/P5). AIM in the shell = the existing am/plan nodes below (the Range replaces them in P3). =====
+    var _litOn = !dormant && !(S.profile && S.profile.simpleMode) && !!(S.profile && S.profile.set);
+    var _litOpenDone = _litOn && ((S.tools || {}).gauge || []).some(function (g) { return g.k === k && (g.stack === "daily-stack" || g.stack === "first-stack"); });
+    if (_litOn) nodes.push({ key: "litopen", icon: "ti-sunrise", title: tr("The Open"), _lead: !_litOpenDone,
+      line: _litOpenDone ? tr("Charged. The day is open.") : tr("Ninety seconds — set the day's charge."),
+      color: "#ffd24a", done: _litOpenDone, act: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); } });
+
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
     // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
     var settleNode = null;
@@ -1218,6 +1232,11 @@
         color: DOM.focus.c, done: planned.length > 0 && !(S.timers || []).some(function (t) { return t.dayK === todayK() && t.title === "Plan your day"; }), act: function () { closeJourney(); shapeFlow(k); } }); // stays the live cockpit while you're TRACKING the planning (David 2026-07-02)
     }
     if (settleNode) { nodes.push(settleNode); settleNode = null; } // #6: settle falls in as 2nd node after Plan (when AM not unlocked); still available but not the headline
+
+    // LITURGY SHELL · LESSON SLOT (§1/§3): day 2's lesson = THE GAP — "it deserves a fresh morning and gives day 2 its reason." Persists until felt once (fd.s3, set by theGapLesson). Doer door filters it below (lessons arrive only as moment-answers).
+    if (_litOn && litGapDue()) nodes.push({ key: "litgap", icon: "ti-wave-sine", title: tr("The Gap"),
+      line: tr("Frankl's space between stimulus and response — felt, not read."),
+      color: "#46e2a4", done: false, act: function () { runLesson(DAY1_LESSONS.fd3); } });
 
     // CHAPTER TASK — one chapter-specific practice node that grounds the daily trail in the current growth arc.
     // Only shown for the ACTIVE chapter (jn). No new state fields — done/act use existing data.
@@ -1305,8 +1324,9 @@
         } });
     });
 
-    // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3).
-    if (jn >= 3 && !dormant && (!!am.done || new Date().getHours() >= 17)) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
+    // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3). LITURGY SHELL (§0 law 2): every day has a CLOSE from day 2 — the skeleton kills the day-2 cliff structurally, so a fresh user past the stones gets the pm node too (evening-gated as ever).
+    var _litPastDay1 = !!((S.guide || {}).fd && S.guide.fd.done);
+    if ((jn >= 3 || (_litOn && _litPastDay1)) && !dormant && (!!am.done || new Date().getHours() >= 17)) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
       var pmNode = { key:"pm", emoji:"🌙", title:"Close the day", line:"One honest line. A line is enough.", color:DOM.restore.c, done:pmDone, act:function(){ closeJourney(); try{enterStage("pm",{trackTitle:"Reflection",byTap:true});}catch(e){} } };
       var atPm = preSurfaceCheck('pm', 4, "You've done full bookends 3 of the last 7 days — already there?", pmDone, "Day closed");
       nodes.push(atPm || pmNode);
@@ -1320,6 +1340,8 @@
       }
     }
 
+    // LITURGY SHELL · DOOR ROUTING (§1): Doer = OPEN/AIM/CLOSE only — the teaching nodes leave the trail (lessons arrive solely as moment-answers). Scholar/Player keep the full path (a Player's lesson is optional by nature — nothing on the trail is required). Unset door = full (existing users never picked one).
+    if (_litOn && S.profile.door === "doer") { nodes = nodes.filter(function (n) { if (n.done) return true; var nk = n.key || ""; return !(nk === "litgap" || nk === "reflect" || nk.indexOf("chtask:") === 0); }); }
     // SEQUENCER step 3 (David 2026-07-01): on a DEPLETED day the trail shouldn't be a wall of tasks. Keep the essentials (the lead, bookends, your one thing, goals, the away/rest stones) and quietly drop the optional pile (habits, the chapter practice) UNTIL you've got fuel back. Done ones stay (the trail behind you). Reward-never-shame: less to face, not less worth.
     if (pf.lowEnergy) { nodes = nodes.filter(function (n) { if (n.done) return true; var k = n.key || ""; return !(k.indexOf("hab:") === 0 || k.indexOf("chtask:") === 0); }); }
     return nodes;
@@ -1389,6 +1411,60 @@
   };
   function flagSVG(code) { return SS_FLAGS[code] || SS_FLAGS.en; }
   var I18N = { ru: {
+    // ===== THE OPEN + THE MAP + LITURGY SHELL (P1/P2, B4 catch-up 2026-07-05) =====
+    "Before I ask you anything — ninety seconds. Let me show you what I do.": "Прежде чем я спрошу хоть что-то — девяносто секунд. Покажу, что я делаю.",
+    "Before I ask you anything — ninety seconds. Let me show you what I do. Sit up.": "Прежде чем я спрошу хоть что-то — девяносто секунд. Покажу, что я делаю. Сядь ровно.",
+    "Ninety seconds — set the day's charge.": "Девяносто секунд — задай заряд дня.",
+    "Ninety seconds — set the day's charge. Sit up.": "Девяносто секунд — задай заряд дня. Сядь ровно.",
+    "First — where's your charge right now?": "Сначала — сколько в тебе заряда прямо сейчас?",
+    "Where's your charge right now?": "Сколько в тебе заряда прямо сейчас?",
+    "And now — where's your charge?": "А теперь — сколько заряда?",
+    "0 = flat · 10 = fully lit": "0 = пусто · 10 = горишь",
+    "Sit up. Shoulders back — once.": "Сядь ровно. Плечи назад — один раз.",
+    "One long breath out. Let the day off your chest.": "Один долгий выдох. Сними день с груди.",
+    "Hand on your heart. One real thing you're glad of — even small.": "Ладонь на сердце. Одна настоящая радость — пусть маленькая.",
+    "Now breathe in the one word you want more of.": "Теперь вдохни то слово, которого тебе не хватает.",
+    "Press your thumb to your first finger. Hold.": "Прижми большой палец к указательному. Держи.",
+    "Press your thumb to your first finger. Hold. Remember this — we're going to wire it.": "Прижми большой палец к указательному. Держи. Запомни это — мы будем его прошивать.",
+    "hold the ring while you hold the mudra": "держи кольцо, пока держишь пальцы",
+    "or tap here to carry it": "или коснись здесь, чтобы взять с собой",
+    "Ninety seconds. Remember that number — I didn't raise it. You did.": "Девяносто секунд. Запомни это число — его поднял не я. Ты.",
+    "Same number — and you showed up anyway. That counts.": "То же число — и ты всё равно пришёл. Это считается.",
+    "You showed up. That's the whole move.": "Ты пришёл. В этом весь ход.",
+    "The Stack": "Сборка",
+    "The Open": "Открытие",
+    "Charged. The day is open.": "Заряжено. День открыт.",
+    "The Close": "Закрытие",
+    "Lesson 5 · The Close": "Урок 5 · Закрытие",
+    "tomorrow:": "завтра:",
+    "the space between": "пространство между",
+    "We start properly tomorrow. Tonight — just the close.": "По-настоящему начнём завтра. Сегодня — только закрытие.",
+    "Sealed. See you in the morning.": "Скреплено. До утра.",
+    "How much do you want from me?": "Сколько ты хочешь от меня?",
+    "no wrong answer — you can change it any day": "неправильных ответов нет — можно поменять в любой день",
+    "Show me everything": "Покажи мне всё",
+    "the full practice — lessons, depth, the why": "полная практика — уроки, глубина, «почему»",
+    "One thing a day": "Одно дело в день",
+    "a single step a day, kept light": "один шаг в день, налегке",
+    "Only what I need": "Только необходимое",
+    "just the essentials — I'll ask when I want more": "только суть — спрошу сам, когда захочу больше",
+    "One reminder where you'll see it": "Одно напоминание там, где увидишь",
+    "forgetting isn't a flaw — a cue in the right place beats willpower": "забывать — не изъян; подсказка в нужном месте сильнее силы воли",
+    "when it's heavy, small sips beat big plans": "когда тяжело, маленькие глотки сильнее больших планов",
+    "Ten quiet minutes, no phone": "Десять тихих минут без телефона",
+    "a quiet morning is in your good days — let's protect a little of it": "тихое утро — часть твоих хороших дней; защитим его кусочек",
+    "Name tomorrow's one thing tonight": "Вечером назови одно дело на завтра",
+    "you do well with a plan — so we make the smallest one": "с планом у тебя ладится — сделаем самый маленький",
+    "One song you love, fully": "Одна любимая песня — целиком",
+    "music lifts your days — take three minutes of it deliberately": "музыка поднимает твои дни — возьми три минуты осознанно",
+    "your good days move — ten minutes is enough to count": "твои хорошие дни — в движении; десяти минут достаточно",
+    "Lights out ten minutes earlier": "Свет — на десять минут раньше",
+    "your good days start with rest — we borrow it back at the edge": "твои хорошие дни начинаются с отдыха — вернём его с краю",
+    "good people are in your good days — reach one on purpose": "в твоих хороших днях есть люди — напиши одному нарочно",
+    "It's evening. Tonight — just settle in. Day one begins properly tomorrow.": "Уже вечер. Сегодня — просто обживись. День первый по-настоящему начнётся завтра.",
+    "The day's half-run. Let's make the rest of it count.": "Полдня позади. Сделаем так, чтобы остаток засчитался.",
+    "Day one begins now.": "День первый начинается сейчас.",
+    "Close the day if you like — I'll be here in the morning.": "Хочешь — закрой день. Утром я буду здесь.",
     "Continue": "Продолжить", "Load save": "Загрузить", "Start fresh": "Начать заново", "Load game": "Загрузить игру", "New game": "Новая игра", "Start": "Начать", "Begin": "Начать", "Erase & start over?": "Стереть и начать заново?",
     "your guardian-angel life sim": "твой ангел-хранитель — симулятор жизни",
     "Tap again to erase EVERYTHING": "Нажми ещё раз, чтобы стереть ВСЁ", "Erase save & start fresh?": "Стереть сохранение и начать заново?",
@@ -2570,12 +2646,14 @@
     // SEQUENCER (David 2026-07-01): the focal step = the most important UNDONE move for your state, not just the first in the list. One braid priority (canon: ritual > course > goal > habit), with the energy-first override on top.
     function _leadW(n) {
       if (n._lead) return 100;                                                   // regulate-first when depleted (Johnson Step 1)
+      if (n.key === "litopen") return 95;                                        // the liturgy's OPEN — the day's first beat (state first, story second)
       if (n.key === "am") return 90;                                             // open the day on purpose, first
       if (n._aimed) return 85;                                                   // last night's aim
       if (n.key === "pm") return (new Date().getHours() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
       if (n.key === "onething") return 70;                                       // your one thing
       if (n.key && (n.key.indexOf("goalst:") === 0 || n.key.indexOf("goalm:") === 0 || n.key.indexOf("goalhit:") === 0)) return 60; // a goal's next move
       if (n.key === "plan") return 50;                                           // plan your day
+      if (n.key === "litgap") return 46;                                         // the day's lesson slot (§1 LESSON) — after the aim, before the pile
       if (n.key && n.key.indexOf("chtask:") === 0) return 45;                    // the chapter practice
       if (n.key && n.key.indexOf("hab:") === 0) return 20;                       // a small habit
       return 30;
@@ -4245,6 +4323,9 @@
       try { if (ratingV) earn(pmRatingEarn(ratingV, pmLowDay(bookendMirror(todayK()))), { label: "dayRating-" + ratingV }); } catch (e) {} // parity earn
       if (reflectTxt || mp != null) { recp.journal = (recp.journal || []).concat([{ q: "Win or Learn", text: reflectTxt, mood: mp, ts: Date.now() }]); }
       save();
+      try { // LITURGY SHELL · CLOSE queue beat (§1/§3): the close names tomorrow's lesson — day 1's close queues the Gap ("tomorrow: the space between"); it stays queued until felt. One path serves day 1 and day 2+ (both close through here).
+        if ((S.guide || {}).fd && !S.guide.fd.s3) { var _lq = "the space between"; litState().queued = _lq; save(); setTimeout(function () { try { toast("✦ " + tr("tomorrow:") + " " + tr(_lq)); } catch (e) {} }, 700); }
+      } catch (e) {}
     }
     if (commit && mode === "am") { // AM bookend → bk(todayK()).am = {identity[], virtue, why, goalKey, goalMove, oneThing, ts, done}. Writes the live profile + does the SAFE flow-down (skeletonDay / blocks.push / reflow). No #sheet, no calendarView touch.
       var sba = el("tfStageBody"); var idents = (sba && sba.dataset.ident) ? sba.dataset.ident.split("|").filter(Boolean) : [];
@@ -5362,7 +5443,7 @@
       if (d2.vibe) { var _lv = d2.vibe === "thriving" ? "high" : d2.vibe === "coasting" ? "floor" : "low";
         var _as = S.guide.appetiteState = S.guide.appetiteState || { level: _lv, nodeCap: 2, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0, lastDeclineK: null, lastInviteSentK: null };
         if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); } }
-      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = { k: todayK() };
+      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = (new Date().getHours() >= 17) ? { k: tomK(), eve: 1 } : { k: todayK() }; // TIME-OF-DAY (SPEC-FIRST-RUN §2, P2b): an evening first-run arms the stones for TOMORROW — tonight the trail is one node, the floor close ("We start properly tomorrow.")
       save(); ov.remove();
       try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
     }
@@ -10064,7 +10145,8 @@
   }
   // ===== THE OPEN — first-run Phases 0-1 (SPEC-FIRST-RUN §2, P1): threshold → before-dial → the Stack (5 voiced moves) → the anchor → after-dial → the delta. "Serve first, ask after" — this runs BEFORE the survey. Writes THE RECORD's first entry (S.tools.gauge) + seeds S.anchor. Zero new toys: the orb, hold-ring, VPROF voice, entry signature, gauge ledger are all reused. Register law: mythic lines ≤12 words, sober; no line admires the app's role. =====
   var OPEN_C = "#ffd24a";
-  function theOpen(onDone) {
+  function theOpen(onDone, opts) { // opts.daily (LITURGY SHELL, P2b): the same Stack as the day's OPEN beat — first-run prescription copy swapped for the daily line, THE-RECORD tag "daily-stack". One ceremony, two doors in.
+    opts = opts || {};
     try { TTS.unlock(); if (TTS.warmAll) TTS.warmAll(); } catch (e) {}
     var ov = add(document.body, "div"), done = false, pre = null, post = null;
     ov.style.cssText = "position:fixed;inset:0;z-index:135;background:radial-gradient(120% 100% at 50% 22%,#170b1e,#0a0410 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;color:#ffe9f4;font-family:var(--bub);";
@@ -10127,18 +10209,18 @@
       big.textContent = (delta == null) ? "✓" : (delta > 0 ? "+" : "") + delta;
       var line = (delta != null && delta > 0) ? "Ninety seconds. Remember that number — I didn't raise it. You did." : (delta === 0 ? "Same number — and you showed up anyway. That counts." : "You showed up. That's the whole move.");
       var ms = lineIn(stage, line, false); speak((delta != null && delta > 0 ? "Plus " + delta + ". " : "") + line);
-      try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "first-stack", pre: pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+      try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: opts.daily ? "daily-stack" : "first-stack", pre: pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
         var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: tr("The Stack"), mins: 2, catK: "restore", color: OPEN_C });
         earn(5, { catK: "restore" }); save(); } catch (e) {} // THE RECORD's first entry
       try { celebrateGated(OPEN_C, 1); } catch (e) {}
       setTimeout(function () { if (done) return; armTap(finishOpen); }, ms + 400);
     }
-    (function threshold() { // Phase 0: entry signature + mark + prescription + before-dial
+    (function threshold() { // Phase 0: entry signature + mark + prescription + before-dial (daily door: same gate, morning framing)
       entrySignature();
       obMark(stage, 118);
-      var ms = lineIn(stage, "Before I ask you anything — ninety seconds. Let me show you what I do.", false);
-      speak("Before I ask you anything — ninety seconds. Let me show you what I do. Sit up.");
-      setTimeout(function () { if (done) return; armTap(function () { dial("First — where's your charge right now?", "0 = flat · 10 = fully lit", function (v) { pre = v; runStackStep(0); }); }); }, ms);
+      var ms = lineIn(stage, opts.daily ? "Ninety seconds — set the day's charge." : "Before I ask you anything — ninety seconds. Let me show you what I do.", false);
+      speak(opts.daily ? "Ninety seconds — set the day's charge. Sit up." : "Before I ask you anything — ninety seconds. Let me show you what I do. Sit up.");
+      setTimeout(function () { if (done) return; armTap(function () { dial(opts.daily ? "Where's your charge right now?" : "First — where's your charge right now?", "0 = flat · 10 = fully lit", function (v) { pre = v; runStackStep(0); }); }); }, ms);
     })();
   }
   function reprogramTool(onDone) {
@@ -10776,7 +10858,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
