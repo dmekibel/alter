@@ -177,4 +177,18 @@ STILL TO BUILD (Wave 2 remainder, next session — timeline-paint-free, Opus):
 - **ORGAN H1 — Two Tuesdays** (§3): best/worst ordinary-day chips → computed delta as 3 cards ("the difference is 3 choices, not a new life") → pick one → becomes a block tomorrow. Evidence-first: once ≥14 days of logs exist, screen 1 SHOWS their actual best day instead of asking. Add to `WS_REG` (4-screen grammar) + the ACTION-stamp law (every sheet ends with a 10-second body act).
 - **ORGAN H2 — Three Targets** (§3): goals intake (ceiling 3 / floor 1); each = area chip + ONE next brick + WOOP armor; planted as journey quest-lines. Overlaps existing goal infra (`GOAL_SEED`, `activeGoals`) — reuse, don't duplicate.
 
-**WAVE 3** (§4) is directional / spec-before-build per organ; the personal-battery-physics organ TOUCHES TIMELINE PAINT → Fable session + full regression contract, NOT an Opus build day.
+**WAVE 2 COMPLETE** (v893→v895): F, G, H1, H2, H3, I all shipped + verified.
+
+---
+
+## §10 BUILD LOG — WAVE 3 (in progress, same session 2026-07-04, Opus)
+
+SHIPPED + VERIFIED:
+- **Soul Force surface (v896):** `sfNow()` raises (energy × follow-through × inner-work) to a streak-based exponent — consistency compounds world-growth. Felt by default; ceiling (`deckMode()==="cards"`) gets the raw number + parts + the exponent named, in the You-tab. Floor/proverbs = felt-only (verified hidden). Additive, no timeline paint.
+
+STILL TO BUILD (Wave 3, spec-before-build per organ):
+- **Thinker organs** (Opus-safe tool batch, ~8, like existing beatRunner tools): Clear identity-anchored habit installer (refuses too-big habits) · Walker sleep-math cascade · McKeown BOLT score · Carr doomscroll belief-dismantler ("you're not weak, you're outgunned" — SN-152) · Childre coherence · flow-session builder · Pressfield Resistance compass · Dweck copy-law refactor.
+- **Journey chapters 1–4 as capability unlocks** (Switch/Two Tuesdays/Wall/Your Words → earned Toast door) via the SEQUENCER (engine-v1.json braid, currently unwired). Progression = capability, never consumption.
+- **Deck coverage gaps** + the full 47-card transform from `_mined/deck-v1.md` (8 cards shipped so far).
+- **POOLS recording batch** (audio pipeline — separate from app-code build).
+- ⚠️ **FABLE-ONLY — personal-battery-physics:** P.ingredients + an enervators audit modulate the timeline battery's charge/drain rates. Repaints timeline → Fable session + FULL regression contract (the 4-point navigation check), never an Opus build day.
