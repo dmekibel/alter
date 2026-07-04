@@ -4977,7 +4977,7 @@
   }
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
-    var d2 = { name: "", gender: "", age: "", stage: "", vibe: "", bed: "", peak: "", struggles: [], overwhelm: "", wants: [], block: "", pactAt: null, pactDays: 0, taskDone: false };
+    var d2 = { name: "", gender: "", age: "", stage: [], vibe: "", bed: "", peak: "", struggles: [], overwhelm: [], wants: [], block: "", pactAt: null, pactDays: 0, taskDone: false };
     var SECTIONS = [
       { id: "you", l: "ABOUT YOU", c: "#b07aff", ic: "ti-user-star", pat: "radial-gradient(1.5px 1.5px at 22% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 72% 40%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%, #3a2358 0%, #241038 55%, #0c0418 100%)" },
       { id: "energy", l: "ENERGY", c: "#ff8a3a", ic: "ti-bolt", pat: "repeating-conic-gradient(from 0deg at 50% 62%, #3a1a08 0deg 9deg, #7a4212 9deg 18deg), radial-gradient(110% 95% at 50% 62%, #5a2a06 0%, #3a1a08 82%)" },
@@ -4986,13 +4986,13 @@
     var QS = [
       { sec: 0, key: "gender", q: "How should I address you?", opts: [["m", "He", "ti-user", "#5fa8ff"], ["f", "She", "ti-user", "#ff5fa8"], ["x", "Doesn't matter", "ti-sparkles", "#ffd24a"]] },
       { sec: 0, key: "age", q: "How old are you?", opts: [["teens", "Under 20", "ti-seeding", "#46e2a4"], ["20s", "20s", "ti-rocket", "#5fa8ff"], ["30s", "30s", "ti-flame", "#ff8a3a"], ["40s", "40+", "ti-crown", "#ffd24a"]] },
-      { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["office", "Office job", "ti-briefcase", "#7f9bc4"], ["free", "Freelance", "ti-device-laptop", "#34d39a"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["figuring", "Figuring it out", "ti-compass", "#ff8a3a"]] },
+      { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["office", "Office job", "ti-briefcase", "#7f9bc4"], ["free", "Freelance", "ti-device-laptop", "#34d39a"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["figuring", "Figuring it out", "ti-compass", "#ff8a3a"]] },
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
       { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
       { sec: 2, key: "struggles", q: "Which of these are you carrying right now?", multi: true, opts: [["procr", "Procrastination", "ti-hourglass-low", "#ff8a3a"], ["anx", "Anxiety", "ti-heart-rate-monitor", "#ff5fa8"], ["burn", "Burnout", "ti-battery-off", "#c4607f"], ["scat", "Scattered attention", "ti-arrows-shuffle", "#48b8e0"], ["phone", "Phone eats my hours", "ti-device-mobile", "#b07aff"], ["tired", "Tired all the time", "ti-zzz", "#7f9bc4"], ["sleep", "Bad sleep", "ti-moon-off", "#5fa8ff"], ["none", "None of these", "ti-cloud", "#46e2a4"]] },
-      { sec: 2, key: "overwhelm", q: "What overwhelms you the most?", rows: 1, opts: [["tasks", "Too many tasks", "ti-stack-3", "#ff8a3a"], ["decide", "Making decisions", "ti-arrows-split", "#48b8e0"], ["others", "Taking care of others", "ti-users", "#ff5fa8"], ["change", "Big life changes", "ti-tornado", "#b07aff"], ["money", "Money & work", "ti-coin", "#ffd24a"], ["none", "Nothing really", "ti-cloud", "#46e2a4"]] },
-      { sec: 2, key: "wants", q: "What do you want more of?", multi: true, max: 3, opts: [["energy", "Energy", "ti-bolt", "#ffd24a"], ["focus", "Focus", "ti-target", "#36b3f0"], ["calm", "Calm", "ti-wind", "#46e2a4"], ["move", "Movement", "ti-run", "#ff8a3a"], ["create", "Creativity", "ti-palette", "#b07aff"], ["order", "Order", "ti-layout-grid", "#ff5fa8"]] }
+      { sec: 2, key: "overwhelm", q: "What overwhelms you the most?", rows: 1, multi: true, opts: [["tasks", "Too many tasks", "ti-stack-3", "#ff8a3a"], ["decide", "Making decisions", "ti-arrows-split", "#48b8e0"], ["others", "Taking care of others", "ti-users", "#ff5fa8"], ["change", "Big life changes", "ti-tornado", "#b07aff"], ["money", "Money & work", "ti-coin", "#ffd24a"], ["none", "Nothing really", "ti-cloud", "#46e2a4"]] },
+      { sec: 2, key: "wants", q: "What do you want more of?", multi: true, opts: [["energy", "Energy", "ti-bolt", "#ffd24a"], ["focus", "Focus", "ti-target", "#36b3f0"], ["calm", "Calm", "ti-wind", "#46e2a4"], ["move", "Movement", "ti-run", "#ff8a3a"], ["create", "Creativity", "ti-palette", "#b07aff"], ["order", "Order", "ti-layout-grid", "#ff5fa8"]] }
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
@@ -5033,11 +5033,11 @@
       if (d2.name) P.name = d2.name;
       if (d2.gender) P.gender = d2.gender;
       if (d2.age) P.ageBand = d2.age;
-      if (d2.stage) P.stage = d2.stage;
+      if (d2.stage.length) { P.stage = d2.stage[0]; P.stages = d2.stage.slice(); }
       P.vibe = d2.vibe || P.vibe || ""; P.lowStart = (d2.vibe === "overwhelmed" || d2.vibe === "stuck") || !!P.lowStart;
       if (d2.bed) P.bed = d2.bed; if (d2.peak) { P.peak = d2.peak === "am" ? "lark" : d2.peak === "night" ? "owl" : "mixed"; P.peakBand = d2.peak; }
       if (d2.struggles.length) P.struggles = d2.struggles.slice();
-      if (d2.overwhelm) P.overwhelm = d2.overwhelm;
+      if (d2.overwhelm.length) { P.overwhelm = d2.overwhelm[0]; P.overwhelms = d2.overwhelm.slice(); }
       if (d2.wants.length) P.wants = d2.wants.slice();
       if (d2.voice) P.register = d2.voice; // soft | straight | push — the guardian's spoken register (V3 speaking-flames pick)
       if (d2.pactAt) P.pact = { ts: d2.pactAt, days: d2.pactDays || 0 };
