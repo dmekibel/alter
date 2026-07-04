@@ -22,22 +22,40 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Artifact name is unique per run ATTEMPT: a manual re-run of a failed run used to upload a second
+      # "github-pages" artifact next to the survivor from attempt 1, and deploy-pages@v4 hard-fails on
+      # "Multiple artifacts named github-pages" (bit us 2026-07-03). Unique names make re-runs safe.
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
-      - id: deployment
+          name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+      # 3 deploy attempts with real backoff. The Pages backend flake ("Deployment failed, try again later")
+      # lasts minutes, not seconds — the old immediate retry fired in the same second and died identically
+      # 3× on 2026-07-03/04. 60s + 180s sleeps span the observed flake window.
+      - id: deploy1
         uses: actions/deploy-pages@v4
-        continue-on-error: true # Pages randomly drops deploys with "failed, try again later" (v816 + v820 both flaked) — retry below instead of stranding David on an old build
+        continue-on-error: true
         with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
           timeout: 600000
-      - id: retry
-        if: steps.deployment.outcome == 'failure'
+      - if: steps.deploy1.outcome == 'failure'
+        run: sleep 60
+      - id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+        with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+          timeout: 600000
+      - if: steps.deploy2.outcome == 'failure'
+        run: sleep 180
+      - id: deploy3
+        if: steps.deploy2.outcome == 'failure' # no continue-on-error — 3rd strike marks the run red for real
         uses: actions/deploy-pages@v4
         with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
           timeout: 600000
-      - if: steps.deployment.outcome == 'failure' && steps.retry.outcome == 'failure'
-        run: exit 1 # both attempts failed → mark the run red for real
