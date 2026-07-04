@@ -186,8 +186,10 @@ STILL TO BUILD (Wave 2 remainder, next session — timeline-paint-free, Opus):
 SHIPPED + VERIFIED:
 - **Soul Force surface (v896):** `sfNow()` raises (energy × follow-through × inner-work) to a streak-based exponent — consistency compounds world-growth. Felt by default; ceiling (`deckMode()==="cards"`) gets the raw number + parts + the exponent named, in the You-tab. Floor/proverbs = felt-only (verified hidden). Additive, no timeline paint.
 
+- **Thinker organs — the tool batch (v897):** Carr "See Through the Scroll" (belief-dismantle), Childre "Coherence Beat" (heart-led regulation), Pressfield "Resistance Compass" (fear-as-navigation) — three new beatRunner tools in the toolbox, KB-faithful, EN+RU. Verified.
+
 STILL TO BUILD (Wave 3, spec-before-build per organ):
-- **Thinker organs** (Opus-safe tool batch, ~8, like existing beatRunner tools): Clear identity-anchored habit installer (refuses too-big habits) · Walker sleep-math cascade · McKeown BOLT score · Carr doomscroll belief-dismantler ("you're not weak, you're outgunned" — SN-152) · Childre coherence · flow-session builder · Pressfield Resistance compass · Dweck copy-law refactor.
+- **Thinker organs — the EXTEND-EXISTING batch** (Opus-safe, but each modifies a live system, so fold into its home rather than a standalone tool): Clear identity-anchor + never-miss-twice + plateau warnings → the **habit installer**; McKeown **BOLT** test + Breathe Light → the **breathwork engine** (a new self-contained test is the one that could be a standalone tool); Walker REM-forecast + destroyer-check → **Sleep Math** (exists); Dweck three copy-laws → the **language layer** (a lint over generated strings, not a tool). flow-session builder → a session composer.
 - **Journey chapters 1–4 as capability unlocks** (Switch/Two Tuesdays/Wall/Your Words → earned Toast door) via the SEQUENCER (engine-v1.json braid, currently unwired). Progression = capability, never consumption.
 - **Deck coverage gaps** + the full 47-card transform from `_mined/deck-v1.md` (8 cards shipped so far).
 - **POOLS recording batch** (audio pipeline — separate from app-code build).
