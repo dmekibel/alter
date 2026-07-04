@@ -5279,34 +5279,28 @@
   }
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
-    var d2 = { name: "", gender: "", age: "", stage: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
+    var d2 = { name: "", gender: "", age: "", stage: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], door: "", block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
     var SECTIONS = [
       { id: "you", l: "ABOUT YOU", c: "#b07aff", ic: "ti-user-star", sub: "so I build for your life — not a template", pat: "radial-gradient(1.5px 1.5px at 22% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 72% 40%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%, #3a2358 0%, #241038 55%, #0c0418 100%)" },
       { id: "energy", l: "ENERGY", c: "#ff8a3a", ic: "ti-bolt", sub: "where your fuel comes from — and where it leaks", pat: "repeating-conic-gradient(from 0deg at 50% 62%, #3a1a08 0deg 9deg, #7a4212 9deg 18deg), radial-gradient(110% 95% at 50% 62%, #5a2a06 0%, #3a1a08 82%)" },
       { id: "way", l: "WHAT'S IN THE WAY", c: "#5fa8ff", ic: "ti-shield-bolt", sub: "name the walls — I'll bring doors", pat: "repeating-linear-gradient(115deg, #0e2240 0 9px, #1a3a66 9px 13px, #0e2240 13px 22px, #5fa8ff26 22px 24px)" }
     ];
+    // THE MAP — shortened survey (SPEC-FIRST-RUN §2 Phase 3, P2): SIX questions only — address · life-shape · vibe · bed · ingredients · friction. "Serve first, ask after": THE OPEN already gave the felt win, so the ask stays short. Dropped from the survey (2026-07-04): age (unused), words (→ Day-1 Words lesson / Phase 2), peak (deferred), struggles + wants (their personalization now rides ingredients + friction + vibe). Pace is asked FIRST via its own beat, not here.
     var QS = [
       { sec: 0, key: "gender", q: "How should I address you?", opts: [["m", "He", "ti-user", "#5fa8ff"], ["f", "She", "ti-user", "#ff5fa8"], ["x", "Doesn't matter", "ti-sparkles", "#ffd24a"]] },
-      { sec: 0, key: "age", q: "How old are you?", opts: [["teens", "Under 20", "ti-seeding", "#46e2a4"], ["20s", "20s", "ti-rocket", "#5fa8ff"], ["30s", "30s", "ti-flame", "#ff8a3a"], ["40s", "40s", "ti-crown", "#ffd24a"], ["50s", "50+", "ti-trees", "#34d39a"]] },
-      { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["job", "A job", "ti-briefcase", "#7f9bc4"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["care", "Caring for someone", "ti-heart-handshake", "#46e2a4"], ["between", "Between chapters", "ti-compass", "#ff8a3a"]] }, // QUESTION-SET REDESIGN (punch-list #10): wide-range life shapes — a caregiver and a student both find their tile; "figuring it out" → the kinder "between chapters"
-      // ORGAN A (DEPTH WAVE 1): the eulogy compressed — death removed, mechanism intact. ≤2 → P.words, which feed TLM pings, the comeback protocol, and the guardian's vocabulary.
-      { sec: 0, key: "words", q: "A year from now, someone who loves you says you've become…", multi: true, opts: [["calmer", "Calmer", "ti-wind", "#46e2a4"], ["stronger", "Stronger", "ti-barbell", "#ff8a3a"], ["builder", "A builder", "ti-tools", "#b07aff"], ["consistent", "Consistent", "ti-checkbox", "#36b3f0"], ["present", "More present", "ti-eye", "#ff5fa8"], ["freer", "Freer", "ti-feather", "#ffd24a"]] },
+      { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["job", "A job", "ti-briefcase", "#7f9bc4"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["care", "Caring for someone", "ti-heart-handshake", "#46e2a4"], ["between", "Between chapters", "ti-compass", "#ff8a3a"]] }, // wide-range life shapes — a caregiver and a student both find their tile
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
       { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
-      // QUESTION-SET REDESIGN: energy PEAK — the state existed (P.peak lark/owl) but nothing ever asked it; now it feeds plan-day slotting + the morning door's timing
-      { sec: 1, key: "peak", q: "When is your energy naturally highest?", opts: [["am", "Morning", "ti-sunrise", "#ffd24a"], ["day", "Midday", "ti-sun", "#ff8a3a"], ["night", "Late night", "ti-moon-stars", "#5fa8ff"], ["mixed", "No pattern", "ti-arrows-shuffle", "#b07aff"]] },
-      // ORGAN A (DEPTH WAVE 1): the good-day ingredients → P.ingredients — the raw material the comeback offer is built from ("one rung up, made of what your good days are made of").
+      // the good-day ingredients → P.ingredients — the raw material the comeback offer + starter plan are built from ("one rung up, made of what your good days are made of").
       { sec: 1, key: "ingredients", q: "Your good days — what's usually in them?", multi: true, opts: [["slept", "Slept enough", "ti-zzz", "#5fa8ff"], ["moved", "Moved my body", "ti-run", "#ff8a3a"], ["quiet", "A quiet morning", "ti-coffee", "#46e2a4"], ["plan", "Had a plan", "ti-list-check", "#36b3f0"], ["people", "Good people", "ti-users", "#ff5fa8"], ["music", "Music", "ti-music", "#b07aff"], ["early", "Started early", "ti-sunrise", "#ffd24a"], ["alone", "Time alone", "ti-user", "#7f9bc4"]] },
-      { sec: 2, key: "struggles", q: "Which of these are you carrying right now?", multi: true, opts: [["procr", "Procrastination", "ti-hourglass-low", "#ff8a3a"], ["anx", "Anxiety", "ti-heart-rate-monitor", "#ff5fa8"], ["burn", "Burnout", "ti-battery-off", "#c4607f"], ["scat", "Scattered attention", "ti-arrows-shuffle", "#48b8e0"], ["phone", "Phone eats my hours", "ti-device-mobile", "#b07aff"], ["tired", "Tired all the time", "ti-zzz", "#7f9bc4"], ["sleep", "Bad sleep", "ti-moon-off", "#5fa8ff"], ["mood", "Low mood", "ti-cloud-rain", "#7a9aff"], ["lonely", "Feeling alone", "ti-user-off", "#9a8cc4"], ["none", "None of these", "ti-cloud", "#46e2a4"]] },
-      // QUESTION-SET REDESIGN (punch-list #9): "what overwhelms you" was a grab-bag of abstractions — replaced by THE FRICTION QUESTION: concrete, true for everyone, and it SETS the Motivation Dial's default route (P.mlDrift). Every answer teaches an engine.
-      { sec: 2, key: "overwhelm", q: "When something needs doing and you don't do it — what's usually true?", rows: 1, multi: true, opts: [["cant", "I can't get started", "ti-player-pause", "#ff8a3a"], ["doubt", "I doubt it'll matter", "ti-help-circle", "#48b8e0"], ["bored", "It bores me", "ti-mood-neutral", "#b07aff"], ["empty", "I'm out of fuel", "ti-battery-1", "#7f9bc4"], ["forget", "I just forget", "ti-bulb-off", "#ffd24a"], ["none", "I mostly just do it", "ti-circle-check", "#46e2a4"]] },
-      { sec: 2, key: "wants", q: "What do you want more of?", multi: true, opts: [["energy", "Energy", "ti-bolt", "#ffd24a"], ["focus", "Focus", "ti-target", "#36b3f0"], ["calm", "Calm", "ti-wind", "#46e2a4"], ["move", "Movement", "ti-run", "#ff8a3a"], ["create", "Creativity", "ti-palette", "#b07aff"], ["order", "Order", "ti-layout-grid", "#ff5fa8"]] }
+      // THE FRICTION QUESTION: concrete, true for everyone, and it SETS the Motivation Dial's default route (P.mlDrift). Every answer teaches an engine.
+      { sec: 2, key: "overwhelm", q: "When something needs doing and you don't do it — what's usually true?", rows: 1, multi: true, opts: [["cant", "I can't get started", "ti-player-pause", "#ff8a3a"], ["doubt", "I doubt it'll matter", "ti-help-circle", "#48b8e0"], ["bored", "It bores me", "ti-mood-neutral", "#b07aff"], ["empty", "I'm out of fuel", "ti-battery-1", "#7f9bc4"], ["forget", "I just forget", "ti-bulb-off", "#ffd24a"], ["none", "I mostly just do it", "ti-circle-check", "#46e2a4"]] }
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }]; // name beat REMOVED (punch-list #5, David device 2026-07-04: "no typing" — the app addresses you as "you"; a name can come later, never typed in onboarding)
-    var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); if (si === 1) { BEATS.push({ t: "breath" }); BEATS.push({ t: "write" }); } });
+    var BEATS = [{ t: "intro" }, { t: "pace" }]; // intro → THE OPEN (fires on the intro button) → PACE (SPEC-FIRST-RUN §2: "Your pace?" opens the map) → the six-question survey. breath+write dropped: THE OPEN's Stack already front-loads the felt first-win, so the ask stays short.
+    var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
     var bi2 = 0, advT = null, _justPicked = false;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
@@ -5355,6 +5349,7 @@
       if (d2.ingredients && d2.ingredients.length) P.ingredients = d2.ingredients.slice(); // ORGAN A → comeback offers built from these
       if (P.theoryMode == null) P.theoryMode = P.lowStart ? "cards" : "cards";   // ceiling default; floor→proverbs is set later if appetite drops
       if (d2.voice) P.register = d2.voice; // soft | straight | push — the guardian's spoken register (V3 speaking-flames pick)
+      if (d2.door) P.door = d2.door; // scholar | player | doer — THE PACE DOOR (P2). The liturgy (next pass) modulates OPEN/AIM/LIVE/LESSON/CLOSE depth by it.
       if (d2.pactAt) P.pact = { ts: d2.pactAt, days: d2.pactDays || 0 };
       if (d2.block && d2.block !== "none") P.block = { type: d2.block, ts: Date.now() };
       var _hr = new Date().getHours(); P.openBand = P.openBand || ((_hr >= 22 || _hr < 4) ? "night" : _hr < 9 ? "early" : _hr < 17 ? "day" : "evening");
@@ -5371,19 +5366,21 @@
       save(); ov.remove();
       try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
     }
-    function planItems() { // THE STARTER PLAN, rebuilt (punch-list #15): every item = a real habit seed with an HONEST one-line trace — why THIS, in plain words that answer back to what you just said. Priority-ordered; max 4 + the already-done breath (living proof the plan is real).
+    function planItems() { // THE STARTER PLAN (P2 rewire): built from the shortened map's retained signal — bed · friction · vibe · and above all INGREDIENTS ("one rung up, made of what your good days are made of"). Every item = a real habit seed with an HONEST trace answering what you just said. Priority-ordered; max 4 + the already-done breath.
       var items = [{ t: "One conscious breath", ic: "ti-wind", c: "#46e2a4", trace: "already done, just now — see? it counts", done: true }];
-      var Sg = d2.struggles, W = d2.wants, F = d2.overwhelm;
+      var F = d2.overwhelm || [], I = d2.ingredients || [];
       if (d2.bed === "battle") items.push({ t: "Glass of water right after waking", ic: "ti-droplet", c: "#5fa8ff", trace: "mornings are a battle — water is the easiest first win there is" });
       else if (d2.bed === "creaky") items.push({ t: "Glass of water right after waking", ic: "ti-droplet", c: "#5fa8ff", trace: "creaky mornings oil best with the smallest possible move — this one" });
-      if (Sg.indexOf("phone") >= 0) items.push({ t: "First 10 minutes phone-free", ic: "ti-device-mobile-off", c: "#b07aff", trace: "the phone eats your hours — and mornings are where it feeds first" });
       if (F.indexOf("cant") >= 0) items.push({ t: "The two-minute version", ic: "ti-player-play", c: "#36b3f0", trace: "starting is your wall — two minutes is a door, not a wall" });
-      if (Sg.indexOf("burn") >= 0 || d2.vibe === "overwhelmed") items.push({ t: "One 5-minute breather", ic: "ti-coffee", c: "#ff8a3a", trace: "burnout heals in small sips, not vacations" });
-      if (Sg.indexOf("mood") >= 0) items.push({ t: "Ten minutes outside, in light", ic: "ti-sun", c: "#ffd24a", trace: "low mood listens to daylight before it listens to advice" });
-      if (Sg.indexOf("lonely") >= 0) items.push({ t: "One message to a good person", ic: "ti-message-heart", c: "#ff5fa8", trace: "feeling alone shrinks at the first real hello" });
-      if (W.indexOf("calm") >= 0 || Sg.indexOf("anx") >= 0) items.push({ t: "One quiet minute before bed", ic: "ti-moon", c: "#5fa8ff", trace: "calm is built at the edges of the day — this is the evening edge" });
-      if (W.indexOf("move") >= 0) items.push({ t: "A 10-minute walk", ic: "ti-walk", c: "#46e2a4", trace: "you asked for movement — ten minutes is enough to count" });
-      if (W.indexOf("focus") >= 0) items.push({ t: "One 25-minute deep block", ic: "ti-target", c: "#36b3f0", trace: "you asked for focus — one protected block beats a busy day" });
+      if (F.indexOf("forget") >= 0) items.push({ t: "One reminder where you'll see it", ic: "ti-bell", c: "#ffd24a", trace: "forgetting isn't a flaw — a cue in the right place beats willpower" });
+      if (d2.vibe === "overwhelmed" || d2.vibe === "stuck") items.push({ t: "One 5-minute breather", ic: "ti-coffee", c: "#ff8a3a", trace: "when it's heavy, small sips beat big plans" });
+      // INGREDIENT-DRIVEN (the good-day parts, handed back as tiny reps)
+      if (I.indexOf("moved") >= 0) items.push({ t: "A 10-minute walk", ic: "ti-walk", c: "#46e2a4", trace: "your good days move — ten minutes is enough to count" });
+      if (I.indexOf("quiet") >= 0) items.push({ t: "Ten quiet minutes, no phone", ic: "ti-coffee", c: "#46e2a4", trace: "a quiet morning is in your good days — let's protect a little of it" });
+      if (I.indexOf("plan") >= 0) items.push({ t: "Name tomorrow's one thing tonight", ic: "ti-list-check", c: "#36b3f0", trace: "you do well with a plan — so we make the smallest one" });
+      if (I.indexOf("people") >= 0) items.push({ t: "One message to a good person", ic: "ti-message-heart", c: "#ff5fa8", trace: "good people are in your good days — reach one on purpose" });
+      if (I.indexOf("music") >= 0) items.push({ t: "One song you love, fully", ic: "ti-music", c: "#b07aff", trace: "music lifts your days — take three minutes of it deliberately" });
+      if (I.indexOf("slept") >= 0 || I.indexOf("early") >= 0) items.push({ t: "Lights out ten minutes earlier", ic: "ti-moon", c: "#5fa8ff", trace: "your good days start with rest — we borrow it back at the edge" });
       if (items.length < 3) items.push({ t: "One small thing on purpose", ic: "ti-star", c: "#ffd24a", trace: "a day changes from one chosen thing — any one" });
       return items.slice(0, 5);
     }
@@ -5411,6 +5408,17 @@
           else next(); };
         var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
+        return; }
+      if (B.t === "pace") { // THE PACE DOOR (SPEC-FIRST-RUN §2 Phase 3, P2): the FIRST thing the map asks → P.door (scholar|player|doer). The liturgy will modulate depth by it; NEVER announced as a persona, and changeable any day.
+        obMark(body, 92);
+        add(body, "div", "ob-q", tr("How much do you want from me?"));
+        add(body, "div", "ob-sb", tr("no wrong answer — you can change it any day")).style.cssText = "text-align:center;margin-top:6px;";
+        var pw5 = add(body, "div", "obv-rows"); pw5.style.maxWidth = "400px"; var _pRows = [], pgo;
+        var DOORS = [["scholar", "Show me everything", "the full practice — lessons, depth, the why", "ti-books", "#b07aff"], ["player", "One thing a day", "a single step a day, kept light", "ti-player-play", "#36b3f0"], ["doer", "Only what I need", "just the essentials — I'll ask when I want more", "ti-bolt", "#ff8a3a"]];
+        function paintPRow(r6, o) { var on = d2.door === o[0]; r6.classList.toggle("on", on); r6.style.background = on ? tfStripeDoor(o[4]) : ""; r6.innerHTML = '<i class="ti ' + o[3] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '<span class="os">' + esc(tr(o[2])) + '</span></span>'; }
+        DOORS.forEach(function (o) { var r6 = add(pw5, "button", "obv-row"); r6.style.setProperty("--oc", o[4]); r6.style.setProperty("--ost", tfStripeDoor(o[4])); r6.style.minHeight = "58px"; paintPRow(r6, o); _pRows.push([r6, o]);
+          r6.onclick = function () { d2.door = (d2.door === o[0]) ? "" : o[0]; _pRows.forEach(function (p) { paintPRow(p[0], p[1]); }); pgo.classList.toggle("asleep", !d2.door); if (d2.door) pgo.classList.add("ignite"); }; });
+        pgo = stdFoot(); if (!d2.door) pgo.classList.add("asleep");
         return; }
       if (B.t === "gate") { var sec = SECTIONS[B.sec];
         var g = add(body, "div", "obv-gate"); g.style.setProperty("--sc", sec.c); g.style.background = "#160510";
@@ -5575,7 +5583,7 @@
         var mi2 = add(mc, "div"); mi2.style.cssText = "text-align:center;position:relative;z-index:1;";
         mi2.innerHTML = '<div style="font-weight:800;font-size:13px;letter-spacing:2.4px;color:#ffd24a;">' + tr("SPARK ONE") + '</div><div class="obv-plan-t" style="font-size:30px;margin-top:3px">' + esc(tr("You")) + '</div>';
         obMark(mi2, 104);
-        var wchips = (d2.wants || []).slice(0, 3).map(function (w) { var o = null; QS.forEach(function (q) { if (q.key === "wants") q.opts.forEach(function (oo) { if (oo[0] === w) o = oo; }); }); return o ? '<span class="ob-wchip" style="--oc:' + o[3] + '"><i class="ti ' + o[2] + '"></i></span>' : ""; }).join("");
+        var wchips = (d2.ingredients || []).slice(0, 3).map(function (w) { var o = null; QS.forEach(function (q) { if (q.key === "ingredients") q.opts.forEach(function (oo) { if (oo[0] === w) o = oo; }); }); return o ? '<span class="ob-wchip" style="--oc:' + o[3] + '"><i class="ti ' + o[2] + '"></i></span>' : ""; }).join("");
         var mtail = add(mi2, "div");
         mtail.innerHTML = (wchips ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:4px">' + wchips + '</div>' : '') + '<div class="ob-holo"></div><div style="font-weight:800;font-size:13px;letter-spacing:2px;color:rgba(255,255,255,.82);margin-top:11px">' + tr("DAY 1 · THE SPARK") + '</div>';
         add(body, "div", "ob-sb", tr("matte now — it ignites as you live")).style.cssText = "text-align:center;margin-top:12px;";
@@ -5586,9 +5594,13 @@
         add(body, "div", "ob-kick", tr("STAGE 1 · THE SPARK"));
         add(body, "div", "ob-q", tr("Your world is born."));
         add(body, "div", "ob-sb", tr("It grows only from real things. I can't water it. Only you can.")).style.cssText = "text-align:center;margin-top:8px;";
-        var wake2 = d2.bed === "battle" ? "9:00" : "8:00";
-        add(body, "div", "ob-eline", tr("Day one begins tomorrow at") + " " + wake2 + ".").style.cssText = "margin-top:14px;color:#ffd24a;font-weight:800;";
-        add(body, "div", "ob-sb", tr("Done. No more questions — let's go make the day.")).style.cssText = "text-align:center;margin-top:10px;font-weight:800;color:#ffe3f1;";
+        // TIME-OF-DAY ADAPTIVITY (SPEC-FIRST-RUN §2, P2): serve first → day one begins NOW in the morning/afternoon; a late first open settles in tonight and starts properly tomorrow.
+        var _oh = new Date().getHours();
+        var _eln = _oh >= 17 ? tr("It's evening. Tonight — just settle in. Day one begins properly tomorrow.")
+          : _oh >= 12 ? tr("The day's half-run. Let's make the rest of it count.")
+          : tr("Day one begins now.");
+        add(body, "div", "ob-eline", _eln).style.cssText = "margin-top:14px;color:#ffd24a;font-weight:800;text-align:center;";
+        add(body, "div", "ob-sb", _oh >= 17 ? tr("Close the day if you like — I'll be here in the morning.") : tr("Done. No more questions — let's go make the day.")).style.cssText = "text-align:center;margin-top:10px;font-weight:800;color:#ffe3f1;";
         stdFoot(tr("Open my world") + " ▸", false).onclick = finishV2; return; }
     }
     draw();
