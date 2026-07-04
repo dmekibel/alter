@@ -137,3 +137,23 @@ Not a metric dashboard — four felt moments, one per person:
 - Brother, Friday: he logs the urge instead of the scroll and the app calls it the best move of the day. The inversion clicks.
 - Sister, week 2: the bored-route swap arrives before she churns. The app noticed before she did.
 Every one of these is the same skill — the gap, noticed, chosen — wearing four costumes. That's the app. That's the whole app.
+
+---
+
+## §8 BUILD LOG — WAVE 1 (append-only status; this spec is the source of record, no separate handoff)
+
+**Session 2026-07-04 (Opus) — shipped v890 + v891. Felt-Day-1 subset (David chose this ordering).**
+
+SHIPPED + VERIFIED (preview; gestures/feel device-untested):
+- **Foundation (v890)** — SCHEMA 3→4 + `prevSchema<4` migration, round-trip verified on a real v3 save (blocks + spark survived). New lazy-guarded state: `P.words` · `P.ingredients` · `P.theoryMode` (ceiling→cards/floor→proverbs) · `S.dayClose` · `S.deck` · `S.mantra` · `S.chains` · `S.nudge` · `S.tlm`.
+- **THE DECK (v890)** — `WISDOM_DECK` const, 8 Day-1 cards (pm-close/pm-close-hard/rebound/comeback/first-vote/catch) each EN+RU per B4. `deckPick()` = predictable oldest-first 30-day no-repeat (law 7); `renderDeckCard()` never modal. **Remaining: the full 47-card transform from `_mined/deck-v1.md` lands with the moment-listener (Organ D) — each card still needs its RU same-commit.**
+- **ORGAN A (v890)** — onboarding delta: `words` Q (cap 2, closes YOU) + `ingredients` Q (into ENERGY), V3 grammar, RU dict. Renders (verified). Feeds TLM + comeback.
+- **ORGAN E (v890)** — `pickTLM` weaves `P.words` ("that's the builder"), rotating; `triggerTLM` caps ≤2/day; first-ever ping arms `S.deck.pendingVote` → SN-091 dealt at next pm-close.
+- **ORGAN B (v891)** — PM CLOSE v2, evolved the CKPT-PM bookend in place (overlay, zero timeline paint). 6 beats verified end-to-end: win(real-log chips) → learn(friction chips) → rating(Rebound parity earn + guardian line) → tomorrow(full WOOP → armor on block) → install(candle-dark crown + mantra soft door) → deal(day-matched card + first-vote cross-deal). `S.dayClose[k]` + `bk.pm.done` written; DEV.pmClose/dayClose hooks.
+
+STILL TO BUILD THIS WAVE (next session, Opus — both are timeline-paint-free):
+- **ORGAN C — Reset sprint + chore chains** (§2 ORGAN C). Reset = a toolbox+plannable block (zone chip → 10-min timer + music → before/after feel-tap to THE RECORD). Chains = block-editor "this has a part 2 →" plants step-1 now + auto-plants step-2 at +N min into `S.chains` (background timing = DEVICE-UNTESTED, flag it). Morning one-time "your space right now?" chip → chaos seeds a Reset offer.
+- **ORGAN D — Moment-listener v1** (§2 ORGAN D). Read-only rules table over already-logged events (zero timeline regression surface): postponed-2× → Motivation Dial; drift → Off-Ramp; urge chip → +3 CATALYST; comeback → emotional-ladder offer from `P.ingredients`; pre-sleep → Tranquility. LAWS: ≤1 nudge/day (`S.nudge`), respect muteUntilK, never during wide-day, hand ONE tool never a menu; after a tool works, deal its theory card. **This is where the full 47-card deck transform should ride in.**
+- **Deferred cosmetic:** the WOOP shield-pip on tomorrow's bubble (armor data already written on the block) — needs a timeline-paint touch, so batch it into a Fable/timeline-safe pass, not an Opus build day.
+
+Persona/dose plumbing present: `pmFloor()` (floor = win+rating+deal), `deckMode()` theoryMode gate, nodeCap in appetiteState. Full §5 persona routing table still to be wired per-organ as organs land.
