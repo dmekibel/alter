@@ -161,5 +161,20 @@ STILL OPEN (future waves / follow-ups):
 - **Full 47-card deck transform** from `_mined/deck-v1.md` (Wave 1 shipped 8 Day-1 cards; the rest ride into the moment-listener's trigger coverage). Each card EN+RU same commit.
 - **WOOP shield-pip** on tomorrow's bubble (armor DATA already written on the block) — needs a timeline-paint touch → Fable/timeline-safe pass, not an Opus build day.
 - **Drag-based postpone auto-trigger** for the Motivation Dial (editor time-nudge path works; drag needs a safe choke point in the move handler).
-- **Wave 2** (§3): Morning Door unified, Week Seal, Worksheet Pack v2, Rewire→Mantra wiring (connects to the PM INSTALL beat already built). **Wave 3** (§4) directional.
 - Persona/dose plumbing present (`pmFloor()`, `deckMode()`, nodeCap, `profile.mlDrift` route default); full §5 persona routing table wired per-organ as later organs land.
+
+---
+
+## §9 BUILD LOG — WAVE 2 (same session 2026-07-04, Opus; timeline-paint-free)
+
+SHIPPED + VERIFIED:
+- **ORGAN I (v893) — Rewire→Mantra wiring:** a completed Rewire offers "keep one line as yours?" from candidates seeded by the user's year-words (never a blank field — mantra law) → `S.mantra={line,bornK,method:rewire}`. PM install soft-door "Make my line" now runs Rewire → this loop → installed at the (Wave-1) INSTALL beat next night; install shows `tr(mantra)`. Verified.
+- **ORGAN F (v893) — Morning Door unified:** 60-sec switch — 3 body beats + a 1-breath word-prime (inhale a `P.words` word, Virtue Meditation rung 1) + morning-light-first close → onFinish opens the gauge (voice gate). "Switch in" cockpit chip in the morning phase. Verified: beats render, word-prime personalizes.
+- **ORGAN H3 (v893) — Your Words tournament:** VIA-as-a-game, 8 forced-choice pairs over a 10-word pool → top-5 → `P.words`. Vocabulary maps (TLM/mantra/morning) expanded to brave/kind/focused/disciplined. Verified: 8 rounds → 5 words written; candidates flow into the mantra offer.
+- **ORGAN G (v894) — Week Seal:** Sunday PM close grows a screen. Ceiling = GOLF CARD (behavior × 7-day birdie grid + spelled count + biggest-bogey "+1 next week?" chip); floor = "the garden grew". `pmIsSunday()` gate. Verified with seeded data: grid + 7-birdie count + correct bogey targeting.
+
+STILL TO BUILD (Wave 2 remainder, next session — timeline-paint-free, Opus):
+- **ORGAN H1 — Two Tuesdays** (§3): best/worst ordinary-day chips → computed delta as 3 cards ("the difference is 3 choices, not a new life") → pick one → becomes a block tomorrow. Evidence-first: once ≥14 days of logs exist, screen 1 SHOWS their actual best day instead of asking. Add to `WS_REG` (4-screen grammar) + the ACTION-stamp law (every sheet ends with a 10-second body act).
+- **ORGAN H2 — Three Targets** (§3): goals intake (ceiling 3 / floor 1); each = area chip + ONE next brick + WOOP armor; planted as journey quest-lines. Overlaps existing goal infra (`GOAL_SEED`, `activeGoals`) — reuse, don't duplicate.
+
+**WAVE 3** (§4) is directional / spec-before-build per organ; the personal-battery-physics organ TOUCHES TIMELINE PAINT → Fable session + full regression contract, NOT an Opus build day.
