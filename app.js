@@ -222,7 +222,7 @@
     ov.appendChild(b); return b;
   }
   var el = function (id) { return document.getElementById(id); };
-  var KEY = "alter_plan2", SCHEMA = 3, lastSaveErr = 0;
+  var KEY = "alter_plan2", SCHEMA = 4, lastSaveErr = 0;
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -4977,7 +4977,7 @@
   }
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
-    var d2 = { name: "", gender: "", age: "", stage: [], vibe: "", bed: "", peak: "", struggles: [], overwhelm: [], wants: [], block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
+    var d2 = { name: "", gender: "", age: "", stage: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
     var SECTIONS = [
       { id: "you", l: "ABOUT YOU", c: "#b07aff", ic: "ti-user-star", pat: "radial-gradient(1.5px 1.5px at 22% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 72% 40%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%, #3a2358 0%, #241038 55%, #0c0418 100%)" },
       { id: "energy", l: "ENERGY", c: "#ff8a3a", ic: "ti-bolt", pat: "repeating-conic-gradient(from 0deg at 50% 62%, #3a1a08 0deg 9deg, #7a4212 9deg 18deg), radial-gradient(110% 95% at 50% 62%, #5a2a06 0%, #3a1a08 82%)" },
@@ -4987,9 +4987,13 @@
       { sec: 0, key: "gender", q: "How should I address you?", opts: [["m", "He", "ti-user", "#5fa8ff"], ["f", "She", "ti-user", "#ff5fa8"], ["x", "Doesn't matter", "ti-sparkles", "#ffd24a"]] },
       { sec: 0, key: "age", q: "How old are you?", opts: [["teens", "Under 20", "ti-seeding", "#46e2a4"], ["20s", "20s", "ti-rocket", "#5fa8ff"], ["30s", "30s", "ti-flame", "#ff8a3a"], ["40s", "40+", "ti-crown", "#ffd24a"]] },
       { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["office", "Office job", "ti-briefcase", "#7f9bc4"], ["free", "Freelance", "ti-device-laptop", "#34d39a"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["figuring", "Figuring it out", "ti-compass", "#ff8a3a"]] },
+      // ORGAN A (DEPTH WAVE 1): the eulogy compressed — death removed, mechanism intact. ≤2 → P.words, which feed TLM pings, the comeback protocol, and the guardian's vocabulary.
+      { sec: 0, key: "words", q: "A year from now, someone who loves you says you've become…", multi: true, cap: 2, opts: [["calmer", "Calmer", "ti-wind", "#46e2a4"], ["stronger", "Stronger", "ti-barbell", "#ff8a3a"], ["builder", "A builder", "ti-tools", "#b07aff"], ["consistent", "Consistent", "ti-checkbox", "#36b3f0"], ["present", "More present", "ti-eye", "#ff5fa8"], ["freer", "Freer", "ti-feather", "#ffd24a"]] },
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
       { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
+      // ORGAN A (DEPTH WAVE 1): the good-day ingredients → P.ingredients — the raw material the comeback offer is built from ("one rung up, made of what your good days are made of").
+      { sec: 1, key: "ingredients", q: "Your good days — what's usually in them?", multi: true, opts: [["slept", "Slept enough", "ti-zzz", "#5fa8ff"], ["moved", "Moved my body", "ti-run", "#ff8a3a"], ["quiet", "A quiet morning", "ti-coffee", "#46e2a4"], ["plan", "Had a plan", "ti-list-check", "#36b3f0"], ["people", "Good people", "ti-users", "#ff5fa8"], ["music", "Music", "ti-music", "#b07aff"], ["early", "Started early", "ti-sunrise", "#ffd24a"], ["alone", "Time alone", "ti-user", "#7f9bc4"]] },
       { sec: 2, key: "struggles", q: "Which of these are you carrying right now?", multi: true, opts: [["procr", "Procrastination", "ti-hourglass-low", "#ff8a3a"], ["anx", "Anxiety", "ti-heart-rate-monitor", "#ff5fa8"], ["burn", "Burnout", "ti-battery-off", "#c4607f"], ["scat", "Scattered attention", "ti-arrows-shuffle", "#48b8e0"], ["phone", "Phone eats my hours", "ti-device-mobile", "#b07aff"], ["tired", "Tired all the time", "ti-zzz", "#7f9bc4"], ["sleep", "Bad sleep", "ti-moon-off", "#5fa8ff"], ["none", "None of these", "ti-cloud", "#46e2a4"]] },
       { sec: 2, key: "overwhelm", q: "What overwhelms you the most?", rows: 1, multi: true, opts: [["tasks", "Too many tasks", "ti-stack-3", "#ff8a3a"], ["decide", "Making decisions", "ti-arrows-split", "#48b8e0"], ["others", "Taking care of others", "ti-users", "#ff5fa8"], ["change", "Big life changes", "ti-tornado", "#b07aff"], ["money", "Money & work", "ti-coin", "#ffd24a"], ["none", "Nothing really", "ti-cloud", "#46e2a4"]] },
       { sec: 2, key: "wants", q: "What do you want more of?", multi: true, opts: [["energy", "Energy", "ti-bolt", "#ffd24a"], ["focus", "Focus", "ti-target", "#36b3f0"], ["calm", "Calm", "ti-wind", "#46e2a4"], ["move", "Movement", "ti-run", "#ff8a3a"], ["create", "Creativity", "ti-palette", "#b07aff"], ["order", "Order", "ti-layout-grid", "#ff5fa8"]] }
@@ -5041,6 +5045,9 @@
       if (d2.struggles.length) P.struggles = d2.struggles.slice();
       if (d2.overwhelm.length) { P.overwhelm = d2.overwhelm[0]; P.overwhelms = d2.overwhelm.slice(); }
       if (d2.wants.length) P.wants = d2.wants.slice();
+      if (d2.words && d2.words.length) P.words = d2.words.slice();               // ORGAN A → TLM pings + comeback vocabulary
+      if (d2.ingredients && d2.ingredients.length) P.ingredients = d2.ingredients.slice(); // ORGAN A → comeback offers built from these
+      if (P.theoryMode == null) P.theoryMode = P.lowStart ? "cards" : "cards";   // ceiling default; floor→proverbs is set later if appetite drops
       if (d2.voice) P.register = d2.voice; // soft | straight | push — the guardian's spoken register (V3 speaking-flames pick)
       if (d2.pactAt) P.pact = { ts: d2.pactAt, days: d2.pactDays || 0 };
       if (d2.block && d2.block !== "none") P.block = { type: d2.block, ts: Date.now() };
@@ -5118,7 +5125,7 @@
           el2.onclick = function () { // V3: nothing auto-advances — answers TOGGLE freely, Next ignites when there's one (David: "always a chance to change your answer")
             if (q.multi) { var arr = d2[q.key], ix = arr.indexOf(o[0]);
               if (o[0] === "none") { d2[q.key] = ix >= 0 ? [] : ["none"]; }
-              else { if (ix >= 0) arr.splice(ix, 1); else { var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); arr.push(o[0]); _justPicked = true; } }
+              else { if (ix >= 0) arr.splice(ix, 1); else { var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); if (q.cap && arr.length >= q.cap) arr.shift(); /* capped pick (words ≤2): oldest drops so the new one lands */ arr.push(o[0]); _justPicked = true; } }
               secAward(q.sec, el2); draw(); return; }
             if (d2[q.key] !== o[0]) _justPicked = true;
             d2[q.key] = o[0]; secAward(q.sec, el2); draw();
@@ -5492,6 +5499,17 @@
     }
     /* additive top-level keys (every load, idempotent — match S.bk/S.tools precedent, no bump needed for these) */
     S.sf = S.sf || { history: {}, actions: {} }; S.scorecard = S.scorecard || { weeks: {} }; S.alg = S.alg || { list: [], catalysts: {} }; S.course = S.course || {}; S.cdj = S.cdj || {}; S.guide.nodeHistory = S.guide.nodeHistory || {}; if (S.guide.onboard2 === undefined) S.guide.onboard2 = null; if (S.profile) S.profile.viaTop5 = S.profile.viaTop5 || [];
+    /* ===== DEPTH BUILD WAVE 1 (SCHEMA 3→4, 2026-07-04): the nervous-system state. All lazy-guarded (S.bk/S.tools precedent) so old saves are safe; the SCHEMA bump + prevSchema<4 block below make the shape change EXPLICIT per the constitution. ===== */
+    S.dayClose = S.dayClose || {};                                   // dayClose[k] = { win, learn, rating, woop:{o,p}, installed }
+    S.deck = S.deck || { dealt: {}, lastDealK: null };               // wisdom-deck rotation: card never repeats within 30 days
+    if (S.deck.dealt == null) S.deck.dealt = {};
+    if (S.mantra === undefined) S.mantra = null;                     // { line, bornK, method } — born in Rewire, installed nightly
+    S.chains = S.chains || [];                                       // two-part chore chains: [{id, title, step2title, step2delayMin, armedAt}]
+    S.nudge = S.nudge || { lastK: null, muteUntilK: null };          // one-nudge/day ledger (unifies with profile.muteNudgeUntilK)
+    if (S.sfShown == null) S.sfShown = 0;                            // soul-force surface mode (ceiling reveal)
+    if (S.tlm === undefined) S.tlm = { k: null, n: 0 };              // ≤2 TLM pings/day (dopamine-wave-pool law)
+    if (S.profile) { S.profile.words = S.profile.words || []; S.profile.ingredients = S.profile.ingredients || []; }
+    if (prevSchema < 4 && S.profile && S.profile.theoryMode == null) { var _lvl4 = ((S.guide || {}).appetiteState || {}).level; S.profile.theoryMode = (_lvl4 === "floor") ? "proverbs" : "cards"; } // derive: ceiling→cards, floor→proverbs
     S.v = SCHEMA;
     } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged — backed up + started fresh"); }
   }
@@ -6283,13 +6301,81 @@
     if (pulls.length) { lab.style.display = "flex"; pulls.forEach(function (v) { var r = add(pl, "div", "pull"); r.appendChild(dot(v.rate.c)); var _pr = add(r, "div"); _pr.innerHTML = '<i class="ti ' + v.rate.e + '"></i> ' + esc(v.title); _pr.style.flex = "1"; var t = add(r, "div", null, v.rate.l + " · " + dur(v.min) + "/wk"); t.style.cssText = "font-family:var(--bub);font-weight:800;font-size:13px;color:" + v.rate.c; }); } else lab.style.display = "none";
   }
 
+  // ===== THE WISDOM DECK (DEPTH BUILD WAVE 1, 2026-07-04): mined from _mined/deck-v1.md (Field Guide KB, 262 SNs). A CARD = a 15-second metacognition lesson dealt AFTER a practice worked (names the mechanism the user just felt); a PROVERB = the same wisdom as one warm sentence. NEVER a modal — always rendered attached to a moment that just happened (renderDeckCard). B4 LAW: every card AND proverb ships with its RU dict same commit. Wave 1 seeds the Day-1 moments (pm-close · comeback · first-vote); the full 47-card transform lands with the moment-listener (Wave-1 Organ D). =====
+  var WISDOM_DECK = [
+    { id: "SN-022", moment: "pm-close", card: "The state you carry across the edge of sleep is the program your brain consolidates all night. Closing the day calm and resolved, like now, is literally choosing tonight's installation.", proverb: "Whatever you carry to bed, the night sews into you.", src: "Goddard · Walker · Dispenza" },
+    { id: "SN-111", moment: "pm-close-hard", card: "Tonight, in REM sleep, your brain replays today's hard moments in the only state where the stress chemical is completely absent — keeping the lesson, stripping the sting. Naming what hurt, as you just did, hands the night the right material to heal.", proverb: "Tell the day's trouble to the page, and let the night carry it off.", src: "Walker · Maltz · Stutz" },
+    { id: "SN-109", moment: "pm-close", card: "Sleep isn't one pillar of health beside diet and exercise — it's the foundation the pillars stand on. Protecting tonight is the single highest-leverage move for who you'll be tomorrow.", proverb: "Tomorrow is built tonight.", src: "Walker · Maltz · Goddard" },
+    { id: "SN-222", moment: "rebound", card: "Elite performers are separated not by their good days but by how they execute on bad ones — running the process even when everything feels off. A system that only works on good days is just a mood. Today you proved yours is a system.", proverb: "Anyone can dance in sunshine; keep walking in the rain.", src: "Johnson · St-Pierre · Bassham" },
+    { id: "SN-007", moment: "comeback", card: "Player mode was never about not falling — everyone falls, daily. The real skill, the trainable one, is how fast you climb back. Each comeback is a rep, and the reps compound.", proverb: "It's not how you fall — it's how quickly you stand that becomes who you are.", src: "Marcus Aurelius · Johnson · Porges" },
+    { id: "SN-107", moment: "comeback", card: "\"I failed\" is a verb — an event, data, done. \"I am a failure\" is a noun — an identity, and identities self-fulfill. Twenty-five years of clinical evidence: the machine runs whatever self-image you feed it. You just filed yesterday as an event, not a name.", proverb: "You fell down — you didn't become the falling.", src: "Maltz · Stutz · Dweck" },
+    { id: "SN-091", moment: "first-vote", card: "Identity isn't declared — it's accumulated as evidence. Every small action is a vote for the person you're becoming, and enough votes shift what you believe, at which point the behavior runs automatically — no willpower needed. You just cast one.", proverb: "You become what you do twice, then three times, then without counting.", src: "Clear · Goddard · Pressfield" },
+    { id: "SN-227", moment: "catch", card: "Between every trigger and every reaction there's a real neurological gap — a few hundred milliseconds where the thinking brain can override the alarm brain. Most people live without knowing it exists. You just used it, and every use widens it.", proverb: "Freedom lives in the breath between the spark and the flame.", src: "Withers · Frankl · Kahneman" }
+  ];
+  Object.assign(I18N.ru, {
+    "The state you carry across the edge of sleep is the program your brain consolidates all night. Closing the day calm and resolved, like now, is literally choosing tonight's installation.": "Состояние, с которым ты переходишь грань сна, — это программа, которую мозг закрепляет всю ночь. Закрыть день спокойно и цельно, как сейчас, — значит буквально выбрать сегодняшнюю установку.",
+    "Whatever you carry to bed, the night sews into you.": "Что несёшь в постель, то ночь и вшивает в тебя.",
+    "Tonight, in REM sleep, your brain replays today's hard moments in the only state where the stress chemical is completely absent — keeping the lesson, stripping the sting. Naming what hurt, as you just did, hands the night the right material to heal.": "Ночью, в фазе быстрого сна, мозг переиграет тяжёлые моменты дня в единственном состоянии, где гормон стресса полностью отсутствует, — оставит урок, убрав боль. Назвав то, что ранило, ты дал ночи верный материал для исцеления.",
+    "Tell the day's trouble to the page, and let the night carry it off.": "Расскажи беду дня странице — и ночь унесёт её.",
+    "Sleep isn't one pillar of health beside diet and exercise — it's the foundation the pillars stand on. Protecting tonight is the single highest-leverage move for who you'll be tomorrow.": "Сон — не одна из опор здоровья рядом с едой и движением, а фундамент, на котором стоят все опоры. Беречь эту ночь — самый мощный ход ради того, кем ты будешь завтра.",
+    "Tomorrow is built tonight.": "Завтра строится сегодня ночью.",
+    "Elite performers are separated not by their good days but by how they execute on bad ones — running the process even when everything feels off. A system that only works on good days is just a mood. Today you proved yours is a system.": "Лучших отличают не хорошие дни, а то, как они действуют в плохие — держат процесс, даже когда всё не так. Система, что работает только в хорошие дни, — это просто настроение. Сегодня ты доказал, что у тебя система.",
+    "Anyone can dance in sunshine; keep walking in the rain.": "Танцевать на солнце может каждый — ты иди и под дождём.",
+    "Player mode was never about not falling — everyone falls, daily. The real skill, the trainable one, is how fast you climb back. Each comeback is a rep, and the reps compound.": "Режим Игрока — не про то, чтобы не падать: падают все, каждый день. Настоящий навык, тренируемый, — как быстро ты встаёшь. Каждое возвращение — это повтор, и повторы копятся.",
+    "It's not how you fall — it's how quickly you stand that becomes who you are.": "Дело не в том, как ты падаешь, — а в том, как быстро встаёшь; это и становится тобой.",
+    "\"I failed\" is a verb — an event, data, done. \"I am a failure\" is a noun — an identity, and identities self-fulfill. Twenty-five years of clinical evidence: the machine runs whatever self-image you feed it. You just filed yesterday as an event, not a name.": "«Я не справился» — это глагол: событие, данные, всё. «Я неудачник» — это существительное: личность, а личности сбываются сами. Двадцать пять лет клинических данных: механизм исполняет тот образ себя, что ты в него вложил. Ты только что записал вчерашнее как событие, а не как имя.",
+    "You fell down — you didn't become the falling.": "Ты упал — но не стал падением.",
+    "Identity isn't declared — it's accumulated as evidence. Every small action is a vote for the person you're becoming, and enough votes shift what you believe, at which point the behavior runs automatically — no willpower needed. You just cast one.": "Личность не объявляют — её накапливают как доказательства. Каждое малое действие — голос за того, кем ты становишься, и когда голосов достаточно, меняется то, во что ты веришь, — и поведение идёт само, без воли. Ты только что отдал один голос.",
+    "You become what you do twice, then three times, then without counting.": "Ты становишься тем, что делаешь дважды, потом трижды, потом не считая.",
+    "Between every trigger and every reaction there's a real neurological gap — a few hundred milliseconds where the thinking brain can override the alarm brain. Most people live without knowing it exists. You just used it, and every use widens it.": "Между каждым толчком и каждой реакцией есть настоящий нейрологический зазор — доли секунды, где думающий мозг может перекрыть тревожный. Многие живут, не зная, что он есть. Ты им только что воспользовался — а каждое использование его расширяет.",
+    "Freedom lives in the breath between the spark and the flame.": "Свобода живёт в том вдохе между искрой и пламенем.",
+    "why that mattered": "почему это важно", "a thought to carry": "мысль, чтобы унести с собой"
+  });
+  Object.assign(I18N.ru, { // ORGAN A onboarding-delta strings (B4 law — EN source + RU dict, same commit)
+    "A year from now, someone who loves you says you've become…": "Через год кто-то, кто тебя любит, скажет: ты стал(а)…",
+    "Calmer": "Спокойнее", "Stronger": "Сильнее", "A builder": "Созидателем", "Consistent": "Постоянным", "More present": "Более присутствующим", "Freer": "Свободнее",
+    "Your good days — what's usually in them?": "Твои хорошие дни — что в них обычно есть?",
+    "Slept enough": "Выспался", "Moved my body": "Двигался", "A quiet morning": "Тихое утро", "Had a plan": "Был план", "Good people": "Хорошие люди", "Music": "Музыка", "Started early": "Начал рано", "Time alone": "Время наедине"
+  });
+  function deckMode() { var P = S.profile || {}; if (P.theoryMode === "off") return "off"; if (P.theoryMode === "proverbs") return "proverbs"; if (P.theoryMode && P.theoryMode.indexOf("cards") === 0) return "cards"; var lvl = ((S.guide || {}).appetiteState || {}).level; return lvl === "floor" ? "proverbs" : "cards"; }
+  function _deckAge(id) { var dk = (S.deck && S.deck.dealt) ? S.deck.dealt[id] : null; return dk ? daysSince(dk) : 99999; } // never-dealt = effectively infinite age → dealt first
+  function deckPick(moment) { // PREDICTABLE rotation (law 7: no variable-ratio) — oldest / never-dealt first, pool-order tiebreak
+    S.deck = S.deck || { dealt: {}, lastDealK: null }; S.deck.dealt = S.deck.dealt || {};
+    var pool = WISDOM_DECK.filter(function (c) { return c.moment === moment; }); if (!pool.length) return null;
+    pool.sort(function (a, b) { return _deckAge(b.id) - _deckAge(a.id); });
+    return pool[0];
+  }
+  function renderDeckCard(host, moment) { // NEVER a modal — renders into whatever moment surface calls it, gated by theoryMode. Marks the card dealt.
+    var mode = deckMode(); if (mode === "off") return null;
+    var c = deckPick(moment); if (!c) return null;
+    S.deck.dealt[c.id] = todayK(); S.deck.lastDealK = todayK(); save();
+    var wrap = add(host, "div", "deck-card"); wrap.style.cssText = "margin-top:14px;padding:14px 15px;border-radius:14px;background:linear-gradient(160deg,rgba(176,122,255,.14),rgba(23,10,28,.55));border:1.5px solid rgba(176,122,255,.28);font-family:var(--bub);";
+    var kick = add(wrap, "div", null, tr(mode === "proverbs" ? "a thought to carry" : "why that mattered")); kick.style.cssText = "font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#c9a6ff;font-weight:800;margin-bottom:6px;";
+    add(wrap, "div", null, tr(mode === "proverbs" ? c.proverb : c.card)).style.cssText = "font-size:14px;line-height:1.52;color:#efe4ef;";
+    if (mode !== "proverbs") add(wrap, "div", null, "“" + tr(c.proverb) + "”").style.cssText = "margin-top:9px;font-size:12.5px;font-style:italic;color:#c8a6d8;";
+    return c;
+  }
+
   // ---- the game: spark currency + compounding upgrades -------------------
   function hasShippedToday() { var lg = logs(todayK()), i; for (i = 0; i < lg.length; i++) if (virtueOf(lg[i]) === "courage") return true; var bl = blocks(todayK()); for (i = 0; i < bl.length; i++) if (bl[i].done && virtueOf(bl[i]) === "courage") return true; return false; }
   /* ===== B: SOUL FORCE score + "THAT'S LIKE ME" ping (David 2026-06-30, _course/BUILD-SPEC.md §B). Additive; reads existing state; no shape change. Labels are placeholders — rename anytime. ===== */
   var TLM_PHRASES = ["That's like me.", "That's like me. ✦", "That's so like me."];
-  var _tlmTimer = null;
-  function pickTLM(domain) { return TLM_PHRASES[Math.floor(Date.now() / 2000) % TLM_PHRASES.length]; }
-  function triggerTLM(ctx) { var chip = el("tlmChip"); if (!chip) return; chip.textContent = (ctx && ctx.tlm) || pickTLM(ctx && ctx.domain); chip.classList.remove("show"); void chip.offsetWidth; chip.classList.add("show"); if (_tlmTimer) clearTimeout(_tlmTimer); _tlmTimer = setTimeout(function () { chip.classList.remove("show"); }, 2100); }
+  var _tlmTimer = null, _tlmWordI = 0;
+  // ORGAN E (DEPTH BUILD WAVE 1): stamp aligned completions with the user's OWN year-word ("that's the builder") — rotating, so the reward names WHO they're becoming, not a generic ping.
+  var TLM_WORD_LINE = { calmer: "That's the calm one.", stronger: "That's the strong one.", builder: "That's the builder.", consistent: "That's the consistent one.", present: "That's presence.", freer: "That's freedom." };
+  function pickTLM(domain) {
+    var words = ((S.profile || {}).words) || [];
+    if (words.length) { var w = words[_tlmWordI % words.length]; _tlmWordI++; if (TLM_WORD_LINE[w]) return tr(TLM_WORD_LINE[w]); }
+    return TLM_PHRASES[Math.floor(Date.now() / 2000) % TLM_PHRASES.length];
+  }
+  function triggerTLM(ctx) {
+    var chip = el("tlmChip"); if (!chip) return;
+    var k = todayK(); S.tlm = S.tlm || { k: null, n: 0 }; if (S.tlm.k !== k) { S.tlm.k = k; S.tlm.n = 0; }
+    if (S.tlm.n >= 2 && !(ctx && ctx.force)) return; // ≤2 pings/day — dopamine-wave-pool law: a reward that's always on becomes wallpaper
+    S.tlm.n++;
+    if (!(S.deck && S.deck.firstTLM)) { S.deck = S.deck || { dealt: {}, lastDealK: null }; S.deck.firstTLM = k; S.deck.pendingVote = 1; } // first-ever aligned ping → arm the identity-votes card for the next pm-close (dealt attached to a moment, never a modal)
+    chip.textContent = (ctx && ctx.tlm) || pickTLM(ctx && ctx.domain); chip.classList.remove("show"); void chip.offsetWidth; chip.classList.add("show"); if (_tlmTimer) clearTimeout(_tlmTimer); _tlmTimer = setTimeout(function () { chip.classList.remove("show"); }, 2100);
+  }
   function logSF(ctx) { var dk = todayK(); S.sf = S.sf || { history: {}, actions: {} }; S.sf.actions = S.sf.actions || {}; (S.sf.actions[dk] = S.sf.actions[dk] || []).push({ t: Date.now(), label: (ctx && ctx.label) || "", domain: (ctx && ctx.domain) || null }); var ks = Object.keys(S.sf.actions); if (ks.length > 45) { ks.sort(); ks.slice(0, ks.length - 40).forEach(function (k) { delete S.sf.actions[k]; }); } }
   function sfNow(dk) {
     dk = dk || todayK();
@@ -9618,7 +9704,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
