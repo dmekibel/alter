@@ -1698,7 +1698,7 @@
     "Morning. No rush — one small thing.": "Доброе утро. Без спешки — одно маленькое дело.",
     "Morning. One task moves everything.": "Доброе утро. Одна задача двигает всё.",
     "Up. We're taking ground today.": "Подъём. Сегодня берём своё.",
-    "PACT": "ПАКТ", "SPARK ONE": "ПЕРВАЯ ИСКРА",
+    "PACT": "ПАКТ", "SPARK ONE": "ПЕРВАЯ ИСКРА", "DAY 1 · THE SPARK": "ДЕНЬ 1 · ИСКРА", "PART": "ЧАСТЬ",
     "Day one begins tomorrow at": "День первый начнётся завтра в" });
   Object.assign(I18N.ru, { "EVENING RITUAL": "ВЕЧЕРНИЙ РИТУАЛ", "PRISM · SHINING": "ПРИЗМА · СИЯЮЩИЙ", "FLARE": "ВСПЫШКА", "THE BLADE": "КЛИНОК", "THE LATTICE": "РЕШЁТКА", "COSMOS": "КОСМОС", "BLOOM": "ЦВЕТЕНИЕ" }); // audit TOP-fix batch 1 strings (B4)
   Object.assign(I18N.ru, { // GUIDED WORKSHEETS (B4) — engine + all six course-mined sheets
@@ -5005,14 +5005,15 @@
     var bar = add(card, "div", "obv-bar"), segEls = [];
     SECTIONS.forEach(function (sec, si) { var sg = add(bar, "div", "obv-seg"); sg.style.setProperty("--sc", sec.c); add(sg, "div", "obv-seglbl", tr(sec.l)); var cw = add(sg, "div", "obv-cells"); var qn = QS.filter(function (q) { return q.sec === si; }).length; for (var ci = 0; ci < qn; ci++) add(cw, "div", "obv-cell"); segEls.push(sg); });
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
+    // THE POINTS PLACE (David 2026-07-04): one corner counter — every earned spark flies HERE, never to the progress bar
+    d2.pts = 0; var ptsEl = add(card, "div", "ob-pts"); ptsEl.innerHTML = '<i class="ti ti-sparkles"></i><b>0</b>'; ptsEl.style.display = "none";
+    function awardPts(n) { d2.pts += n; try { earn(n, { label: "onboard-answer" }); } catch (e) {} ptsEl.style.display = ""; var bc = ptsEl.querySelector("b"); if (bc) bc.textContent = d2.pts; ptsEl.classList.remove("pop"); void ptsEl.offsetWidth; ptsEl.classList.add("pop"); }
     function paintBar() { var counted = {}; QS.forEach(function (q) { counted[q.key] = (q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key]); });
       SECTIONS.forEach(function (sec, si) { var qs = QS.filter(function (q) { return q.sec === si; }); var cells = segEls[si].querySelectorAll(".obv-cell"); var curSec = (BEATS[bi2] && ((BEATS[bi2].t === "q" && BEATS[bi2].q.sec === si) || (BEATS[bi2].t === "gate" && BEATS[bi2].sec === si)));
         segEls[si].classList.toggle("on", !!curSec); qs.forEach(function (q, qi2) { if (cells[qi2]) cells[qi2].classList.toggle("on", !!counted[q.key]); }); }); }
-    function obConfetti(fromEl, secIx) { // SPARK CONFETTI (locked D+glow): star lead + ink gems + one streak fly bezier arcs into the next battery cell
+    function obConfetti(fromEl) { // SPARK CONFETTI (locked D+glow): star lead + ink gems + one streak fly bezier arcs into THE POINTS PLACE (the corner chip — David 2026-07-04)
       try {
-        var seg = segEls[secIx] || segEls[segEls.length - 1], cells = seg.querySelectorAll(".obv-cell"), tgt = null;
-        for (var ci2 = 0; ci2 < cells.length; ci2++) { if (!cells[ci2].classList.contains("on")) { tgt = cells[ci2]; break; } }
-        tgt = tgt || cells[cells.length - 1]; if (!tgt || !fromEl) return;
+        ptsEl.style.display = ""; var tgt = ptsEl; if (!fromEl) return;
         var fr = fromEl.getBoundingClientRect(), tr2 = tgt.getBoundingClientRect();
         var x0 = fr.left + fr.width / 2, y0 = fr.top + 10, x1 = tr2.left + tr2.width / 2, y1 = tr2.top + tr2.height / 2;
         [[13, 13, "star", "#ffd24a", "255,210,74", 1], [7, 7, "gem", "#b07aff", "176,122,255", 1.5], [16, 3.5, "stk", "#ff5fa8", "255,95,168", 0], [8, 8, "star", "#fff", "255,255,255", 0.8], [6, 6, "gem", "#5fa8ff", "95,168,255", 1.8]].forEach(function (p, pi2) {
@@ -5022,7 +5023,7 @@
           s.style.cssText = "left:0;top:0;width:" + p[0] + "px;height:" + p[1] + "px;offset-path:" + path2 + ";animation-delay:" + (pi2 * 0.06) + "s;" + (p[2] === "stk" ? "background:linear-gradient(90deg,rgba(" + p[4] + ",0)," + p[3] + " 65%,#fff);box-shadow:0 0 8px rgba(" + p[4] + ",.5);" : "");
           if (p[2] !== "stk") { var b2 = document.createElement("b"); b2.className = "obp-" + p[2] + " obspin"; b2.style.cssText = "width:100%;height:100%;background:" + p[3] + ";box-shadow:0 0 " + (p[0] > 9 ? 10 : 7) + "px 2px rgba(" + p[4] + ",.55);animation-duration:" + p[5] + "s;"; s.appendChild(b2); }
           setTimeout(function () { s.remove(); }, 1100 + pi2 * 60); });
-        setTimeout(function () { tgt.classList.add("pop"); setTimeout(function () { tgt.classList.remove("pop"); }, 500); }, 750);
+        setTimeout(function () { awardPts(2); }, 750); // the chip pops + counts as the swarm lands
       } catch (e) {}
     }
     function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } draw(); }
@@ -5101,6 +5102,7 @@
         add(g, "div", "gk", tr("PART") + " " + (B.sec + 1) + " " + tr("OF") + " 3"); add(g, "div", "gt", tr(sec.l));
         advT = setTimeout(next, 1500); return; }
       if (B.t === "q") { var q = B.q;
+        add(body, "div", "ob-kick", tr("PART") + " " + (q.sec + 1) + " · " + tr(SECTIONS[q.sec].l));
         add(body, "div", "ob-q", tr(q.q));
         var wrap = add(body, "div", q.rows ? "obv-rows" : "obv-tiles");
         q.opts.forEach(function (o) {
@@ -5113,9 +5115,9 @@
           el2.onclick = function () { // V3: nothing auto-advances — answers TOGGLE freely, Next ignites when there's one (David: "always a chance to change your answer")
             if (q.multi) { var arr = d2[q.key], ix = arr.indexOf(o[0]);
               if (o[0] === "none") { d2[q.key] = ix >= 0 ? [] : ["none"]; }
-              else { if (ix >= 0) arr.splice(ix, 1); else { if (q.max && arr.length >= q.max) return; var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); arr.push(o[0]); obConfetti(el2, q.sec); _justPicked = true; } }
+              else { if (ix >= 0) arr.splice(ix, 1); else { if (q.max && arr.length >= q.max) return; var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); arr.push(o[0]); obConfetti(el2); _justPicked = true; } }
               draw(); return; }
-            if (d2[q.key] !== o[0]) { obConfetti(el2, q.sec); _justPicked = true; }
+            if (d2[q.key] !== o[0]) { obConfetti(el2); _justPicked = true; }
             d2[q.key] = o[0]; draw();
           };
         });
@@ -5132,7 +5134,8 @@
         var eline = B.sec === 0 ? tr("Noted. My plans will fit your days — not a template.")
           : B.sec === 1 ? (d2.bed === "battle" ? tr("Mornings are a battle — then mornings are where I earn my keep.") : d2.bed === "creaky" ? tr("Creaky mornings. We'll oil them gently.") : tr("An easy riser — we'll spend that gift well."))
           : tr("That's the map. Now I know the way in.");
-        add(body, "div", "ob-eline", eline);
+        var earr = add(body, "div"); earr.innerHTML = '<i class="ti ti-arrow-down"></i>'; earr.style.cssText = "text-align:center;font-size:17px;color:rgba(255,242,249,.4);margin-top:12px;";
+        var ecard = add(body, "div", "ob-ecard"); add(ecard, "div", "ob-eline", eline);
         stdFoot(); return; }
       if (B.t === "constel") { // THE CONSTELLATION (locked #3): every answer was a star all along
         add(body, "div", "ob-kick", tr("THIS IS YOU"));
@@ -5154,7 +5157,7 @@
         [["soft", "Softly", "Morning. No rush — one small thing.", "#5fa8ff", 16], ["straight", "Straight", "Morning. One task moves everything.", "#b07aff", 24], ["push", "Push me", "Up. We're taking ground today.", "#ff5fa8", 31]].forEach(function (o) {
           var r5 = add(vw2, "button", "obv-row" + (d2.voice === o[0] ? " on" : "")); r5.style.setProperty("--oc", o[3]); r5.style.setProperty("--ost", tfStripeDoor(o[3])); if (d2.voice === o[0]) r5.style.background = tfStripeDoor(o[3]);
           r5.innerHTML = '<i class="ti ti-flame oi ob-flm" style="font-size:' + o[4] + 'px;width:34px;text-align:center;flex:none"></i><span class="ol">' + esc(tr(o[1])) + '<span class="ovq">«' + esc(tr(o[2])) + '»</span></span>' + (d2.voice === o[0] ? '<i class="ti ti-check ock"></i>' : '');
-          r5.onclick = function () { if (d2.voice !== o[0]) { obConfetti(r5, 2); _justPicked = true; } d2.voice = o[0]; draw(); }; });
+          r5.onclick = function () { if (d2.voice !== o[0]) { obConfetti(r5); _justPicked = true; } d2.voice = o[0]; draw(); }; });
         var vgo = stdFoot(); if (!d2.voice) vgo.classList.add("asleep"); else if (_justPicked) { vgo.classList.add("ignite"); _justPicked = false; }
         return; }
       if (B.t === "breath") {
@@ -5172,7 +5175,7 @@
         setTimeout(function () { if (_bcap && _bcap.isConnected) _bcap.textContent = tr(d2.vibe === "overwhelmed" ? "out… let a little go" : "out through the mouth… slowly"); }, 4200);
         advT = setTimeout(function () { if (!d2.taskDone) { d2.taskDone = true;
           try { logs(todayK()).push({ id: uid(), time: pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()), title: "One conscious breath", mins: 1, catK: null, domain: "restore", color: DOM.restore.c }); } catch (e) {}
-          try { earn(10, { label: "first-breath" }); } catch (e) {} try { earn(8, { label: "onboard-task-bonus" }); } catch (e) {} }
+          try { earn(10, { label: "first-breath" }); } catch (e) {} try { earn(8, { label: "onboard-task-bonus" }); } catch (e) {} d2.pts += 18; var bc2 = ptsEl.querySelector("b"); if (bc2) { ptsEl.style.display = ""; bc2.textContent = d2.pts; ptsEl.classList.add("pop"); } }
           next(); }, 9200);
         var sk3 = add(foot, "button", "ob-skip", tr("skip")); sk3.onclick = finishV2; return; }
       if (B.t === "write") { ov.setAttribute("data-sec", "burst"); // payoff + thesis — the reward plays on the ВСПЫШКА sunburst (binder-card language, full-screen)
@@ -5200,7 +5203,7 @@
         [["fear", "It scares me to even look", "ti-flame", "#ff8a3a"], ["overwhelm", "Too big — I don't know where it starts", "ti-mountain", "#7a9aff"], ["wound", "An old bad time with it", "ti-anchor", "#c4607f"], ["none", "Nothing like that — I'm just here", "ti-cloud", "#48b8e0"]].forEach(function (o) {
           var r2 = add(bw2, "button", "obv-row" + (d2.block === o[0] ? " on" : "")); r2.style.setProperty("--oc", o[3]); r2.style.setProperty("--ost", tfStripeDoor(o[3])); if (d2.block === o[0]) r2.style.background = tfStripeDoor(o[3]);
           r2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>' + (d2.block === o[0] ? '<i class="ti ti-check ock"></i>' : '');
-          r2.onclick = function () { if (d2.block === o[0]) return; d2.block = o[0]; _justPicked = true; draw(); }; });
+          r2.onclick = function () { if (d2.block === o[0]) return; obConfetti(r2); d2.block = o[0]; _justPicked = true; draw(); }; });
         var BR2 = { fear: "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.", overwhelm: "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.", wound: "Then we go gently — with a way out at every step. You set the pace.", none: "Good. Then we build forward." };
         if (d2.block) add(body, "div", "ob-sb", tr(BR2[d2.block])).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;";
         var wgo = stdFoot(); if (!d2.block) wgo.classList.add("asleep"); else if (_justPicked) { wgo.classList.add("ignite"); _justPicked = false; }
@@ -5224,18 +5227,24 @@
           [[2, "Baby steps", "#48b8e0"], [5, "Strong start", "#46e2a4"], [7, "Serious", "#ffd24a"], [14, "Unstoppable", "#ff5fa8"]].forEach(function (o) {
             var t2 = add(dw2, "button", "obv-tile" + (d2.pactDays === o[0] ? " on" : "")); t2.style.setProperty("--oc", o[2]); t2.style.setProperty("--ost", tfStripeDoor(o[2])); if (d2.pactDays === o[0]) t2.style.background = tfStripeDoor(o[2]);
             t2.innerHTML = '<span class="ol" style="font-size:22px">' + o[0] + '</span><span class="ol">' + esc(tr(o[1])) + '</span>' + (d2.pactDays === o[0] ? '<i class="ti ti-check ock"></i>' : '');
-            t2.onclick = function () { if (d2.pactDays !== o[0]) _justPicked = true; d2.pactDays = o[0]; draw(); }; });
+            t2.onclick = function () { if (d2.pactDays !== o[0]) { obConfetti(t2); _justPicked = true; } d2.pactDays = o[0]; draw(); }; });
           var pgo = stdFoot(null, false); if (!d2.pactDays) pgo.classList.add("asleep"); else if (_justPicked) { pgo.classList.add("ignite"); _justPicked = false; }
           var sk6 = add(foot, "button", "ob-skip", tr("skip")); sk6.onclick = next; }
         else { var sk7 = add(foot, "button", "ob-skip", tr("skip")); sk7.onclick = finishV2; }
         return; }
       if (B.t === "mint") {
         add(body, "div", "ob-kick", tr("YOUR FIRST CARD"));
-        var mc = add(body, "div", "binder-card el-burst"); mc.style.cssText = "width:100%;max-width:300px;margin-top:14px;padding:18px 14px;border-width:3px;"; add(mc, "div", "mint-sheen"); var mi2 = add(mc, "div"); mi2.style.cssText = "text-align:center;position:relative;z-index:1;";
-        var vibeL = { thriving: "Thriving", coasting: "Coasting", stuck: "Stuck", overwhelmed: "Overwhelmed" }[d2.vibe] || "Day one";
-        mc.classList.add("ob-mintcard"); // V3 (locked #2): holographic trading card — tilt + rainbow strip + your wants as hue chips
+        // V3.1 (David: 1:1 with the approved chat widget) — dark prism card: soft tricolor weave + foil + the REAL mark + wants chips + rainbow holo strip
+        var mc = add(body, "div", "ob-mintcard"); mc.style.cssText = "width:206px;margin-top:14px;padding:16px 13px 13px;border:3px solid #160510;border-radius:16px;background:linear-gradient(160deg,#241335,#170a1c);box-shadow:0 6px 0 #160510;position:relative;overflow:hidden;";
+        add(mc, "div").style.cssText = "position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,95,168,.1) 0 8px,rgba(95,168,255,.1) 8px 16px,rgba(255,210,74,.1) 16px 24px);";
+        add(mc, "div", "mint-sheen");
+        var mi2 = add(mc, "div"); mi2.style.cssText = "text-align:center;position:relative;z-index:1;";
+        mi2.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:2.2px;color:#ffd24a;">' + tr("SPARK ONE") + '</div><div class="obv-plan-t" style="font-size:24px;margin-top:2px">' + esc(d2.name || tr("you")) + '</div>';
+        obMark(mi2, 76);
         var wchips = (d2.wants || []).slice(0, 3).map(function (w) { var o = null; QS.forEach(function (q) { if (q.key === "wants") q.opts.forEach(function (oo) { if (oo[0] === w) o = oo; }); }); return o ? '<span class="ob-wchip" style="--oc:' + o[3] + '"><i class="ti ' + o[2] + '"></i></span>' : ""; }).join("");
-        mi2.innerHTML = '<div style="font-weight:800;font-size:9px;letter-spacing:2.2px;color:#ffd24a;">' + tr("SPARK ONE") + '</div><div class="obv-plan-t" style="font-size:23px;margin-top:2px">' + esc(d2.name || tr("you")) + '</div><div class="obv-plan-k" style="margin-top:4px;color:#fff2f9;opacity:.85">' + esc(tr(vibeL)) + ' · ' + tr("day 1") + '</div>' + (wchips ? '<div style="margin-top:11px;display:flex;gap:7px;justify-content:center">' + wchips + '</div>' : '') + '<div class="ob-holo"></div><div class="ob-sb" style="margin-top:9px">' + tr("matte now — it ignites as you live") + '</div>';
+        var mtail = add(mi2, "div");
+        mtail.innerHTML = (wchips ? '<div style="display:flex;gap:7px;justify-content:center;margin-top:2px">' + wchips + '</div>' : '') + '<div class="ob-holo"></div><div style="font-weight:800;font-size:11px;letter-spacing:1.8px;color:rgba(255,255,255,.78);margin-top:9px">' + tr("DAY 1 · THE SPARK") + '</div>';
+        add(body, "div", "ob-sb", tr("matte now — it ignites as you live")).style.cssText = "text-align:center;margin-top:12px;";
         stdFoot(); return; }
       if (B.t === "seed") {
         add(ov, "div", "ob-shoot"); // V3 (locked #9): one star crosses — the promise gets a timestamp
