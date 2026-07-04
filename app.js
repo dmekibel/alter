@@ -3984,13 +3984,19 @@
       if (rec0) { var rec = bk(todayK()); rec.journal = (rec.journal || []).concat([{ type: rec0.type, label: rec0.label, entries: rec0.entries, summary: rec0.summary, q: rec0.label, text: rec0.summary, mood: rec0.mood, ts: rec0.ts }]);
         rec.pm = rec.pm || {}; if (rec0.summary) rec.pm.reflect = rec0.summary; if (rec0.mood != null) rec.pm.mood = rec0.mood; save(); }
     }
-    if (commit && mode === "pm") { // PM bookend (multi-beat) → bk(todayK()).pm = {reflect, mood, q, ts, done}. Marks done so the evening hero never nags twice/day.
-      var sbp = el("tfStageBody"), tap = sbp && sbp.querySelector("textarea");
-      var txt = (tap ? tap.value.trim() : "") || (sbp && sbp.dataset.reflect) || ""; // close beat has no textarea → fall back to the value flushed when leaving the ask beat
-      var qp = (sbp && sbp.dataset.q) || "", mp = (sbp && sbp.dataset.mood != null && sbp.dataset.mood !== "") ? +sbp.dataset.mood : null;
-      var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = txt; recp.pm.q = qp; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true;
-      var _dr = (sbp && sbp.dataset.dayRating) || ""; if (_dr) { recp.pm.wol = recp.pm.wol || { wentWell: "", needsWork: "", optimize: "", dayRating: "" }; recp.pm.wol.dayRating = _dr; } // day-close rating → the once-dead pm.wol.dayRating field
-      if (txt || mp != null) { recp.journal = (recp.journal || []).concat([{ q: qp, text: txt, mood: mp, ts: Date.now() }]); } // also feed the journal feed, like the journal door does
+    if (commit && mode === "pm") { // PM CLOSE v2 (ORGAN B) → bk.pm.done (evening hero never re-nags) + S.dayClose[k] (THE RECORD)
+      var sbp = el("tfStageBody");
+      var winV = (sbp && sbp.dataset.win) || "", learnV = (sbp && sbp.dataset.learn) || "";
+      var ratingV = (sbp && sbp.dataset.dayRating) || "", oneV = (sbp && sbp.dataset.oneThing) || "";
+      var woopO = (sbp && sbp.dataset.woopO) || "", woopP = (sbp && sbp.dataset.woopP) || "";
+      var mp = (sbp && sbp.dataset.mood != null && sbp.dataset.mood !== "") ? +sbp.dataset.mood : null;
+      var reflectTxt = (winV ? "Win: " + winV : "") + (learnV ? (winV ? "\n" : "") + "Learn: " + learnV : "");
+      var recp = bk(todayK()); recp.pm = recp.pm || {}; recp.pm.reflect = reflectTxt; if (mp != null) recp.pm.mood = mp; recp.pm.ts = Date.now(); recp.pm.done = true;
+      if (ratingV) { recp.pm.wol = recp.pm.wol || { wentWell: "", needsWork: "", optimize: "", dayRating: "" }; recp.pm.wol.dayRating = ratingV; }
+      S.dayClose = S.dayClose || {}; S.dayClose[todayK()] = { win: winV, learn: learnV, rating: ratingV, woop: { o: woopO, p: woopP }, installed: 1 }; // THE RECORD
+      try { if (oneV) { pmPlantOneThing(oneV); if (woopO && woopP) { var _tb = (blocks(tomK()) || []).filter(function (b) { return (b.title || "").toLowerCase() === oneV.toLowerCase(); })[0]; if (_tb) { _tb.woop = { o: woopO, p: woopP }; _tb.armor = true; } } } } catch (e) {} // WOOP armor onto the block via the SAFE path (pip render deferred — timeline-paint-free this wave)
+      try { if (ratingV) earn(pmRatingEarn(ratingV, pmLowDay(bookendMirror(todayK()))), { label: "dayRating-" + ratingV }); } catch (e) {} // parity earn
+      if (reflectTxt || mp != null) { recp.journal = (recp.journal || []).concat([{ q: "Win or Learn", text: reflectTxt, mood: mp, ts: Date.now() }]); }
       save();
     }
     if (commit && mode === "am") { // AM bookend → bk(todayK()).am = {identity[], virtue, why, goalKey, goalMove, oneThing, ts, done}. Writes the live profile + does the SAFE flow-down (skeletonDay / blocks.push / reflow). No #sheet, no calendarView touch.
@@ -4462,181 +4468,201 @@
   // (renderStage's dataset.mode guard keeps the 1s tick from wiping inputs; pmAdvance rebuilds explicitly). reward-never-shame: a
   // miss/drift is NEUTRAL data in DRIFT_GRAY, never red, never guilt. ALL tomorrow writes go through the safe path (skeletonDay /
   // blocks(tomK()).push + reflow(tomK())) — never calendarView/buildPull.
-  var PM_BEATS = ["mirror", "restory", "ask", "plan", "close"];
+  // ===== PM CLOSE v2 (DEPTH BUILD WAVE 1, ORGAN B — "the most valuable 60 seconds"): win → learn → rating → tomorrow(WOOP) → install → deal.
+  // Evolves the CKPT-PM bookend IN PLACE (no parallel overlay, no timeline paint). Floor dose (mom) = win + rating + deal(proverb). exitStage('pm') writes S.dayClose[k] + keeps bk.pm.done so the evening hero never re-nags. =====
+  var PM_BEATS = ["win", "learn", "rating", "tomorrow", "install", "deal"];
   function pmHasDrift(mr) { return (mr.missBlocks && mr.missBlocks.length) || mr.drift; }
-  function pmStageStep(sb) { // entry: reset to beat 0, then render. Called once per open (renderStage rebuilds only on mode change).
-    sb.dataset.step = "0"; sb.dataset.mood = ""; sb.dataset.carry = ""; sb.dataset.reflect = ""; sb.dataset.oneThing = "";
+  function pmFloor() { var lvl = ((S.guide || {}).appetiteState || {}).level; return lvl === "floor"; } // mom-tier: two taps, a proverb, done
+  function pmLowDay(mr) { try { return profile().lowEnergy || currentMood() <= 1 || (mr && mr.planned > 0 && mr.kept < Math.ceil(mr.planned * 0.5)); } catch (e) { return false; } }
+  function pmLiveBeats(mr) { // which beats actually run this close (dose + skip-learn-when-nothing-drifted)
+    if (pmFloor()) return ["win", "rating", "deal"];
+    var b = PM_BEATS.slice();
+    if (!pmHasDrift(mr)) b = b.filter(function (x) { return x !== "learn"; });
+    return b;
+  }
+  function pmStageStep(sb) { // entry: reset transient state, render beat 0 (called once per open)
+    sb.dataset.step = "0"; sb.dataset.mood = ""; sb.dataset.win = ""; sb.dataset.learn = ""; sb.dataset.dayRating = ""; sb.dataset.oneThing = ""; sb.dataset.woopO = ""; sb.dataset.woopP = "";
     pmRenderBeat(sb);
   }
-  function pmAdvance() { // primary-button handler: persist this beat's transient input, advance the step, rebuild — or commit+close on the last beat
+  function pmBeatName(sb) { var live = pmLiveBeats(bookendMirror(todayK())); var step = Math.max(0, Math.min(live.length - 1, +(sb.dataset.step || 0))); return live[step]; }
+  function pmPrimaryLabel() { var sb = el("tfStageBody"); if (!sb) return "Continue"; return (pmBeatName(sb) === "deal") ? "Rest now" : "Continue"; }
+  function pmAdvance() { // primary-button handler: advance the step, rebuild — or commit+close on the last live beat
     var sb = el("tfStageBody"); if (!sb) return;
-    var step = Math.max(0, Math.min(PM_BEATS.length - 1, +(sb.dataset.step || 0)));
-    var mr = bookendMirror(todayK());
-    // flush the ask beat's transient inputs onto dataset so the later 'close' commit (no textarea in the DOM) still has them
-    if (PM_BEATS[step] === "ask") { var ta = sb.querySelector("textarea"); if (ta) sb.dataset.reflect = ta.value.trim(); }
-    if (step >= PM_BEATS.length - 1) { exitStage(true); return; } // final beat (close) → commit pm record + GENTLE celebrate + un-corner
-    // skip the re-story beat entirely when there's nothing to re-story
-    var next = step + 1;
-    if (PM_BEATS[next] === "restory" && !pmHasDrift(mr)) next++;
-    sb.dataset.step = String(next);
+    var live = pmLiveBeats(bookendMirror(todayK()));
+    var step = Math.max(0, Math.min(live.length - 1, +(sb.dataset.step || 0)));
+    if (step >= live.length - 1) { exitStage(true); return; } // final beat (deal) → commit S.dayClose + bk.pm.done + un-corner
+    sb.dataset.step = String(step + 1);
     pmRenderBeat(sb);
   }
-  function pmBeatName(sb) { var step = Math.max(0, Math.min(PM_BEATS.length - 1, +(sb.dataset.step || 0))); return PM_BEATS[step]; }
-  function pmPrimaryLabel() { var sb = el("tfStageBody"); if (!sb) return "Continue"; return (pmBeatName(sb) === "close") ? "Rest now" : "Continue"; }
   function pmRenderBeat(sb) {
-    var k = todayK(), mr = bookendMirror(k), beat = pmBeatName(sb);
+    var k = todayK(), mr = bookendMirror(k), beat = pmBeatName(sb), live = pmLiveBeats(mr);
     sb.innerHTML = "";
     var card = add(sb, "div", "tf-stagecard"); card.style.display = "flex"; card.style.flexDirection = "column"; card.style.gap = "12px";
-    // AUDIT TOP-7 (canon mock #20): the «ВЕЧЕРНИЙ РИТУАЛ» eyebrow + beat dots with the CURRENT pip in GOLD
     var _hdrow = add(card, "div"); _hdrow.setAttribute("style", "display:flex;align-items:center;justify-content:space-between;gap:10px;");
-    var _eyeb = add(_hdrow, "div", null, tr("EVENING RITUAL")); _eyeb.setAttribute("style", "font-family:'Jost',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:1.8px;color:#b596ad;");
-    var live = PM_BEATS.filter(function (b) { return b !== "restory" || pmHasDrift(mr); });
+    add(_hdrow, "div", null, tr("EVENING RITUAL")).setAttribute("style", "font-family:'Jost',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:1.8px;color:#b596ad;");
     var dots = add(_hdrow, "div"); dots.setAttribute("style", "display:flex;gap:6px;align-items:center;");
-    live.forEach(function (b) { var d = add(dots, "div"); var on = (b === beat); d.setAttribute("style", "width:" + (on ? 18 : 7) + "px;height:7px;border-radius:4px;background:" + (on ? "#ffd24a" : "#3a2640") + ";transition:all .2s;"); });
-    if (beat === "mirror") pmBeatMirror(card, sb, mr, k);
-    else if (beat === "restory") pmBeatRestory(card, sb, mr, k);
-    else if (beat === "ask") pmBeatAsk(card, sb, mr, k);
-    else if (beat === "plan") pmBeatPlan(card, sb, mr, k);
-    else pmBeatClose(card, sb, mr, k);
+    live.forEach(function (b) { var on = (b === beat); add(dots, "div").setAttribute("style", "width:" + (on ? 18 : 7) + "px;height:7px;border-radius:4px;background:" + (on ? "#ffd24a" : "#3a2640") + ";transition:all .2s;"); });
+    if (beat === "win") pmBeatWin(card, sb, mr, k);
+    else if (beat === "learn") pmBeatLearn(card, sb, mr, k);
+    else if (beat === "rating") pmBeatRating(card, sb, mr, k);
+    else if (beat === "tomorrow") pmBeatTomorrow(card, sb, mr, k);
+    else if (beat === "install") pmBeatInstall(card, sb, mr, k);
+    else pmBeatDeal(card, sb, mr, k);
     try { renderTFControls("pm"); } catch (e) {} // refresh the primary label ("Continue" → "Rest now")
   }
-  // ---- BEAT 1: MIRROR (richer) — kept/drifted/missed, domain minutes, streak, a standout note. Pure read, no timeline touch.
-  // ---- BEAT 1: MIRROR (mock #20 1:1) — the DAY ITSELF as mini time-blocks (kept striped / DRIFT / MIMO-ghost) + a now-line, spelled tally, jewel mood row + narrated pink door.
-  function pmBeatMirror(card, sb, mr, k) {
+  // ---- helpers: real-log WIN candidates + friction LEARN candidates + best charge (all PURE reads, no timeline touch)
+  function pmWinCandidates(k) {
+    var out = [], seen = {};
+    function push(t) { t = (t || "").trim(); if (!t || seen[t.toLowerCase()]) return; seen[t.toLowerCase()] = 1; out.push(t); }
+    (blocks(k) || []).forEach(function (b) { if (b.title && blockStatus(k, b) === "ok" && domainOf(b) !== "drift") push(b.title); });
+    (logs(k) || []).forEach(function (l) { if (l.title && !/^Mood:/.test(l.title) && domainOf(l) !== "drift") push(l.title); });
+    out = out.slice(0, 6); push(tr("Just showing up")); // reward-never-shame: a quiet day still holds a real win
+    return out.slice(0, 7);
+  }
+  function pmLearnCandidates(mr) {
+    var out = [];
+    (mr.missBlocks || []).slice(0, 3).forEach(function (b) { out.push(esc(b.title) + " " + tr("slipped")); });
+    if (mr.drift) out.push(tr("drifted more than I meant to"));
+    out.push(tr("Nothing — it was a full day"));
+    return out;
+  }
+  function pmBestCharge(k) {
+    var best = null, bm = -1;
+    (blocks(k) || []).forEach(function (b) { if (b.title && blockStatus(k, b) === "ok" && (b.mins || 0) >= bm && domainOf(b) !== "drift") { bm = b.mins || 0; best = b.title; } });
+    (logs(k) || []).forEach(function (l) { if (l.title && !/^Mood:/.test(l.title) && (l.mins || 0) >= bm && domainOf(l) !== "drift") { bm = l.mins || 0; best = l.title; } });
+    return best;
+  }
+  // ---- BEAT 1: WIN — the day mirror + "which was the day's real win?" chips (generated from real logs; never free-text)
+  function pmBeatWin(card, sb, mr, k) {
     add(card, "div", "tfs-h", tr("Here's the day you lived"));
     add(card, "div", "tfs-sub", tr("not a grade — a reflection")).style.opacity = ".8";
     var day = (blocks(k) || []).filter(function (b) { return b.title; }).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
-    var mir = add(card, "div", "pm-mir");
-    var nowM = (k === todayK()) ? logicalNowMin() : 24 * 60, nowDrawn = false;
-    function drawNowLine() { if (nowDrawn || k !== todayK()) return; nowDrawn = true; var nr = add(mir, "div", "pm-nowrow"); nr.innerHTML = '<span class="dot"></span><span class="ln"></span><span class="lbl">' + tr("now") + ' · ' + esc(fmt(nowM)) + '</span>'; }
-    day.forEach(function (b) {
-      if (hm(b.time) >= nowM) drawNowLine();
-      var st = blockStatus(k, b), dom = domainOf(b), D = DOM[dom] || DOM.focus;
-      var row = add(mir, "div", "pm-mrow");
-      add(row, "div", "pm-mtime", fmt(hm(b.time)).replace(/(am|pm)$/, ""));
-      var blk = add(row, "div", "pm-mblk" + (st === "miss" ? " miss" : dom === "drift" ? " drift" : ""));
-      if (st === "ok" && dom !== "drift") blk.style.background = tfStripeDoor(D.c); // BRIGHT stripes (both shades light) so the dark ink text stays readable (David device: dark-on-dark)
-      else if (dom !== "drift" && st !== "miss") blk.style.background = D.c;
-      var _ink = st === "miss" ? "#7a6a80" : dom === "drift" ? "#e6e8ec" : (D.ink || "#160510");
-      blk.innerHTML = '<i class="ti ' + tiClass(b) + '" style="color:' + (st === "miss" ? "#7a6a80" : dom === "drift" ? "#b8bcc6" : (D.ink || "#160510")) + '"></i><span class="pm-mttl" style="color:' + _ink + '">' + esc(b.title) + '</span>' + (dom === "drift" ? '<span class="pm-mtag">' + tr("DRIFT") + '</span>' : st === "miss" ? '<span class="pm-mtag">' + tr("MISSED") + '</span>' : '');
+    if (day.length) {
+      var mir = add(card, "div", "pm-mir");
+      day.forEach(function (b) {
+        var st = blockStatus(k, b), dom = domainOf(b), D = DOM[dom] || DOM.focus;
+        var row = add(mir, "div", "pm-mrow");
+        add(row, "div", "pm-mtime", fmt(hm(b.time)).replace(/(am|pm)$/, ""));
+        var blk = add(row, "div", "pm-mblk" + (st === "miss" ? " miss" : dom === "drift" ? " drift" : ""));
+        if (st === "ok" && dom !== "drift") blk.style.background = tfStripeDoor(D.c); else if (dom !== "drift" && st !== "miss") blk.style.background = D.c;
+        var _ink = st === "miss" ? "#7a6a80" : dom === "drift" ? "#e6e8ec" : (D.ink || "#160510");
+        blk.innerHTML = '<i class="ti ' + tiClass(b) + '" style="color:' + (st === "miss" ? "#7a6a80" : dom === "drift" ? "#b8bcc6" : (D.ink || "#160510")) + '"></i><span class="pm-mttl" style="color:' + _ink + '">' + esc(b.title) + '</span>' + (dom === "drift" ? '<span class="pm-mtag">' + tr("DRIFT") + '</span>' : st === "miss" ? '<span class="pm-mtag">' + tr("MISSED") + '</span>' : '');
+      });
+    }
+    add(card, "div", "pm-moodq", tr("Which was the day's real win?"));
+    var wrap = add(card, "div"); wrap.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+    pmWinCandidates(k).forEach(function (w) {
+      var sel = sb.dataset.win === w;
+      var b = add(wrap, "button", "tf-chip"); b.setAttribute("style", sel ? "background:#ffd24a;color:#160510;border-color:#ffd24a;" : "");
+      b.innerHTML = '<i class="ti ti-star"></i> ' + esc(w);
+      b.onclick = function () { sb.dataset.win = sel ? "" : w; pmRenderBeat(sb); };
     });
-    drawNowLine();
-    var tally = add(card, "div", "pm-tally");
-    tally.textContent = mr.planned ? (mr.kept + " " + tr("of") + " " + mr.planned + " " + tr("lived") + " — " + (mr.kept >= Math.ceil(mr.planned * 0.6) ? tr("you held the line") : tr("and that's enough"))) : tr("A free-form day — rest is part of the work.");
+  }
+  // ---- BEAT 2: LEARN — chips from the day's actual friction (postponed titles / drift / "nothing"). Cool-gray, never red, never free-text.
+  function pmBeatLearn(card, sb, mr, k) {
+    add(card, "div", "tfs-h", tr("And what did today teach?"));
+    add(card, "div", "tfs-sub", tr("not a verdict — just data for tomorrow")).style.color = DRIFT_GRAY;
+    var wrap = add(card, "div"); wrap.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+    pmLearnCandidates(mr).forEach(function (w) {
+      var sel = sb.dataset.learn === w;
+      var b = add(wrap, "button", "tf-chip"); b.setAttribute("style", sel ? "background:#7cc8ff;color:#160510;border-color:#7cc8ff;" : "");
+      b.innerHTML = '<i class="ti ti-bulb"></i> ' + w;
+      b.onclick = function () { sb.dataset.learn = sel ? "" : w; pmRenderBeat(sb); };
+    });
+  }
+  // ---- BEAT 3: RATING — Masterpiece / OK / Rebound + PARITY LAW (low day → Rebound scores ≥ Masterpiece, earn parity in exitStage) + "what did it taste like" jewels.
+  var PM_RATES = [
+    { k: "masterpiece", l: "Masterpiece", ic: "ti-crown",       sub: "a day you'd repeat",        c: "#ffc83d" },
+    { k: "ok",          l: "OK",          ic: "ti-circle-check", sub: "showed up, moved forward",  c: "#34d39a" },
+    { k: "rebound",     l: "Rebound",     ic: "ti-refresh",      sub: "tough — but you came back",  c: "#7cc8ff" }
+  ];
+  function pmRatingEarn(rating, low) { if (rating === "rebound") return low ? 10 : 8; if (rating === "masterpiece") return 10; if (rating === "ok") return 7; return 0; } // LAW: on a low-gauge day Rebound (10) ≥ Masterpiece (10)
+  function pmBeatRating(card, sb, mr, k) {
+    add(card, "div", "tfs-h", tr("Name the day."));
+    var low = pmLowDay(mr);
+    var row = add(card, "div"); row.setAttribute("style", "display:flex;gap:8px;");
+    PM_RATES.forEach(function (r) {
+      var sel = sb.dataset.dayRating === r.k;
+      var b = add(row, "button"); b.setAttribute("style", "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:" + (sel ? r.c : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:11px 6px;cursor:pointer;color:" + (sel ? "#160510" : "#e6cfe0") + ";");
+      b.innerHTML = '<i class="ti ' + r.ic + '" style="font-size:21px;color:' + (sel ? "#160510" : r.c) + '"></i><span style="font-family:\'Jost\',sans-serif;font-weight:800;font-size:12.5px">' + tr(r.l) + '</span>';
+      b.onclick = function () { sb.dataset.dayRating = sel ? "" : r.k; pmRenderBeat(sb); };
+    });
+    var sel0 = PM_RATES.filter(function (r) { return r.k === sb.dataset.dayRating; })[0];
+    if (sel0) {
+      var line = tr(sel0.sub) + ".";
+      if (sel0.k === "rebound" && low) line = tr("Coming back IS the skill. That bounce scores like a win here."); // parity guardian line
+      add(card, "div", "tfs-sub", line).setAttribute("style", "color:" + sel0.c + ";font-size:13px;");
+    }
     add(card, "div", "pm-moodq", tr("What did it taste like?"));
     var jewels = add(card, "div", "pm-jewels");
     var prev = ((S.bk || {})[k] || {}).pm;
     MOODS.forEach(function (m, i) {
-      var sel = (sb.dataset.mood === String(i)) || (!sb.dataset.mood && prev && prev.mood === i);
-      var j = add(jewels, "button", "pm-jewel" + (sel ? " on" : ""));
-      j.style.borderColor = m.c; // AUDIT TOP-7 (canon): each mood tile wears ITS jewel hue as the border (blue/blue/teal/gold/pink)
-      j.innerHTML = '<i class="ti ' + m.e + '" style="color:' + (sel ? "#160510" : m.c) + '"></i><span>' + tr(m.l) + '</span>';
-      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (b, bi) { var s = (!on && bi === idx); b.className = "pm-jewel" + (s ? " on" : ""); b.style.borderColor = MOODS[bi].c; b.querySelector("i").style.color = s ? "#160510" : MOODS[bi].c; }); }; })(i);
-    });
-    var door = add(card, "button", "pm-door");
-    door.innerHTML = tr("To re-storying the day") + ' <i class="ti ti-arrow-right"></i>';
-    door.onclick = function () { try { pmAdvance(); } catch (e) {} };
-  }
-  // ---- BEAT 2: RE-STORY DRIFT (PM-RESTORY) — three calm taps per missed/drifted block. Drift in cool-gray, never red, never guilt.
-  function pmBeatRestory(card, sb, mr, k) {
-    add(card, "div", "tfs-h", "Re-story the drift.");
-    add(card, "div", "tfs-sub", "What slid by isn't a verdict — it's a choice you get to make now.").style.color = DRIFT_GRAY;
-    var list = add(card, "div"); list.setAttribute("style", "display:flex;flex-direction:column;gap:9px;");
-    var rows = (mr.missBlocks || []).slice();
-    if (!rows.length) { add(list, "div", "tfs-sub", "Nothing to re-story — you stayed close to the plan."); return; }
-    rows.forEach(function (b) {
-      var row = add(list, "div"); row.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:9px 11px;display:flex;flex-direction:column;gap:8px;");
-      var ttl = add(row, "div"); ttl.setAttribute("style", "color:" + DRIFT_GRAY + ";font-size:14px;");
-      ttl.innerHTML = '<i class="ti ti-circle-dashed"></i> ' + esc(b.title) + ' · ' + esc(fmt(hm(b.time)));
-      var btns = add(row, "div"); btns.setAttribute("style", "display:flex;gap:6px;flex-wrap:wrap;");
-      var done = function (label) { row.innerHTML = ""; row.style.opacity = ".6"; var d = add(row, "div", "tfs-sub", label); d.style.color = DRIFT_GRAY; d.style.fontSize = "13px"; };
-      var bRight = add(btns, "button", "tf-chip"); bRight.innerHTML = '<i class="ti ti-check"></i> Right call';
-      bRight.onclick = function () { try { pushUndo(); b.done = true; b.intentional = true; save(); } catch (e) {} done("Right call — kept as a conscious choice."); }; // mark intentional so it stops reading as a miss; no log
-      var bCarry = add(btns, "button", "tf-chip"); bCarry.innerHTML = '<i class="ti ti-arrow-right"></i> Carry to tomorrow';
-      bCarry.onclick = function () { pmCarryToTomorrow(b); var c = (sb.dataset.carry || "").split("|").filter(Boolean); c.push(b.title); sb.dataset.carry = c.join("|"); done("Carried to tomorrow — it'll be waiting."); };
-      var bLet = add(btns, "button", "tf-chip"); bLet.innerHTML = '<i class="ti ti-wind"></i> Let go';
-      bLet.onclick = function () { try { pushUndo(); var a = blocks(k), i = a.indexOf(b); if (i >= 0) a.splice(i, 1); reflow(k); save(); renderToday(); } catch (e) {} done("Let go — no trace, no weight."); };
+      var msel = (sb.dataset.mood === String(i)) || (!sb.dataset.mood && prev && prev.mood === i);
+      var j = add(jewels, "button", "pm-jewel" + (msel ? " on" : "")); j.style.borderColor = m.c;
+      j.innerHTML = '<i class="ti ' + m.e + '" style="color:' + (msel ? "#160510" : m.c) + '"></i><span>' + tr(m.l) + '</span>';
+      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (bb, bi) { var s = (!on && bi === idx); bb.className = "pm-jewel" + (s ? " on" : ""); bb.style.borderColor = MOODS[bi].c; bb.querySelector("i").style.color = s ? "#160510" : MOODS[bi].c; }); }; })(i);
     });
   }
-  // ---- BEAT 3: ASK — Win-or-Learn when Chapter 4+ unlocked (Synthesis §VI, Landmark 6 Celebrate); otherwise adaptive pickPrompt.
-  function pmBeatAsk(card, sb, mr, k) {
-    var _INP = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;-webkit-appearance:none;";
-    var prev = ((S.bk || {})[k] || {}).pm;
-    if (journeyNode() >= 4) {
-      // WIN-OR-LEARN: structured 2-part reflection; writes to sb.dataset.reflect as "Win: …\nLearn: …"
-      sb.dataset.q = "Win or Learn";
-      add(card, "div", "tfs-h", "Win or Learn.");
-      add(card, "div", "tfs-sub", "Every day is a win or a lesson. Both move you forward.").style.opacity = ".8";
-      var winInp = add(card, "input"); winInp.type = "text"; winInp.placeholder = "Today's win…"; winInp.setAttribute("style", _INP + "margin-bottom:8px;");
-      add(card, "div", "", "What I learned").style.cssText = "font-size:11px;font-weight:700;color:#9a7090;text-transform:uppercase;letter-spacing:.4px;margin:2px 0 4px;font-family:'Jost',sans-serif;";
-      var learnInp = add(card, "input"); learnInp.type = "text"; learnInp.placeholder = "What I learned…"; learnInp.setAttribute("style", _INP);
-      function syncReflect() { var w=winInp.value.trim(),l=learnInp.value.trim(); sb.dataset.reflect=w||l?(w&&l?"Win: "+w+"\nLearn: "+l:w||l):""; }
-      winInp.oninput = learnInp.oninput = syncReflect;
-      if (prev && prev.reflect) {
-        var pmParts = prev.reflect.split("\nLearn:");
-        if (pmParts.length >= 2) { winInp.value = pmParts[0].replace(/^Win:\s*/,""); learnInp.value = pmParts[1].trim(); }
-        else winInp.value = prev.reflect;
-        syncReflect();
-      }
-    } else {
-      // original ask: random adaptive prompt + textarea
-      var q = pickPrompt("pm", journalCtx()); sb.dataset.q = q;
-      add(card, "div", "tfs-h", "One honest line.");
-      add(card, "div", "tfs-sub").textContent = q;
-      var ta = add(card, "textarea", "jr-ta"); ta.placeholder = "a line is enough — or a few"; ta.rows = 4;
-      ta.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;line-height:1.4;padding:11px 12px;resize:none;outline:none;-webkit-appearance:none;");
-      if (prev && prev.reflect) ta.value = prev.reflect;
-    }
-    var moodWrap = add(card, "div", "jr-moodrow"); moodWrap.setAttribute("style", "display:flex;gap:8px;justify-content:space-between;margin-top:10px;");
-    MOODS.forEach(function (m, i) {
-      var f = add(moodWrap, "button", "jr-mood");
-      f.setAttribute("style", "flex:1;background:#241328;border:2px solid #160510;border-radius:11px;box-shadow:0 2px 0 #160510;font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
-      f.innerHTML = '<i class="ti ' + m.e + '" style="color:' + m.c + '"></i>'; f.title = tr(m.l); // visual audit 2026-07-04: same literal-class fix
-      if ((prev && prev.mood === i) || sb.dataset.mood === String(i)) { f.style.borderColor = DOM.restore.light; }
-      f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : "#160510"; b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
-    });
+  // ---- BEAT 4: TOMORROW (WOOP, never named) — name the one thing → "what's most likely to kill it?" → "when that shows up you'll…?" → armor written onto the block.
+  var PM_KILL = ["tired", "no time", "distracted", "I'll forget", "scared of it"];
+  function pmWoopPlans(kill) {
+    var m = { "tired": ["do just the first 2 minutes", "shrink it smaller", "do it right after waking"], "no time": ["put it first, before anything", "block 15 minutes for it", "shrink it smaller"], "distracted": ["phone in another room", "one tab, timer on", "do the first 2 minutes"], "I'll forget": ["make it the day's one thing", "leave a note where I'll see it", "do it right after waking"], "scared of it": ["do the smallest first step", "give it 5 minutes only", "tell someone I'll do it"] };
+    return m[kill] || ["do just the first 2 minutes", "shrink it smaller", "do it right after waking"];
   }
-  // ---- BEAT 4: PRE-COMMIT TOMORROW (PM-PLAN, Odysseus) — name tomorrow's ONE thing → starred prio-3 block on tomK() via the safe path.
-  function pmBeatPlan(card, sb, mr, k) {
-    add(card, "div", "tfs-h", "Name tomorrow's one thing.");
-    add(card, "div", "tfs-sub", "Decide it now, while you're calm — so tomorrow-you wakes to it already chosen.");
-    var carry = (sb.dataset.carry || "").split("|").filter(Boolean);
-    if (carry.length) { var cc = add(card, "div", "tfs-sub"); cc.style.color = DRIFT_GRAY; cc.style.fontSize = "13px"; cc.textContent = "Already waiting tomorrow: " + carry.join(", ") + "."; }
-    var inp = add(card, "input"); inp.type = "text"; inp.placeholder = "e.g. ship the build";
+  function pmBeatTomorrow(card, sb, mr, k) {
+    add(card, "div", "tfs-h", tr("Tomorrow's one thing."));
+    add(card, "div", "tfs-sub", tr("choose it now, while you're calm — tomorrow-you wakes to it already set")).style.opacity = ".85";
+    var inp = add(card, "input"); inp.type = "text"; inp.placeholder = tr("e.g. ship the build");
     inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;-webkit-appearance:none;");
     if (sb.dataset.oneThing) inp.value = sb.dataset.oneThing;
-    var done = ((S.bk || {})[tomK()] || {}).am || {};
-    var status = add(card, "div", "tfs-sub"); status.style.fontSize = "13px"; status.style.color = DOM.restore.light;
-    if (done.oneThing) status.textContent = "✓ Set for tomorrow: " + done.oneThing;
-    var setBtn = add(card, "button", "tf-chip"); setBtn.style.marginTop = "2px"; setBtn.innerHTML = '<i class="ti ti-star"></i> Set it for tomorrow';
-    setBtn.onclick = function () { var v = (inp.value || "").trim(); if (!v) { inp.focus(); return; } sb.dataset.oneThing = v; pmPlantOneThing(v); status.textContent = "✓ Set for tomorrow: " + v + " — starred and waiting."; };
-  }
-  // ---- BEAT 5: CLOSE — warm forward line. (commit happens in exitStage when the primary fires from this beat.)
-  function pmBeatClose(card, sb, mr, k) {
-    add(card, "div", "tfs-h", "That's the day, well closed.");
-    // DAY-CLOSE RATING (David 2026-06-30, course IV.1 Win-or-Learn): one tap names the day. Reward-never-shame — even a hard day earns a warm "Rebound" badge, never "bad". Persisted to pm.wol.dayRating in exitStage. Was a dead migration-only field until now.
-    add(card, "div", "tfs-sub", "How did today feel?").style.opacity = ".85";
-    var prevR = (((S.bk || {})[k] || {}).pm || {}).wol || {};
-    if (sb.dataset.dayRating == null) sb.dataset.dayRating = prevR.dayRating || "";
-    var RATES = [
-      { k: "masterpiece", l: "Masterpiece", ic: "ti-crown",       sub: "a day you'd repeat",         c: "#ffc83d" },
-      { k: "solid",       l: "Solid",       ic: "ti-circle-check", sub: "showed up, moved forward",   c: "#34d39a" },
-      { k: "rebound",     l: "Rebound",     ic: "ti-refresh",      sub: "tough — but you came back",  c: "#7cc8ff" }
-    ];
-    var row = add(card, "div"); row.setAttribute("style", "display:flex;gap:8px;");
-    RATES.forEach(function (r) {
-      var sel = sb.dataset.dayRating === r.k;
-      var b = add(row, "button"); b.setAttribute("style", "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:" + (sel ? r.c : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:11px 6px;cursor:pointer;color:" + (sel ? "#160510" : "#e6cfe0") + ";");
-      b.innerHTML = '<i class="ti ' + r.ic + '" style="font-size:21px;color:' + (sel ? "#160510" : r.c) + '"></i><span style="font-family:\'Jost\',sans-serif;font-weight:800;font-size:12.5px">' + r.l + '</span>';
-      b.onclick = function () { sb.dataset.dayRating = sel ? "" : r.k; pmRenderBeat(sb); }; // close beat has no text inputs → safe to re-render for the selection state
+    inp.oninput = function () { sb.dataset.oneThing = inp.value.trim(); };
+    add(card, "div", "pm-moodq", tr("What's most likely to kill it?"));
+    var kw = add(card, "div"); kw.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+    PM_KILL.forEach(function (o) {
+      var sel = sb.dataset.woopO === o;
+      var b = add(kw, "button", "tf-chip"); b.setAttribute("style", sel ? "background:#c4607f;color:#fff;border-color:#c4607f;" : "");
+      b.innerHTML = esc(tr(o));
+      b.onclick = function () { sb.dataset.woopO = sel ? "" : o; if (sel) sb.dataset.woopP = ""; pmRenderBeat(sb); };
     });
-    var sel0 = RATES.filter(function (r) { return r.k === sb.dataset.dayRating; })[0];
-    if (sel0) { var sl = add(card, "div", "tfs-sub"); sl.textContent = sel0.sub + "."; sl.setAttribute("style", "color:" + sel0.c + ";font-size:13px;"); }
-    var one = ((S.bk || {})[tomK()] || {}).am || {}, line;
-    if (one.oneThing) line = "Tomorrow opens with one clear move: " + one.oneThing + ". I've got the morning — rest now.";
-    else line = "You met the day and named what mattered. Rest now — I've got the morning.";
-    var l = add(card, "div", "tfs-sub"); l.textContent = line; l.style.lineHeight = "1.5";
-    l.setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:12px 14px;line-height:1.5;margin-top:4px;");
+    if (sb.dataset.woopO) {
+      add(card, "div", "pm-moodq", tr("When that shows up, you'll…?"));
+      var pw = add(card, "div"); pw.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+      pmWoopPlans(sb.dataset.woopO).forEach(function (o) {
+        var sel = sb.dataset.woopP === o;
+        var b = add(pw, "button", "tf-chip"); b.setAttribute("style", sel ? "background:#46e2a4;color:#160510;border-color:#46e2a4;" : "");
+        b.innerHTML = esc(tr(o));
+        b.onclick = function () { sb.dataset.woopP = sel ? "" : o; pmRenderBeat(sb); };
+      });
+    }
+    if (sb.dataset.oneThing && sb.dataset.woopP) { var st = add(card, "div", "tfs-sub"); st.style.cssText = "font-size:13px;color:" + DOM.restore.light + ";"; st.innerHTML = '<i class="ti ti-shield-check"></i> ' + tr("armored — it waits on tomorrow with a plan"); }
+  }
+  // ---- BEAT 5: THE INSTALL (the crown) — candle-dark, one long exhale, the user's mantra line + today's own best charge as the picture. Skippable forever; soft door to Rewire if no mantra born yet (mantra law: never typed).
+  function pmBeatInstall(card, sb, mr, k) {
+    card.style.background = "linear-gradient(180deg,#0c0510,#160a1c)"; card.style.border = "1.5px solid #241030";
+    add(card, "div", null, tr("THE INSTALL")).setAttribute("style", "font-size:10.5px;letter-spacing:1.8px;color:#c9a6ff;font-weight:800;text-align:center;");
+    var breath = add(card, "div"); breath.setAttribute("style", "text-align:center;padding:2px 0;");
+    add(breath, "div").setAttribute("style", "width:60px;height:60px;margin:8px auto;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffe6b0,#ffb84d 55%,#7a4a12);box-shadow:0 0 26px rgba(255,184,77,.55);animation:breathe 11s ease-in-out infinite;");
+    add(breath, "div", "tfs-sub", tr("one breath — let the exhale run long")).style.opacity = ".85";
+    var mantra = (S.mantra && S.mantra.line) || "";
+    if (mantra) {
+      add(card, "div", null, "“" + esc(mantra) + "”").setAttribute("style", "text-align:center;font-family:var(--bub);font-size:19px;font-weight:800;color:#ffe3f1;margin:8px 0 2px;line-height:1.35;");
+      var best = pmBestCharge(k);
+      if (best) add(card, "div", "tfs-sub", tr("today, that was true when you did") + ": " + esc(best)).setAttribute("style", "text-align:center;font-size:12.5px;color:#c8a6d8;");
+    } else {
+      add(card, "div", "tfs-sub", tr("Want a line of your own — one you'll install each night? Three minutes, once.")).setAttribute("style", "text-align:center;line-height:1.5;margin-top:6px;");
+      var b = add(card, "button", "tf-chip"); b.style.cssText = "margin:8px auto 0;display:block;"; b.innerHTML = '<i class="ti ti-spiral"></i> ' + tr("Make my line");
+      b.onclick = function () { try { selfHypnosis(); } catch (e) {} };
+    }
+  }
+  // ---- BEAT 6: DEAL — one wisdom card matched to the day's shape (never a modal — attached to this moment). rebound day → SN-222; hard day → SN-111; else pm-close. First-ever aligned TLM → the SN-091 identity-votes card, finally dealt.
+  function pmBeatDeal(card, sb, mr, k) {
+    add(card, "div", "tfs-h", tr("That's the day, well closed."));
+    var one = ((S.bk || {})[tomK()] || {}).am || {};
+    var line = one.oneThing ? (tr("Tomorrow opens with one clear move") + ": " + esc(one.oneThing) + ". " + tr("I've got the morning — rest now.")) : tr("You met the day and named what mattered. Rest now — I've got the morning.");
+    add(card, "div", "tfs-sub", line).setAttribute("style", "background:#1c0f20;border:2px solid #160510;border-radius:11px;padding:12px 14px;line-height:1.5;");
+    var moment = (sb.dataset.dayRating === "rebound") ? "rebound" : (pmLowDay(mr) || (sb.dataset.learn && /slipped|drift/i.test(sb.dataset.learn))) ? "pm-close-hard" : "pm-close";
+    renderDeckCard(card, moment);
+    if (S.deck && S.deck.pendingVote) { renderDeckCard(card, "first-vote"); S.deck.pendingVote = 0; save(); }
   }
   // ---- safe tomorrow-write helpers (PM-PLAN / PM-RESTORY) — ONLY skeletonDay / blocks(tomK()).push + reflow(tomK()); never the live timeline render
   function pmPlantOneThing(title) {
@@ -6336,6 +6362,24 @@
     "Calmer": "Спокойнее", "Stronger": "Сильнее", "A builder": "Созидателем", "Consistent": "Постоянным", "More present": "Более присутствующим", "Freer": "Свободнее",
     "Your good days — what's usually in them?": "Твои хорошие дни — что в них обычно есть?",
     "Slept enough": "Выспался", "Moved my body": "Двигался", "A quiet morning": "Тихое утро", "Had a plan": "Был план", "Good people": "Хорошие люди", "Music": "Музыка", "Started early": "Начал рано", "Time alone": "Время наедине"
+  });
+  Object.assign(I18N.ru, { // ORGAN B — PM CLOSE v2 strings (B4 law — EN source + RU dict, same commit)
+    "Here's the day you lived": "Вот день, что ты прожил", "not a grade — a reflection": "не оценка — отражение",
+    "Which was the day's real win?": "Что было настоящей победой дня?", "Just showing up": "Просто пришёл",
+    "And what did today teach?": "А чему сегодня научило?", "not a verdict — just data for tomorrow": "не приговор — просто данные на завтра",
+    "slipped": "ускользнуло", "drifted more than I meant to": "дрейфа было больше, чем хотел", "Nothing — it was a full day": "Ничего — день был полным",
+    "Name the day.": "Назови день.", "Masterpiece": "Шедевр", "OK": "Норм", "Rebound": "Возврат",
+    "a day you'd repeat": "день, что повторил бы", "showed up, moved forward": "пришёл, продвинулся", "tough — but you came back": "тяжело — но ты вернулся",
+    "Coming back IS the skill. That bounce scores like a win here.": "Возвращение и ЕСТЬ навык. Здесь этот отскок засчитывается как победа.",
+    "What did it taste like?": "Каким он был на вкус?",
+    "Tomorrow's one thing.": "Главное дело завтра.", "choose it now, while you're calm — tomorrow-you wakes to it already set": "выбери сейчас, пока спокоен — завтрашний ты проснётся, а оно уже готово", "e.g. ship the build": "напр. выпустить сборку",
+    "What's most likely to kill it?": "Что вероятнее всего его сорвёт?", "tired": "устал", "no time": "нет времени", "distracted": "отвлекусь", "I'll forget": "забуду", "scared of it": "боюсь его",
+    "When that shows up, you'll…?": "Когда это придёт, ты…?",
+    "do just the first 2 minutes": "сделаю только первые 2 минуты", "shrink it smaller": "уменьшу его", "do it right after waking": "сделаю сразу после пробуждения", "put it first, before anything": "поставлю первым, прежде всего", "block 15 minutes for it": "выделю 15 минут", "phone in another room": "телефон в другую комнату", "one tab, timer on": "одна вкладка, таймер включён", "do the first 2 minutes": "сделаю первые 2 минуты", "make it the day's one thing": "сделаю его главным делом дня", "leave a note where I'll see it": "оставлю записку на виду", "do the smallest first step": "сделаю самый малый первый шаг", "give it 5 minutes only": "дам ему только 5 минут", "tell someone I'll do it": "скажу кому-то, что сделаю",
+    "armored — it waits on tomorrow with a plan": "с бронёй — ждёт завтра с планом",
+    "THE INSTALL": "УСТАНОВКА", "one breath — let the exhale run long": "один вдох — и долгий выдох", "today, that was true when you did": "сегодня это было правдой, когда ты сделал",
+    "Want a line of your own — one you'll install each night? Three minutes, once.": "Хочешь свою строку — ту, что будешь устанавливать каждую ночь? Три минуты, один раз.", "Make my line": "Создать мою строку",
+    "That's the day, well closed.": "Вот и день — закрыт по-хорошему.", "Tomorrow opens with one clear move": "Завтра открывается одним ясным шагом", "I've got the morning — rest now.": "Утро на мне — отдыхай.", "You met the day and named what mattered. Rest now — I've got the morning.": "Ты встретил день и назвал важное. Отдыхай — утро на мне."
   });
   function deckMode() { var P = S.profile || {}; if (P.theoryMode === "off") return "off"; if (P.theoryMode === "proverbs") return "proverbs"; if (P.theoryMode && P.theoryMode.indexOf("cards") === 0) return "cards"; var lvl = ((S.guide || {}).appetiteState || {}).level; return lvl === "floor" ? "proverbs" : "cards"; }
   function _deckAge(id) { var dk = (S.deck && S.deck.dealt) ? S.deck.dealt[id] : null; return dk ? daysSince(dk) : 99999; } // never-dealt = effectively infinite age → dealt first
@@ -9704,7 +9748,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
