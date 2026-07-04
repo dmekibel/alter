@@ -993,6 +993,9 @@
   /* PER-SECOND LIVE CHARGE glide: the now-anchored elements creep/grow/shrink smoothly between the per-minute rebuilds (tickCharge nudges top/height each second; the ~1s linear transition fills the gap → the battery reads as MOVING, not snapping). Suppressed while zooming so a pinch can't animate → no bounce. */
   .nowline, .nowcirc, .nowread, .nowtime, .calblk.live, .matchseg.chgseg, .committedfut{ transition: top .98s linear, height .98s linear; }
   .matchseg.chgseg.sliver{ border:none !important; border-radius:3px !important; box-shadow:none !important; } /* newborn charge (<10px) = a clean color line — no border-soup up close (David device 2026-07-03) */
+  /* PERSONAL BATTERY PHYSICS (Wave 3, Fable 2026-07-04): the day's VOLTAGE — charge prints hotter on a day whose good-day ingredients are evidenced, dimmer on an enervator-heavy day. Paint-only (filter never touches layout/geometry); subtle by law (no neon); ghosts/drift/future never carry it. */
+  .matchseg.volt-hi, .calblk.volt-hi{ filter:saturate(1.18) brightness(1.07); }
+  .matchseg.volt-lo, .calblk.volt-lo{ filter:saturate(.8) brightness(.93); }
   .calblk.committedfut{ border-top:none !important; } /* the now-line IS the seam — a dashed top edge under it read as a glitch */
   #pullBody.zooming .nowline, #pullBody.zooming .nowcirc, #pullBody.zooming .nowread, #pullBody.zooming .nowtime, #pullBody.zooming .calblk.live, #pullBody.zooming .matchseg.chgseg, #pullBody.zooming .committedfut{ transition:none !important; }
   .calblk.dragging{ transition:none !important; }
@@ -2645,6 +2648,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=897"></script>
+  <script src="app.js?v=898"></script>
 </body>
 </html>
