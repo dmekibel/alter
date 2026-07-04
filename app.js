@@ -837,70 +837,65 @@
     return nodes;
   }
   // ===== THE LESSON ENGINE (Day-1 v2, David 2026-07-04: "draw the nuance from the 300-day course — clever, deep, functional, educational, epic"): ONE Duolingo-grade grammar that converts any course session into a mini lesson. HOOK (epic line on a spinning-ray card, per-lesson palette) → TEACH (2 dense course-faithful cards) → CHECK (a real forced-choice test, warm retry — the moment it FEELS like a lesson) → REP (launch the organ; doing is the skill) → the organ's completion lights the stone + deals the card. Tap-only forever. This engine is the conversion pipeline for the whole 300-day course (25 sessions → chapters of lessons). =====
-  function runLesson(L) {
-    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
-    var step = -1; // -1 hook · 0..n teach · n+1 check · n+2 rep door
-    function render() {
-      body.innerHTML = ""; foot.innerHTML = "";
-      if (step === -1) { // HOOK — the lesson card, alive
-        add(body, "div", "ob-kick", tr(L.kicker));
-        var hc = add(body, "div"); hc.style.cssText = "position:relative;overflow:hidden;width:302px;padding:26px 18px 22px;border:3px solid #160510;border-radius:20px;background:#1a0b26;box-shadow:0 7px 0 #160510;";
-        var hs = add(hc, "div", "gspin"); hs.style.background = "repeating-conic-gradient(from 0deg at 50% 50%," + L.c + "26 0deg 10deg, transparent 10deg 20deg)";
-        var hin = add(hc, "div"); hin.style.cssText = "position:relative;z-index:1;text-align:center;";
-        hin.innerHTML = '<i class="ti ' + L.ic + '" style="font-size:46px;color:' + L.c + '"></i><div style="font-family:var(--bub);font-weight:800;font-size:24px;color:#fff2f9;margin-top:8px;line-height:1.2">' + esc(tr(L.title)) + '</div>';
-        add(body, "div", "ob-sb", tr(L.hook)).style.cssText = "text-align:center;margin-top:15px;font-size:16px;line-height:1.55;font-weight:700;color:#ffe3f1;max-width:330px;";
-        add(foot, "button", "ob-btn go", tr("Teach me ▸")).onclick = function () { step = 0; render(); };
-        add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
-        return;
-      }
-      if (step < L.teach.length) { // TEACH — one dense idea per card, guardian voice, course-faithful
-        add(body, "div", "ob-kick", tr(L.kicker));
-        var tc = add(body, "div"); tc.style.cssText = "width:100%;max-width:360px;padding:19px 18px;border:2.5px solid #160510;border-radius:16px;background:" + mixHex(L.c, "#160510", 0.85) + ";box-shadow:0 4px 0 #160510;";
-        tc.innerHTML = '<i class="ti ' + L.ic + '" style="font-size:20px;color:' + L.c + '"></i><div style="font-family:var(--bub);font-size:15.5px;line-height:1.6;color:#f4e9f2;margin-top:8px">' + esc(tr(L.teach[step])) + '</div>';
-        add(body, "div", "ob-sb", (step + 1) + " / " + L.teach.length).style.cssText = "text-align:center;margin-top:10px;color:#9a7cae;font-size:12px;";
-        add(foot, "button", "ob-btn go", tr(step < L.teach.length - 1 ? "Next ▸" : "Got it — test me ▸")).onclick = function () { step++; render(); };
-        return;
-      }
-      if (step === L.teach.length) { // CHECK — the Duolingo moment: prove it landed; wrong answers get a warm retry, never a wall
-        add(body, "div", "ob-kick", tr("QUICK CHECK"));
-        add(body, "div", "ob-q", tr(L.check.q));
-        var w = add(body, "div", "obv-rows"); w.style.maxWidth = "400px"; w.style.marginTop = "12px";
-        var fb = add(body, "div", "ob-sb", ""); fb.style.cssText = "text-align:center;margin-top:14px;font-weight:700;min-height:24px;line-height:1.45;";
-        L.check.opts.forEach(function (o, i) {
-          var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", L.c); r.style.setProperty("--ost", tfStripeDoor(L.c));
-          r.innerHTML = '<span class="ol">' + esc(tr(o)) + '</span>';
-          r.onclick = function () {
-            if (i === L.check.right) { r.classList.add("on"); r.style.background = tfStripeDoor(L.c); fb.style.color = "#46e2a4"; fb.textContent = tr(L.check.why); try { earn(2, { label: "lesson-check" }); } catch (e) {} setTimeout(function () { step++; render(); }, 1700); }
-            else { fb.style.color = "#ff9ec9"; fb.textContent = tr(L.check.nope || "Not quite — read it again with the body in mind."); r.style.opacity = ".45"; r.disabled = true; }
-          };
-        });
-        return;
-      }
-      if (L.install && step === L.teach.length + 1) { // INSTALL — the reverse-hypnosis beat (David 2026-07-04 / Psycho-Cybernetics): the lesson's core line, present tense, sealed with a HELD thumb while the room dims — taught, checked, and now INSTALLED. One lesson at a time, the self-image updates.
-        ov.style.background = "linear-gradient(180deg,#0c0510,#160a1c)"; // candle-dark — the pre-sleep doorway, borrowed for 20 seconds
-        add(body, "div", "ob-kick", tr("INSTALL IT"));
-        var orb = add(body, "div"); orb.style.cssText = "width:54px;height:54px;border-radius:50%;margin:6px auto;background:radial-gradient(circle at 40% 35%," + mixHex(L.c, "#ffffff", 0.3) + "," + L.c + " 60%," + mixHex(L.c, "#160510", 0.3) + ");box-shadow:0 0 26px " + L.c + "66;animation:breathe 9s ease-in-out infinite;";
-        add(body, "div", null, "“" + esc(tr(L.install)) + "”").style.cssText = "text-align:center;font-family:var(--bub);font-size:20px;font-weight:800;color:#ffe3f1;line-height:1.4;max-width:320px;margin-top:6px;";
-        add(body, "div", "ob-sb", tr("one slow breath — say it as if it's already true. Hold to keep it.")).style.cssText = "text-align:center;margin-top:8px;";
-        try { say(tr(L.install), VPROF.mantra); } catch (e) {}
-        var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
-        pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-        var arc = pw.querySelector(".parc"), holdT = null, held = false;
-        function rel() { if (held) return; clearTimeout(holdT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.6s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-install" }); } catch (e) {} step++; render(); }, 1600); });
-        pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
-        var carry = add(foot, "button", "ob-skip", tr("carry it without the hold")); carry.onclick = function () { step++; render(); }; // never a dead-end
-        return;
-      }
-      // REP DOOR — knowing isn't the skill
-      ov.style.background = "";
-      add(body, "div", "ob-kick", tr("NOW THE REP"));
-      add(body, "div", "ob-q", tr(L.repLine));
-      add(body, "div", "ob-sb", tr("knowing isn't the skill — doing is. This is the part that counts.")).style.cssText = "text-align:center;margin-top:8px;";
-      add(foot, "button", "ob-btn go", tr(L.repBtn || "Do it ▸")).onclick = function () { ov.remove(); try { L.rep(); } catch (e) {} };
-      add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
+  function runLesson(L) { // ===== THE RITUAL LESSON (v904, David device notes 2026-07-04): "a guided journal / guided magic ritual — no quizzes; questions that learn about the USER; big text, one beat at a time, visuals in between." A full-screen ceremony in the lesson's color. Beats: line (BIG text arriving word-by-word, tap to continue) · mirror (a self-question with NO right answer — the pick personalizes the guardian's next line AND teaches the app who you are; Duolingo's real trick) · feel (a breath with the orb) · burn (a limiting belief, burned to embers) · seal (the present-tense line, thumb-held — the install) · door (into the real rep). Voice whispers every line. Tap-only forever. =====
+    var ov = add(document.body, "div"), done = false;
+    ov.style.cssText = "position:fixed;inset:0;z-index:130;background:linear-gradient(180deg,#0c0510,#160a1c);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;";
+    var rays = add(ov, "div", "gspin"); rays.style.background = "repeating-conic-gradient(from 0deg at 50% 50%," + L.c + "16 0deg 10deg, transparent 10deg 20deg)";
+    var stage = add(ov, "div"); stage.style.cssText = "position:relative;z-index:1;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;";
+    var hint = add(ov, "div"); hint.style.cssText = "position:absolute;bottom:30px;left:0;right:0;text-align:center;font-family:var(--bub);font-size:13px;font-weight:700;color:#8a7898;z-index:1;";
+    var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:2;background:none;border:none;color:#6a5a78;font-size:20px;padding:8px;cursor:pointer;";
+    xb.onclick = function (e) { e.stopPropagation(); done = true; try { TTS.stop(); } catch (er) {} ov.remove(); };
+    var i = -1, ctx = { answers: {} };
+    function speak(t) { try { say(tr(t), VPROF.mantra); } catch (e) {} }
+    function lineIn(host, t, big) { var d = add(host, "div"); d.style.cssText = "font-family:var(--bub);font-weight:800;line-height:1.45;color:#ffe9f4;font-size:" + (big ? "25px" : "20.5px") + ";";
+      var words = tr(t).split(" ");
+      words.forEach(function (w, wi) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", (wi * 0.13) + "s"); sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); }); /* the space rides OUTSIDE the inline-block span (else it collapses and the words fuse) */
+      return words.length * 130 + 400; }
+    function orbEl(sz) { var o = add(stage, "div"); o.style.cssText = "flex:none;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:radial-gradient(circle at 40% 35%," + mixHex(L.c, "#ffffff", 0.3) + "," + L.c + " 60%," + mixHex(L.c, "#160510", 0.3) + ");box-shadow:0 0 30px " + L.c + "55;animation:breathe 9s ease-in-out infinite;"; return o; }
+    function armTap(after) { hint.textContent = tr("tap to continue"); ov.onclick = function () { ov.onclick = null; hint.textContent = ""; (after || next)(); }; }
+    function next() { if (done) return; i++; if (i >= L.beats.length) { finish(); return; } render(L.beats[i]); }
+    function finish() { done = true; try { TTS.stop(); } catch (e) {} ov.remove(); if (L.onDone) { try { L.onDone(ctx); } catch (e) {} } try { drawJourney(true); } catch (e) {}
     }
-    render();
+    function render(b) {
+      stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
+      var iCur = i;
+      if (b.k === "line") { if (b.orb) orbEl(46); var ms = lineIn(stage, b.t, b.big); speak(b.t);
+        setTimeout(function () { if (done || iCur !== i) return; armTap(); }, ms); return; }
+      if (b.k === "mirror") { var msq = lineIn(stage, b.q, false); speak(b.q);
+        var w = add(stage, "div"); w.style.cssText = "display:flex;flex-direction:column;gap:9px;width:100%;margin-top:6px;";
+        b.opts.forEach(function (o) { var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", L.c); r.style.setProperty("--ost", tfStripeDoor(L.c)); r.style.minHeight = "52px"; r.innerHTML = '<span class="ol" style="font-size:15.5px">' + esc(tr(o.t)) + '</span>';
+          r.onclick = function (e) { e.stopPropagation(); ctx.answers[b.save || "m" + iCur] = o.tag || o.t; if (b.onPick) { try { b.onPick(o, ctx); } catch (er) {} }
+            stage.innerHTML = ""; orbEl(40); var rep = (typeof b.reply === "function") ? b.reply(o, ctx) : (o.reply || b.reply); var ms2 = lineIn(stage, rep, false); speak(rep);
+            setTimeout(function () { if (done) return; armTap(); }, ms2); }; });
+        return; }
+      if (b.k === "feel") { orbEl(66); var tt = (typeof b.t === "function") ? b.t(ctx) : b.t; var ms3 = lineIn(stage, tt, false); speak(tt);
+        setTimeout(function () { if (done || iCur !== i) return; next(); }, Math.max(ms3 + 1400, (b.secs || 7) * 1000)); return; }
+      if (b.k === "burn") { lineIn(stage, "One belief to leave here:", false);
+        var bl = add(stage, "div"); bl.textContent = "\u201c" + tr(b.t) + "\u201d"; bl.style.cssText = "font-family:var(--bub);font-size:19px;font-weight:800;color:#c9a6b8;border:2px dashed #6a4a5c;border-radius:14px;padding:14px 18px;margin-top:4px;";
+        var btn = add(stage, "button", "ob-btn go", tr("Burn it")); btn.style.marginTop = "10px";
+        btn.onclick = function (e) { e.stopPropagation(); btn.style.display = "none"; bl.classList.add("burnaway");
+          try { var r7 = bl.getBoundingClientRect(); for (var e2 = 0; e2 < 5; e2++) { var sp7 = add(ov, "b", "ob-rise obp-star"); sp7.style.cssText = "position:fixed;left:" + Math.round(r7.left + 20 + e2 * Math.max(40, r7.width - 40) / 4) + "px;top:" + Math.round(r7.top) + "px;width:7px;height:7px;background:#ff8a3a;box-shadow:0 0 8px rgba(255,138,58,.6);z-index:3;"; (function (sp) { setTimeout(function () { sp.remove(); }, 1200); })(sp7); } } catch (er) {}
+          setTimeout(function () { if (done) return; stage.innerHTML = ""; var ms4 = lineIn(stage, b.reply, false); speak(b.reply);
+            setTimeout(function () { if (done) return; armTap(); }, ms4); }, 1100); };
+        return; }
+      if (b.k === "seal") { orbEl(46); lineIn(stage, "\u201c" + tr(b.line) + "\u201d", true); speak(b.line);
+        add(stage, "div", null, tr("one slow breath — say it as if it's already true. Hold to keep it.")).style.cssText = "font-family:var(--bub);text-align:center;font-size:14px;font-weight:700;color:#c8a6d8;";
+        var pw = add(stage, "div", "ob-pwrap"); pw.style.touchAction = "none";
+        pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
+        var arc = pw.querySelector(".parc"), hT = null, held = false;
+        function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset 1.6s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-seal" }); } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }, 1600); });
+        pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+        hint.textContent = tr("or tap here to carry it without the hold"); hint.style.pointerEvents = "auto";
+        hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; if (b.onSeal) { try { b.onSeal(ctx); } catch (er) {} } next(); };
+        return; }
+      if (b.k === "door") { lineIn(stage, b.t, false); speak(b.t);
+        var db = add(stage, "button", "ob-btn go", tr(b.btn || "Do it \u25b8")); db.style.marginTop = "12px";
+        db.onclick = function (e) { e.stopPropagation(); done = true; try { TTS.stop(); } catch (er) {} ov.remove(); try { b.rep(); } catch (er) {} };
+        return; }
+      next();
+    }
+    next();
   }
   // ===== DAY-1 LESSON CONTENT — each lesson carries real course DNA (COURSE-MAP.md): the concept names, the science, the exact moves. =====
   function firstCommit() { // THE PACT as a journey lesson (moved OUT of onboarding, David 2026-07-04) — the course's 'Initiate and Celebrate' (Module O): commit, then CELEBRATE committing (celebration wires the return). Days first, thumb-seal second, confetti third.
@@ -942,55 +937,73 @@
     }
     render();
   }
-  var DAY1_LESSONS = {
-    fd0: { kicker: "LESSON 1 · THE SWITCH", title: "Flip the Switch", ic: "ti-sun", c: "#ffc83d",
-      hook: "Every hero's story starts the same way: they stop waiting to feel ready.",
-      teach: [
-        "Rule one of the whole game: you are never exonerated. Challenges will come today, tomorrow, always — that's not a flaw in the plan, that IS the plan. The only real question each time: respond as a victim, or as a hero?",
-        "And the hero's first move is never the task. It's the SWITCH: shoulders back, one slow breath with a longer exhale, choose the state on purpose. The body leads — the mind follows it. Sixty seconds, every morning, before the world gets a vote."
-      ],
-      check: { q: "Tomorrow hits before you feel ready. The hero's first move?", opts: ["Grab the phone — ease into it", "Switch the body on — breath, posture, choose", "Wait until the feeling shows up"], right: 1, why: "Feelings follow the body. Switch first — readiness arrives after you move.", nope: "That's the victim's opening move — comfortable, and it hands the morning away." },
-      install: "I move first. The feeling follows.", repLine: "Do the Switch — 60 seconds, right now.", repBtn: "Switch on ▸", rep: function () { morningDoor(); } },
-    fd1: { kicker: "LESSON 2 · YOUR WORDS", title: "Areté", ic: "ti-cards", c: "#b07aff",
-      hook: "The Greeks had one word for a life well lived: areté — excellence. Closing the gap between who you are and who you could be.",
-      teach: [
-        "Science caught up with Aristotle: a flourishing life runs on VIRTUES in action — and your virtues aren't traits you have, they're stats you train. Used on purpose, they level. Ignored, they idle.",
-        "So every hero starts by naming their strengths. Researchers built a whole assessment for it — we'll play it as a game of eight taps. The words you pick become the words I speak back to you when you live them."
-      ],
-      check: { q: "What actually levels a virtue up?", opts: ["Believing in it deeply", "Acting it out — even small", "Reading about it daily"], right: 1, why: "A virtue only counts in motion. One small act beats a hundred intentions.", nope: "Belief and books prime it — but a virtue levels only when it moves." },
-      install: "I choose who I'm being.", repLine: "Find your five words — eight taps.", repBtn: "Play ▸", rep: function () { wordsTournament(function () { if (S.guide && S.guide.fd) { S.guide.fd.s1 = 1; } save(); try { earn(6, { label: "lesson-words" }); } catch (e) {} try { drawJourney(true); } catch (e) {} }); } },
-    fdp: { kicker: "LESSON 3 · THE PACT", title: "Initiate & Celebrate", ic: "ti-shield-check", c: "#ff8a3a",
-      hook: "The most underrated move in any journey: deciding — out loud — that you're in.",
-      teach: [
-        "The course calls it Initiate and Celebrate: first you commit, then you immediately CELEBRATE committing. That's not fluff — celebration is how the brain tags a behavior as worth returning to.",
-        "And know this going in: motivation is a campfire, not a furnace. It goes out overnight, every night, by design. A streak promise isn't 'never miss' — it's agreeing to re-light the fire each morning."
-      ],
-      check: { q: "You wake up and yesterday's motivation is gone. What does that mean?", opts: ["You failed already", "Nothing — it's biology; re-light it", "The plan was too ambitious"], right: 1, why: "The fire dies nightly for everyone. Re-lighting it IS the practice — that's the whole streak.", nope: "No verdicts here — the fire going out is the design, not the failure." },
-      install: "I re-light the fire. Every morning.", repLine: "Make the pact — pick your days, seal it with your thumb.", repBtn: "Commit ▸", rep: function () { firstCommit(); } },
-    fd2: { kicker: "LESSON 4 · ONE REAL THING", title: "Votes & Evidence", ic: "ti-player-play", c: "#36b3f0",
-      hook: "Your self-image is a thermostat: it quietly pulls your behavior back to whatever 'someone like me' does.",
-      teach: [
-        "So the game was never willpower — it's EVIDENCE. Every real act is a vote for the person you're becoming. Cast enough votes and the thermostat itself resets; then the behavior runs without a fight.",
-        "And the pros collect data, not judgment — 'an artistic archer in a lab coat.' You track what you actually do, kindly, like arrows on a target. No grades. Just arrows, and where they landed."
-      ],
-      check: { q: "What resets the thermostat?", opts: ["One big decision", "Small real acts, repeated — votes", "A perfect day"], right: 1, why: "Identity is accumulated, not declared. You just learned the app's favorite law.", nope: "Big moments fade — the thermostat only listens to repetition." },
-      install: "Small and real — that's how I vote.", repLine: "Cast a vote — one small real thing, tracked.", repBtn: "Pick it ▸", rep: function () { fdOneThing(); } },
-    fd3: { kicker: "LESSON 5 · THE GAP", title: "Response-Ability", ic: "ti-wave-sine", c: "#46e2a4",
-      hook: "“Between stimulus and response there is a space. In that space is our power to choose.” — Viktor Frankl",
-      teach: [
-        "The course calls it Response-Ability — literally the ABILITY to choose your response. The victim reacts on autopilot; the hero finds the gap between the trigger and the reaction, and chooses inside it.",
-        "It's not a metaphor — it's a few hundred milliseconds of real neurology, and it trains like a muscle. Everything in this app, every tool, every ritual, is a rep of this one skill in a different costume."
-      ],
-      check: { q: "Someone cuts you off mid-sentence. Where does the hero live?", opts: ["In the sharp comeback", "In the instant before the reaction", "In never feeling anger at all"], right: 1, why: "Heroes feel everything — they just choose inside the gap. Now go feel it once, for real.", nope: "Feelings aren't the enemy and wit isn't the skill — look between the trigger and the reply." },
-      install: "There is a space — and it's mine.", repLine: "Feel the gap once — 90 seconds, eyes open.", repBtn: "Find it ▸", rep: function () { theGapLesson(); } },
-    fd4: { kicker: "LESSON 6 · THE CLOSE", title: "Win or Learn", ic: "ti-moon-stars", c: "#ff5fa8",
-      hook: "Masterpiece days aren't found. They're framed — and the frame is the evening.",
-      teach: [
-        "'Today starts the night before.' The evening close isn't a diary — it seeds tomorrow: name the day's real win, harvest one lesson, aim one thing. Three taps that decide how tomorrow opens.",
-        "And the scoring is upside down on purpose: every day ends a WIN or a LESSON — both count. A rough day closed well scores like a victory here, because 'playing badly well' is the professional's skill."
-      ],
-      check: { q: "A rough day is ending. The masterpiece move?", opts: ["Write the day off", "Close it anyway: one win, one lesson, one aim", "Stay up late to make up for it"], right: 1, why: "A day closed kindly is a day that worked — and tomorrow opens aimed.", nope: "That's the day winning twice. The close is how you take the day back." },
-      install: "I close my days kindly. Win or learn.", repLine: "Close day one the way it deserves.", repBtn: "Close it ▸", rep: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }
+  var DAY1_LESSONS = { // ritual-lesson data — SHORT lines (max ~15 words), mirror questions with NO right answer (they learn the user), a burn, a seal, a door. Course DNA intact: Never Exonerated / Areté / Initiate & Celebrate / votes / Response-Ability / Win-or-Learn.
+    fd0: { c: "#ffc83d", beats: [
+      { k: "line", t: "You are never exonerated.", big: true, orb: true },
+      { k: "line", t: "Challenges come today, tomorrow, always. That's not a flaw in the plan — that IS the plan." },
+      { k: "mirror", q: "Where does the day usually hit you first?", save: "morningFoe", onPick: function (o) { S.profile = S.profile || {}; S.profile.morningFoe = o.tag; save(); }, opts: [
+        { t: "The phone, before I'm even up", tag: "phone", reply: "So the fight starts in your hand. Good — now we know exactly where the switch goes." },
+        { t: "My own head", tag: "head", reply: "So it starts inside. The switch was built for exactly that." },
+        { t: "Other people, first thing", tag: "people", reply: "So it comes through the door. We'll flip the switch before they arrive." },
+        { t: "The snooze button", tag: "snooze", reply: "So it starts in bed. Then that's where the switch will live." }] },
+      { k: "line", t: "The hero's first move is never the task. It's the body — shoulders back, one long exhale, state chosen." },
+      { k: "feel", t: "Try it with me — shoulders back… one slow breath out.", secs: 8 },
+      { k: "burn", t: "I need to feel ready first.", reply: "Gone. Readiness follows motion — it never leads." },
+      { k: "seal", line: "I move first. The feeling follows." },
+      { k: "door", t: "Now the real thing — the sixty-second Switch.", btn: "Switch on \u25b8", rep: function () { morningDoor(); } }] },
+    fd1: { c: "#b07aff", beats: [
+      { k: "line", t: "Areté. One Greek word: close the gap between who you are and who you could be.", big: true, orb: true },
+      { k: "mirror", q: "A year from now, someone who loves you describes what changed. Which line lands hardest?", save: "word1", reply: "That's a word we'll make true. I'll hand it back to you every time you live it.", onPick: function (o) { S.profile = S.profile || {}; S.profile.words = S.profile.words || []; if (S.profile.words.indexOf(o.tag) < 0) S.profile.words.push(o.tag); save(); }, opts: [
+        { t: "\u201cYou got so calm — nothing shakes you now.\u201d", tag: "calmer" },
+        { t: "\u201cYou actually built the thing.\u201d", tag: "builder" },
+        { t: "\u201cYou just kept showing up. Every day.\u201d", tag: "consistent" },
+        { t: "\u201cYou look… free.\u201d", tag: "freer" }] },
+      { k: "mirror", q: "And which would the younger you be proudest of?", save: "word2", reply: "Noted — it's on the board now. Two words, chosen by feel.", onPick: function (o) { S.profile = S.profile || {}; S.profile.words = S.profile.words || []; if (S.profile.words.indexOf(o.tag) < 0) S.profile.words.push(o.tag); save(); }, opts: [
+        { t: "\u201cYou got strong.\u201d", tag: "stronger" },
+        { t: "\u201cYou're really HERE now.\u201d", tag: "present" },
+        { t: "\u201cYou stayed kind through all of it.\u201d", tag: "kind" },
+        { t: "\u201cYou can focus like a laser.\u201d", tag: "focused" }] },
+      { k: "line", t: "Virtues aren't traits you have. They're stats you train — and you just picked your build." },
+      { k: "feel", t: function (ctx) { var w = ((S.profile || {}).words) || []; return tr("Breathe them in") + ": " + w.slice(-2).join(" … "); }, secs: 7 },
+      { k: "seal", line: "I choose who I'm being.", onSeal: function () { if (S.guide && S.guide.fd) S.guide.fd.s1 = 1; try { earn(6, { label: "lesson-words" }); } catch (e) {} save(); } }] },
+    fdp: { c: "#ff8a3a", beats: [
+      { k: "line", t: "The most underrated move in any journey: deciding — out loud — that you're in.", big: true, orb: true },
+      { k: "line", t: "The course calls it Initiate and Celebrate. Commit — then celebrate committing. That's how the brain learns to come back." },
+      { k: "mirror", q: "How many days in a row will you come — to start?", save: "days", reply: "Honest. Small promises kept beat grand ones broken.", onPick: function (o, ctx) { ctx.days = +o.tag; }, opts: [
+        { t: "2 — baby steps", tag: "2" }, { t: "5 — a strong start", tag: "5" }, { t: "7 — serious", tag: "7" }, { t: "14 — unstoppable", tag: "14" }] },
+      { k: "line", t: "Know this going in: motivation is a campfire, not a furnace. It dies overnight — by design. Re-lighting it IS the streak." },
+      { k: "seal", line: "I re-light the fire. Every morning.", onSeal: function (ctx) { S.profile = S.profile || {}; S.profile.pact = { ts: Date.now(), days: ctx.days || 2 }; if (S.guide && S.guide.fd) S.guide.fd.sp = 1; try { earn(10, { label: "first-commit" }); celebrateGated("#ffd24a", 1); } catch (e) {} save(); } }],
+      onDone: function () { try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else c.remove(); } catch (e) {} } },
+    fd2: { c: "#36b3f0", beats: [
+      { k: "line", t: "Your self-image is a thermostat. It pulls you back to whatever \u201csomeone like me\u201d does.", big: true, orb: true },
+      { k: "mirror", q: "Finish it honestly: \u201cSomeone like me usually…\u201d", save: "selfStory", onPick: function (o) { S.profile = S.profile || {}; S.profile.selfStory = o.tag; save(); }, opts: [
+        { t: "…starts strong, then fades", tag: "fades", reply: "Then we stack evidence that FINISHES. Small votes, counted." },
+        { t: "…puts everyone else first", tag: "others", reply: "Then some votes will be for YOU. That's allowed here." },
+        { t: "…waits for the right moment", tag: "waits", reply: "Then every tiny now-vote rewires the waiting." },
+        { t: "…comes through when it matters", tag: "clutch", reply: "Good. We'll widen \u201cwhen it matters\u201d to include Tuesdays." }] },
+      { k: "line", t: "Every real act is a vote for the person you're becoming. Enough votes — and the thermostat resets itself." },
+      { k: "seal", line: "Small and real — that's how I vote." },
+      { k: "door", t: "Cast one now — one small true thing, tracked.", btn: "Pick it \u25b8", rep: function () { fdOneThing(); } }] },
+    fd3: { c: "#46e2a4", beats: [
+      { k: "line", t: "\u201cBetween stimulus and response there is a space. In that space is our power to choose.\u201d — Frankl", big: true, orb: true },
+      { k: "mirror", q: "When you lose that space — what usually takes over?", save: "gapThief", onPick: function (o) { S.profile = S.profile || {}; S.profile.gapThief = o.tag; save(); }, opts: [
+        { t: "My temper", tag: "temper", reply: "Then the gap is where your temper loses the driver's seat." },
+        { t: "The scroll", tag: "scroll", reply: "Then the gap is the moment the phone stops choosing for you." },
+        { t: "Saying yes to everything", tag: "yes", reply: "Then the gap is where your real yes lives." },
+        { t: "Shutting down", tag: "freeze", reply: "Then the gap is the door out of the freeze." }] },
+      { k: "line", t: "It's real neurology — a few hundred milliseconds, trainable like a muscle. Every use widens it." },
+      { k: "seal", line: "There is a space — and it's mine." },
+      { k: "door", t: "Now feel it once — ninety seconds, eyes open.", btn: "Find it \u25b8", rep: function () { theGapLesson(); } }] },
+    fd4: { c: "#ff5fa8", beats: [
+      { k: "line", t: "Masterpiece days aren't found. They're framed — and the frame is the evening.", big: true, orb: true },
+      { k: "mirror", q: "How do your days usually end?", save: "dayEnd", onPick: function (o) { S.profile = S.profile || {}; S.profile.dayEnd = o.tag; save(); }, opts: [
+        { t: "Mid-scroll", tag: "scroll", reply: "Then closing on purpose will feel like getting hours back." },
+        { t: "Still working", tag: "work", reply: "Then \u201cshutdown complete\u201d will become your favorite spell." },
+        { t: "Worrying about tomorrow", tag: "worry", reply: "Then we'll aim tomorrow BEFORE the worry gets to it." },
+        { t: "I just… fall asleep", tag: "sleep", reply: "Then we'll catch the day before it slips out unnoticed." }] },
+      { k: "line", t: "Every day ends a win or a lesson — both count. A rough day closed well scores like a victory." },
+      { k: "seal", line: "I close my days kindly. Win or learn." },
+      { k: "door", t: "Close day one the way it deserves.", btn: "Close it \u25b8", rep: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }] }
   };
   function fdOneThing() { // LESSON · ONE REAL THING (Day-1 rebuild): no bento-first (punch-list #21 — the box intimidated) — three solid chips grown from YOUR onboarding answers; the full picker only if you ask. Tap → the clock starts → the rep is live.
     var P = S.profile || {}, opts = [];
@@ -6680,6 +6693,68 @@
     "you asked for movement — ten minutes is enough to count": "ты просил движения — десяти минут достаточно, чтобы засчитать",
     "you asked for focus — one protected block beats a busy day": "ты просил фокуса — один защищённый блок сильнее занятого дня",
     "a day changes from one chosen thing — any one": "день меняется от одного выбранного дела — любого одного"
+  });
+  Object.assign(I18N.ru, { // RITUAL LESSONS v904 (B4 law) — short lines, mirrors, burn, seal
+    "tap to continue": "коснись, чтобы продолжить", "One belief to leave here:": "Одно убеждение оставим здесь:", "Burn it": "Сжечь", "or tap here to carry it without the hold": "или коснись здесь, чтобы унести без удержания", "Breathe them in": "Вдохни их",
+    "You are never exonerated.": "Тебя никогда не освободят.",
+    "Challenges come today, tomorrow, always. That's not a flaw in the plan — that IS the plan.": "Испытания придут сегодня, завтра, всегда. Это не изъян плана — это И ЕСТЬ план.",
+    "Where does the day usually hit you first?": "Куда день обычно бьёт первым?",
+    "The phone, before I'm even up": "Телефон — я ещё не встал", "My own head": "Моя собственная голова", "Other people, first thing": "Другие люди, с порога", "The snooze button": "Кнопка «ещё пять минут»",
+    "So the fight starts in your hand. Good — now we know exactly where the switch goes.": "Значит, бой начинается у тебя в руке. Хорошо — теперь мы точно знаем, куда ставить переключатель.",
+    "So it starts inside. The switch was built for exactly that.": "Значит, начинается внутри. Переключатель создан ровно для этого.",
+    "So it comes through the door. We'll flip the switch before they arrive.": "Значит, входит через дверь. Мы щёлкнем переключателем до их прихода.",
+    "So it starts in bed. Then that's where the switch will live.": "Значит, начинается в постели. Тогда там переключатель и поселится.",
+    "The hero's first move is never the task. It's the body — shoulders back, one long exhale, state chosen.": "Первый ход героя — никогда не задача. Это тело: плечи назад, один долгий выдох, состояние выбрано.",
+    "Try it with me — shoulders back… one slow breath out.": "Попробуй со мной — плечи назад… один медленный выдох.",
+    "I need to feel ready first.": "Сначала мне нужно почувствовать готовность.",
+    "Gone. Readiness follows motion — it never leads.": "Сгорело. Готовность идёт за движением — она никогда не ведёт.",
+    "Now the real thing — the sixty-second Switch.": "Теперь настоящее — шестидесятисекундное Переключение.",
+    "Areté. One Greek word: close the gap between who you are and who you could be.": "Арете. Одно греческое слово: закрой зазор между тем, кто ты есть, и кем мог бы быть.",
+    "A year from now, someone who loves you describes what changed. Which line lands hardest?": "Через год тот, кто тебя любит, описывает, что изменилось. Какая фраза бьёт сильнее всего?",
+    "“You got so calm — nothing shakes you now.”": "«Ты стал таким спокойным — тебя ничто не трясёт.»", "“You actually built the thing.”": "«Ты действительно построил это.»", "“You just kept showing up. Every day.”": "«Ты просто продолжал приходить. Каждый день.»", "“You look… free.”": "«Ты выглядишь… свободным.»",
+    "That's a word we'll make true. I'll hand it back to you every time you live it.": "Это слово мы сделаем правдой. Я буду возвращать его тебе каждый раз, когда ты его живёшь.",
+    "And which would the younger you be proudest of?": "А каким больше всего гордился бы ты младший?",
+    "“You got strong.”": "«Ты стал сильным.»", "“You're really HERE now.”": "«Ты теперь по-настоящему ЗДЕСЬ.»", "“You stayed kind through all of it.”": "«Ты остался добрым через всё это.»", "“You can focus like a laser.”": "«Ты фокусируешься как лазер.»",
+    "Noted — it's on the board now. Two words, chosen by feel.": "Записано — теперь оно на доске. Два слова, выбранные чувством.",
+    "Virtues aren't traits you have. They're stats you train — and you just picked your build.": "Добродетели — не черты, что у тебя есть. Это характеристики, что ты качаешь — и ты только что выбрал свой билд.",
+    "I choose who I'm being.": "Я выбираю, кем быть.",
+    "The most underrated move in any journey: deciding — out loud — that you're in.": "Самый недооценённый ход любого пути: решить — вслух — что ты в деле.",
+    "The course calls it Initiate and Celebrate. Commit — then celebrate committing. That's how the brain learns to come back.": "Курс зовёт это «Начни и отпразднуй». Обяжись — и отпразднуй само обязательство. Так мозг учится возвращаться.",
+    "How many days in a row will you come — to start?": "Сколько дней подряд ты придёшь — для начала?",
+    "2 — baby steps": "2 — детские шаги", "5 — a strong start": "5 — сильный старт", "7 — serious": "7 — серьёзно", "14 — unstoppable": "14 — неудержимо",
+    "Honest. Small promises kept beat grand ones broken.": "Честно. Малые сдержанные обещания бьют великие нарушенные.",
+    "Know this going in: motivation is a campfire, not a furnace. It dies overnight — by design. Re-lighting it IS the streak.": "Знай заранее: мотивация — костёр, а не печь. Она гаснет за ночь — по замыслу. Зажигать заново — И ЕСТЬ серия.",
+    "I re-light the fire. Every morning.": "Я заново зажигаю огонь. Каждое утро.",
+    "Your self-image is a thermostat. It pulls you back to whatever “someone like me” does.": "Твой образ себя — термостат. Он стягивает тебя к тому, что делает «такой, как я».",
+    "Finish it honestly: “Someone like me usually…”": "Закончи честно: «Такой, как я, обычно…»",
+    "…starts strong, then fades": "…начинает сильно, потом гаснет", "…puts everyone else first": "…ставит всех остальных первыми", "…waits for the right moment": "…ждёт подходящего момента", "…comes through when it matters": "…вытягивает, когда важно",
+    "Then we stack evidence that FINISHES. Small votes, counted.": "Тогда мы копим доказательства, которые ЗАКАНЧИВАЮТ. Малые голоса, засчитанные.",
+    "Then some votes will be for YOU. That's allowed here.": "Тогда часть голосов будет ЗА ТЕБЯ. Здесь это разрешено.",
+    "Then every tiny now-vote rewires the waiting.": "Тогда каждый крошечный голос «сейчас» перепрошивает ожидание.",
+    "Good. We'll widen “when it matters” to include Tuesdays.": "Хорошо. Мы расширим «когда важно» до обычных вторников.",
+    "Every real act is a vote for the person you're becoming. Enough votes — and the thermostat resets itself.": "Каждое настоящее действие — голос за того, кем ты становишься. Достаточно голосов — и термостат сам сбрасывается.",
+    "Small and real — that's how I vote.": "Мало и по-настоящему — так я голосую.",
+    "Cast one now — one small true thing, tracked.": "Отдай один сейчас — одно малое настоящее дело, записанное.",
+    "“Between stimulus and response there is a space. In that space is our power to choose.” — Frankl": "«Между стимулом и реакцией есть пространство. В нём — наша сила выбирать.» — Франкл",
+    "When you lose that space — what usually takes over?": "Когда ты теряешь это пространство — что обычно берёт верх?",
+    "My temper": "Мой гнев", "The scroll": "Лента", "Saying yes to everything": "Согласие на всё", "Shutting down": "Отключение",
+    "Then the gap is where your temper loses the driver's seat.": "Тогда зазор — то место, где твой гнев теряет руль.",
+    "Then the gap is the moment the phone stops choosing for you.": "Тогда зазор — момент, когда телефон перестаёт выбирать за тебя.",
+    "Then the gap is where your real yes lives.": "Тогда зазор — то место, где живёт твоё настоящее «да».",
+    "Then the gap is the door out of the freeze.": "Тогда зазор — дверь из оцепенения.",
+    "It's real neurology — a few hundred milliseconds, trainable like a muscle. Every use widens it.": "Это настоящая нейрология — доли секунды, тренируемые как мышца. Каждое использование расширяет его.",
+    "There is a space — and it's mine.": "Есть пространство — и оно моё.",
+    "Now feel it once — ninety seconds, eyes open.": "Теперь почувствуй его раз — девяносто секунд, глаза открыты.",
+    "Masterpiece days aren't found. They're framed — and the frame is the evening.": "Дни-шедевры не находят. Их обрамляют — и рама это вечер.",
+    "How do your days usually end?": "Как обычно заканчиваются твои дни?",
+    "Mid-scroll": "Посреди ленты", "Still working": "Всё ещё работая", "Worrying about tomorrow": "В тревоге о завтра", "I just… fall asleep": "Я просто… засыпаю",
+    "Then closing on purpose will feel like getting hours back.": "Тогда закрытие нарочно будет ощущаться как возвращённые часы.",
+    "Then “shutdown complete” will become your favorite spell.": "Тогда «работа закрыта» станет твоим любимым заклинанием.",
+    "Then we'll aim tomorrow BEFORE the worry gets to it.": "Тогда мы нацелим завтра ДО того, как до него доберётся тревога.",
+    "Then we'll catch the day before it slips out unnoticed.": "Тогда мы поймаем день до того, как он выскользнет незамеченным.",
+    "Every day ends a win or a lesson — both count. A rough day closed well scores like a victory.": "Каждый день кончается победой или уроком — считаются оба. Тяжёлый день, закрытый хорошо, засчитывается как победа.",
+    "I close my days kindly. Win or learn.": "Я закрываю свои дни по-доброму. Победа или урок.",
+    "Close day one the way it deserves.": "Закрой первый день так, как он заслуживает."
   });
   Object.assign(I18N.ru, { // THE LESSON ENGINE + Day-1 course lessons + INSTALL beat (B4 law)
     "Teach me ▸": "Научи меня ▸", "Got it — test me ▸": "Понял — проверь меня ▸", "QUICK CHECK": "БЫСТРАЯ ПРОВЕРКА", "NOW THE REP": "ТЕПЕРЬ ПОВТОР", "Do it ▸": "Сделать ▸", "Not quite — read it again with the body in mind.": "Не совсем — перечитай, держа в уме тело.",
