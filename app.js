@@ -4070,6 +4070,8 @@
     var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";
     if (profile().lowEnergy) { var st = add(w, "button", "tf-chip"); st.innerHTML = '<i class="ti ti-wind" style="color:' + DOM.restore.light + '"></i> Settle'; st.onclick = function () { try { breathwork(4); } catch (e) {} }; } // ENERGY-FIRST GATE: low fuel → lead with one body reset before the cognitive doors (suggest, never wall)
     var c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ti-feather" style="color:' + DOM.restore.light + '"></i> Journal'; c.onclick = openJournal;
+    // ORGAN F (DEPTH WAVE 2): the Morning Door — a 60-sec switch into the day, offered in the morning phase before the deeper bookend
+    if (typeof phase === "function" && phase() === "morning") { var md = add(w, "button", "tf-chip"); md.innerHTML = '<i class="ti ti-sun" style="color:#ffc83d"></i> ' + tr("Switch in"); md.onclick = function () { morningDoor(); }; }
     // AM / PM bookend doors (David 2026-06-28) — greet, never auto-trap; a one-tap chip opens the stage
     var am = add(w, "button", "tf-chip"); am.innerHTML = '<i class="ti ti-sun-high" style="color:#ffc83d"></i> Morning'; am.onclick = function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); };
     var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
@@ -4646,13 +4648,13 @@
     add(breath, "div", "tfs-sub", tr("one breath — let the exhale run long")).style.opacity = ".85";
     var mantra = (S.mantra && S.mantra.line) || "";
     if (mantra) {
-      add(card, "div", null, "“" + esc(mantra) + "”").setAttribute("style", "text-align:center;font-family:var(--bub);font-size:19px;font-weight:800;color:#ffe3f1;margin:8px 0 2px;line-height:1.35;");
+      add(card, "div", null, "“" + esc(tr(mantra)) + "”").setAttribute("style", "text-align:center;font-family:var(--bub);font-size:19px;font-weight:800;color:#ffe3f1;margin:8px 0 2px;line-height:1.35;");
       var best = pmBestCharge(k);
       if (best) add(card, "div", "tfs-sub", tr("today, that was true when you did") + ": " + esc(best)).setAttribute("style", "text-align:center;font-size:12.5px;color:#c8a6d8;");
     } else {
       add(card, "div", "tfs-sub", tr("Want a line of your own — one you'll install each night? Three minutes, once.")).setAttribute("style", "text-align:center;line-height:1.5;margin-top:6px;");
-      var b = add(card, "button", "tf-chip"); b.style.cssText = "margin:8px auto 0;display:block;"; b.innerHTML = '<i class="ti ti-spiral"></i> ' + tr("Make my line");
-      b.onclick = function () { try { selfHypnosis(); } catch (e) {} };
+      var b = add(card, "button", "tf-chip"); b.style.cssText = "margin:8px auto 0;display:block;"; b.innerHTML = '<i class="ti ti-brain"></i> ' + tr("Make my line");
+      b.onclick = function () { try { reprogramTool(); } catch (e) { try { selfHypnosis(); } catch (e2) {} } }; // ORGAN I: born in Rewire → offerKeepMantra → S.mantra → installed here tomorrow night
     }
   }
   // ---- BEAT 6: DEAL — one wisdom card matched to the day's shape (never a modal — attached to this moment). rebound day → SN-222; hard day → SN-111; else pm-close. First-ever aligned TLM → the SN-091 identity-votes card, finally dealt.
@@ -6400,6 +6402,24 @@
     "here's your evidence": "вот твоё доказательство", "You already proved you can — you did": "Ты уже доказал, что можешь — ты сделал", "You've shown up before. The doubt is a feeling, not a fact.": "Ты приходил и раньше. Сомнение — это чувство, а не факт.", "one small step ▶": "один малый шаг ▶", "make it new": "сделай это новым", "Boredom's a signal, not a verdict. Swap the shape, keep the aim.": "Скука — сигнал, а не приговор. Смени форму, оставь цель.", "pick a fresh way ▶": "выбери свежий способ ▶", "close": "закрыть",
     "+3 · best move of the day": "+3 · лучший ход дня", "Caught an urge": "Поймал позыв", "You logged the urge instead of feeding it. That's the whole skill.": "Ты записал позыв, а не поддался ему. В этом весь навык.", "Want to spend that energy on something instead?": "Направить эту энергию на что-то другое?", "Swap it ▶": "Заменить ▶", "just noting it": "просто отмечаю", "that urge": "тот позыв"
   });
+  Object.assign(I18N.ru, { // ORGAN I — Rewire→Mantra (B4 law)
+    "Keep one line as yours?": "Оставить одну строку своей?", "the one you just felt — I'll whisper it back each night, with your own evidence.": "ту, что ты только что почувствовал — я буду шептать её каждую ночь, с твоими же доказательствами.", "your line is set — I'll install it tonight": "твоя строка задана — установлю её сегодня ночью",
+    "I am calm and clear.": "Я спокоен и ясен.", "I am stronger than the resistance.": "Я сильнее сопротивления.", "I build, a little, every day.": "Я строю — понемногу, каждый день.", "I show up, especially when it's hard.": "Я прихожу — особенно когда трудно.", "I am here, now, on this.": "Я здесь, сейчас, на этом.", "I choose — and I am free.": "Я выбираю — и я свободен.", "I start before I feel ready.": "Я начинаю прежде, чем почувствую готовность.", "I am becoming who I choose.": "Я становлюсь тем, кого выбираю.", "I can do hard things.": "Я могу трудное."
+  });
+  Object.assign(I18N.ru, { // ORGAN F — Morning Door (B4 law)
+    "Morning": "Утро", "Switch in": "Включиться", "the switch into your day · 60 sec": "переключение в день · 60 сек",
+    "A tiny switch from sleep-you to day-you: three body beats, one breath on a word you're becoming, then I read your energy and set my voice for the day.": "Крошечное переключение из сонного тебя в дневного: три телесных такта, один вдох на слове, которым ты становишься, — потом я читаю твою энергию и настраиваю голос на день.",
+    "Roll the shoulders back, once.": "Отведи плечи назад, один раз.", "Unclench the jaw, let it drop loose.": "Разожми челюсть, отпусти её.", "Feet flat — feel the floor take your weight.": "Стопы ровно — почувствуй, как пол берёт твой вес.", "Inhale your word; exhale, and settle into the day.": "Вдохни своё слово; выдохни — и осядь в день.",
+    "The body leads the mind. A short switch plus morning light tells your whole system the day has begun — cortisol, focus, and mood fall in behind it.": "Тело ведёт ум. Короткое переключение плюс утренний свет говорят всей системе, что день начался — кортизол, фокус и настроение выстраиваются следом.",
+    "Roll your shoulders back": "Отведи плечи назад", "once, slow — let sleep fall off them": "один раз, медленно — пусть сон спадёт с них", "Unclench the jaw": "Разожми челюсть", "drop it loose, soften the face": "отпусти её, смягчи лицо", "Feet flat on the floor": "Стопы ровно на полу", "feel it take your weight — you're here now": "почувствуй, как он берёт твой вес — ты здесь", "Inhale": "Вдох", "breathe the word in… exhale, and settle into the day": "вдохни слово… выдохни и осядь в день", "Get some light if you can": "Поймай немного света, если можешь", "morning light sets the whole day's clock": "утренний свет заводит часы всего дня", "I'm in ✓": "Я в дне ✓",
+    "calm": "спокойствие", "strong": "сила", "the builder": "созидатель", "steady": "постоянство", "present": "присутствие", "free": "свобода", "here": "здесь", "brave": "храбрость", "kind": "доброта", "focus": "фокус", "discipline": "дисциплина"
+  });
+  Object.assign(I18N.ru, { // ORGAN H3 — Your Words tournament + vocabulary expansion (B4 law)
+    "MORE YOU": "БОЛЬШЕ ТЫ", "Which is more you?": "Что больше похоже на тебя?", "YOUR WORDS": "ТВОИ СЛОВА", "This is who you're becoming.": "Вот кем ты становишься.", "I'll speak these back to you — in your wins, your line, your mornings.": "Я буду возвращать их тебе — в твоих победах, в твоей строке, в твоих утрах.", "These are mine ✓": "Это мои ✓", "your words are set": "твои слова заданы",
+    "Brave": "Храбрый", "Kind": "Добрый", "Focused": "Сосредоточенный", "Disciplined": "Дисциплинированный", "Present": "Присутствующий",
+    "That's the brave one.": "Вот храбрый.", "That's kindness.": "Это доброта.", "That's focus.": "Это фокус.", "That's the disciplined one.": "Вот дисциплинированный.",
+    "I do the brave thing.": "Я делаю храброе.", "I lead with kindness.": "Я веду с добротой.", "I am here, on this, now.": "Я здесь, на этом, сейчас.", "I keep my word to myself.": "Я держу слово перед собой."
+  });
   function deckMode() { var P = S.profile || {}; if (P.theoryMode === "off") return "off"; if (P.theoryMode === "proverbs") return "proverbs"; if (P.theoryMode && P.theoryMode.indexOf("cards") === 0) return "cards"; var lvl = ((S.guide || {}).appetiteState || {}).level; return lvl === "floor" ? "proverbs" : "cards"; }
   function _deckAge(id) { var dk = (S.deck && S.deck.dealt) ? S.deck.dealt[id] : null; return dk ? daysSince(dk) : 99999; } // never-dealt = effectively infinite age → dealt first
   function deckPick(moment) { // PREDICTABLE rotation (law 7: no variable-ratio) — oldest / never-dealt first, pool-order tiebreak
@@ -6425,7 +6445,7 @@
   var TLM_PHRASES = ["That's like me.", "That's like me. ✦", "That's so like me."];
   var _tlmTimer = null, _tlmWordI = 0;
   // ORGAN E (DEPTH BUILD WAVE 1): stamp aligned completions with the user's OWN year-word ("that's the builder") — rotating, so the reward names WHO they're becoming, not a generic ping.
-  var TLM_WORD_LINE = { calmer: "That's the calm one.", stronger: "That's the strong one.", builder: "That's the builder.", consistent: "That's the consistent one.", present: "That's presence.", freer: "That's freedom." };
+  var TLM_WORD_LINE = { calmer: "That's the calm one.", stronger: "That's the strong one.", builder: "That's the builder.", consistent: "That's the consistent one.", present: "That's presence.", freer: "That's freedom.", brave: "That's the brave one.", kind: "That's kindness.", focused: "That's focus.", disciplined: "That's the disciplined one." };
   function pickTLM(domain) {
     var words = ((S.profile || {}).words) || [];
     if (words.length) { var w = words[_tlmWordI % words.length]; _tlmWordI++; if (TLM_WORD_LINE[w]) return tr(TLM_WORD_LINE[w]); }
@@ -9359,9 +9379,75 @@
       onPlay: cfg.pick ? function (t) { if (cfg.onPick) cfg.onPick(t.map(function (x) { return { k: x.k, d: x.d }; })); } : function (t) { playTrack(t, cfg.onFinish); }
     });
   }
+  // ===== ORGAN I · REWIRE→MANTRA WIRING (DEPTH BUILD WAVE 1/2): the mantra law — a line is never typed into a field; it is BORN inside a Rewire session (feeling attached) and INSTALLED nightly at the PM INSTALL beat (already built) with the user's OWN evidence as the picture. After a completed Rewire, offer to KEEP the line the user just felt — picked from candidates seeded by their year-words, never a blank field. =====
+  function mantraCandidates() {
+    var words = ((S.profile || {}).words) || [], MAP = { calmer: "I am calm and clear.", stronger: "I am stronger than the resistance.", builder: "I build, a little, every day.", consistent: "I show up, especially when it's hard.", present: "I am here, now, on this.", freer: "I choose — and I am free.", brave: "I do the brave thing.", kind: "I lead with kindness.", focused: "I am here, on this, now.", disciplined: "I keep my word to myself." };
+    var out = []; words.forEach(function (w) { if (MAP[w] && out.indexOf(MAP[w]) < 0) out.push(MAP[w]); });
+    ["I start before I feel ready.", "I am becoming who I choose.", "I can do hard things."].forEach(function (l) { if (out.indexOf(l) < 0) out.push(l); });
+    return out.slice(0, 5);
+  }
+  function offerKeepMantra() {
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    add(body, "div", "ob-q", tr("Keep one line as yours?"));
+    add(body, "div", "ob-sb", tr("the one you just felt — I'll whisper it back each night, with your own evidence.")).style.cssText = "text-align:center;margin-top:6px;";
+    var w = add(body, "div", "obv-rows"); w.style.maxWidth = "400px";
+    mantraCandidates().forEach(function (line) {
+      var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", "#b07aff"); r.style.setProperty("--ost", tfStripeDoor("#b07aff"));
+      var cur = S.mantra && S.mantra.line === line; if (cur) r.classList.add("on");
+      r.innerHTML = '<i class="ti ti-quote oi"></i><span class="ol">' + esc(tr(line)) + '</span>' + (cur ? '<i class="ti ti-check ock"></i>' : '');
+      r.onclick = function () { S.mantra = { line: line, bornK: todayK(), method: "rewire" }; save(); ov.remove(); try { toast("✦ " + tr("your line is set — I'll install it tonight")); } catch (e) {} };
+    });
+    add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
+  }
+  // ===== ORGAN H3 · YOUR WORDS TOURNAMENT (DEPTH BUILD WAVE 2): the VIA character-strengths assessment as a Duolingo-style game — forced-choice pairs narrow the field to your top 5. Feeds TLM pings + mantra candidates + the morning word-prime + the guardian's whole vocabulary. =====
+  var VIA_POOL = [["calmer", "Calmer", "ti-wind", "#46e2a4"], ["stronger", "Stronger", "ti-barbell", "#ff8a3a"], ["builder", "A builder", "ti-tools", "#b07aff"], ["consistent", "Consistent", "ti-checkbox", "#36b3f0"], ["present", "Present", "ti-eye", "#ff5fa8"], ["freer", "Freer", "ti-feather", "#ffd24a"], ["brave", "Brave", "ti-flame", "#ff5f5f"], ["kind", "Kind", "ti-heart", "#ff8fc4"], ["focused", "Focused", "ti-target", "#2ab8c4"], ["disciplined", "Disciplined", "ti-shield", "#7f9bc4"]];
+  function wordsTournament(onDone) {
+    var pool = VIA_POOL.slice(), wins = {}; pool.forEach(function (o) { wins[o[0]] = 0; });
+    ((S.profile || {}).words || []).forEach(function (w) { if (wins[w] != null) wins[w] = 1; }); // prior picks get a head start
+    var ROUNDS = 8, r = 0, seed = 3, lastKey = "";
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
+    var bar = add(card, "div"); bar.style.cssText = "height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:8px 14px 0;overflow:hidden;"; var fill = add(bar, "div"); fill.style.cssText = "height:100%;background:#b07aff;width:0;transition:width .3s;";
+    var body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; } // deterministic-ish pairing (no Math.random dependency)
+    function pickPair() { var a, b, tries = 0; do { a = pool[Math.floor(rnd() * pool.length)]; b = pool[Math.floor(rnd() * pool.length)]; tries++; } while ((a === b || (a[0] + b[0]) === lastKey || (b[0] + a[0]) === lastKey) && tries < 40); lastKey = a[0] + b[0]; return [a, b]; }
+    function round() {
+      body.innerHTML = ""; foot.innerHTML = ""; fill.style.width = Math.round(r / ROUNDS * 100) + "%";
+      if (r >= ROUNDS) return finishT();
+      add(body, "div", "ob-kick", tr("MORE YOU")); add(body, "div", "ob-q", tr("Which is more you?"));
+      var w = add(body, "div"); w.style.cssText = "display:flex;gap:12px;margin-top:16px;width:100%;max-width:360px;";
+      pickPair().forEach(function (o) { var t = add(w, "button", "obv-tile"); t.style.flex = "1"; t.style.setProperty("--oc", o[3]); t.style.setProperty("--ost", tfStripeDoor(o[3])); t.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>'; t.onclick = function () { wins[o[0]]++; r++; round(); }; });
+      var sk = add(foot, "button", "ob-skip", tr("skip")); sk.onclick = function () { r++; round(); };
+    }
+    function finishT() {
+      var ranked = pool.slice().sort(function (a, b) { return wins[b[0]] - wins[a[0]]; }).slice(0, 5);
+      body.innerHTML = ""; foot.innerHTML = ""; fill.style.width = "100%";
+      add(body, "div", "ob-kick", tr("YOUR WORDS")); add(body, "div", "ob-q", tr("This is who you're becoming."));
+      var chips = add(body, "div", "ob-echips"); ranked.forEach(function (o) { var c = add(chips, "span", "ob-echip"); c.style.setProperty("--oc", o[3]); c.innerHTML = '<i class="ti ' + o[2] + '"></i>' + esc(tr(o[1])); });
+      add(body, "div", "ob-sb", tr("I'll speak these back to you — in your wins, your line, your mornings.")).style.cssText = "text-align:center;margin-top:12px;";
+      add(foot, "button", "ob-btn go", tr("These are mine ✓")).onclick = function () { S.profile = S.profile || {}; S.profile.words = ranked.map(function (o) { return o[0]; }); save(); ov.remove(); if (onDone) onDone(); try { toast("✦ " + tr("your words are set")); } catch (e) {} };
+    }
+    round();
+  }
+  // ===== ORGAN F · MORNING DOOR unified (DEPTH BUILD WAVE 2): the switch from sleep-you to day-you — 3 body beats + a 1-breath word-prime (inhale a word you're becoming, exhale settle — Virtue Meditation rung 1, the course's #1 practice at its smallest dose) → the gauge as the voice gate for the day. Morning-light-first law in the copy. Floats to real wake (time-symmetry — a 12:30 wake isn't shamed). =====
+  function morningDoor(onDone) {
+    var words = ((S.profile || {}).words) || [], WMAP = { calmer: "calm", stronger: "strong", builder: "the builder", consistent: "steady", present: "present", freer: "free", brave: "brave", kind: "kind", focused: "focus", disciplined: "discipline" };
+    var word = words.length ? (WMAP[words[0]] || words[0]) : "here";
+    beatRunner({
+      id: "morningdoor", title: tr("Morning"), logTitle: "Morning switch", catK: "restore", color: "#ffc83d", spark: 5, voiceProf: VPROF.relax,
+      intro: { tag: tr("the switch into your day · 60 sec"), what: tr("A tiny switch from sleep-you to day-you: three body beats, one breath on a word you're becoming, then I read your energy and set my voice for the day."), how: [tr("Roll the shoulders back, once."), tr("Unclench the jaw, let it drop loose."), tr("Feet flat — feel the floor take your weight."), tr("Inhale your word; exhale, and settle into the day.")], why: tr("The body leads the mind. A short switch plus morning light tells your whole system the day has begun — cortisol, focus, and mood fall in behind it.") },
+      beats: [
+        { lab: tr("Roll your shoulders back"), sub: tr("once, slow — let sleep fall off them"), orb: "" },
+        { lab: tr("Unclench the jaw"), sub: tr("drop it loose, soften the face"), orb: "out" },
+        { lab: tr("Feet flat on the floor"), sub: tr("feel it take your weight — you're here now"), orb: "" },
+        { lab: tr("Inhale") + ": “" + esc(tr(word)) + "”", sub: tr("breathe the word in… exhale, and settle into the day"), orb: "in" },
+        { lab: tr("Get some light if you can"), sub: tr("morning light sets the whole day's clock"), orb: "" }
+      ], lastLabel: tr("I'm in ✓"),
+      onFinish: function (skipped) { if (onDone) onDone(); if (!skipped) { try { S.gaugeK = null; gaugeOpen(function () {}); } catch (e) {} } } // → the gauge = the day's voice gate
+    });
+  }
   function reprogramTool(onDone) {
     beatRunner({
-      onFinish: function () { if (onDone) onDone(); },
+      onFinish: function (skipped) { if (onDone) onDone(); if (!skipped) setTimeout(function () { offerKeepMantra(); }, 450); }, // ORGAN I: a completed Rewire → keep the line as your nightly mantra
       id: "reprogram", title: "Rewire", logTitle: "Rewire", catK: "love", color: "#9a5cf0", spark: 7, voiceProf: VPROF.relax,
       intro: {
         tag: "install a new self-belief · 2–3 min",
@@ -9942,7 +10028,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
