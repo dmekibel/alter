@@ -1983,7 +1983,12 @@
   .ob-ov[data-sec="0"]::before{ opacity:1; background:radial-gradient(78% 90% at 50% 0%, rgba(176,122,255,.26), transparent 68%); }
   .ob-ov[data-sec="1"]::before{ opacity:1; background:radial-gradient(78% 90% at 50% 0%, rgba(255,138,58,.22), transparent 68%); }
   .ob-ov[data-sec="2"]::before{ opacity:1; background:radial-gradient(78% 90% at 50% 0%, rgba(95,168,255,.24), transparent 68%); }
-  .ob-ov[data-sec="burst"]{ background:repeating-conic-gradient(from 0deg at 50% 44%, rgba(255,210,74,.13) 0deg 9deg, transparent 9deg 18deg), radial-gradient(1.5px 1.5px at 20% 18%,rgba(255,255,255,.5) 99%,transparent), linear-gradient(175deg,#1c0e2e,#160510 78%); } /* the ВСПЫШКА — gold rays on the SAME twilight (orange room retired, David 2026-07-04) */
+  .ob-ov[data-sec="burst"]{ background:radial-gradient(1.5px 1.5px at 20% 18%,rgba(255,255,255,.5) 99%,transparent), linear-gradient(175deg,#1c0e2e,#160510 78%); } /* the ВСПЫШКА twilight — the gold rays moved to a SPINNING ::after (David device 2026-07-04: the rays must rotate around the center; ::before stays the aurora layer) */
+  .ob-ov[data-sec="burst"]::after{ content:""; position:absolute; inset:-60%; background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,210,74,.13) 0deg 9deg, transparent 9deg 18deg); animation:obRaySpin 48s linear infinite; pointer-events:none; }
+  .ob-ov > .ob-card{ position:relative; z-index:1; } /* content always above the spinning ray layer */
+  @keyframes obRaySpin{ to{ transform:rotate(360deg); } }
+  .obv-gate .gspin{ position:absolute; inset:-58%; animation:obRaySpin 38s linear infinite; z-index:0; pointer-events:none; } /* the gate card's ray/foil pattern rotates around its center — the pack comes ALIVE (punch-list, David 2026-07-04) */
+  .obv-gate .gfoil, .obv-gate .gic, .obv-gate .gk, .obv-gate .gt{ position:relative; z-index:1; }
   .obv-bar{ display:flex; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 0; align-items:center; }
   .obv-seg{ flex:1; display:flex; flex-direction:column; gap:5px; }
   .obv-seglbl{ font-family:"Jost",sans-serif; font-weight:800; font-size:11px; letter-spacing:1.1px; color:#7a5e72; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -2651,6 +2656,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=900"></script>
+  <script src="app.js?v=901"></script>
 </body>
 </html>

@@ -797,53 +797,80 @@
     add(body, "div", "ob-sb", learned.length ? "Here's what I learned about you: " + learned.join(" · ") + ". Tomorrow I use all of it." : _fb);
     add(foot, "button", "ob-btn go", "Goodnight ▸").onclick = function () { ov.remove(); try { celebrateGated("#9a7cff", 1); } catch (e) {} };
   }
-  function firstDayNodes() { // returns the stone trail while first-day is live, else null
+  function firstDayNodes() { // ===== DAY 1 = THE FIRST LESSON (rebuilt ground-up, David device notes 2026-07-04): five lessons, five color worlds, ZERO typing — only taps. Each lesson is one real REP of a built organ at starter dose, and each ends by NAMING the mechanism (the deck card deals AFTER it worked — Conway-Smith: reps first, theory after). The arc IS the whole app in miniature: switch the body → choose who you're becoming → do one real thing → find the GAP (the one skill under everything, taught explicitly) → close the day. First impressions carry the journey. =====
     var fd = (S.guide || {}).fd; if (!fd || fd.done) return null;
     var k = todayK(), nodes = [];
-    if (fd.k && fd.k !== k) { fd.done = true; try { save(); } catch (e) {} return null; } // the stones are a DAY-ONE trail: an unfinished first day hatches quietly at day end (no ceremony) — day 2 must open with the callback, never with stale day-1 homework (2026-07-03)
-    var s0 = !!fd.s0 || (S.timers || []).some(function (t) { return t.dayK === k; }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // exclude the onboarding chore + the onboarding breath + mood stamps from counting as stone-0's real track (punch-list #20: the first stone showed pre-checked because the onboarding breath log counted)
-    var amB = (S.bk || {})[k] ? (S.bk[k].am || {}) : {};
-    var s1 = !!fd.s1 || !!amB.done;
-    var s2 = !!fd.s2, s3 = !!fd.s3;
+    if (fd.k && fd.k !== k) { fd.done = true; try { save(); } catch (e) {} return null; } // an unfinished first day hatches quietly at day end — day 2 opens with the callback, never stale homework
+    var s0 = !!fd.s0; // L1 · the Switch (morningDoor completion marks it)
+    var s1 = !!fd.s1 || (((S.profile || {}).words) || []).length >= 5; // L2 · Your Words (the tournament)
+    var s2 = !!fd.s2 || (S.timers || []).some(function (t) { return t.dayK === k && !/morning switch|reflection|the gap/i.test(t.title || ""); }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath|morning switch|the gap/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // L3 · one REAL tracked thing (lesson logs excluded — a lesson isn't the rep)
+    var s3 = !!fd.s3; // L4 · the Gap
     var pmB = (S.bk || {})[k] ? (S.bk[k].pm || {}) : {};
-    var s4 = !!fd.s4 || !!pmB.done;
+    var s4 = !!fd.s4 || !!pmB.done; // L5 · the Close (PM Close v2, floor dose — taps only)
+    if (s4 && !fd.done) { fd.s4 = 1; fd.done = true; try { save(); } catch (e) {} } // lesson five closes day one; tomorrow the adaptive path takes over — same voice, no ceremony
     var evening = new Date().getHours() >= 17;
-    nodes.push({ key: "fd0", emoji: "▶", icon: "ti-player-play", title: "What are you doing right now?", _lead: !s0,
-      line: s0 ? "Tracked — that's the whole game, and you just played it." : "Anything real counts. Track one thing — I'll hold it.",
-      color: DOM.focus.c, done: s0, act: jpTrackNow });
-    nodes.push({ key: "fd1", icon: "ti-user-star", title: "Who are you today?", locked: !s0,
-      line: s1 ? "Noted. Today bends around that." : "One word — and one thing that would make today a win.",
-      color: "#7c3aed", done: s1, act: function () {
-        if (!s0) { toast("one stone at a time — the glowing one first"); return; }
-        fdSheet("Who do you want to be today?", "one word — and one thing that would make today a win",
-          ["one word (calm, brave, steady…)", "the one thing"], function (vals) {
-            var word = vals[0], one = vals[1], reca = bk(todayK()); reca.am = reca.am || {};
-            if (word) { reca.am.identity = [word]; S.profile.todayIdentity = [word]; }
-            if (one) reca.am.oneThing = one;
-            reca.am.ts = Date.now(); reca.am.done = true; S.guide.fd.s1 = 1;
-            save(); try { earn(6, { label: "first-day" }); } catch (e) {}
-            toast(word ? "✦ " + word + ". Then today bends around that." : "✦ noted.");
-            drawJourney(true);
-          });
+    var _leadSet = false; function lead(done, locked) { if (done || locked || _leadSet) return false; _leadSet = true; return true; }
+    nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Lesson 1 · The Switch"), _lead: lead(s0, false),
+      line: s0 ? tr("Switched on. The body leads the mind — and you led the body.") : tr("60 seconds. Wake the body, breathe your word, step into the day."),
+      color: "#ffc83d", done: s0, act: function () { morningDoor(); } });
+    nodes.push({ key: "fd1", icon: "ti-cards", title: tr("Lesson 2 · Your Words"), locked: !s0, _lead: lead(s1, !s0),
+      line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Eight taps — find the five words you're becoming."),
+      color: "#b07aff", done: s1, act: function () {
+        if (!s0) { toast(tr("one lesson at a time — the glowing one first")); return; }
+        wordsTournament(function () { S.guide.fd.s1 = 1; save(); try { earn(6, { label: "lesson-words" }); } catch (e) {} try { drawJourney(true); } catch (e) {} });
       } });
-    nodes.push({ key: "fd2", icon: "ti-wand", title: "Shape today — my offer", locked: !s1,
-      line: s2 ? "Shaped. Small and real." : "I'll propose a tiny day from what you've told me. You adjust.",
-      color: DOM.focus.c, done: s2, act: function () { if (!s1) { toast("one stone at a time — the glowing one first"); return; } fdPropose(); } });
-    // fd3 "Come see your world" REMOVED (punch-list #26, David device 2026-07-04): it led to the game pane which isn't ready — a first-day stone must never dead-end. Returns when the world is worth visiting.
-    nodes.push({ key: "fd4", icon: "ti-moon-stars", title: "One honest line", locked: !evening && !s4,
-      line: s4 ? "Day one, closed. See you tomorrow." : evening ? "About today. A line is enough." : "tonight — it'll glow when it's time",
-      color: DOM.restore.c, done: s4, act: function () {
-        if (!evening && !s4) { toast("tonight — I'll be here"); return; }
-        fdSheet("One honest line about today.", "no grade, no judgement — just what's true",
-          ["today was…"], function (vals) {
-            var line = vals[0]; var reca = bk(todayK()); reca.pm = reca.pm || {};
-            if (line) reca.pm.reflect = line;
-            reca.pm.ts = Date.now(); reca.pm.done = true; S.guide.fd.s4 = 1; S.guide.fd.done = true;
-            save(); try { earn(8, { label: "first-day-close" }); } catch (e) {}
-            drawJourney(true); setTimeout(function () { fdFinale(S.guide.fd); }, 450);
-          });
+    nodes.push({ key: "fd2", icon: "ti-player-play", title: tr("Lesson 3 · One Real Thing"), locked: !s1, _lead: lead(s2, !s1),
+      line: s2 ? tr("Tracked. Real beats planned — every time.") : tr("Not a plan — a rep. Pick one small true thing; I'll hold the clock."),
+      color: "#36b3f0", done: s2, act: function () { if (!s1) { toast(tr("one lesson at a time — the glowing one first")); return; } fdOneThing(); } });
+    nodes.push({ key: "fd3", icon: "ti-wave-sine", title: tr("Lesson 4 · The Gap"), locked: !s2, _lead: lead(s3, !s2),
+      line: s3 ? tr("You found it. Every use widens it.") : tr("The one skill under everything — 90 seconds, eyes open."),
+      color: "#46e2a4", done: s3, act: function () { if (!s2) { toast(tr("one lesson at a time — the glowing one first")); return; } theGapLesson(); } });
+    nodes.push({ key: "fd4", icon: "ti-moon-stars", title: tr("Lesson 5 · The Close"), locked: !evening && !s4, _lead: lead(s4, !evening && !s4),
+      line: s4 ? tr("Day one, closed. This is the shape of every day — see you tomorrow.") : evening ? tr("Close the day the way it deserves — taps, not typing.") : tr("tonight — it'll glow when it's time"),
+      color: "#ff5fa8", done: s4, act: function () {
+        if (!evening && !s4) { toast(tr("tonight — I'll be here")); return; }
+        enterStage("pm", { trackTitle: "Reflection", byTap: true }); // Lesson 5 = the real PM Close v2 (win chips → rating → deal) — floor dose is pure taps; the typed fdSheet is retired (no typing, ever)
       } });
     return nodes;
+  }
+  function fdOneThing() { // LESSON 3 · ONE REAL THING (Day-1 rebuild): no bento-first (punch-list #21 — the box intimidated) — three solid chips grown from YOUR onboarding answers; the full picker only if you ask. Tap → the clock starts → the rep is live.
+    var P = S.profile || {}, opts = [];
+    (P.starter || []).slice(0, 3).forEach(function (it) { opts.push({ t: it.t, ic: it.ic || "ti-star", c: "#36b3f0" }); });
+    if (!opts.length) opts = [{ t: "A 10-minute walk", ic: "ti-walk", c: "#46e2a4" }, { t: "One glass of water", ic: "ti-droplet", c: "#5fa8ff" }, { t: "Two minutes of tidying", ic: "ti-sparkles", c: "#ff8a3a" }];
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    add(body, "div", "ob-kick", tr("LESSON 3 · ONE REAL THING"));
+    add(body, "div", "ob-q", tr("Pick one. Small on purpose."));
+    add(body, "div", "ob-sb", tr("a plan is a promise — doing is a vote. I'll hold the clock while you go.")).style.cssText = "text-align:center;margin-top:6px;";
+    var w = add(body, "div", "obv-rows"); w.style.maxWidth = "400px"; w.style.marginTop = "14px";
+    opts.forEach(function (o) {
+      var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", o.c); r.style.setProperty("--ost", tfStripeDoor(o.c));
+      r.innerHTML = '<i class="ti ' + o.ic + ' oi"></i><span class="ol">' + esc(tr(o.t)) + '</span>';
+      r.onclick = function () { ov.remove(); try { startTimer({ title: o.t, catK: "energy", color: o.c }); } catch (e) {} try { toast("✦ " + tr("tracking — go do it, I've got the clock")); } catch (e) {} try { renderAll(); drawJourney(true); } catch (e) {} };
+    });
+    var other = add(w, "button", "obv-row"); other.style.setProperty("--oc", "#9a8cc4"); other.style.setProperty("--ost", tfStripeDoor("#9a8cc4"));
+    other.innerHTML = '<i class="ti ti-dots oi"></i><span class="ol">' + esc(tr("Something else…")) + '</span>';
+    other.onclick = function () { ov.remove(); try { jpTrackNow(); } catch (e) {} };
+    add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
+  }
+  function theGapLesson() { // LESSON 4 · THE GAP (Day-1 rebuild): the ONE-SKILL THESIS taught explicitly on day one — notice the gap, choose inside it. A 90-second eyes-open rep; the SN-227 card names the mechanism only AFTER it was felt (Conway-Smith: the rep makes the theory land).
+    beatRunner({
+      id: "gap", title: tr("The Gap"), logTitle: "The Gap", catK: "love", color: "#46e2a4", spark: 8, voiceProf: VPROF.relax,
+      intro: { tag: tr("the one skill · 90 sec"),
+        what: tr("Between everything that happens and what you do next, there's a real, physical instant — a gap. Most people live whole lives without seeing it. Everything in this app is training for that one instant."),
+        how: [tr("Read, breathe, tap — nothing to get right."), tr("Feel the pause between an urge and an action."), tr("Choose the next minute on purpose — that's the rep."), tr("Then I'll name what you just did.")],
+        why: tr("Between trigger and reaction, the thinking brain can override the alarm brain — a few hundred milliseconds, trainable like a muscle. Noticing the gap IS the skill, and every use widens it.") },
+      beats: [
+        { lab: tr("Something always happens next"), sub: tr("a ping, an itch, a thought — life fires triggers at you all day long"), orb: "" },
+        { lab: tr("But there's a gap"), sub: tr("right after the trigger, before your reaction — a real instant. It's there every single time."), orb: "" },
+        { lab: tr("One breath — stand in it"), sub: tr("breathe in slow. This pause you're feeling right now? You're standing inside the gap."), orb: "in" },
+        { lab: tr("Now choose, on purpose"), sub: tr("decide the next minute — anything, as long as YOU choose it. Choosing inside the gap is the whole skill."), orb: "out" },
+        { lab: tr("That was a rep"), sub: tr("you noticed, you chose. Everything else here is this same move in a hundred costumes."), orb: "" }
+      ], lastLabel: tr("I felt it ✓"),
+      onFinish: function (skipped) { if (skipped) return;
+        try { if (S.guide && S.guide.fd) S.guide.fd.s3 = 1; save(); } catch (e) {}
+        setTimeout(function () { try { var c = mlCard(); if (renderDeckCard(c, "catch")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else { c.remove(); try { drawJourney(true); } catch (e) {} } } catch (e) { try { drawJourney(true); } catch (e2) {} } }, 450);
+      }
+    });
   }
   function fdPropose() { // F1's simple propose (the F2 engine upgrades this): built from energy + room + word + one-thing, count scales by energy
     var P = S.profile || {}, k = todayK(), amB = bk(k).am || {}, items = [];
@@ -5188,7 +5215,8 @@
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
         return; }
       if (B.t === "gate") { var sec = SECTIONS[B.sec];
-        var g = add(body, "div", "obv-gate"); g.style.setProperty("--sc", sec.c); g.style.background = sec.pat;
+        var g = add(body, "div", "obv-gate"); g.style.setProperty("--sc", sec.c); g.style.background = "#160510";
+        var gsp = add(g, "div", "gspin"); gsp.style.background = sec.pat; // punch-list (David 2026-07-04): the Pokémon-card rays now SPIN around the center — the pattern lives on an oversized layer that slowly rotates
         add(g, "div", "gfoil"); var gi2 = add(g, "div", "gic"); gi2.innerHTML = '<i class="ti ' + sec.ic + '"></i>';
         add(g, "div", "gk", tr("PART") + " " + (B.sec + 1) + " " + tr("OF") + " 3"); add(g, "div", "gt", tr(sec.l));
         advT = setTimeout(next, 1500); return; }
@@ -6462,6 +6490,25 @@
     "Tip the smallest stone and the mountain learns to move.": "Столкни самый малый камень — и гора учится двигаться.",
     "Progress is stored before it's visible — an ice cube warming from 25° to 31° shows nothing, then melts at 32°. Most people quit in that invisible stretch, discarding work that was accumulating the whole time. What feels like a plateau is a loading bar with the display turned off.": "Прогресс копится прежде, чем станет видимым — кубик льда, греясь с 25° до 31°, не показывает ничего, а потом тает при 32°. Многие бросают на этом невидимом отрезке, отбрасывая работу, что копилась всё это время. То, что кажется плато, — полоса загрузки с выключенным экраном.",
     "The seed is growing long before it breaks the ground.": "Семя растёт задолго до того, как пробьётся из земли."
+  });
+  Object.assign(I18N.ru, { // DAY-1 REBUILD — THE FIRST LESSON: five lessons, five colors, zero typing (B4 law)
+    "Lesson 1 · The Switch": "Урок 1 · Переключение", "Switched on. The body leads the mind — and you led the body.": "Включился. Тело ведёт ум — а ты повёл тело.", "60 seconds. Wake the body, breathe your word, step into the day.": "60 секунд. Разбуди тело, вдохни своё слово, шагни в день.",
+    "Lesson 2 · Your Words": "Урок 2 · Твои слова", "Five words. I'll speak them back to you the whole way.": "Пять слов. Я буду возвращать их тебе всю дорогу.", "Eight taps — find the five words you're becoming.": "Восемь касаний — найди пять слов, которыми ты становишься.",
+    "one lesson at a time — the glowing one first": "по одному уроку за раз — сначала светящийся",
+    "Lesson 3 · One Real Thing": "Урок 3 · Одно настоящее дело", "Tracked. Real beats planned — every time.": "Записано. Настоящее бьёт запланированное — всегда.", "Not a plan — a rep. Pick one small true thing; I'll hold the clock.": "Не план — повтор. Выбери одно малое настоящее дело; часы на мне.",
+    "Lesson 4 · The Gap": "Урок 4 · Зазор", "You found it. Every use widens it.": "Ты нашёл его. Каждое использование его расширяет.", "The one skill under everything — 90 seconds, eyes open.": "Один навык под всем остальным — 90 секунд, глаза открыты.",
+    "Lesson 5 · The Close": "Урок 5 · Закрытие", "Day one, closed. This is the shape of every day — see you tomorrow.": "День первый закрыт. Такова форма каждого дня — до завтра.", "Close the day the way it deserves — taps, not typing.": "Закрой день так, как он заслуживает — касаниями, не печатью.", "tonight — it'll glow when it's time": "вечером — загорится, когда придёт время", "tonight — I'll be here": "вечером — я буду здесь",
+    "LESSON 3 · ONE REAL THING": "УРОК 3 · ОДНО НАСТОЯЩЕЕ ДЕЛО", "Pick one. Small on purpose.": "Выбери одно. Малое — нарочно.", "a plan is a promise — doing is a vote. I'll hold the clock while you go.": "план — это обещание, а дело — это голос. Я подержу часы, пока ты делаешь.", "One glass of water": "Один стакан воды", "Two minutes of tidying": "Две минуты уборки", "Something else…": "Что-то другое…", "tracking — go do it, I've got the clock": "записываю — иди делай, часы у меня",
+    "The Gap": "Зазор", "the one skill · 90 sec": "один навык · 90 сек",
+    "Between everything that happens and what you do next, there's a real, physical instant — a gap. Most people live whole lives without seeing it. Everything in this app is training for that one instant.": "Между всем, что происходит, и тем, что ты делаешь дальше, есть настоящий, физический миг — зазор. Многие проживают целые жизни, не видя его. Всё в этом приложении — тренировка ради этого одного мига.",
+    "Read, breathe, tap — nothing to get right.": "Читай, дыши, касайся — здесь нельзя ошибиться.", "Feel the pause between an urge and an action.": "Почувствуй паузу между позывом и действием.", "Choose the next minute on purpose — that's the rep.": "Выбери следующую минуту нарочно — это и есть повтор.", "Then I'll name what you just did.": "Потом я назову то, что ты только что сделал.",
+    "Between trigger and reaction, the thinking brain can override the alarm brain — a few hundred milliseconds, trainable like a muscle. Noticing the gap IS the skill, and every use widens it.": "Между толчком и реакцией думающий мозг может перекрыть тревожный — доли секунды, тренируемые как мышца. Замечать зазор — И ЕСТЬ навык, и каждое использование его расширяет.",
+    "Something always happens next": "Что-то всегда происходит дальше", "a ping, an itch, a thought — life fires triggers at you all day long": "уведомление, зуд, мысль — жизнь весь день стреляет в тебя толчками",
+    "But there's a gap": "Но есть зазор", "right after the trigger, before your reaction — a real instant. It's there every single time.": "сразу после толчка, до твоей реакции — настоящий миг. Он там каждый раз.",
+    "One breath — stand in it": "Один вдох — встань в него", "breathe in slow. This pause you're feeling right now? You're standing inside the gap.": "вдохни медленно. Эта пауза, которую ты сейчас чувствуешь? Ты стоишь внутри зазора.",
+    "Now choose, on purpose": "Теперь выбери — нарочно", "decide the next minute — anything, as long as YOU choose it. Choosing inside the gap is the whole skill.": "реши следующую минуту — что угодно, лишь бы выбрал ТЫ. Выбор внутри зазора — в этом весь навык.",
+    "That was a rep": "Это был повтор", "you noticed, you chose. Everything else here is this same move in a hundred costumes.": "ты заметил, ты выбрал. Всё остальное здесь — то же движение в сотне костюмов.",
+    "I felt it ✓": "Я почувствовал ✓"
   });
   Object.assign(I18N.ru, { // PUNCH-LIST 2026-07-04 — onboarding rephrase + pact reorder (B4 law)
     "A starter plan — for you": "Стартовый план — для тебя",
@@ -9659,6 +9706,7 @@
         { lab: tr("Get some light if you can"), sub: tr("morning light sets the whole day's clock"), orb: "" }
       ], lastLabel: tr("I'm in ✓"),
       onFinish: function (skipped) { if (onDone) onDone(); if (skipped) return;
+        try { if (S.guide && S.guide.fd && !S.guide.fd.done && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); try { drawJourney(true); } catch (e) {} } } catch (e) {} // Day-1 rebuild: the Switch IS Lesson 1 — completing it lights the first stone
         var toGauge = function () { try { S.gaugeK = null; gaugeOpen(function () {}); } catch (e) {} };
         try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Good", true, function () { c.remove(); toGauge(); }); } else { c.remove(); toGauge(); } } catch (e) { toGauge(); } } // → deal an am-open card (why the morning switch mattered), then the gauge = the day's voice gate
     });
