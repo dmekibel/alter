@@ -91,12 +91,12 @@ v1 builds four room identities only: **Well** (dark water, ripples, 10s orb, nea
 
 ## §10 BUILD PHASES (one per session; preview-verified; device-untested flags honest)
 
-- **P1 · THE OPEN:** first-run Phases 0-1 (threshold + Stack + delta + anchor) + the entry signature + voice-register pass on all first-run copy. Zero new toys. Highest leverage.
-- **P2 · THE MAP + LITURGY SHELL:** pace doors + shortened survey + liturgy skeleton (OPEN/AIM/LIVE/LESSON/CLOSE day-state + door routing + time-of-day adaptivity) + Close re-choreography (queue beat).
-- **P3 · THE RANGE:** scene, targets, the arrow → block, WOOP wind, floor dose. SCHEMA 5 migration (S.goals import).
-- **P4 · THE STONES:** Well/ember + Hearth scaling-seal + Mirror words re-skin + room identities + thresholds + beds.
-- **P5 · THE RELIGHT + storm mode + anchor moment-listener wiring + pause-and-feel chips.**
-- **P6 · RU register pass over P1-P5 + polish punch-list.**
+- **P1 · THE OPEN — DONE (v905, Opus 2026-07-04):** threshold + Stack + delta + anchor + entry signature. theOpen() gated by S.guide.openDone.
+- **P2 · THE MAP — DONE (v906, Opus) + LITURGY SHELL — DONE (v907, Fable 2026-07-05):** pace door (P.door) + 6-question survey + ingredient-driven starter plan (v906); liturgy as a PURE spine over jpNodes (litopen node, Gap→day-2 lesson slot, pm universalized past day 1, doer routing, Close queue-beat, seal capture, evening first-run arms stones for tomorrow) (v907). B4 catch-up: ~55 RU entries.
+- **P3 · THE RANGE — DONE (v908, Fable):** rangeScene (field, 4 horizons, floor placement, arrowhead chips, arrow→REAL block via the safe path, one arrow/day, WOOP wind), litaim node, day-1 stone 4 re-aimed, SCHEMA 4→5 (S.goals import). Deferred: drag-placement, carry-off ceremony, mist mirror, arrows ceiling.
+- **P4 · THE STONES — DONE (v909, Fable):** Well (dark water + ripples + pad bed + EMBER exhale step) · Hearth (flicker room + SCALING SEAL 1.0-3.0s + fist-to-chest) · Mirror sheen · Base-Camp dusk tint on the Close · entry signature on every ceremony + roomIn thresholds. Deferred: crackle layer, later rooms.
+- **P5 · THE RELIGHT + STORM — DONE (v910, Fable):** relightScene = primary return (gap ≥2d; gapReason saved, zero penalty, strike→fire returns→one arrow); storm mode (Settings door, trail = Well+track+Close); anchorFire() wired as the drift-catch's 4th row. Deferred: storm auto-offer (needs gauge history), pause-and-feel chips, broken-pact trigger.
+- **P6 · RU register pass — DONE (v911, Fable):** inline RU shipped with every phase (B4 held); de-gendering register pass over the new lines. OUTSTANDING: RU/EN neural voice CLIPS for all new lines need the local gen-voice pipeline run (until then: EN web-speech / RU honest silence). All hour-of-day branches + every gesture/audio feel = DEVICE-UNTESTED — David confirms on the phone.
 Verification per phase: fresh-user preview run + screenshots vs this spec's copy; gestures/audio/haptics = DEVICE-UNTESTED, David confirms; regression contract re-check on any phase that plants blocks (P3).
 
 ## §11 FELT SUCCESS (the only metrics that matter)
