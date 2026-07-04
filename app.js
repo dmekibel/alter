@@ -4074,6 +4074,7 @@
     var am = add(w, "button", "tf-chip"); am.innerHTML = '<i class="ti ti-sun-high" style="color:#ffc83d"></i> Morning'; am.onclick = function () { enterStage("am", { trackTitle: "Morning bookend", byTap: true }); };
     var pm = add(w, "button", "tf-chip"); pm.innerHTML = '<i class="ti ti-moon" style="color:' + DOM.restore.light + '"></i> Reflection'; pm.onclick = function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); };
     var tb = add(w, "button", "tf-chip"); tb.innerHTML = '<i class="ti ti-briefcase" style="color:' + DOM.restore.light + '"></i> Toolbox'; tb.onclick = openToolbox; // WISDOM TOOLBOX entry door (TB-SHEET)
+    var ur = add(w, "button", "tf-chip"); ur.innerHTML = '<i class="ti ti-bolt" style="color:#ff8a3a"></i> ' + tr("Urge"); ur.onclick = logUrge; // ORGAN D: +3 CATALYST — logging the urge IS the highest-scoring single move (the inversion)
     var sm = add(w, "button", "tf-chip"); sm.innerHTML = '<i class="ti ti-bed" style="color:' + DOM.restore.light + '"></i> Sleep Math'; sm.onclick = function () { enterStage("sleepmath", { byTap: true }); }; // D-1: AutoCalc entry door
     var rx = add(w, "button", "tf-chip"); rx.innerHTML = '<i class="ti ti-clipboard-heart" style="color:' + DOM.restore.light + '"></i> Daily Rx'; rx.onclick = function () { RX_ACTIVE = "fundamental"; enterStage("rx", { byTap: true }); }; // D-2: Rx Pad entry door
   }
@@ -6381,6 +6382,24 @@
     "Want a line of your own — one you'll install each night? Three minutes, once.": "Хочешь свою строку — ту, что будешь устанавливать каждую ночь? Три минуты, один раз.", "Make my line": "Создать мою строку",
     "That's the day, well closed.": "Вот и день — закрыт по-хорошему.", "Tomorrow opens with one clear move": "Завтра открывается одним ясным шагом", "I've got the morning — rest now.": "Утро на мне — отдыхай.", "You met the day and named what mattered. Rest now — I've got the morning.": "Ты встретил день и назвал важное. Отдыхай — утро на мне."
   });
+  Object.assign(I18N.ru, { // ORGAN C — Reset sprint + chore chains + space check (B4 law)
+    "Reset": "Сброс", "One surface": "Одна поверхность", "The floor": "Пол", "Your desk": "Твой стол", "The sink": "Раковина",
+    "Reset — ten minutes of care": "Сброс — десять минут заботы", "not a chore — a way to feel your space lighten. Pick one small zone.": "не рутина — способ почувствовать, как пространство светлеет. Выбери одну малую зону.", "not now": "не сейчас",
+    "How heavy does the space feel?": "Насколько тяжело ощущается пространство?", "gut answer — no wrong number": "как чувствуешь — нет неверных чисел", "And now?": "А теперь?", "same scale — just notice": "та же шкала — просто заметь",
+    "put on something you like. tidy only this one zone. stop when the timer does.": "включи что-то приятное. приберись только в этой зоне. остановись вместе с таймером.", "Done ✓": "Готово ✓",
+    "point lighter": "балл легче", "points lighter": "балла легче", "the space and you": "пространство и ты", "done — care counts": "готово — забота засчитывается",
+    "part 2 armed": "часть 2 готова", "this has a part 2": "у этого есть часть 2", "the second half — I'll plant it for you at the right time": "вторая половина — я поставлю её в нужное время", "e.g. move to the dryer": "напр. переложить в сушилку", "how long until part 2?": "через сколько часть 2?", "Arm part 2": "Поставить часть 2", "Re-arm part 2": "Переставить часть 2", "part 2 will be waiting": "часть 2 будет ждать", "planted — part 2 is on the timeline": "поставлено — часть 2 на ленте",
+    "Your space right now?": "Как твоё пространство сейчас?", "no judgment — it just helps me help you": "без осуждения — просто чтобы помочь тебе", "All tidy": "Прибрано", "Lived-in": "Обжитое", "Full chaos": "Полный хаос", "Full chaos is fine.": "Полный хаос — это нормально.", "want ten minutes of Reset? I'll pick one small zone with you.": "хочешь десять минут Сброса? Выберем одну малую зону вместе.", "Reset now ▶": "Сброс сейчас ▶", "chaos is fine — want a 10-min Reset?": "хаос — это нормально; хочешь 10-мин Сброс?"
+  });
+  Object.assign(I18N.ru, { // ORGAN D — moment-listener v1 (B4 law)
+    "Urge": "Позыв", "a soft off-ramp": "мягкий съезд", "You drifted — and you noticed. That noticing IS the gap.": "Ты уплыл — и заметил. Это замечание и ЕСТЬ зазор.", "Wouldn't it be nice if the next few minutes went a little differently?": "А не славно ли будет, если следующие пару минут пройдут чуть иначе?", "One breath, then choose ▶": "Один вдох — потом выбери ▶", "Got it": "Понял",
+    "welcome back": "с возвращением", "You came back. That bounce — not the streak — is the skill.": "Ты вернулся. Этот отскок — а не серия — и есть навык.", "One small thing from your good days": "Одно малое из твоих хороших дней", "One small thing on purpose today?": "Одно малое дело сегодня — намеренно?", "I'm in ▶": "Я в деле ▶", "Let's go": "Поехали", "not today": "не сегодня",
+    "a real night's sleep": "нормальный ночной сон", "moving your body": "движение тела", "a quiet morning": "тихое утро", "one small plan": "один малый план", "one good person": "один хороший человек", "some music": "немного музыки", "an early start": "ранний старт", "a little time alone": "немного времени наедине",
+    "winding toward sleep": "к отходу ко сну", "Getting close to your bedtime.": "Близко ко времени сна.", "A short wind-down? It sets tonight's sleep — and tomorrow's you.": "Короткое затихание? Оно задаёт сон этой ночи — и тебя завтрашнего.", "Wind down ▶": "Затихнуть ▶",
+    "hard to start?": "трудно начать?", "What's in the way — honestly?": "Что мешает — честно?", "Can't start": "Не могу начать", "Doubt it'll matter": "Сомневаюсь, что важно", "It's boring": "Скучно", "No energy left": "Не осталось сил",
+    "here's your evidence": "вот твоё доказательство", "You already proved you can — you did": "Ты уже доказал, что можешь — ты сделал", "You've shown up before. The doubt is a feeling, not a fact.": "Ты приходил и раньше. Сомнение — это чувство, а не факт.", "one small step ▶": "один малый шаг ▶", "make it new": "сделай это новым", "Boredom's a signal, not a verdict. Swap the shape, keep the aim.": "Скука — сигнал, а не приговор. Смени форму, оставь цель.", "pick a fresh way ▶": "выбери свежий способ ▶", "close": "закрыть",
+    "+3 · best move of the day": "+3 · лучший ход дня", "Caught an urge": "Поймал позыв", "You logged the urge instead of feeding it. That's the whole skill.": "Ты записал позыв, а не поддался ему. В этом весь навык.", "Want to spend that energy on something instead?": "Направить эту энергию на что-то другое?", "Swap it ▶": "Заменить ▶", "just noting it": "просто отмечаю", "that urge": "тот позыв"
+  });
   function deckMode() { var P = S.profile || {}; if (P.theoryMode === "off") return "off"; if (P.theoryMode === "proverbs") return "proverbs"; if (P.theoryMode && P.theoryMode.indexOf("cards") === 0) return "cards"; var lvl = ((S.guide || {}).appetiteState || {}).level; return lvl === "floor" ? "proverbs" : "cards"; }
   function _deckAge(id) { var dk = (S.deck && S.deck.dealt) ? S.deck.dealt[id] : null; return dk ? daysSince(dk) : 99999; } // never-dealt = effectively infinite age → dealt first
   function deckPick(moment) { // PREDICTABLE rotation (law 7: no variable-ratio) — oldest / never-dealt first, pool-order tiebreak
@@ -7508,7 +7527,9 @@
     var tup = add(trow, "button", "ed-tnudge"); tup.innerHTML = '<i class="ti ti-plus"></i>';
     function setStart(ns) { ns = Math.max(_floorS, Math.min(_ceilS, Math.round(ns / 5) * 5)); o.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); }
     tdn.onclick = function () { setStart(hm(o.time) - 5); layout(); commit(); };
-    tup.onclick = function () { setStart(hm(o.time) + 5); layout(); commit(); };
+    tup.onclick = function () { setStart(hm(o.time) + 5); layout(); commit();
+      if (!isLog && k === todayK() && !o.done) { o.postponed = (o.postponed || 0) + 1; if (o.postponed >= 3 && !o.dialFired && canNudge()) { o.dialFired = 1; markNudge(); save(); setTimeout(function () { try { motivationDial({ block: o }); } catch (e) {} }, 300); } } // ORGAN D: pushing a today-block ≥15min later (3 nudges) = an avoidance signal → the Motivation Dial (NOTE: drag-based postpone doesn't count yet — needs a safe choke point in the move handler; flagged for a timeline-safe pass)
+    };
     add(B, "div", "ed-hint", "length — slide, step ＋, or tap a chip");
     var sld = document.createElement("input"); sld.type = "range"; sld.min = "0"; sld.max = "1000"; sld.step = "1"; sld.value = minToPos(o.mins || DEF); sld.className = "ed-slider"; B.appendChild(sld);
     var read = add(B, "div", "ed-read");
@@ -7538,6 +7559,24 @@
           var rm = add(r, "button", "step-rm"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { o.subs.splice(i, 1); save(); drawSteps(); stHeadTxt(); };
         });
         var ab = add(stBody, "button", "step-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a step'; ab.onclick = function () { bentoPicker({ title: "Add a step to " + o.title, onPick: function (x) { o.subs.push({ t: x.title, done: false }); save(); drawSteps(); stHeadTxt(); } }); };
+      })();
+      // CHAIN — "this has a part 2" (ORGAN C, DEPTH WAVE 1): a two-part chore (laundry→dryer, dough→bake). The app carries the second half + plants it at +N min so you don't have to remember.
+      var chExp = add(B, "div", "ed-steps"); var chHead = add(chExp, "button", "ed-stephead"); var chBody = add(chExp, "div", "ed-stepbody"); chBody.style.display = o.chain ? "block" : "none";
+      function chHeadTxt() { chHead.innerHTML = '<span><i class="ti ti-link"></i> ' + tr(o.chain ? "part 2 armed" : "this has a part 2") + (o.chain ? ' · +' + o.chain.delayMin + 'm' : '') + '</span><i class="ti ti-chevron-' + (chBody.style.display === "none" ? "down" : "up") + '"></i>'; }
+      chHeadTxt(); chHead.onclick = function () { chBody.style.display = chBody.style.display === "none" ? "block" : "none"; chHeadTxt(); };
+      (function drawChain() {
+        chBody.innerHTML = "";
+        add(chBody, "div", "ed-hint", tr("the second half — I'll plant it for you at the right time"));
+        var ti = document.createElement("input"); ti.type = "text"; ti.placeholder = tr("e.g. move to the dryer"); ti.value = (o.chain && o.chain.step2title) || ""; ti.className = "ws-text"; ti.style.cssText = "min-height:0;height:46px;margin:6px 0;font-size:15px;"; chBody.appendChild(ti);
+        add(chBody, "div", "ed-hint", tr("how long until part 2?"));
+        var dw = add(chBody, "div"); dw.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;";
+        var delays = [30, 45, 60, 90, 120], pickD = (o.chain && o.chain.delayMin) || 45;
+        function paintD() { Array.prototype.forEach.call(dw.children, function (n, i) { var on = delays[i] === pickD; n.style.background = on ? DOM.upkeep.c : ""; n.style.color = on ? DOM.upkeep.ink : ""; n.style.borderColor = on ? DOM.upkeep.c : ""; }); }
+        delays.forEach(function (m) { var c = add(dw, "button", "tf-chip", (m < 60 ? m + "m" : (m / 60) + "h")); c.onclick = function () { pickD = m; paintD(); }; });
+        paintD();
+        var arm = add(chBody, "button", "done2", tr(o.chain ? "Re-arm part 2" : "Arm part 2")); arm.style.cssText = "margin-top:10px;max-width:240px;";
+        arm.onclick = function () { var t2 = ti.value.trim(); if (!t2) { ti.focus(); return; } plantChain(o, k, t2, pickD); chBody.style.display = "none"; chHeadTxt(); toast("✦ " + tr("part 2 will be waiting")); };
+        if (o.chain) add(chBody, "div", "ed-hint", tr("planted — part 2 is on the timeline")).style.color = DOM.upkeep.light;
       })();
     }
     // MARK DONE (plan only)
@@ -8123,7 +8162,8 @@
     { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   ti: "ti-mountain",       emoji: "🦁", thinker: "Stutz — Tool 3", when: "before a hard conversation or performance, or when you freeze up", why: "Rehearsing your grounded self first primes the brain to actually run that version live.", fn: function () { innerAuthority(); } },
     { id: "reprogram",layer: "Become who you're being", name: "Rewire",            ti: "ti-brain",          emoji: "🧠", thinker: "Silva · Dispenza · Maltz", when: "to install a new belief or self-image — the core reset", why: "A calm, focused state lets a new self-image slip past the critical mind and land — your brain rehearses it as real.", fn: function () { reprogramTool(); } },
     { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     ti: "ti-spiral",         emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", why: "A light trance quiets the critical mind so a new self-image can land — the induction is what makes it stick.", fn: function () { selfHypnosis(); } },
-    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", why: "Gratitude shifts you out of the threat network into the care network — a different brain state, on demand.", fn: function () { gratefulFlow(); } }
+    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", why: "Gratitude shifts you out of the threat network into the care network — a different brain state, on demand.", fn: function () { gratefulFlow(); } },
+    { id: "reset",    layer: "Steady the body",         name: "Reset",             ti: "ti-sparkles",       emoji: "✨", thinker: "Carpe · care-not-duty", when: "a cluttered space that's quietly draining you — or when you can't start anything", why: "Ten minutes of caring for one small zone lightens the room AND the nervous system — outer order, inner calm.", fn: function () { resetSprint(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
   // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
@@ -8930,9 +8970,163 @@
       });
     });
   }
+  // ===== ORGAN C · RESET SPRINT (DEPTH BUILD WAVE 1): 10 minutes of CARE for one small zone — framed as regulation, never duty (Carpe: recovery is designed). zone → before-feel → timer + music → after-feel; the space delta lands in THE RECORD (S.tools.gauge, stack:"reset-space"). Domain = upkeep. =====
+  var RESET_ZONES = [["surface", "One surface", "ti-square-rounded"], ["floor", "The floor", "ti-layout-distribute-horizontal"], ["desk", "Your desk", "ti-device-desktop"], ["sink", "The sink", "ti-bath"]];
+  function resetSprint(zonePre) {
+    function run(zone) {
+      gauge010(tr("How heavy does the space feel?"), tr("gut answer — no wrong number"), function (pre) {
+        resetTimer(zone, 10, function () {
+          gauge010(tr("And now?"), tr("same scale — just notice"), function (post) {
+            S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "reset-space", zone: zone[0], pre: pre, post: post });
+            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+            var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: tr("Reset") + " · " + tr(zone[1]), mins: 10, catK: "energy", domain: "upkeep", color: DOM.upkeep.c });
+            S.lastTidy = todayK(); try { tickTool("reset"); earn(10, {}); celebrateGated(DOM.upkeep.c, 1); } catch (e) {}
+            var delta = (pre != null && post != null) ? pre - post : null; save(); renderAll();
+            toast(delta != null && delta > 0 ? "✦ " + delta + (delta === 1 ? " " + tr("point lighter") : " " + tr("points lighter")) + " — " + tr("the space and you") : "✦ " + tr("done — care counts"));
+          });
+        });
+      });
+    }
+    if (zonePre) { var z = null; RESET_ZONES.forEach(function (x) { if (x[0] === zonePre) z = x; }); if (z) { run(z); return; } }
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
+    var body = add(card, "div", "ob-body center");
+    add(body, "div", "ob-q", tr("Reset — ten minutes of care"));
+    add(body, "div", "ob-sb", tr("not a chore — a way to feel your space lighten. Pick one small zone.")).style.cssText = "text-align:center;margin-top:6px;";
+    var w = add(body, "div", "obv-tiles"); w.style.marginTop = "14px";
+    RESET_ZONES.forEach(function (z) { var t = add(w, "button", "obv-tile"); t.style.setProperty("--oc", DOM.upkeep.c); t.style.setProperty("--ost", tfStripeDoor(DOM.upkeep.c)); t.innerHTML = '<i class="ti ' + z[2] + ' oi"></i><span class="ol">' + esc(tr(z[1])) + '</span>'; t.onclick = function () { ov.remove(); run(z); }; });
+    var sk = add(add(card, "div", "ob-foot"), "button", "ob-skip", tr("not now")); sk.onclick = function () { ov.remove(); };
+  }
+  function resetTimer(zone, mins, onDone) { // a calm 10-min countdown with the peaceful bed. NOTE: iOS pauses setInterval when backgrounded — real background timing is DEVICE-UNTESTED.
+    var left = (mins || 10) * 60, col = DOM.upkeep.c, iv = null;
+    var ov = add(document.body, "div"); ov.id = "breatheOv"; ov.style.cssText = "position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0c0510;color:#f0e6ef;font-family:var(--bub);padding:24px;box-sizing:border-box;";
+    add(ov, "div", null, tr("Reset") + " · " + tr(zone[1])).style.cssText = "font-size:12.5px;letter-spacing:1.6px;text-transform:uppercase;color:" + col + ";font-weight:800;";
+    var orb = add(ov, "div"); orb.style.cssText = "width:130px;height:130px;border-radius:50%;margin:20px 0;background:radial-gradient(circle at 40% 35%," + mixHex(col, "#ffffff", 0.3) + "," + col + " 60%," + mixHex(col, "#160510", 0.3) + ");box-shadow:0 0 44px " + col + "66;display:flex;align-items:center;justify-content:center;animation:breathe 11s ease-in-out infinite;";
+    var clk = add(orb, "b"); clk.style.cssText = "font-size:32px;font-weight:800;color:#160510;";
+    add(ov, "div", null, tr("put on something you like. tidy only this one zone. stop when the timer does.")).style.cssText = "max-width:300px;text-align:center;font-size:13.5px;color:#c8b8c8;line-height:1.55;";
+    var doneB = add(ov, "button", "done2", tr("Done ✓")); doneB.style.cssText = "margin-top:24px;max-width:240px;";
+    function paint() { clk.textContent = Math.floor(left / 60) + ":" + pad(left % 60); }
+    paint();
+    try { if (bedMode() !== "off") BGM.start(); } catch (e) {}
+    iv = setInterval(function () { left--; if (left <= 0) { finish(); return; } paint(); }, 1000);
+    function finish() { if (!ov.parentNode) return; clearInterval(iv); try { BGM.stop(); } catch (e) {} ov.remove(); onDone(); }
+    doneB.onclick = finish;
+  }
+  // ===== ORGAN C · CHORE CHAINS: a two-part chore (laundry→dryer, dough→bake). The app CARRIES the second half — plants it at +N min via the safe path so you never have to remember. S.chains is the ledger. =====
+  function plantChain(o, k, step2title, delayMin) {
+    var s2 = hm(o.time) + (delayMin || 45), tk = k;
+    if (s2 >= 1440) { s2 -= 1440; tk = keyAdd(k, 1); } // spills past midnight → tomorrow
+    var blk = markFutureBlock({ id: uid(), time: pad(Math.floor(s2 / 60)) + ":" + pad(s2 % 60), mins: Math.min(30, o.mins || 15), title: step2title, prio: o.prio || 2, color: DOM.upkeep.c, domain: "upkeep", done: false, chainStep: 2 }, tk);
+    blocks(tk).push(blk); reflow(tk);
+    o.chain = { step2title: step2title, delayMin: delayMin, step2Id: blk.id, step2Day: tk };
+    S.chains = S.chains || []; S.chains.push({ id: uid(), title: o.title, step1Id: o.id, step2title: step2title, step2delayMin: delayMin, step2Id: blk.id, dayK: k, armedAt: Date.now() });
+    save(); renderToday();
+  }
+  // ORGAN C · one-time space profiling: after the very first gauge, ask "your space right now?" once ever. Full chaos → a single gentle Reset offer (never nagging). Sets S.profile.spaceState for later routing.
+  function spaceCheckOnce(cb) {
+    cb = cb || function () {};
+    S.profile = S.profile || {}; if (S.profile.spaceAsked) { cb(); return; }
+    S.profile.spaceAsked = 1; save();
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    add(body, "div", "ob-q", tr("Your space right now?"));
+    add(body, "div", "ob-sb", tr("no judgment — it just helps me help you")).style.cssText = "text-align:center;margin-top:6px;";
+    var w = add(body, "div", "obv-tiles"); w.style.marginTop = "14px";
+    [["clear", "All tidy", "ti-sparkles", "#46e2a4"], ["lived", "Lived-in", "ti-home", "#48b8e0"], ["chaos", "Full chaos", "ti-tornado", "#ff8a3a"]].forEach(function (o) {
+      var t = add(w, "button", "obv-tile"); t.style.setProperty("--oc", o[3]); t.style.setProperty("--ost", tfStripeDoor(o[3])); t.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>';
+      t.onclick = function () { S.profile.spaceState = o[0]; save();
+        if (o[0] === "chaos") { S.profile.spaceOfferK = todayK(); body.innerHTML = ""; foot.innerHTML = "";
+          add(body, "i", "ti ti-sparkles ob-spk"); add(body, "div", "ob-q", tr("Full chaos is fine.")); add(body, "div", "ob-sb", tr("want ten minutes of Reset? I'll pick one small zone with you.")).style.cssText = "text-align:center;margin-top:6px;";
+          add(foot, "button", "ob-btn go", tr("Reset now ▶")).onclick = function () { ov.remove(); resetSprint(); cb(); };
+          add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); cb(); };
+          save();
+        } else { ov.remove(); cb(); }
+      };
+    });
+    add(foot, "button", "ob-skip", tr("skip")).onclick = function () { ov.remove(); cb(); };
+  }
+  // ===== ORGAN D · MOMENT-LISTENER v1 (DEPTH BUILD WAVE 1): a READ-ONLY rules table over already-logged state (zero timeline regression surface). LAWS: at most ONE nudge/day (S.nudge), respect mutes, NEVER during a wide-day, hand ONE tool never a menu. After a tool WORKS, deal its theory card (theoryMode-gated). =====
+  function nudgeMuted() { var k = todayK(), m1 = (S.profile && S.profile.muteNudgeUntilK) || null, m2 = (S.nudge && S.nudge.muteUntilK) || null; return !!((m1 && k <= m1) || (m2 && k <= m2)); }
+  function wideDayNow() { try { var k = todayK(), nm = logicalNowMin(); return (blocks(k) || []).some(function (b) { return b.wide && hm(b.time) <= nm && hm(b.time) + (b.mins || 0) > nm; }); } catch (e) { return false; } } // wide-day silence law — the guardian's absence is the trust (b.wide lands with Wave-2 recovery blocks; structurally honored now)
+  function canNudge() { var k = todayK(); S.nudge = S.nudge || { lastK: null, muteUntilK: null }; return S.nudge.lastK !== k && !nudgeMuted() && !wideDayNow(); }
+  function markNudge() { S.nudge = S.nudge || {}; S.nudge.lastK = todayK(); save(); }
+  function mlCard(host) { var ob = add(host || document.body, "div", "hs-ov"); ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:15px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;font-family:var(--bub);"; return ob; } // the ONE-tool arrival surface — a calm bottom card, never a full modal
+  function mlKick(ob, txt) { add(ob, "div", null, tr(txt)).style.cssText = "font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#9a7090;margin-bottom:5px;"; }
+  function mlBtn(ob, label, primary, fn) { var b = add(ob, "button", primary ? "ob-btn go" : "tf-chip", tr(label)); b.style.cssText = primary ? "margin-top:6px;" : "margin:6px 6px 0 0;"; b.onclick = fn; return b; }
+  // ---- the tools (each hands ONE move; deals its theory card after it works) ----
+  function offRamp() { // drift → 90s: Withers gap-interrupt + one breath; deals SN-227 (the catch)
+    var ob = mlCard(); mlKick(ob, "a soft off-ramp");
+    add(ob, "div", null, tr("You drifted — and you noticed. That noticing IS the gap.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
+    add(ob, "div", null, tr("Wouldn't it be nice if the next few minutes went a little differently?")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
+    mlBtn(ob, "One breath, then choose ▶", true, function () { ob.remove(); try { breathwork(2); } catch (e) {} setTimeout(function () { var c = mlCard(); renderDeckCard(c, "catch"); mlBtn(c, "Got it", false, function () { c.remove(); }); }, 400); });
+    mlBtn(ob, "not now", false, function () { ob.remove(); });
+  }
+  function comebackLadder() { // return-after-gap → ONE rung up, built from P.ingredients; deals SN-007
+    var ing = ((S.profile || {}).ingredients) || [], ILBL = { slept: "a real night's sleep", moved: "moving your body", quiet: "a quiet morning", plan: "one small plan", people: "one good person", music: "some music", early: "an early start", alone: "a little time alone" };
+    var pick = ing.length ? (ILBL[ing[Math.floor(Date.now() / 3600000) % ing.length]] || null) : null;
+    var ob = mlCard(); mlKick(ob, "welcome back");
+    add(ob, "div", null, tr("You came back. That bounce — not the streak — is the skill.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
+    add(ob, "div", null, pick ? (tr("One small thing from your good days") + " — " + tr(pick) + "?") : tr("One small thing on purpose today?")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
+    mlBtn(ob, "I'm in ▶", true, function () { ob.remove(); var c = mlCard(); renderDeckCard(c, "comeback"); mlBtn(c, "Let's go", false, function () { c.remove(); try { openJourney(); } catch (e) {} }); });
+    mlBtn(ob, "not today", false, function () { ob.remove(); S.profile.muteNudgeUntilK = keyAdd(todayK(), 2); save(); }); // "needed a break" → 2 nudge-free days (ladder: never scold a no)
+  }
+  function tranquilityOffer() { // pre-sleep window → a wind-down offer (never if wide-day/mute)
+    var ob = mlCard(); mlKick(ob, "winding toward sleep");
+    add(ob, "div", null, tr("Getting close to your bedtime.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
+    add(ob, "div", null, tr("A short wind-down? It sets tonight's sleep — and tomorrow's you.")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
+    mlBtn(ob, "Wind down ▶", true, function () { ob.remove(); try { selfHypnosis(); } catch (e) { try { breathwork(4); } catch (e2) {} } });
+    mlBtn(ob, "not now", false, function () { ob.remove(); });
+  }
+  function motivationDial(ctx) { // task postponed 2× → hand ONE of four moves; default route by profile
+    var ob = mlCard(); mlKick(ob, "hard to start?");
+    add(ob, "div", null, tr("What's in the way — honestly?")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:9px;";
+    var wrap = add(ob, "div"); wrap.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
+    var pf = {}; try { pf = profile(); } catch (e) {}
+    var def = ((S.profile || {}).mlDrift) || (pf.lowEnergy ? "empty" : "cant"); // brother→can't-start, sister→bored routed via profile.mlDrift when set
+    [["cant", "Can't start", "ti-player-play"], ["doubt", "Doubt it'll matter", "ti-help"], ["bored", "It's boring", "ti-mood-flat"], ["empty", "No energy left", "ti-battery-1"]].forEach(function (o) {
+      var c = add(wrap, "button", "tf-chip"); if (o[0] === def) c.style.borderColor = "#ffd24a";
+      c.innerHTML = '<i class="ti ' + o[2] + '"></i> ' + esc(tr(o[1]));
+      c.onclick = function () { ob.remove(); mlRoute(o[0], ctx); };
+    });
+  }
+  function mlRoute(kind, ctx) {
+    if (kind === "cant") { try { reversalOfDesire(null); } catch (e) {} return; } // shrink-to-first-action / move toward the discomfort
+    if (kind === "empty") { try { relaxMoment(); } catch (e) { try { breathwork(4); } catch (e2) {} } return; } // rest ritual — regulate first
+    var ob = mlCard();
+    if (kind === "doubt") { mlKick(ob, "here's your evidence");
+      var best = null; try { best = pmBestCharge(todayK()) || pmBestCharge(keyAdd(todayK(), -1)); } catch (e) {}
+      add(ob, "div", null, best ? (tr("You already proved you can — you did") + " “" + esc(best) + "”.") : tr("You've shown up before. The doubt is a feeling, not a fact.")).style.cssText = "font-size:14px;font-weight:700;color:#e6cfe0;line-height:1.5;margin-bottom:9px;";
+      mlBtn(ob, "one small step ▶", true, function () { ob.remove(); try { openJourney(); } catch (e) {} });
+    } else { mlKick(ob, "make it new"); // bored → novelty swap
+      add(ob, "div", null, tr("Boredom's a signal, not a verdict. Swap the shape, keep the aim.")).style.cssText = "font-size:14px;font-weight:700;color:#e6cfe0;line-height:1.5;margin-bottom:9px;";
+      mlBtn(ob, "pick a fresh way ▶", true, function () { ob.remove(); try { bentoPicker({ title: tr("Switch to…"), onPick: function () { try { renderAll(); } catch (e) {} } }); } catch (e) {} });
+    }
+    mlBtn(ob, "close", false, function () { ob.remove(); });
+  }
+  function logUrge() { // +3 CATALYST: logging the urge IS the highest-scoring single move (the inversion). Bypasses the daily nudge gate — it's a user action, not a guardian nudge.
+    var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: tr("Caught an urge"), mins: 1, catK: "love", domain: "restore", color: DOM.restore.c });
+    try { earn(3, { label: "catalyst-urge", force: true }); } catch (e) {} save(); renderAll();
+    try { celebrateGated(DOM.restore.c, 1); } catch (e) {}
+    var ob = mlCard(); mlKick(ob, "+3 · best move of the day");
+    add(ob, "div", null, tr("You logged the urge instead of feeding it. That's the whole skill.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
+    add(ob, "div", null, tr("Want to spend that energy on something instead?")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
+    mlBtn(ob, "Swap it ▶", true, function () { ob.remove(); try { catalystCard(tr("that urge"), 1); } catch (e) {} });
+    mlBtn(ob, "just noting it", false, function () { ob.remove(); });
+  }
+  function preSleepWindow() { try { var sm = (S.course && S.course.sleepMath) || {}; var bed = sm.wake ? (smMin(sm.wake) - (sm.hours || 8) * 60 + 1440) % 1440 : 1350; var nm = nowMin(); var diff = (bed - nm + 1440) % 1440; return diff <= 45 || diff >= (1440 - 10); } catch (e) { return false; } } // within ~45min before estimated bedtime
+  function checkMoments(trigger) { // passive scan — fires the FIRST matching trigger that passes the gate, ONE tool only
+    try {
+      if (!canNudge()) return false;
+      var k = todayK(), pf = {}; try { pf = profile(); } catch (e) {}
+      if (pf.bouncedBack) { markNudge(); comebackLadder(); return true; }
+      var driftNow = (logs(k) || []).some(function (l) { return domainOf(l) === "drift"; }) || activeTimers().some(function (t) { return domainOf(t) === "drift"; });
+      if (driftNow) { markNudge(); offRamp(); return true; }
+      if (preSleepWindow()) { markNudge(); tranquilityOffer(); return true; }
+    } catch (e) {}
+    return false;
+  }
   // F0 — THE GAUGE-ROUTED OPEN (HANDOFF-first-day §1): once per logical day, the guardian reads state FIRST. Low → the relief door. Uses the ob-ov scaffold (already in the pane-swipe guard).
   function gaugeOpen(onDone) {
-    var fin = function () { if (onDone) onDone(); };
+    var fin = function () { var _d = onDone; spaceCheckOnce(function () { if (_d) _d(); try { setTimeout(function () { checkMoments("open"); }, 1200); } catch (e) {} }); }; // ORGAN C+D: chain the one-time space check + a single passive moment-scan onto the first daily gauge completion
     if (!(S.profile && S.profile.set)) { fin(); return; }
     if (S.gaugeK === todayK()) { fin(); return; }
     S.gaugeK = todayK(); save(); // mark immediately — a crash mid-gauge must never loop her into it every open
@@ -9748,7 +9942,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
