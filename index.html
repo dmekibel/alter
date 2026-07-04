@@ -2512,6 +2512,15 @@
   @keyframes streakFlow{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
   /* ============ v448 — NOW = the live card's bottom edge · time lives in the left gutter (David 2026-06-24) ============ */
   .nowtime{ position:absolute; left:0; color:#ff7fb6; font-family:"Jost",sans-serif; font-weight:800; font-size:11px; z-index:7; background:#2c081a; padding:1px 4px; border-radius:5px; white-space:nowrap; line-height:1.4; } /* clearer NOW readout — brighter pink, a touch larger (David 2026-06-27) */
+  /* ============ ROOMS v1 (SPEC-FIRST-RUN §6, P4): each room = a bg treatment + a 2s threshold crossing + the 3-note entry signature. Rays retire to seals only. ============ */
+  @keyframes roomIn{ from{ opacity:0; } to{ opacity:1; } }                      /* the threshold crossing — every ceremony fades through dark */
+  @keyframes wellRipple{ 0%{ transform:translate(-50%,-50%) scale(.25); opacity:.5; } 100%{ transform:translate(-50%,-50%) scale(1.9); opacity:0; } }
+  .well-rip{ position:absolute; left:50%; top:38%; width:220px; height:110px; border:1.5px solid rgba(120,170,220,.35); border-radius:50%; animation:wellRipple 7s ease-out infinite; pointer-events:none; }
+  @keyframes emberCalm{ 0%{ transform:scale(1); filter:brightness(1.25); } 100%{ transform:scale(.38); filter:brightness(.85); } } /* the alarm in your chest, shrinking to a calm point on the exhale */
+  @keyframes hearthFlick{ 0%,100%{ opacity:.55; } 42%{ opacity:.8; } 58%{ opacity:.45; } 71%{ opacity:.72; } }
+  .hearth-glow{ position:absolute; left:50%; bottom:14%; width:340px; height:230px; transform:translateX(-50%); background:radial-gradient(50% 60% at 50% 100%, rgba(255,138,58,.34), rgba(255,95,40,.12) 55%, transparent 75%); animation:hearthFlick 2.8s ease-in-out infinite; pointer-events:none; }
+  .mirror-sheen{ position:absolute; inset:0; background:linear-gradient(105deg, transparent 42%, rgba(200,180,230,.07) 49%, rgba(255,255,255,.10) 50%, rgba(200,180,230,.07) 51%, transparent 58%); pointer-events:none; }
+  #trackerFull.room-dusk::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(58,28,66,.30), rgba(120,62,74,.26)); pointer-events:none; z-index:0; } /* Base Camp at dusk — a tint on the existing Close, not a new surface */
 </style>
 </head>
 <body>
@@ -2658,6 +2667,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=908"></script>
+  <script src="app.js?v=909"></script>
 </body>
 </html>

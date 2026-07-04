@@ -860,8 +860,12 @@
   // ===== THE LESSON ENGINE (Day-1 v2, David 2026-07-04: "draw the nuance from the 300-day course — clever, deep, functional, educational, epic"): ONE Duolingo-grade grammar that converts any course session into a mini lesson. HOOK (epic line on a spinning-ray card, per-lesson palette) → TEACH (2 dense course-faithful cards) → CHECK (a real forced-choice test, warm retry — the moment it FEELS like a lesson) → REP (launch the organ; doing is the skill) → the organ's completion lights the stone + deals the card. Tap-only forever. This engine is the conversion pipeline for the whole 300-day course (25 sessions → chapters of lessons). =====
   function runLesson(L) { // ===== THE RITUAL LESSON (v904, David device notes 2026-07-04): "a guided journal / guided magic ritual — no quizzes; questions that learn about the USER; big text, one beat at a time, visuals in between." A full-screen ceremony in the lesson's color. Beats: line (BIG text arriving word-by-word, tap to continue) · mirror (a self-question with NO right answer — the pick personalizes the guardian's next line AND teaches the app who you are; Duolingo's real trick) · feel (a breath with the orb) · burn (a limiting belief, burned to embers) · seal (the present-tense line, thumb-held — the install) · door (into the real rep). Voice whispers every line. Tap-only forever. =====
     var ov = add(document.body, "div"), done = false;
-    ov.style.cssText = "position:fixed;inset:0;z-index:130;background:linear-gradient(180deg,#0c0510,#160a1c);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;";
-    var rays = add(ov, "div", "gspin"); rays.style.background = "repeating-conic-gradient(from 0deg at 50% 50%," + L.c + "16 0deg 10deg, transparent 10deg 20deg)";
+    ov.style.cssText = "position:fixed;inset:0;z-index:130;background:linear-gradient(180deg,#0c0510,#160a1c);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;animation:roomIn 1.8s ease;";
+    try { entrySignature(); } catch (e) {} // §7: the same 3 notes open every ceremony — the conditioning asset
+    // ROOMS v1 (§6, P4): when a lesson owns a room, the room's treatment replaces the rays (rays retire to seals). hearth = warm flicker; mirror = dim reflective sheen.
+    if (L.room === "hearth") { ov.style.background = "linear-gradient(180deg,#160806,#2a1109 58%,#3a180c)"; add(ov, "div", "hearth-glow"); }
+    else if (L.room === "mirror") { ov.style.background = "linear-gradient(180deg,#100a1a,#1a1226 55%,#221a30)"; add(ov, "div", "mirror-sheen"); }
+    else { var rays = add(ov, "div", "gspin"); rays.style.background = "repeating-conic-gradient(from 0deg at 50% 50%," + L.c + "16 0deg 10deg, transparent 10deg 20deg)"; }
     var stage = add(ov, "div"); stage.style.cssText = "position:relative;z-index:1;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;";
     var hint = add(ov, "div"); hint.style.cssText = "position:absolute;bottom:30px;left:0;right:0;text-align:center;font-family:var(--bub);font-size:13px;font-weight:700;color:#8a7898;z-index:1;";
     var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:2;background:none;border:none;color:#6a5a78;font-size:20px;padding:8px;cursor:pointer;";
@@ -905,7 +909,8 @@
         pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
         var arc = pw.querySelector(".parc"), hT = null, held = false;
         function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset 1.6s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-seal" }); } catch (e) {} try { litState().seal = b.line; } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }, 1600); }); // seal capture → S.lit.seal: today's sealed line, for the Close's install replay (rooms pass)
+        var _hMs = 1600; try { _hMs = (typeof b.holdMs === "function") ? b.holdMs(ctx) : (b.holdMs || 1600); } catch (e) {} // SCALING SEAL (§3): hold length = promise weight (2d=1.0s … 14d=3.0s)
+        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-seal" }); } catch (e) {} try { litState().seal = b.line; } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }, _hMs); }); // seal capture → S.lit.seal: today's sealed line, for the Close's install replay (rooms pass)
         pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
         hint.textContent = tr("or tap here to carry it without the hold"); hint.style.pointerEvents = "auto";
         hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; try { litState().seal = b.line; } catch (er) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (er) {} } next(); };
@@ -972,7 +977,7 @@
       { k: "burn", t: "I need to feel ready first.", reply: "Gone. Readiness follows motion — it never leads." },
       { k: "seal", line: "I move first. The feeling follows." },
       { k: "door", t: "Now the real thing — the sixty-second Switch.", btn: "Switch on \u25b8", rep: function () { morningDoor(); } }] },
-    fd1: { c: "#b07aff", beats: [
+    fd1: { c: "#b07aff", room: "mirror", beats: [
       { k: "line", t: "Areté. One Greek word: close the gap between who you are and who you could be.", big: true, orb: true },
       { k: "mirror", q: "A year from now, someone who loves you describes what changed. Which line lands hardest?", save: "word1", reply: "That's a word we'll make true. I'll hand it back to you every time you live it.", onPick: function (o) { S.profile = S.profile || {}; S.profile.words = S.profile.words || []; if (S.profile.words.indexOf(o.tag) < 0) S.profile.words.push(o.tag); save(); }, opts: [
         { t: "\u201cYou got so calm — nothing shakes you now.\u201d", tag: "calmer" },
@@ -987,13 +992,14 @@
       { k: "line", t: "Virtues aren't traits you have. They're stats you train — and you just picked your build." },
       { k: "feel", t: function (ctx) { var w = ((S.profile || {}).words) || []; return tr("Breathe them in") + ": " + w.slice(-2).join(" … "); }, secs: 7 },
       { k: "seal", line: "I choose who I'm being.", onSeal: function () { if (S.guide && S.guide.fd) S.guide.fd.s1 = 1; try { earn(6, { label: "lesson-words" }); } catch (e) {} save(); } }] },
-    fdp: { c: "#ff8a3a", beats: [
+    fdp: { c: "#ff8a3a", room: "hearth", beats: [
       { k: "line", t: "The most underrated move in any journey: deciding — out loud — that you're in.", big: true, orb: true },
       { k: "line", t: "The course calls it Initiate and Celebrate. Commit — then celebrate committing. That's how the brain learns to come back." },
       { k: "mirror", q: "How many days in a row will you come — to start?", save: "days", reply: "Honest. Small promises kept beat grand ones broken.", onPick: function (o, ctx) { ctx.days = +o.tag; }, opts: [
         { t: "2 — baby steps", tag: "2" }, { t: "5 — a strong start", tag: "5" }, { t: "7 — serious", tag: "7" }, { t: "14 — unstoppable", tag: "14" }] },
       { k: "line", t: "Know this going in: motivation is a campfire, not a furnace. It dies overnight — by design. Re-lighting it IS the streak." },
-      { k: "seal", line: "I re-light the fire. Every morning.", onSeal: function (ctx) { S.profile = S.profile || {}; S.profile.pact = { ts: Date.now(), days: ctx.days || 2 }; if (S.guide && S.guide.fd) S.guide.fd.sp = 1; try { earn(10, { label: "first-commit" }); celebrateGated("#ffd24a", 1); } catch (e) {} save(); } }],
+      { k: "seal", line: "I re-light the fire. Every morning.", holdMs: function (ctx) { return ({ 2: 1000, 5: 1600, 7: 2200, 14: 3000 })[+(ctx.days || 2)] || 1600; }, onSeal: function (ctx) { S.profile = S.profile || {}; S.profile.pact = { ts: Date.now(), days: ctx.days || 2 }; if (S.guide && S.guide.fd) S.guide.fd.sp = 1; try { earn(10, { label: "first-commit" }); celebrateGated("#ffd24a", 1); } catch (e) {} save(); } },
+      { k: "line", t: "Fist to chest — say YES, out loud or inside." }],
       onDone: function () { try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else c.remove(); } catch (e) {} } },
     fd2: { c: "#36b3f0", beats: [
       { k: "line", t: "Your self-image is a thermostat. It pulls you back to whatever \u201csomeone like me\u201d does.", big: true, orb: true },
@@ -1447,6 +1453,9 @@
     "Then the plan: if the wind comes — two minutes anyway.": "Тогда план: если налетит ветер — всё равно две минуты.",
     "Now the real thing — one arrow at today.": "Теперь по-настоящему — одна стрела в сегодня.",
     "Aim \u25b8": "Прицелься \u25b8",
+    "This is the alarm in your chest.": "Это тревога у тебя в груди.",
+    "Watch what your exhale does to it.": "Смотри, что с ней делает твой выдох.",
+    "Fist to chest — say YES, out loud or inside.": "Кулак к груди — скажи ДА, вслух или внутри.",
     "Frankl's space between stimulus and response — felt, not read.": "Франклов зазор между стимулом и ответом — прочувствованный, а не прочитанный.",
     "Before I ask you anything — ninety seconds. Let me show you what I do.": "Прежде чем я спрошу хоть что-то — девяносто секунд. Покажу, что я делаю.",
     "Before I ask you anything — ninety seconds. Let me show you what I do. Sit up.": "Прежде чем я спрошу хоть что-то — девяносто секунд. Покажу, что я делаю. Сядь ровно.",
@@ -4334,10 +4343,13 @@
     opts = opts || {};
     if (opts.trackTitle) { startTimer({ title: opts.trackTitle, catK: "restore", color: DOM.restore.c, flow: mode }); var r = activeTimers(); TF_BLOCKID = r.length ? r[r.length - 1].id : null; } // the ring lights + will slide aside in the SAME gesture (guidance+tracking fused); finish stops it
     TF_MODE = mode; TF_MODE_USERSET = !!opts.byTap;
+    try { var _tfR = el("trackerFull"); if (_tfR) _tfR.classList.toggle("room-dusk", mode === "pm"); } catch (e) {} // ROOMS v1 (§6): Base Camp dusk = a tint on the existing Close
+    if (opts.byTap) { try { entrySignature(0.1); } catch (e) {} } // §7: the signature rides the entry gesture
     if (!TF_OPEN) openTrackerFull(); else renderTrackerFull();
   }
   function exitStage(commit) { // the single exit door: write the flow's data (if commit), stop the flow timer (logs a Restore block + earns Spark), GENTLE+gated celebrate, un-corner the ring
     var mode = TF_MODE;
+    try { var _tfD = el("trackerFull"); if (_tfD) _tfD.classList.remove("room-dusk"); } catch (e) {}
     if (commit && mode === "journal") { // persist the journal entry onto the bookend baton: additive, no SCHEMA bump, rides export/import/undo
       // JOURNALING 101 (David 2026-06-28): build the RICH typed record {type,label,entries[],summary,mood,ts}. Back-compat: also write q/text so the
       // existing feed (journalEntries/journalSheet) keeps rendering; q=type label, text=summary. Empty flow (no entries, no mood) writes nothing.
@@ -10195,7 +10207,10 @@
     opts = opts || {};
     try { TTS.unlock(); if (TTS.warmAll) TTS.warmAll(); } catch (e) {}
     var ov = add(document.body, "div"), done = false, pre = null, post = null;
-    ov.style.cssText = "position:fixed;inset:0;z-index:135;background:radial-gradient(120% 100% at 50% 22%,#170b1e,#0a0410 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;color:#ffe9f4;font-family:var(--bub);";
+    // THE WELL (§6, P4): dark water, ripples, near-silence — the Stack's room. Threshold = the fade through dark + the entry signature.
+    ov.style.cssText = "position:fixed;inset:0;z-index:135;background:radial-gradient(130% 110% at 50% 30%,#0d1626,#060a14 74%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;color:#ffe9f4;font-family:var(--bub);animation:roomIn 1.8s ease;";
+    for (var _ri = 0; _ri < 2; _ri++) { var _rp = add(ov, "div", "well-rip"); _rp.style.animationDelay = (_ri * 3.4) + "s"; }
+    var _bedCtl = null; try { var _bc = sharedAudioCtx(); if (_bc) _bedCtl = startPad(_bc, bgBus() || _bc.destination, 0.04); } catch (e) {} // the Well's bed: the existing pad, low — near-silence, not silence
     var stage = add(ov, "div"); stage.style.cssText = "position:relative;z-index:1;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;";
     var hint = add(ov, "div"); hint.style.cssText = "position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:13px;font-weight:700;color:#8a7898;z-index:1;";
     var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:3;background:none;border:none;color:#6a5a78;font-size:20px;padding:8px;cursor:pointer;";
@@ -10205,7 +10220,7 @@
       return words.length * 130 + 500; }
     function orbEl(sz) { var o = add(stage, "div"); o.style.cssText = "flex:none;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:radial-gradient(circle at 40% 35%," + mixHex(OPEN_C, "#ffffff", 0.35) + "," + OPEN_C + " 60%," + mixHex(OPEN_C, "#160510", 0.3) + ");box-shadow:0 0 34px " + OPEN_C + "66;animation:breathe 9s ease-in-out infinite;"; return o; }
     function armTap(after) { hint.textContent = tr("tap to continue"); ov.onclick = function () { ov.onclick = null; hint.textContent = ""; (after || function () {})(); }; }
-    function finishOpen() { if (done) return; done = true; try { TTS.stop(); } catch (e) {} ov.remove(); if (onDone) onDone(); } // skip/close still proceeds to the survey — never trap a fresh user
+    function finishOpen() { if (done) return; done = true; try { TTS.stop(); } catch (e) {} try { if (_bedCtl) _bedCtl.stop(); } catch (e) {} ov.remove(); if (onDone) onDone(); } // skip/close still proceeds to the survey — never trap a fresh user
     xb.onclick = function (e) { e.stopPropagation(); finishOpen(); };
     function dial(title, sub, cb) { // the 0-10 state dial, dark, one thumb (charge, not tension: after should read HIGHER)
       stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
@@ -10218,7 +10233,7 @@
     }
     var STACK = [ // the five moves (§0 law 5): posture · breath · hand-on-heart + appreciation · the word · the anchor
       { t: "Sit up. Shoulders back — once.", orb: 0 },
-      { t: "One long breath out. Let the day off your chest.", orb: 1, secs: 10 },
+      { t: "This is the alarm in your chest.", t2: "Watch what your exhale does to it.", ember: 1, secs: 10 }, // §3 stone 1: the ember — a pulsing point that shrinks to calm with the paced exhale; two sober lines total (register law)
       { t: "Hand on your heart. One real thing you're glad of — even small.", orb: 0, secs: 8 },
       { t: "Now breathe in the one word you want more of.", orb: 1, secs: 7 }
     ];
@@ -10227,7 +10242,9 @@
       if (n >= STACK.length) { anchorStep(); return; }
       stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
       var s = STACK[n]; if (s.orb) orbEl(64);
-      var ms = lineIn(stage, s.t, false); speak(s.t);
+      if (s.ember) { var em = add(stage, "div"); em.style.cssText = "flex:none;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 42% 38%,#ffb24a,#ff6a2a 62%,#a02c10);box-shadow:0 0 30px rgba(255,110,42,.55);animation:emberCalm " + (s.secs || 10) + "s ease-out forwards;"; }
+      var ms = lineIn(stage, s.t, false); speak(s.t + (s.t2 ? " " + s.t2 : ""));
+      if (s.t2) { var t2 = add(stage, "div", null, tr(s.t2)); t2.style.cssText = "font-size:14px;font-weight:700;color:#c8a6d8;"; }
       if (s.secs) setTimeout(function () { if (done) return; runStackStep(n + 1); }, Math.max(ms + 1200, s.secs * 1000));
       else setTimeout(function () { if (done) return; armTap(function () { runStackStep(n + 1); }); }, ms);
     }
