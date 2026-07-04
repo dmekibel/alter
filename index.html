@@ -958,6 +958,8 @@
   @keyframes livePulse{ 0%,100%{box-shadow:0 3px 0 #160510,0 0 0 3px #ff7a1a,0 0 14px #ff5a1a;} 50%{box-shadow:0 3px 0 #160510,0 0 0 4px #ff5a1a,0 0 30px #ff7a1a;} } /* B1: the present BURNS — fire-orange glow ring pulse (David 2026-06-25) */
   .calx{ position:absolute; top:3px; right:4px; width:20px; height:20px; border-radius:7px; background:rgba(10,4,12,.42); color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; }
   .calblk.live{ z-index:3; } /* the live/current activity sits above neighbours, never squished */
+  .calblk.live.newborn{ animation:none; box-shadow:none !important; border-color:transparent; } /* first ~minute of tracking: no burning ring around a nearly-empty bubble — the ring arrives once the bar has a body (David device 2026-07-04: the empty orange ring floating at the line read as broken) */
+  .calblk.live.newborn > *{ display:none; } /* the stop-foot/label wait for space too — the pill + cockpit carry them meanwhile */
   .calblk.live .cn{ font-size:14px; padding-right:2px; }
   /* live footer (mockup 007): elapsed bottom-left + a big pink stop bottom-right */
   .calblk.live .livefoot{ position:absolute; left:9px; right:8px; bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px; z-index:5; }
@@ -2643,6 +2645,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=888"></script>
+  <script src="app.js?v=889"></script>
 </body>
 </html>
