@@ -2039,6 +2039,10 @@
   /* ===== ONBOARDING V3 (2026-07-04, _specs/ONBOARDING-V3-LOCKED): chat-picked ceremony layer ===== */
   .ob-pts{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 52px); right:14px; z-index:6; display:inline-flex; align-items:center; gap:7px; background:#3a1730; border:2.5px solid #160510; border-radius:13px; box-shadow:0 4px 0 #160510; padding:8px 14px; font-family:"Jost",sans-serif; font-weight:800; font-size:19px; color:#ffd24a; } /* THE POINTS PLACE (David 2026-07-04): all sparks fly HERE, not to the progress bar */
   .ob-pts i{ font-size:16px; }
+  .ob-pts.rain{ animation:obPtsRain 1.1s ease; } /* the chip runs the GEM palette for a beat when points land, then settles back to gold */
+  @keyframes obPtsRain{ 0%,100%{ color:#ffd24a; } 18%{ color:#ff5fa8; box-shadow:0 4px 0 #160510, 0 0 14px rgba(255,95,168,.55); } 42%{ color:#5fa8ff; box-shadow:0 4px 0 #160510, 0 0 14px rgba(95,168,255,.55); } 66%{ color:#b07aff; box-shadow:0 4px 0 #160510, 0 0 14px rgba(176,122,255,.55); } 88%{ color:#46e2a4; } }
+  .ob-back{ flex:none; width:40px; height:34px; border-radius:11px; background:#35142a; border:2px solid #160510; box-shadow:0 3px 0 #160510; color:#fff2f9; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-right:4px; align-self:flex-end; } /* ALWAYS a way back — undo your last answer (David 2026-07-04) */
+  .ob-back:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
   .ob-pts.pop{ animation:obPtsPop .45s var(--ease-spring); } @keyframes obPtsPop{ 40%{ transform:scale(1.22); } }
   .ob-ecard{ border:2.5px solid #160510; border-radius:16px; padding:17px 16px; background:#2f1524; box-shadow:0 5px 0 #160510; max-width:340px; margin-top:14px; } /* echo card — 1:1 with the approved chat widget */
   .ob-ecard .ob-eline{ margin-top:0; }
@@ -2639,6 +2643,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=887"></script>
+  <script src="app.js?v=888"></script>
 </body>
 </html>
