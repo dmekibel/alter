@@ -236,7 +236,7 @@
     ov.appendChild(b); return b;
   }
   var el = function (id) { return document.getElementById(id); };
-  var KEY = "alter_plan2", SCHEMA = 4, lastSaveErr = 0;
+  var KEY = "alter_plan2", SCHEMA = 5, lastSaveErr = 0; // 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -827,7 +827,7 @@
     var s0 = !!fd.s0; // L1 · the Switch (morningDoor completion marks it)
     var s1 = !!fd.s1 || (((S.profile || {}).words) || []).length >= 5; // L2 · Your Words (the tournament)
     var sp = !!fd.sp || !!(S.profile && S.profile.pact && S.profile.pact.ts); // L3 · THE PACT (Initiate & Celebrate — moved here from onboarding)
-    var s2 = !!fd.s2 || (S.timers || []).some(function (t) { return t.dayK === k && !/morning switch|reflection|the gap/i.test(t.title || ""); }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath|morning switch|the gap/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // L4 · one REAL tracked thing (lesson logs excluded — a lesson isn't the rep)
+    var s2 = !!fd.s2 || !!(S.range && S.range.lastArrowK === k) || (S.timers || []).some(function (t) { return t.dayK === k && !/morning switch|reflection|the gap/i.test(t.title || ""); }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath|morning switch|the gap/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // L4 · §3: the Range arrow landed IS the one-real-thing rep (a tracked thing still counts too — never stricter than before)
     var s3 = !!fd.s3; // L5 · the Gap
     var pmB = (S.bk || {})[k] ? (S.bk[k].pm || {}) : {};
     var s4 = !!fd.s4 || !!pmB.done; // L6 · the Close (PM Close v2, floor dose — taps only)
@@ -844,8 +844,8 @@
     nodes.push({ key: "fdp", icon: "ti-shield-check", title: tr("Lesson 3 · The Pact"), locked: !s1, _lead: lead(sp, !s1),
       line: sp ? tr("Committed — and celebrated. That's how returns are wired.") : tr("Initiate & Celebrate — the most underrated move in any journey."),
       color: "#ff8a3a", done: sp, act: gate(s1, function () { runLesson(DAY1_LESSONS.fdp); }) });
-    nodes.push({ key: "fd2", icon: "ti-player-play", title: tr("Lesson 4 · One Real Thing"), locked: !sp, _lead: lead(s2, !sp),
-      line: s2 ? tr("Tracked. A real vote, cast and counted.") : tr("Identity is a thermostat — learn what actually resets it."),
+    nodes.push({ key: "fd2", icon: "ti-target-arrow", title: tr("Lesson 4 · The Range"), locked: !sp, _lead: lead(s2, !sp), // §3 stone 4: the Range — the arrow's block IS the one-real-thing rep
+      line: s2 ? tr("Aimed. Today's arrow is on the board.") : tr("Identity is a thermostat — learn what actually resets it."),
       color: "#36b3f0", done: s2, act: gate(sp, function () { runLesson(DAY1_LESSONS.fd2); }) });
     // fd3 · THE GAP left day 1 (SPEC-FIRST-RUN §3): it's day 2's lesson slot now — jpNodes surfaces it via litGapDue(). s3 stays the done-flag; theGapLesson still sets it.
     nodes.push({ key: "fd4", icon: "ti-moon-stars", title: tr("Lesson 5 · The Close"), locked: (!evening && !s4) || !s2, _lead: lead(s4, (!evening && !s4) || !s2),
@@ -1004,7 +1004,7 @@
         { t: "…comes through when it matters", tag: "clutch", reply: "Good. We'll widen \u201cwhen it matters\u201d to include Tuesdays." }] },
       { k: "line", t: "Every real act is a vote for the person you're becoming. Enough votes — and the thermostat resets itself." },
       { k: "seal", line: "Small and real — that's how I vote." },
-      { k: "door", t: "Cast one now — one small true thing, tracked.", btn: "Pick it \u25b8", rep: function () { fdOneThing(); } }] },
+      { k: "door", t: "Now the real thing — one arrow at today.", btn: "Aim \u25b8", rep: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); } }] }, // §3 stone 4: the vote is cast at the Range — the arrow lands as a real block (fdOneThing absorbed by the arrow, §8)
     fd3: { c: "#46e2a4", beats: [
       { k: "line", t: "\u201cBetween stimulus and response there is a space. In that space is our power to choose.\u201d — Frankl", big: true, orb: true },
       { k: "mirror", q: "When you lose that space — what usually takes over?", save: "gapThief", onPick: function (o) { S.profile = S.profile || {}; S.profile.gapThief = o.tag; save(); }, opts: [
@@ -1174,6 +1174,11 @@
     if (_litOn) nodes.push({ key: "litopen", icon: "ti-sunrise", title: tr("The Open"), _lead: !_litOpenDone,
       line: _litOpenDone ? tr("Charged. The day is open.") : tr("Ninety seconds — set the day's charge."),
       color: "#ffd24a", done: _litOpenDone, act: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); } });
+    // LITURGY · THE AIM (§1/§4, P3): one arrow at the Range — the day's baby step becomes a REAL block on today's timeline. Done = today's arrow landed. The ceremony exits into the planner.
+    if (_litOn) { var _aimDone = !!(S.range && S.range.lastArrowK === k);
+      nodes.push({ key: "litaim", icon: "ti-target-arrow", title: tr("The Aim"), _lead: _litOpenDone && !_aimDone,
+        line: _aimDone ? tr("Aimed. Today's arrow is on the board.") : tr("One arrow — it becomes a real block on today."),
+        color: "#36b3f0", done: _aimDone, act: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); } }); }
 
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
     // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
@@ -1412,6 +1417,37 @@
   function flagSVG(code) { return SS_FLAGS[code] || SS_FLAGS.en; }
   var I18N = { ru: {
     // ===== THE OPEN + THE MAP + LITURGY SHELL (P1/P2, B4 catch-up 2026-07-05) =====
+    // ===== THE RANGE (P3, 2026-07-05) =====
+    "The Aim": "Прицел",
+    "One arrow — it becomes a real block on today.": "Одна стрела — она становится настоящим блоком в сегодня.",
+    "Aimed. Today's arrow is on the board.": "Прицелился. Сегодняшняя стрела на доске.",
+    "Lesson 4 · The Range": "Урок 4 · Стрельбище",
+    "The Range": "Стрельбище",
+    "You only ever get one arrow — today's.": "У тебя всегда только одна стрела — сегодняшняя.",
+    "Tap the target it belongs to.": "Коснись мишени, которой она принадлежит.",
+    "Arrows are data, not grades.": "Стрелы — это данные, а не оценки.",
+    "One thing you'd like more of this week?": "Чего тебе хотелось бы больше на этой неделе?",
+    "More movement": "Больше движения",
+    "A calmer head": "Спокойнее голова",
+    "Real progress on my thing": "Настоящий прогресс в моём деле",
+    "Better evenings": "Лучше вечера",
+    "More time with my people": "Больше времени со своими",
+    "A tidier space": "Порядок в пространстве",
+    "Pick your arrowhead — small on purpose.": "Выбери наконечник — маленький нарочно.",
+    "15 minutes on it": "15 минут на это",
+    "The first tiny piece": "Первый крошечный кусочек",
+    "Just open it": "Просто открой это",
+    "It's on your day.": "Это в твоём дне.",
+    "See it": "Посмотреть",
+    "What knocks arrows down, for you?": "Что сбивает твои стрелы?",
+    "The phone": "Телефон",
+    "My energy dies": "Кончается энергия",
+    "People need me": "Я нужен людям",
+    "I just forget": "Я просто забываю",
+    "Then the plan: if the wind comes — two minutes anyway.": "Тогда план: если налетит ветер — всё равно две минуты.",
+    "Now the real thing — one arrow at today.": "Теперь по-настоящему — одна стрела в сегодня.",
+    "Aim \u25b8": "Прицелься \u25b8",
+    "Frankl's space between stimulus and response — felt, not read.": "Франклов зазор между стимулом и ответом — прочувствованный, а не прочитанный.",
     "Before I ask you anything — ninety seconds. Let me show you what I do.": "Прежде чем я спрошу хоть что-то — девяносто секунд. Покажу, что я делаю.",
     "Before I ask you anything — ninety seconds. Let me show you what I do. Sit up.": "Прежде чем я спрошу хоть что-то — девяносто секунд. Покажу, что я делаю. Сядь ровно.",
     "Ninety seconds — set the day's charge.": "Девяносто секунд — задай заряд дня.",
@@ -2647,6 +2683,7 @@
     function _leadW(n) {
       if (n._lead) return 100;                                                   // regulate-first when depleted (Johnson Step 1)
       if (n.key === "litopen") return 95;                                        // the liturgy's OPEN — the day's first beat (state first, story second)
+      if (n.key === "litaim") return 92;                                         // the liturgy's AIM — one arrow, right after the open
       if (n.key === "am") return 90;                                             // open the day on purpose, first
       if (n._aimed) return 85;                                                   // last night's aim
       if (n.key === "pm") return (new Date().getHours() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
@@ -5927,6 +5964,15 @@
     if (S.tlm === undefined) S.tlm = { k: null, n: 0 };              // ≤2 TLM pings/day (dopamine-wave-pool law)
     if (S.profile) { S.profile.words = S.profile.words || []; S.profile.ingredients = S.profile.ingredients || []; }
     if (prevSchema < 4 && S.profile && S.profile.theoryMode == null) { var _lvl4 = ((S.guide || {}).appetiteState || {}).level; S.profile.theoryMode = (_lvl4 === "floor") ? "proverbs" : "cards"; } // derive: ceiling→cards, floor→proverbs
+    /* ===== THE RANGE (SCHEMA 4→5, SPEC-FIRST-RUN §4, 2026-07-05): S.range = { targets:[{id,title,domain,horizon,placedK,arrows:[{k,dx,dy,blockId,done}],woop,retiredK}], lastArrowK }. Existing active goals import ONCE as season-horizon targets (title-deduped) — your goals ARE the targets, nothing re-entered. ===== */
+    S.range = S.range || { targets: [], lastArrowK: null }; S.range.targets = S.range.targets || [];
+    if (prevSchema < 5 && (S.goals || []).length) {
+      var _seen5 = {}; S.range.targets.forEach(function (t) { _seen5[(t.title || "").toLowerCase()] = 1; });
+      (S.goals || []).filter(function (g) { return g.active !== false && g.title; }).forEach(function (g) {
+        if (_seen5[g.title.toLowerCase()]) return; _seen5[g.title.toLowerCase()] = 1;
+        S.range.targets.push({ id: uid(), title: g.title, domain: g.domain || "focus", horizon: "season", placedK: todayK(), arrows: [], woop: g.woop || null });
+      });
+    }
     S.v = SCHEMA;
     } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged — backed up + started fresh"); }
   }
@@ -10223,6 +10269,110 @@
       setTimeout(function () { if (done) return; armTap(function () { dial(opts.daily ? "Where's your charge right now?" : "First — where's your charge right now?", "0 = flat · 10 = fully lit", function (v) { pre = v; runStackStep(0); }); }); }, ms);
     })();
   }
+  // ===== THE RANGE (SPEC-FIRST-RUN §4, P3 — the flagship): targets = your actual goals at the distance they live at; the ONE rule carries all the meaning — "You only ever get one arrow — today's." Aim → arrowhead (baby-step chip) → loose → the arrow LANDS AS A REAL BLOCK on today's timeline (safe path only: nextFreeMin + blocks().push + reflow — same as the doorway node). Arrows stick where they land (a scatter, never a score). Floor dose: one near target, chips only. v1 defers: drag-placement, carry-off ceremony, mist mirror, multi-arrow ceiling. =====
+  function rangeState() { S.range = S.range || { targets: [], lastArrowK: null }; S.range.targets = S.range.targets || []; return S.range; }
+  var RANGE_HORIZONS = { week: { y: 74, sz: 78, op: 1 }, season: { y: 52, sz: 58, op: 0.9 }, year: { y: 34, sz: 42, op: 0.7 }, someday: { y: 18, sz: 30, op: 0.45 } }; // depth = vertical position + size + mist
+  function rangeNearest() { var ord = ["week", "season", "year", "someday"], ts = rangeState().targets.filter(function (t) { return !t.retiredK; }); ts.sort(function (a, b) { return ord.indexOf(a.horizon) - ord.indexOf(b.horizon); }); return ts[0] || null; }
+  function rangeScene(onDone) {
+    try { TTS.unlock(); } catch (e) {}
+    var R = rangeState(), k = todayK(), done = false;
+    var ov = add(document.body, "div");
+    ov.style.cssText = "position:fixed;inset:0;z-index:135;background:linear-gradient(180deg,#1a0f2e 0%,#2e1a42 40%,#4a2a52 70%,#6e4260 100%);display:flex;flex-direction:column;align-items:center;padding:26px;box-sizing:border-box;overflow:hidden;color:#ffe9f4;font-family:var(--bub);";
+    entrySignature();
+    var haze = add(ov, "div"); haze.style.cssText = "position:absolute;left:-10%;right:-10%;top:8%;height:34%;background:radial-gradient(60% 100% at 50% 100%,rgba(255,210,74,.10),transparent 70%);pointer-events:none;"; // dawn on the far field
+    var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:3;background:none;border:none;color:#8a7898;font-size:20px;padding:8px;cursor:pointer;";
+    function finish() { if (done) return; done = true; try { TTS.stop(); } catch (e) {} ov.remove(); if (onDone) { try { onDone(); } catch (e) {} } }
+    xb.onclick = function (e) { e.stopPropagation(); finish(); };
+    var field = add(ov, "div"); field.style.cssText = "position:relative;z-index:1;width:100%;max-width:390px;flex:1;min-height:0;";
+    var foot = add(ov, "div"); foot.style.cssText = "position:relative;z-index:2;width:100%;max-width:390px;display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);text-align:center;";
+    function speak(t) { try { say(tr(t), VPROF.mantra); } catch (e) {} }
+    function fline(t, big) { var d = add(foot, "div"); d.style.cssText = "font-weight:800;line-height:1.4;color:#ffe9f4;font-size:" + (big ? "21px" : "15px") + ";"; d.textContent = tr(t); return d; }
+    function chipRow(opts, cb) { var w = add(foot, "div"); w.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;";
+      opts.forEach(function (o) { var b = add(w, "button", "obv-row"); b.style.setProperty("--oc", o.c); b.style.setProperty("--ost", tfStripeDoor(o.c)); b.style.minHeight = "50px"; b.innerHTML = '<i class="ti ' + (o.ic || "ti-target") + ' oi"></i><span class="ol" style="font-size:15px">' + esc(tr(o.t)) + '</span>'; b.onclick = function (e) { e.stopPropagation(); cb(o); }; });
+      return w; }
+    function drawField() { // targets as chunky game-piece discs at their distance — ink borders, hard shadows, domain color; mist by horizon
+      field.innerHTML = "";
+      var ts = R.targets.filter(function (t) { return !t.retiredK; });
+      ts.forEach(function (t, i) { var H = RANGE_HORIZONS[t.horizon] || RANGE_HORIZONS.season, c = (DOM[t.domain] || DOM.focus).c;
+        var lane = 18 + (i % 3) * 32 + ((i * 7) % 10); // simple spread — no overlap chaos at v1 counts (≤6)
+        var el2 = add(field, "div"); el2.className = "rg-t"; el2.dataset.tid = t.id;
+        el2.style.cssText = "position:absolute;left:" + lane + "%;top:" + H.y + "%;transform:translate(-50%,-50%);opacity:" + H.op + ";display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;" + (t.horizon === "someday" ? "filter:blur(.6px);" : "");
+        var disc = add(el2, "div"); disc.style.cssText = "width:" + H.sz + "px;height:" + H.sz + "px;border-radius:50%;background:" + mixHex(c, "#160510", 0.35) + ";border:3px solid #160510;box-shadow:0 4px 0 #160510, inset 0 0 " + Math.round(H.sz / 3) + "px " + c + "44;display:flex;align-items:center;justify-content:center;";
+        disc.innerHTML = '<i class="ti ' + ((DOM[t.domain] || DOM.focus).ti || "ti-target") + '" style="font-size:' + Math.round(H.sz * 0.42) + 'px;color:' + mixHex(c, "#ffffff", 0.35) + '"></i>';
+        var lb = add(el2, "div", null, t.title); lb.style.cssText = "font-size:11px;font-weight:800;color:#e8d8ee;max-width:110px;text-align:center;line-height:1.2;text-shadow:0 1px 0 #160510;";
+        var landed = (t.arrows || []).filter(function (a) { return a.k === k; }).length; // today's arrow stuck in this target
+        if (landed) { var st = add(disc, "i", "ti ti-arrow-narrow-up"); st.style.cssText = "position:absolute;font-size:20px;color:#ffd24a;transform:rotate(38deg) translate(6px,-" + Math.round(H.sz / 2) + "px);text-shadow:0 1px 0 #160510;"; }
+        el2.onclick = function (e) { e.stopPropagation(); if (R.lastArrowK === k) { toast(tr("Arrows are data, not grades.")); return; } aimAt(t); };
+      });
+    }
+    function placeFlow() { // FLOOR DOSE (§4): "one thing you'd like more of this week?" — chips only (no typing law); custom targets arrive via goals
+      foot.innerHTML = "";
+      fline("One thing you'd like more of this week?", true); speak("One thing you'd like more of this week?");
+      chipRow([
+        { t: "More movement", ic: "ti-run", c: "#ff8a3a", d: "move" },
+        { t: "A calmer head", ic: "ti-wind", c: "#46e2a4", d: "restore" },
+        { t: "Real progress on my thing", ic: "ti-rocket", c: "#36b3f0", d: "focus" },
+        { t: "Better evenings", ic: "ti-moon", c: "#5fa8ff", d: "restore" },
+        { t: "More time with my people", ic: "ti-users", c: "#ff5fa8", d: "connect" },
+        { t: "A tidier space", ic: "ti-sparkles", c: "#b07aff", d: "upkeep" }
+      ], function (o) {
+        R.targets.push({ id: uid(), title: tr(o.t), domain: o.d, horizon: "week", placedK: k, arrows: [] });
+        save(); drawField();
+        var t = R.targets[R.targets.length - 1];
+        aimAt(t);
+      });
+    }
+    function aimAt(t) { // the arrowhead: baby-step chips grown from the starter plan + the three universals
+      foot.innerHTML = "";
+      fline(t.title, true); fline("Pick your arrowhead — small on purpose.");
+      var chips = [{ t: "15 minutes on it", ic: "ti-clock", c: "#36b3f0", m: 15 }, { t: "The first tiny piece", ic: "ti-puzzle", c: "#46e2a4", m: 10 }, { t: "Just open it", ic: "ti-door-enter", c: "#ffd24a", m: 5 }];
+      chipRow(chips, function (o) { loose(t, o); });
+    }
+    function loose(t, o) { // the arrow flies — then LANDS AS A BLOCK (the enacted meaning; ceremony exits into the planner)
+      foot.innerHTML = "";
+      var tEl = field.querySelector('[data-tid="' + t.id + '"]');
+      var fr = field.getBoundingClientRect(), tr2 = tEl ? tEl.getBoundingClientRect() : fr;
+      var arrow = add(ov, "div"); arrow.style.cssText = "position:fixed;left:" + Math.round(fr.left + fr.width / 2) + "px;top:" + Math.round(fr.bottom - 8) + "px;width:10px;height:10px;border-radius:50%;background:#ffd24a;box-shadow:0 0 12px #ffd24a99;z-index:4;transition:transform .7s cubic-bezier(.3,.6,.3,1), opacity .2s;";
+      var dx = (tr2.left + tr2.width / 2) - (fr.left + fr.width / 2) + (Math.random() * 14 - 7), dy = (tr2.top + tr2.height / 2) - (fr.bottom - 8) + (Math.random() * 10 - 5);
+      requestAnimationFrame(function () { arrow.style.transform = "translate(" + Math.round(dx) + "px," + Math.round(dy) + "px) scale(.7)"; });
+      setTimeout(function () { if (done) return; arrow.style.opacity = "0"; setTimeout(function () { arrow.remove(); }, 250);
+        try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+        var t0 = nextFreeMin(k), bid = uid(); // THE SAFE WRITE PATH — identical to the doorway node + exitStage flow-down; no timeline render code touched
+        blocks(k).push({ id: bid, time: pad(Math.floor(t0 / 60)) + ":" + pad(t0 % 60), mins: o.m, title: tr(o.t) + " · " + t.title, prio: 2, color: (DOM[t.domain] || DOM.focus).c, domain: t.domain, done: false, fromRange: true });
+        reflow(k);
+        t.arrows = t.arrows || []; t.arrows.push({ k: k, dx: Math.round(dx), dy: Math.round(dy), blockId: bid, done: false });
+        R.lastArrowK = k; save();
+        try { earn(4, { catK: "focus", label: "range-arrow" }); } catch (e) {}
+        drawField();
+        if (!R.woopAsked) { windFlow(t); } else { landed(); }
+      }, 720);
+    }
+    function windFlow(t) { // WOOP rides after the FIRST arrow ever (§4): name the wind, pocket the plan
+      foot.innerHTML = "";
+      fline("What knocks arrows down, for you?", true); speak("What knocks arrows down, for you?");
+      chipRow([
+        { t: "The phone", ic: "ti-device-mobile", c: "#b07aff", tag: "phone" },
+        { t: "My energy dies", ic: "ti-battery-1", c: "#7f9bc4", tag: "energy" },
+        { t: "People need me", ic: "ti-users", c: "#ff5fa8", tag: "people" },
+        { t: "I just forget", ic: "ti-bulb-off", c: "#ffd24a", tag: "forget" }
+      ], function (o) {
+        R.woopAsked = 1; t.woop = { o: o.tag, p: "two minutes anyway" }; save();
+        foot.innerHTML = "";
+        fline("Then the plan: if the wind comes — two minutes anyway.", true); speak("Then the plan: if the wind comes — two minutes anyway.");
+        var b = add(foot, "button", "ob-btn go", tr("See it") + " ▸"); b.onclick = function (e) { e.stopPropagation(); finish(); try { renderAll(); } catch (er) {} toast("✦ " + tr("It's on your day.")); };
+      });
+    }
+    function landed() {
+      foot.innerHTML = "";
+      fline("It's on your day.", true); speak("It's on your day.");
+      var b = add(foot, "button", "ob-btn go", tr("See it") + " ▸"); b.onclick = function (e) { e.stopPropagation(); finish(); try { renderAll(); } catch (er) {} };
+    }
+    drawField();
+    var live = R.targets.filter(function (t) { return !t.retiredK; });
+    if (!live.length) { placeFlow(); }
+    else if (R.lastArrowK === k) { fline("Arrows are data, not grades.", true); var b0 = add(foot, "button", "ob-btn go", tr("Done") + " ✓"); b0.onclick = function (e) { e.stopPropagation(); finish(); }; }
+    else { fline("You only ever get one arrow — today's.", true); speak("You only ever get one arrow — today's."); fline("Tap the target it belongs to."); var near = rangeNearest(); if (live.length === 1 && near) aimAt(near); }
+  }
   function reprogramTool(onDone) {
     beatRunner({
       onFinish: function (skipped) { if (onDone) onDone(); if (!skipped) setTimeout(function () { offerKeepMantra(); }, 450); }, // ORGAN I: a completed Rewire → keep the line as your nightly mantra
@@ -10858,7 +11008,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); } };
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
