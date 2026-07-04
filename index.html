@@ -328,7 +328,9 @@
   /* ALIVE active node (David 2026-07-01, refined): crisp COLOR-MATCHED glow (var --glow set per node) — a calm lift + scale-breath + a tight halo in the node's own colour that swells, so the focal coin reads premium & coherent, not a blurry off-colour smudge */
   @keyframes jpAlive{0%,100%{transform:translateY(0) scale(1);filter:drop-shadow(0 4px 7px var(--glow,rgba(255,95,160,.3)));}50%{transform:translateY(-6px) scale(1.04);filter:drop-shadow(0 9px 17px var(--glow,rgba(255,95,160,.55)));}}
   .jp-card{margin-top:13px;width:256px;max-width:86vw;background:#2c081a;border:2.5px solid var(--ink);border-radius:16px;padding:15px 16px;text-align:center;position:relative;z-index:4;box-shadow:0 4px 0 var(--ink);}
-  .jp-card:before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#2c081a;border-left:2.5px solid var(--ink);border-top:2.5px solid var(--ink);}
+  /* punch-list #19 (David device 2026-07-04): the rotated-diamond connector read as a BROKEN bubble — replaced with a classic speech-bubble tail (ink triangle behind, fill triangle in front) */
+  .jp-card:before{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:12px solid var(--ink);}
+  .jp-card:after{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid #2c081a;}
   .jp-card .jc-t{font-family:var(--bub);font-size:17.5px;font-weight:800;color:#fff2f9;line-height:1.18;}
   .jp-card .jc-l{font-family:"Jost",sans-serif;font-size:14px;font-weight:600;color:#d59cb4;margin-top:4px;line-height:1.35;} /* AUDIT P1: the step's meaning, readable at arm's length */
   .jp-card .jc-cta{margin-top:12px;width:100%;min-height:52px;color:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:13px;font-family:var(--bub);font-size:16px;font-weight:800;letter-spacing:.6px;cursor:pointer;box-shadow:0 4px 0 var(--ink);transition:transform .16s cubic-bezier(.34,1.56,.64,1), box-shadow .16s cubic-bezier(.34,1.56,.64,1);}
@@ -1482,7 +1484,8 @@
   #ltHint{ background:#4a1126; color:#ffd9ec; font-size:10.5px; border-radius:7px; padding:3px 8px; font-weight:700; flex:none; }
   /* ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) ===== */
   /* SHARED-ELEMENT MORPH (FLIP) model (David 2026-06-28): the sheet shows at FULL size; only its dark BACKGROUND fades in (content crossfade is banned). Each big element FLIES/GROWS from its mini dock counterpart — circles via uniform scale only, never distort. The outer no longer clips by height (no more rise/crossfade). */
-  #trackerFull{ position:fixed; left:0; right:0; bottom:0; top:auto; height:100dvh; z-index:90; overflow:hidden; opacity:0; pointer-events:none; border-radius:0; touch-action:none; overscroll-behavior:none; } /* §12 CALM LAW: the cockpit owns the FULL screen — no calendar peek */
+  #trackerFull{ position:fixed; left:0; right:0; bottom:0; top:auto; height:100dvh; z-index:90; overflow:hidden; opacity:0; pointer-events:none; border-radius:0; touch-action:none; overscroll-behavior:none; padding-top:env(safe-area-inset-top, 0px); box-sizing:border-box; } /* §12 CALM LAW: the cockpit owns the FULL screen — no calendar peek. safe-area-top (punch-list #22): content must never hide under the iPhone island */
+  .ob-card{ padding-top:max(14px, env(safe-area-inset-top, 0px)); } /* onboarding/fd overlays clear the island too */
   #trackerFull.on{ opacity:1; pointer-events:auto; }
   /* B (David 2026-06-30): Soul Force readout (cockpit) + "that's like me" ping (body-level so it shows even when cockpit is closed) */
   .tf-sf{ position:absolute; top:30px; left:50%; transform:translateX(-50%); font-size:12px; color:#ffd98a; font-weight:600; letter-spacing:.02em; opacity:.92; z-index:4; white-space:nowrap; pointer-events:none; }
@@ -2054,9 +2057,9 @@
   .ob-btn.asleep{ background:#2c1226; color:rgba(255,242,249,.38); border-color:#160510; box-shadow:0 5px 0 rgba(22,5,16,.8); pointer-events:none; } /* Next SLEEPS until answered (Duolingo check pattern) */
   .ob-btn.ignite{ position:relative; overflow:hidden; } .ob-btn.ignite::after{ content:""; position:absolute; top:-30%; bottom:-30%; left:0; width:36%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent); transform:skewX(-14deg) translateX(-260%); animation:obIgn .7s ease-out .05s 1; } @keyframes obIgn{ to{ transform:skewX(-14deg) translateX(420%); } }
   /* INTRO — the Spark script materializes word by word, like it's being spoken */
-  .obi-line{ font-family:"Jost",sans-serif; font-weight:700; font-size:21px; line-height:1.45; color:#fff2f9; margin:0 0 14px; max-width:340px; text-align:center; }
+  .obi-line{ font-family:"Jost",sans-serif; font-weight:700; font-size:23.5px; line-height:1.45; color:#fff2f9; margin:0 0 14px; max-width:352px; text-align:center; } /* punch-list #1 (David device 2026-07-04): intro text up a notch */
   .obi-line b{ font-weight:800; }
-  .obi-line.big{ font-size:25px; font-weight:800; margin-top:4px; }
+  .obi-line.big{ font-size:28px; font-weight:800; margin-top:4px; }
   .obi-w{ display:inline-block; opacity:0; animation:obiW .5s var(--ease-settle) var(--d,0s) both; }
   @keyframes obiW{ from{ opacity:0; transform:translateY(9px); } to{ opacity:1; transform:none; } }
   .obi-fast .obi-w{ animation-duration:.01s; animation-delay:0s !important; }
@@ -2648,6 +2651,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=899"></script>
+  <script src="app.js?v=900"></script>
 </body>
 </html>

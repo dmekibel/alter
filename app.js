@@ -801,7 +801,7 @@
     var fd = (S.guide || {}).fd; if (!fd || fd.done) return null;
     var k = todayK(), nodes = [];
     if (fd.k && fd.k !== k) { fd.done = true; try { save(); } catch (e) {} return null; } // the stones are a DAY-ONE trail: an unfinished first day hatches quietly at day end (no ceremony) — day 2 must open with the callback, never with stale day-1 homework (2026-07-03)
-    var s0 = !!fd.s0 || (S.timers || []).some(function (t) { return t.dayK === k; }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && l.title !== "Gratitude"; }); // exclude the (now vibe-sized: one/two/three) onboarding chore from counting as stone-0's real track
+    var s0 = !!fd.s0 || (S.timers || []).some(function (t) { return t.dayK === k; }) || (logs(k) || []).some(function (l) { return !/things? up off the floor/i.test(l.title || "") && !/conscious breath/i.test(l.title || "") && !/^Mood:/.test(l.title || "") && l.title !== "Gratitude"; }); // exclude the onboarding chore + the onboarding breath + mood stamps from counting as stone-0's real track (punch-list #20: the first stone showed pre-checked because the onboarding breath log counted)
     var amB = (S.bk || {})[k] ? (S.bk[k].am || {}) : {};
     var s1 = !!fd.s1 || !!amB.done;
     var s2 = !!fd.s2, s3 = !!fd.s3;
@@ -829,9 +829,7 @@
     nodes.push({ key: "fd2", icon: "ti-wand", title: "Shape today — my offer", locked: !s1,
       line: s2 ? "Shaped. Small and real." : "I'll propose a tiny day from what you've told me. You adjust.",
       color: DOM.focus.c, done: s2, act: function () { if (!s1) { toast("one stone at a time — the glowing one first"); return; } fdPropose(); } });
-    nodes.push({ key: "fd3", icon: "ti-seeding", title: "Come see your world", locked: !s2,
-      line: s3 ? "It grows from real things. Only you can water it." : "Your seed's out there. One look.",
-      color: "#46e2a4", done: s3, act: function () { if (!s2) { toast("one stone at a time — the glowing one first"); return; } S.guide.fd.s3 = 1; save(); toast("It only grows from real things. I can't water it — only you can."); setPaneRest("game"); } });
+    // fd3 "Come see your world" REMOVED (punch-list #26, David device 2026-07-04): it led to the game pane which isn't ready — a first-day stone must never dead-end. Returns when the world is worth visiting.
     nodes.push({ key: "fd4", icon: "ti-moon-stars", title: "One honest line", locked: !evening && !s4,
       line: s4 ? "Day one, closed. See you tomorrow." : evening ? "About today. A line is enough." : "tonight — it'll glow when it's time",
       color: DOM.restore.c, done: s4, act: function () {
@@ -5079,7 +5077,7 @@
       { sec: 0, key: "age", q: "How old are you?", opts: [["teens", "Under 20", "ti-seeding", "#46e2a4"], ["20s", "20s", "ti-rocket", "#5fa8ff"], ["30s", "30s", "ti-flame", "#ff8a3a"], ["40s", "40+", "ti-crown", "#ffd24a"]] },
       { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["office", "Office job", "ti-briefcase", "#7f9bc4"], ["free", "Freelance", "ti-device-laptop", "#34d39a"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["figuring", "Figuring it out", "ti-compass", "#ff8a3a"]] },
       // ORGAN A (DEPTH WAVE 1): the eulogy compressed — death removed, mechanism intact. ≤2 → P.words, which feed TLM pings, the comeback protocol, and the guardian's vocabulary.
-      { sec: 0, key: "words", q: "A year from now, someone who loves you says you've become…", multi: true, cap: 2, opts: [["calmer", "Calmer", "ti-wind", "#46e2a4"], ["stronger", "Stronger", "ti-barbell", "#ff8a3a"], ["builder", "A builder", "ti-tools", "#b07aff"], ["consistent", "Consistent", "ti-checkbox", "#36b3f0"], ["present", "More present", "ti-eye", "#ff5fa8"], ["freer", "Freer", "ti-feather", "#ffd24a"]] },
+      { sec: 0, key: "words", q: "A year from now, someone who loves you says you've become…", multi: true, opts: [["calmer", "Calmer", "ti-wind", "#46e2a4"], ["stronger", "Stronger", "ti-barbell", "#ff8a3a"], ["builder", "A builder", "ti-tools", "#b07aff"], ["consistent", "Consistent", "ti-checkbox", "#36b3f0"], ["present", "More present", "ti-eye", "#ff5fa8"], ["freer", "Freer", "ti-feather", "#ffd24a"]] },
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
       { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
@@ -5091,7 +5089,7 @@
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }, { t: "name" }];
+    var BEATS = [{ t: "intro" }]; // name beat REMOVED (punch-list #5, David device 2026-07-04: "no typing" — the app addresses you as "you"; a name can come later, never typed in onboarding)
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); if (si === 1) { BEATS.push({ t: "breath" }); BEATS.push({ t: "write" }); } });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "wall" }, { t: "voice" }, { t: "pact" }, { t: "mint" }, { t: "seed" });
     var bi2 = 0, advT = null, _justPicked = false;
@@ -5171,6 +5169,8 @@
       paintBar(); body.innerHTML = ""; foot.innerHTML = "";
       backB.style.visibility = bi2 > 0 ? "" : "hidden";
       var B = BEATS[bi2];
+      var _inSurvey = (B.t === "q" || B.t === "gate" || B.t === "echo" || B.t === "breath" || B.t === "write"); // punch-list #2+#4: the battery bar exists ONLY during the survey — not on the intro, and not on the ritual beats after (so it can never read "done" while screens keep coming)
+      segEls.forEach(function (sg) { sg.style.display = _inSurvey ? "" : "none"; });
       var _sc3 = (B.t === "q") ? B.q.sec : (B.t === "gate") ? B.sec : -1; ov.setAttribute("data-sec", _sc3 >= 0 ? String(_sc3) : ""); // the whole ROOM shifts biome per section (Pokemon region feel)
       body.className = "ob-body center";
       if (B.t === "intro") { // THE SPARK OPEN (locked intro B): the real animated mark + the script arriving word by word, like it's being spoken
@@ -5183,20 +5183,10 @@
         iline("It never goes out. It waits.");
         iline("My whole job is keeping yours lit.");
         iline("I'm Alter — your guardian.", true);
-        var ib = stdFoot(tr("Let's go") + " ▸"); ib.classList.add("asleep");
+        var ib = stdFoot(tr("Let's go") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen (punch-list #3) — the intro IS the app's handshake
         var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
         return; }
-      if (B.t === "name") { obMark(body, 110);
-        add(body, "div", "ob-q", tr("You know me now. What do I call you?"));
-        var nw = add(body, "div"); nw.style.cssText = "display:flex;gap:9px;width:100%;max-width:340px;margin-top:20px;align-items:center;";
-        var ni = document.createElement("input"); ni.type = "text"; ni.className = "ws-text"; ni.style.cssText = "min-height:0;height:54px;flex:1;margin-top:0;text-align:center;font-size:18px;"; ni.placeholder = tr("your name"); ni.value = d2.name; nw.appendChild(ni);
-        var names = ["Ray", "Sky", "Nova", "Alex", "Sam", "Kai"]; var sh = add(nw, "button", "ws-x"); sh.style.cssText = "width:54px;height:54px;flex:none;font-size:18px;"; sh.innerHTML = '<i class="ti ti-arrows-shuffle"></i>'; sh.onclick = function () { ni.value = names[Math.floor((Date.now() / 100) % names.length)]; ni.dispatchEvent(new Event("input")); };
-        var nrep = add(body, "div", "ob-sb"); nrep.style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#ff9ec9;min-height:20px;font-size:14.5px;";
-        ni.addEventListener("input", function () { var v = ni.value.trim(); nrep.textContent = v.length >= 2 ? v + ". " + tr("Good name for a comeback.") : "";
-          if (ni.value.length) { try { var r6 = ni.getBoundingClientRect(); var sp6 = add(ov, "b", "ob-rise obp-star"); sp6.style.cssText = "left:" + Math.round(r6.left + 14 + ((ni.value.length * 23) % Math.max(20, r6.width - 28))) + "px;top:" + Math.round(r6.top - 2) + "px;width:8px;height:8px;background:" + ["#ffd24a", "#ff5fa8", "#fff"][ni.value.length % 3] + ";box-shadow:0 0 7px rgba(255,210,74,.5);"; setTimeout(function () { sp6.remove(); }, 1150); } catch (e) {} } });
-        var b = stdFoot(); b.onclick = function () { d2.name = ni.value.trim() || tr("friend"); next(); };
-        setTimeout(function () { try { ni.focus(); } catch (e) {} }, 400); return; }
       if (B.t === "gate") { var sec = SECTIONS[B.sec];
         var g = add(body, "div", "obv-gate"); g.style.setProperty("--sc", sec.c); g.style.background = sec.pat;
         add(g, "div", "gfoil"); var gi2 = add(g, "div", "gic"); gi2.innerHTML = '<i class="ti ' + sec.ic + '"></i>';
@@ -5206,25 +5196,29 @@
         add(body, "div", "ob-kick", tr("PART") + " " + (q.sec + 1) + " · " + tr(SECTIONS[q.sec].l));
         add(body, "div", "ob-q", tr(q.q));
         var wrap = add(body, "div", q.rows ? "obv-rows" : "obv-tiles");
+        // IN-PLACE toggling (punch-list #7, David device 2026-07-04): a tap must NEVER rebuild the screen — the full draw() replayed the entrance cascade (opacity-0 first frame = the "black flash + menu reset"). Tiles repaint themselves; the bar, reply line and Next button update in place. Also: no plus badge, no checkmark (punch-list #11+#12) — selection IS the lit stripe; and NO caps ever (punch-list #8) — pick as many as you like.
+        var _tileEls = [], _reply = null, qgo;
+        function tilePicked(o) { return q.multi ? (d2[q.key].indexOf(o[0]) >= 0) : d2[q.key] === o[0]; }
+        function paintTile(el2, o) { var picked = tilePicked(o); el2.classList.toggle("on", picked); el2.style.background = picked ? tfStripeDoor(o[3]) : ""; el2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + (o[4] ? '<span class="os">' + esc(tr(o[4])) + '</span>' : '') + '</span>'; }
         q.opts.forEach(function (o) {
           var el2 = add(wrap, "button", (q.rows ? "obv-row" : "obv-tile"));
           el2.style.setProperty("--oc", o[3]); el2.style.setProperty("--ost", tfStripeDoor(o[3]));
-          var picked = q.multi ? (d2[q.key].indexOf(o[0]) >= 0) : d2[q.key] === o[0];
-          if (picked) el2.classList.add("on");
-          el2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + (o[4] ? '<span class="os">' + esc(tr(o[4])) + '</span>' : '') + '</span>' + (picked ? '<i class="ti ti-check ock"></i>' : (q.multi ? '<span class="oplus"><i class="ti ti-plus"></i></span>' : ''));
-          el2.style.background = picked ? tfStripeDoor(o[3]) : "";
-          el2.onclick = function () { // V3: nothing auto-advances — answers TOGGLE freely, Next ignites when there's one (David: "always a chance to change your answer")
+          paintTile(el2, o); _tileEls.push([el2, o]);
+          el2.onclick = function () { // answers TOGGLE freely, Next ignites when there's one — all without a rebuild
             if (q.multi) { var arr = d2[q.key], ix = arr.indexOf(o[0]);
               if (o[0] === "none") { d2[q.key] = ix >= 0 ? [] : ["none"]; }
-              else { if (ix >= 0) arr.splice(ix, 1); else { var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); if (q.cap && arr.length >= q.cap) arr.shift(); /* capped pick (words ≤2): oldest drops so the new one lands */ arr.push(o[0]); _justPicked = true; } }
-              secAward(q.sec, el2); draw(); return; }
-            if (d2[q.key] !== o[0]) _justPicked = true;
-            d2[q.key] = o[0]; secAward(q.sec, el2); draw();
+              else { if (ix >= 0) arr.splice(ix, 1); else { var nx = arr.indexOf("none"); if (nx >= 0) arr.splice(nx, 1); arr.push(o[0]); } } }
+            else { d2[q.key] = (d2[q.key] === o[0]) ? "" : o[0]; }
+            _tileEls.forEach(function (p) { paintTile(p[0], p[1]); });
+            if (_reply) _reply.textContent = (q.reply && d2[q.key] && q.reply[d2[q.key]]) ? tr(q.reply[d2[q.key]]) : "";
+            var ok = q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key];
+            qgo.classList.toggle("asleep", !ok); if (ok) qgo.classList.add("ignite");
+            paintBar(); secAward(q.sec, el2);
           };
         });
-        if (q.reply && d2[q.key]) { add(body, "div", "ob-sb", tr(q.reply[d2[q.key]])).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;"; }
-        var qgo = stdFoot(); var qok = q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key];
-        if (!qok) qgo.classList.add("asleep"); else if (_justPicked) { qgo.classList.add("ignite"); _justPicked = false; }
+        if (q.reply) { _reply = add(body, "div", "ob-sb", (d2[q.key] && q.reply[d2[q.key]]) ? tr(q.reply[d2[q.key]]) : ""); _reply.style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;min-height:20px;"; }
+        qgo = stdFoot(); var qok = q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key];
+        if (!qok) qgo.classList.add("asleep");
         return; }
       if (B.t === "echo") { // THE ECHO (locked #5): the guardian says your answers back — proof it listened
         obMark(body, 96);
@@ -5252,14 +5246,16 @@
         add(body, "div", "ob-eline", picked2.slice(0, 4).map(function (o) { return tr(o[1]); }).join(" · ")).style.marginTop = "4px";
         add(body, "div", "ob-sb", tr("Every answer became a star. This is your sky now — I'll be walking it with you.")).style.cssText = "text-align:center;margin-top:10px;";
         stdFoot(); return; }
-      if (B.t === "voice") { // SPEAKING FLAMES (locked A′): the flame grows down the list, the sub-line is the REAL sentence
+      if (B.t === "voice") { // SPEAKING FLAMES (locked A′): the flame grows down the list, the sub-line is the REAL sentence. IN-PLACE picks (punch-list #7/#12): no rebuild, no checkmark — the lit stripe is the selection.
         add(body, "div", "ob-q", tr("How do I talk to you?"));
         var vw2 = add(body, "div", "obv-rows"); vw2.style.maxWidth = "400px";
+        var _vRows = [], vgo;
+        function paintVRow(r5, o) { var on = d2.voice === o[0]; r5.classList.toggle("on", on); r5.style.background = on ? tfStripeDoor(o[3]) : ""; r5.innerHTML = '<i class="ti ti-flame oi ob-flm" style="font-size:' + o[4] + 'px;width:34px;text-align:center;flex:none"></i><span class="ol">' + esc(tr(o[1])) + '<span class="ovq">«' + esc(tr(o[2])) + '»</span></span>'; }
         [["soft", "Softly", "Morning. No rush — one small thing.", "#5fa8ff", 16], ["straight", "Straight", "Morning. One task moves everything.", "#b07aff", 24], ["push", "Push me", "Up. We're taking ground today.", "#ff5fa8", 31]].forEach(function (o) {
-          var r5 = add(vw2, "button", "obv-row" + (d2.voice === o[0] ? " on" : "")); r5.style.setProperty("--oc", o[3]); r5.style.setProperty("--ost", tfStripeDoor(o[3])); if (d2.voice === o[0]) r5.style.background = tfStripeDoor(o[3]);
-          r5.innerHTML = '<i class="ti ti-flame oi ob-flm" style="font-size:' + o[4] + 'px;width:34px;text-align:center;flex:none"></i><span class="ol">' + esc(tr(o[1])) + '<span class="ovq">«' + esc(tr(o[2])) + '»</span></span>' + (d2.voice === o[0] ? '<i class="ti ti-check ock"></i>' : '');
-          r5.onclick = function () { if (d2.voice !== o[0]) _justPicked = true; d2.voice = o[0]; draw(); }; });
-        var vgo = stdFoot(); if (!d2.voice) vgo.classList.add("asleep"); else if (_justPicked) { vgo.classList.add("ignite"); _justPicked = false; }
+          var r5 = add(vw2, "button", "obv-row"); r5.style.setProperty("--oc", o[3]); r5.style.setProperty("--ost", tfStripeDoor(o[3]));
+          paintVRow(r5, o); _vRows.push([r5, o]);
+          r5.onclick = function () { d2.voice = (d2.voice === o[0]) ? "" : o[0]; _vRows.forEach(function (p) { paintVRow(p[0], p[1]); }); vgo.classList.toggle("asleep", !d2.voice); if (d2.voice) vgo.classList.add("ignite"); }; });
+        vgo = stdFoot(); if (!d2.voice) vgo.classList.add("asleep");
         return; }
       if (B.t === "breath") {
         var _bm = obMark(body, 150); _bm.classList.add("ob-breathe");
@@ -5291,60 +5287,70 @@
         stdFoot(); return; }
       if (B.t === "plan") { // THE STARTER PLAN — the survey's visible gift
         add(body, "div", "ob-kick", tr("MADE FROM YOUR ANSWERS"));
-        add(body, "div", "ob-q", tr("A starter plan for") + " " + esc(d2.name || tr("you")));
+        add(body, "div", "ob-q", tr("A starter plan — for you")); // punch-list #14: no name in onboarding → never "for friend"
         var pw = add(body, "div", "obv-plan"), pin = add(pw, "div", "obv-plan-in");
         var rows = add(pin, "div", "obv-plan-rows"); var items = planItems(); S.profile = S.profile || {}; S.profile.starter = items.filter(function (it) { return !it.done; }).map(function (it) { return { t: it.t, ic: it.ic }; });
         items.forEach(function (it, ii) { var r = add(rows, "div", "obv-plan-row" + (it.done ? " done" : "")); r.style.animationDelay = (0.25 + ii * 0.4) + "s";
           r.innerHTML = '<i class="ti ' + (it.done ? "ti-check" : it.ic) + ' pi" style="background:' + (it.done ? "#28cf86" : mixHex(it.c, "#160510", 0.6)) + ';color:' + (it.done ? "#07351f" : it.c) + '"></i><span class="pt">' + esc(tr(it.t)) + '<span class="ptr">' + esc(tr(it.trace)) + '</span></span>'; });
         stdFoot(tr("I'll take it") + " ✓"); return; }
-      if (B.t === "wall") { obMark(body, 110);
+      if (B.t === "wall") { obMark(body, 110); // punch-list #16: plain, unambiguous phrasing + in-place picks + no checkmark
         add(body, "div", "ob-q", tr("Is there something you keep putting off?"));
-        add(body, "div", "ob-sb", tr("I don't need to know what it is — just the shape of the wall.")).style.cssText = "text-align:center;margin-top:6px;";
+        add(body, "div", "ob-sb", tr("You don't have to tell me what it is. Just tell me what's in the way.")).style.cssText = "text-align:center;margin-top:6px;";
         var bw2 = add(body, "div", "obv-rows");
-        [["fear", "It scares me to even look", "ti-flame", "#ff8a3a"], ["overwhelm", "Too big — I don't know where it starts", "ti-mountain", "#7a9aff"], ["wound", "An old bad time with it", "ti-anchor", "#c4607f"], ["none", "Nothing like that — I'm just here", "ti-cloud", "#48b8e0"]].forEach(function (o) {
-          var r2 = add(bw2, "button", "obv-row" + (d2.block === o[0] ? " on" : "")); r2.style.setProperty("--oc", o[3]); r2.style.setProperty("--ost", tfStripeDoor(o[3])); if (d2.block === o[0]) r2.style.background = tfStripeDoor(o[3]);
-          r2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>' + (d2.block === o[0] ? '<i class="ti ti-check ock"></i>' : '');
-          r2.onclick = function () { if (d2.block === o[0]) return; d2.block = o[0]; _justPicked = true; draw(); }; });
-        var BR2 = { fear: "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.", overwhelm: "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.", wound: "Then we go gently — with a way out at every step. You set the pace.", none: "Good. Then we build forward." };
-        if (d2.block) add(body, "div", "ob-sb", tr(BR2[d2.block])).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;";
-        var wgo = stdFoot(); if (!d2.block) wgo.classList.add("asleep"); else if (_justPicked) { wgo.classList.add("ignite"); _justPicked = false; }
+        var BR2 = { fear: "Then we won't face it all at once. Tomorrow I'll bring you a first step so small it can't scare you.", overwhelm: "Then we won't start with all of it — just the first corner. Tomorrow I'll bring you one.", wound: "Then we go gently, with a way out at every step. You set the pace.", none: "Good. Then we build forward." };
+        var _wRows = [], _wReply, wgo;
+        function paintWRow(r2, o) { var on = d2.block === o[0]; r2.classList.toggle("on", on); r2.style.background = on ? tfStripeDoor(o[3]) : ""; r2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>'; }
+        [["fear", "I'm scared to even start", "ti-flame", "#ff8a3a"], ["overwhelm", "It feels too big", "ti-mountain", "#7a9aff"], ["wound", "I've tried before — it went badly", "ti-anchor", "#c4607f"], ["none", "No — nothing like that", "ti-cloud", "#48b8e0"]].forEach(function (o) {
+          var r2 = add(bw2, "button", "obv-row"); r2.style.setProperty("--oc", o[3]); r2.style.setProperty("--ost", tfStripeDoor(o[3]));
+          paintWRow(r2, o); _wRows.push([r2, o]);
+          r2.onclick = function () { d2.block = (d2.block === o[0]) ? "" : o[0]; _wRows.forEach(function (p) { paintWRow(p[0], p[1]); }); _wReply.textContent = d2.block ? tr(BR2[d2.block]) : ""; wgo.classList.toggle("asleep", !d2.block); if (d2.block) wgo.classList.add("ignite"); }; });
+        _wReply = add(body, "div", "ob-sb", d2.block ? tr(BR2[d2.block]) : ""); _wReply.style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;min-height:20px;";
+        wgo = stdFoot(); if (!d2.block) wgo.classList.add("asleep");
         return; }
-      if (B.t === "pact") {
-        add(body, "div", "ob-q", tr("One rule — now that you've seen it's real."));
-        add(body, "div", "ob-sb", tr("I will never lie to you. Hold — and promise the same.")).style.cssText = "text-align:center;margin-top:6px;";
-        // V3 THUMB-SEAL (locked #1): your thumb signs it — hold, the ring fills, the gold seal STAMPS (DEVICE-UNTESTED gesture)
-        var pw2 = add(body, "div", "ob-pwrap"); pw2.style.touchAction = "none";
+      if (B.t === "pact") { // punch-list #17 (David device 2026-07-04): choose the commitment FIRST, THEN your thumb seals it — a promise has content before it has a signature. In-place picks, no checkmark, no rebuild until the SEAL stamps (that transition earns its cascade).
         if (!d2.pactAt) {
-          pw2.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffd24a" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-          var arc = pw2.querySelector(".parc"), holdT2 = null, holdDone2 = false;
-          function rel2() { if (holdDone2) return; clearTimeout(holdT2); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-          pw2.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT2 = setTimeout(function () { holdDone2 = true; d2.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} obConfetti(pw2, 10); draw(); }, 1300); });
-          pw2.addEventListener("pointerup", rel2); pw2.addEventListener("pointercancel", rel2); pw2.addEventListener("pointerleave", rel2);
-          add(body, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
-        } else pw2.innerHTML = '<div class="ob-pseal"><i class="ti ti-shield-check"></i><b>' + tr("PACT") + '</b></div>';
-        if (d2.pactAt) { // THE DAYS COMMIT (Finch): a promise TO Alter, with a number the callback can cite
-          add(body, "div", "ob-sb", tr("How many days in a row will you come — to start?")).style.cssText = "text-align:center;margin-top:22px;font-weight:800;color:#ffe3f1;font-size:16px;";
-          var dw2 = add(body, "div", "obv-tiles");
+          add(body, "div", "ob-q", tr("How many days in a row will you come — to start?"));
+          add(body, "div", "ob-sb", tr("small is honest — pick the promise you'll actually keep")).style.cssText = "text-align:center;margin-top:6px;";
+          var dw2 = add(body, "div", "obv-tiles"), _dTiles = [];
+          function paintDTile(t2, o) { var on = d2.pactDays === o[0]; t2.classList.toggle("on", on); t2.style.background = on ? tfStripeDoor(o[2]) : ""; t2.innerHTML = '<span class="ol" style="font-size:22px">' + o[0] + '</span><span class="ol">' + esc(tr(o[1])) + '</span>'; }
+          var sealZone = null;
+          function buildSeal() {
+            if (sealZone) sealZone.remove(); sealZone = add(body, "div"); sealZone.style.cssText = "width:100%;display:flex;flex-direction:column;align-items:center;";
+            if (!d2.pactDays) return;
+            add(sealZone, "div", "ob-sb", tr("One rule between us: I will never lie to you. Hold — and promise the same, for") + " " + d2.pactDays + " " + tr("days.")).style.cssText = "text-align:center;margin-top:18px;font-weight:700;color:#ffe3f1;";
+            var pw2 = add(sealZone, "div", "ob-pwrap"); pw2.style.touchAction = "none"; // THUMB-SEAL (locked #1) — DEVICE-UNTESTED gesture
+            pw2.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffd24a" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
+            var arc = pw2.querySelector(".parc"), holdT2 = null, holdDone2 = false;
+            function rel2() { if (holdDone2) return; clearTimeout(holdT2); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+            pw2.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT2 = setTimeout(function () { holdDone2 = true; d2.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} obConfetti(pw2, 10); draw(); }, 1300); });
+            pw2.addEventListener("pointerup", rel2); pw2.addEventListener("pointercancel", rel2); pw2.addEventListener("pointerleave", rel2);
+            add(sealZone, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
+          }
           [[2, "Baby steps", "#48b8e0"], [5, "Strong start", "#46e2a4"], [7, "Serious", "#ffd24a"], [14, "Unstoppable", "#ff5fa8"]].forEach(function (o) {
-            var t2 = add(dw2, "button", "obv-tile" + (d2.pactDays === o[0] ? " on" : "")); t2.style.setProperty("--oc", o[2]); t2.style.setProperty("--ost", tfStripeDoor(o[2])); if (d2.pactDays === o[0]) t2.style.background = tfStripeDoor(o[2]);
-            t2.innerHTML = '<span class="ol" style="font-size:22px">' + o[0] + '</span><span class="ol">' + esc(tr(o[1])) + '</span>' + (d2.pactDays === o[0] ? '<i class="ti ti-check ock"></i>' : '');
-            t2.onclick = function () { if (d2.pactDays !== o[0]) _justPicked = true; d2.pactDays = o[0]; draw(); }; });
-          var pgo = stdFoot(null, false); if (!d2.pactDays) pgo.classList.add("asleep"); else if (_justPicked) { pgo.classList.add("ignite"); _justPicked = false; }
-          var sk6 = add(foot, "button", "ob-skip", tr("skip")); sk6.onclick = next; }
-        else { var sk7 = add(foot, "button", "ob-skip", tr("skip")); sk7.onclick = finishV2; }
+            var t2 = add(dw2, "button", "obv-tile"); t2.style.setProperty("--oc", o[2]); t2.style.setProperty("--ost", tfStripeDoor(o[2]));
+            paintDTile(t2, o); _dTiles.push([t2, o]);
+            t2.onclick = function () { d2.pactDays = (d2.pactDays === o[0]) ? 0 : o[0]; _dTiles.forEach(function (p) { paintDTile(p[0], p[1]); }); buildSeal(); }; });
+          buildSeal();
+          var sk7 = add(foot, "button", "ob-skip", tr("skip")); sk7.onclick = next;
+        } else {
+          add(body, "div", "ob-q", tr("Sealed."));
+          var pw3 = add(body, "div", "ob-pwrap"); pw3.innerHTML = '<div class="ob-pseal"><i class="ti ti-shield-check"></i><b>' + tr("PACT") + '</b></div>';
+          add(body, "div", "ob-sb", d2.pactDays + " " + tr("days. I'll hold you to it — kindly.")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;color:#ffe3f1;";
+          stdFoot(null, false);
+        }
         return; }
       if (B.t === "mint") {
         add(body, "div", "ob-kick", tr("YOUR FIRST CARD"));
         // V3.1 (David: 1:1 with the approved chat widget) — dark prism card: soft tricolor weave + foil + the REAL mark + wants chips + rainbow holo strip
-        var mc = add(body, "div", "ob-mintcard"); mc.style.cssText = "width:206px;margin-top:14px;padding:16px 13px 13px;border:3px solid #160510;border-radius:16px;background:linear-gradient(160deg,#241335,#170a1c);box-shadow:0 6px 0 #160510;position:relative;overflow:hidden;";
+        var mc = add(body, "div", "ob-mintcard"); mc.style.cssText = "width:278px;margin-top:14px;padding:22px 17px 17px;border:3px solid #160510;border-radius:20px;background:linear-gradient(160deg,#241335,#170a1c);box-shadow:0 7px 0 #160510;position:relative;overflow:hidden;"; // punch-list #18: "nothing should be small in this app" — the first card is a PRIZE, sized like one
         add(mc, "div").style.cssText = "position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,95,168,.1) 0 8px,rgba(95,168,255,.1) 8px 16px,rgba(255,210,74,.1) 16px 24px);";
         add(mc, "div", "mint-sheen");
         var mi2 = add(mc, "div"); mi2.style.cssText = "text-align:center;position:relative;z-index:1;";
-        mi2.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:2.2px;color:#ffd24a;">' + tr("SPARK ONE") + '</div><div class="obv-plan-t" style="font-size:24px;margin-top:2px">' + esc(d2.name || tr("you")) + '</div>';
-        obMark(mi2, 76);
+        mi2.innerHTML = '<div style="font-weight:800;font-size:13px;letter-spacing:2.4px;color:#ffd24a;">' + tr("SPARK ONE") + '</div><div class="obv-plan-t" style="font-size:30px;margin-top:3px">' + esc(tr("You")) + '</div>';
+        obMark(mi2, 104);
         var wchips = (d2.wants || []).slice(0, 3).map(function (w) { var o = null; QS.forEach(function (q) { if (q.key === "wants") q.opts.forEach(function (oo) { if (oo[0] === w) o = oo; }); }); return o ? '<span class="ob-wchip" style="--oc:' + o[3] + '"><i class="ti ' + o[2] + '"></i></span>' : ""; }).join("");
         var mtail = add(mi2, "div");
-        mtail.innerHTML = (wchips ? '<div style="display:flex;gap:7px;justify-content:center;margin-top:2px">' + wchips + '</div>' : '') + '<div class="ob-holo"></div><div style="font-weight:800;font-size:11px;letter-spacing:1.8px;color:rgba(255,255,255,.78);margin-top:9px">' + tr("DAY 1 · THE SPARK") + '</div>';
+        mtail.innerHTML = (wchips ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:4px">' + wchips + '</div>' : '') + '<div class="ob-holo"></div><div style="font-weight:800;font-size:13px;letter-spacing:2px;color:rgba(255,255,255,.82);margin-top:11px">' + tr("DAY 1 · THE SPARK") + '</div>';
         add(body, "div", "ob-sb", tr("matte now — it ignites as you live")).style.cssText = "text-align:center;margin-top:12px;";
         stdFoot(); return; }
       if (B.t === "seed") {
@@ -6456,6 +6462,16 @@
     "Tip the smallest stone and the mountain learns to move.": "Столкни самый малый камень — и гора учится двигаться.",
     "Progress is stored before it's visible — an ice cube warming from 25° to 31° shows nothing, then melts at 32°. Most people quit in that invisible stretch, discarding work that was accumulating the whole time. What feels like a plateau is a loading bar with the display turned off.": "Прогресс копится прежде, чем станет видимым — кубик льда, греясь с 25° до 31°, не показывает ничего, а потом тает при 32°. Многие бросают на этом невидимом отрезке, отбрасывая работу, что копилась всё это время. То, что кажется плато, — полоса загрузки с выключенным экраном.",
     "The seed is growing long before it breaks the ground.": "Семя растёт задолго до того, как пробьётся из земли."
+  });
+  Object.assign(I18N.ru, { // PUNCH-LIST 2026-07-04 — onboarding rephrase + pact reorder (B4 law)
+    "A starter plan — for you": "Стартовый план — для тебя",
+    "You don't have to tell me what it is. Just tell me what's in the way.": "Можешь не говорить, что это. Просто скажи, что мешает.",
+    "I'm scared to even start": "Мне страшно даже начать", "It feels too big": "Оно кажется слишком большим", "I've tried before — it went badly": "Я уже пробовал — вышло плохо", "No — nothing like that": "Нет — ничего такого",
+    "Then we won't face it all at once. Tomorrow I'll bring you a first step so small it can't scare you.": "Тогда мы не пойдём на него целиком. Завтра я принесу первый шаг — такой маленький, что он не сможет напугать.",
+    "Then we won't start with all of it — just the first corner. Tomorrow I'll bring you one.": "Тогда мы не начнём со всего сразу — только с первого угла. Завтра я принесу тебе один.",
+    "small is honest — pick the promise you'll actually keep": "малое — честно; выбери обещание, которое действительно сдержишь",
+    "One rule between us: I will never lie to you. Hold — and promise the same, for": "Одно правило между нами: я никогда не совру тебе. Удержи — и пообещай то же, на",
+    "days.": "дней.", "Sealed.": "Скреплено.", "days. I'll hold you to it — kindly.": "дней. Я напомню о нём — по-доброму."
   });
   Object.assign(I18N.ru, { // ORGAN A onboarding-delta strings (B4 law — EN source + RU dict, same commit)
     "A year from now, someone who loves you says you've become…": "Через год кто-то, кто тебя любит, скажет: ты стал(а)…",
