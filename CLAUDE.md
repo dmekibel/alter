@@ -6,7 +6,7 @@ A guardian-angel life-sim PWA (pixel-art planner + tracker + game). Single user:
 
 ## Source of truth — edit ONLY these
 - **`index.html`** — shell, all CSS, the `<script src="app.js?v=NNN">` tag.
-- **`app.js`** — the whole app (one file, ~3000 lines).
+- **`app.js`** — the whole app (one file, ~11,200 lines). **Navigate by grep anchors, never by line number** (line numbers rot as the file grows): the `@MAP` header at the top lists every `@SEC:` section; `grep -n "@SEC:<name> — " app.js` jumps to a section, `grep -n "@CONTRACT" app.js` lists the invariants at their edit sites.
 - **`manifest.json`** — PWA manifest.
 - **`server.js` is GENERATED** — a 176KB Cloudflare artifact built from the three above by `build-hf-server.js`. **Never hand-edit it.** `_dev/preship.sh` regenerates it on every ship so it can't go stale.
 
@@ -19,7 +19,7 @@ A guardian-angel life-sim PWA (pixel-art planner + tracker + game). Single user:
 
 ## The ONE ship command
 ```bash
-bash _dev/preship.sh        # syntax-checks app.js, auto-bumps app.js?v=, regenerates server.js, prints the fresh.html link
+bash _dev/preship.sh        # syntax-checks app.js, runs structure ratchets (_dev/ratchet.js), auto-bumps app.js?v=, regenerates server.js, prints the fresh.html link
 ```
 Then `git add -A && git commit && git push`. This replaces the hand-ritual that caused most "it's broken" reports (a forgotten version bump = David sees a cached old build).
 
@@ -39,9 +39,9 @@ The core navigation has been rebuilt 3× (v488 continuous → v496 day-at-a-time
 If a change can't be device-confirmed this session, label it **DEVICE-UNTESTED** in the handoff — don't mark it done.
 
 ## Architecture landmines (known debt — don't widen it)
-- **Full-DOM rebuild on every interaction.** Many draws do `body.innerHTML=""` / `card.innerHTML=""` (e.g. [app.js:140](app.js:140), [app.js:424](app.js:424), [app.js:1054](app.js:1054)) → flicker, lost scroll, dropped keyboard. Prefer targeted node updates / class toggles. New code must NOT add another wipe-and-rebuild surface.
-- **One 2975-line file, 871 functions.** A bug in one region cascades. When you touch a region, leave it cleaner; don't graft a third menu system on (there are already two — `#sheet` modal + the notebook surface — and they clash; `REBUILD-PLAN.md` targets unifying them).
-- State: `localStorage["alter_plan2"]`, `SCHEMA` in [app.js:75](app.js:75), migrated in `load()` ([app.js:1097](app.js:1097)). Bump `SCHEMA` and add a migration when you change the shape — a silent shape change wipes David's real data.
+- **Full-DOM rebuild on every interaction.** Many draws wipe with `innerHTML=""` (150 sites as of v913) → flicker, lost scroll, dropped keyboard. Prefer targeted node updates / class toggles. New code must NOT add another wipe-and-rebuild surface — **the preship ratchet FAILS the ship if the wipe count grows** (baseline in `_dev/ratchet-baseline.json`; it auto-lowers as debt is paid, never rises).
+- **One ~11,200-line file, ~2,600 functions.** A bug in one region cascades. When you touch a region, leave it cleaner; don't graft a third menu system on (there are already two — `#sheet` modal + the notebook surface — and they clash; `REBUILD-PLAN.md` targets unifying them).
+- State: `localStorage["alter_plan2"]`, `SCHEMA` at `@SEC:TIME`, migrated in `load()` at `@SEC:STATE`. Bump `SCHEMA` and add a `MIG n→n+1` block when you change the shape — a silent shape change wipes David's real data. The ratchet enforces the SCHEMA↔MIG pairing mechanically.
 
 ## Don't replan instead of building
 There are 16 planning docs and 3 rebuild cycles already. Don't add a 17th. Update the newest `TRACKER-HANDOFF-*.md` in place; the rest are archive. A new doc is justified only when David asks for one.

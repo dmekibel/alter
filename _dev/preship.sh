@@ -14,6 +14,10 @@ fail() { printf '\033[31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 node --check app.js || fail "app.js has a syntax error — fix before shipping."
 say "✓ app.js parses"
 
+# 1.5 Structure ratchets — @SEC anchors present+ordered, innerHTML wipes never grow, SCHEMA↔MIG pairing.
+node _dev/ratchet.js --write || fail "structure ratchets FAILED — fix before shipping (see above)."
+say "✓ structure ratchets pass"
+
 # 2. Logic invariant audit — mirrors chapter gates + appetite dial from app.js.
 #    Fails fast if any testable invariant regresses. Writes results back to GUARD.json.
 node _dev/audit.js --write || fail "logic invariants FAILED — fix before shipping (see above)."

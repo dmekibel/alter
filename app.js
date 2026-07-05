@@ -1,12 +1,44 @@
 /* ALTER v1.3 — RPG character: sub-attribute self-assessment + pixel avatar,
    gamified picker, Toggl multitask timers, Streaks habits, auto-adjust schedule, proactive. $0. */
+/* ============================================================================
+   @MAP — single-file navigation (2026-07-05). LINE NUMBERS ROT; ANCHORS DON'T.
+   Navigate:  grep -n "@SEC:<name> —" app.js  (the "— " form = the DEFINITION; bare mentions are cross-refs)
+   Contracts: grep -n "@CONTRACT" app.js      (this MAP lists names without the @ to stay out of those greps)
+   Sections in FILE ORDER — _dev/ratchet.js fails the ship if one goes missing or out of order:
+     SEC:ERRNET          global error net (toast + tap-to-reload)
+     SEC:AUDIO           ONE shared Web Audio ctx + voice/bg buses + pads/BGM (iOS ctx-cap law)
+     SEC:TTS             iOS-safe speech + hashed voice clips + manifest
+     SEC:TIME            KEY/SCHEMA consts + THE 4AM LOGICAL-DAY LAW (logicalK/todayK) — DANGER
+     SEC:JOURNEY-ENGINE  pure decide-never-render engine (readiness/appetite/curriculum)
+     SEC:LESSONS         lesson engine + day-1 content + liturgy shell
+     SEC:MOTION          portal reveal + block cascade + spring tokens
+     SEC:I18N-DICT       the ru dictionary DATA (pure data, no logic)
+     SEC:I18N-CORE       tr() + latinAudit + translateTree — the tr() law
+     SEC:CAROUSEL        3-pane slider + PANE_GUARD selector REGISTRY — DANGER
+     SEC:JOURNEY-TRAIL   drawJourney + the visible trail UI
+     SEC:TIMELINE        tickCharge / pager / recenter / buildPull — THE REGRESSION ZONE — DANGER
+     SEC:COCKPIT         expanded tracker ring + stage modes + bookends
+     SEC:ONBOARD         onboarding V2 survey
+     SEC:STATE           S / fresh() / load() migrations / save() / export-import — DANGER
+     SEC:GAME            the game world (openGame …)
+     SEC:RENDER          renderAll fan-out + per-surface renderers
+     SEC:DEV             dev/test harness (?dev, personas, headless drive)
+     SEC:BOOT            init() + THE MASTER 1s TICK — DANGER
+   FILE LAWS (mechanically enforced by _dev/preship.sh → _dev/ratchet.js):
+     · innerHTML="" wipe count may NEVER increase (baseline in _dev/ratchet-baseline.json)
+     · a SCHEMA bump REQUIRES a matching "MIG n→n+1" marker inside load() (@SEC:STATE)
+     · every new interactive element registers its selector in PANE_GUARD (@SEC:CAROUSEL)
+     · every user-visible string passes tr() (@SEC:I18N-CORE)
+   ============================================================================ */
 (function () {
   "use strict";
+  // @SEC:ERRNET — global error net: catch, rate-limit, tap-to-reload.
   // GLOBAL ERROR NET (David 2026-07-02): a boot/render crash used to just brick the screen silently. Catch it, rate-limit so a repeating error doesn't spam, tap-to-reload.
   var _lastErrToast = 0;
   function _globalErrToast() { var n = Date.now(); if (n - _lastErrToast < 6000) return; _lastErrToast = n; try { var t = document.createElement("div"); t.className = "toast show"; t.textContent = "something glitched — tap to refresh"; t.style.cursor = "pointer"; t.onclick = function () { location.reload(); }; document.body.appendChild(t); setTimeout(function () { try { t.remove(); } catch (e) {} }, 6000); } catch (e) {} }
   window.addEventListener("error", _globalErrToast);
   window.addEventListener("unhandledrejection", _globalErrToast);
+  // @SEC:AUDIO — ONE shared AudioContext + voice/bg buses. iOS ctx-cap law: NEVER `new AudioContext()` elsewhere.
   // ONE shared, persistent Web Audio context for the whole app (voice + tool ambient beds). Reused everywhere so we never leak/exhaust iOS's context cap (each `new AudioContext()` per tool was leaking — a likely cause of "some tools have sound, some don't"). Resumed on every gesture. (David 2026-07-01)
   var _sharedACtx = null, _voiceBus = null, _bgBus = null;
   function _audioCfg() { return (typeof S !== "undefined" && S && S.audio) ? S.audio : { voice: 1, bg: 1 }; }
@@ -97,6 +129,7 @@
       });
     } catch (e) {}
   }
+  // @SEC:TTS — iOS-safe speech + hashed voice clips (manifest). Voice plays via Web Audio buffers, never timer-driven HTMLAudio.
   // ---- TTS: iOS-safe browser speech for the guided modules ($0, on-device, no API). Robustness per research:
   //   lazy voice load (event + poll), gesture-bound unlock via a silent primer, cancel-before-speak,
   //   short-chunk + watchdog (dodge the ~15s cutoff & missing onend), hard ref (anti-GC), stop on hide/lock. ----
@@ -236,6 +269,7 @@
     ov.appendChild(b); return b;
   }
   var el = function (id) { return document.getElementById(id); };
+  // @SEC:TIME — KEY/SCHEMA constants + THE 4AM LAW: logicalK() rolls the day at 4am and EVERYTHING keys off it. SCHEMA's migrations live in load() (@SEC:STATE) — bump them TOGETHER.
   var KEY = "alter_plan2", SCHEMA = 5, lastSaveErr = 0; // 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
@@ -488,6 +522,7 @@
     return { grad: "linear-gradient(90deg,#ffe14a,#ffd23a)", glow: "0 0 7px rgba(255,210,60,.4)", name: "", txt: "#ffe14a", cls: "" };
   }
   function curStreak() { if (!S || !S.game) return 0; if (S.game.streakDay && S.game.streakDay !== todayK()) return 0; return S.game.streak || 0; }
+  // @SEC:JOURNEY-ENGINE — pure decide-never-render engine (readiness / appetite / curriculum / journeyTick).
   // ===== JOURNEY ENGINE (CKPT-4, David 2026-06-28): PURE functions that DECIDE (never render), READ by nothing yet (S.guide.mode defaults 'off' → inert until CKPT-7). Additive, no SCHEMA bump. =====
   function readiness() { // a pure 0..1 read of recent follow-through — cached per logical-day in S.guide.cache; never writes anything else
     var g = (S.guide || {}); if (g.cache && g.cache.computedK === todayK() && typeof g.cache.r === "number") return g.cache.r;
@@ -857,6 +892,7 @@
       } });
     return nodes;
   }
+  // @SEC:LESSONS — lesson engine + day-1 content + liturgy shell.
   // ===== THE LESSON ENGINE (Day-1 v2, David 2026-07-04: "draw the nuance from the 300-day course — clever, deep, functional, educational, epic"): ONE Duolingo-grade grammar that converts any course session into a mini lesson. HOOK (epic line on a spinning-ray card, per-lesson palette) → TEACH (2 dense course-faithful cards) → CHECK (a real forced-choice test, warm retry — the moment it FEELS like a lesson) → REP (launch the organ; doing is the skill) → the organ's completion lights the stone + deals the card. Tap-only forever. This engine is the conversion pipeline for the whole 300-day course (25 sessions → chapters of lessons). =====
   function runLesson(L) { // ===== THE RITUAL LESSON (v904, David device notes 2026-07-04): "a guided journal / guided magic ritual — no quizzes; questions that learn about the USER; big text, one beat at a time, visuals in between." A full-screen ceremony in the lesson's color. Beats: line (BIG text arriving word-by-word, tap to continue) · mirror (a self-question with NO right answer — the pick personalizes the guardian's next line AND teaches the app who you are; Duolingo's real trick) · feel (a breath with the orb) · burn (a limiting belief, burned to embers) · seal (the present-tense line, thumb-held — the install) · door (into the real rep). Voice whispers every line. Tap-only forever. =====
     var ov = add(document.body, "div"), done = false;
@@ -1362,6 +1398,7 @@
     return nodes;
   }
   function prefersReducedMotion() { return false; } // David wants animations to ALWAYS play — even with iOS "Reduce Motion" on (v659); that setting was making the app look static
+  // @SEC:MOTION — portal reveal + block cascade + spring tokens (paint-time only; never disturbs scroll/pinch).
   // PORTAL REVEAL (v648): punch a surface open through a circle growing from a focal point (e.g. the now-line). clip-path only → paint-time, never disturbs scroll/pinch. One-shot; clears itself on animationend.
   function playReveal(elm, focal) {
     if (!elm || prefersReducedMotion()) return;
@@ -1425,6 +1462,7 @@
     pt: '<svg viewBox="0 0 30 22" preserveAspectRatio="none"><rect width="30" height="22" fill="#DA291C"/><rect width="12" height="22" fill="#046A38"/><circle cx="12" cy="11" r="2.6" fill="#FFD100" stroke="#fff" stroke-width="0.6"/></svg>'
   };
   function flagSVG(code) { return SS_FLAGS[code] || SS_FLAGS.en; }
+  // @SEC:I18N-DICT — the ru dictionary DATA. Pure data, no logic; read only by tr()/translateTree (@SEC:I18N-CORE).
   var I18N = { ru: {
     // ===== THE OPEN + THE MAP + LITURGY SHELL (P1/P2, B4 catch-up 2026-07-05) =====
     // ===== THE RANGE (P3, 2026-07-05) =====
@@ -2220,6 +2258,8 @@
     [/\b(\d+) in a row\b/g, "$1 подряд"],
     [/(\d{1,2}:\d{2}) · tap to start it now\./g, "$1 · коснись — и начнём."]
   ] };
+  // @SEC:I18N-CORE — tr() + latinAudit + translateTree.
+  // @CONTRACT: every user-visible string must pass tr() (or arrive via translateTree). The app NEVER reads rendered text back for logic — keep it that way; that invariant is what makes display-layer translation safe.
   function tr(s) { var L = curLang(); if (L === "en" || !I18N[L]) return s; var k = (s == null ? "" : ("" + s)).trim(); var v = I18N[L][k]; return v != null ? v : s; }
   function latinAudit() { // RU-mode QA sweep (David 2026-07-02: "be better at figuring out what's still in English") — returns every VISIBLE text node still showing Latin script. Run window.__latinAudit() from the console after opening a surface; fix the harvest, don't wait for David to report it.
     var out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
@@ -2340,6 +2380,8 @@
     if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); }
     else if (!gaming) revealTimeline();
   }
+  // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
+  // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
   var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit";
   var PANE_ORDER = ["planner", "journey", "game"];
@@ -2692,6 +2734,7 @@
     }
     beat("");
   }
+  // @SEC:JOURNEY-TRAIL — the visible Duolingo-style trail (drawJourney + node UI).
   function drawJourney(autoScroll) {
     var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
     var jn = Math.max(0, Math.min(JP_CHAPTERS.length - 1, journeyNode()));
@@ -3562,6 +3605,13 @@
     return rate;
   }
   function voltClass(k) { var r = energyRate(k); return r >= 1.1 ? " volt-hi" : r <= 0.9 ? " volt-lo" : ""; } // paint-only tier; "" = neutral = today's exact look
+  // @SEC:TIMELINE — THE REGRESSION ZONE (rebuilt 3×: v488 continuous → v496 day-at-a-time → v501 continuous). tickCharge + pull pager + infinite recenter + buildPull live here; renderToday (@SEC:RENDER) is the per-minute entry point.
+  // @CONTRACT — re-verify ALL FOUR before shipping ANY edit in this zone; NEVER run two day-nav models at once (the v488 infinite-watcher vs a horizontal pager FIGHT → bounce):
+  //   1. Vertical scroll flows continuously into prev/next day — no cut at midnight, no snap-back bounce.
+  //   2. Started/past blocks are set-in-stone; future can't cross the now-line into the past.
+  //   3. Tap-empty-slot creates a block there; drag moves/resizes; tap-bubble opens the editor.
+  //   4. The week-strip + Today/Now pill track the centered day.
+  //   Gesture FEEL is NOT provable in preview (synthetic touches lie about touch-action/momentum/rAF-recenter) — ship such edits labeled DEVICE-UNTESTED.
   function tickCharge() { // PER-SECOND LIVE CHARGE (the battery principle, restored): the now-line is the conversion edge; it + every now-anchored element move TOGETHER each second — the charged stretch GROWS, the committed future SHRINKS, the now-line CREEPS — so the present visibly moves and the battery fills. This is exactly the "every now-anchored element redraws together" the old creep-removal comment said was the right way (the old bug was moving ONLY the now-line; here nothing can desync). Gated: timeline open + something tracking + not zooming/dragging. Reposition-by-dataset, no full rebuild (same cheap path as the zoom relayout).
     var pb = el("pullBody"); if (!pb || pb.offsetParent === null || pb.classList.contains("zooming")) return; // whenever the timeline is on-screen (inline planner OR pull overlay), not mid-zoom
     if (document.querySelector(".calblk.dragging")) return;
@@ -4063,6 +4113,7 @@
       var pg = el("pullGrab"); if (pg) pg.addEventListener("pointerdown", function (ev) { ev.preventDefault(); var sy = ev.clientY, ps = el("pullSheet"), bd2 = el("pullBackdrop"), H = (ps && ps.offsetHeight) || 600, moved = false; if (ps) ps.style.transition = "none"; if (bd2) bd2.style.transition = "none"; function mv(e) { var dy = e.clientY - sy; if (Math.abs(dy) > 3) moved = true; var fr = Math.max(0, Math.min(1, -dy / H)); if (ps) ps.style.transform = "translateY(" + (-fr * 100) + "%)"; if (bd2) bd2.style.opacity = String(0.82 * (1 - fr)); } function up(e) { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (ps) ps.style.transition = ""; if (bd2) bd2.style.transition = ""; var dy = e.clientY - sy; if (!moved || -dy > H * 0.28) closePull(); else { if (ps) { ps.classList.add("on"); ps.style.transform = ""; } if (bd2) bd2.style.opacity = ""; } } document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); }); // drag the bottom handle UP to close — same smooth finger-follow (David 2026-06-24)
     }
   }
+  // @SEC:COCKPIT — expanded tracker ring + stage modes + bookends + journal stages.
   // ===== EXPANDED LIVE TRACKER — the reward RING (David 2026-06-27) =====
   // circle-in-circle: a colored activity DISC (the "album", channel 1 = WHAT) inside a radial reward RING (channel 2 = the verdict:
   // green on-plan, gold declared-break, dim off-plan). NOT square-in-circle, NOT the rejected crystal/diamond.
@@ -5433,6 +5484,7 @@
     w.innerHTML = '<svg class="ss-mark" viewBox="0 0 120 120" aria-hidden="true"><ellipse class="ss-halo" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#ffd24a" stroke-width="7" stroke-linecap="round"/><ellipse class="ss-glint" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#fff3c0" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="9 91"/><path class="ss-spark" fill="#ff5fa0" d="M60 22 L66 54 L98 60 L66 66 L60 98 L54 66 L22 60 L54 54 Z"/><path class="ss-spk2" fill="#ffd24a" d="M88 27 L91 33 L97 36 L91 39 L88 45 L85 39 L79 36 L85 33 Z"/><path class="ss-spk3" fill="#36b3f0" d="M30 82 L33 88 L39 91 L33 94 L30 100 L27 94 L21 91 L27 88 Z"/></svg>';
     return w;
   }
+  // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
     var d2 = { name: "", gender: "", age: "", stage: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], door: "", block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
@@ -5967,6 +6019,8 @@
     return null;
   }
 
+  // @SEC:STATE — S / fresh() / load() / save() / export-import. TOTAL-DATA-LOSS BLAST RADIUS.
+  // @CONTRACT: changing the SHAPE of S requires bumping SCHEMA (@SEC:TIME) + a "MIG n→n+1" block inside load() — the preship ratchet enforces the pairing. Purely-additive fields with guarded reads (S.x || {}) may skip the bump (the S.mood/S.acts/S.bk precedent). load() must NEVER throw past its catch: a damaged save falls through to the _bak backup + fresh() path — David's data survives every crash.
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
   function load() { var _rawLoad = localStorage.getItem(KEY); try { S = JSON.parse(_rawLoad) || fresh(); if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "pad"; if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */ if (S.audio.appMusic == null) S.audio.appMusic = false; if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; } /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
@@ -6608,6 +6662,7 @@
     for (var i = 0; i < PROMPTS.length; i++) { var d = Math.hypot(px - PROMPTS[i][0], py - PROMPTS[i][1]); if (d < 74 && d < best) { best = d; hint = PROMPTS[i][2]; } }
     h.innerHTML = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island") + "<br><span style='opacity:.82;font-size:12px'>" + hint + "</span>";
   }
+  // @SEC:GAME — the game world (openGame, islands, guardian, joy controls).
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
     gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap(); try { playReveal(gm); } catch (e) {} // portal-reveal the game on open (v648)
@@ -8377,6 +8432,7 @@
     var tot = 0; lastDays(7).forEach(function (k) { logs(k).forEach(function (e) { tot += e.mins || 0; }); });
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
+  // @SEC:RENDER — renderAll fan-out: the god-dispatcher over every per-surface renderer. Adding a surface = add its renderer HERE, and make it idempotent (the master tick re-enters, see @SEC:BOOT).
   function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
@@ -11079,6 +11135,7 @@
     });
   }
 
+  // @SEC:DEV — dev/test harness (?dev, personas, headless drive). The persona states double as load()-migration fixtures.
   // ===== DEV / TEST HARNESS (David 2026-06-30) — fast full-workflow testing + headless drive (bypasses the cockpit drag-gesture). OFF unless ?dev in the URL or localStorage.alter_dev='1'. window.DEV mirrors every action for console/eval (lets the app be driven + screenshotted without a finger). =====
   function devOn() { try { if (/[?&]dev\b/.test(location.search)) localStorage.setItem("alter_dev", "1"); return localStorage.getItem("alter_dev") === "1"; } catch (e) { return false; } }
   function devOpenStage(mode) { mode = mode || "sleepmath"; if (!TF_OPEN) openTrackerFull(); TF_MODE_USERSET = true; enterStage(mode, { byTap: true }); return "stage:" + mode; }
@@ -11116,12 +11173,14 @@
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
     document.body.appendChild(s);
   }
+  // @SEC:BOOT — init(): boot ORDER is a contract (load → world → master tick → nav wiring → renderAll → openJourney → start screen → i18n observe). Appending is safe; reordering is not.
   function init() {
     load(); loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
     try { devInit(); } catch (e) {}
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
     // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)
+    // @CONTRACT — THE MASTER 1s TICK: re-renders per second (tickCharge) and per minute (renderToday). ANY surface with inputs must be built ONCE + idempotent (the renderStage dataset.mode guard pattern) or this tick wipes what the user is typing. Never tear down the timeline mid-drag / mid-zoom / while the edge inspector is open (guards below).
     var _lastMin = nowMin();
     setInterval(function () {
       S.timers.forEach(function (t) { var r = el("tr_" + t.id); if (r) r.textContent = elapsedStr(t); });
