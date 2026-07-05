@@ -138,7 +138,7 @@
     var supported = !!synth && typeof window.SpeechSynthesisUtterance === "function";
     var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null, vprimed = false, curSrc = null, bufCache = {}, playGen = 0;
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
-    function load() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
+    function loadVoices() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
     // RU VOICE (David 2026-07-02): vhash is the ONE choke point every speak/warm/getBuffer/scheduleClip path converges on. Under Russian, the EN line maps through the display dict FIRST (so call sites stay EN literals), then hashes with a Cyrillic-keeping charset — the RU clip bank (gen-voice-ru.py, ru-RU-DmitryNeural) is keyed by the hash of the RUSSIAN text. English hashes are untouched (EN lines contain no Cyrillic, so the widened charset changes nothing). No RU clip → honest silence, never a sudden English line mid-eyes-closed.
     function vline(text) { try { if (typeof curLang === "function" && curLang() === "ru" && typeof I18N !== "undefined" && I18N.ru) { var d = I18N.ru, t = String(text).trim(); if (d[t]) return d[t];
@@ -149,7 +149,7 @@
     function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
       if (chosen) return chosen;
-      if (!voices.length) load();
+      if (!voices.length) loadVoices();
       var i, j, v, HQ = /enhanced|premium|neural|natural|siri/i; // TTS #1 (David 2026-07-01): PREFER a high-quality voice when one is installed (iOS "Enhanced"/Siri, Edge/Google "Natural/Neural") — auto lift from the robotic compact voices, still free + offline
       for (j = 0; j < voices.length; j++) { v = voices[j]; if (isEn(v) && (HQ.test(v.name || "") || HQ.test(v.voiceURI || ""))) { chosen = v; return chosen; } }
       for (i = 0; i < PREF.length; i++) for (j = 0; j < voices.length; j++) if (voices[j].name === PREF[i]) { chosen = voices[j]; return chosen; } // then the good named compact voices
@@ -158,9 +158,9 @@
     }
     function initVoices() {
       loadManifest();
-      if (!supported) return; load();
-      try { synth.addEventListener("voiceschanged", load); } catch (e) { synth.onvoiceschanged = load; }
-      var p = setInterval(function () { load(); if (voices.length || ++polls > 12) clearInterval(p); }, 250); // ~3s
+      if (!supported) return; loadVoices();
+      try { synth.addEventListener("voiceschanged", loadVoices); } catch (e) { synth.onvoiceschanged = loadVoices; }
+      var p = setInterval(function () { loadVoices(); if (voices.length || ++polls > 12) clearInterval(p); }, 250); // ~3s
     }
     function unlock() {
       if (!unlocked) { unlocked = true; try { if (supported) { synth.cancel(); var u = new SpeechSynthesisUtterance(" "); u.volume = 0.01; synth.speak(u); } } catch (e) {} }
@@ -335,17 +335,17 @@
     var head = add(card, "div", "bento-head"), hq = add(head, "div", "bento-q"), xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); renderToday(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) { ov.remove(); renderToday(); } });
     var body = add(card, "div", "bento-body");
-    function render() {
+    function renderChores() {
       hq.innerHTML = '<i class="ti ti-home"></i> Your space · ' + spaceScore() + '% fresh'; body.innerHTML = "";
       add(body, "div", "sughead", "tap to mark done · overdue floats to the top");
       CHORES_DEF.slice().sort(function (a, b) { return choreFresh(b).ratio - choreFresh(a).ratio; }).forEach(function (c) {
         var f = choreFresh(c), row = add(body, "div", "chore " + f.state); row.innerHTML = '<i class="ti ' + c.ti + ' chore-i"></i>';
         var mid = add(row, "div", "chore-mid"); add(mid, "div", "chore-l", c.l); var bar = add(mid, "div", "chore-bar"), fi = add(bar, "i"); fi.style.width = Math.min(100, Math.round(f.ratio * 100)) + "%"; fi.style.background = f.state === "overdue" ? "#ff7a6e" : f.state === "due" ? "#ffc83d" : "#34d39a";
         add(row, "div", "chore-d", f.days >= 999 ? "never" : f.days === 0 ? "today" : f.days + "d ago");
-        var go = add(row, "button", "chore-go"); go.textContent = f.days === 0 ? "✓" : "do it"; go.disabled = f.days === 0; go.onclick = function () { choreMark(c); render(); };
+        var go = add(row, "button", "chore-go"); go.textContent = f.days === 0 ? "✓" : "do it"; go.disabled = f.days === 0; go.onclick = function () { choreMark(c); renderChores(); };
       });
     }
-    render();
+    renderChores();
   }
   var DURS = [15, 30, 45, 60, 90, 120];
   var MORNING_RITUAL = { t: "Morning bookend", steps: [
@@ -914,10 +914,10 @@
       return words.length * 130 + 400; }
     function orbEl(sz) { var o = add(stage, "div"); o.style.cssText = "flex:none;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:radial-gradient(circle at 40% 35%," + mixHex(L.c, "#ffffff", 0.3) + "," + L.c + " 60%," + mixHex(L.c, "#160510", 0.3) + ");box-shadow:0 0 30px " + L.c + "55;animation:breathe 9s ease-in-out infinite;"; return o; }
     function armTap(after) { hint.textContent = tr("tap to continue"); ov.onclick = function () { ov.onclick = null; hint.textContent = ""; (after || next)(); }; }
-    function next() { if (done) return; i++; if (i >= L.beats.length) { finish(); return; } render(L.beats[i]); }
+    function next() { if (done) return; i++; if (i >= L.beats.length) { finish(); return; } renderLessonBeat(L.beats[i]); }
     function finish() { done = true; try { TTS.stop(); } catch (e) {} ov.remove(); if (L.onDone) { try { L.onDone(ctx); } catch (e) {} } try { drawJourney(true); } catch (e) {}
     }
-    function render(b) {
+    function renderLessonBeat(b) {
       stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
       var iCur = i;
       if (b.k === "line") { if (b.orb) orbEl(46); var ms = lineIn(stage, b.t, b.big); speak(b.t);
@@ -963,7 +963,7 @@
   function firstCommit() { // THE PACT as a journey lesson (moved OUT of onboarding, David 2026-07-04) — the course's 'Initiate and Celebrate' (Module O): commit, then CELEBRATE committing (celebration wires the return). Days first, thumb-seal second, confetti third.
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     var days = 0;
-    function render() {
+    function renderFirstCommit() {
       body.innerHTML = ""; foot.innerHTML = "";
       add(body, "div", "ob-kick", tr("LESSON 3 · THE PACT"));
       add(body, "div", "ob-q", tr("How many days in a row will you come — to start?"));
@@ -997,7 +997,7 @@
       buildSeal();
       add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); };
     }
-    render();
+    renderFirstCommit();
   }
   var DAY1_LESSONS = { // ritual-lesson data — SHORT lines (max ~15 words), mirror questions with NO right answer (they learn the user), a burn, a seal, a door. Course DNA intact: Never Exonerated / Areté / Initiate & Celebrate / votes / Response-Ability / Win-or-Learn.
     fd0: { c: "#ffc83d", beats: [
@@ -3220,8 +3220,8 @@
     ensureGoalDefaults();
     var ov = add(document.body, "div", "goal-ov"); var card = add(ov, "div", "goal-card"); var view = null;
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    function header(title, withBack) { var head = add(card, "div", "goal-head"); if (withBack) { var bk = add(head, "button", "goal-back"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; draw(); }; } var h = add(head, "div", "goal-q"); h.innerHTML = title; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); }; return head; }
-    function draw() { card.innerHTML = ""; if (!view) drawMap(); else drawGoal(view); }
+    function header(title, withBack) { var head = add(card, "div", "goal-head"); if (withBack) { var bk = add(head, "button", "goal-back"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; drawGoals(); }; } var h = add(head, "div", "goal-q"); h.innerHTML = title; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); }; return head; }
+    function drawGoals() { card.innerHTML = ""; if (!view) drawMap(); else drawGoal(view); }
     function drawMap() {
       var head = header('<i class="ti ti-map-2"></i> ' + tr("Quests"), false);
       var sparkN = (S.spark != null) ? S.spark : activeGoals().length;
@@ -3239,9 +3239,9 @@
       var shelf = add(body, "div", "q-shelf");
       var sh = add(shelf, "div", "q-shelf-head"); sh.innerHTML = '<i class="ti ti-archive q-shelf-lead"></i> ' + tr("Released") + ' · ' + released.length + '<i class="ti ti-chevron-down q-shelf-caret"></i>';
       var shb = add(shelf, "div", "q-shelf-body");
-      released.forEach(function (g) { var dom = DOM[g.domain || "focus"], r = add(shb, "div", "q-shelf-row"); var ic = add(r, "i", "ti " + tiClass(g) + " q-shelf-ic"); ic.style.color = dom.c; add(r, "div", "q-shelf-t", g.title); add(r, "div", "q-shelf-restore", tr("return")); r.onclick = function () { g.released = false; g.active = true; save(); draw(); }; });
+      released.forEach(function (g) { var dom = DOM[g.domain || "focus"], r = add(shb, "div", "q-shelf-row"); var ic = add(r, "i", "ti " + tiClass(g) + " q-shelf-ic"); ic.style.color = dom.c; add(r, "div", "q-shelf-t", g.title); add(r, "div", "q-shelf-restore", tr("return")); r.onclick = function () { g.released = false; g.active = true; save(); drawGoals(); }; });
       sh.onclick = function () { shelf.classList.toggle("open"); };
-      typeAdd(body, tr("a quest you're building toward…"), function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); draw(); });
+      typeAdd(body, tr("a quest you're building toward…"), function (v) { var go = { title: v, domain: domainOf({ title: v }), subtasks: [], active: true }; try { decomposeGoal(go).forEach(function (st) { go.subtasks.push({ title: st, done: false }); }); } catch (e) {} attachGuessedMetric(go); (S.goals = S.goals || []).push(go); save(); drawGoals(); });
     }
     function drawHero(grid, g) {
       var dom = DOM[g.domain || "focus"], subs = g.subtasks || [];
@@ -3271,7 +3271,7 @@
         if (subs.length > 5) { var mr = add(lad, "div", "q-step fut"); mr.innerHTML = '<span class="q-ic"></span><span class="q-lab q-wrap">' + esc(subs[5].title) + '</span><span class="q-bounty">+' + bountyFor(5) + '</span>'; }
       } else add(gc, "div", "goal-tagnone", tr("tap to break it down →"));
       if (nextStep) { var cta = add(gc, "button", "tf-door"); cta.style.cssText = "background:#ff5fa8;color:#4a1126;margin-top:14px;font-size:15px;position:relative;z-index:2;"; cta.innerHTML = '<i class="ti ti-calendar-plus"></i> ' + tr("Put a session into the day"); cta.onclick = scheduleNext; }
-      gc.onclick = function (e) { if (e.target.closest(".tf-door") || e.target.closest(".q-step.next")) return; view = g; draw(); };
+      gc.onclick = function (e) { if (e.target.closest(".tf-door") || e.target.closest(".q-step.next")) return; view = g; drawGoals(); };
     }
     function drawStaleRow(body, g) {
       var dom = DOM[g.domain || "focus"], days = staleDays(g);
@@ -3279,12 +3279,12 @@
       var w = add(row, "div", "q-stale-well"); w.style.background = tfStripe(dom.c); w.innerHTML = tiIcon(g);
       var tx = add(row, "div", "q-stale-tx"); add(tx, "div", "q-stale-t", g.title);
       add(tx, "div", "q-stale-s").innerHTML = (days > 0 ? (tr("quiet") + " " + days + " " + tr("days") + " · ") : "") + tr("I'll bring it back into the path");
-      row.onclick = function () { view = g; draw(); };
+      row.onclick = function () { view = g; drawGoals(); };
     }
     function drawGoal(g) {
       var dom = DOM[g.domain || "focus"];
       var head = add(card, "div", "qb-head");
-      var bk = add(head, "button", "qb-nav"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; draw(); };
+      var bk = add(head, "button", "qb-nav"); bk.innerHTML = '<i class="ti ti-chevron-left"></i>'; bk.onclick = function () { view = null; drawGoals(); };
       var well = add(head, "div", "qb-well"); well.style.background = tfStripe(dom.c); well.innerHTML = tiIcon(g);
       var tw = add(head, "div", "qb-titlewrap"); add(tw, "div", "qb-title", g.title); add(tw, "div", "qb-sub").innerHTML = tr("card back") + " · WOOP";
       var xw = add(head, "button", "qb-nav"); xw.innerHTML = '<i class="ti ti-x"></i>'; xw.onclick = function () { ov.remove(); };
@@ -3306,27 +3306,27 @@
         var obsInp = add(plan, "input", "goal-input"); obsInp.type = "text"; obsInp.placeholder = tr("the inner block that gets in the way…"); obsInp.value = (g.woop && g.woop.obstacle) || ""; obsInp.style.marginBottom = "8px";
         var r2 = add(plan, "div", "goal-hint"); r2.style.margin = "0 0 6px"; r2.innerHTML = '<i class="ti ti-arrow-right"></i> ' + tr("If that hits, I'll…");
         var planInp = add(plan, "input", "goal-input"); planInp.type = "text"; planInp.placeholder = tr("my if-then plan…"); planInp.value = (g.woop && g.woop.plan) || "";
-        function saveWoop() { var o = obsInp.value.trim(), p = planInp.value.trim(); g.woop = g.woop || {}; g.woop.obstacle = o; g.woop.plan = p; save(); draw(); }
+        function saveWoop() { var o = obsInp.value.trim(), p = planInp.value.trim(); g.woop = g.woop || {}; g.woop.obstacle = o; g.woop.plan = p; save(); drawGoals(); }
         planInp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveWoop(); } });
         obsInp.addEventListener("blur", saveWoop); planInp.addEventListener("blur", saveWoop);
         setTimeout(function () { try { obsInp.focus(); } catch (e) {} }, 60);
       };
-      metricSection(g, body, draw);
+      metricSection(g, body, drawGoals);
       var sl = add(body, "div", "goal-steps"); sl.style.margin = "0 12px";
       (g.subtasks || []).forEach(function (st, i) {
         var row = add(sl, "div", "goal-step" + (st.done ? " done" : ""));
-        var ck = add(row, "button", "gs-check"); ck.innerHTML = st.done ? '<i class="ti ti-circle-check-filled"></i>' : '<i class="ti ti-circle"></i>'; ck.onclick = function () { st.done = !st.done; if (st.done) goalTouch(g); save(); draw(); };
+        var ck = add(row, "button", "gs-check"); ck.innerHTML = st.done ? '<i class="ti ti-circle-check-filled"></i>' : '<i class="ti ti-circle"></i>'; ck.onclick = function () { st.done = !st.done; if (st.done) goalTouch(g); save(); drawGoals(); };
         add(row, "div", "gs-title", st.title);
         var sc = add(row, "button", "gs-sched"); sc.innerHTML = '<i class="ti ti-calendar-plus"></i>'; sc.onclick = function () { scheduleSubtask(g, st); };
-        var dd = add(row, "button", "gs-del"); dd.innerHTML = '<i class="ti ti-x"></i>'; dd.onclick = function () { g.subtasks.splice(i, 1); save(); draw(); };
+        var dd = add(row, "button", "gs-del"); dd.innerHTML = '<i class="ti ti-x"></i>'; dd.onclick = function () { g.subtasks.splice(i, 1); save(); drawGoals(); };
       });
       var st2 = add(body, "div"); st2.style.margin = "0 12px";
-      typeAdd(st2, tr("add a step or milestone…"), function (v) { (g.subtasks = g.subtasks || []).push({ title: v, done: false }); save(); draw(); });
+      typeAdd(st2, tr("add a step or milestone…"), function (v) { (g.subtasks = g.subtasks || []).push({ title: v, done: false }); save(); drawGoals(); });
       var rel = add(body, "button", "qb-release");
       rel.innerHTML = '<i class="ti ti-feather"></i><div class="qb-release-tx"><div class="qb-release-t">' + tr("Release with honor") + '</div><div class="qb-release-s">' + tr("the story is kept · you can always return it") + '</div></div>';
-      rel.onclick = function () { g.released = true; g.active = false; g.releasedAt = Date.now(); save(); view = null; draw(); toast(tr("released with honor — kept on the shelf")); };
+      rel.onclick = function () { g.released = true; g.active = false; g.releasedAt = Date.now(); save(); view = null; drawGoals(); toast(tr("released with honor — kept on the shelf")); };
     }
-    draw();
+    drawGoals();
   }
   // ---- IDENTITY MINDMAP (§21, mockups 017/018): "see your life" — domains as planets sized by where your days actually go; vices shown honestly ----
   function lifeInvest() { var inv = {}; DOM_ORDER.forEach(function (d) { inv[d] = 0; }); lastDays(30).forEach(function (k) { logs(k).forEach(function (e) { var d = domainOf(e); if (inv[d] != null) inv[d] += (e.mins || 0); }); blocks(k).forEach(function (b) { if (b.done) { var d2 = domainOf(b); if (inv[d2] != null) inv[d2] += (b.mins || 0) * 0.5; } }); }); return inv; }
@@ -3374,7 +3374,7 @@
   function stackDetail(stack, k, custom) {
     var ov = add(document.body, "div", "goal-ov"), card = add(ov, "div", "goal-card");
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    function draw() {
+    function drawStackDetail() {
       card.innerHTML = "";
       var head = add(card, "div", "goal-head");
       var back = add(head, "button", "goal-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { ov.remove(); presetsSheet(k); };
@@ -3388,23 +3388,23 @@
         var row = add(steps, "div", "goal-step");
         var ic = add(row, "span", "gs-on"); ic.style.color = D.c; ic.innerHTML = '<i class="ti ' + tiClass({ title: bl.t || bl.title, domain: dom }) + '"></i>';
         var t = add(row, "span", "gs-title"); t.innerHTML = esc(bl.t || bl.title) + ' <span style="opacity:.55;font-weight:600">· ' + fmt(hm(bl.h || bl.time)) + ' · ' + dur(bl.m || bl.mins) + '</span>';
-        if (custom) { var del = add(row, "button", "gs-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function () { var i = arr.indexOf(bl); if (i >= 0) arr.splice(i, 1); save(); draw(); }; }
+        if (custom) { var del = add(row, "button", "gs-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function () { var i = arr.indexOf(bl); if (i >= 0) arr.splice(i, 1); save(); drawStackDetail(); }; }
       });
       if (!arr.length) add(body, "div", "goal-empty", custom ? "empty stack — add your activities below" : "no activities");
-      if (custom) { var addb = add(body, "button", "goal-breakdown"); addb.style.background = "#36b3f0"; addb.style.color = "#08283c"; addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = function () { bentoPicker({ title: "Add to " + stack.name, onPick: function (a) { var sorted = arr.slice().sort(function (x, y) { return hm(x.h) - hm(y.h); }), last = sorted[sorted.length - 1], st = last ? hm(last.h) + (last.m || 30) : 480; st = Math.min(1410, st); arr.push({ h: pad(Math.floor(st / 60)) + ":" + pad(st % 60), m: 30, t: a.title, d: a.domain }); save(); draw(); } }); }; }
+      if (custom) { var addb = add(body, "button", "goal-breakdown"); addb.style.background = "#36b3f0"; addb.style.color = "#08283c"; addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = function () { bentoPicker({ title: "Add to " + stack.name, onPick: function (a) { var sorted = arr.slice().sort(function (x, y) { return hm(x.h) - hm(y.h); }), last = sorted[sorted.length - 1], st = last ? hm(last.h) + (last.m || 30) : 480; st = Math.min(1410, st); arr.push({ h: pad(Math.floor(st / 60)) + ":" + pad(st % 60), m: 30, t: a.title, d: a.domain }); save(); drawStackDetail(); } }); }; }
       var ap = add(body, "button", "goal-breakdown"); ap.style.background = "#34d39a"; ap.style.color = "#0c3d29"; ap.style.marginTop = "12px"; ap.innerHTML = '<i class="ti ti-calendar-plus"></i> apply to ' + esc(relLabel(k).toLowerCase()); ap.disabled = !arr.length;
       ap.onclick = function () { if (!arr.length) return; applyDayPreset(k, arr); ov.remove(); if (el("pullSheet")) buildPull(); renderToday(); toast("✨ " + stack.name + " — " + relLabel(k).toLowerCase() + " planned"); };
       if (custom) {
-        var ren = add(body, "button", "goal-delete"); ren.innerHTML = "rename this stack"; ren.onclick = function () { ren.style.display = "none"; typeAdd(body, "new name…", function (v) { stack.name = v; save(); draw(); }); };
+        var ren = add(body, "button", "goal-delete"); ren.innerHTML = "rename this stack"; ren.onclick = function () { ren.style.display = "none"; typeAdd(body, "new name…", function (v) { stack.name = v; save(); drawStackDetail(); }); };
         var dl = add(body, "button", "goal-delete"); dl.style.color = "#d0708a"; dl.innerHTML = "delete this stack"; dl.onclick = function () { var i = (S.presets || []).indexOf(stack); if (i >= 0) S.presets.splice(i, 1); save(); ov.remove(); presetsSheet(k); };
       } else { var cp = add(body, "button", "goal-delete"); cp.style.color = "#9fd0ee"; cp.innerHTML = "save a copy to customize"; cp.onclick = function () { S.presets = S.presets || []; var copy = { name: stack.name + " (mine)", blocks: arr.map(function (b) { return { h: b.h || b.time, m: b.m || b.mins, t: b.t || b.title, d: b.d || b.domain }; }) }; S.presets.push(copy); save(); ov.remove(); stackDetail(copy, k, true); }; }
     }
-    draw();
+    drawStackDetail();
   }
   function presetsSheet(k) {
     var ov = add(document.body, "div", "goal-ov"), card = add(ov, "div", "goal-card");
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    function draw() {
+    function drawPresets() {
       card.innerHTML = "";
       var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-stack-2"></i> Habit stacks'; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
       var body = add(card, "div", "goal-body");
@@ -3413,10 +3413,10 @@
       var prevK = keyAdd(k, -1); // one-tap reuse: copy the previous day's plan
       if (blocks(prevK).length) { var cb = add(body, "button", "preset-row"); var cnm = add(cb, "span", "preset-name"); cnm.innerHTML = '<i class="ti ti-copy"></i> Copy ' + esc(relLabel(prevK)) + "'s plan"; add(cb, "span", "preset-meta", blocks(prevK).length + " blocks"); cb.onclick = function () { applyDayPreset(k, blocks(prevK).map(function (b) { return { h: b.time, m: b.mins, t: b.title, d: domainOf(b) }; })); ov.remove(); if (el("pullSheet")) buildPull(); renderToday(); toast("📋 copied " + relLabel(prevK).toLowerCase() + "'s plan"); }; }
       DAY_PRESETS.forEach(function (p) { var b = add(body, "button", "preset-row"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-stack-2"></i> ' + esc(p.name); add(b, "span", "preset-meta", p.blocks.length + " · view"); b.onclick = function () { ov.remove(); stackDetail(p, k, false); }; });
-      (S.presets || []).forEach(function (p) { var b = add(body, "button", "preset-row mine"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-bookmark"></i> ' + esc(p.name); var del = add(b, "span", "preset-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function (e) { e.stopPropagation(); var i = S.presets.indexOf(p); if (i >= 0) S.presets.splice(i, 1); save(); draw(); }; b.onclick = function (e) { if (e.target === del || del.contains(e.target)) return; ov.remove(); stackDetail(p, k, true); }; });
-      if (blocks(k).length) { var sh = add(body, "div", "goal-hint"); sh.textContent = "save " + relLabel(k).toLowerCase() + "'s plan as a reusable stack:"; typeAdd(body, "name this stack…", function (v) { saveDayAsPreset(k, v); draw(); toast("💾 saved “" + v + "”"); }); }
+      (S.presets || []).forEach(function (p) { var b = add(body, "button", "preset-row mine"); var nm = add(b, "span", "preset-name"); nm.innerHTML = '<i class="ti ti-bookmark"></i> ' + esc(p.name); var del = add(b, "span", "preset-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function (e) { e.stopPropagation(); var i = S.presets.indexOf(p); if (i >= 0) S.presets.splice(i, 1); save(); drawPresets(); }; b.onclick = function (e) { if (e.target === del || del.contains(e.target)) return; ov.remove(); stackDetail(p, k, true); }; });
+      if (blocks(k).length) { var sh = add(body, "div", "goal-hint"); sh.textContent = "save " + relLabel(k).toLowerCase() + "'s plan as a reusable stack:"; typeAdd(body, "name this stack…", function (v) { saveDayAsPreset(k, v); drawPresets(); toast("💾 saved “" + v + "”"); }); }
     }
-    draw();
+    drawPresets();
   }
   // HABITS notebook page — manage your activity library anytime (recreates onboarding's stock-your-life) — David 2026-06-24
   function habitsSheet() {
@@ -3426,7 +3426,7 @@
     var body = add(card, "div", "bento-body"), adding = false, openSub = null, openDom = {}; // openSub = parent whose sub-editor shows; openDom = which domains are expanded past the first few (David 2026-06-28)
     var CAP = 8; // calm: show a few chips per domain, the rest behind one "+N more" so the page stops shouting (David 2026-06-28)
     function isCustom(a) { return (S.acts || []).some(function (c) { return (c.title || "").toLowerCase() === (a.title || "").toLowerCase(); }); }
-    function draw() {
+    function drawHabitsSheet() {
       body.innerHTML = "";
       add(body, "div", "sughead", "your activities — tap one to edit, ✕ to remove, or add a new one");
       var by = bentoByDomain();
@@ -3441,21 +3441,21 @@
           var kids = (custom && custom.children) || [];
           var chip = add(row, "span", "bchip"); if (a.domain !== "drift") { chip.style.background = D.c; chip.style.color = D.ink; }
           chip.innerHTML = '<i class="ti ' + tiClass(a) + '"></i> ' + esc(a.title) + (kids.length ? ' <span class="bchip-n">' + kids.length + '</span>' : '');
-          if (custom) { chip.style.cursor = "pointer"; chip.onclick = function () { openSub = (openSub === custom ? null : custom); adding = false; draw(); }; var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); openSub = null; save(); draw(); }; }
+          if (custom) { chip.style.cursor = "pointer"; chip.onclick = function () { openSub = (openSub === custom ? null : custom); adding = false; drawHabitsSheet(); }; var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); openSub = null; save(); drawHabitsSheet(); }; }
         });
         var rest = acts.length - shown.length;
-        if (rest > 0) { var mo = add(row, "span", "bchip more"); mo.style.background = mixHex(D.c, "#160510", 0.5); mo.style.color = D.light; mo.textContent = "+" + rest + " more"; mo.onclick = function () { openDom[d] = true; draw(); }; }
-        else if (expanded && acts.length > CAP) { var le = add(row, "span", "bchip more"); le.style.background = mixHex(D.c, "#160510", 0.5); le.style.color = D.light; le.textContent = "less"; le.onclick = function () { openDom[d] = false; draw(); }; }
+        if (rest > 0) { var mo = add(row, "span", "bchip more"); mo.style.background = mixHex(D.c, "#160510", 0.5); mo.style.color = D.light; mo.textContent = "+" + rest + " more"; mo.onclick = function () { openDom[d] = true; drawHabitsSheet(); }; }
+        else if (expanded && acts.length > CAP) { var le = add(row, "span", "bchip more"); le.style.background = mixHex(D.c, "#160510", 0.5); le.style.color = D.light; le.textContent = "less"; le.onclick = function () { openDom[d] = false; drawHabitsSheet(); }; }
         if (openSub && openSub.domain === d) drawSubEditor(body, openSub, D);
       });
-      if (!adding) { var ab = add(body, "div", "bento-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a habit / activity'; ab.onclick = function () { adding = true; draw(); }; }
+      if (!adding) { var ab = add(body, "div", "bento-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a habit / activity'; ab.onclick = function () { adding = true; drawHabitsSheet(); }; }
       else {
         var frm = add(body, "div", "habit-addform");
         var inp = document.createElement("input"); inp.type = "text"; inp.className = "bento-input"; inp.placeholder = "name it (e.g. Climbing, Therapy)…"; frm.appendChild(inp);
         add(frm, "div", "bento-lbl", "category");
         var crow = add(frm, "div", "bento-cats"), chosen = { d: "focus" };
         DOM_ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
-        var go = add(frm, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>'; go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; if (!(S.acts.some(function (c) { return c.title.toLowerCase() === nm.toLowerCase(); }) || TITLE2CAT[nm.toLowerCase()])) S.acts.push({ title: nm, catK: null, domain: chosen.d, children: [] }); save(); adding = false; draw(); toast("added " + nm); };
+        var go = add(frm, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>'; go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; if (!(S.acts.some(function (c) { return c.title.toLowerCase() === nm.toLowerCase(); }) || TITLE2CAT[nm.toLowerCase()])) S.acts.push({ title: nm, catK: null, domain: chosen.d, children: [] }); save(); adding = false; drawHabitsSheet(); toast("added " + nm); };
         setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
       }
     }
@@ -3466,13 +3466,13 @@
       p.children = p.children || [];
       var srow = add(pan, "div", "habit-row");
       if (!p.children.length) add(srow, "div", "subhab-empty", "no sub-habits yet — break it into smaller steps");
-      p.children.forEach(function (kid, i) { var k = add(srow, "span", "bchip sub"); k.style.background = D.dark; k.style.color = "#fff"; k.innerHTML = '<i class="ti ti-corner-down-right"></i> ' + esc(kid); var kd = document.createElement("i"); kd.className = "ti ti-x habit-del"; k.appendChild(kd); kd.onclick = function (e) { e.stopPropagation(); p.children.splice(i, 1); save(); draw(); }; });
+      p.children.forEach(function (kid, i) { var k = add(srow, "span", "bchip sub"); k.style.background = D.dark; k.style.color = "#fff"; k.innerHTML = '<i class="ti ti-corner-down-right"></i> ' + esc(kid); var kd = document.createElement("i"); kd.className = "ti ti-x habit-del"; k.appendChild(kd); kd.onclick = function (e) { e.stopPropagation(); p.children.splice(i, 1); save(); drawHabitsSheet(); }; });
       var sf = add(pan, "div", "habit-addform");
       var si = document.createElement("input"); si.type = "text"; si.className = "bento-input"; si.placeholder = "sub-habit (e.g. Define the ONE thing)…"; sf.appendChild(si);
-      var sg = add(sf, "button", "bento-save"); sg.innerHTML = 'add step <i class="ti ti-check"></i>'; sg.onclick = function () { var nm = si.value.trim(); if (!nm) { si.focus(); return; } if (p.children.some(function (c) { return c.toLowerCase() === nm.toLowerCase(); })) { si.value = ""; return; } p.children.push(nm); save(); draw(); };
+      var sg = add(sf, "button", "bento-save"); sg.innerHTML = 'add step <i class="ti ti-check"></i>'; sg.onclick = function () { var nm = si.value.trim(); if (!nm) { si.focus(); return; } if (p.children.some(function (c) { return c.toLowerCase() === nm.toLowerCase(); })) { si.value = ""; return; } p.children.push(nm); save(); drawHabitsSheet(); };
       setTimeout(function () { try { si.focus(); } catch (e) {} }, 60);
     }
-    draw();
+    drawHabitsSheet();
   }
   // ---- THE NOTEBOOK (David 2026-06-23): the single menu door (bottom-left, above the stick). Every menu roots from here, each X-able. No more top-drag / scattered taps. ----
   function notebookSheet() {
@@ -3507,8 +3507,8 @@
     var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
     var body = add(card, "div", "nb-body"); var wrap = add(body, "div", "");
     function chip(p, label, on) { var s = add(p, "span", "ob-ch" + (on ? " on" : "")); s.innerHTML = label; return s; }
-    function commit() { save(); draw(); if (timelineIsHome()) buildPull(); else renderToday(); }
-    function draw() {
+    function commit() { save(); drawWakeBed(); if (timelineIsHome()) buildPull(); else renderToday(); }
+    function drawWakeBed() {
       wrap.innerHTML = "";
       var sb = add(wrap, "div", "ob-lbl"); sb.style.cssText = "margin:0 0 4px;text-transform:none;font-size:12px;color:#caa0bd;letter-spacing:0;"; sb.textContent = "rough is fine — the timeline frames your day from these.";
       add(wrap, "div", "ob-lbl", "I USUALLY WAKE");
@@ -3519,7 +3519,7 @@
       var lr = add(wrap, "div", "ob-row"); [["lark", "Morning", "ti-sun"], ["owl", "Night", "ti-moon"], ["mixed", "It varies", "ti-windmill"]].forEach(function (o) { var c = chip(lr, '<i class="ti ' + o[0 + 2] + '"></i> ' + o[1], P.peak === o[0]); c.onclick = function () { P.peak = o[0]; P.lark = (o[0] !== "owl"); commit(); }; });
       var dw = dayWindow(); var hint = add(wrap, "div", ""); hint.style.cssText = "margin-top:15px;padding:11px 13px;border-radius:13px;background:#1c0512;border:2px solid #160510;color:#ffd9ec;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;"; hint.innerHTML = '<i class="ti ti-clock-hour-9" style="color:#ffb02e;font-size:17px;"></i> your day on the timeline: <b style="color:#ffe3f1;">' + fmtHour(dw.startH) + ' → ' + fmtHour(dw.endH) + '</b>';
     }
-    draw();
+    drawWakeBed();
   }
   var pullK = null, pullZoom = "day", pullHourPx = 64, pullFocusK = null; // pullFocusK = the day currently centered in the scroll (drives the header label + ‹ › paging) — David 2026-06-24
   var _ttapT = 0, _ttapX = 0, _ttapY = 0; // double-tap-to-zoom tracking on the timeline (David 2026-07-02)
@@ -3878,12 +3878,12 @@
     add(B, "div", "sttl", "Daily fundamentals");
     add(B, "div", "lbl", "Your recurring basics — “Daily fundamentals” fills these into a day.");
     var list = add(B, "div", "fund-list");
-    function draw() {
+    function drawFundamentals() {
       list.innerHTML = ""; var arr = getFund();
-      arr.forEach(function (f, i) { var row = add(list, "div", "fund-row"); var sw = add(row, "span", "fund-sw"); sw.style.background = (DOM[f.d] || DOM.focus).c; add(row, "span", "fund-n", f.t + " · " + f.m + "m"); var rm = add(row, "button", "fund-x"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { var a = getFund().slice(); a.splice(i, 1); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); draw(); }; });
-      var ab = add(list, "button", "add2"); ab.innerHTML = '<i class="ti ti-plus"></i> add a fundamental'; ab.style.margin = "6px 0 0"; ab.onclick = function () { bentoPicker({ title: "Add a daily fundamental", onPick: function (x) { if (!x) return; var a = getFund().slice(); a.push({ t: x.title, d: domainOf(x), m: 30, slot: 720 }); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); draw(); } }); };
+      arr.forEach(function (f, i) { var row = add(list, "div", "fund-row"); var sw = add(row, "span", "fund-sw"); sw.style.background = (DOM[f.d] || DOM.focus).c; add(row, "span", "fund-n", f.t + " · " + f.m + "m"); var rm = add(row, "button", "fund-x"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { var a = getFund().slice(); a.splice(i, 1); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); drawFundamentals(); }; });
+      var ab = add(list, "button", "add2"); ab.innerHTML = '<i class="ti ti-plus"></i> add a fundamental'; ab.style.margin = "6px 0 0"; ab.onclick = function () { bentoPicker({ title: "Add a daily fundamental", onPick: function (x) { if (!x) return; var a = getFund().slice(); a.push({ t: x.title, d: domainOf(x), m: 30, slot: 720 }); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); drawFundamentals(); } }); };
     }
-    draw();
+    drawFundamentals();
     if (S.profile && S.profile.fundamentals) { var rs = add(B, "button", "add2"); rs.innerHTML = '<i class="ti ti-rotate"></i> reset to defaults'; rs.style.margin = "8px 0 0"; rs.onclick = function () { delete S.profile.fundamentals; save(); fundamentalsMenu(); }; }
     add(B, "button", "done2", "Done").onclick = function () { closeSheet(); shapeFlow(todayK()); }; // → the one planning flow (was the old planDay sheet)
   }
@@ -5514,7 +5514,7 @@
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     // BATTERY PROGRESS — 3 labeled section segments, cells = that section's questions
     var bar = add(card, "div", "obv-bar"), segEls = [];
-    var backB = add(bar, "button", "ob-back"); backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; do { bi2--; } while (bi2 > 0 && BEATS[bi2].t === "gate"); draw(); };
+    var backB = add(bar, "button", "ob-back"); backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; do { bi2--; } while (bi2 > 0 && BEATS[bi2].t === "gate"); drawObV2(); };
     SECTIONS.forEach(function (sec, si) { var sg = add(bar, "div", "obv-seg"); sg.style.setProperty("--sc", sec.c); add(sg, "div", "obv-seglbl", tr(sec.l)); var cw = add(sg, "div", "obv-cells"); var qn = QS.filter(function (q) { return q.sec === si; }).length; for (var ci = 0; ci < qn; ci++) add(cw, "div", "obv-cell"); segEls.push(sg); });
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     // THE POINTS PLACE (David 2026-07-04): one corner counter — every earned spark flies HERE, never to the progress bar
@@ -5539,7 +5539,7 @@
         setTimeout(function () { awardPts(pts || 0, skipEarn); }, 750); // the chip pops + runs the gem palette as the swarm lands
       } catch (e) {}
     }
-    function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } draw(); }
+    function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } drawObV2(); }
     function stdFoot(label, canSkip) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; if (canSkip !== false) { var sk = add(foot, "button", "ob-skip", tr("skip")); sk.onclick = finishV2; } return b; }
     function finishV2() {
       S.profile = S.profile || {}; var P = S.profile;
@@ -5592,7 +5592,7 @@
       if (items.length < 3) items.push({ t: "One small thing on purpose", ic: "ti-star", c: "#ffd24a", trace: "a day changes from one chosen thing — any one" });
       return items.slice(0, 5);
     }
-    function draw() {
+    function drawObV2() {
       paintBar(); body.innerHTML = ""; foot.innerHTML = "";
       backB.style.visibility = bi2 > 0 ? "" : "hidden";
       var B = BEATS[bi2];
@@ -5639,7 +5639,7 @@
         add(body, "div", "ob-kick", tr("PART") + " " + (q.sec + 1) + " · " + tr(SECTIONS[q.sec].l));
         add(body, "div", "ob-q", tr(q.q));
         var wrap = add(body, "div", q.rows ? "obv-rows" : "obv-tiles");
-        // IN-PLACE toggling (punch-list #7, David device 2026-07-04): a tap must NEVER rebuild the screen — the full draw() replayed the entrance cascade (opacity-0 first frame = the "black flash + menu reset"). Tiles repaint themselves; the bar, reply line and Next button update in place. Also: no plus badge, no checkmark (punch-list #11+#12) — selection IS the lit stripe; and NO caps ever (punch-list #8) — pick as many as you like.
+        // IN-PLACE toggling (punch-list #7, David device 2026-07-04): a tap must NEVER rebuild the screen — the full drawObV2() replayed the entrance cascade (opacity-0 first frame = the "black flash + menu reset"). Tiles repaint themselves; the bar, reply line and Next button update in place. Also: no plus badge, no checkmark (punch-list #11+#12) — selection IS the lit stripe; and NO caps ever (punch-list #8) — pick as many as you like.
         var _tileEls = [], _reply = null, qgo;
         function tilePicked(o) { return q.multi ? (d2[q.key].indexOf(o[0]) >= 0) : d2[q.key] === o[0]; }
         function paintTile(el2, o) { var picked = tilePicked(o); el2.classList.toggle("on", picked); el2.style.background = picked ? tfStripeDoor(o[3]) : ""; el2.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + (o[4] ? '<span class="os">' + esc(tr(o[4])) + '</span>' : '') + '</span>'; }
@@ -5765,7 +5765,7 @@
             pw2.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffd24a" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
             var arc = pw2.querySelector(".parc"), holdT2 = null, holdDone2 = false;
             function rel2() { if (holdDone2) return; clearTimeout(holdT2); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-            pw2.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT2 = setTimeout(function () { holdDone2 = true; d2.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} obConfetti(pw2, 10); draw(); }, 1300); });
+            pw2.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT2 = setTimeout(function () { holdDone2 = true; d2.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} obConfetti(pw2, 10); drawObV2(); }, 1300); });
             pw2.addEventListener("pointerup", rel2); pw2.addEventListener("pointercancel", rel2); pw2.addEventListener("pointerleave", rel2);
             add(sealZone, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
           }
@@ -5811,7 +5811,7 @@
         add(body, "div", "ob-sb", _oh >= 17 ? tr("Close the day if you like — I'll be here in the morning.") : tr("Done. No more questions — let's go make the day.")).style.cssText = "text-align:center;margin-top:10px;font-weight:800;color:#ffe3f1;";
         stdFoot(tr("Open my world") + " ▸", false).onclick = finishV2; return; }
     }
-    draw();
+    drawObV2();
   }
   function onboard() { return onboardV2(); }
   function onboardV1() {
@@ -5821,7 +5821,7 @@
     var bar = add(card, "div", "ob-bar"), barDs = []; for (var _bi = 0; _bi < STEPS; _bi++) barDs.push(add(bar, "i")); // §12 frame 12: course-style dashes, one per beat
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     function chip(p, label, on, color, ink) { var s = add(p, "span", "ob-ch" + (on ? " on" : "")); if (color) { s.style.background = on ? color : mixDark(color); s.style.color = on ? (ink || "#160510") : color; } s.innerHTML = label; return s; }
-    function next() { clearTimeout(advT); advT = null; if (step < STEPS - 1) { step++; draw(); } else finish(); } // clearTimeout: a pick's auto-advance timer must never double-fire past a beat when the user taps Next first
+    function next() { clearTimeout(advT); advT = null; if (step < STEPS - 1) { step++; drawObV1(); } else finish(); } // clearTimeout: a pick's auto-advance timer must never double-fire past a beat when the user taps Next first
     function finish() {
       S.profile = S.profile || {}; var P = S.profile;
       P.vibe = data.vibe || P.vibe || ""; P.lowStart = (data.vibe === "overwhelmed" || data.vibe === "stuck") || !!P.lowStart;
@@ -5842,7 +5842,7 @@
     }
     function stdFoot(primaryLabel, showBack) {
       var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : ""), primaryLabel); b.onclick = next;
-      if (showBack) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; draw(); }; }
+      if (showBack) { var bk = add(foot, "button", "ob-back", "◂ back"); bk.onclick = function () { step--; drawObV1(); }; }
       var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = finish; // skip must still seed defaults via finish() — bailing early used to strand the app half-initialized (David 2026-07-02)
     }
     function taskDone() {
@@ -5850,9 +5850,9 @@
       try { logs(todayK()).push({ id: uid(), time: pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()), title: "One conscious breath", mins: 1, catK: null, domain: "restore", color: DOM.restore.c }); } catch (e) {} // the breath becomes the FIRST REAL ENTRY in the record — the thesis, proven in minute one
       try { earn(10, { label: "first-breath" }); } catch (e) {}
       try { earn(8, { label: "onboard-task-bonus" }); } catch (e) {}
-      draw();
+      drawObV1();
     }
-    function draw() {
+    function drawObV1() {
       barDs.forEach(function (d, di) { d.className = di <= step ? "on" : ""; }); body.innerHTML = ""; foot.innerHTML = "";
       body.className = (step === 0 || step === 1 || step === 2 || step === 4 || step === 6 || step === 7) ? "ob-body center" : "ob-body";
       if (step === 0) { obMark(body, 190); add(body, "div", "ob-q", "Hi. I'm Alter."); add(body, "div", "ob-sb", "what I'm about to show you gives you real powers. this is no joke."); stdFoot("Let's go ▸", false); return; }
@@ -5866,7 +5866,7 @@
         var holdT = null, holdDone = !!data.pactAt;
         function release() { if (holdDone) return; clearTimeout(holdT); fill.style.transition = "width .25s ease"; fill.style.width = "0%"; }
         if (!data.pactAt) {
-          pb.addEventListener("pointerdown", function () { holdDone = false; fill.style.transition = "width 1.2s linear"; requestAnimationFrame(function () { fill.style.width = "100%"; }); holdT = setTimeout(function () { holdDone = true; data.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} draw(); }, 1200); });
+          pb.addEventListener("pointerdown", function () { holdDone = false; fill.style.transition = "width 1.2s linear"; requestAnimationFrame(function () { fill.style.width = "100%"; }); holdT = setTimeout(function () { holdDone = true; data.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} drawObV1(); }, 1200); });
           pb.addEventListener("pointerup", release); pb.addEventListener("pointercancel", release); pb.addEventListener("pointerleave", release);
         }
         if (data.pactAt) { stdFoot("Next ▸", true); } else { var skip = add(foot, "button", "ob-skip", "skip"); skip.onclick = finish; }
@@ -5884,7 +5884,7 @@
           var on3 = data.vibe === o[0], r = add(vw, "div", "k-row" + (on3 ? " lit" : ""));
           r.style.cssText = "--kc:" + mixHex(o[4], "#160510", 0.28) + ";--kt:" + mixHex(o[4], "#0d0410", 0.86) + ";--kA:" + o[4] + ";--kB:" + mixHex(o[4], "#160510", 0.24) + ";--ki:" + mixHex(o[4], "#0d0410", 0.76) + ";--ks:" + mixHex(o[4], "#b39ab0", 0.5) + ";";
           r.innerHTML = '<i class="ti ' + o[3] + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o[1] + '</div><div class="kr-s">' + o[2] + '</div></div>' + (on3 ? '<i class="ti ti-check kr-chk"></i>' : '');
-          r.onclick = function () { if (data.vibe === o[0]) return; data.vibe = o[0]; data.energy = o[5]; draw(); clearTimeout(advT); advT = setTimeout(next, 1700); };
+          r.onclick = function () { if (data.vibe === o[0]) return; data.vibe = o[0]; data.energy = o[5]; drawObV1(); clearTimeout(advT); advT = setTimeout(next, 1700); };
         });
         var VR = { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." };
         if (data.vibe) { add(body, "div", "ob-sb", VR[data.vibe]).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;"; }
@@ -5941,7 +5941,7 @@
           var on4 = data.block === o[0], r = add(bw, "div", "k-row" + (on4 ? " lit" : ""));
           r.style.cssText = "--kc:" + mixHex(o[3], "#160510", 0.28) + ";--kt:" + mixHex(o[3], "#0d0410", 0.86) + ";--kA:" + o[3] + ";--kB:" + mixHex(o[3], "#160510", 0.24) + ";--ki:" + mixHex(o[3], "#0d0410", 0.76) + ";--ks:" + mixHex(o[3], "#b39ab0", 0.5) + ";";
           r.innerHTML = '<i class="ti ' + o[2] + '"></i><div style="flex:1;min-width:0;"><div class="kr-t">' + o[1] + '</div></div>' + (on4 ? '<i class="ti ti-check kr-chk"></i>' : '');
-          r.onclick = function () { if (data.block === o[0]) return; data.block = o[0]; draw(); clearTimeout(advT); advT = setTimeout(next, 1900); };
+          r.onclick = function () { if (data.block === o[0]) return; data.block = o[0]; drawObV1(); clearTimeout(advT); advT = setTimeout(next, 1900); };
         });
         var BR = { fear: "Then we never look at the whole thing — just the edge. Tomorrow I'll bring it so small it can't scare you.", overwhelm: "Then we never start with the whole thing — just the first corner. Tomorrow I'll bring you one.", wound: "Then we go gently — with a way out at every step. You set the pace.", none: "Good. Then we build forward." };
         if (data.block) { add(body, "div", "ob-sb", BR[data.block]).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#f0e6ef;"; stdFoot("Next ▸", false); }
@@ -5984,7 +5984,7 @@
         add(body, "div", "ob-q", "Plant your first seed."); add(body, "div", "ob-sb", "free — you already earned it.");
         if (!data.seeded) {
           var plantBtn = add(body, "button", "ob-btn", "🌱 Plant"); plantBtn.style.marginTop = "16px";
-          plantBtn.onclick = function () { try { plantGarden(); } catch (e) {} data.seeded = true; draw(); };
+          plantBtn.onclick = function () { try { plantGarden(); } catch (e) {} data.seeded = true; drawObV1(); };
         } else {
           add(body, "div", "ob-sb", "planted — your world grows with you now.").style.marginTop = "10px";
           var startBtn = add(foot, "button", "ob-btn go", "Start ▸"); startBtn.onclick = finish;
@@ -5992,7 +5992,7 @@
         return;
       }
     }
-    draw();
+    drawObV1();
   }
   var VIRTUES = [
     { k: "zest", l: "Zest", e: "⚡", c: "#ff8a1e", grow: "move your body" },
@@ -6023,8 +6023,52 @@
   // @CONTRACT: changing the SHAPE of S requires bumping SCHEMA (@SEC:TIME) + a "MIG n→n+1" block inside load() — the preship ratchet enforces the pairing. Purely-additive fields with guarded reads (S.x || {}) may skip the bump (the S.mood/S.acts/S.bk precedent). load() must NEVER throw past its catch: a damaged save falls through to the _bak backup + fresh() path — David's data survives every crash.
   var S;
   function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
-  function load() { var _rawLoad = localStorage.getItem(KEY); try { S = JSON.parse(_rawLoad) || fresh(); if (S.v == null) S.v = 0; var prevSchema = S.v; S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice(); S.habitDone = S.habitDone || {}; S.blocks = S.blocks || {}; S.log = S.log || {}; S.timers = S.timers || []; S.habits = S.habits.filter(function (h) { return h.id !== "send"; }); S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; }); S.game = S.game || { spark: 0, total: 0, ups: {} }; S.game.ups = S.game.ups || {}; S.game.garden = S.game.garden || []; S.brain = S.brain || { engine: "off", key: "" }; S.microState = S.microState || {}; S.mood = S.mood || {}; S.acts = S.acts || []; S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */ S.bk = S.bk || {}; S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null }; S.tools = S.tools || {}; S.tools.use = S.tools.use || {}; S.tools.last = S.tools.last || {}; S.tools.fav = S.tools.fav || []; S.tools.recents = S.tools.recents || []; if (S.voiceDebug == null) S.voiceDebug = false; S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */ S.audio = S.audio || { voice: 1, bg: 1 }; if (S.audio.voice == null) S.audio.voice = 1; if (S.audio.bg == null) S.audio.bg = 1; if (S.audio.bed == null) S.audio.bed = "pad"; if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */ if (S.audio.appMusic == null) S.audio.appMusic = false; if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; } /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */ /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */ /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */ TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */ S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); }); var _tk = todayK(); S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
+  function load() { // THE MIGRATION LADDER (wave-2 restructure 2026-07-05: exploded from one 10KB line — SAME statements, SAME order; only whitespace + comment placement changed). Structure: base defaults (every load) → gated MIG blocks (prevSchema < n) → S.v stamp → damaged-save catch.
+    var _rawLoad = localStorage.getItem(KEY);
+    try {
+    S = JSON.parse(_rawLoad) || fresh();
+    if (S.v == null) S.v = 0;
+    var prevSchema = S.v; // the save's schema BEFORE migration — every gated MIG block below keys off this
+    /* ── BASE DEFAULTS (every load, idempotent, NOT schema-gated): lazy-guard the core shape so any save, however old or partial, boots ── */
+    S.habits = S.habits && S.habits.length ? S.habits : DEFAULT_HABITS.slice();
+    S.habitDone = S.habitDone || {};
+    S.blocks = S.blocks || {};
+    S.log = S.log || {};
+    S.timers = S.timers || [];
+    S.habits = S.habits.filter(function (h) { return h.id !== "send"; });
+    S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; });
+    S.game = S.game || { spark: 0, total: 0, ups: {} };
+    S.game.ups = S.game.ups || {};
+    S.game.garden = S.game.garden || [];
+    S.brain = S.brain || { engine: "off", key: "" };
+    S.microState = S.microState || {};
+    S.mood = S.mood || {};
+    S.acts = S.acts || [];
+    S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */
+    S.bk = S.bk || {};
+    S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null };
+    /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */
+    S.tools = S.tools || {};
+    S.tools.use = S.tools.use || {};
+    S.tools.last = S.tools.last || {};
+    S.tools.fav = S.tools.fav || [];
+    S.tools.recents = S.tools.recents || [];
+    if (S.voiceDebug == null) S.voiceDebug = false;
+    S.voiceDebug = false; /* audio confirmed working (David 2026-07-01) → diagnostic OFF; can re-enable in Settings if a tool ever misbehaves */
+    S.audio = S.audio || { voice: 1, bg: 1 };
+    if (S.audio.voice == null) S.audio.voice = 1;
+    if (S.audio.bg == null) S.audio.bg = 1;
+    if (S.audio.bed == null) S.audio.bed = "pad";
+    if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */
+    if (S.audio.appMusic == null) S.audio.appMusic = false;
+    if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; } /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */
+    /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */
+    TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */
+    S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); });
+    var _tk = todayK();
+    S.timers = S.timers.filter(function (t) { return t.dayK === _tk && t.title !== "Tracking…"; });
     /* ===== F-0 (SCHEMA 1→2, David 2026-06-30): consolidated migration — keystone for the Heroic-course build (_course/BUILD-SPEC.md §2). Adds scaffolding fields/keys ONLY; zero behavior change. prevSchema captured near top of load(). ===== */
+    // MIG 1→2
     if (prevSchema < 2) {
       Object.keys(S.bk).forEach(function (dk) { var day = S.bk[dk]; if (!day) return;
         if (day.am) { if (!day.am.vm) day.am.vm = { rungs: [], focusVirtue: "", ts: null }; if (day.am.compassFocus === undefined) day.am.compassFocus = null; }
@@ -6038,6 +6082,7 @@
       if (!S.vmStreak) S.vmStreak = { current: 0, best: 0, lastDate: null };
     }
     /* ===== F-1 (SCHEMA 2→3, 2026-06-30): plannedAhead field — marks blocks created for a future day so the reward economy can fire the planned-then-done celebrate(). Migration sets existing blocks to false (safe default). New blocks get plannedAhead=true at creation time when dayKey > todayK(). ===== */
+    // MIG 2→3
     if (prevSchema < 3) {
       Object.keys(S.blocks || {}).forEach(function (dk) {
         (S.blocks[dk] || []).forEach(function (b) { if (b.plannedAhead === undefined) b.plannedAhead = false; });
@@ -6055,9 +6100,11 @@
     if (S.sfShown == null) S.sfShown = 0;                            // soul-force surface mode (ceiling reveal)
     if (S.tlm === undefined) S.tlm = { k: null, n: 0 };              // ≤2 TLM pings/day (dopamine-wave-pool law)
     if (S.profile) { S.profile.words = S.profile.words || []; S.profile.ingredients = S.profile.ingredients || []; }
+    // MIG 3→4 (the shape adds above are idempotent every-load; only this derive is gated)
     if (prevSchema < 4 && S.profile && S.profile.theoryMode == null) { var _lvl4 = ((S.guide || {}).appetiteState || {}).level; S.profile.theoryMode = (_lvl4 === "floor") ? "proverbs" : "cards"; } // derive: ceiling→cards, floor→proverbs
     /* ===== THE RANGE (SCHEMA 4→5, SPEC-FIRST-RUN §4, 2026-07-05): S.range = { targets:[{id,title,domain,horizon,placedK,arrows:[{k,dx,dy,blockId,done}],woop,retiredK}], lastArrowK }. Existing active goals import ONCE as season-horizon targets (title-deduped) — your goals ARE the targets, nothing re-entered. ===== */
     S.range = S.range || { targets: [], lastArrowK: null }; S.range.targets = S.range.targets || [];
+    // MIG 4→5
     if (prevSchema < 5 && (S.goals || []).length) {
       var _seen5 = {}; S.range.targets.forEach(function (t) { _seen5[(t.title || "").toLowerCase()] = 1; });
       (S.goals || []).filter(function (g) { return g.active !== false && g.title; }).forEach(function (g) {
@@ -6065,8 +6112,8 @@
         S.range.targets.push({ id: uid(), title: g.title, domain: g.domain || "focus", horizon: "season", placedK: todayK(), arrows: [], woop: g.woop || null });
       });
     }
-    S.v = SCHEMA;
-    } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged — backed up + started fresh"); }
+    S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
+    } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged — backed up + started fresh"); } // NEVER let load() throw past here: damaged save → _bak + fresh() — David's data survives every crash
   }
   function bk(k) { S.bk = S.bk || {}; return (S.bk[k] = S.bk[k] || { am: {}, pm: {} }); } // bookend baton accessor — guarded lazy shape (CKPT-4)
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { var n = Date.now(); if (n - lastSaveErr > 8000) { lastSaveErr = n; toast("⚠️ Couldn't save — storage may be full. Back up your data via 🧠."); } } }
@@ -8467,7 +8514,7 @@
     function close() { ov.remove(); }
     xb.onclick = function () { close(); if (opts.onCancel) opts.onCancel(); }; // G2 (David on device, v801): the X must fire onCancel too — closing via X after tap-empty-slot was leaving the empty "tap to choose" stub behind (only the backdrop tap cleaned it)
     ov.addEventListener("click", function (e) { if (e.target === ov) { close(); if (opts.onCancel) opts.onCancel(); } });
-    function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); render(); renderFoot(); pdSyncStrip(); } else { close(); opts.onPick(a); } }
+    function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); renderBento(); renderFoot(); pdSyncStrip(); } else { close(); opts.onPick(a); } }
     function actChip(a, container, big, soft) {
       var D = DOM[a.domain], on = sel.indexOf(a) >= 0, pin = isPinned(a);
       var s = add(container, "span", "bchip" + (big ? " big" : "") + (soft ? " soft" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : "") + (_isPlan ? " pd-lit" : ""));
@@ -8479,7 +8526,7 @@
       }
       s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"' + iconStyle + '></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
       var holdT = null, held = false; // press & hold any chip → pin / unpin it (tap-only, no keyboard) — David 2026-06-24
-      s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "pinned to the top" : "unpinned"); render(); }, 450); });
+      s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "pinned to the top" : "unpinned"); renderBento(); }, 450); });
       function cancelHold() { if (holdT) { clearTimeout(holdT); holdT = null; } }
       s.addEventListener("pointermove", cancelHold); s.addEventListener("pointerup", cancelHold); s.addEventListener("pointercancel", cancelHold);
       s.onclick = function (e) { e.stopPropagation(); if (held) { held = false; return; } commit(a); };
@@ -8503,7 +8550,7 @@
         var acts = (by[d] || []).slice(); if (!acts.length) return;
         acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the front (David 2026-06-24)
         var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
-        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; view.grp = null; render(); };
+        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; view.grp = null; renderBento(); };
         var wrap = add(mc, "div", "bento-chips"); wrap.style.cssText = "display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;padding-bottom:3px;touch-action:pan-x;"; // FULL list per category, scroll SIDEWAYS — no +N truncation, no per-item + (David 2026-07-01)
         acts.forEach(function (a) { var c = actChip(a, wrap, false); c.style.flex = "0 0 auto"; c.style.whiteSpace = "nowrap"; });
       });
@@ -8527,17 +8574,17 @@
       var D = DOM[d], gd = groupsOf(d);
       // top strip: back (steps up ONE level) + a breadcrumb + lateral domain tabs
       var strip = add(body, "div", "bento-strip");
-      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { if (view.grp) { view.grp = null; } else { view.cat = null; } render(); };
+      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { if (view.grp) { view.grp = null; } else { view.cat = null; } renderBento(); };
       var crumb = add(strip, "span", "bento-crumb"); crumb.style.color = D.light;
       crumb.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l) + (view.grp ? ' <i class="ti ti-chevron-right" style="opacity:.55;font-size:.85em"></i> ' + esc(view.grp) : '');
-      if (view.grp) { crumb.style.cursor = "pointer"; crumb.onclick = function () { view.grp = null; render(); }; } // tap the breadcrumb domain → back to its sub-groups
-      ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; view.grp = null; render(); }; });
+      if (view.grp) { crumb.style.cursor = "pointer"; crumb.onclick = function () { view.grp = null; renderBento(); }; } // tap the breadcrumb domain → back to its sub-groups
+      ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; view.grp = null; renderBento(); }; });
       var pane = add(body, "div", "bento-pane"); pane.style.borderColor = D.c;
       // LEVEL 2: more than one sub-group AND none chosen yet → show the sub-category list (drill down one more) — David 2026-06-27
       if (gd.order.length > 1 && !view.grp) {
         var h = add(pane, "div", "bento-paneh"); h.style.color = D.light; h.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
         var gl = add(pane, "div", "bento-tiles");
-        gd.order.forEach(function (gn) { var t = add(gl, "span", "bchip big grp"); t.style.background = mixHex(D.c, "#160510", 0.55); t.style.color = D.light; t.style.borderColor = mixHex(D.c, "#160510", 0.2); t.innerHTML = '<i class="ti ti-folder"></i> ' + esc(gn) + ' <span class="grp-n">' + gd.groups[gn].length + '</span>'; t.onclick = function () { view.grp = gn; render(); }; });
+        gd.order.forEach(function (gn) { var t = add(gl, "span", "bchip big grp"); t.style.background = mixHex(D.c, "#160510", 0.55); t.style.color = D.light; t.style.borderColor = mixHex(D.c, "#160510", 0.2); t.innerHTML = '<i class="ti ti-folder"></i> ' + esc(gn) + ' <span class="grp-n">' + gd.groups[gn].length + '</span>'; t.onclick = function () { view.grp = gn; renderBento(); }; });
         var addt0 = add(gl, "span", "bchip big addt"); addt0.innerHTML = '<i class="ti ti-plus"></i> add'; addt0.onclick = addNew;
         return;
       }
@@ -8549,7 +8596,7 @@
       var tin = add(pane, "div", "bento-typein");
       var ti = document.createElement("input"); ti.type = "text"; ti.className = "bento-tinput"; ti.placeholder = "add your own…"; tin.appendChild(ti);
       var tgo = add(tin, "button", "bento-tadd"); tgo.innerHTML = '<i class="ti ti-plus"></i>';
-      function addTyped() { var nm = ti.value.trim(); if (!nm) { ti.focus(); return; } S.acts = S.acts || []; if (!S.acts.filter(function (x) { return (x.title || "").toLowerCase() === nm.toLowerCase(); })[0]) S.acts.push({ title: nm, catK: null, domain: d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: d, color: DOM[d].c }; if (multi) { if (sel.indexOf(a) < 0) sel.push(a); ti.value = ""; render(); renderFoot(); } else { close(); opts.onPick(a); } }
+      function addTyped() { var nm = ti.value.trim(); if (!nm) { ti.focus(); return; } S.acts = S.acts || []; if (!S.acts.filter(function (x) { return (x.title || "").toLowerCase() === nm.toLowerCase(); })[0]) S.acts.push({ title: nm, catK: null, domain: d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: d, color: DOM[d].c }; if (multi) { if (sel.indexOf(a) < 0) sel.push(a); ti.value = ""; renderBento(); renderFoot(); } else { close(); opts.onPick(a); } }
       tgo.onclick = addTyped; ti.onkeydown = function (e) { if (e.key === "Enter") addTyped(); };
     }
     function addNew() {
@@ -8561,7 +8608,7 @@
       var crow = add(body, "div", "bento-cats"), chosen = { d: (ORDER.indexOf("focus") >= 0 ? "focus" : ORDER[0]) };
       ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
       var go = add(body, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>';
-      go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: chosen.d, color: DOM[chosen.d].c }; if (multi) { sel.push(a); render(); renderFoot(); } else { close(); opts.onPick(a); } };
+      go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: chosen.d, color: DOM[chosen.d].c }; if (multi) { sel.push(a); renderBento(); renderFoot(); } else { close(); opts.onPick(a); } };
       setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
     }
     function renderFoot() {
@@ -8604,7 +8651,7 @@
       // THE 4 TABS — only the active supercategory's striped cards render
       if (!view.tab) view.tab = "energy";
       var tabsEl = add(body, "div", "bento-tabrow");
-      SUPERCAT.forEach(function (sc) { var t = add(tabsEl, "span", "bento-tab" + (sc.k === view.tab ? " on" : ""), sc.l); t.style.color = (sc.k === view.tab ? "#fff" : sc.c); if (sc.k === view.tab) { t.style.background = mixDark(sc.c); t.style.borderColor = mixHex(sc.c, "#160510", 0.25); } t.onclick = function () { view.tab = sc.k; render(); }; });
+      SUPERCAT.forEach(function (sc) { var t = add(tabsEl, "span", "bento-tab" + (sc.k === view.tab ? " on" : ""), sc.l); t.style.color = (sc.k === view.tab ? "#fff" : sc.c); if (sc.k === view.tab) { t.style.background = mixDark(sc.c); t.style.borderColor = mixHex(sc.c, "#160510", 0.25); } t.onclick = function () { view.tab = sc.k; renderBento(); }; });
       var results = add(body, "div", "bento-results"); results.style.display = "none";
       var gridWrap = add(body, "div", "bento-gridwrap");
       var activeSc = SUPERCAT.filter(function (s) { return s.k === view.tab; })[0] || SUPERCAT[0];
@@ -8631,13 +8678,13 @@
       si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
       drawResults(searchQ.trim());
     }
-    function render() {
+    function renderBento() {
       body.innerHTML = "";
       if (view.cat) { renderExpanded(view.cat); return; }            // deep per-domain view (still reachable)
       if (opts.domains && opts.domains.length) { renderScoped(); return; } // plan beats: scoped to specific domains → direct list
       renderOverview();                                              // the tabbed striped bento box
     }
-    render(); renderFoot(); pdSyncStrip();
+    renderBento(); renderFoot(); pdSyncStrip();
   }
 
   // ---- picker (shared) ---------------------------------------------------
@@ -8657,28 +8704,28 @@
           var sel = !!picked[ky]; x.classList.toggle("on", sel); x.style.background = sel ? meta.color : "";
           if (opts.onTask) opts.onTask(meta, picked);
           syncFoot();
-        } else if (opts.onTask) opts.onTask(meta, picked, draw);
+        } else if (opts.onTask) opts.onTask(meta, picked, drawPicker);
       });
       return x;
     }
-    function draw() {
+    function drawPicker() {
       B.innerHTML = "";
-      titleEl = add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, draw);
+      titleEl = add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, drawPicker);
       if (view.cat == null) {
         var ph2 = phase(), ctx = (CONTEXT[ph2] || []).map(function (t) { return TITLE2META[t.toLowerCase()]; }).filter(Boolean);
         if (ctx.length) { add(B, "div", "lbl", (ph2 === "morning" ? "🌅" : ph2 === "evening" ? "🌆" : ph2 === "night" ? "🌙" : "☀️") + " good right now"); var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { mkTile(xg, t); }); }
         if (opts.priority && opts.priority.length) { add(B, "div", "lbl", "🕓 you've been meaning to…"); var pg2 = add(B, "div", "tilegrid"); opts.priority.forEach(function (t) { mkTile(pg2, t); }); } // the inferred procrastination list, surfaced first (David 2026-06-28)
         if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { mkTile(fg, t); }); } }
-        add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; draw(); }; cg.appendChild(card); });
-        if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (!v) return; var m = { title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }; if (opts.multi) { picked[m.catK + "|" + m.title] = m; ct.value = ""; syncFoot(); } else if (opts.onTask) opts.onTask(m, picked, draw); }; }
+        add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; drawPicker(); }; cg.appendChild(card); });
+        if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (!v) return; var m = { title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }; if (opts.multi) { picked[m.catK + "|" + m.title] = m; ct.value = ""; syncFoot(); } else if (opts.onTask) opts.onTask(m, picked, drawPicker); }; }
       } else if (view.group == null) {
-        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; draw(); }; add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; draw(); }; sg.appendChild(card); });
+        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; drawPicker(); }; add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; drawPicker(); }; sg.appendChild(card); });
       } else {
-        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; draw(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { mkTile(tg, { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }); });
+        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; drawPicker(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { mkTile(tg, { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }); });
       }
       footEl = add(B, "div", "pickfoot"); syncFoot();
     }
-    draw();
+    drawPicker();
   }
   function nowSheet() { startOrSwitch(); } // C8 (David 2026-07-02): the ONE track-now door = the bento standard (Tabler icons, single-tap, clean switch). The old white pickerSheet (emojis + multi-timer stacking) is retired from the track path — one activity at a time is the locked model.
   // ===== THE DAILY ELICITOR (David 2026-06-28): the app's first move on open is to get today's activities OUT of you — especially the ones you keep avoiding — and keep an always-ready, startable, editable plan. Not "type a list" you maintain; it DERIVES what you're procrastinating from your last few days + asks, one-tap. =====
@@ -8912,16 +8959,16 @@
     add(B, "div", "lbl", "best things to do from here — tap to drop one in");
     if (brainCfg().engine !== "off" && brainCfg().key) { var bb = add(B, "button", "done2", "🧠 ask my brain what's best"); bb.style.marginBottom = "10px"; var bo = add(B, "div", "lbl", ""); bo.style.fontSize = "13px"; bb.onclick = function () { bo.textContent = "thinking…"; askBrain(brainContext(), function (t, err) { bo.textContent = t || ("⚠️ " + (err || "failed")); }); }; }
     var list = add(B, "div");
-    function draw() {
+    function drawSuggest() {
       list.innerHTML = ""; var sg = suggestNext(k), start = nextFreeMin(k);
       if (!sg.length) { add(list, "div", "empty", "You're set for now — add anything you like below."); }
       sg.forEach(function (m) {
         var d0 = m.habitId === "move" ? 45 : 30, r = add(list, "div", "sgrow"); add(r, "div", "sge", m.emoji || "•");
         var mid = add(r, "div"); mid.style.flex = "1"; add(mid, "div", "sgn", m.title); add(mid, "div", "sgt", fmt(start) + " · " + d0 + "m");
-        r.onclick = function () { blocks(k).push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: d0, title: m.title, prio: 2, color: m.color || "#8a5cf0", done: false }); save(); draw(); renderToday(); };
+        r.onclick = function () { blocks(k).push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: d0, title: m.title, prio: 2, color: m.color || "#8a5cf0", done: false }); save(); drawSuggest(); renderToday(); };
       });
     }
-    draw();
+    drawSuggest();
     add(B, "div", "lbl", "or");
     var mp = !!(S.profile && S.profile.masterpiece && S.profile.masterpiece.length);
     add(B, "button", "done2", mp ? "🌟 Fill my masterpiece day" : "🌟 Suggest a full day").onclick = function () { if (mp) fillMasterpiece(k); else suggestDay(k); closeSheet(); renderToday(); };
@@ -8999,7 +9046,7 @@
     var body = add(card, "div", "bento-body");
     var foot = add(card, "div", "bento-foot"); var go = add(foot, "button", "bento-go"); go.innerHTML = '<i class="ti ti-check"></i> Create my tool';
     function sect(t) { add(body, "div", "", t).setAttribute("style", "font-weight:800;color:#ffb3d9;margin:14px 0 6px;font-family:'Jost',sans-serif;font-size:13px;"); }
-    function chips(opts, key) { var row = add(body, "div"); row.setAttribute("style", "display:flex;flex-wrap:wrap;gap:8px;"); opts.forEach(function (o) { var on = st[key] === o.k; var b = add(row, "button"); b.setAttribute("style", "display:flex;align-items:center;gap:6px;background:" + (on ? (o.c || "#ff7ab8") : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:9px 12px;cursor:pointer;color:" + (on ? "#160510" : "#e6cfe0") + ";font-family:'Jost',sans-serif;font-weight:700;font-size:13px;"); b.innerHTML = (o.ti ? '<i class="ti ' + o.ti + '"></i> ' : '') + esc(o.l); b.onclick = function () { st[key] = on ? "" : o.k; draw(); }; }); }
+    function chips(opts, key) { var row = add(body, "div"); row.setAttribute("style", "display:flex;flex-wrap:wrap;gap:8px;"); opts.forEach(function (o) { var on = st[key] === o.k; var b = add(row, "button"); b.setAttribute("style", "display:flex;align-items:center;gap:6px;background:" + (on ? (o.c || "#ff7ab8") : "#241328") + ";border:2px solid #160510;border-radius:12px;box-shadow:0 3px 0 #160510;padding:9px 12px;cursor:pointer;color:" + (on ? "#160510" : "#e6cfe0") + ";font-family:'Jost',sans-serif;font-weight:700;font-size:13px;"); b.innerHTML = (o.ti ? '<i class="ti ' + o.ti + '"></i> ' : '') + esc(o.l); b.onclick = function () { st[key] = on ? "" : o.k; drawToolFlow(); }; }); }
     var INP = "width:100%;box-sizing:border-box;background:#1c0f20;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:'Jost',sans-serif;font-size:15px;padding:11px 12px;outline:none;margin-top:2px;";
     function sync() { var ok = st.intent && st.when && st.anchor && (st.name || "").trim(); go.disabled = !ok; go.style.opacity = ok ? "1" : ".5"; }
     function sigilPicker() {
@@ -9009,11 +9056,11 @@
         var on = st.sigil.indexOf(ic) >= 0; var b = add(grid, "button");
         b.setAttribute("style", "width:44px;height:44px;border-radius:12px;border:2px solid #160510;box-shadow:0 3px 0 #160510;cursor:pointer;display:flex;align-items:center;justify-content:center;background:" + (on ? "#ff7ab8" : "#241328") + ";color:" + (on ? "#160510" : "#ffb3d9") + ";");
         b.innerHTML = '<i class="ti ' + ic + '" style="font-size:20px"></i>';
-        b.onclick = function () { var i = st.sigil.indexOf(ic); if (i >= 0) st.sigil.splice(i, 1); else if (st.sigil.length < 3) st.sigil.push(ic); draw(); };
+        b.onclick = function () { var i = st.sigil.indexOf(ic); if (i >= 0) st.sigil.splice(i, 1); else if (st.sigil.length < 3) st.sigil.push(ic); drawToolFlow(); };
       });
       if (st.sigil.length) { var prev = add(body, "div"); prev.setAttribute("style", "display:flex;align-items:center;gap:7px;margin-top:9px;color:#e6cfe0;font-size:12px;"); prev.innerHTML = "your mark: " + st.sigil.map(function (ic) { return '<i class="ti ' + ic + '" style="font-size:19px;color:#ffb3d9"></i>'; }).join(" "); }
     }
-    function draw() {
+    function drawToolFlow() {
       body.innerHTML = "";
       add(body, "div", "tfs-sub", "Every little tool follows one shape: settle → picture it → seal. You pick the pieces.").setAttribute("style", "font-size:12px;color:#b596ad;line-height:1.4;");
       sect("1 · What's it for?"); chips(TB_INTENT, "intent");
@@ -9033,7 +9080,7 @@
       S.tools.custom.push({ id: "custom_" + uid(), name: st.name.trim(), intent: st.intent, when: st.when, anchor: st.anchor, line: (st.line || it.line), sigil: (st.anchor === "symbol" ? (st.sigil || []) : []), ti: it.ti, color: it.c, created: todayK() });
       save(); ov.remove(); toast("✦ “" + st.name.trim() + "” is in your toolbox"); try { renderStage("tool"); } catch (e) {}
     };
-    draw();
+    drawToolFlow();
   }
   function suggestTool() { // the right tool for your state RIGHT NOW — so the toolbox leads with one pick, never a wall (David 2026-07-01)
     var m = currentMood(), hr = new Date().getHours();
@@ -10086,7 +10133,7 @@
     var zO = add(right, "button"); zO.innerHTML = '<i class="ti ti-minus"></i>'; var zI = add(right, "button"); zI.innerHTML = '<i class="ti ti-plus"></i>';
     [zO, zI].forEach(function (b) { b.style.cssText = "width:30px;height:30px;border-radius:8px;border:1.5px solid #6a4a6a;background:rgba(255,255,255,.05);color:#f0e6ef;font-size:13px;cursor:pointer;padding:0;"; });
     var totLbl = add(right, "div"); totLbl.style.cssText = "font-size:15px;font-weight:800;color:#c9a6ff;min-width:42px;text-align:right;";
-    zO.onclick = function () { zoom = Math.max(12, zoom - 8); render(); }; zI.onclick = function () { zoom = Math.min(72, zoom + 8); render(); };
+    zO.onclick = function () { zoom = Math.max(12, zoom - 8); renderComposer(); }; zI.onclick = function () { zoom = Math.min(72, zoom + 8); renderComposer(); };
     add(box, "div", null, "drag ⋮⋮ to reorder · drag the bottom edge to set length · ± to zoom").style.cssText = "font-size:11px;color:#b39ab0;margin:2px 0 8px;flex:none;line-height:1.4;";
     var scroller = add(box, "div"); scroller.style.cssText = "overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:80px;border:1.5px solid #3a1730;border-radius:12px;background:rgba(0,0,0,.25);padding:8px 8px 8px 42px;position:relative;";
     var lane = add(scroller, "div"); lane.style.position = "relative";
@@ -10094,7 +10141,7 @@
     function persist() { if (cfg.onSave) cfg.onSave(track); }
     function startResize(e, i, blk) { e.preventDefault(); e.stopPropagation(); var sy = e.clientY, sd = track[i].d;
       function mv(ev) { var dy = (ev.clientY != null ? ev.clientY : sy) - sy; var nd = Math.max(15, Math.round((sd + dy / zoom * 60) / 15) * 15); track[i].d = nd; blk.style.height = Math.max(30, nd * zoom / 60) + "px"; }
-      function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); persist(); render(); }
+      function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); persist(); renderComposer(); }
       document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
     }
     function startReorder(e, i, blk) { e.preventDefault(); e.stopPropagation(); var sy = e.clientY, moved = false;
@@ -10104,11 +10151,11 @@
           while (true) { var nj = j + dir; if (nj < 0 || nj >= track.length) break; var nh = Math.max(30, track[nj].d * zoom / 60) + 4; if (rem > nh * 0.5) { rem -= nh; j = nj; } else break; }
           if (j !== i) { var x = track.splice(i, 1)[0]; track.splice(j, 0, x); persist(); }
         }
-        render();
+        renderComposer();
       }
       document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
     }
-    function render() {
+    function renderComposer() {
       var total = track.reduce(function (a, t) { return a + t.d; }, 0); totLbl.textContent = mm(total);
       lane.innerHTML = ""; var y = 0;
       if (!track.length) { add(lane, "div", null, "empty — add from below").style.cssText = "color:#8a7a9a;font-size:12px;padding:18px;text-align:center;"; }
@@ -10118,19 +10165,19 @@
         var tl = add(blk, "div", null, mm(y)); tl.style.cssText = "position:absolute;left:-38px;top:-1px;font-size:9px;color:#8a7a9a;font-family:var(--bub);";
         var handle = add(blk, "div"); handle.innerHTML = '<i class="ti ti-grip-vertical"></i>'; handle.style.cssText = "position:absolute;left:1px;top:0;bottom:0;width:24px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,.45);cursor:grab;touch-action:none;";
         var c = add(blk, "div"); c.style.cssText = "padding:5px 8px 5px 28px;display:flex;align-items:center;gap:8px;height:100%;box-sizing:border-box;pointer-events:none;"; c.innerHTML = '<i class="ti ' + m.ti + '" style="font-size:' + (h > 46 ? 20 : 15) + 'px;"></i><span style="font-weight:800;font-size:' + (h > 46 ? 14.5 : 13) + 'px;">' + m.name + (m.adv ? ' <span style="font-size:10px;opacity:.65;">adv</span>' : '') + '</span><span style="margin-left:auto;font-size:12px;opacity:.75;">' + mm(t.d) + '</span>'; // AUDIT P1
-        var rm = add(blk, "div"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "position:absolute;top:3px;right:5px;font-size:13px;color:rgba(0,0,0,.5);cursor:pointer;"; rm.onclick = function (e) { e.stopPropagation(); track.splice(i, 1); persist(); render(); };
+        var rm = add(blk, "div"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "position:absolute;top:3px;right:5px;font-size:13px;color:rgba(0,0,0,.5);cursor:pointer;"; rm.onclick = function (e) { e.stopPropagation(); track.splice(i, 1); persist(); renderComposer(); };
         var grip = add(blk, "div"); grip.style.cssText = "position:absolute;left:24px;right:0;bottom:0;height:14px;cursor:ns-resize;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;touch-action:none;"; grip.innerHTML = '<div style="width:34px;height:3px;border-radius:2px;background:rgba(0,0,0,.4);"></div>';
         handle.addEventListener("pointerdown", function (e) { startReorder(e, i, blk); });
         grip.addEventListener("pointerdown", function (e) { startResize(e, i, blk); });
-        if (cfg.onTap) blk.addEventListener("click", function (e) { if (e.target === rm || (e.target.closest && e.target.closest("[data-nc]"))) return; cfg.onTap(i, render); });
+        if (cfg.onTap) blk.addEventListener("click", function (e) { if (e.target === rm || (e.target.closest && e.target.closest("[data-nc]"))) return; cfg.onTap(i, renderComposer); });
         y += t.d;
       })(i); });
     }
     add(foot, "div", null, cfg.poolLabel || "Add").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:2px 0 6px;";
     var pool = add(foot, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
-    cfg.pool.forEach(function (k) { var m = cfg.lookup(k); var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + m.ti + '"></i> ' + m.name; b.style.cssText = "border:2px solid " + m.col + ";border-radius:11px;padding:6px 10px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: cfg.addDur || 60 }); persist(); render(); scroller.scrollTop = scroller.scrollHeight; }; });
+    cfg.pool.forEach(function (k) { var m = cfg.lookup(k); var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + m.ti + '"></i> ' + m.name; b.style.cssText = "border:2px solid " + m.col + ";border-radius:11px;padding:6px 10px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: cfg.addDur || 60 }); persist(); renderComposer(); scroller.scrollTop = scroller.scrollHeight; }; });
     var play = add(foot, "button", "done2", cfg.playLabel || "Play ▶"); play.style.cssText = "margin:12px auto 0;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; persist(); if (ov.parentNode) ov.remove(); cfg.onPlay(track); };
-    render();
+    renderComposer();
     return { close: function () { if (ov.parentNode) ov.remove(); } };
   }
   function medEditor(cfg) {
@@ -10818,7 +10865,7 @@
       document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-day"); });
       renderAll();
     }
-    function draw() {
+    function drawRecommit() {
       var B = el("sheetBody"); B.innerHTML = ""; openSheet();
       var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(st.step / 3 * 100) + "%";
       if (st.step === 0) {
@@ -10826,10 +10873,10 @@
         var ic = add(B, "div", "pchips"); ["Focused", "Disciplined", "Calm", "Bold", "Loving", "Creative", "Grateful", "Unstoppable"].forEach(function (t) { var x = add(ic, "div", "pchip" + (st.ident[t] ? " on" : ""), t); x.onclick = function () { if (st.ident[t]) delete st.ident[t]; else st.ident[t] = 1; x.classList.toggle("on"); }; });
       } else if (st.step === 1) {
         add(B, "div", "sttl", "🌟 Which virtues?"); add(B, "div", "lbl", "the virtues you'll embody today.");
-        var g = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = st.virt.indexOf(v.k) !== -1; var x = add(g, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var i = st.virt.indexOf(v.k); if (i !== -1) st.virt.splice(i, 1); else st.virt.push(v.k); draw(); }; });
+        var g = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = st.virt.indexOf(v.k) !== -1; var x = add(g, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var i = st.virt.indexOf(v.k); if (i !== -1) st.virt.splice(i, 1); else st.virt.push(v.k); drawRecommit(); }; });
       } else if (st.step === 2) {
         add(B, "div", "sttl", "✅ Commit to today"); add(B, "div", "lbl", "which habits are you committing to? they'll land on your day.");
-        S.habits.forEach(function (h) { var on = !!st.hab[h.id]; var r = add(B, "div", "subi"); var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = h.color; add(r, "div", null, h.e + "  " + h.l).style.flex = "1"; r.onclick = function () { st.hab[h.id] = !st.hab[h.id]; draw(); }; });
+        S.habits.forEach(function (h) { var on = !!st.hab[h.id]; var r = add(B, "div", "subi"); var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = h.color; add(r, "div", null, h.e + "  " + h.l).style.flex = "1"; r.onclick = function () { st.hab[h.id] = !st.hab[h.id]; drawRecommit(); }; });
       } else {
         add(B, "div", "sttl", "🙏 Close with gratitude"); add(B, "div", "lbl", "the Stutz & Michels way — or a quick one.");
         add(B, "button", "done2", "Grateful Flow (full)").onclick = function () { gratefulFlow(finalize); };
@@ -10837,11 +10884,11 @@
       }
       if (st.step < 3) {
         var nav = add(B, "div", "frm"); nav.style.marginTop = "14px";
-        if (st.step > 0) add(nav, "button", "add", "← back").onclick = function () { st.step--; draw(); };
-        var nx = add(nav, "button", "done2", "Next →"); nx.style.flex = "1"; nx.onclick = function () { st.step++; draw(); };
+        if (st.step > 0) add(nav, "button", "add", "← back").onclick = function () { st.step--; drawRecommit(); };
+        var nx = add(nav, "button", "done2", "Next →"); nx.style.flex = "1"; nx.onclick = function () { st.step++; drawRecommit(); };
       }
     }
-    draw();
+    drawRecommit();
   }
   function planSheet(k, label, atTime) {
     var cfg = { mins: 60, prio: 2 }; if (atTime) { cfg.time = atTime; } else { var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
@@ -10887,25 +10934,25 @@
     openSheet();
     function numIn(ph, val) { var i = document.createElement("input"); i.type = "number"; i.placeholder = ph; if (val != null) i.value = val; i.style.cssText = "width:80px;"; return i; }
     function collect() { if (inputs.age) prof.age = inputs.age.value ? +inputs.age.value : null; if (inputs.g) prof.goals = inputs.g.value.trim() || null; }
-    function draw() {
+    function drawCharSheet() {
       collect(); inputs = {}; B.innerHTML = ""; var bar = add(B, "div", "obarT"); add(bar, "i").style.width = Math.round(step / (STEPS - 1) * 100) + "%";
       if (step === 0) {
         add(B, "div", "sttl", "✨ Begin your character"); add(B, "div", "lbl", "just the basics");
-        var f1 = add(B, "div", "frm"); inputs.age = numIn("age", prof.age); f1.appendChild(inputs.age); var gw = add(f1, "div", "pchips"); gw.style.margin = "0"; [["m", "♂"], ["f", "♀"], ["o", "⚧"]].forEach(function (g) { var x = add(gw, "div", "pchip" + (prof.gender === g[0] ? " on" : ""), g[1]); x.onclick = function () { prof.gender = g[0]; draw(); }; });
+        var f1 = add(B, "div", "frm"); inputs.age = numIn("age", prof.age); f1.appendChild(inputs.age); var gw = add(f1, "div", "pchips"); gw.style.margin = "0"; [["m", "♂"], ["f", "♀"], ["o", "⚧"]].forEach(function (g) { var x = add(gw, "div", "pchip" + (prof.gender === g[0] ? " on" : ""), g[1]); x.onclick = function () { prof.gender = g[0]; drawCharSheet(); }; });
         add(B, "div", "lbl", "🎯 what are you chasing? (optional)"); inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "get lean, ship the app, find peace…"; inputs.g.style.cssText = "width:100%;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
       } else if (step === 1) {
         add(B, "div", "sttl", "💼 What's your work?"); add(B, "div", "lbl", "so the app tailors your deep-work habits to you");
-        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = "#2a9fe0"; if (on) x.style.background = "#2a9fe0"; add(x, "div", "ge", o.e); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; draw(); }; });
+        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = "#2a9fe0"; if (on) x.style.background = "#2a9fe0"; add(x, "div", "ge", o.e); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; drawCharSheet(); }; });
       } else {
         add(B, "div", "sttl", "🌟 Your path"); add(B, "div", "lbl", "which virtues call you most right now? pick up to 3 — you'll still grow them all");
-        var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); draw(); }; });
+        var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); drawCharSheet(); }; });
       }
       var nav = add(B, "div", "frm"); nav.style.marginTop = "10px";
-      if (step > 0) { add(nav, "button", "add", "← back").onclick = function () { step--; draw(); }; }
+      if (step > 0) { add(nav, "button", "add", "← back").onclick = function () { step--; drawCharSheet(); }; }
       var nx = add(nav, "button", "done2", step === STEPS - 1 ? "Awaken ✨" : "Next →"); nx.style.flex = "1";
-      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; draw(); } else { prof.set = true; S.profile = prof; save(); closeSheet(); renderChar(); surveySheet(); } };
+      nx.onclick = function () { collect(); if (step < STEPS - 1) { step++; drawCharSheet(); } else { prof.set = true; S.profile = prof; save(); closeSheet(); renderChar(); surveySheet(); } };
     }
-    draw();
+    drawCharSheet();
   }
 
   function brainCfg() { S.brain = S.brain || { engine: "off", key: "", model: "" }; if (S.brain.model == null) S.brain.model = ""; if (S.brain.model === "mistralai/mistral-7b-instruct:free") S.brain.model = ""; return S.brain; }
@@ -11057,7 +11104,7 @@
     if (!entries.length) { add(B, "div", "empty", "No reflections yet — your first one starts the thread."); return; }
     var si = document.createElement("input"); si.type = "text"; si.placeholder = "search reflections…"; si.style.cssText = "width:100%;margin:6px 0 8px;"; B.appendChild(si);
     var feed = add(B, "div", "jfeed");
-    function draw() {
+    function drawJournalSheet() {
       feed.innerHTML = ""; var ql = si.value.trim().toLowerCase();
       var shown = entries.filter(function (e) { if (!ql) return true; var moodL = (e.mood != null && MOODS[e.mood]) ? MOODS[e.mood].l.toLowerCase() : ""; return (e.text + " " + e.q + " " + moodL).toLowerCase().indexOf(ql) >= 0; });
       if (!shown.length) { add(feed, "div", "empty", "Nothing matches that."); return; }
@@ -11070,7 +11117,7 @@
         row.onclick = function () { journalDaySheet(e.k); };
       });
     }
-    si.oninput = draw; draw();
+    si.oninput = drawJournalSheet; drawJournalSheet();
   }
   function journalDaySheet(k) { // tap an entry → reopen that day's full record (reflections + that day's notes)
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
