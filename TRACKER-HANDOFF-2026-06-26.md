@@ -115,4 +115,13 @@ David's recurring fear ("big-vision asks + small features get silently dropped")
 - **Never run two day-nav models at once** (the old bounce = the v488 infinite-watcher vs a horizontal pager fighting). Current model is one continuous stack + a guarded pager.
 - **Regression contract** (CLAUDE.md): vertical-flows-continuously · past set-in-stone / future can't cross now · tap-empty-creates / drag-moves / tap-bubble-edits · strip+pill track the centred day. Re-check every timeline change.
 - Ship via `bash _dev/preship.sh` (don't forget — a missed version bump = David sees a cached old build; a missed `server.js` regen = the Cloudflare artifact goes stale).
-- Bump `SCHEMA` (app.js:75) + add a `load()` migration if you change state shape — a silent shape change wipes David's real data.
+- Bump `SCHEMA` (grep `@SEC:TIME` — line refs rot) + add a `MIG n→n+1` block in `load()` (grep `@SEC:STATE`; the preship ratchet enforces the pairing) if you change state shape — a silent shape change wipes David's real data.
+
+
+---
+
+## RESTRUCTURE v913–v915 (2026-07-05, Fable) — the file is now anchor-navigable
+- **v913 WAVE 1:** `@MAP` header + 19 `@SEC:` anchors + `@CONTRACT` blocks at the edit sites (regression contract now lives ABOVE tickCharge/buildPull; SCHEMA↔MIG law above load(); PANE_GUARD + tr() + master-tick laws in place). `_dev/ratchet.js` in preship: anchors ordered · innerHTML="" wipes can never grow (baseline 150) · SCHEMA bump requires MIG marker. CLAUDE.md stale facts fixed.
+- **v914 WAVE 2:** `load()` exploded into the readable migration ladder — PROVEN token-identical (comments/whitespace stripped, byte-equal). All 20 closure-local `draw()/render()/load()` collisions renamed unique (122 refs): grep now lands on one definition per name.
+- **v915 WAVE 3:** `timelineIsHome`+`renderToday` co-located into `@SEC:TIMELINE` (the whole regression zone reads as one region). The 800-line RU dict moved low (seed `var I18N={ru:{}}` stays high; base dict became `Object.assign` like its 40 siblings). 16 stale dict entries (12 keys) deleted — they were dead (always overwritten by later assigns). PROVEN: merged I18N.ru deep-equal before/after (3,293 keys); RU smoke-tested in preview (nav = Планер | Путь | Игра).
+- **Verified in preview:** boots clean ×3, zero console errors, timeline renders (3-day buffer + now-line + blocks), bento picker opens, RU translates. **DEVICE-UNTESTED:** gesture FEEL after the wave-3 moves (scroll-wall/drag/swipe) — pure function moves, hoisting-safe, but confirm the regression contract's 4 items on the phone.

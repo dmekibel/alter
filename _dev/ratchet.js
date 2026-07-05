@@ -15,7 +15,7 @@ var failed = false;
 function fail(m) { console.error("✗ RATCHET: " + m); failed = true; }
 
 // 1. anchor DEFINITIONS (line-start "// @SEC:NAME — …"; mid-line mentions are cross-refs, ignored)
-var ORDER = ["ERRNET", "AUDIO", "TTS", "TIME", "JOURNEY-ENGINE", "LESSONS", "MOTION", "I18N-DICT", "I18N-CORE", "CAROUSEL", "JOURNEY-TRAIL", "TIMELINE", "COCKPIT", "ONBOARD", "STATE", "GAME", "RENDER", "DEV", "BOOT"];
+var ORDER = ["ERRNET", "AUDIO", "TTS", "TIME", "JOURNEY-ENGINE", "LESSONS", "MOTION", "I18N-CORE", "CAROUSEL", "JOURNEY-TRAIL", "TIMELINE", "COCKPIT", "ONBOARD", "STATE", "GAME", "RENDER", "I18N-DICT", "DEV", "BOOT"];
 var defs = [], re = /^\s*\/\/ @SEC:([A-Z0-9-]+) — /gm, m;
 while ((m = re.exec(APP))) defs.push(m[1]);
 ORDER.forEach(function (n) { if (defs.indexOf(n) === -1) fail("missing anchor definition @SEC:" + n + " (see the @MAP header)"); });
