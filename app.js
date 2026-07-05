@@ -5120,6 +5120,9 @@
       return ' <span class="am-vglyph" style="opacity:.5;font-size:.85em" title="today\'s virtue">' + v.e + '</span>';
     } catch (e) { return ""; }
   }
+  function armorGlyph(b) { // WOOP shield-pip (DEPTH §2 Organ B, deferred from v891): PM Close wrote {woop, armor:true} onto tomorrow's block — this makes it visible. Same law as amVirtueGlyph: PURE additive innerHTML in the label concat, zero geometry, drops once the block is done (cele has its own sparkle).
+    return (b.armor && !b.done) ? ' <i class="ti ti-shield-check" style="opacity:.55;font-size:.85em" title="armored — it has a plan"></i>' : "";
+  }
   function amStep(sb) { return Math.max(0, Math.min(3, parseInt(sb.dataset.amStep || "0", 10) || 0)); }
   function amGoStep(sb, n) { sb.dataset.amStep = String(Math.max(0, Math.min(3, n))); amStageStep(sb); } // rebuild this beat (amStageStep clears #tfStageBody itself)
   function amStageStep(sb) {
@@ -7908,7 +7911,7 @@
       var ink = D.light; // ALL bubbles are now dark-hollow → bright domain-light text everywhere (legible + cool, per David's ghost-look preference, 2026-06-27)
       var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
-      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "") + amVirtueGlyph(b)); /* AM FLOW-DOWN (c): dim today's-virtue glyph — PURE additive concat, no geometry */
+      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + (status === "ok" && !partial ? ' <i class="ti ti-sparkles" style="color:' + D.c + '"></i>' : "") + armorGlyph(b) + amVirtueGlyph(b)); /* AM FLOW-DOWN (c): dim today's-virtue glyph — PURE additive concat, no geometry */
       if (status === "miss") { var ms = add(card, "div", "csub", b.plannedAhead ? "want to Replan it?" : "want to log it?"); ms.style.color = "rgba(255,240,249,.45)"; } // Blizzard-invert (SCHEMA 3): no "missed" label — forward-only framing per Design Principles Law 7
       if ((status === "miss" || dark) && b.title) { var wb = add(card, "div", "wayback"); wb.innerHTML = '<i class="ti ti-arrow-back-up"></i>'; } // A-6 wayback: a missed/ghost block is walkable-back (widget's Обед glyph); pointer-events:none so taps fall through
       // ARMED AT PRESENT (David 2026-06-27): a FUTURE plan slid UP until its start bumps the now-line → a round Play affordance appears ON the bubble. Tap = startPlanned(b): tracking begins charging from now, so it "prints in both lanes" (plan stays left, the tracked half flows down the right via the existing straddle/matched render). Shows only when the block sits at/just-after now, is still a plan (not done/matched), isn't the live straddling block, and nothing of its own domain is already tracking. Render-driven (not a transient flag) so it survives the full-DOM rebuild a drop triggers. (regression contract #2: bs >= now means it never crossed into the past)
@@ -7951,6 +7954,7 @@
           }
           else if (fling && dxEnd > 0) { var dmv = domainOf(b), tnow = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); logs(k).push({ id: uid(), time: tnow, mins: b.mins || 30, title: b.title, domain: dmv, color: b.color || (DOM[dmv] || DOM.focus).c, catK: b.catK || null, prio: b.prio || 2 }); var a3 = blocks(k), bi3 = a3.indexOf(b); if (bi3 >= 0) a3.splice(bi3, 1); reflow(k); reflowLogs(k); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e2) {} toast("moved to real"); } // a plan flung all the way RIGHT RELOCATES into the real lane (it doesn't fuse to the middle — fusing is a side-stretch) (David 2026-06-25)
           else if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60);
+            if (k === todayK() && !b.done && b.title && dragMin >= sm0 + 15) notePostpone(b); // ORGAN D drag choke point (the deferred timeline-safe pass): a same-day forward push ≥15min counts exactly like the editor's ＋nudge — mutation before the save below; the dial itself arrives on a 300ms delay, after this drop's renderToday
             // FREE DRAG INTO THE FUTURE (David device 2026-07-03): the dropped block OWNS its window — any other undone block overlapping it (pin or not) gets pushed forward past its end, cascading via reflow. Past blocks never move backward; same-title neighbours then fuse in reflow's merge pass.
             (function () { var ds = dragMin, de = dragMin + (b.mins || 30), arr = blocks(k), g3 = 0, moved3 = true;
               while (moved3 && g3++ < 40) { moved3 = false;
@@ -8256,7 +8260,7 @@
     function setStart(ns) { ns = Math.max(_floorS, Math.min(_ceilS, Math.round(ns / 5) * 5)); o.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); }
     tdn.onclick = function () { setStart(hm(o.time) - 5); layout(); commit(); };
     tup.onclick = function () { setStart(hm(o.time) + 5); layout(); commit();
-      if (!isLog && k === todayK() && !o.done) { o.postponed = (o.postponed || 0) + 1; if (o.postponed >= 3 && !o.dialFired && canNudge()) { o.dialFired = 1; markNudge(); save(); setTimeout(function () { try { motivationDial({ block: o }); } catch (e) {} }, 300); } } // ORGAN D: pushing a today-block ≥15min later (3 nudges) = an avoidance signal → the Motivation Dial (NOTE: drag-based postpone doesn't count yet — needs a safe choke point in the move handler; flagged for a timeline-safe pass)
+      if (!isLog && k === todayK() && !o.done) notePostpone(o); // ORGAN D: pushing a today-block later (3 nudges) = an avoidance signal → the Motivation Dial (shared choke point with the drag path)
     };
     add(B, "div", "ed-hint", "length — slide, step ＋, or tap a chip");
     var sld = document.createElement("input"); sld.type = "range"; sld.min = "0"; sld.max = "1000"; sld.step = "1"; sld.value = minToPos(o.mins || DEF); sld.className = "ed-slider"; B.appendChild(sld);
@@ -9806,6 +9810,10 @@
     add(ob, "div", null, tr("A short wind-down? It sets tonight's sleep — and tomorrow's you.")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
     mlBtn(ob, "Wind down ▶", true, function () { ob.remove(); try { selfHypnosis(); } catch (e) { try { breathwork(4); } catch (e2) {} } });
     mlBtn(ob, "not now", false, function () { ob.remove(); });
+  }
+  function notePostpone(b) { // ORGAN D choke point, shared by the editor's ＋nudge AND the drag-commit path (the deferred timeline-safe pass): a counter + a deferred overlay — zero paint, zero geometry, runs only after the move already committed
+    b.postponed = (b.postponed || 0) + 1;
+    if (b.postponed >= 3 && !b.dialFired && canNudge()) { b.dialFired = 1; markNudge(); save(); setTimeout(function () { try { motivationDial({ block: b }); } catch (e) {} }, 300); }
   }
   function motivationDial(ctx) { // task postponed 2× → hand ONE of four moves; default route by profile
     var ob = mlCard(); mlKick(ob, "hard to start?");

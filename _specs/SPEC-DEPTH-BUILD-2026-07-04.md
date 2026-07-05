@@ -159,8 +159,8 @@ SHIPPED + VERIFIED (v892, same session):
 
 STILL OPEN (future waves / follow-ups):
 - **Full 47-card deck transform** from `_mined/deck-v1.md` (Wave 1 shipped 8 Day-1 cards; the rest ride into the moment-listener's trigger coverage). Each card EN+RU same commit.
-- **WOOP shield-pip** on tomorrow's bubble (armor DATA already written on the block) — needs a timeline-paint touch → Fable/timeline-safe pass, not an Opus build day.
-- **Drag-based postpone auto-trigger** for the Motivation Dial (editor time-nudge path works; drag needs a safe choke point in the move handler).
+- ✅ **WOOP shield-pip (v912, Fable 2026-07-05, DONE):** `armorGlyph(b)` — pure additive innerHTML in the bubble-label concat (same law as amVirtueGlyph, zero geometry); dim `ti-shield-check` on any `b.armor && !b.done` block, drops once done. Preview-verified: pip on the armored block only, timeline geometry/now-line untouched.
+- ✅ **Drag-based postpone auto-trigger (v912, same pass, DONE):** editor counter extracted into shared `notePostpone(b)`; drag-commit `wasMoved` branch calls it on a same-day forward push ≥15min of an undone block (counter before save; dial on the existing 300ms delay after the drop's renderToday). Preview-verified end-to-end via the editor path (3 strikes → dial card, 1/day + mute gates hold — the demo profile's muteNudgeUntilK correctly suppressed it until cleared). Drag *feel* + the real-drag trigger = DEVICE-UNTESTED.
 - Persona/dose plumbing present (`pmFloor()`, `deckMode()`, nodeCap, `profile.mlDrift` route default); full §5 persona routing table wired per-organ as later organs land.
 
 ---
