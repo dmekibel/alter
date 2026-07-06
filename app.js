@@ -931,6 +931,50 @@
         return; }
       if (b.k === "feel") { orbEl(66); var tt = (typeof b.t === "function") ? b.t(ctx) : b.t; var ms3 = lineIn(stage, tt, false); speak(tt);
         setTimeout(function () { if (done || iCur !== i) return; next(); }, Math.max(ms3 + 1400, (b.secs || 7) * 1000)); return; }
+      if (b.k === "vigil") { // THE CANDLE VIGIL (v916, 2026-07-07): attention training as a REP, not text. Press-hold keeps a flame lit; release and it gutters (no punish, charge only pauses). Breath-paced (10s swell). The guardian's LINE lands at the peak. Charges S.sigils.candle (additive, guarded, no SCHEMA bump). DEVICE-UNTESTED: flame + hold feel needs the phone.
+        var vtt = (typeof b.t === "function") ? b.t(ctx) : (b.t || "Attention is a muscle. You just held it.");
+        var vInstr = add(stage, "div"); vInstr.style.cssText = "font-family:var(--bub);font-weight:800;font-size:16px;line-height:1.4;color:#ffdca6;min-height:44px;"; vInstr.textContent = tr("Press and hold. The flame lives on your attention.");
+        var vcw = 240, vch = 300, vdpr = Math.min(2, window.devicePixelRatio || 1);
+        var vcv = add(stage, "canvas"); vcv.width = vcw * vdpr; vcv.height = vch * vdpr; vcv.style.cssText = "width:" + vcw + "px;height:" + vch + "px;touch-action:none;cursor:pointer;";
+        var vg = vcv.getContext("2d"); vg.scale(vdpr, vdpr);
+        var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
+        var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
+        function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
+        function vpaint(f) {
+          vg.clearRect(0, 0, vcw, vch); var cx = vcw / 2, by = vch - 46, fr = Math.min(1, vchg / vtgt);
+          vg.beginPath(); vg.arc(cx, vch * 0.4, 104, 0, 7); vg.strokeStyle = "rgba(255,220,150,.10)"; vg.lineWidth = 5; vg.stroke();
+          vg.beginPath(); vg.arc(cx, vch * 0.4, 104, -Math.PI / 2, -Math.PI / 2 + fr * 6.2832); vg.strokeStyle = "#ffcf6a"; vg.lineWidth = 5; vg.lineCap = "round"; vg.stroke();
+          vg.fillStyle = "#efe4cc"; vrr(cx - 24, by, 48, 50, 8); vg.fill();
+          vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx, by - 9); vg.stroke();
+          var fh = 28 + 150 * f, fw = 24 + 24 * f, ty = by - 9 - fh, jt = (Math.random() - 0.5) * (7 * f);
+          var gg = vg.createRadialGradient(cx, by - 9 - fh * 0.4, 2, cx, by - 9 - fh * 0.4, fh); gg.addColorStop(0, "rgba(255,214,130," + (0.5 * f + 0.15) + ")"); gg.addColorStop(1, "rgba(255,120,40,0)"); vg.fillStyle = gg; vg.beginPath(); vg.arc(cx, by - 9 - fh * 0.4, fh, 0, 7); vg.fill();
+          vg.beginPath(); vg.moveTo(cx + jt, ty); vg.bezierCurveTo(cx + fw / 2, ty + fh * 0.5, cx + fw / 2, by - 9 - fh * 0.08, cx, by - 9); vg.bezierCurveTo(cx - fw / 2, by - 9 - fh * 0.08, cx - fw / 2, ty + fh * 0.5, cx + jt, ty);
+          var fgd = vg.createLinearGradient(cx, ty, cx, by - 9); fgd.addColorStop(0, "#fff4d6"); fgd.addColorStop(0.35, "#ffcf6a"); fgd.addColorStop(0.75, "#ff8a2e"); fgd.addColorStop(1, "#e8641c"); vg.fillStyle = fgd; vg.fill();
+          vg.beginPath(); vg.ellipse(cx, by - 9 - fh * 0.3, fw * 0.2, fh * 0.3, 0, 0, 7); vg.fillStyle = "rgba(255,255,240," + (0.65 * Math.min(1, f + 0.25)) + ")"; vg.fill();
+        }
+        function vonpeak() {
+          try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
+          try { earn(3, { label: "vigil" }); } catch (e) {}
+          try { S.sigils = S.sigils || {}; S.sigils.candle = (S.sigils.candle || 0) + 1; save(); } catch (e) {}
+          try { vlab.remove(); vInstr.remove(); } catch (e) {}
+          try { ov.removeEventListener("pointerup", vup); ov.removeEventListener("pointercancel", vup); } catch (e) {}
+          var pms = lineIn(stage, vtt, true); speak(vtt);
+          setTimeout(function () { if (done || iCur !== i) return; next(); }, Math.max(pms + 1000, 2800));
+        }
+        function vloop(ts) {
+          if (done || iCur !== i) { cancelAnimationFrame(vraf); return; }
+          if (!vtp) vtp = ts; var dt = Math.min(0.05, (ts - vtp) / 1000); vtp = ts;
+          var aim = vpk ? 1 : (vhold ? 1 : 0.12); vlit += (aim - vlit) * Math.min(1, dt * 3.2);
+          if (vhold && !vpk) vchg += dt;
+          var brv = 0.5 + 0.5 * Math.sin(ts / 1000 * 0.6283), f = vlit * (0.85 + 0.15 * brv);
+          vpaint(f);
+          if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
+          vraf = requestAnimationFrame(vloop);
+        }
+        function vdn(ev) { ev.preventDefault(); vhold = true; }
+        function vup() { vhold = false; }
+        vcv.addEventListener("pointerdown", vdn); ov.addEventListener("pointerup", vup); ov.addEventListener("pointercancel", vup);
+        vraf = requestAnimationFrame(vloop); return; }
       if (b.k === "burn") { lineIn(stage, "One belief to leave here:", false);
         var bl = add(stage, "div"); bl.textContent = "\u201c" + tr(b.t) + "\u201d"; bl.style.cssText = "font-family:var(--bub);font-size:19px;font-weight:800;color:#c9a6b8;border:2px dashed #6a4a5c;border-radius:14px;padding:14px 18px;margin-top:4px;";
         var btn = add(stage, "button", "ob-btn go", tr("Burn it")); btn.style.marginTop = "10px";
@@ -958,6 +1002,13 @@
       next();
     }
     next();
+  }
+  function candleVigil() { // THE CANDLE VIGIL tool-ritual (v916): attention line, rung 1. A 3-beat ceremony ending in the vigil rep (the lesson IS a rep, never text). Routes through TOOLS via tickTool on finish.
+    runLesson({ c: "#ff8a2e", room: "hearth", beats: [
+      { k: "line", t: "This is the oldest attention practice there is.", big: true },
+      { k: "line", t: "Keep one flame lit with nothing but your steady attention. Let go, and it gutters." },
+      { k: "vigil", t: "Attention is a muscle. You just held it. The flame remembers.", secs: 22 }
+    ], onDone: function () { try { tickTool("vigil"); } catch (e) {} } });
   }
   // ===== DAY-1 LESSON CONTENT — each lesson carries real course DNA (COURSE-MAP.md): the concept names, the science, the exact moves. =====
   function firstCommit() { // THE PACT as a journey lesson (moved OUT of onboarding, David 2026-07-04) — the course's 'Initiate and Celebrate' (Module O): commit, then CELEBRATE committing (celebration wires the return). Days first, thumb-seal second, confetti third.
@@ -8220,9 +8271,20 @@
     { id: "reset",    layer: "Steady the body",         name: "Reset",             ti: "ti-sparkles",       emoji: "✨", thinker: "Carpe · care-not-duty", when: "a cluttered space that's quietly draining you — or when you can't start anything", why: "Ten minutes of caring for one small zone lightens the room AND the nervous system — outer order, inner calm.", fn: function () { resetSprint(); } },
     { id: "coherence",layer: "Steady the body",         name: "Coherence Beat",    ti: "ti-heartbeat",      emoji: "💓", thinker: "Doc Childre — HeartMath", when: "60 seconds before anything that matters — a focus block, a hard talk, sleep", why: "The heart's rhythm is upstream of the thinking brain — smooth it first and the prefrontal cortex comes back online.", fn: function () { coherenceBeat(); } },
     { id: "resistance",layer: "Become who you're being", name: "Resistance Compass", ti: "ti-compass",        emoji: "🧭", thinker: "Steven Pressfield — The War of Art", when: "something you keep avoiding — the thing that scares you most", why: "Resistance is proportional to importance; the fear is the arrow. Name the force, do two minutes — that's Turning Pro.", fn: function () { resistanceCompass(); } },
-    { id: "doomscroll",layer: "Lift the lens",           name: "See Through the Scroll", ti: "ti-device-mobile-off", emoji: "📵", thinker: "Allen Carr — Easyway", when: "the pull to scroll — before or instead of reaching for the phone", why: "Not willpower — belief-dismantling. Remove the illusion that the scroll relaxes you and the desire has less to stand on.", fn: function () { doomscroll(); } }
+    { id: "doomscroll",layer: "Lift the lens",           name: "See Through the Scroll", ti: "ti-device-mobile-off", emoji: "📵", thinker: "Allen Carr — Easyway", when: "the pull to scroll — before or instead of reaching for the phone", why: "Not willpower — belief-dismantling. Remove the illusion that the scroll relaxes you and the desire has less to stand on.", fn: function () { doomscroll(); } },
+    { id: "vigil",    layer: "Clear the mind",          name: "Candle Vigil",      ti: "ti-flame",          thinker: "Culadasa · attention", when: "scattered or restless, or before deep work, when you need to gather your focus", why: "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.", fn: function () { candleVigil(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
+  Object.assign(I18N.ru, { // Candle Vigil (v916) strings, extended in place per the B4 law (after the I18N seed at @SEC:I18N-CORE). RU тире kept: correct native grammar, not an EN AI-tell.
+    "Candle Vigil": "Свеча внимания",
+    "Press and hold. The flame lives on your attention.": "Нажмите и держите. Пламя живёт вашим вниманием.",
+    "hold to keep it lit": "держите, чтобы оно не гасло",
+    "This is the oldest attention practice there is.": "Это древнейшая практика внимания.",
+    "Keep one flame lit with nothing but your steady attention. Let go, and it gutters.": "Удерживайте пламя одним лишь ровным вниманием. Отпустите — и оно гаснет.",
+    "Attention is a muscle. You just held it. The flame remembers.": "Внимание — это мышца. Вы только что её удержали. Пламя помнит.",
+    "scattered or restless, or before deep work, when you need to gather your focus": "рассеянность или беспокойство, или перед сложной работой, когда нужно собрать внимание",
+    "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.": "Удержание внимания на одной точке — это повтор, растящий мышцу. Каждая свеча делает следующую устойчивее."
+  });
   // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
   var TB_INTENT = [
     { k: "calm",       l: "Calm",       ti: "ti-ripple",   c: "#48d0e0", line: "I am calm and clear." },
