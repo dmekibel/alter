@@ -1008,7 +1008,7 @@
       { k: "line", t: "This is the oldest attention practice there is.", big: true },
       { k: "line", t: "Keep one flame lit with nothing but your steady attention. Let go, and it gutters." },
       { k: "vigil", t: "Attention is a muscle. You just held it. The flame remembers.", secs: 22 }
-    ], onDone: function () { try { tickTool("vigil"); } catch (e) {} } });
+    ], onDone: function () { try { tickTool("vigil"); } catch (e) {} try { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Candle Vigil", mins: 2, catK: null, domain: "restore", color: "#ff8a2e" }); doneMap(todayK()).vigil = true; save(); } catch (e) {} } }); // the rep becomes today's record + a per-day done-read for the journey node (additive doneMap.vigil, no SCHEMA bump)
   }
   // ===== DAY-1 LESSON CONTENT — each lesson carries real course DNA (COURSE-MAP.md): the concept names, the science, the exact moves. =====
   function firstCommit() { // THE PACT as a journey lesson (moved OUT of onboarding, David 2026-07-04) — the course's 'Initiate and Celebrate' (Module O): commit, then CELEBRATE committing (celebration wires the return). Days first, thumb-seal second, confetti third.
@@ -1275,6 +1275,11 @@
       nodes.push({ key: "litaim", icon: "ti-target-arrow", title: tr("The Aim"), _lead: _litOpenDone && !_aimDone,
         line: _aimDone ? tr("Aimed. Today's arrow is on the board.") : tr("One arrow — it becomes a real block on today."),
         color: "#36b3f0", done: _aimDone, act: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); } }); }
+    // ATTENTION LINE, rung 1 (v917, journey consolidation): the Candle Vigil reachable IN the journey, not only the toolbox. done = today's vigil rep (doneMap.vigil, additive). Renders via the runLesson ceremony overlay (the guided-flow surface). Gated to established users (jn >= 1), like the settle node.
+    if (_litOn && jn >= 1) { var _vigDone = !!dm.vigil;
+      nodes.push({ key: "vigil", icon: "ti-flame", title: tr("Steady your attention"), _lead: false,
+        line: _vigDone ? tr("The flame held. Attention is stronger for it.") : tr("Keep one flame lit with your attention. Ninety seconds."),
+        color: "#ff8a2e", done: _vigDone, act: function () { closeJourney(); try { candleVigil(); } catch (e) {} } }); }
 
     // #6 FIX: settle is NO LONGER the headline opener. It's a gentle secondary node inserted AFTER the first real forward step when energy is low.
     // Build a lazy settle-node reference; jpNodes() inserts it after the first real step below.
@@ -8283,7 +8288,10 @@
     "Keep one flame lit with nothing but your steady attention. Let go, and it gutters.": "Удерживайте пламя одним лишь ровным вниманием. Отпустите — и оно гаснет.",
     "Attention is a muscle. You just held it. The flame remembers.": "Внимание — это мышца. Вы только что её удержали. Пламя помнит.",
     "scattered or restless, or before deep work, when you need to gather your focus": "рассеянность или беспокойство, или перед сложной работой, когда нужно собрать внимание",
-    "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.": "Удержание внимания на одной точке — это повтор, растящий мышцу. Каждая свеча делает следующую устойчивее."
+    "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.": "Удержание внимания на одной точке — это повтор, растящий мышцу. Каждая свеча делает следующую устойчивее.",
+    "Steady your attention": "Соберите внимание",
+    "Keep one flame lit with your attention. Ninety seconds.": "Удержите пламя своим вниманием. Девяносто секунд.",
+    "The flame held. Attention is stronger for it.": "Пламя удержалось. Внимание стало крепче."
   });
   // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
   var TB_INTENT = [
