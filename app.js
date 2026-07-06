@@ -975,6 +975,28 @@
         function vup() { vhold = false; }
         vcv.addEventListener("pointerdown", vdn); ov.addEventListener("pointerup", vup); ov.addEventListener("pointercancel", vup);
         vraf = requestAnimationFrame(vloop); return; }
+      if (b.k === "breathviz") { // THE BREATH VISUAL (v918): a guided paced breath, the reusable component the app needs everywhere. A glowing orb expands on the inhale, holds, and contracts slowly on the longer exhale (the vagal brake), phase label above. Auto-paced N cycles, earns on completion. DEVICE-UNTESTED: the audio timing and the felt pace.
+        var bCue = add(stage, "div"); bCue.style.cssText = "font-family:var(--bub);font-weight:800;font-size:20px;color:#bfe3ff;min-height:30px;"; bCue.textContent = tr("Breathe in");
+        var bcw = 240, bchh = 260, bdpr = Math.min(2, window.devicePixelRatio || 1);
+        var bcv = add(stage, "canvas"); bcv.width = bcw * bdpr; bcv.height = bchh * bdpr; bcv.style.cssText = "width:" + bcw + "px;height:" + bchh + "px;";
+        var bgx = bcv.getContext("2d"); bgx.scale(bdpr, bdpr);
+        var bPhases = [{ n: "Breathe in", d: 4, f: function (t) { return t; } }, { n: "Hold", d: 1.5, f: function () { return 1; } }, { n: "Let it out, slow", d: 6, f: function (t) { return 1 - t; } }];
+        var bCol = b.col || "#5fb0ff", bCycles = (b.cycles || 3), bpi = 0, bci = 0, bpt = 0, braf = 0, btp = 0;
+        function bpaint(amp) {
+          bgx.clearRect(0, 0, bcw, bchh); var cx = bcw / 2, cy = bchh / 2, r = 34 + amp * 74;
+          var gr = bgx.createRadialGradient(cx, cy, 2, cx, cy, r); gr.addColorStop(0, "rgba(224,242,255,.95)"); gr.addColorStop(0.5, bCol); gr.addColorStop(1, "rgba(40,90,160,0)");
+          bgx.fillStyle = gr; bgx.beginPath(); bgx.arc(cx, cy, r, 0, 7); bgx.fill();
+          bgx.beginPath(); bgx.arc(cx, cy, r, 0, 7); bgx.strokeStyle = "rgba(255,255,255,.5)"; bgx.lineWidth = 2; bgx.stroke();
+        }
+        function bloop(ts) {
+          if (done || iCur !== i) { cancelAnimationFrame(braf); return; }
+          if (!btp) btp = ts; var dt = Math.min(0.05, (ts - btp) / 1000); btp = ts; bpt += dt;
+          var ph = bPhases[bpi]; var frac = Math.min(1, bpt / ph.d);
+          bCue.textContent = tr(ph.n); bpaint(ph.f(frac));
+          if (bpt >= ph.d) { bpt = 0; bpi++; if (bpi >= bPhases.length) { bpi = 0; bci++; if (bci >= bCycles) { cancelAnimationFrame(braf); try { earn(3, { label: "breath" }); } catch (e) {} next(); return; } } }
+          braf = requestAnimationFrame(bloop);
+        }
+        braf = requestAnimationFrame(bloop); return; }
       if (b.k === "burn") { lineIn(stage, "One belief to leave here:", false);
         var bl = add(stage, "div"); bl.textContent = "\u201c" + tr(b.t) + "\u201d"; bl.style.cssText = "font-family:var(--bub);font-size:19px;font-weight:800;color:#c9a6b8;border:2px dashed #6a4a5c;border-radius:14px;padding:14px 18px;margin-top:4px;";
         var btn = add(stage, "button", "ob-btn go", tr("Burn it")); btn.style.marginTop = "10px";
@@ -1009,6 +1031,14 @@
       { k: "line", t: "Keep one flame lit with nothing but your steady attention. Let go, and it gutters." },
       { k: "vigil", t: "Attention is a muscle. You just held it. The flame remembers.", secs: 22 }
     ], onDone: function () { try { tickTool("vigil"); } catch (e) {} try { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Candle Vigil", mins: 2, catK: null, domain: "restore", color: "#ff8a2e" }); doneMap(todayK()).vigil = true; save(); } catch (e) {} } }); // the rep becomes today's record + a per-day done-read for the journey node (additive doneMap.vigil, no SCHEMA bump)
+  }
+  function breathChalice() { // THE CHALICE (v918): a calming guided-breath ritual-as-rep, built on the reusable breathviz beat. The lesson is the rep: you follow the light, longer on the exhale, and feel the downshift. Routes through TOOLS via tickTool.
+    runLesson({ c: "#5fb0ff", room: "mirror", beats: [
+      { k: "line", t: "Let's settle the water.", big: true },
+      { k: "line", t: "Follow the light. Longer on the way out, that is the part that calms you." },
+      { k: "breathviz", cycles: 3, col: "#5fb0ff" },
+      { k: "line", t: "Notice it. That was you steering your own state, on purpose." }
+    ], onDone: function () { try { tickTool("chalice"); } catch (e) {} try { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "The Chalice", mins: 2, catK: null, domain: "restore", color: "#5fb0ff" }); doneMap(todayK()).chalice = true; save(); } catch (e) {} } });
   }
   // ===== DAY-1 LESSON CONTENT — each lesson carries real course DNA (COURSE-MAP.md): the concept names, the science, the exact moves. =====
   function firstCommit() { // THE PACT as a journey lesson (moved OUT of onboarding, David 2026-07-04) — the course's 'Initiate and Celebrate' (Module O): commit, then CELEBRATE committing (celebration wires the return). Days first, thumb-seal second, confetti third.
@@ -8277,7 +8307,8 @@
     { id: "coherence",layer: "Steady the body",         name: "Coherence Beat",    ti: "ti-heartbeat",      emoji: "💓", thinker: "Doc Childre — HeartMath", when: "60 seconds before anything that matters — a focus block, a hard talk, sleep", why: "The heart's rhythm is upstream of the thinking brain — smooth it first and the prefrontal cortex comes back online.", fn: function () { coherenceBeat(); } },
     { id: "resistance",layer: "Become who you're being", name: "Resistance Compass", ti: "ti-compass",        emoji: "🧭", thinker: "Steven Pressfield — The War of Art", when: "something you keep avoiding — the thing that scares you most", why: "Resistance is proportional to importance; the fear is the arrow. Name the force, do two minutes — that's Turning Pro.", fn: function () { resistanceCompass(); } },
     { id: "doomscroll",layer: "Lift the lens",           name: "See Through the Scroll", ti: "ti-device-mobile-off", emoji: "📵", thinker: "Allen Carr — Easyway", when: "the pull to scroll — before or instead of reaching for the phone", why: "Not willpower — belief-dismantling. Remove the illusion that the scroll relaxes you and the desire has less to stand on.", fn: function () { doomscroll(); } },
-    { id: "vigil",    layer: "Clear the mind",          name: "Candle Vigil",      ti: "ti-flame",          thinker: "Culadasa · attention", when: "scattered or restless, or before deep work, when you need to gather your focus", why: "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.", fn: function () { candleVigil(); } }
+    { id: "vigil",    layer: "Clear the mind",          name: "Candle Vigil",      ti: "ti-flame",          thinker: "Culadasa · attention", when: "scattered or restless, or before deep work, when you need to gather your focus", why: "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.", fn: function () { candleVigil(); } },
+    { id: "chalice",  layer: "Steady the body",         name: "The Chalice",       ti: "ti-droplet",        thinker: "Huberman · vagal brake", when: "wired, anxious, or before sleep, when you need to come down", why: "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.", fn: function () { breathChalice(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
   Object.assign(I18N.ru, { // Candle Vigil (v916) strings, extended in place per the B4 law (after the I18N seed at @SEC:I18N-CORE). RU тире kept: correct native grammar, not an EN AI-tell.
@@ -8291,7 +8322,16 @@
     "Holding attention on one point is the rep that builds the muscle. Every vigil makes the next one steadier.": "Удержание внимания на одной точке — это повтор, растящий мышцу. Каждая свеча делает следующую устойчивее.",
     "Steady your attention": "Соберите внимание",
     "Keep one flame lit with your attention. Ninety seconds.": "Удержите пламя своим вниманием. Девяносто секунд.",
-    "The flame held. Attention is stronger for it.": "Пламя удержалось. Внимание стало крепче."
+    "The flame held. Attention is stronger for it.": "Пламя удержалось. Внимание стало крепче.",
+    "The Chalice": "Чаша",
+    "Let's settle the water.": "Успокоим воду.",
+    "Follow the light. Longer on the way out, that is the part that calms you.": "Следуйте за светом. Дольше на выдохе, именно это вас успокаивает.",
+    "Notice it. That was you steering your own state, on purpose.": "Заметьте это. Вы только что сами направили своё состояние, намеренно.",
+    "Breathe in": "Вдох",
+    "Hold": "Задержите",
+    "Let it out, slow": "Медленный выдох",
+    "wired, anxious, or before sleep, when you need to come down": "на взводе, тревожно или перед сном, когда нужно успокоиться",
+    "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.": "Медленное дыхание с длинным выдохом включает вагусный тормоз. Тело успокаивается примерно за минуту, и вы это чувствуете."
   });
   // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
   var TB_INTENT = [
