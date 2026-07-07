@@ -942,11 +942,10 @@
         var _sgr = vsg.createRadialGradient(32, 32, 0, 32, 32, 32); _sgr.addColorStop(0, "rgba(255,255,255,1)"); _sgr.addColorStop(0.28, "rgba(255,226,120,0.92)"); _sgr.addColorStop(0.6, "rgba(255,150,45,0.42)"); _sgr.addColorStop(1, "rgba(255,60,20,0)"); vsg.fillStyle = _sgr; vsg.beginPath(); vsg.arc(32, 32, 32, 0, 7); vsg.fill();
         var vparts = [], vspawn = 0;
         function drawSpr(x, y, w, h, a) { vg.globalAlpha = a < 0 ? 0 : a > 1 ? 1 : a; vg.drawImage(vspr, x - w / 2, y - h / 2, w, h); vg.globalAlpha = 1; }
-        // CEL flame sprite sheet (David's hand-drawn art, transparent PNG, vsFrames laid out horizontally). If flame-sheet.png loads, the cel flame plays with a glow; otherwise the additive particle flame is the fallback. Drop it at alter/flame-sheet.png and set vsFrames to the real frame count. See STYLE-ART-IDENTITY.md.
-        var vsFrames = 8, vsheetOk = false, vsW = 0, vsH = 0, vsheet = new Image();
-        vsheet.onload = function () { vsheetOk = true; vsW = vsheet.width / vsFrames; vsH = vsheet.height; };
-        vsheet.onerror = function () { vsheetOk = false; };
-        vsheet.src = "flame-sheet.png";
+        // FLAME ASSET (David generates with Kling / Midjourney / Kie, not hand-drawn). Two forms: a black-background looping VIDEO (Kling) screen-composited, or a transparent still IMAGE (Midjourney/Kie) the app animates. Priority: image, then video, else the particle flame. Drop at alter/flame.png or alter/flame.mp4. See STYLE-ART-IDENTITY.md.
+        var fimg = new Image(), fimgOk = false; fimg.onload = function () { fimgOk = true; }; fimg.src = "flame.png";
+        var fvid = document.createElement("video"); fvid.muted = true; fvid.loop = true; fvid.playsInline = true; fvid.setAttribute("playsinline", ""); fvid.setAttribute("muted", ""); fvid.preload = "auto"; fvid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;left:-20px;top:-20px;pointer-events:none;"; ov.appendChild(fvid);
+        var fvidOk = false; fvid.addEventListener("loadeddata", function () { fvidOk = true; try { fvid.play(); } catch (e) {} }); fvid.addEventListener("error", function () {}); fvid.src = "flame.mp4"; try { fvid.play(); } catch (e) {}
         var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
         var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
@@ -963,12 +962,16 @@
           vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx + sway * 0.3, wickY); vg.stroke(); // wick
           // the flame is NOT a filled shape: soft translucent sprites stacked ADDITIVELY (density = the bright core)
           vg.globalCompositeOperation = "lighter";
-          if (vsheetOk && vsW > 0) { // CEL flame sprite: soft glow behind (additive), then the hand-drawn frame in normal compositing so the flat cel colors read true; grows with the charge
-            drawSpr(cx + lean, wickY - (54 + 44 * f), (70 + 56 * f), (94 + 76 * f), 0.38 + 0.42 * bright);
+          if (fimgOk) { // transparent still (Midjourney/Kie), app-animated: soft glow behind (additive), then the cel image (normal compositing), breathing + swaying
+            drawSpr(cx + lean, wickY - (54 + 44 * f), (70 + 56 * f), (94 + 76 * f), 0.36 + 0.42 * bright);
             vg.globalCompositeOperation = "source-over";
-            var vfr = Math.floor(t2 / 100) % vsFrames, cfw = 60 + 58 * f, cfh = cfw * (vsH / vsW);
-            vg.globalAlpha = 0.92 + 0.08 * bright; vg.drawImage(vsheet, vfr * vsW, 0, vsW, vsH, cx + lean - cfw / 2, wickY - cfh + 8, cfw, cfh); vg.globalAlpha = 1;
-          } else { // fallback: additive particle flame (until flame-sheet.png is present)
+            var iar = fimg.height / fimg.width || 1.3, iw = 58 + 56 * f, ih = iw * iar * (1 + 0.05 * Math.sin(t2 / 900));
+            vg.globalAlpha = 0.95; vg.drawImage(fimg, cx + lean - iw / 2, wickY - ih + 8, iw, ih); vg.globalAlpha = 1;
+          } else if (fvidOk && fvid.readyState >= 2) { // black-bg video (Kling), screen-composited: black drops out, the glowing flame shows; grows with the charge
+            var vw = 96 + 74 * f, vh = 132 + 96 * f; vg.globalAlpha = 0.6 + 0.4 * bright;
+            try { vg.drawImage(fvid, cx + lean - vw / 2, wickY - vh + 10, vw, vh); } catch (e) { fvidOk = false; }
+            vg.globalAlpha = 1;
+          } else { // fallback: additive particle flame (until an asset is present)
             var baseA = 0.4 + 0.34 * bright;
             drawSpr(cx + lean, wickY - (10 + 30 * f), (34 + 40 * f), (46 + 72 * f), baseA * 0.5);
             drawSpr(cx + lean * 1.1, wickY - (22 + 46 * f), (22 + 26 * f), (34 + 58 * f), baseA * 0.6);
