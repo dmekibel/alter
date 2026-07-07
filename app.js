@@ -10125,17 +10125,17 @@
       onFinish: function (skipped) { if (onDone) onDone(); if (!skipped) setTimeout(function () { offerKeepMantra(); }, 450); }, // ORGAN I: a completed Rewire → keep the line as your nightly mantra
       id: "reprogram", title: "Rewire", logTitle: "Rewire", catK: "love", color: "#9a5cf0", spark: 7, voiceProf: VPROF.relax,
       intro: {
-        tag: "install a new self-belief · 2–3 min",
-        what: "A calm, guided way to plant one new belief about yourself. You settle the body, picture the change as already true, and say it in the present tense — the same three moves under every reprogramming method, stripped of the mysticism.",
-        how: ["Settle down: slow breaths, exhale longer than the inhale.", "Let the body soften and the mind go quiet and open.", "See it as a real scene: you, already doing the thing, in a moment you can picture.", "Say one present-tense line, like “I start before I feel ready,” and mean it.", "Seal it with one full breath, and carry it with you."],
-        why: "The brain rehearses a vividly imagined self almost like a real one. Repeating a calm, present-tense image is how a new self-image actually installs."
+        tag: "install a new self-belief · 2 to 3 min",
+        what: "This is mental rehearsal, the thing athletes and surgeons use because it works: your brain barely separates a vividly imagined rep from a real one. You settle the body, picture the change as already true, and say one present-tense line. Your brain files it as evidence. The same three moves under every reprogramming method, without the mysticism.",
+        how: ["Settle the body: slow breaths, exhale longer than the inhale.", "Let the body soften and the mind go quiet and open.", "See a real scene: you, already doing the thing, somewhere you can picture.", "Say one present-tense line, like “I move before the fear finishes its sentence,” and mean it.", "Seal it with one full breath, and carry it with you."],
+        why: "The brain rehearses a vividly imagined self almost like a real one. A calm, present-tense image, repeated, is how a new self-image actually installs. That is not woo. That is you using placebo on purpose, which is a real edge."
       },
       beats: [
-        { lab: "Settle down", sub: "Slow breath — make the exhale longer than the inhale. With each one, a step calmer.", orb: "out" },
-        { lab: "Three… two… one…", sub: "let the body go soft and the mind go quiet and open", orb: "out" },
+        { lab: "Settle the body", sub: "Slow breath. Make the exhale longer than the inhale. With each one, a step calmer.", orb: "out" },
+        { lab: "Three, two, one", sub: "let the body go soft and the mind go quiet and open", orb: "out" },
         { lab: "See the scene", sub: "you, already doing it, in a real moment. Hold the picture.", orb: "in" },
-        { lab: "Say it as now", sub: "one present-tense line — like “I start before I feel ready.” Say it slow, and mean it.", orb: "" },
-        { lab: "Seal it", sub: "one full breath, the line once more… and it's in. Carry it.", orb: "out" }
+        { lab: "Say it as now", sub: "one present-tense line, like “I am the person who does the thing anyway.” Say it slow, and mean it.", orb: "" },
+        { lab: "Seal it", sub: "one full breath, the line once more, and it's in. Carry it.", orb: "out" }
       ], lastLabel: "Done ✓"
     });
   }
