@@ -4831,7 +4831,7 @@
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }, { t: "stack" }, { t: "stackdone" }, { t: "pace" }]; // intro (Beat 1 hook) → STACK (plan a micro-stack, run it, self-tracks) → STACKDONE (guardian names the loop) → PACE → survey. theOpen stays the DAILY ceremony only.
+    var BEATS = [{ t: "intro" }, { t: "stackintro" }, { t: "stack" }, { t: "stackdone" }, { t: "pace" }]; // intro (Beat 1 hook) → STACKINTRO (frame the guided micro-session) → STACK (plan it, run it, self-tracks) → STACKDONE (guardian names the loop) → PACE → survey. theOpen stays the DAILY ceremony only.
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
     var bi2 = 0, advT = null, _justPicked = false;
@@ -4941,23 +4941,34 @@
         var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
         return; }
+      if (B.t === "stackintro") { // frame the guided micro-session so it doesn't cold-open on a form (David 2026-07-07: "not clear we're doing onboarding")
+        obMark(body, 120);
+        var si1 = tr("Let's do the whole thing once, small."); var si2 = tr("You plan it, you run it, you feel it land. A minute, tops.");
+        var sid = add(body, "div"); sid.style.cssText = "text-align:center;margin-top:14px;max-width:360px;";
+        var sia = add(sid, "div"); sia.style.cssText = "font-size:19px;font-weight:800;color:#f0e6ef;line-height:1.4;"; sia.textContent = si1;
+        var sib = add(sid, "div"); sib.style.cssText = "font-size:15px;font-weight:600;color:#cbb6e6;line-height:1.4;margin-top:8px;"; sib.textContent = si2;
+        try { speak(si1 + " " + si2); } catch (e) {}
+        stdFoot(tr("I'm ready") + " ▸", false);
+        return; }
       if (B.t === "stack") { // BEAT 2 — THE WHOLE APP IN ONE MINUTE (David 2026-07-07): plan a micro-stack (pick time, tune each tool, add meditation), RUN it (chained tool beats, gauge-wrapped), and it self-tracks to the day log. plan -> do -> track = the app's whole loop, taught by living it. Reuses stretchFloor / breathwork / stackMantra / meditationQuick + runFirstStack. DEVICE-UNTESTED: the felt run + audio need the phone.
         add(body, "div", "ob-q", tr("How much time do you have?"));
         add(body, "div", "ob-sb", tr("a tiny version of the whole app: plan it, run it, watch it land")).style.cssText = "text-align:center;margin-top:6px;";
         var STK = [
-          { id: "muscle", nm: "Loosen the body", ic: "ti-stretching", c: "#ff8a1e", secs: 45, on: true, run: function (s, cb) { stretchFloor(cb, s); } },
-          { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#6a5cf0", secs: 48, on: true, run: function (s, cb) { breathwork(Math.max(2, Math.round(s / 16)), cb); } },
-          { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: 40, on: true, run: function (s, cb) { stackMantra(cb, s); } },
+          { id: "stretch", nm: "Loosen the body", ic: "ti-stretching", c: "#ff8a1e", secs: 40, on: true, run: function (s, cb) { stretchFloor(cb, s); } },
+          { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: 40, on: true, run: function (s, cb) { relaxMoment(cb); } },
+          { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: 48, on: true, run: function (s, cb) { breathwork(Math.max(2, Math.round(s / 16)), cb); } },
+          { id: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", secs: 40, on: true, run: function (s, cb) { stackMantra(cb, s); } },
           { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: 60, on: false, run: function (s, cb) { meditationQuick(cb, s); } }
         ];
-        var PRE = { quick: [30, 32, 30, 45], some: [45, 48, 40, 60], deep: [60, 64, 50, 90] }, presetK = "some";
+        var PRE = { quick: [30, 30, 32, 30, 45], some: [40, 40, 48, 40, 60], deep: [55, 50, 64, 50, 90] }, presetK = "some";
         function fmtS(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }
         function stackTotal() { return STK.reduce(function (a, t) { return a + (t.on ? t.secs : 0); }, 0); }
         var pbox = add(body, "div"); pbox.style.cssText = "width:100%;max-width:400px;margin-top:12px;";
         // BUILT ONCE, updated in place (no innerHTML wipe — nudges only rewrite the duration text + total; add/remove toggle display). Honors the wipe ratchet.
         var chipRow = add(pbox, "div"); chipRow.style.cssText = "display:flex;gap:8px;justify-content:center;margin-bottom:14px;"; var chips = {};
         [["quick", "Quick"], ["some", "A bit"], ["deep", "Deeper"]].forEach(function (p) { var b = add(chipRow, "button", "obv-row"); b.style.cssText = "flex:1;min-height:0;padding:9px 4px;justify-content:center;text-align:center;font-weight:800;"; b.textContent = tr(p[1]); chips[p[0]] = b; b.onclick = function () { presetK = p[0]; STK.forEach(function (t, i) { t.secs = PRE[p[0]][i]; }); refreshStack(); }; });
-        var rows = {}, totB, addRow;
+        var rows = {}, addRow;
+        var totB = add(pbox, "div"); totB.style.cssText = "text-align:center;font-weight:900;font-size:21px;color:#ffcf6a;letter-spacing:.5px;margin:2px 0 14px;"; // the clock, prominent right by the picker (David 2026-07-07)
         function updTot() { totB.textContent = tr("about") + " " + fmtS(stackTotal()); }
         STK.forEach(function (t) {
           var r = add(pbox, "div", "obv-row"); r.style.cssText = "min-height:52px;margin-bottom:8px;"; r.style.setProperty("--oc", t.c);
@@ -4969,8 +4980,7 @@
           if (t.id === "medit") { var rm = add(ctrl, "button"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;opacity:.6;font-size:16px;"; rm.onclick = function (e) { e.stopPropagation(); t.on = false; r.style.display = "none"; addRow.style.display = ""; updTot(); }; r.style.display = "none"; }
           rows[t.id] = { r: r, du: du };
         });
-        addRow = add(pbox, "button", "obv-row"); addRow.style.cssText = "min-height:46px;margin-bottom:8px;opacity:.75;border-style:dashed;"; addRow.innerHTML = '<i class="ti ti-plus oi"></i><span class="ol">' + esc(tr("Add stillness (meditation)")) + '</span>'; addRow.onclick = function () { STK[3].on = true; rows.medit.r.style.display = ""; addRow.style.display = "none"; updTot(); };
-        totB = add(pbox, "div"); totB.style.cssText = "text-align:center;font-weight:800;color:#cbb6e6;margin:10px 0 2px;";
+        addRow = add(pbox, "button", "obv-row"); addRow.style.cssText = "min-height:46px;margin-bottom:8px;opacity:.75;border-style:dashed;"; addRow.innerHTML = '<i class="ti ti-plus oi"></i><span class="ol">' + esc(tr("Add stillness (meditation)")) + '</span>'; addRow.onclick = function () { STK[4].on = true; rows.medit.r.style.display = ""; addRow.style.display = "none"; updTot(); };
         function refreshStack() { STK.forEach(function (t) { if (rows[t.id]) rows[t.id].du.textContent = fmtS(t.secs); }); for (var k in chips) chips[k].style.background = (k === presetK) ? tfStripeDoor("#b07aff") : ""; updTot(); }
         refreshStack();
         var sb = stdFoot(tr("Start") + " ▸", false);
@@ -8373,7 +8383,8 @@
     "How much time do you have?": "Сколько у тебя времени?",
     "a tiny version of the whole app: plan it, run it, watch it land": "крошечная версия всего приложения: спланируй, выполни, увидь результат",
     "Quick": "Быстро", "A bit": "Немного", "Deeper": "Глубже",
-    "Loosen the body": "Расслабь тело", "Breathe": "Дыхание", "A line to carry": "Фраза, чтобы унести с собой", "Sit in stillness": "Побудь в тишине",
+    "Let's do the whole thing once, small.": "Давай пройдём весь путь один раз, коротко.", "You plan it, you run it, you feel it land. A minute, tops.": "Ты планируешь, выполняешь и чувствуешь результат. Минута, не больше.", "I'm ready": "Я готов",
+    "Loosen the body": "Расслабь тело", "Relax the muscles": "Расслабь мышцы", "Breathe": "Дыхание", "Mantra": "Мантра", "Sit in stillness": "Побудь в тишине",
     "Add stillness (meditation)": "Добавить тишину (медитацию)",
     "about": "около", "Start": "Начать",
     "Where's the tension right now?": "Где сейчас напряжение?", "gut answer, no wrong number": "отвечай нутром, нет неправильных чисел",
