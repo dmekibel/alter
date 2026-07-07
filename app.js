@@ -8748,7 +8748,7 @@
     ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div>';
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-    var _xb0 = ov.querySelector(".bw-x"); if (_xb0) _xb0.innerHTML = '<i class="ti ti-x"></i>'; // ref: bare ✕ top-left
+    var _xb0 = ov.querySelector(".bw-x"); if (_xb0) { _xb0.innerHTML = '<i class="ti ti-x"></i>'; _xb0.style.zIndex = "10"; } // ref: bare ✕ top-left — z above the carousel track so it always takes taps
     orb.style.animation = "breathe 9s ease-in-out infinite";
     ov.style.setProperty("--gp-c", col); // PLAYER 1:1 (mock #20): element-tint everything (map pips, catch dots, ripple) to this session's color
     orb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(col, "#ffffff", 0.26) + " 0%," + col + " 55%," + mixHex(col, "#160510", 0.26) + " 100%)"; // ref: a SOLID element sphere with soft top-light, not a white-core glow
@@ -8765,7 +8765,7 @@
       mapWrap.style.display = "none";
       var _gt = ov.querySelector(".gp-title"); if (_gt) _gt.style.display = "none"; // the section labels are the header now — drop the centered title so they don't collide
       var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:56px;right:56px;display:flex;gap:9px;z-index:6;pointer-events:none;"; // inset to clear the ✕ / gear in the corners
-      acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;"; var ic = add(colx, "i", "ti " + (a.icon || "ti-circle-filled")); ic.style.cssText = "font-size:16px;line-height:1;color:" + (a.color || col) + ";opacity:.34;transition:opacity .3s;"; actLabels.push(ic); var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:6px;border-radius:4px;background:" + mixHex(a.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:4px;background:" + (a.color || col) + ";transition:width .2s linear;"; actFills.push(fl); actResume.push(null); }); // a miniature COLORED symbol + thicker colored bar per activity; brightens as you pass through
+      acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(a.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + (a.color || col) + ";transition:width .2s linear;"; actFills.push(fl); var ic = add(colx, "i", "ti " + (a.icon || "ti-circle-filled")); ic.style.cssText = "font-size:22px;line-height:1;color:" + (a.color || col) + ";opacity:.34;transition:opacity .3s;"; actLabels.push(ic); actResume.push(null); }); // the LINE on top, a bigger COLORED SYMBOL below it; brightens as you pass through (David 2026-07-08)
       // HORIZONTAL TRACK OF PER-ACTIVITY PAGES (David 2026-07-07): the WHOLE page slides sideways and the next identical page slides in, Instagram-story style — you see the slide. Each page has its own color-tinted orb. Top bars + bottom transport are the fixed frame.
       orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; // the single template content is unused in acts mode
       track = add(ov, "div", "gp-track"); track.style.cssText = "position:fixed;inset:0;display:flex;width:" + (acts.length * 100) + "vw;z-index:2;transition:transform .44s cubic-bezier(.4,0,.2,1);will-change:transform;pointer-events:none;";
@@ -8782,7 +8782,7 @@
       if (seg && seg._act === ai) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } else { lab.textContent = acts[ai].name; sub.textContent = ""; }
       for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.opacity = (li <= ai) ? "1" : "0.34"; // done + current activities light up to full color; upcoming stay dim
     }
-    var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
+    var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
     var driftCount = 0;
     function medChime() { var c = TTS.ctx && TTS.ctx(); if (!c) return; var t = c.currentTime, out = (typeof bgBus === "function" && bgBus()) || c.destination; [528, 792].forEach(function (f, i) { var o = c.createOscillator(), g = c.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.04); g.gain.linearRampToValueAtTime(0.13 - i * 0.06, t + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); o.connect(g); g.connect(out); o.start(t); o.stop(t + 1.6); }); }
@@ -8811,9 +8811,10 @@
     var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
     bar.style.visibility = "hidden";
     // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
-    var padCtl = null, usedBGM = false, bedM = bedMode();
-    if (opts.drone !== false && bedM === "music") { try { BGM.start(); usedBGM = true; } catch (e) {} }
-    else if (opts.drone !== false && bedM === "pad" && ctx) { try { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); } catch (e) { padCtl = null; } } // much louder bed (David 2026-07-01)
+    var padCtl = null, usedBGM = false, bedM = bedMode(), bedOn = false;
+    function bedStart() { if (bedOn || opts.drone === false) return; try { if (bedM === "music") { BGM.start(); usedBGM = true; bedOn = true; } else if (bedM === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); bedOn = true; } } catch (e) {} } // the background bed follows play/pause (David 2026-07-08: pausing should pause the music too)
+    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} try { if (padCtl) padCtl.stop(); } catch (e) {} padCtl = null; bedOn = false; }
+    bedStart();
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0;
@@ -8853,7 +8854,7 @@
     }
     function startFrom(sec, keepOld) { // schedule every remaining clip up front, relative to now
       if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
-      if (!keepOld) stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade)
+      if (!keepOld) stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bedStart(); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade); bedStart resumes the music on play
       segs.forEach(function (sg) {
         if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
         try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); var _v = opts.vol != null ? opts.vol : 1; g.gain.value = _v; if (keepOld && sg.start <= sec + 0.05) { g.gain.setValueAtTime(0.0001, baseCtx); g.gain.linearRampToValueAtTime(_v, baseCtx + 0.35); } src.connect(g); g.connect(voiceBus() || ctx.destination);
@@ -8863,7 +8864,7 @@
       });
       dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
     }
-    function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
+    function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bedStop(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // pause the background bed too
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
     function paintNow(e) { paintMap(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
@@ -8892,9 +8893,9 @@
     if (acts) { // STORY-NAV (David 2026-07-07): tap left/right or swipe to move between activities. The voice CROSSFADES (fadeStopSources) instead of hard-cutting, and each act remembers where you left off so a slip is recoverable.
       function gotoAct(j) { if (!ready || done || j < 0 || j >= acts.length || j === curAct) return; actResume[curAct] = curElapsed(); var target = (actResume[j] != null) ? actResume[j] : (acts[j]._start || 0);
         if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } curAct = j; paintNow(target); }
-      var tapL = add(ov, "div", "gp-tapz"); tapL.style.cssText = "position:fixed;top:64px;bottom:220px;left:0;width:28%;z-index:5;"; tapL.onclick = function () { gotoAct(curAct - 1); };
-      var tapR = add(ov, "div", "gp-tapz"); tapR.style.cssText = "position:fixed;top:64px;bottom:220px;right:0;width:28%;z-index:5;"; tapR.onclick = function () { gotoAct(curAct + 1); };
-      var _sx = null; ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && e.target.closest(".gp-bar")) { _sx = null; return; } _sx = e.touches ? e.touches[0].clientX : null; }, { passive: true }); // ignore drags that start on the transport scrubber
+      var tapL = add(ov, "div", "gp-tapz"); tapL.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);left:0;width:28%;z-index:5;"; tapL.onclick = function () { gotoAct(curAct - 1); }; // start BELOW the ✕ / gear / story-bar (the safe-area inset pushes them down on device — the old top:64px covered them and ate their taps)
+      var tapR = add(ov, "div", "gp-tapz"); tapR.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);right:0;width:28%;z-index:5;"; tapR.onclick = function () { gotoAct(curAct + 1); };
+      var _sx = null; ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && (e.target.closest(".gp-bar") || e.target.closest(".bw-x") || e.target.closest(".gp-cog"))) { _sx = null; return; } _sx = e.touches ? e.touches[0].clientX : null; }, { passive: true }); // ignore drags that start on the transport, the exit, or the gear
       ov.addEventListener("touchend", function (e) { if (_sx == null) return; var ex = e.changedTouches ? e.changedTouches[0].clientX : _sx, dx = ex - _sx; _sx = null; if (Math.abs(dx) > 55) gotoAct(curAct + (dx < 0 ? 1 : -1)); }, { passive: true }); // swipe left = next act, right = previous (resumes where you left off)
     }
 
