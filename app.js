@@ -937,18 +937,20 @@
         // CANDLE ORB — native <video> layers (smooth, hardware-decoded) clipped to a circle, with an SVG charge ring on top. Drawing a 1080p clip into a canvas every frame was the lag AND the empty circle (iOS blocked the autoplay-prime, so the canvas had no frame); a real <video> plays smoothly and a poster (candle-unlit.png) shows the unlit candle the INSTANT the tool opens. State machine (cst): hold -> IGNITE plays fast (unlit -> lit) -> hands into the BURN loop while the ring charges; release while lit -> OUT (snuff, release-to-die); re-press relights. Ring/charge preserved across snuffs. See STYLE-ART-IDENTITY.md.
         var vwrap = add(stage, "div"); vwrap.style.cssText = "position:relative;width:224px;height:224px;border-radius:50%;overflow:hidden;background:#000;touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none;";
         function mkV(src, loop, poster) { var v = add(vwrap, "video"); v.src = src; v.loop = !!loop; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("webkit-playsinline", ""); v.setAttribute("muted", ""); v.setAttribute("preload", "auto"); if (poster) v.setAttribute("poster", poster); v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;opacity:0;pointer-events:none;"; return v; }
-        var vIgn = mkV("candle-ignite.mp4", false, "candle-unlit.png"), vBurn = mkV("candle-burn.mp4", true, null), vOut = mkV("candle-out.mp4", false, null);
+        var vIgn = mkV("candle-ignite.mp4", false, "candle-unlit.png"), vBurn = mkV("candle-burn.mp4", false, null), vBurn2 = mkV("candle-burn.mp4", false, null), vOut = mkV("candle-out.mp4", false, null);
         vIgn.style.opacity = "1"; vIgn.playbackRate = 2.4; vOut.playbackRate = 1.6; // unlit poster shows instantly; ignite + snuff quickened so lighting matches the burn's energy
-        var cst = "unlit"; // unlit | igniting | burning | dying
-        function showV(v) { vIgn.style.opacity = v === vIgn ? "1" : "0"; vBurn.style.opacity = v === vBurn ? "1" : "0"; vOut.style.opacity = v === vOut ? "1" : "0"; }
-        vIgn.addEventListener("ended", function () { if (cst === "igniting") { cst = "burning"; try { vBurn.currentTime = 0; vBurn.play(); } catch (e) {} showV(vBurn); } }); // lit -> seamless into the burn loop
+        var cst = "unlit", burns = [vBurn, vBurn2], bi = 0, handing = false; // burning is DOUBLE-BUFFERED: two burn clips ping-pong with a crossfade, so the loop re-seek (native loop literally PAUSES at the seam) always happens on the hidden buffer
+        function pauseBurns() { try { vBurn.pause(); vBurn2.pause(); } catch (e) {} }
+        function showV(v) { [vIgn, vBurn, vBurn2, vOut].forEach(function (x) { x.style.opacity = x === v ? "1" : "0"; }); }
+        function startBurn() { bi = 0; handing = false; vBurn2.style.opacity = "0"; try { vBurn.currentTime = 0; vBurn.playbackRate = 1; vBurn.play(); } catch (e) {} showV(vBurn); }
+        vIgn.addEventListener("ended", function () { if (cst === "igniting") { cst = "burning"; startBurn(); } }); // lit -> into the double-buffered burn
         vOut.addEventListener("ended", function () { if (cst === "dying") { cst = "unlit"; showV(vIgn); try { vIgn.pause(); vIgn.currentTime = 0; } catch (e) {} } }); // fully snuffed -> unlit
         vwrap.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 224 224" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><circle cx="112" cy="112" r="108" fill="none" stroke="rgba(255,220,150,.14)" stroke-width="5"></circle><circle class="varc" cx="112" cy="112" r="108" fill="none" stroke="#ffcf6a" stroke-width="5" stroke-linecap="round" stroke-dasharray="678.6" stroke-dashoffset="678.6" transform="rotate(-90 112 112)"></circle></svg>');
         var varc = vwrap.querySelector(".varc");
         var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
         var vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vonpeak() {
-          cst = "burning"; try { if (vBurn.paused) vBurn.play(); } catch (e) {} showV(vBurn); // lock to the energetic lit loop
+          if (cst !== "burning") { cst = "burning"; startBurn(); } // lock to the burning loop (start it if we peaked mid-ignite)
           try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
           try { earn(3, { label: "vigil" }); } catch (e) {}
           try { S.sigils = S.sigils || {}; S.sigils.candle = (S.sigils.candle || 0) + 1; save(); } catch (e) {}
@@ -962,14 +964,18 @@
           if (!vtp) vtp = ts; var dt = Math.min(0.05, (ts - vtp) / 1000); vtp = ts;
           if (vhold && !vpk) vchg += dt;
           var fr = Math.min(1, vchg / vtgt); varc.style.strokeDashoffset = (678.6 * (1 - fr)).toFixed(1); // charge ring only — the flame is native video now
-          if (cst === "burning" && !vBurn.paused) { var bd = vBurn.duration || 3, bc = vBurn.currentTime, edge = 0.45, tail = bd - bc, e = bc < edge ? (edge - bc) / edge : (tail < edge ? (edge - tail) / edge : 0); e = e * e * (3 - 2 * e); vBurn.playbackRate = 1 + 0.8 * e; } // speed-ramp (smoothstep) through the loop seam so the restart hitch is rushed past
+          if (cst === "burning") { var act = burns[bi], oth = burns[1 - bi], bd = act.duration || 3, bc = act.currentTime, tail = bd - bc, LEAD = 0.34;
+            var e = bc < 0.45 ? (0.45 - bc) / 0.45 : (tail < 0.45 ? (0.45 - tail) / 0.45 : 0); e = e * e * (3 - 2 * e); act.playbackRate = 1 + 0.8 * e; // seam speed-ramp (kept)
+            if (!handing && tail <= LEAD) { handing = true; try { oth.currentTime = 0; oth.playbackRate = 1; oth.play(); } catch (e2) {} } // pre-roll the OTHER buffer before this one ends — its re-seek happens off-screen
+            if (handing) { var pr = Math.min(1, Math.max(0, (LEAD - tail) / LEAD)); act.style.opacity = (1 - pr).toFixed(3); oth.style.opacity = pr.toFixed(3); if (tail <= 0.03) { try { act.pause(); act.currentTime = 0; } catch (e3) {} act.style.opacity = "0"; oth.style.opacity = "1"; bi = 1 - bi; handing = false; } } // crossfade, then hand over
+          }
           if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
           vraf = requestAnimationFrame(vloop);
         }
         function vdn(ev) { ev.preventDefault(); vhold = true; if (vpk) return;
-          if (cst === "unlit" || cst === "dying") { cst = "igniting"; showV(vIgn); try { vOut.pause(); vBurn.pause(); vIgn.currentTime = 0; vIgn.play(); } catch (e) {} } } // hold -> light it fast from the start
+          if (cst === "unlit" || cst === "dying") { cst = "igniting"; handing = false; showV(vIgn); try { vOut.pause(); pauseBurns(); vIgn.currentTime = 0; vIgn.play(); } catch (e) {} } } // hold -> light it fast from the start
         function vup() { vhold = false; if (vpk) return;
-          if (cst === "burning") { cst = "dying"; showV(vOut); try { vBurn.pause(); vOut.currentTime = 0; vOut.play(); } catch (e) {} } // let go while lit -> snuff (ring kept)
+          if (cst === "burning") { cst = "dying"; handing = false; showV(vOut); try { pauseBurns(); vOut.currentTime = 0; vOut.play(); } catch (e) {} } // let go while lit -> snuff (ring kept)
           else if (cst === "igniting") { cst = "unlit"; showV(vIgn); try { vIgn.pause(); vIgn.currentTime = 0; } catch (e) {} } } // let go mid-light -> unlit, no jarring snuff
         vwrap.addEventListener("pointerdown", vdn); ov.addEventListener("pointerup", vup); ov.addEventListener("pointercancel", vup);
         vraf = requestAnimationFrame(vloop); return; }
