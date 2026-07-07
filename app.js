@@ -4831,7 +4831,7 @@
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }, { t: "pace" }]; // intro → THE OPEN (fires on the intro button) → PACE (SPEC-FIRST-RUN §2: "Your pace?" opens the map) → the six-question survey. breath+write dropped: THE OPEN's Stack already front-loads the felt first-win, so the ask stays short.
+    var BEATS = [{ t: "intro" }, { t: "breath" }, { t: "pace" }]; // intro (Beat 1 hook) → BREATH (Beat 2 = the first earned win, SPEC-FIRST-DAY-REDESIGN) → PACE → the six-question survey. theOpen no longer fires on first-run (it stays the DAILY ceremony).
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
     var bi2 = 0, advT = null, _justPicked = false;
@@ -4920,7 +4920,7 @@
       paintBar(); body.innerHTML = ""; foot.innerHTML = "";
       backB.style.visibility = bi2 > 0 ? "" : "hidden";
       var B = BEATS[bi2];
-      var _inSurvey = (B.t === "q" || B.t === "gate" || B.t === "echo" || B.t === "breath" || B.t === "write"); // punch-list #2+#4: the battery bar exists ONLY during the survey — not on the intro, and not on the ritual beats after (so it can never read "done" while screens keep coming)
+      var _inSurvey = (B.t === "q" || B.t === "gate" || B.t === "echo" || B.t === "write"); // punch-list #2+#4: the battery bar exists ONLY during the survey — not on the intro, the Beat-2 breath win, or the ritual beats after (so it can never read "done" while screens keep coming)
       segEls.forEach(function (sg) { sg.style.display = _inSurvey ? "" : "none"; });
       var _sc3 = (B.t === "q") ? B.q.sec : (B.t === "gate") ? B.sec : -1; ov.setAttribute("data-sec", _sc3 >= 0 ? String(_sc3) : ""); // the whole ROOM shifts biome per section (Pokemon region feel)
       body.className = "ob-body center";
@@ -4929,17 +4929,35 @@
         var iw = add(body, "div"); iw.style.cssText = "margin-top:16px;display:flex;flex-direction:column;align-items:center;";
         var t0 = 0.4, HUES = { spark: "#ffd24a", "искрой": "#ffd24a", waits: "#ff5fa8", "ждёт": "#ff5fa8", yours: "#ffd24a", "твоя": "#ffd24a", alter: "#ff5fa8", "альтер": "#ff5fa8" };
         function iline(txt, big) { var d = add(iw, "div", "obi-line" + (big ? " big" : "")); tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", t0.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase(); if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + "</b>"; else sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); t0 += 0.22; }); t0 += 0.55; }
-        iline("Everyone is born with a spark.");
-        iline("Life buries it — under noise, under screens, under Tuesdays.");
-        iline("It never goes out. It waits.");
-        iline("My whole job is keeping yours lit.");
-        iline("I'm Alter — your guardian.", true);
-        var ib = stdFoot(tr("Let's go") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen (punch-list #3) — the intro IS the app's handshake
-        ib.onclick = function () { // P1 · THE OPEN (SPEC-FIRST-RUN): serve first, ask after — the threshold + first Stack runs BEFORE the survey, once per fresh install
-          if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} theOpen(function () { next(); }); }
-          else next(); };
+        iline("I am the part of you that remembers what you actually want.");
+        iline("Give me sixty seconds and I'll show you something your mind can already do.", true);
+        var ib = stdFoot(tr("Show me") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen — the intro IS the app's handshake
+        ib.onclick = function () { // BEAT 1 -> BEAT 2 (SPEC-FIRST-DAY-REDESIGN): the guided breath is the first earned win now; theOpen stays the DAILY ceremony only (day 2+)
+          if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} }
+          next(); };
         var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
+        return; }
+      if (B.t === "breath") { // BEAT 2 — THE FIRST BREATH (SPEC-FIRST-DAY-REDESIGN Phase 1): one guided breath = the felt, EARNED win under a minute. Breath visual (expand/hold/fall), voice + text one cue at a time, then the guardian names what the long exhale did (scientific framing, not woo). Points are earned by the completed rep. DEVICE-UNTESTED: audio timing + felt pace need the phone.
+        var bCue = add(body, "div"); bCue.style.cssText = "font-family:var(--bub);font-weight:800;font-size:20px;color:#bfe3ff;min-height:30px;text-align:center;";
+        var bcw = 220, bchh = 220, bdpr = Math.min(2, window.devicePixelRatio || 1);
+        var bcv = add(body, "canvas"); bcv.width = bcw * bdpr; bcv.height = bchh * bdpr; bcv.style.cssText = "width:" + bcw + "px;height:" + bchh + "px;margin-top:8px;";
+        var bx = bcv.getContext("2d"); bx.scale(bdpr, bdpr);
+        var _eio = function (t) { t = t < 0 ? 0 : t > 1 ? 1 : t; return 0.5 - 0.5 * Math.cos(Math.PI * t); }; // easeInOutSine — organic, not linear
+        var bphs = [{ n: "Breathe in with the light", d: 4, f: function (t) { return _eio(t); } }, { n: "Hold it a moment", d: 2, f: function () { return 1; } }, { n: "Now let the exhale run longer", d: 6, f: function (t) { return _eio(1 - t); } }];
+        var bpi3 = 0, bpt3 = 0, braf3 = 0, btp3 = 0, bdone3 = false, bvoiced = {};
+        function bpaint3(amp) { bx.clearRect(0, 0, bcw, bchh); var cx = bcw / 2, cy = bchh / 2, r = 26 + amp * 70; var g = bx.createRadialGradient(cx, cy, 2, cx, cy, r); g.addColorStop(0, "rgba(224,242,255,.95)"); g.addColorStop(0.5, "#5fb0ff"); g.addColorStop(1, "rgba(40,90,160,0)"); bx.fillStyle = g; bx.beginPath(); bx.arc(cx, cy, r, 0, 7); bx.fill(); bx.beginPath(); bx.arc(cx, cy, r, 0, 7); bx.strokeStyle = "rgba(255,255,255,.5)"; bx.lineWidth = 2; bx.stroke(); }
+        function bwin3() { bdone3 = true; try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {}
+          var rl = tr("That longer exhale just told your nervous system it is safe. You did that on purpose. That is the whole game: learning to steer your own state.");
+          bCue.textContent = ""; var rec = add(body, "div"); rec.style.cssText = "text-align:center;font-size:17px;font-weight:700;color:#f0e6ef;max-width:340px;margin-top:14px;line-height:1.45;"; rec.textContent = rl; try { speak(rl); } catch (e) {}
+          try { awardPts(3); } catch (e) {} stdFoot(tr("Keep going") + " ▸", false); }
+        function bloop3(ts) { if (bdone3 || !bcv.isConnected) { cancelAnimationFrame(braf3); return; } // auto-stop if the beat is torn down (back button rebuilds body)
+          if (!btp3) btp3 = ts; var dt = Math.min(0.05, (ts - btp3) / 1000); btp3 = ts; bpt3 += dt;
+          var ph = bphs[bpi3]; if (!bvoiced[bpi3]) { bvoiced[bpi3] = 1; bCue.textContent = tr(ph.n); try { speak(tr(ph.n)); } catch (e) {} }
+          bpaint3(ph.f(Math.min(1, bpt3 / ph.d)));
+          if (bpt3 >= ph.d) { bpt3 = 0; bpi3++; if (bpi3 >= bphs.length) { bwin3(); return; } }
+          braf3 = requestAnimationFrame(bloop3); }
+        braf3 = requestAnimationFrame(bloop3);
         return; }
       if (B.t === "pace") { // THE PACE DOOR (SPEC-FIRST-RUN §2 Phase 3, P2): the FIRST thing the map asks → P.door (scholar|player|doer). The liturgy will modulate depth by it; NEVER announced as a persona, and changeable any day.
         obMark(body, 92);
@@ -8315,6 +8333,16 @@
     { id: "chalice",  layer: "Steady the body",         name: "The Chalice",       ti: "ti-droplet",        thinker: "Huberman · vagal brake", when: "wired, anxious, or before sleep, when you need to come down", why: "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.", fn: function () { breathChalice(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
+  Object.assign(I18N.ru, { // FIRST-DAY REDESIGN — Beat 1 hook + Beat 2 breath win (B4 law: EN source + RU dict, same commit; mom is a canonical persona). RU тире kept.
+    "I am the part of you that remembers what you actually want.": "Я та часть тебя, которая помнит, чего ты на самом деле хочешь.",
+    "Give me sixty seconds and I'll show you something your mind can already do.": "Дай мне шестьдесят секунд, и я покажу тебе то, что твой разум уже умеет.",
+    "Show me": "Покажи",
+    "Breathe in with the light": "Вдохни вместе со светом",
+    "Hold it a moment": "Задержи на мгновение",
+    "Now let the exhale run longer": "Теперь выдохни медленнее, чем вдыхал",
+    "That longer exhale just told your nervous system it is safe. You did that on purpose. That is the whole game: learning to steer your own state.": "Этот долгий выдох только что сказал твоей нервной системе, что ты в безопасности. Ты сделал это намеренно. В этом вся игра: учиться управлять своим состоянием.",
+    "Keep going": "Дальше"
+  });
   Object.assign(I18N.ru, { // Candle Vigil (v916) strings, extended in place per the B4 law (after the I18N seed at @SEC:I18N-CORE). RU тире kept: correct native grammar, not an EN AI-tell.
     "Candle Vigil": "Свеча внимания",
     "Press and hold. The flame lives on your attention.": "Нажмите и держите. Пламя живёт вашим вниманием.",
