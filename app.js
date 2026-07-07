@@ -8764,8 +8764,8 @@
     if (acts) {
       mapWrap.style.display = "none";
       var _gt = ov.querySelector(".gp-title"); if (_gt) _gt.style.display = "none"; // the section labels are the header now — drop the centered title so they don't collide
-      var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;right:12px;display:flex;gap:6px;z-index:6;pointer-events:none;";
-      acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;"; var bar = add(colx, "div"); bar.style.cssText = "height:4px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:" + (a.color || col) + ";transition:width .18s linear;"; actFills.push(fl); var nm = add(colx, "div"); nm.style.cssText = "font-size:9.5px;font-weight:800;letter-spacing:.2px;color:rgba(240,230,239,.4);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"; nm.textContent = a.name; actLabels.push(nm); actResume.push(null); }); // labels every section so you see what's coming
+      var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:56px;right:56px;display:flex;gap:9px;z-index:6;pointer-events:none;"; // inset to clear the ✕ / gear in the corners
+      acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;"; var ic = add(colx, "i", "ti " + (a.icon || "ti-circle-filled")); ic.style.cssText = "font-size:16px;line-height:1;color:" + (a.color || col) + ";opacity:.34;transition:opacity .3s;"; actLabels.push(ic); var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:6px;border-radius:4px;background:" + mixHex(a.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:4px;background:" + (a.color || col) + ";transition:width .2s linear;"; actFills.push(fl); actResume.push(null); }); // a miniature COLORED symbol + thicker colored bar per activity; brightens as you pass through
       // HORIZONTAL TRACK OF PER-ACTIVITY PAGES (David 2026-07-07): the WHOLE page slides sideways and the next identical page slides in, Instagram-story style — you see the slide. Each page has its own color-tinted orb. Top bars + bottom transport are the fixed frame.
       orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; // the single template content is unused in acts mode
       track = add(ov, "div", "gp-track"); track.style.cssText = "position:fixed;inset:0;display:flex;width:" + (acts.length * 100) + "vw;z-index:2;transition:transform .44s cubic-bezier(.4,0,.2,1);will-change:transform;pointer-events:none;";
@@ -8780,7 +8780,7 @@
       var c = acts[ai].color || col; try { ov.style.setProperty("--gp-c", c); if (bPlay) bPlay.style.background = c; if (fill) fill.style.background = "linear-gradient(90deg," + mixHex(c, "#ffffff", 0.4) + "," + c + ")"; } catch (e) {}
       var e2 = curElapsed(), seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e2) seg = segs[i]; else break; }
       if (seg && seg._act === ai) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } else { lab.textContent = acts[ai].name; sub.textContent = ""; }
-      for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.color = (li === ai) ? "#fff" : "rgba(240,230,239,.4)";
+      for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.opacity = (li <= ai) ? "1" : "0.34"; // done + current activities light up to full color; upcoming stay dim
     }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
@@ -9226,7 +9226,7 @@
     var segs = [], acts = [];
     list.forEach(function (t) {
       var C = STACK_CONTENT[t.id]; if (!C) return;
-      acts.push({ name: tr(t.nm), color: t.c }); var ai = acts.length - 1;
+      acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
       function P(s) { s._act = ai; segs.push(s); }
       P({ text: C.intro, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
       if (C.breath) {
