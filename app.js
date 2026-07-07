@@ -4834,7 +4834,7 @@
     var BEATS = [{ t: "intro" }, { t: "stackintro" }, { t: "stack" }, { t: "stackdone" }, { t: "pace" }]; // intro (Beat 1 hook) → STACKINTRO (frame the guided micro-session) → STACK (plan it, run it, self-tracks) → STACKDONE (guardian names the loop) → PACE → survey. theOpen stays the DAILY ceremony only.
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
-    var bi2 = 0, advT = null, _justPicked = false;
+    var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     // BATTERY PROGRESS — 3 labeled section segments, cells = that section's questions
     var bar = add(card, "div", "obv-bar"), segEls = [];
@@ -4984,12 +4984,20 @@
         function refreshStack() { STK.forEach(function (t) { if (rows[t.id]) rows[t.id].du.textContent = fmtS(t.secs); }); for (var k in chips) chips[k].style.background = (k === presetK) ? tfStripeDoor("#b07aff") : ""; updTot(); }
         refreshStack();
         var sb = stdFoot(tr("Start") + " ▸", false);
-        sb.onclick = function () { var list = STK.filter(function (t) { return t.on; }); if (!list.length) return; runFirstStack(list, function () { next(); }); }; // -> the stackdone beat names the loop (drawObV2 does the clear)
+        sb.onclick = function () { var list = STK.filter(function (t) { return t.on; }); if (!list.length) return; runFirstStack(list, function (pre, post) { _sk = { acts: list.map(function (t) { return { nm: t.nm, ic: t.ic, c: t.c }; }), pre: pre, post: post }; next(); }); }; // -> the stackdone recap SHOWS what you did + the tension drop
         return; }
-      if (B.t === "stackdone") { // the guardian names the loop after the micro-stack (David's meta line). Its own beat so the existing drawObV2 clear renders it — no new innerHTML wipe surface.
-        obMark(body, 120);
-        var ml = tr("That was the whole app, in one minute. You made a small plan, you ran it, and you felt it land. Tomorrow we do it with your real day.");
-        var m = add(body, "div"); m.style.cssText = "text-align:center;font-size:17px;font-weight:700;color:#f0e6ef;max-width:360px;margin:14px auto 0;line-height:1.45;"; m.textContent = ml; try { speak(ml); } catch (e) {}
+      if (B.t === "stackdone") { // SHOW, DON'T TELL (David 2026-07-07): instead of a text claim, show the plan you made turned into a done row + your tension number actually dropping (the proof). The full plan-on-the-real-timeline version is the next careful step.
+        add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
+        var acts = (_sk && _sk.acts) || [];
+        var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
+        acts.forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
+        if (_sk && _sk.pre != null && _sk.post != null) {
+          var drop = add(body, "div"); drop.style.cssText = "margin-top:18px;text-align:center;";
+          add(drop, "div", null, tr("Tension")).style.cssText = "font-size:13px;font-weight:800;letter-spacing:1px;color:#cbb6e6;text-transform:uppercase;";
+          var nums = add(drop, "div"); nums.style.cssText = "font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:2px;"; nums.innerHTML = '<span style="color:#ffcf6a;">' + _sk.pre + '</span><i class="ti ti-arrow-right" style="font-size:19px;opacity:.5;color:#fff;"></i><span style="color:#8fe6a8;">' + _sk.post + '</span>';
+          var dl = _sk.pre - _sk.post; add(drop, "div", null, dl > 0 ? (tr("you brought it down by") + " " + dl) : tr("you showed up. that's the rep.")).style.cssText = "font-size:13px;font-weight:700;color:#cbb6e6;margin-top:4px;";
+        }
+        add(body, "div", null, tr("That is the whole loop. Tomorrow, with your real day.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
         stdFoot(tr("Keep going") + " ▸", false);
         return; }
       if (B.t === "pace") { // THE PACE DOOR (SPEC-FIRST-RUN §2 Phase 3, P2): the FIRST thing the map asks → P.door (scholar|player|doer). The liturgy will modulate depth by it; NEVER announced as a persona, and changeable any day.
@@ -8390,6 +8398,9 @@
     "Where's the tension right now?": "Где сейчас напряжение?", "gut answer, no wrong number": "отвечай нутром, нет неправильных чисел",
     "And now?": "А теперь?", "same scale, just notice": "та же шкала, просто заметь",
     "done. that's the whole loop.": "готово. это и есть весь цикл.",
+    "Your first minute": "Твоя первая минута",
+    "YOUR FIRST LOOP": "ТВОЙ ПЕРВЫЙ ЦИКЛ", "Tension": "Напряжение", "you brought it down by": "ты снизил его на", "you showed up. that's the rep.": "ты пришёл. это и есть подход.",
+    "That is the whole loop. Tomorrow, with your real day.": "Это весь цикл. Завтра — с твоим настоящим днём.",
     "That was the whole app, in one minute. You made a small plan, you ran it, and you felt it land. Tomorrow we do it with your real day.": "Это было всё приложение, за одну минуту. Ты составил маленький план, выполнил его и почувствовал результат. Завтра сделаем это с твоим настоящим днём."
   });
   Object.assign(I18N.ru, { // Candle Vigil (v916) strings, extended in place per the B4 law (after the I18N seed at @SEC:I18N-CORE). RU тире kept: correct native grammar, not an EN AI-tell.
@@ -9154,22 +9165,45 @@
       });
     });
   }
-  function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07): a before/after tension gauge (the felt-shift PROOF) wraps the chained tools; each tool self-logs to the day (the tracking pillar, via the safe log API); a ledger entry records pre/post. Reuses gauge010 + the existing tool beats.
+  var STACK_CONTENT = { // the day-one stack's guided content, EN by convention like every other tool's script (spoken via TTS, not translated). Each act opens with a transition card so a change registers.
+    stretch: { intro: "First, loosen the body.", cues: [["Stand up, reach for the ceiling", "a big, slow stretch"], ["Fold forward", "hang heavy, let the neck go"], ["Roll up slowly", "one vertebra at a time"]] },
+    relax: { intro: "Now, relax the muscles.", cues: [["Settle in", "let your eyes soften"], ["Soften your forehead", "and unclench your jaw"], ["Drop your shoulders", "let them fall"], ["Soften your chest", "and your belly"], ["Arms go heavy", "down to the fingertips"], ["Release your legs", "all the way to your feet"], ["The whole body, heavy and calm", "nothing to do"], ["One mindful moment", "just be here"]] },
+    breath: { intro: "Now, the breath.", breath: true },
+    mantra: { intro: "Now, a line to carry.", lines: ["I have absolute trust in myself.", "I embrace my mistakes, and keep loving who I am.", "I push beyond my comfort zone every day.", "Every mistake is a teacher.", "I am the master of my life.", "What would I do if I wasn't afraid?"] },
+    medit: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] }
+  };
+  function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act. Fed to timelinePlayer (shared orb/voice/transport/progress-pips) so the stack is one continuous surface, not 5 jarring overlays.
+    var segs = [];
+    list.forEach(function (t) {
+      var C = STACK_CONTENT[t.id]; if (!C) return;
+      segs.push({ text: C.intro, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
+      if (C.breath) {
+        var cyc = Math.max(2, Math.round(t.secs / 16));
+        for (var i = 0; i < cyc; i++) { segs.push({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: 4 }); segs.push({ text: "Hold", label: "Hold", sub: "", gap: 4 }); segs.push({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: 6 }); segs.push({ text: "", label: "Rest", sub: "", gap: 2 }); }
+      } else if (C.cues) {
+        var per = Math.max(3.5, t.secs / C.cues.length);
+        C.cues.forEach(function (q) { segs.push({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
+      } else if (C.lines) {
+        var cad = 5, t2 = 0, ci = 0; while (t2 < t.secs - 1) { var ln = C.lines[ci % C.lines.length]; segs.push({ text: ln, label: ln, sub: "", gap: cad }); t2 += cad; ci++; }
+      }
+    });
+    return segs;
+  }
+  function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07, unified v938): a before/after tension gauge (the felt-shift PROOF) wraps ONE composed timelinePlayer session (all acts + transitions in one surface). Logs the stack to the day (tracking). onDone(pre, post) feeds the show-don't-tell recap.
     gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
-      (function chain(i) {
-        if (i >= list.length) {
-          gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
-            S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
-            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "firststack", pre: pre, post: post });
-            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
-            save();
-            try { toast("✦ " + tr("done. that's the whole loop.")); } catch (e) {}
-            if (onDone) onDone();
-          });
-          return;
-        }
-        var t = list[i]; try { t.run(t.secs, function () { chain(i + 1); }); } catch (e) { chain(i + 1); }
-      })(0);
+      var segs = composeStackSegs(list);
+      try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
+      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, autostart: true, onFinish: function (skip) {
+        if (skip) { save(); if (onDone) onDone(pre, null); return; }
+        gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
+          S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+          S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "firststack", pre: pre, post: post });
+          if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+          try { var _d = new Date(); logs(todayK()).push({ id: uid(), time: pad(_d.getHours()) + ":" + pad(_d.getMinutes()), title: "First stack", mins: Math.max(1, Math.round(segs.reduce(function (a, s) { return a + (s.gap || 5); }, 0) / 60)), catK: "energy", color: "#9a5cf0" }); } catch (e) {}
+          save(); try { renderAll(); } catch (e) {}
+          if (onDone) onDone(pre, post);
+        });
+      } });
     });
   }
   // ===== THE FULL STACK (David 2026-07-02 — "press play on your whole practice"): his canonical pipeline as ONE flagship session. breath → attention → CHARGE (the Tony material) → love/embodiment → mantra, scaled to the time you have. Tapping is a CHANNEL toggle (on = the point ladder weaves through the charge; off = same words, hands still) — exactly like mudras will be. Reuses breathwork/meditationQuick/timelinePlayer/mantraPlayer + the recorded pools: ZERO new clips needed. =====
