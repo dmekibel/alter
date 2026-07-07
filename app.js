@@ -10145,14 +10145,14 @@
     beatRunner({
       id: "doomscroll", title: "See Through the Scroll", logTitle: "See Through the Scroll", catK: "love", color: "#48b8e0", spark: 6, voiceProf: VPROF.relax,
       intro: { tag: "dismantle the pull · 5 min · Allen Carr",
-        what: "Not a blocker and not a timer — a short read-through that takes apart the beliefs that make the phone feel necessary. You're not weak; you're outgunned by a machine built to pull you. This levels the field by removing the illusion, not by force.",
-        how: ["Read each belief slowly — feel whether it's actually true for you.", "Don't argue with it — just look at it clearly.", "Notice the pull get quieter as the illusion thins.", "End as someone who sees through it — no willpower spent."],
-        why: "The scroll doesn't relieve restlessness — it CREATES the restlessness it then appears to cure. The phone is both the tight shoe and the taking-it-off. Remove the belief and the desire has less to stand on." },
+        what: "Not a blocker and not a timer. A short read-through that takes apart the beliefs that make the phone feel necessary. You're not weak; you're outgunned by a machine built to pull you. This levels the field by removing the illusion, not by force.",
+        how: ["Read each belief slowly. Feel whether it's actually true for you.", "Don't argue with it, just look at it clearly.", "Notice the pull get quieter as the illusion thins.", "End as someone who sees through it, no willpower spent."],
+        why: "The scroll doesn't relieve restlessness; it CREATES the restlessness it then appears to cure. The phone is both the tight shoe and the taking-it-off. Remove the belief and the desire has less to stand on." },
       beats: [
         { lab: "“The scroll relaxes me.”", sub: "The calm you feel is just relief from the agitation the last scroll made. Tight shoe, then taking it off.", orb: "" },
-        { lab: "“I deserve to check out.”", sub: "You deserve rest — and this isn't it. You get up more tired and more scattered than you sat down.", orb: "out" },
+        { lab: "“I deserve to check out.”", sub: "You deserve rest, and this isn't it. You get up more tired and more scattered than you sat down.", orb: "out" },
         { lab: "“I might miss something.”", sub: "The fear of missing out IS the hook. Nothing there needs you in the next five minutes. It never did.", orb: "" },
-        { lab: "“It's only a few minutes.”", sub: "It's never a few minutes — it's built so it never is. That's not your weakness. That's the design.", orb: "" },
+        { lab: "“It's only a few minutes.”", sub: "It's never a few minutes; it's built so it never is. That's not your weakness. That's the design.", orb: "" },
         { lab: "You see through it now", sub: "You're not someone giving up the scroll. You're someone who sees what it is. The pull has less to hold.", orb: "in" }
       ], lastLabel: "Done ✓"
     });
@@ -10162,15 +10162,15 @@
     beatRunner({
       id: "coherence", title: "Coherence Beat", logTitle: "Coherence Beat", catK: "love", color: "#ff5fa8", spark: 5, voiceProf: VPROF.relax,
       intro: { tag: "heart first · 60 sec · HeartMath",
-        what: "Sixty seconds to bring your heart into a smooth rhythm before a focus block, a hard conversation, or sleep. The heart's signal is upstream of the thinking brain — settle it first and your prefrontal cortex comes back online.",
-        how: ["Hand on your chest, over the heart.", "Breathe as if the air enters and leaves through the heart — about six slow breaths a minute.", "Recall a real moment of appreciation — genuinely re-feel it, however small.", "Sixty seconds, then begin with the heart leading."],
-        why: "Around six breaths a minute the heart locks into a coherent rhythm and the brain entrains to it. A truly felt appreciation is the signal — performed gratitude is noise the system ignores." },
+        what: "Sixty seconds to bring your heart into a smooth rhythm before a focus block, a hard conversation, or sleep. The heart's signal is upstream of the thinking brain. Settle it first and your prefrontal cortex comes back online.",
+        how: ["Hand on your chest, over the heart.", "Breathe as if the air enters and leaves through the heart, about six slow breaths a minute.", "Recall a real moment of appreciation. Genuinely re-feel it, however small.", "Sixty seconds, then begin with the heart leading."],
+        why: "Around six breaths a minute the heart locks into a coherent rhythm and the brain entrains to it. A truly felt appreciation is the signal. Performed gratitude is noise the system ignores." },
       beats: [
-        { lab: "Hand on your heart", sub: "settle it there — we start here, not in the head", orb: "" },
-        { lab: "Breathe through the heart", sub: "slow — in for a count, out for a count, about six breaths a minute", orb: "in" },
-        { lab: "Find something real", sub: "one true thing you appreciate right now, even small — re-feel it, don't just think it", orb: "" },
+        { lab: "Hand on your heart", sub: "settle it there. we start here, not in the head", orb: "" },
+        { lab: "Breathe through the heart", sub: "slow, in for a count, out for a count, about six breaths a minute", orb: "in" },
+        { lab: "Find something real", sub: "one true thing you appreciate right now, even small. re-feel it, don't just think it", orb: "" },
         { lab: "Let it smooth out", sub: "the rhythm evens; the thinking brain comes back online", orb: "out" },
-        { lab: "Heart is upstream", sub: "you're regulated now — begin from here", orb: "in" }
+        { lab: "Heart is upstream", sub: "you're regulated now. begin from here", orb: "in" }
       ], lastLabel: "Begin ✓"
     });
   }
