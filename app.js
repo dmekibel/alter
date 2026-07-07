@@ -1950,11 +1950,11 @@
   // Course-mined content lives in WS_REG (one worksheet per early chapter); answers persist additively at S.ws[id] = {k, a}.
   var WS_REG = [
     { id: "ws_why", ch: 0, title: "Why you're here", ic: "ti-flame", beats: [
-      { say: "Energy follows clarity.", sub: "60 seconds. No wrong answers — only true ones.", type: "info" },
+      { say: "You show up harder when you know why.", sub: "One minute. Only honest answers.", type: "info" },
       { say: "What's calling loudest right now?", type: "choice", opts: [{ l: "Energy", ic: "ti-bolt" }, { l: "Deep work", ic: "ti-briefcase" }, { l: "Love", ic: "ti-heart" }, { l: "Calm & quiet", ic: "ti-wind" }] },
-      { say: "A year from now it worked. What changed first?", type: "text", ph: "one honest sentence…" },
+      { say: "A year from now it worked. What changed first?", type: "text", ph: "one honest sentence" },
       { say: "How much do you want it?", type: "scale" }
-    ], seal: function (a) { return tr("That's your flame. I wrote it down — I'll remind you when it matters."); } },
+    ], seal: function (a) { return tr("That's your flame. I wrote it down, and I'll remind you when it matters."); } },
     { id: "ws_identity", ch: 1, title: "Who you are", ic: "ti-user-star", beats: [
       { say: "You're not fixing yourself. You're remembering yourself.", type: "info" },
       { say: "Pick two strengths already in you", type: "chips", max: 2, opts: [{ l: "Courage" }, { l: "Kindness" }, { l: "Discipline" }, { l: "Playfulness" }, { l: "Honesty" }, { l: "Grit" }] },
@@ -8331,7 +8331,10 @@
     "Hold": "Задержите",
     "Let it out, slow": "Медленный выдох",
     "wired, anxious, or before sleep, when you need to come down": "на взводе, тревожно или перед сном, когда нужно успокоиться",
-    "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.": "Медленное дыхание с длинным выдохом включает вагусный тормоз. Тело успокаивается примерно за минуту, и вы это чувствуете."
+    "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.": "Медленное дыхание с длинным выдохом включает вагусный тормоз. Тело успокаивается примерно за минуту, и вы это чувствуете.",
+    "You show up harder when you know why.": "Ты выкладываешься сильнее, когда знаешь зачем.",
+    "One minute. Only honest answers.": "Одна минута. Только честные ответы.",
+    "That's your flame. I wrote it down, and I'll remind you when it matters.": "Это твой огонь. Я записал, и напомню, когда будет важно."
   });
   // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
   var TB_INTENT = [
