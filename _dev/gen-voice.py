@@ -56,6 +56,14 @@ if m:
 m = re.search(r'var PTS = \[(.*?)\];', src, re.S)
 if m:
     for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)): add(un(a))
+# 10) STACK carousel (day-one + daily, 2026-07-08): transition intros (intro: "...") + stretch/relax cue LABELS (q[0], spoken as the segment text). beatRunner intros are objects (intro: {...}) so they don't match the string form.
+for s in re.findall(r'intro:\s*'+STR, src): add(un(s))
+m = re.search(r'var STACK_CONTENT = \{(.*?)\n  \};', src, re.S)
+if m:
+    for cuesarr in re.findall(r'cues:\s*(\[\[.*?\]\])', m.group(1), re.S):
+        for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*\]', cuesarr): add(un(a))
+# breath sub-cues spoken in the carousel breath act
+for c in ["fill up slowly","longer than the in-breath"]: add(c)
 # de-dupe
 uniq=[]; seen=set()
 for l in lines:
