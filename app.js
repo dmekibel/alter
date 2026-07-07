@@ -934,59 +934,21 @@
       if (b.k === "vigil") { // THE CANDLE VIGIL (v916, 2026-07-07): attention training as a REP, not text. Press-hold keeps a flame lit; release and it gutters (no punish, charge only pauses). Breath-paced (10s swell). The guardian's LINE lands at the peak. Charges S.sigils.candle (additive, guarded, no SCHEMA bump). DEVICE-UNTESTED: flame + hold feel needs the phone.
         var vtt = (typeof b.t === "function") ? b.t(ctx) : (b.t || "Attention is a muscle. You just held it.");
         var vInstr = add(stage, "div"); vInstr.style.cssText = "font-family:var(--bub);font-weight:800;font-size:16px;line-height:1.4;color:#ffdca6;min-height:44px;"; vInstr.textContent = tr("Press and hold. The flame lives on your attention.");
-        var vcw = 240, vch = 300, vdpr = Math.min(2, window.devicePixelRatio || 1);
-        var vcv = add(stage, "canvas"); vcv.width = vcw * vdpr; vcv.height = vch * vdpr; vcv.style.cssText = "width:" + vcw + "px;height:" + vch + "px;touch-action:none;cursor:pointer;";
-        var vg = vcv.getContext("2d"); vg.scale(vdpr, vdpr);
-        // FLAME = soft translucent sprites stacked with additive blending (research 2026-07-07), never one filled shape. Pre-render the soft radial sprite once (fades to fully transparent = no hard edge).
-        var vspr = document.createElement("canvas"); vspr.width = 64; vspr.height = 64; var vsg = vspr.getContext("2d");
-        var _sgr = vsg.createRadialGradient(32, 32, 0, 32, 32, 32); _sgr.addColorStop(0, "rgba(255,255,255,1)"); _sgr.addColorStop(0.28, "rgba(255,226,120,0.92)"); _sgr.addColorStop(0.6, "rgba(255,150,45,0.42)"); _sgr.addColorStop(1, "rgba(255,60,20,0)"); vsg.fillStyle = _sgr; vsg.beginPath(); vsg.arc(32, 32, 32, 0, 7); vsg.fill();
-        var vparts = [], vspawn = 0;
-        function drawSpr(x, y, w, h, a) { vg.globalAlpha = a < 0 ? 0 : a > 1 ? 1 : a; vg.drawImage(vspr, x - w / 2, y - h / 2, w, h); vg.globalAlpha = 1; }
-        // CANDLE CLIPS (Kling, on-palette purple candle on black — David generated 2026-07-07). A play-based state machine (cst), faithful to the copy "the flame lives on your attention": hold -> IGNITE plays (unlit -> lit, quickened so it lights in ~2s) -> hands off to the BURN loop (energetic lit) while the ring keeps charging; release before full charge -> OUT plays (lit -> snuffed, release-to-die), re-press relights. The ring/charge is preserved across snuffs so a slip does not wipe progress. Full-candle art fills the orb (black bg = the dark orb interior). The clips are PRIMED (decode frame 0 up front) so there is no cream-candle flash; the drawn particle flame only shows if a clip actually fails to load. See STYLE-ART-IDENTITY.md.
-        function mkCandleVid(src, loop) { var v = document.createElement("video"); v.muted = true; v.loop = !!loop; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("muted", ""); v.preload = "auto"; v.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;left:-20px;top:-20px;pointer-events:none;"; ov.appendChild(v); v.src = src; return v; }
-        var vIgn = mkCandleVid("candle-ignite.mp4", false), vBurn = mkCandleVid("candle-burn.mp4", true), vOut = mkCandleVid("candle-out.mp4", false);
-        var cst = "unlit", vErr = false; vIgn.playbackRate = 1.5; // states: unlit | igniting | burning | dying
-        [vIgn, vBurn, vOut].forEach(function (v) {
-          v.addEventListener("loadeddata", function () { try { var p = v.play(); if (p && p.then) p.then(function () { try { v.pause(); v.currentTime = 0; } catch (e) {} }).catch(function () {}); else { try { v.pause(); v.currentTime = 0; } catch (e) {} } } catch (e) {} }); // prime: decode frame 0, then park unlit
-          v.addEventListener("error", function () { vErr = true; });
-        });
-        vIgn.addEventListener("ended", function () { if (cst === "igniting") { cst = "burning"; try { vBurn.currentTime = 0; vBurn.play(); } catch (e) {} } }); // lit -> hand off to the burn loop
-        vOut.addEventListener("ended", function () { if (cst === "dying") { cst = "unlit"; try { vIgn.pause(); vIgn.currentTime = 0; } catch (e) {} } }); // fully snuffed -> back to unlit
-        try { vIgn.load(); vOut.load(); } catch (e) {}
-        function candleReady(v) { return v && v.readyState >= 2 && v.videoWidth > 0; }
+        // CANDLE ORB — native <video> layers (smooth, hardware-decoded) clipped to a circle, with an SVG charge ring on top. Drawing a 1080p clip into a canvas every frame was the lag AND the empty circle (iOS blocked the autoplay-prime, so the canvas had no frame); a real <video> plays smoothly and a poster (candle-unlit.png) shows the unlit candle the INSTANT the tool opens. State machine (cst): hold -> IGNITE plays fast (unlit -> lit) -> hands into the BURN loop while the ring charges; release while lit -> OUT (snuff, release-to-die); re-press relights. Ring/charge preserved across snuffs. See STYLE-ART-IDENTITY.md.
+        var vwrap = add(stage, "div"); vwrap.style.cssText = "position:relative;width:224px;height:224px;border-radius:50%;overflow:hidden;background:#000;touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none;";
+        function mkV(src, loop, poster) { var v = add(vwrap, "video"); v.src = src; v.loop = !!loop; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("webkit-playsinline", ""); v.setAttribute("muted", ""); v.setAttribute("preload", "auto"); if (poster) v.setAttribute("poster", poster); v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;opacity:0;pointer-events:none;"; return v; }
+        var vIgn = mkV("candle-ignite.mp4", false, "candle-unlit.png"), vBurn = mkV("candle-burn.mp4", true, null), vOut = mkV("candle-out.mp4", false, null);
+        vIgn.style.opacity = "1"; vIgn.playbackRate = 2.4; vOut.playbackRate = 1.6; // unlit poster shows instantly; ignite + snuff quickened so lighting matches the burn's energy
+        var cst = "unlit"; // unlit | igniting | burning | dying
+        function showV(v) { vIgn.style.opacity = v === vIgn ? "1" : "0"; vBurn.style.opacity = v === vBurn ? "1" : "0"; vOut.style.opacity = v === vOut ? "1" : "0"; }
+        vIgn.addEventListener("ended", function () { if (cst === "igniting") { cst = "burning"; try { vBurn.currentTime = 0; vBurn.play(); } catch (e) {} showV(vBurn); } }); // lit -> seamless into the burn loop
+        vOut.addEventListener("ended", function () { if (cst === "dying") { cst = "unlit"; showV(vIgn); try { vIgn.pause(); vIgn.currentTime = 0; } catch (e) {} } }); // fully snuffed -> unlit
+        vwrap.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 224 224" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><circle cx="112" cy="112" r="108" fill="none" stroke="rgba(255,220,150,.14)" stroke-width="5"></circle><circle class="varc" cx="112" cy="112" r="108" fill="none" stroke="#ffcf6a" stroke-width="5" stroke-linecap="round" stroke-dasharray="678.6" stroke-dashoffset="678.6" transform="rotate(-90 112 112)"></circle></svg>');
+        var varc = vwrap.querySelector(".varc");
         var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
-        var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
-        function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
-        function vpaint(f, ts) {
-          var t2 = ts || 0; vg.clearRect(0, 0, vcw, vch);
-          var cx = vcw / 2, cy = vch * 0.44, R = 112, by = cy + 70, wickY = by - 10, fr = Math.min(1, vchg / vtgt);
-          var sway = Math.sin(t2 / 620) * 3 + Math.sin(t2 / 230) * 1.6 + Math.sin(t2 / 97) * 0.9, lean = sway * 0.5;
-          var flick = 0.78 + 0.22 * (Math.sin(t2 / 60) * 0.5 + Math.sin(t2 / 31) * 0.3 + Math.sin(t2 / 18) * 0.2);
-          var bright = Math.min(1, f * flick);
-          vg.save();
-          vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.clip(); // circular orb frame — matches the app's orb design
-          var bgg = vg.createRadialGradient(cx, cy + 22, 4, cx, cy, R * 1.06); bgg.addColorStop(0, "rgba(66,28,10," + (0.34 + 0.22 * bright) + ")"); bgg.addColorStop(1, "rgba(15,7,12,.94)"); vg.fillStyle = bgg; vg.fillRect(cx - R, cy - R, R * 2, R * 2);
-          var candleVid = (cst === "dying") ? vOut : (cst === "burning" || vpk) ? vBurn : vIgn;
-          if (candleReady(candleVid)) { // FULL-CANDLE clip fills the orb (its black bg reads as the dark orb interior); the clip's own animation carries the state — no scrub, no alpha dim
-            var vsW = candleVid.videoWidth, vsH = candleVid.videoHeight, crop = Math.min(vsW, vsH), cropY = Math.min(vsH - crop, crop * 0.19); // square crop biased upward to frame the flame + upper wax
-            try { vg.drawImage(candleVid, (vsW - crop) / 2, cropY, crop, crop, cx - R, cy - R, R * 2, R * 2); } catch (e) {}
-          } else if (vErr) { // a clip failed to load: drawn wax + additive particle flame (density = the bright core)
-            vg.fillStyle = "#efe4cc"; vrr(cx - 22, by, 44, 64, 8); vg.fill(); // wax
-            vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx + sway * 0.3, wickY); vg.stroke(); // wick
-            vg.globalCompositeOperation = "lighter";
-            var baseA = 0.4 + 0.34 * bright;
-            drawSpr(cx + lean, wickY - (10 + 30 * f), (34 + 40 * f), (46 + 72 * f), baseA * 0.5);
-            drawSpr(cx + lean * 1.1, wickY - (22 + 46 * f), (22 + 26 * f), (34 + 58 * f), baseA * 0.6);
-            drawSpr(cx + lean * 1.2, wickY - (5 + 8 * f), (16 + 16 * f), (18 + 22 * f), baseA * 0.72);
-            for (var pi = 0; pi < vparts.length; pi++) { var p = vparts[pi]; var s = p.sz * (1 + (1 - p.life) * 1.0); drawSpr(p.x, p.y, s, s * 1.3, p.life * 0.4 * (0.6 + 0.7 * bright)); }
-            vg.globalCompositeOperation = "source-over";
-          } // else: still decoding — show just the dark orb (reads as unlit), no cream-candle flash
-          vg.restore();
-          vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.strokeStyle = "rgba(255,220,150,.13)"; vg.lineWidth = 5; vg.stroke();
-          vg.beginPath(); vg.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + fr * 6.2832); vg.strokeStyle = "#ffcf6a"; vg.lineWidth = 5; vg.lineCap = "round"; vg.stroke();
-        }
+        var vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vonpeak() {
-          cst = "burning"; try { if (vBurn.paused) vBurn.play(); } catch (e) {} // lock to the energetic lit loop (no reset — avoids a jump if already burning)
+          cst = "burning"; try { if (vBurn.paused) vBurn.play(); } catch (e) {} showV(vBurn); // lock to the energetic lit loop
           try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
           try { earn(3, { label: "vigil" }); } catch (e) {}
           try { S.sigils = S.sigils || {}; S.sigils.candle = (S.sigils.candle || 0) + 1; save(); } catch (e) {}
@@ -998,23 +960,17 @@
         function vloop(ts) {
           if (done || iCur !== i) { cancelAnimationFrame(vraf); return; }
           if (!vtp) vtp = ts; var dt = Math.min(0.05, (ts - vtp) / 1000); vtp = ts;
-          var aim = vpk ? 1 : (vhold ? 1 : 0.12); vlit += (aim - vlit) * Math.min(1, dt * 3.2);
           if (vhold && !vpk) vchg += dt;
-          var brv = 0.5 + 0.5 * Math.sin(ts / 1000 * 0.6283), f = vlit * (0.85 + 0.15 * brv);
-          var pcx = vcw / 2, pwick = vch * 0.44 + 60, psway = Math.sin(ts / 620) * 3 + Math.sin(ts / 230) * 1.6 + Math.sin(ts / 97) * 0.9;
-          vspawn += dt * (16 + 30 * f);
-          while (vspawn >= 1) { vspawn -= 1; vparts.push({ x: pcx + psway * 0.5 + (Math.random() - 0.5) * 5, y: pwick, vx: (Math.random() - 0.5) * 0.7 + psway * 0.05, vy: -(0.7 + Math.random() * 1.1 + 0.9 * f), life: 1, sz: (7 + Math.random() * 6) * (0.7 + 0.5 * f) }); }
-          for (var pj = vparts.length - 1; pj >= 0; pj--) { var q = vparts[pj]; q.x += q.vx * dt * 60; q.y += q.vy * dt * 60; q.life -= dt / 0.8; if (q.life <= 0) vparts.splice(pj, 1); }
-          vpaint(f, ts);
+          var fr = Math.min(1, vchg / vtgt); varc.style.strokeDashoffset = (678.6 * (1 - fr)).toFixed(1); // charge ring only — the flame is native video now
           if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
           vraf = requestAnimationFrame(vloop);
         }
         function vdn(ev) { ev.preventDefault(); vhold = true; if (vpk) return;
-          if (cst === "unlit" || cst === "dying") { cst = "igniting"; try { vOut.pause(); vBurn.pause(); vIgn.currentTime = 0; vIgn.play(); } catch (e) {} } } // hold -> light it (from the start), fast
+          if (cst === "unlit" || cst === "dying") { cst = "igniting"; showV(vIgn); try { vOut.pause(); vBurn.pause(); vIgn.currentTime = 0; vIgn.play(); } catch (e) {} } } // hold -> light it fast from the start
         function vup() { vhold = false; if (vpk) return;
-          if (cst === "burning") { cst = "dying"; try { vBurn.pause(); vOut.currentTime = 0; vOut.play(); } catch (e) {} } // let go while lit -> snuff (charge/ring kept)
-          else if (cst === "igniting") { cst = "unlit"; try { vIgn.pause(); vIgn.currentTime = 0; } catch (e) {} } } // let go mid-light -> back to unlit, no jarring snuff
-        vcv.addEventListener("pointerdown", vdn); ov.addEventListener("pointerup", vup); ov.addEventListener("pointercancel", vup);
+          if (cst === "burning") { cst = "dying"; showV(vOut); try { vBurn.pause(); vOut.currentTime = 0; vOut.play(); } catch (e) {} } // let go while lit -> snuff (ring kept)
+          else if (cst === "igniting") { cst = "unlit"; showV(vIgn); try { vIgn.pause(); vIgn.currentTime = 0; } catch (e) {} } } // let go mid-light -> unlit, no jarring snuff
+        vwrap.addEventListener("pointerdown", vdn); ov.addEventListener("pointerup", vup); ov.addEventListener("pointercancel", vup);
         vraf = requestAnimationFrame(vloop); return; }
       if (b.k === "breathviz") { // THE BREATH VISUAL (v918): a guided paced breath, the reusable component the app needs everywhere. A glowing orb expands on the inhale, holds, and contracts slowly on the longer exhale (the vagal brake), phase label above. Auto-paced N cycles, earns on completion. DEVICE-UNTESTED: the audio timing and the felt pace.
         var bCue = add(stage, "div"); bCue.style.cssText = "font-family:var(--bub);font-weight:800;font-size:20px;color:#bfe3ff;min-height:30px;"; bCue.textContent = tr("Breathe in");
