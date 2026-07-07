@@ -4831,7 +4831,7 @@
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }, { t: "breath" }, { t: "pace" }]; // intro (Beat 1 hook) → BREATH (Beat 2 = the first earned win, SPEC-FIRST-DAY-REDESIGN) → PACE → the six-question survey. theOpen no longer fires on first-run (it stays the DAILY ceremony).
+    var BEATS = [{ t: "intro" }, { t: "stack" }, { t: "stackdone" }, { t: "pace" }]; // intro (Beat 1 hook) → STACK (plan a micro-stack, run it, self-tracks) → STACKDONE (guardian names the loop) → PACE → survey. theOpen stays the DAILY ceremony only.
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
     var bi2 = 0, advT = null, _justPicked = false;
@@ -4941,26 +4941,46 @@
         var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
         body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
         return; }
-      if (B.t === "breath") { // BEAT 2 — THE FIRST BREATH (SPEC-FIRST-DAY-REDESIGN Phase 1): one guided breath = the felt, EARNED win under a minute. Breath visual (expand/hold/fall), voice + text one cue at a time, then the guardian names what the long exhale did (scientific framing, not woo). Points are earned by the completed rep. DEVICE-UNTESTED: audio timing + felt pace need the phone.
-        var bCue = add(body, "div"); bCue.style.cssText = "font-family:var(--bub);font-weight:800;font-size:20px;color:#bfe3ff;min-height:30px;text-align:center;";
-        var bcw = 220, bchh = 220, bdpr = Math.min(2, window.devicePixelRatio || 1);
-        var bcv = add(body, "canvas"); bcv.width = bcw * bdpr; bcv.height = bchh * bdpr; bcv.style.cssText = "width:" + bcw + "px;height:" + bchh + "px;margin-top:8px;";
-        var bx = bcv.getContext("2d"); bx.scale(bdpr, bdpr);
-        var _eio = function (t) { t = t < 0 ? 0 : t > 1 ? 1 : t; return 0.5 - 0.5 * Math.cos(Math.PI * t); }; // easeInOutSine — organic, not linear
-        var bphs = [{ n: "Breathe in with the light", d: 4, f: function (t) { return _eio(t); } }, { n: "Hold it a moment", d: 2, f: function () { return 1; } }, { n: "Now let the exhale run longer", d: 6, f: function (t) { return _eio(1 - t); } }];
-        var bpi3 = 0, bpt3 = 0, braf3 = 0, btp3 = 0, bdone3 = false, bvoiced = {};
-        function bpaint3(amp) { bx.clearRect(0, 0, bcw, bchh); var cx = bcw / 2, cy = bchh / 2, r = 26 + amp * 70; var g = bx.createRadialGradient(cx, cy, 2, cx, cy, r); g.addColorStop(0, "rgba(224,242,255,.95)"); g.addColorStop(0.5, "#5fb0ff"); g.addColorStop(1, "rgba(40,90,160,0)"); bx.fillStyle = g; bx.beginPath(); bx.arc(cx, cy, r, 0, 7); bx.fill(); bx.beginPath(); bx.arc(cx, cy, r, 0, 7); bx.strokeStyle = "rgba(255,255,255,.5)"; bx.lineWidth = 2; bx.stroke(); }
-        function bwin3() { bdone3 = true; try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {}
-          var rl = tr("That longer exhale just told your nervous system it is safe. You did that on purpose. That is the whole game: learning to steer your own state.");
-          bCue.textContent = ""; var rec = add(body, "div"); rec.style.cssText = "text-align:center;font-size:17px;font-weight:700;color:#f0e6ef;max-width:340px;margin-top:14px;line-height:1.45;"; rec.textContent = rl; try { speak(rl); } catch (e) {}
-          try { awardPts(3); } catch (e) {} stdFoot(tr("Keep going") + " ▸", false); }
-        function bloop3(ts) { if (bdone3 || !bcv.isConnected) { cancelAnimationFrame(braf3); return; } // auto-stop if the beat is torn down (back button rebuilds body)
-          if (!btp3) btp3 = ts; var dt = Math.min(0.05, (ts - btp3) / 1000); btp3 = ts; bpt3 += dt;
-          var ph = bphs[bpi3]; if (!bvoiced[bpi3]) { bvoiced[bpi3] = 1; bCue.textContent = tr(ph.n); try { speak(tr(ph.n)); } catch (e) {} }
-          bpaint3(ph.f(Math.min(1, bpt3 / ph.d)));
-          if (bpt3 >= ph.d) { bpt3 = 0; bpi3++; if (bpi3 >= bphs.length) { bwin3(); return; } }
-          braf3 = requestAnimationFrame(bloop3); }
-        braf3 = requestAnimationFrame(bloop3);
+      if (B.t === "stack") { // BEAT 2 — THE WHOLE APP IN ONE MINUTE (David 2026-07-07): plan a micro-stack (pick time, tune each tool, add meditation), RUN it (chained tool beats, gauge-wrapped), and it self-tracks to the day log. plan -> do -> track = the app's whole loop, taught by living it. Reuses stretchFloor / breathwork / stackMantra / meditationQuick + runFirstStack. DEVICE-UNTESTED: the felt run + audio need the phone.
+        add(body, "div", "ob-q", tr("How much time do you have?"));
+        add(body, "div", "ob-sb", tr("a tiny version of the whole app: plan it, run it, watch it land")).style.cssText = "text-align:center;margin-top:6px;";
+        var STK = [
+          { id: "muscle", nm: "Loosen the body", ic: "ti-stretching", c: "#ff8a1e", secs: 45, on: true, run: function (s, cb) { stretchFloor(cb, s); } },
+          { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#6a5cf0", secs: 48, on: true, run: function (s, cb) { breathwork(Math.max(2, Math.round(s / 16)), cb); } },
+          { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: 40, on: true, run: function (s, cb) { stackMantra(cb, s); } },
+          { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: 60, on: false, run: function (s, cb) { meditationQuick(cb, s); } }
+        ];
+        var PRE = { quick: [30, 32, 30, 45], some: [45, 48, 40, 60], deep: [60, 64, 50, 90] }, presetK = "some";
+        function fmtS(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }
+        function stackTotal() { return STK.reduce(function (a, t) { return a + (t.on ? t.secs : 0); }, 0); }
+        var pbox = add(body, "div"); pbox.style.cssText = "width:100%;max-width:400px;margin-top:12px;";
+        // BUILT ONCE, updated in place (no innerHTML wipe — nudges only rewrite the duration text + total; add/remove toggle display). Honors the wipe ratchet.
+        var chipRow = add(pbox, "div"); chipRow.style.cssText = "display:flex;gap:8px;justify-content:center;margin-bottom:14px;"; var chips = {};
+        [["quick", "Quick"], ["some", "A bit"], ["deep", "Deeper"]].forEach(function (p) { var b = add(chipRow, "button", "obv-row"); b.style.cssText = "flex:1;min-height:0;padding:9px 4px;justify-content:center;text-align:center;font-weight:800;"; b.textContent = tr(p[1]); chips[p[0]] = b; b.onclick = function () { presetK = p[0]; STK.forEach(function (t, i) { t.secs = PRE[p[0]][i]; }); refreshStack(); }; });
+        var rows = {}, totB, addRow;
+        function updTot() { totB.textContent = tr("about") + " " + fmtS(stackTotal()); }
+        STK.forEach(function (t) {
+          var r = add(pbox, "div", "obv-row"); r.style.cssText = "min-height:52px;margin-bottom:8px;"; r.style.setProperty("--oc", t.c);
+          r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
+          var ctrl = add(r, "span"); ctrl.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:6px;";
+          var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:16px;"; mn.onclick = function (e) { e.stopPropagation(); t.secs = Math.max(20, t.secs - 10); du.textContent = fmtS(t.secs); updTot(); };
+          var du = add(ctrl, "b"); du.textContent = fmtS(t.secs); du.style.cssText = "min-width:40px;text-align:center;";
+          var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:16px;"; pl.onclick = function (e) { e.stopPropagation(); t.secs = Math.min(120, t.secs + 10); du.textContent = fmtS(t.secs); updTot(); };
+          if (t.id === "medit") { var rm = add(ctrl, "button"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;opacity:.6;font-size:16px;"; rm.onclick = function (e) { e.stopPropagation(); t.on = false; r.style.display = "none"; addRow.style.display = ""; updTot(); }; r.style.display = "none"; }
+          rows[t.id] = { r: r, du: du };
+        });
+        addRow = add(pbox, "button", "obv-row"); addRow.style.cssText = "min-height:46px;margin-bottom:8px;opacity:.75;border-style:dashed;"; addRow.innerHTML = '<i class="ti ti-plus oi"></i><span class="ol">' + esc(tr("Add stillness (meditation)")) + '</span>'; addRow.onclick = function () { STK[3].on = true; rows.medit.r.style.display = ""; addRow.style.display = "none"; updTot(); };
+        totB = add(pbox, "div"); totB.style.cssText = "text-align:center;font-weight:800;color:#cbb6e6;margin:10px 0 2px;";
+        function refreshStack() { STK.forEach(function (t) { if (rows[t.id]) rows[t.id].du.textContent = fmtS(t.secs); }); for (var k in chips) chips[k].style.background = (k === presetK) ? tfStripeDoor("#b07aff") : ""; updTot(); }
+        refreshStack();
+        var sb = stdFoot(tr("Start") + " ▸", false);
+        sb.onclick = function () { var list = STK.filter(function (t) { return t.on; }); if (!list.length) return; runFirstStack(list, function () { next(); }); }; // -> the stackdone beat names the loop (drawObV2 does the clear)
+        return; }
+      if (B.t === "stackdone") { // the guardian names the loop after the micro-stack (David's meta line). Its own beat so the existing drawObV2 clear renders it — no new innerHTML wipe surface.
+        obMark(body, 120);
+        var ml = tr("That was the whole app, in one minute. You made a small plan, you ran it, and you felt it land. Tomorrow we do it with your real day.");
+        var m = add(body, "div"); m.style.cssText = "text-align:center;font-size:17px;font-weight:700;color:#f0e6ef;max-width:360px;margin:14px auto 0;line-height:1.45;"; m.textContent = ml; try { speak(ml); } catch (e) {}
+        stdFoot(tr("Keep going") + " ▸", false);
         return; }
       if (B.t === "pace") { // THE PACE DOOR (SPEC-FIRST-RUN §2 Phase 3, P2): the FIRST thing the map asks → P.door (scholar|player|doer). The liturgy will modulate depth by it; NEVER announced as a persona, and changeable any day.
         obMark(body, 92);
@@ -7136,6 +7156,13 @@
     var segs = LINES.map(function (line) { return { text: line, label: line, sub: "" }; });
     timelinePlayer({ id: "mantra", title: "Mantra", logTitle: "Mantra", catK: "love", color: "#ff7ab8", spark: 7, vol: VPROF.mantra.volume, drone: true, cadenceSec: 5, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
+  function stackMantra(onDone, secs) { // a SHORT, duration-capped mantra for stacks (mantraPlayer runs the full ~2min set; the day-one micro-stack needs a quick version). Curated from the same line pool = no new content risk.
+    var LINES = ["I have absolute trust in myself.", "I embrace my mistakes, and keep loving who I am.", "I push beyond my comfort zone every day.", "Every mistake is a teacher.", "I am the master of my life.", "What would I do if I wasn't afraid?"];
+    TTS.unlock(); TTS.warm(LINES);
+    var cad = 5, segs = [], t = 0, ci = 0; secs = Math.max(20, secs || 40);
+    while (t < secs - 1) { var ln = LINES[ci % LINES.length]; segs.push({ text: ln, label: ln, sub: "" }); t += cad; ci++; }
+    timelinePlayer({ id: "mantra", title: "Mantra", logTitle: "Mantra", catK: "love", color: "#ff7ab8", spark: 7, vol: VPROF.mantra.volume, drone: true, cadenceSec: cad, totalSec: secs, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
+  }
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
   function meditationQuick(onDone, durSec) {
     var seq = ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"];
@@ -8342,11 +8369,17 @@
     "It never goes out. It waits.": "Она никогда не гаснет. Она ждёт.",
     "My whole job is keeping yours lit.": "Моя работа — беречь твою.",
     "I'm Alter, your guardian.": "Я Альтер, твой хранитель.",
-    "Breathe in with the light": "Вдохни вместе со светом",
-    "Hold it a moment": "Задержи на мгновение",
-    "Now let the exhale run longer": "Теперь выдохни медленнее, чем вдыхал",
-    "That longer exhale just told your nervous system it is safe. You did that on purpose. That is the whole game: learning to steer your own state.": "Этот долгий выдох только что сказал твоей нервной системе, что ты в безопасности. Ты сделал это намеренно. В этом вся игра: учиться управлять своим состоянием.",
-    "Keep going": "Дальше"
+    "Keep going": "Дальше",
+    "How much time do you have?": "Сколько у тебя времени?",
+    "a tiny version of the whole app: plan it, run it, watch it land": "крошечная версия всего приложения: спланируй, выполни, увидь результат",
+    "Quick": "Быстро", "A bit": "Немного", "Deeper": "Глубже",
+    "Loosen the body": "Расслабь тело", "Breathe": "Дыхание", "A line to carry": "Фраза, чтобы унести с собой", "Sit in stillness": "Побудь в тишине",
+    "Add stillness (meditation)": "Добавить тишину (медитацию)",
+    "about": "около", "Start": "Начать",
+    "Where's the tension right now?": "Где сейчас напряжение?", "gut answer, no wrong number": "отвечай нутром, нет неправильных чисел",
+    "And now?": "А теперь?", "same scale, just notice": "та же шкала, просто заметь",
+    "done. that's the whole loop.": "готово. это и есть весь цикл.",
+    "That was the whole app, in one minute. You made a small plan, you ran it, and you felt it land. Tomorrow we do it with your real day.": "Это было всё приложение, за одну минуту. Ты составил маленький план, выполнил его и почувствовал результат. Завтра сделаем это с твоим настоящим днём."
   });
   Object.assign(I18N.ru, { // Candle Vigil (v916) strings, extended in place per the B4 law (after the I18N seed at @SEC:I18N-CORE). RU тире kept: correct native grammar, not an EN AI-tell.
     "Candle Vigil": "Свеча внимания",
@@ -9108,6 +9141,24 @@
           });
         }
       });
+    });
+  }
+  function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07): a before/after tension gauge (the felt-shift PROOF) wraps the chained tools; each tool self-logs to the day (the tracking pillar, via the safe log API); a ledger entry records pre/post. Reuses gauge010 + the existing tool beats.
+    gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
+      (function chain(i) {
+        if (i >= list.length) {
+          gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
+            S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "firststack", pre: pre, post: post });
+            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+            save();
+            try { toast("✦ " + tr("done. that's the whole loop.")); } catch (e) {}
+            if (onDone) onDone();
+          });
+          return;
+        }
+        var t = list[i]; try { t.run(t.secs, function () { chain(i + 1); }); } catch (e) { chain(i + 1); }
+      })(0);
     });
   }
   // ===== THE FULL STACK (David 2026-07-02 — "press play on your whole practice"): his canonical pipeline as ONE flagship session. breath → attention → CHARGE (the Tony material) → love/embodiment → mantra, scaled to the time you have. Tapping is a CHANNEL toggle (on = the point ladder weaves through the charge; off = same words, hands still) — exactly like mudras will be. Reuses breathwork/meditationQuick/timelinePlayer/mantraPlayer + the recorded pools: ZERO new clips needed. =====
