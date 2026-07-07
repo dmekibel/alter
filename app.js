@@ -965,8 +965,7 @@
           if (vhold && !vpk) vchg += dt;
           var fr = Math.min(1, vchg / vtgt); varc.style.strokeDashoffset = (678.6 * (1 - fr)).toFixed(1); // charge ring only — the flame is native video now
           if (cst === "burning") { var act = burns[bi], oth = burns[1 - bi], bd = act.duration || 3, bc = act.currentTime, tail = bd - bc, LEAD = 0.34;
-            var e = bc < 0.45 ? (0.45 - bc) / 0.45 : (tail < 0.45 ? (0.45 - tail) / 0.45 : 0); e = e * e * (3 - 2 * e); act.playbackRate = 1 + 0.8 * e; // seam speed-ramp (kept)
-            if (!handing && tail <= LEAD) { handing = true; try { oth.currentTime = 0; oth.playbackRate = 1; oth.play(); } catch (e2) {} } // pre-roll the OTHER buffer before this one ends — its re-seek happens off-screen
+            if (!handing && tail <= LEAD) { handing = true; try { oth.currentTime = 0; oth.play(); } catch (e2) {} } // pre-roll the OTHER buffer before this one ends — its re-seek happens off-screen
             if (handing) { var pr = Math.min(1, Math.max(0, (LEAD - tail) / LEAD)); act.style.opacity = (1 - pr).toFixed(3); oth.style.opacity = pr.toFixed(3); if (tail <= 0.03) { try { act.pause(); act.currentTime = 0; } catch (e3) {} act.style.opacity = "0"; oth.style.opacity = "1"; bi = 1 - bi; handing = false; } } // crossfade, then hand over
           }
           if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
