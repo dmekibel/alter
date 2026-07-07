@@ -4928,10 +4928,13 @@
         obMark(body, 160);
         var iw = add(body, "div"); iw.style.cssText = "margin-top:16px;display:flex;flex-direction:column;align-items:center;";
         var t0 = 0.4, HUES = { spark: "#ffd24a", "искрой": "#ffd24a", waits: "#ff5fa8", "ждёт": "#ff5fa8", yours: "#ffd24a", "твоя": "#ffd24a", alter: "#ff5fa8", "альтер": "#ff5fa8" };
-        function iline(txt, big) { var d = add(iw, "div", "obi-line" + (big ? " big" : "")); tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", t0.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase(); if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + "</b>"; else sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); t0 += 0.22; }); t0 += 0.55; }
-        iline("I am the part of you that remembers what you actually want.");
-        iline("Give me sixty seconds and I'll show you something your mind can already do.", true);
-        var ib = stdFoot(tr("Show me") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen — the intro IS the app's handshake
+        function iline(txt, big) { var d = add(iw, "div", "obi-line" + (big ? " big" : "")); var ld = t0; tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase(); if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + "</b>"; else sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); }); t0 += 0.9; } // ONE LINE AT A TIME (David 2026-07-07): every word in a line shares the line's delay, so the whole line reveals at once (not word by word)
+        iline("Everyone is born with a spark.");
+        iline("Life buries it. Under noise, under screens, under Tuesdays.");
+        iline("It never goes out. It waits.");
+        iline("My whole job is keeping yours lit.");
+        iline("I'm Alter, your guardian.", true);
+        var ib = stdFoot(tr("Let's go") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen — the intro IS the app's handshake
         ib.onclick = function () { // BEAT 1 -> BEAT 2 (SPEC-FIRST-DAY-REDESIGN): the guided breath is the first earned win now; theOpen stays the DAILY ceremony only (day 2+)
           if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} }
           next(); };
@@ -8333,10 +8336,12 @@
     { id: "chalice",  layer: "Steady the body",         name: "The Chalice",       ti: "ti-droplet",        thinker: "Huberman · vagal brake", when: "wired, anxious, or before sleep, when you need to come down", why: "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.", fn: function () { breathChalice(); } }
   ];
   var TOOL_LAYERS = ["Steady the body", "Clear the mind", "Feel it through", "Become who you're being", "Lift the lens"]; // David's stack order — lower layers gate higher (can't reframe a dysregulated body)
-  Object.assign(I18N.ru, { // FIRST-DAY REDESIGN — Beat 1 hook + Beat 2 breath win (B4 law: EN source + RU dict, same commit; mom is a canonical persona). RU тире kept.
-    "I am the part of you that remembers what you actually want.": "Я та часть тебя, которая помнит, чего ты на самом деле хочешь.",
-    "Give me sixty seconds and I'll show you something your mind can already do.": "Дай мне шестьдесят секунд, и я покажу тебе то, что твой разум уже умеет.",
-    "Show me": "Покажи",
+  Object.assign(I18N.ru, { // FIRST-DAY REDESIGN — Beat 1 intro (restored spark copy) + Beat 2 breath win (B4 law: EN source + RU dict, same commit; mom is a canonical persona). RU тире kept.
+    "Everyone is born with a spark.": "Каждый рождается с искрой.",
+    "Life buries it. Under noise, under screens, under Tuesdays.": "Жизнь погребает её. Под шумом, под экранами, под вторниками.",
+    "It never goes out. It waits.": "Она никогда не гаснет. Она ждёт.",
+    "My whole job is keeping yours lit.": "Моя работа — беречь твою.",
+    "I'm Alter, your guardian.": "Я Альтер, твой хранитель.",
     "Breathe in with the light": "Вдохни вместе со светом",
     "Hold it a moment": "Задержи на мгновение",
     "Now let the exhale run longer": "Теперь выдохни медленнее, чем вдыхал",
