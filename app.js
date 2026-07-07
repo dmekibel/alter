@@ -8827,9 +8827,11 @@
       ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
       // battery cue ticks (one per segment start) + silence tail sized to silenceSec
       ticks.innerHTML = "";
-      segs.forEach(function (sg) { if (sg.start <= 0 || sg.start >= total) return; var tk = add(ticks, "i"); tk.style.left = (sg.start / total * 100) + "%"; });
-      if (silenceSec > 0 && total > silenceSec) { tailEl.style.left = ((total - silenceSec) / total * 100) + "%"; tailEl.style.display = ""; silCap.style.visibility = ""; }
-      else { tailEl.style.display = "none"; }
+      if (!acts) { // no cue ticks or silence-tail in acts mode — they read as messy random lines, and each activity has its own local timeline (David 2026-07-08)
+        segs.forEach(function (sg) { if (sg.start <= 0 || sg.start >= total) return; var tk = add(ticks, "i"); tk.style.left = (sg.start / total * 100) + "%"; });
+        if (silenceSec > 0 && total > silenceSec) { tailEl.style.left = ((total - silenceSec) / total * 100) + "%"; tailEl.style.display = ""; silCap.style.visibility = ""; }
+        else { tailEl.style.display = "none"; }
+      } else { ticks.style.display = "none"; tailEl.style.display = "none"; silCap.style.visibility = "hidden"; }
       paintMap(0); paintNow(0);
       if (acts) { onActEnter(0, 1); _prevAct = 0; } // tint the orb to the FIRST activity's color right away (the opening page)
       if (autoplay) { startFrom(0); } // clips were pre-warmed → we're still inside the Begin tap, so we can start right now
@@ -8863,8 +8865,14 @@
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } /* ref: the cell gaps live only INSIDE the filled battery — the empty track is clean */ tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
-      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } var _na = 0; for (var _ak = 0; _ak < acts.length; _ak++) if (acts[_ak]._start != null && e >= acts[_ak]._start) _na = _ak; curAct = _na; if (_na !== _prevAct) { onActEnter(_na, _na >= _prevAct ? 1 : -1); _prevAct = _na; } } } // show the CURRENT line through its whole gap; fill the act story-pages; on an act change, slide+tint to the new page
+    function paintNow(e) { paintMap(e);
+      var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
+      var pct, curTxt, totTxt;
+      if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total), _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); }
+      else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
+      fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
+      var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
@@ -8872,11 +8880,12 @@
       raf = requestAnimationFrame(tick);
     }
     bPlay.onclick = function () { if (!ready || done) return; if (playing) pause(); else startFrom(offset); };
-    bBack.onclick = function () { if (ready) seek(curElapsed() - 15); };
-    bFwd.onclick = function () { if (ready) seek(curElapsed() + 15); };
+    function _clampAct(sec) { if (!acts) return sec; var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); return Math.max(lo, Math.min(hi - 0.15, sec)); } // ±15 + scrub stay INSIDE the current activity's own timeline
+    bBack.onclick = function () { if (ready) seek(_clampAct(curElapsed() - 15)); };
+    bFwd.onclick = function () { if (ready) seek(_clampAct(curElapsed() + 15)); };
     (function () { var dragging = false; function frac(x) { var r = scrub.getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)); }
       function down(ev) { if (!ready) return; dragging = true; ev.preventDefault(); var wasP = playing; if (wasP) pause(); scrub._wasP = wasP; move(ev); }
-      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); offset = frac(x) * total; paintNow(offset); }
+      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); if (acts) { var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); offset = lo + frac(x) * (hi - lo); } else { offset = frac(x) * total; } paintNow(offset); }
       function up() { if (!dragging) return; dragging = false; if (scrub._wasP) startFrom(offset); }
       scrub.addEventListener("pointerdown", down); window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
     })();
