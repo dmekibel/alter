@@ -8334,7 +8334,10 @@
     "A slow breath with a longer exhale pulls the vagal brake. Your body downshifts in about a minute, and you feel it.": "Медленное дыхание с длинным выдохом включает вагусный тормоз. Тело успокаивается примерно за минуту, и вы это чувствуете.",
     "You show up harder when you know why.": "Ты выкладываешься сильнее, когда знаешь зачем.",
     "One minute. Only honest answers.": "Одна минута. Только честные ответы.",
-    "That's your flame. I wrote it down, and I'll remind you when it matters.": "Это твой огонь. Я записал, и напомню, когда будет важно."
+    "That's your flame. I wrote it down, and I'll remind you when it matters.": "Это твой огонь. Я записал, и напомню, когда будет важно.",
+    "See it as a real scene: you, already doing the thing, in a moment you can picture.": "Представь это как настоящую сцену: ты уже делаешь это, в моменте, который можешь ясно увидеть.",
+    "See the scene": "Увидь сцену",
+    "you, already doing it, in a real moment. Hold the picture.": "ты, уже делаешь это, в настоящем моменте. Удержи картину."
   });
   // ===== MAKE IT YOURS — the custom tool builder (HANDOFF-reprogramming-toolkit §3 / CD3 creativity endgame, David 2026-07-01). Compose your own little tool from a simple grammar (intent · when · anchor · name); it runs the Rewire settle→picture→seal move personalised to your pick, joins the toolbox, and is YOURS. Additive: rides S.tools.custom, no SCHEMA bump. NEVER the words magic/spell/ritual/occult/hypnosis in the UI. =====
   var TB_INTENT = [
@@ -9914,13 +9917,13 @@
       intro: {
         tag: "install a new self-belief · 2–3 min",
         what: "A calm, guided way to plant one new belief about yourself. You settle the body, picture the change as already true, and say it in the present tense — the same three moves under every reprogramming method, stripped of the mysticism.",
-        how: ["Settle down: slow breaths, exhale longer than the inhale.", "Let the body soften and the mind go quiet and open.", "Picture yourself already being the way you want to be — vividly, right now.", "Say one present-tense line, like “I start before I feel ready,” and mean it.", "Seal it with one full breath, and carry it with you."],
+        how: ["Settle down: slow breaths, exhale longer than the inhale.", "Let the body soften and the mind go quiet and open.", "See it as a real scene: you, already doing the thing, in a moment you can picture.", "Say one present-tense line, like “I start before I feel ready,” and mean it.", "Seal it with one full breath, and carry it with you."],
         why: "The brain rehearses a vividly imagined self almost like a real one. Repeating a calm, present-tense image is how a new self-image actually installs."
       },
       beats: [
         { lab: "Settle down", sub: "Slow breath — make the exhale longer than the inhale. With each one, a step calmer.", orb: "out" },
         { lab: "Three… two… one…", sub: "let the body go soft and the mind go quiet and open", orb: "out" },
-        { lab: "Picture it already true", sub: "see yourself being it — clear, real, right now. Hold the image.", orb: "in" },
+        { lab: "See the scene", sub: "you, already doing it, in a real moment. Hold the picture.", orb: "in" },
         { lab: "Say it as now", sub: "one present-tense line — like “I start before I feel ready.” Say it slow, and mean it.", orb: "" },
         { lab: "Seal it", sub: "one full breath, the line once more… and it's in. Carry it.", orb: "out" }
       ], lastLabel: "Done ✓"
