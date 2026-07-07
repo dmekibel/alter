@@ -962,6 +962,7 @@
           if (!vtp) vtp = ts; var dt = Math.min(0.05, (ts - vtp) / 1000); vtp = ts;
           if (vhold && !vpk) vchg += dt;
           var fr = Math.min(1, vchg / vtgt); varc.style.strokeDashoffset = (678.6 * (1 - fr)).toFixed(1); // charge ring only — the flame is native video now
+          if (cst === "burning" && !vBurn.paused) { var bd = vBurn.duration || 3, bc = vBurn.currentTime, edge = 0.45, tail = bd - bc, e = bc < edge ? (edge - bc) / edge : (tail < edge ? (edge - tail) / edge : 0); e = e * e * (3 - 2 * e); vBurn.playbackRate = 1 + 0.8 * e; } // speed-ramp (smoothstep) through the loop seam so the restart hitch is rushed past
           if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
           vraf = requestAnimationFrame(vloop);
         }
@@ -1027,7 +1028,7 @@
     runLesson({ c: "#ff8a2e", room: "hearth", beats: [
       { k: "line", t: "This is the oldest attention practice there is.", big: true },
       { k: "line", t: "Keep one flame lit with nothing but your steady attention. Let go, and it gutters." },
-      { k: "vigil", t: "Attention is a muscle. You just held it. The flame remembers.", secs: 22 }
+      { k: "vigil", t: "Attention is a muscle. You just held it. The flame remembers.", secs: 12 }
     ], onDone: function () { try { tickTool("vigil"); } catch (e) {} try { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Candle Vigil", mins: 2, catK: null, domain: "restore", color: "#ff8a2e" }); doneMap(todayK()).vigil = true; save(); } catch (e) {} } }); // the rep becomes today's record + a per-day done-read for the journey node (additive doneMap.vigil, no SCHEMA bump)
   }
   function breathChalice() { // THE CHALICE (v918): a calming guided-breath ritual-as-rep, built on the reusable breathviz beat. The lesson is the rep: you follow the light, longer on the exhale, and feel the downshift. Routes through TOOLS via tickTool.
