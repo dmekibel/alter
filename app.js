@@ -942,6 +942,10 @@
         var _sgr = vsg.createRadialGradient(32, 32, 0, 32, 32, 32); _sgr.addColorStop(0, "rgba(255,255,255,1)"); _sgr.addColorStop(0.28, "rgba(255,226,120,0.92)"); _sgr.addColorStop(0.6, "rgba(255,150,45,0.42)"); _sgr.addColorStop(1, "rgba(255,60,20,0)"); vsg.fillStyle = _sgr; vsg.beginPath(); vsg.arc(32, 32, 32, 0, 7); vsg.fill();
         var vparts = [], vspawn = 0;
         function drawSpr(x, y, w, h, a) { vg.globalAlpha = a < 0 ? 0 : a > 1 ? 1 : a; vg.drawImage(vspr, x - w / 2, y - h / 2, w, h); vg.globalAlpha = 1; }
+        // REAL flame video path (David's Kling clip, black background). If flame.mp4 loads, it screen-composites into the circle as the flame; otherwise the additive particle flame below is the fallback. Drop the clip at alter/flame.mp4.
+        var vvid = document.createElement("video"); vvid.muted = true; vvid.loop = true; vvid.playsInline = true; vvid.setAttribute("playsinline", ""); vvid.setAttribute("muted", ""); vvid.preload = "auto"; vvid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;left:-20px;top:-20px;pointer-events:none;"; ov.appendChild(vvid);
+        var vvidOk = false; vvid.addEventListener("loadeddata", function () { vvidOk = true; try { vvid.play(); } catch (e) {} }); vvid.addEventListener("error", function () { vvidOk = false; });
+        vvid.src = "flame.mp4"; try { vvid.play(); } catch (e) {}
         var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
         var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
@@ -958,11 +962,17 @@
           vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx + sway * 0.3, wickY); vg.stroke(); // wick
           // the flame is NOT a filled shape: soft translucent sprites stacked ADDITIVELY (density = the bright core)
           vg.globalCompositeOperation = "lighter";
-          var baseA = 0.4 + 0.34 * bright;
-          drawSpr(cx + lean, wickY - (10 + 30 * f), (34 + 40 * f), (46 + 72 * f), baseA * 0.5); // wide dim body
-          drawSpr(cx + lean * 1.1, wickY - (22 + 46 * f), (22 + 26 * f), (34 + 58 * f), baseA * 0.6); // narrower brighter mid
-          drawSpr(cx + lean * 1.2, wickY - (5 + 8 * f), (16 + 16 * f), (18 + 22 * f), baseA * 0.72); // hot base at the wick
-          for (var pi = 0; pi < vparts.length; pi++) { var p = vparts[pi]; var s = p.sz * (1 + (1 - p.life) * 1.0); drawSpr(p.x, p.y, s, s * 1.3, p.life * 0.4 * (0.6 + 0.7 * bright)); }
+          if (vvidOk && vvid.readyState >= 2) { // REAL flame video, screen-composited: black drops out, only the light shows; grows with the charge
+            var vw = 96 + 74 * f, vh = 132 + 96 * f; vg.globalAlpha = 0.55 + 0.45 * bright;
+            try { vg.drawImage(vvid, cx + lean - vw / 2, wickY - vh + 10, vw, vh); } catch (e) { vvidOk = false; }
+            vg.globalAlpha = 1;
+          } else { // fallback: additive particle flame (until flame.mp4 is present)
+            var baseA = 0.4 + 0.34 * bright;
+            drawSpr(cx + lean, wickY - (10 + 30 * f), (34 + 40 * f), (46 + 72 * f), baseA * 0.5);
+            drawSpr(cx + lean * 1.1, wickY - (22 + 46 * f), (22 + 26 * f), (34 + 58 * f), baseA * 0.6);
+            drawSpr(cx + lean * 1.2, wickY - (5 + 8 * f), (16 + 16 * f), (18 + 22 * f), baseA * 0.72);
+            for (var pi = 0; pi < vparts.length; pi++) { var p = vparts[pi]; var s = p.sz * (1 + (1 - p.life) * 1.0); drawSpr(p.x, p.y, s, s * 1.3, p.life * 0.4 * (0.6 + 0.7 * bright)); }
+          }
           vg.globalCompositeOperation = "source-over";
           vg.restore();
           vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.strokeStyle = "rgba(255,220,150,.13)"; vg.lineWidth = 5; vg.stroke();
