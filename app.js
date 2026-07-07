@@ -119,12 +119,12 @@
   function entrySignature(vol) {
     try {
       var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
-      var out = bgBus() || ctx.destination, t0 = ctx.currentTime + 0.04, V = (vol == null ? 0.15 : vol);
-      // a rising fifth-then-octave motif (A4 · E5 · A5) — hopeful, unhurried, unmistakable
-      [[440.0, 0.0, 1.2], [659.25, 0.40, 1.3], [880.0, 0.80, 1.9]].forEach(function (n) {
+      var out = bgBus() || ctx.destination, t0 = ctx.currentTime + 0.04, V = (vol == null ? 0.12 : vol * 0.8);
+      // a soft warm bloom — a gentle major triad (E4 · G#4 · B4) struck almost together, swelling and fading like a chime. NOT the old rising fifth-then-octave sweep, which read as a siren (David 2026-07-07).
+      [[329.63, 0.0, 2.6], [415.30, 0.09, 2.6], [493.88, 0.16, 2.9]].forEach(function (n) {
         var o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), g2 = ctx.createGain(), t = t0 + n[1];
-        o.type = "sine"; o.frequency.value = n[0]; o2.type = "triangle"; o2.frequency.value = n[0] * 2; g2.gain.value = 0.11; o2.connect(g2); g2.connect(g);
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(V, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + n[2]);
+        o.type = "sine"; o.frequency.value = n[0]; o2.type = "sine"; o2.frequency.value = n[0] * 2; g2.gain.value = 0.05; o2.connect(g2); g2.connect(g);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(V, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + n[2]); // soft 0.12s attack + long gentle decay = a bloom, not a beep
         o.connect(g); g.connect(out); o.start(t); o2.start(t); o.stop(t + n[2] + 0.12); o2.stop(t + n[2] + 0.12);
       });
     } catch (e) {}
@@ -8759,6 +8759,13 @@
     var mapWrap = add(ov, "div", "gp-map"), mapPips = [];
     opts.segments.forEach(function () { mapPips.push(add(mapWrap, "i")); });
     function paintMap(e) { for (var mi = 0; mi < mapPips.length; mi++) { var on = opts.segments[mi] && opts.segments[mi].start != null && opts.segments[mi].start <= e; mapPips[mi].className = on ? "on" : ""; } }
+    // ACT-LEVEL STORY PAGES (David 2026-07-07): for the stack, the TOP shows one page per activity (Instagram-story style) that fills as you move through it — the whole plan's progress, not per-cue pips. Gated by opts.acts so daily rituals keep the per-segment map.
+    var acts = opts.acts || null, actFills = [], curAct = 0, actResume = [];
+    if (acts) {
+      mapWrap.style.display = "none";
+      var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:6px;z-index:6;pointer-events:none;";
+      acts.forEach(function (a) { var bar = add(storyWrap, "div"); bar.style.cssText = "flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:" + (a.color || col) + ";"; actFills.push(fl); actResume.push(null); });
+    }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
     var driftCount = 0;
@@ -8793,13 +8800,14 @@
     else if (opts.drone !== false && bedM === "pad" && ctx) { try { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); } catch (e) { padCtl = null; } } // much louder bed (David 2026-07-01)
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
-    var total = 0, ready = false, playing = false, done = false, sources = [], baseCtx = 0, offset = 0, raf = 0;
+    var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0;
     function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
 
     function layout(bufs, autoplay) {
       var t = 0;
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) acts[_ai]._start = null; segs.forEach(function (sg) { if (sg._act != null && acts[sg._act] && acts[sg._act]._start == null) acts[sg._act]._start = sg.start; }); for (var _aj = 0; _aj < acts.length; _aj++) acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; }
       ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
       // battery cue ticks (one per segment start) + silence tail sized to silenceSec
       ticks.innerHTML = "";
@@ -8816,22 +8824,30 @@
     if (syncBufs && segs.every(function (sg, i) { return !sg.text || syncBufs[i]; })) { layout(syncBufs, true); }
     else { Promise.all(segs.map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (bufs) { var c2 = TTS.ctx(); layout(bufs, !!opts.autostart && !!c2 && c2.state === "running"); }); } // David on device v800: "it didn't play automatically". If the context is already unlocked (any prior tap — toolbox open, the play press that launched us), starting sources after an async decode is legal on iOS → honor autostart. Only a still-suspended context falls back to tap-to-play.
 
-    function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; }
-    function startFrom(sec) { // schedule every remaining clip up front, relative to now
+    function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; sourceGains = []; }
+    function fadeStopSources(ms) { // gentle: ramp the current voice down and stop after, so an act-jump crossfades instead of hard-cutting (David 2026-07-07)
+      if (!ctx || !sources.length) { stopSources(); return; }
+      var now = ctx.currentTime, dead = sources.slice(), sec = (ms || 350) / 1000;
+      sourceGains.forEach(function (g) { try { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0.0001, now + sec); } catch (e) {} });
+      sources = []; sourceGains = [];
+      setTimeout(function () { dead.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); }, (ms || 350) + 60);
+    }
+    function startFrom(sec, keepOld) { // schedule every remaining clip up front, relative to now
       if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
-      stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade)
+      if (!keepOld) stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade)
       segs.forEach(function (sg) {
         if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
-        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); g.gain.value = opts.vol != null ? opts.vol : 1; src.connect(g); g.connect(voiceBus() || ctx.destination);
+        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); var _v = opts.vol != null ? opts.vol : 1; g.gain.value = _v; if (keepOld && sg.start <= sec + 0.05) { g.gain.setValueAtTime(0.0001, baseCtx); g.gain.linearRampToValueAtTime(_v, baseCtx + 0.35); } src.connect(g); g.connect(voiceBus() || ctx.destination);
           if (sg.start >= sec) src.start(baseCtx + (sg.start - sec)); else src.start(baseCtx, sec - sg.start); // future clip, or mid-clip resume
-          sources.push(src);
+          sources.push(src); sourceGains.push(g);
         } catch (e) {}
       });
       dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } /* ref: the cell gaps live only INSIDE the filled battery — the empty track is clean */ tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts
+    function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } /* ref: the cell gaps live only INSIDE the filled battery — the empty track is clean */ tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } var _na = 0; for (var _ak = 0; _ak < acts.length; _ak++) if (acts[_ak]._start != null && e >= acts[_ak]._start) _na = _ak; curAct = _na; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts; and fill the act story-pages
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
@@ -8847,6 +8863,14 @@
       function up() { if (!dragging) return; dragging = false; if (scrub._wasP) startFrom(offset); }
       scrub.addEventListener("pointerdown", down); window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
     })();
+    if (acts) { // STORY-NAV (David 2026-07-07): tap left/right or swipe to move between activities. The voice CROSSFADES (fadeStopSources) instead of hard-cutting, and each act remembers where you left off so a slip is recoverable.
+      function gotoAct(j) { if (!ready || done || j < 0 || j >= acts.length || j === curAct) return; actResume[curAct] = curElapsed(); var target = (actResume[j] != null) ? actResume[j] : (acts[j]._start || 0);
+        if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } curAct = j; paintNow(target); }
+      var tapL = add(ov, "div", "gp-tapz"); tapL.style.cssText = "position:fixed;top:64px;bottom:220px;left:0;width:28%;z-index:5;"; tapL.onclick = function () { gotoAct(curAct - 1); };
+      var tapR = add(ov, "div", "gp-tapz"); tapR.style.cssText = "position:fixed;top:64px;bottom:220px;right:0;width:28%;z-index:5;"; tapR.onclick = function () { gotoAct(curAct + 1); };
+      var _sx = null; ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && e.target.closest(".gp-bar")) { _sx = null; return; } _sx = e.touches ? e.touches[0].clientX : null; }, { passive: true }); // ignore drags that start on the transport scrubber
+      ov.addEventListener("touchend", function (e) { if (_sx == null) return; var ex = e.changedTouches ? e.changedTouches[0].clientX : _sx, dx = ex - _sx; _sx = null; if (Math.abs(dx) > 55) gotoAct(curAct + (dx < 0 ? 1 : -1)); }, { passive: true }); // swipe left = next act, right = previous (resumes where you left off)
+    }
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
@@ -9172,28 +9196,30 @@
     mantra: { intro: "Now, a line to carry.", lines: ["I have absolute trust in myself.", "I embrace my mistakes, and keep loving who I am.", "I push beyond my comfort zone every day.", "Every mistake is a teacher.", "I am the master of my life.", "What would I do if I wasn't afraid?"] },
     medit: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] }
   };
-  function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act. Fed to timelinePlayer (shared orb/voice/transport/progress-pips) so the stack is one continuous surface, not 5 jarring overlays.
-    var segs = [];
+  function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
+    var segs = [], acts = [];
     list.forEach(function (t) {
       var C = STACK_CONTENT[t.id]; if (!C) return;
-      segs.push({ text: C.intro, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
+      acts.push({ name: tr(t.nm), color: t.c }); var ai = acts.length - 1;
+      function P(s) { s._act = ai; segs.push(s); }
+      P({ text: C.intro, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
       if (C.breath) {
         var cyc = Math.max(2, Math.round(t.secs / 16));
-        for (var i = 0; i < cyc; i++) { segs.push({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: 4 }); segs.push({ text: "Hold", label: "Hold", sub: "", gap: 4 }); segs.push({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: 6 }); segs.push({ text: "", label: "Rest", sub: "", gap: 2 }); }
+        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: 4 }); P({ text: "Hold", label: "Hold", sub: "", gap: 4 }); P({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: 6 }); P({ text: "", label: "Rest", sub: "", gap: 2 }); }
       } else if (C.cues) {
         var per = Math.max(3.5, t.secs / C.cues.length);
-        C.cues.forEach(function (q) { segs.push({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
+        C.cues.forEach(function (q) { P({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
       } else if (C.lines) {
-        var cad = 5, t2 = 0, ci = 0; while (t2 < t.secs - 1) { var ln = C.lines[ci % C.lines.length]; segs.push({ text: ln, label: ln, sub: "", gap: cad }); t2 += cad; ci++; }
+        var cad = 5, t2 = 0, ci = 0; while (t2 < t.secs - 1) { var ln = C.lines[ci % C.lines.length]; P({ text: ln, label: ln, sub: "", gap: cad }); t2 += cad; ci++; }
       }
     });
-    return segs;
+    return { segs: segs, acts: acts };
   }
   function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07, unified v938): a before/after tension gauge (the felt-shift PROOF) wraps ONE composed timelinePlayer session (all acts + transitions in one surface). Logs the stack to the day (tracking). onDone(pre, post) feeds the show-don't-tell recap.
     gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
-      var segs = composeStackSegs(list);
+      var built = composeStackSegs(list), segs = built.segs;
       try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
-      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, autostart: true, onFinish: function (skip) {
+      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, autostart: true, onFinish: function (skip) {
         if (skip) { save(); if (onDone) onDone(pre, null); return; }
         gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
           S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
