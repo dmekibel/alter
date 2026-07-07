@@ -9023,7 +9023,15 @@
       }
     });
   }
+  function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id]; }); } // every tool has guided cue content -> can run as the unified carousel
+  function runStackCarousel(track, onAll) { // route ANY stack through the SAME carousel player as the day-one stack (David 2026-07-08: "should function the same way in the rest of the app")
+    var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && t.k.run) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || "#9a7cff", secs: t.d || m.dur || 60 }; });
+    var built = composeStackSegs(list);
+    try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
+    timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || "#9a7cff", spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, autostart: true, onFinish: function () { if (onAll) onAll(track.length); else stackComplete(track.length); } });
+  }
   function runStack(track, i, onAll) { // onAll (R0, David 2026-07-02): optional completion override so a wrapper (the relief-door ritual) can add its own close — e.g. the post 0-10 gauge — without forking the runner
+    if (i === 0 && stackCarouselable(track)) { runStackCarousel(track, onAll); return; } // NEW (v948): supported stacks run as the unified carousel; unsupported (inline charge/deep, custom run fns) fall back to the chained cards below
     if (i >= track.length) { if (onAll) { onAll(track.length); } else { stackComplete(track.length); } return; }
     var t = track[i], m = (t.k && t.k.run) ? t.k : stackTool(t.k); if (!m) { runStack(track, i + 1, onAll); return; } // t.k may be an inline {name, ti, run} step (the Full Stack uses these) instead of a registry id
     var ov = document.createElement("div"); ov.id = "breatheOv";
@@ -9221,7 +9229,11 @@
     relax: { intro: "Now, relax the muscles.", cues: [["Settle in", "let your eyes soften"], ["Soften your forehead", "and unclench your jaw"], ["Drop your shoulders", "let them fall"], ["Soften your chest", "and your belly"], ["Arms go heavy", "down to the fingertips"], ["Release your legs", "all the way to your feet"], ["The whole body, heavy and calm", "nothing to do"], ["One mindful moment", "just be here"]] },
     breath: { intro: "Now, the breath.", breath: true },
     mantra: { intro: "Now, a line to carry.", lines: ["I have absolute trust in myself.", "I embrace my mistakes, and keep loving who I am.", "I push beyond my comfort zone every day.", "Every mistake is a teacher.", "I am the master of my life.", "What would I do if I wasn't afraid?"] },
-    medit: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] }
+    medit: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] },
+    breathe: { intro: "Now, the breath.", breath: true }, // alias for the daily stack's tool ids
+    meditate: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] },
+    gratitude: { intro: "Now, gratitude.", lines: ["Something small from today", "Someone who makes life warmer", "This body, it carried you here", "A door that opened without you pushing", "Something you'd miss if tomorrow forgot it", "One thing that just works, that you never notice"] },
+    reprogram: { intro: "Now, rewire one belief.", lines: ["Picture the version of you who already lives this", "See the scene in detail, make it vivid", "Feel it in your body, as if it's already true", "Say your line in the present tense", "A vivid rehearsal gets filed as real evidence"] }
   };
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
     var segs = [], acts = [];
