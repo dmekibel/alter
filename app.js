@@ -940,13 +940,13 @@
         var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
         var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
-        function vpaint(f) {
+        function vpaint(f, ts) {
           vg.clearRect(0, 0, vcw, vch); var cx = vcw / 2, by = vch - 46, fr = Math.min(1, vchg / vtgt);
           vg.beginPath(); vg.arc(cx, vch * 0.4, 104, 0, 7); vg.strokeStyle = "rgba(255,220,150,.10)"; vg.lineWidth = 5; vg.stroke();
           vg.beginPath(); vg.arc(cx, vch * 0.4, 104, -Math.PI / 2, -Math.PI / 2 + fr * 6.2832); vg.strokeStyle = "#ffcf6a"; vg.lineWidth = 5; vg.lineCap = "round"; vg.stroke();
           vg.fillStyle = "#efe4cc"; vrr(cx - 24, by, 48, 50, 8); vg.fill();
           vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx, by - 9); vg.stroke();
-          var fh = 28 + 150 * f, fw = 24 + 24 * f, ty = by - 9 - fh, jt = (Math.random() - 0.5) * (7 * f);
+          var t2 = ts || 0, fh = 28 + 150 * f + Math.sin(t2 / 480) * 3.5 * f, fw = 24 + 24 * f, ty = by - 9 - fh, jt = (Math.sin(t2 / 205) + Math.sin(t2 / 91) * 0.6) * 3.4 * f; // smooth layered-sine sway instead of per-frame random jitter
           var gg = vg.createRadialGradient(cx, by - 9 - fh * 0.4, 2, cx, by - 9 - fh * 0.4, fh); gg.addColorStop(0, "rgba(255,214,130," + (0.5 * f + 0.15) + ")"); gg.addColorStop(1, "rgba(255,120,40,0)"); vg.fillStyle = gg; vg.beginPath(); vg.arc(cx, by - 9 - fh * 0.4, fh, 0, 7); vg.fill();
           vg.beginPath(); vg.moveTo(cx + jt, ty); vg.bezierCurveTo(cx + fw / 2, ty + fh * 0.5, cx + fw / 2, by - 9 - fh * 0.08, cx, by - 9); vg.bezierCurveTo(cx - fw / 2, by - 9 - fh * 0.08, cx - fw / 2, ty + fh * 0.5, cx + jt, ty);
           var fgd = vg.createLinearGradient(cx, ty, cx, by - 9); fgd.addColorStop(0, "#fff4d6"); fgd.addColorStop(0.35, "#ffcf6a"); fgd.addColorStop(0.75, "#ff8a2e"); fgd.addColorStop(1, "#e8641c"); vg.fillStyle = fgd; vg.fill();
@@ -967,7 +967,7 @@
           var aim = vpk ? 1 : (vhold ? 1 : 0.12); vlit += (aim - vlit) * Math.min(1, dt * 3.2);
           if (vhold && !vpk) vchg += dt;
           var brv = 0.5 + 0.5 * Math.sin(ts / 1000 * 0.6283), f = vlit * (0.85 + 0.15 * brv);
-          vpaint(f);
+          vpaint(f, ts);
           if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
           vraf = requestAnimationFrame(vloop);
         }
@@ -980,7 +980,8 @@
         var bcw = 240, bchh = 260, bdpr = Math.min(2, window.devicePixelRatio || 1);
         var bcv = add(stage, "canvas"); bcv.width = bcw * bdpr; bcv.height = bchh * bdpr; bcv.style.cssText = "width:" + bcw + "px;height:" + bchh + "px;";
         var bgx = bcv.getContext("2d"); bgx.scale(bdpr, bdpr);
-        var bPhases = [{ n: "Breathe in", d: 4, f: function (t) { return t; } }, { n: "Hold", d: 1.5, f: function () { return 1; } }, { n: "Let it out, slow", d: 6, f: function (t) { return 1 - t; } }];
+        var _eio = function (t) { t = t < 0 ? 0 : t > 1 ? 1 : t; return 0.5 - 0.5 * Math.cos(Math.PI * t); }; // easeInOutSine — organic breath, not linear/robotic
+        var bPhases = [{ n: "Breathe in", d: 4, f: function (t) { return _eio(t); } }, { n: "Hold", d: 1.5, f: function () { return 1; } }, { n: "Let it out, slow", d: 6, f: function (t) { return _eio(1 - t); } }];
         var bCol = b.col || "#5fb0ff", bCycles = (b.cycles || 3), bpi = 0, bci = 0, bpt = 0, braf = 0, btp = 0;
         function bpaint(amp) {
           bgx.clearRect(0, 0, bcw, bchh); var cx = bcw / 2, cy = bchh / 2, r = 34 + amp * 74;
