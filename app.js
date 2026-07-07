@@ -937,30 +937,33 @@
         var vcw = 240, vch = 300, vdpr = Math.min(2, window.devicePixelRatio || 1);
         var vcv = add(stage, "canvas"); vcv.width = vcw * vdpr; vcv.height = vch * vdpr; vcv.style.cssText = "width:" + vcw + "px;height:" + vch + "px;touch-action:none;cursor:pointer;";
         var vg = vcv.getContext("2d"); vg.scale(vdpr, vdpr);
+        // FLAME = soft translucent sprites stacked with additive blending (research 2026-07-07), never one filled shape. Pre-render the soft radial sprite once (fades to fully transparent = no hard edge).
+        var vspr = document.createElement("canvas"); vspr.width = 64; vspr.height = 64; var vsg = vspr.getContext("2d");
+        var _sgr = vsg.createRadialGradient(32, 32, 0, 32, 32, 32); _sgr.addColorStop(0, "rgba(255,255,255,1)"); _sgr.addColorStop(0.28, "rgba(255,226,120,0.92)"); _sgr.addColorStop(0.6, "rgba(255,150,45,0.42)"); _sgr.addColorStop(1, "rgba(255,60,20,0)"); vsg.fillStyle = _sgr; vsg.beginPath(); vsg.arc(32, 32, 32, 0, 7); vsg.fill();
+        var vparts = [], vspawn = 0;
+        function drawSpr(x, y, w, h, a) { vg.globalAlpha = a < 0 ? 0 : a > 1 ? 1 : a; vg.drawImage(vspr, x - w / 2, y - h / 2, w, h); vg.globalAlpha = 1; }
         var vlab = add(stage, "div"); vlab.style.cssText = "font-family:var(--bub);font-weight:700;font-size:13px;color:#b09a86;"; vlab.textContent = tr("hold to keep it lit");
         var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
         function vpaint(f, ts) {
           var t2 = ts || 0; vg.clearRect(0, 0, vcw, vch);
-          var cx = vcw / 2, cy = vch * 0.44, R = 112, fr = Math.min(1, vchg / vtgt);
-          // wind bends the flame in layered gusts; flicker pulses the actual light output — this is what makes it feel alive
-          var wind = Math.sin(t2 / 660) * 0.62 + Math.sin(t2 / 280) * 0.30 + Math.sin(t2 / 115) * 0.18 + Math.sin(t2 / 47) * 0.08;
-          var flick = 0.76 + 0.24 * (Math.sin(t2 / 62) * 0.5 + Math.sin(t2 / 33) * 0.3 + Math.sin(t2 / 19) * 0.2);
-          var bright = f * flick;
+          var cx = vcw / 2, cy = vch * 0.44, R = 112, by = cy + 70, wickY = by - 10, fr = Math.min(1, vchg / vtgt);
+          var sway = Math.sin(t2 / 620) * 3 + Math.sin(t2 / 230) * 1.6 + Math.sin(t2 / 97) * 0.9, lean = sway * 0.5;
+          var flick = 0.78 + 0.22 * (Math.sin(t2 / 60) * 0.5 + Math.sin(t2 / 31) * 0.3 + Math.sin(t2 / 18) * 0.2);
+          var bright = Math.min(1, f * flick);
           vg.save();
           vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.clip(); // circular frame — matches the app's orb design
-          var bgg = vg.createRadialGradient(cx, cy + 24, 4, cx, cy, R * 1.06); bgg.addColorStop(0, "rgba(78,34,10," + (0.4 + 0.2 * bright) + ")"); bgg.addColorStop(1, "rgba(16,7,13,.92)"); vg.fillStyle = bgg; vg.fillRect(cx - R, cy - R, R * 2, R * 2);
-          var by = cy + 70, wickY = by - 10;
+          var bgg = vg.createRadialGradient(cx, cy + 22, 4, cx, cy, R * 1.06); bgg.addColorStop(0, "rgba(66,28,10," + (0.34 + 0.22 * bright) + ")"); bgg.addColorStop(1, "rgba(15,7,12,.94)"); vg.fillStyle = bgg; vg.fillRect(cx - R, cy - R, R * 2, R * 2);
           vg.fillStyle = "#efe4cc"; vrr(cx - 22, by, 44, 64, 8); vg.fill(); // wax
-          vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx, wickY); vg.stroke(); // wick
-          var fh = (24 + 116 * f) * (0.9 + 0.1 * Math.sin(t2 / 105)), fw = 22 + 22 * f;
-          var lean = wind * (12 + 20 * f), tipX = cx + lean, tipY = wickY - fh, gy = wickY - fh * 0.42;
-          var glowR = fh * (0.8 + 0.14 * Math.sin(t2 / 55) + 0.06 * flick);
-          var gg = vg.createRadialGradient(cx + lean * 0.5, gy, 2, cx, gy, glowR); gg.addColorStop(0, "rgba(255,216,132," + (0.55 * bright + 0.15) + ")"); gg.addColorStop(1, "rgba(255,120,40,0)"); vg.fillStyle = gg; vg.beginPath(); vg.arc(cx, gy, glowR, 0, 7); vg.fill();
-          // flame body: a teardrop bent by the wind (tip and upper controls lean, the base stays on the wick)
-          vg.beginPath(); vg.moveTo(tipX, tipY); vg.bezierCurveTo(tipX + fw * 0.78, tipY + fh * 0.42, cx + fw * 0.55, wickY - fh * 0.12, cx, wickY); vg.bezierCurveTo(cx - fw * 0.55, wickY - fh * 0.12, tipX - fw * 0.78, tipY + fh * 0.42, tipX, tipY);
-          var fgd = vg.createLinearGradient(cx, tipY, cx, wickY); fgd.addColorStop(0, "rgba(255,247,222," + Math.min(1, bright + 0.32) + ")"); fgd.addColorStop(0.32, "#ffd071"); fgd.addColorStop(0.72, "#ff8a2e"); fgd.addColorStop(1, "#e8641c"); vg.fillStyle = fgd; vg.fill();
-          vg.beginPath(); vg.ellipse(cx + lean * 0.55, wickY - fh * 0.33, fw * 0.2, fh * 0.32, 0, 0, 7); vg.fillStyle = "rgba(255,255,244," + (0.6 * Math.min(1, bright + 0.32)) + ")"; vg.fill(); // hot core, leans + flickers
+          vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx + sway * 0.3, wickY); vg.stroke(); // wick
+          // the flame is NOT a filled shape: soft translucent sprites stacked ADDITIVELY (density = the bright core)
+          vg.globalCompositeOperation = "lighter";
+          var baseA = 0.4 + 0.34 * bright;
+          drawSpr(cx + lean, wickY - (10 + 30 * f), (34 + 40 * f), (46 + 72 * f), baseA * 0.5); // wide dim body
+          drawSpr(cx + lean * 1.1, wickY - (22 + 46 * f), (22 + 26 * f), (34 + 58 * f), baseA * 0.6); // narrower brighter mid
+          drawSpr(cx + lean * 1.2, wickY - (5 + 8 * f), (16 + 16 * f), (18 + 22 * f), baseA * 0.72); // hot base at the wick
+          for (var pi = 0; pi < vparts.length; pi++) { var p = vparts[pi]; var s = p.sz * (1 + (1 - p.life) * 1.0); drawSpr(p.x, p.y, s, s * 1.3, p.life * 0.4 * (0.6 + 0.7 * bright)); }
+          vg.globalCompositeOperation = "source-over";
           vg.restore();
           vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.strokeStyle = "rgba(255,220,150,.13)"; vg.lineWidth = 5; vg.stroke();
           vg.beginPath(); vg.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + fr * 6.2832); vg.strokeStyle = "#ffcf6a"; vg.lineWidth = 5; vg.lineCap = "round"; vg.stroke();
@@ -980,6 +983,10 @@
           var aim = vpk ? 1 : (vhold ? 1 : 0.12); vlit += (aim - vlit) * Math.min(1, dt * 3.2);
           if (vhold && !vpk) vchg += dt;
           var brv = 0.5 + 0.5 * Math.sin(ts / 1000 * 0.6283), f = vlit * (0.85 + 0.15 * brv);
+          var pcx = vcw / 2, pwick = vch * 0.44 + 60, psway = Math.sin(ts / 620) * 3 + Math.sin(ts / 230) * 1.6 + Math.sin(ts / 97) * 0.9;
+          vspawn += dt * (16 + 30 * f);
+          while (vspawn >= 1) { vspawn -= 1; vparts.push({ x: pcx + psway * 0.5 + (Math.random() - 0.5) * 5, y: pwick, vx: (Math.random() - 0.5) * 0.7 + psway * 0.05, vy: -(0.7 + Math.random() * 1.1 + 0.9 * f), life: 1, sz: (7 + Math.random() * 6) * (0.7 + 0.5 * f) }); }
+          for (var pj = vparts.length - 1; pj >= 0; pj--) { var q = vparts[pj]; q.x += q.vx * dt * 60; q.y += q.vy * dt * 60; q.life -= dt / 0.8; if (q.life <= 0) vparts.splice(pj, 1); }
           vpaint(f, ts);
           if (!vpk && vchg >= vtgt) { vpk = true; vonpeak(); }
           vraf = requestAnimationFrame(vloop);
