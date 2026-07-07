@@ -9024,9 +9024,9 @@
       }
     });
   }
-  function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id]; }); } // every tool has guided cue content -> can run as the unified carousel
+  function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id] || !!(t.rawSegs && t.rawSegs.length); }); } // every tool has guided cue content OR pre-built segments -> can run as the unified carousel
   function runStackCarousel(track, onAll) { // route ANY stack through the SAME carousel player as the day-one stack (David 2026-07-08: "should function the same way in the rest of the app")
-    var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && t.k.run) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || "#9a7cff", secs: t.d || m.dur || 60, med: t.med }; }); // med = the meditation's editor sections, so the carousel can draw its section-ticks
+    var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || "#9a7cff", secs: t.d || m.dur || 60, med: t.med, rawSegs: t.rawSegs, intro: t.intro }; }); // med = meditation editor sections (for section-ticks); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages)
     var built = composeStackSegs(list);
     try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
     timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || "#9a7cff", spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, autostart: true, onFinish: function () { if (onAll) onAll(track.length); else stackComplete(track.length); } });
@@ -9248,11 +9248,13 @@
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
     var segs = [], acts = [];
     list.forEach(function (t) {
-      var C = STACK_CONTENT[t.id]; if (!C) return;
+      var C = STACK_CONTENT[t.id]; if (!C && !(t.rawSegs && t.rawSegs.length)) return;
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
       function P(s) { s._act = ai; segs.push(s); }
-      P({ text: C.intro, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
-      if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
+      var introTxt = t.intro || (C && C.intro) || ("Now, " + String(t.nm || "this").toLowerCase() + ".");
+      P({ text: introTxt, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
+      if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : 6) }); }); } // a tool that supplies its own cue segments (charge, love & embodiment)
+      else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
         var msecs = (t.med && t.med.length) ? t.med.slice() : [{ k: "settle" }, { k: "aware" }, { k: "rest" }];
         msecs.forEach(function (sc, si) {
           var def = MED_SEC[sc.k]; if (!def) return;
@@ -9306,23 +9308,24 @@
     mins = mins || 10;
     var attSecs = Math.round(mins * 60 * 0.2), chargeSecs = Math.round(mins * 60 * 0.3), deepSecs = Math.round(mins * 60 * 0.25);
     var deepSeq = MED_GUIDES.blackstone.seq, deepCad = Math.max(9, Math.round(deepSecs / deepSeq.length));
-    var steps = [
-      { k: { id: "breathe", name: "Breathe", ti: "ti-lungs", run: function (cb) { breathwork(mins <= 10 ? 3 : mins <= 20 ? 5 : 8, cb); } } },
-      { k: { id: "meditate", name: "Attention", ti: "ti-moon", run: function (cb) { meditationQuick(cb, attSecs); } } },
-      { k: { id: "charge", name: "Charge", ti: "ti-bolt", run: function (cb) { timelinePlayer({ id: "charge", title: "Charge", logTitle: "Charge", catK: "energy", color: "#ff8a1e", spark: 8, vol: VPROF.relax.volume, drone: true, segments: composeCharge(chargeSecs, tapOn), onFinish: function () { cb(); } }); } } },
-      { k: { id: "deep", name: "Love & embodiment", ti: "ti-heart", run: function (cb) { timelinePlayer({ id: "deep", title: "Love & embodiment", logTitle: "Love & embodiment", catK: "love", color: "#ff5fa0", spark: 8, vol: VPROF.relax.volume, drone: true, drift: true, segments: deepSeq.map(function (t) { return { text: t, label: t.length > 64 ? "" : t, sub: t.length > 64 ? t : "", gap: deepCad }; }), onFinish: function () { cb(); } }); } } },
-      { k: { id: "mantra", name: "Mantra", ti: "ti-quote", run: function (cb) { mantraPlayer(cb); } } }
+    var bcyc = mins <= 10 ? 3 : mins <= 20 ? 5 : 8;
+    var track = [ // the flagship stack, now as ONE carousel: breathe -> attention -> charge -> love & embodiment -> mantra. charge + deep supply their own cue segments (rawSegs).
+      { k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: bcyc * 16 },
+      { k: { id: "meditate", name: "Attention", ti: "ti-moon", col: "#9a5cf0" }, d: attSecs, med: [{ k: "aware" }] },
+      { k: { id: "charge", name: "Charge", ti: "ti-bolt", col: "#ff8a1e" }, intro: "Now, charge up.", rawSegs: composeCharge(chargeSecs, tapOn) },
+      { k: { id: "deep", name: "Love & embodiment", ti: "ti-heart", col: "#ff5fa0" }, intro: "Now, love and embodiment.", rawSegs: deepSeq.map(function (t) { return { text: t, label: t.length > 64 ? "" : t, sub: t.length > 64 ? t : "", gap: deepCad }; }) },
+      { k: { id: "mantra", name: "Mantra", ti: "ti-quote", col: "#ffc83d" }, d: 60 }
     ];
-    gauge010("Where's the tension right now?", "gut answer — no wrong number", function (pre) {
-      runStack(steps, 0, function () {
-        gauge010("And now?", "same scale — just notice", function (post) {
+    gauge010("Where's the tension right now?", "gut answer, no wrong number", function (pre) {
+      runStackCarousel(track, function () {
+        gauge010("And now?", "same scale, just notice", function (post) {
           S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
           S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "full" + mins + (tapOn ? "t" : ""), pre: pre, post: post });
           if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
           var delta = (pre != null && post != null) ? pre - post : null;
           try { earn(12, { catK: "love" }); celebrateGated("#9a7cff", 1); } catch (e) {}
           save(); renderAll();
-          toast(delta != null && delta > 0 ? "✦ " + delta + (delta === 1 ? " point" : " points") + " lighter — noted." : "✦ the whole practice, done. That's the real thing.");
+          toast(delta != null && delta > 0 ? "✦ " + delta + (delta === 1 ? " point" : " points") + " lighter." : "✦ the whole practice, done.");
         });
       });
     });
