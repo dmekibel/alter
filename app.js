@@ -941,16 +941,29 @@
         var vlit = 0.12, vtgt = (b.secs || 22), vchg = 0, vhold = false, vpk = false, vraf = 0, vtp = 0;
         function vrr(x, y, w, h, r) { vg.beginPath(); vg.moveTo(x + r, y); vg.arcTo(x + w, y, x + w, y + h, r); vg.arcTo(x + w, y + h, x, y + h, r); vg.arcTo(x, y + h, x, y, r); vg.arcTo(x, y, x + w, y, r); vg.closePath(); }
         function vpaint(f, ts) {
-          vg.clearRect(0, 0, vcw, vch); var cx = vcw / 2, by = vch - 46, fr = Math.min(1, vchg / vtgt);
-          vg.beginPath(); vg.arc(cx, vch * 0.4, 104, 0, 7); vg.strokeStyle = "rgba(255,220,150,.10)"; vg.lineWidth = 5; vg.stroke();
-          vg.beginPath(); vg.arc(cx, vch * 0.4, 104, -Math.PI / 2, -Math.PI / 2 + fr * 6.2832); vg.strokeStyle = "#ffcf6a"; vg.lineWidth = 5; vg.lineCap = "round"; vg.stroke();
-          vg.fillStyle = "#efe4cc"; vrr(cx - 24, by, 48, 50, 8); vg.fill();
-          vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx, by - 9); vg.stroke();
-          var t2 = ts || 0, fh = 28 + 150 * f + Math.sin(t2 / 480) * 3.5 * f, fw = 24 + 24 * f, ty = by - 9 - fh, jt = (Math.sin(t2 / 205) + Math.sin(t2 / 91) * 0.6) * 3.4 * f; // smooth layered-sine sway instead of per-frame random jitter
-          var gg = vg.createRadialGradient(cx, by - 9 - fh * 0.4, 2, cx, by - 9 - fh * 0.4, fh); gg.addColorStop(0, "rgba(255,214,130," + (0.5 * f + 0.15) + ")"); gg.addColorStop(1, "rgba(255,120,40,0)"); vg.fillStyle = gg; vg.beginPath(); vg.arc(cx, by - 9 - fh * 0.4, fh, 0, 7); vg.fill();
-          vg.beginPath(); vg.moveTo(cx + jt, ty); vg.bezierCurveTo(cx + fw / 2, ty + fh * 0.5, cx + fw / 2, by - 9 - fh * 0.08, cx, by - 9); vg.bezierCurveTo(cx - fw / 2, by - 9 - fh * 0.08, cx - fw / 2, ty + fh * 0.5, cx + jt, ty);
-          var fgd = vg.createLinearGradient(cx, ty, cx, by - 9); fgd.addColorStop(0, "#fff4d6"); fgd.addColorStop(0.35, "#ffcf6a"); fgd.addColorStop(0.75, "#ff8a2e"); fgd.addColorStop(1, "#e8641c"); vg.fillStyle = fgd; vg.fill();
-          vg.beginPath(); vg.ellipse(cx, by - 9 - fh * 0.3, fw * 0.2, fh * 0.3, 0, 0, 7); vg.fillStyle = "rgba(255,255,240," + (0.65 * Math.min(1, f + 0.25)) + ")"; vg.fill();
+          var t2 = ts || 0; vg.clearRect(0, 0, vcw, vch);
+          var cx = vcw / 2, cy = vch * 0.44, R = 112, fr = Math.min(1, vchg / vtgt);
+          // wind bends the flame in layered gusts; flicker pulses the actual light output — this is what makes it feel alive
+          var wind = Math.sin(t2 / 660) * 0.62 + Math.sin(t2 / 280) * 0.30 + Math.sin(t2 / 115) * 0.18 + Math.sin(t2 / 47) * 0.08;
+          var flick = 0.76 + 0.24 * (Math.sin(t2 / 62) * 0.5 + Math.sin(t2 / 33) * 0.3 + Math.sin(t2 / 19) * 0.2);
+          var bright = f * flick;
+          vg.save();
+          vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.clip(); // circular frame — matches the app's orb design
+          var bgg = vg.createRadialGradient(cx, cy + 24, 4, cx, cy, R * 1.06); bgg.addColorStop(0, "rgba(78,34,10," + (0.4 + 0.2 * bright) + ")"); bgg.addColorStop(1, "rgba(16,7,13,.92)"); vg.fillStyle = bgg; vg.fillRect(cx - R, cy - R, R * 2, R * 2);
+          var by = cy + 70, wickY = by - 10;
+          vg.fillStyle = "#efe4cc"; vrr(cx - 22, by, 44, 64, 8); vg.fill(); // wax
+          vg.strokeStyle = "#3a2a20"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(cx, by); vg.lineTo(cx, wickY); vg.stroke(); // wick
+          var fh = (24 + 116 * f) * (0.9 + 0.1 * Math.sin(t2 / 105)), fw = 22 + 22 * f;
+          var lean = wind * (12 + 20 * f), tipX = cx + lean, tipY = wickY - fh, gy = wickY - fh * 0.42;
+          var glowR = fh * (0.8 + 0.14 * Math.sin(t2 / 55) + 0.06 * flick);
+          var gg = vg.createRadialGradient(cx + lean * 0.5, gy, 2, cx, gy, glowR); gg.addColorStop(0, "rgba(255,216,132," + (0.55 * bright + 0.15) + ")"); gg.addColorStop(1, "rgba(255,120,40,0)"); vg.fillStyle = gg; vg.beginPath(); vg.arc(cx, gy, glowR, 0, 7); vg.fill();
+          // flame body: a teardrop bent by the wind (tip and upper controls lean, the base stays on the wick)
+          vg.beginPath(); vg.moveTo(tipX, tipY); vg.bezierCurveTo(tipX + fw * 0.78, tipY + fh * 0.42, cx + fw * 0.55, wickY - fh * 0.12, cx, wickY); vg.bezierCurveTo(cx - fw * 0.55, wickY - fh * 0.12, tipX - fw * 0.78, tipY + fh * 0.42, tipX, tipY);
+          var fgd = vg.createLinearGradient(cx, tipY, cx, wickY); fgd.addColorStop(0, "rgba(255,247,222," + Math.min(1, bright + 0.32) + ")"); fgd.addColorStop(0.32, "#ffd071"); fgd.addColorStop(0.72, "#ff8a2e"); fgd.addColorStop(1, "#e8641c"); vg.fillStyle = fgd; vg.fill();
+          vg.beginPath(); vg.ellipse(cx + lean * 0.55, wickY - fh * 0.33, fw * 0.2, fh * 0.32, 0, 0, 7); vg.fillStyle = "rgba(255,255,244," + (0.6 * Math.min(1, bright + 0.32)) + ")"; vg.fill(); // hot core, leans + flickers
+          vg.restore();
+          vg.beginPath(); vg.arc(cx, cy, R, 0, 7); vg.strokeStyle = "rgba(255,220,150,.13)"; vg.lineWidth = 5; vg.stroke();
+          vg.beginPath(); vg.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + fr * 6.2832); vg.strokeStyle = "#ffcf6a"; vg.lineWidth = 5; vg.lineCap = "round"; vg.stroke();
         }
         function vonpeak() {
           try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
