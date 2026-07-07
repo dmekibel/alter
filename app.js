@@ -8760,11 +8760,19 @@
     opts.segments.forEach(function () { mapPips.push(add(mapWrap, "i")); });
     function paintMap(e) { for (var mi = 0; mi < mapPips.length; mi++) { var on = opts.segments[mi] && opts.segments[mi].start != null && opts.segments[mi].start <= e; mapPips[mi].className = on ? "on" : ""; } }
     // ACT-LEVEL STORY PAGES (David 2026-07-07): for the stack, the TOP shows one page per activity (Instagram-story style) that fills as you move through it — the whole plan's progress, not per-cue pips. Gated by opts.acts so daily rituals keep the per-segment map.
-    var acts = opts.acts || null, actFills = [], curAct = 0, actResume = [];
+    var acts = opts.acts || null, actFills = [], actLabels = [], curAct = 0, _prevAct = -1, actResume = [];
     if (acts) {
       mapWrap.style.display = "none";
-      var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:6px;z-index:6;pointer-events:none;";
-      acts.forEach(function (a) { var bar = add(storyWrap, "div"); bar.style.cssText = "flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:" + (a.color || col) + ";"; actFills.push(fl); actResume.push(null); });
+      var _gt = ov.querySelector(".gp-title"); if (_gt) _gt.style.display = "none"; // the section labels are the header now — drop the centered title so they don't collide
+      var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;right:12px;display:flex;gap:6px;z-index:6;pointer-events:none;";
+      acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;"; var bar = add(colx, "div"); bar.style.cssText = "height:4px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:" + (a.color || col) + ";transition:width .18s linear;"; actFills.push(fl); var nm = add(colx, "div"); nm.style.cssText = "font-size:9.5px;font-weight:800;letter-spacing:.2px;color:rgba(240,230,239,.4);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"; nm.textContent = a.name; actLabels.push(nm); actResume.push(null); }); // labels every section so you see what's coming
+    }
+    function onActEnter(ai, dir) { // NEW PAGE: tint the orb to this activity's color and slide the content in — so each act reads as its own colored page (David 2026-07-07)
+      if (!acts || !acts[ai]) return; var c = acts[ai].color || col;
+      try { orb.style.transition = "background .55s ease, box-shadow .55s ease"; orb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; orb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); ov.style.setProperty("--gp-c", c); if (bPlay) bPlay.style.background = c; if (fill) fill.style.background = "linear-gradient(90deg," + mixHex(c, "#ffffff", 0.4) + "," + c + ")"; } catch (e) {}
+      [lab, sub].forEach(function (el) { if (!el) return; el.style.transition = "none"; el.style.transform = "translateX(" + (dir * 46) + "px)"; el.style.opacity = "0"; });
+      requestAnimationFrame(function () { [lab, sub].forEach(function (el) { if (!el) return; el.style.transition = "transform .36s cubic-bezier(.25,0,.2,1), opacity .32s ease"; el.style.transform = "translateX(0)"; el.style.opacity = "1"; }); });
+      for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.color = (li === ai) ? "#fff" : "rgba(240,230,239,.4)";
     }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
@@ -8815,6 +8823,7 @@
       if (silenceSec > 0 && total > silenceSec) { tailEl.style.left = ((total - silenceSec) / total * 100) + "%"; tailEl.style.display = ""; silCap.style.visibility = ""; }
       else { tailEl.style.display = "none"; }
       paintMap(0); paintNow(0);
+      if (acts) { onActEnter(0, 1); _prevAct = 0; } // tint the orb to the FIRST activity's color right away (the opening page)
       if (autoplay) { startFrom(0); } // clips were pre-warmed → we're still inside the Begin tap, so we can start right now
       else { playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; dbg2("ready · tap play"); }
       tick();
@@ -8847,7 +8856,7 @@
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; }
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
     function paintNow(e) { paintMap(e); var pct = total ? e / total * 100 : 0; fill.style.width = pct + "%"; knob.style.left = pct + "%"; var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } /* ref: the cell gaps live only INSIDE the filled battery — the empty track is clean */ tCur.textContent = fmtT(e); tTot.textContent = "\u2212" + fmtT(Math.max(0, total - e)); var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
-      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } var _na = 0; for (var _ak = 0; _ak < acts.length; _ak++) if (acts[_ak]._start != null && e >= acts[_ak]._start) _na = _ak; curAct = _na; } } // show the CURRENT line through its whole gap (not stale) until the next cue starts; and fill the act story-pages
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } var _na = 0; for (var _ak = 0; _ak < acts.length; _ak++) if (acts[_ak]._start != null && e >= acts[_ak]._start) _na = _ak; curAct = _na; if (_na !== _prevAct) { onActEnter(_na, _na >= _prevAct ? 1 : -1); _prevAct = _na; } } } // show the CURRENT line through its whole gap; fill the act story-pages; on an act change, slide+tint to the new page
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
