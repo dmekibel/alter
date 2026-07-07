@@ -9245,6 +9245,18 @@
     gratitude: { intro: "Now, gratitude.", lines: ["Something small from today", "Someone who makes life warmer", "This body, it carried you here", "A door that opened without you pushing", "Something you'd miss if tomorrow forgot it", "One thing that just works, that you never notice"] },
     reprogram: { intro: "Now, rewire one belief.", lines: ["Picture the version of you who already lives this", "See the scene in detail, make it vivid", "Feel it in your body, as if it's already true", "Say your line in the present tense", "A vivid rehearsal gets filed as real evidence"] }
   };
+  function pauseFor(kind) { // INTELLIGENT PAUSE (David 2026-07-08): every silence has a reason, and contemplative pauses adapt to the user's MEASURED attention (the drift-tap learns S.tools.medFocus.rate). Scattered minds get shorter pauses + more frequent re-anchoring; steady minds get longer silences to sit in.
+    var mf = (S.tools && S.tools.medFocus) || {}, drift = mf.n ? (mf.rate || 0) : 0.9; // drifts per minute; ~0.9 default until tested, ~3+ = very scattered
+    var att = Math.max(0, Math.min(1, 1 - drift / 3)); // 1 = steady (long silences ok), 0 = scattered (re-anchor sooner)
+    switch (kind) {
+      case "in": return 4; case "hold": return 4; case "out": return 6; case "rest": return 2; // breath = physiological, set by the body, not the mind
+      case "settle": return 2.4;
+      case "transition": return 2.6;        // the act-change card: brief, just enough to register the shift
+      case "cue": return 3 + att * 2.5;     // a guidance line to hold: 3s (scattered) to 5.5s (steady)
+      case "absorb": return 5 + att * 6.5;  // a contemplative line to sit with: 5s (scattered, re-anchor often) to 11.5s (steady, deep silence)
+      default: return 4;
+    }
+  }
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
     var segs = [], acts = [];
     list.forEach(function (t) {
@@ -9252,23 +9264,23 @@
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
       function P(s) { s._act = ai; segs.push(s); }
       var introTxt = t.intro || (C && C.intro) || ("Now, " + String(t.nm || "this").toLowerCase() + ".");
-      P({ text: introTxt, label: tr(t.nm), sub: "", gap: 2.6 }); // TRANSITION card — announces the act
-      if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : 6) }); }); } // a tool that supplies its own cue segments (charge, love & embodiment)
+      P({ text: introTxt, label: tr(t.nm), sub: "", gap: pauseFor("transition") }); // TRANSITION card — announces the act
+      if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")) }); }); } // a tool that supplies its own cue segments (charge, love & embodiment)
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
         var msecs = (t.med && t.med.length) ? t.med.slice() : [{ k: "settle" }, { k: "aware" }, { k: "rest" }];
         msecs.forEach(function (sc, si) {
           var def = MED_SEC[sc.k]; if (!def) return;
-          var dur = sc.d || Math.round((t.secs || 90) / msecs.length), cad = 6, tt = 0, ci2 = 0, first = true;
-          while (tt < dur - 1) { var seg2 = { text: def.lines[ci2 % def.lines.length], label: def.lines[ci2 % def.lines.length], sub: first ? def.name : "", gap: cad }; if (si > 0 && first) seg2._sectionStart = true; P(seg2); tt += cad; ci2++; first = false; }
+          var dur = sc.d || Math.round((t.secs || 90) / msecs.length), tt = 0, ci2 = 0, first = true;
+          while (tt < dur - 1) { var cad = pauseFor("absorb"); var seg2 = { text: def.lines[ci2 % def.lines.length], label: def.lines[ci2 % def.lines.length], sub: first ? def.name : "", gap: cad }; if (si > 0 && first) seg2._sectionStart = true; P(seg2); tt += cad; ci2++; first = false; } // ADAPTIVE meditation silence: contemplative absorb-pauses scale with the user's tested attention
         });
       } else if (C.breath) {
         var cyc = Math.max(2, Math.round(t.secs / 16));
-        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: 4 }); P({ text: "Hold", label: "Hold", sub: "", gap: 4 }); P({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: 6 }); P({ text: "", label: "Rest", sub: "", gap: 2 }); }
+        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in") }); P({ text: "Hold", label: "Hold", sub: "", gap: pauseFor("hold") }); P({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: pauseFor("out") }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest") }); }
       } else if (C.cues) {
-        var per = Math.max(3.5, t.secs / C.cues.length);
+        var per = Math.max(3.5, t.secs / C.cues.length); // body cues fill the tool's own time (the pose IS the pause), so time-driven not attention-driven
         C.cues.forEach(function (q) { P({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
       } else if (C.lines) {
-        var cad = 5, t2 = 0, ci = 0; while (t2 < t.secs - 1) { var ln = C.lines[ci % C.lines.length]; P({ text: ln, label: ln, sub: "", gap: cad }); t2 += cad; ci++; }
+        var t2 = 0, ci = 0; while (t2 < t.secs - 1) { var lcad = pauseFor("cue"); var ln = C.lines[ci % C.lines.length]; P({ text: ln, label: ln, sub: "", gap: lcad }); t2 += lcad; ci++; }
       }
     });
     return { segs: segs, acts: acts };
