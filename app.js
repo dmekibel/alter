@@ -7040,11 +7040,40 @@
       if (chip) chip.classList.add("won"); setTimeout(function () { renderQuick(); renderGame(); renderToday(); }, 360);
     }
   }
+  // THE REAL BREATH PROTOCOLS (David 2026-07-08 depth mandate — don't oversimplify the real counterpart): breathwork isn't one generic pace. Each is an evidence-based pattern matched to a goal, named with its mechanism. PH rows = [screenLabel, ms, kind, spokenKey?]; spokenKey lets the on-screen label differ from the reused voice clip (so new patterns need ZERO new audio — every cue reuses "Breathe in"/"Hold"/"Breathe out"). kind: in | in2 (top-up) | hold | out | rest(silent).
+  var BREATH_PATTERNS = {
+    resonance: { name: "Calming breath", goal: "Just settle me", thinker: "Coherence", why: "A gentle in, a longer out. The extended exhale pulls the vagal brake and downshifts you in about ninety seconds.", cyc: 4,
+      ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 6000, "out"], ["Rest", 2000, "rest"]] },
+    sigh: { name: "Physiological sigh", goal: "Wired right now", thinker: "Huberman", why: "Two inhales stack air into collapsed sacs, then one long exhale offloads the CO2. The fastest way to drop stress in real time.", cyc: 5,
+      ph: [["Breathe in", 3200, "in"], ["and a little more", 900, "in2", "Breathe in"], ["Long exhale", 7000, "out", "Breathe out"]] },
+    box: { name: "Box breath", goal: "Need to focus", thinker: "Tactical breathing", why: "Four counts each, all equal. Steadies the nervous system without dulling your alertness. Used under real pressure.", cyc: 5,
+      ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 4000, "out"], ["Hold empty", 4000, "rest"]] },
+    calm478: { name: "4-7-8 breath", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
+      ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] }
+  };
+  function breathPicker(onDone) { // the standalone breath tool: offer the real protocols by GOAL (tap, not type; the science is named on each chip). Quick internal calls to breathwork() skip this and run 'resonance' by default.
+    TTS.unlock();
+    var ov = document.createElement("div"); ov.id = "breathPick";
+    ov.style.cssText = "position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;padding:26px 20px;background:radial-gradient(120% 90% at 50% 0%,#241a3a,#150a20 70%);overflow-y:auto;";
+    var h = document.createElement("div"); h.style.cssText = "text-align:center;font-size:20px;font-weight:800;color:#f0e6ff;margin-bottom:2px;"; h.textContent = tr("How do you want to breathe?");
+    var sb = document.createElement("div"); sb.style.cssText = "text-align:center;font-size:13px;font-weight:600;color:#b79ee0;margin-bottom:12px;max-width:320px;"; sb.textContent = tr("each is a real protocol, matched to what you need right now");
+    ov.appendChild(h); ov.appendChild(sb);
+    ["sigh", "box", "calm478", "resonance"].forEach(function (k) {
+      var P = BREATH_PATTERNS[k], b = document.createElement("button");
+      b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid #0e0618;border-radius:16px;background:linear-gradient(180deg,#3a2a5e,#2a1c46);box-shadow:0 4px 0 #0e0618;padding:13px 16px;color:#f2ecff;cursor:pointer;";
+      b.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:16px;font-weight:800;">' + esc(tr(P.goal)) + '</span><span style="font-size:11px;font-weight:700;color:#c9b6f0;">' + esc(tr(P.name)) + '</span></div><div style="font-size:12px;font-weight:500;color:#c7b6e6;line-height:1.4;margin-top:5px;">' + esc(tr(P.why)) + '</div>';
+      b.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(P.cyc, onDone, k); };
+      ov.appendChild(b);
+    });
+    var x = document.createElement("button"); x.style.cssText = "margin-top:8px;background:none;border:none;color:#9a86c0;font-size:14px;font-weight:600;cursor:pointer;"; x.textContent = tr("not now"); x.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); if (onDone) onDone(); };
+    ov.appendChild(x); document.body.appendChild(ov);
+  }
   // guided breathwork: paced orb (inhale/hold/exhale) + synced tone + cues, then logs + rewards
-  function breathwork(cycles, onDone) {
-    cycles = cycles || 4;
+  function breathwork(cycles, onDone, patKey) {
+    var PAT = BREATH_PATTERNS[patKey] || BREATH_PATTERNS.resonance;
+    cycles = cycles || PAT.cyc || 4;
     TTS.unlock(); // gesture-bound (chip tap) — unlock the speech engine in the same synchronous tick
-    var PH = [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 6000, "out"], ["Rest", 2000, "rest"]];
+    var PH = PAT.ph;
     var ov = document.createElement("div"); ov.id = "breatheOv";
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div>';
     document.body.appendChild(ov); addVoiceToggle(ov);
@@ -7056,7 +7085,7 @@
     } } catch (e) { actx = null; }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
     var schedSrcs = [];
-    (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClipAsync(PH[pi][0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
+    (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClipAsync(PH[pi][3] || PH[pi][0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
     var done = false, tmr = null;
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
@@ -7073,13 +7102,13 @@
       if (done) return;
       if (cyc >= cycles) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; tmr = setTimeout(function () { finish(false); }, 1500); return; }
       var p = PH[phi], dur = p[1], kind = p[2];
-      lab.textContent = p[0]; sub.textContent = "cycle " + (cyc + 1) + " / " + cycles;
+      lab.textContent = p[0]; sub.textContent = PAT.name.toLowerCase() + " · " + (cyc + 1) + " / " + cycles;
       // (voice cues are pre-scheduled up front — no timer-fired speak, which iOS silences)
       orb.style.transition = "transform " + (dur / 1000) + "s cubic-bezier(.45,0,.4,1)";
-      if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "out") orb.style.transform = "scale(.5)";
+      if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "in2") orb.style.transform = "scale(1.44)"; else if (kind === "out") orb.style.transform = "scale(.5)";
       if (actx) { var now = actx.currentTime, t = dur / 1000;
         bwGain.gain.cancelScheduledValues(now); bwGain.gain.setValueAtTime(bwGain.gain.value, now);
-        if (kind === "in") bwGain.gain.linearRampToValueAtTime(0.06, now + t * 0.95);         // soft swell, like an in-breath (louder — David 2026-07-01)
+        if (kind === "in" || kind === "in2") bwGain.gain.linearRampToValueAtTime(kind === "in2" ? 0.07 : 0.06, now + t * 0.95);         // soft swell, like an in-breath (louder — David 2026-07-01); in2 = the physiological-sigh top-up
         else if (kind === "out") bwGain.gain.linearRampToValueAtTime(0.018, now + t);        // fade, like an out-breath
         else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.042 : 0.012, now + 0.5); } // hold sustains gently; rest near-silent
       phi++; if (phi >= PH.length) { phi = 0; cyc++; }
@@ -8391,7 +8420,7 @@
   // ===== WISDOM TOOLBOX (TB-*, David 2026-06-28): the cockpit 'tool' stage mode. Adopts the six already-shipping runners under David's 8-Layer Self-Help Stack with KB-EXACT 'when to use me' lines, adds Stutz's Reversal of Desire + a Blair eyes-open self-hypnosis shell + a Part-X triage front door. Reward-never-shame: using a tool on a hard day IS the win. NOT a third menu — it renders into #tfStageBody via renderStage('tool'). =====
   // The kit's single source of truth. layer = David's 8-Layer Self-Help Stack section; when = KB-EXACT verbatim 'when to use me'; fn launches the runner (the six adopted + the new ones). gateNode reserved for TB-JOURNEY-UNLOCK (all unlocked this wave). (TB-STATE)
   var TOOLS = [
-    { id: "breathe",  layer: "Steady the body",        name: "Breathe",          ti: "ti-wind",           emoji: "🌬️", thinker: "Huberman · Johnson", when: "acute stress, a spike, or right before something hard — any transition crash", why: "Long exhales pull the vagal brake — your nervous system downshifts in about 90 seconds.", fn: function () { breathwork(4); } },
+    { id: "breathe",  layer: "Steady the body",        name: "Breathe",          ti: "ti-wind",           emoji: "🌬️", thinker: "Huberman · Weil · Tactical", when: "acute stress, a spike, focus before something hard, or winding down for sleep", why: "Four real protocols, one per need: the physiological sigh to drop stress fast, box breath to focus, 4-7-8 for sleep, a calming breath to settle. Each pulls the vagal brake on a different curve.", fn: function () { breathPicker(); } },
     { id: "relax",    layer: "Steady the body",        name: "Relax all muscles", ti: "ti-ripple",         emoji: "🧘", thinker: "Maltz — Psycho-Cybernetics", when: "tension, pre-sleep, or pre-focus", why: "Releasing muscle tension signals the brain the threat is over — the body leads, the mind follows.", fn: function () { relaxMoment(); } },
     { id: "meditate", layer: "Clear the mind",          name: "Meditate",          ti: "ti-atom",           emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", why: "Watching thoughts without grabbing them quiets the mind's default chatter — focus returns.", fn: function () { medEditor(); } },
     { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     ti: "ti-hand-finger",    emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", why: "Tapping pressure points while naming a feeling lowers amygdala arousal — the charge drains.", fn: function () { tapping(); } },
