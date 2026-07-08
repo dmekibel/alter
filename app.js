@@ -1846,14 +1846,14 @@
     var go = add(wrap, "button", "jp-durgo"); go.textContent = "Commit"; go.style.background = n.color; go.onclick = function () { jpCommitGo(n, secs(+sl.value) / 60); };
   }
   var JP_CHAPTERS = [ // the long-term GROWTH ARC = 8 LANDMARKS (O→VII course arc). Each has a short title, one-line why subtitle, and icon. Active = today's chapter; past = trophied milestones; future = dim aspiration. (Phase 1 Drop 1, 2026-06-30)
-    { t: "Why You're Here",    why: "Get clear on what you actually want.",             ic: "ti-flame" },
-    { t: "Who You Are",        why: "Meet your best self and name your strengths.",      ic: "ti-user-star" },
-    { t: "The Obstacle OS",    why: "Turn what's in your way into fuel.",               ic: "ti-shield-bolt" },
-    { t: "Your Big Three",     why: "Energy, work, love — the shape of a good day.",    ic: "ti-layout-columns" },
-    { t: "Masterpiece Day",    why: "Architect a day worth repeating.",                  ic: "ti-crown" },
-    { t: "Your Algorithms",    why: "Make the good stuff automatic.",                    ic: "ti-refresh" },
-    { t: "The Fundamentals",   why: "Eat, move, sleep, breathe — the foundation.",      ic: "ti-heart-rate-monitor" },
-    { t: "Soul Force",         why: "Live it. This is who you've become.",              ic: "ti-star" }
+    { t: "Why You're Here",    why: "See who you're becoming, then just show up. Showing up is the first proof.", ic: "ti-flame" },
+    { t: "Who You Are",        why: "Name who you are at your best. Every day you get to vote for him.", ic: "ti-user-star" },
+    { t: "The Obstacle OS",    why: "What you're avoiding shrinks the second you name it and take one step.", ic: "ti-shield-bolt" },
+    { t: "Your Big Three",     why: "Energy, work, love. One honest move in each and the day has a shape.", ic: "ti-layout-columns" },
+    { t: "Masterpiece Day",    why: "A day worth repeating: aim it in the morning, close it at night.", ic: "ti-crown" },
+    { t: "Your Algorithms",    why: "Make the good things run on their own, especially on the boring days.", ic: "ti-refresh" },
+    { t: "The Fundamentals",   why: "Eat, move, sleep, breathe. The floor everything else stands on.", ic: "ti-heart-rate-monitor" },
+    { t: "Soul Force",         why: "Live it. The record now shows who you actually are.", ic: "ti-star" }
   ];
   var JP_WORLDS = [ // JOURNEY WORLDS (David 2026-07-03 epic: "colorful and exciting and mysterious"): each chapter is a BIOME with its own jewel hue — the future glows in color, never gray. Aligned 1:1 with JP_CHAPTERS.
     { c: "#ff8a3a", g: "#3a1a08" },  // I    Ember — why you're here
