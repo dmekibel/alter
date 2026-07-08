@@ -871,7 +871,7 @@
     var _leadSet = false; function lead(done, locked) { if (done || locked || _leadSet) return false; _leadSet = true; return true; }
     function gate(ok, fn) { return function () { if (!ok) { toast(tr("one lesson at a time — the glowing one first")); return; } fn(); }; } // sequential Duolingo locks
     nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Lesson 1 · The Switch"), _lead: lead(s0, false),
-      line: s0 ? tr("Switched on. The body leads the mind — and you led the body.") : tr("Never exonerated — and never unarmed. Learn the hero's first move."),
+      line: s0 ? tr("Switched on. The body leads the mind, and you led the body.") : tr("Don't take my word for anything. Sixty seconds."),
       color: "#ffc83d", done: s0, act: gate(true, function () { runLesson(DAY1_LESSONS.fd0); }) });
     nodes.push({ key: "fd1", icon: "ti-cards", title: tr("Lesson 2 · Your Words"), locked: !s0, _lead: lead(s1, !s0),
       line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Areté — the gap between who you are and who you could be."),
@@ -1085,19 +1085,23 @@
     renderFirstCommit();
   }
   var DAY1_LESSONS = { // ritual-lesson data — SHORT lines (max ~15 words), mirror questions with NO right answer (they learn the user), a burn, a seal, a door. Course DNA intact: Never Exonerated / Areté / Initiate & Celebrate / votes / Response-Ability / Win-or-Learn.
+    // STONE 1 rebuilt (David 2026-07-08 verdict: no aphorism slideshows, no jargon, no abstract questions — see memory alter-journey-stones-verdict). New grammar: PRIME (Tony-style, voice carries you in) → DO (the real 60-sec switch) → NAME (one plain line) → CHECK (skeptic-safe, honest-no respected) → PLACE (schedule the real thing; data as side effect) → SEAL. Theory ("never exonerated") deals LATER via deck cards, after reps earn it.
     fd0: { c: "#ffc83d", beats: [
-      { k: "line", t: "You are never exonerated.", big: true, orb: true },
-      { k: "line", t: "Challenges come today, tomorrow, always. That's not a flaw in the plan — that IS the plan." },
-      { k: "mirror", q: "Where does the day usually hit you first?", save: "morningFoe", onPick: function (o) { S.profile = S.profile || {}; S.profile.morningFoe = o.tag; save(); }, opts: [
-        { t: "The phone, before I'm even up", tag: "phone", reply: "So the fight starts in your hand. Good — now we know exactly where the switch goes." },
-        { t: "My own head", tag: "head", reply: "So it starts inside. The switch was built for exactly that." },
-        { t: "Other people, first thing", tag: "people", reply: "So it comes through the door. We'll flip the switch before they arrive." },
-        { t: "The snooze button", tag: "snooze", reply: "So it starts in bed. Then that's where the switch will live." }] },
-      { k: "line", t: "The hero's first move is never the task. It's the body — shoulders back, one long exhale, state chosen." },
-      { k: "feel", t: "Try it with me — shoulders back… one slow breath out.", secs: 8 },
-      { k: "burn", t: "I need to feel ready first.", reply: "Gone. Readiness follows motion — it never leads." },
-      { k: "seal", line: "I move first. The feeling follows." },
-      { k: "door", t: "Now the real thing — the sixty-second Switch.", btn: "Switch on \u25b8", rep: function () { morningDoor(); } }] },
+      { k: "line", t: "Don't take my word for anything.", big: true, orb: true },
+      { k: "line", t: "Sixty seconds. The smallest tool I have. It works even if you don't believe in it yet." },
+      { k: "door", t: "Just follow my voice.", btn: "I'm listening \u25b8", rep: function () { morningDoor(function (skipped) { if (!skipped) runLesson(DAY1_LESSONS.fd0b); }, { lesson: true }); } }] },
+    fd0b: { c: "#ffc83d", beats: [ // the landing after the rep: name it, check it honestly, place tomorrow's offer, seal
+      { k: "line", t: "That was you, steering your own state.", big: true, orb: true },
+      { k: "line", t: "Sixty seconds, on purpose. Most people never learn the wheel exists." },
+      { k: "mirror", q: "Anything shift? Even two percent.", save: "switchFelt", onPick: function (o) { S.profile = S.profile || {}; S.profile.switchFelt = o.tag; save(); }, opts: [
+        { t: "A little", tag: "yes", reply: "That two percent was you. Not coffee, not luck. You." },
+        { t: "Honestly, no", tag: "no", reply: "Good. An honest zero beats a polite maybe. Some tools won't be yours. Finding the ones that are is what this path is for." }] },
+      { k: "mirror", q: "Tomorrow I'll offer this again, at the moment it actually helps. When is that, honestly?", save: "switchWhen", onPick: function (o) { S.profile = S.profile || {}; S.profile.switchWhen = o.tag; save(); }, opts: [
+        { t: "Before I'm out of bed", tag: "bed", reply: "Then it'll be there before your feet hit the floor." },
+        { t: "With the first coffee", tag: "coffee", reply: "Then it pairs with the coffee. Good ritual glue." },
+        { t: "After the phone has already had me", tag: "phone", reply: "Honest. Then it becomes the way you take the morning back." },
+        { t: "Let tomorrow-me decide", tag: "open", reply: "Fair. I'll offer it, you decide in the moment." }] },
+      { k: "seal", line: "I move first. The feeling follows." }] },
     fd1: { c: "#b07aff", room: "mirror", beats: [
       { k: "line", t: "Areté. One Greek word: close the gap between who you are and who you could be.", big: true, orb: true },
       { k: "mirror", q: "A year from now, someone who loves you describes what changed. Which line lands hardest?", save: "word1", reply: "That's a word we'll make true. I'll hand it back to you every time you live it.", onPick: function (o) { S.profile = S.profile || {}; S.profile.words = S.profile.words || []; if (S.profile.words.indexOf(o.tag) < 0) S.profile.words.push(o.tag); save(); }, opts: [
@@ -6478,6 +6482,18 @@
     "Grab the phone — ease into it": "Взять телефон — мягко въехать", "Switch the body on — breath, posture, choose": "Включить тело — дыхание, осанка, выбор", "Wait until the feeling shows up": "Ждать, пока придёт чувство",
     "Feelings follow the body. Switch first — readiness arrives after you move.": "Чувства идут за телом. Сначала переключись — готовность приходит после движения.", "That's the victim's opening move — comfortable, and it hands the morning away.": "Это дебют жертвы — удобно, и утро отдано.",
     "I move first. The feeling follows.": "Я двигаюсь первым. Чувство идёт следом.", "Do the Switch — 60 seconds, right now.": "Сделай Переключение — 60 секунд, прямо сейчас.", "Switch on ▸": "Включиться ▸",
+    "Don't take my word for anything.": "Не верь мне на слово.", "Sixty seconds. The smallest tool I have. It works even if you don't believe in it yet.": "Шестьдесят секунд. Самый маленький мой инструмент. Он работает, даже если ты пока в него не веришь.",
+    "Just follow my voice.": "Просто следуй за моим голосом.", "I'm listening ▸": "Я слушаю ▸",
+    "That was you, steering your own state.": "Это был ты — управлял собственным состоянием.", "Sixty seconds, on purpose. Most people never learn the wheel exists.": "Шестьдесят секунд, нарочно. Большинство так и не узнаёт, что руль существует.",
+    "Anything shift? Even two percent.": "Что-то сдвинулось? Хотя бы на два процента.", "A little": "Немного", "Honestly, no": "Честно? Нет",
+    "That two percent was you. Not coffee, not luck. You.": "Эти два процента — это ты. Не кофе, не удача. Ты.",
+    "Good. An honest zero beats a polite maybe. Some tools won't be yours. Finding the ones that are is what this path is for.": "Хорошо. Честный ноль лучше вежливого «может быть». Не все инструменты окажутся твоими. Найти твои — и есть смысл этого пути.",
+    "Tomorrow I'll offer this again, at the moment it actually helps. When is that, honestly?": "Завтра я предложу это снова — в момент, когда это правда поможет. Когда он, честно?",
+    "Before I'm out of bed": "Ещё до подъёма", "With the first coffee": "С первым кофе", "After the phone has already had me": "Когда телефон уже успел меня забрать", "Let tomorrow-me decide": "Пусть решит завтрашний я",
+    "Then it'll be there before your feet hit the floor.": "Значит, он будет ждать раньше, чем ноги коснутся пола.", "Then it pairs with the coffee. Good ritual glue.": "Значит, в паре с кофе. Отличный клей для ритуала.",
+    "Honest. Then it becomes the way you take the morning back.": "Честно. Тогда это станет способом вернуть себе утро.", "Fair. I'll offer it, you decide in the moment.": "Справедливо. Я предложу, а ты решишь в моменте.",
+    "Good. Last piece": "Хорошо. Последний штрих", "one breath, with a word inside it": "один вдох со словом внутри",
+    "Switched on. The body leads the mind, and you led the body.": "Включился. Тело ведёт ум, а ты повёл тело.", "Don't take my word for anything. Sixty seconds.": "Не верь мне на слово. Шестьдесят секунд.",
     "LESSON 2 · YOUR WORDS": "УРОК 2 · ТВОИ СЛОВА", "Areté": "Арете",
     "The Greeks had one word for a life well lived: areté — excellence. Closing the gap between who you are and who you could be.": "У греков было одно слово для хорошо прожитой жизни: арете — совершенство. Закрытие зазора между тем, кто ты есть, и тем, кем мог бы быть.",
     "Science caught up with Aristotle: a flourishing life runs on VIRTUES in action — and your virtues aren't traits you have, they're stats you train. Used on purpose, they level. Ignored, they idle.": "Наука догнала Аристотеля: цветущая жизнь работает на ДОБРОДЕТЕЛЯХ в действии — и твои добродетели не черты, что у тебя есть, а характеристики, что ты качаешь. Используешь нарочно — растут. Игнорируешь — простаивают.",
@@ -9993,23 +10009,26 @@
     picker("Your best ordinary day — what's in it?", "not a holiday — a good normal day. Tap what's usually there.", best, function () { picker("And a rough ordinary day?", "the low-but-normal kind. Tap what's usually there.", worst, deltaScreen); });
   }
   // ===== ORGAN F · MORNING DOOR unified (DEPTH BUILD WAVE 2): the switch from sleep-you to day-you — 3 body beats + a 1-breath word-prime (inhale a word you're becoming, exhale settle — Virtue Meditation rung 1, the course's #1 practice at its smallest dose) → the gauge as the voice gate for the day. Morning-light-first law in the copy. Floats to real wake (time-symmetry — a 12:30 wake isn't shamed). =====
-  function morningDoor(onDone) {
+  function morningDoor(onDone, opts) { // opts.lesson (STONE 1 rebuild, David 2026-07-08): the primed lesson run — no intro card (the lesson's voice already primed you, "just follow my voice"), and the landing (deck card + gauge) is replaced by the lesson's own NAME/CHECK/PLACE/SEAL flow via onDone(skipped)
+    opts = opts || {};
     var words = ((S.profile || {}).words) || [], WMAP = { calmer: "calm", stronger: "strong", builder: "the builder", consistent: "steady", present: "present", freer: "free", brave: "brave", kind: "kind", focused: "focus", disciplined: "discipline" };
     var word = words.length ? (WMAP[words[0]] || words[0]) : "here";
     var mBeats = [
       { lab: tr("Roll your shoulders back"), sub: tr("once, slow, let sleep fall off them"), orb: "" },
       { lab: tr("Unclench the jaw"), sub: tr("drop it loose, soften the face"), orb: "out" },
       { lab: tr("Feet flat on the floor"), sub: tr("feel it take your weight. you're here now"), orb: "" },
+      { lab: tr("Good. Last piece"), sub: tr("one breath, with a word inside it"), orb: "" }, // TRANSITION PRIME (the Tony law, David 2026-07-08): the voice carries you across every sub-exercise boundary
       { lab: tr("Inhale") + ": “" + esc(tr(word)) + "”", sub: tr("breathe the word in… exhale, and settle into the day"), orb: "in" },
       { lab: tr("Get some light if you can"), sub: tr("morning light sets the whole day's clock"), orb: "" }
     ];
     if (S.tomorrow && S.tomorrow.k === todayK() && S.tomorrow.line) mBeats.unshift({ lab: tr("Last night, you chose"), sub: "“" + esc(tr(S.tomorrow.line)) + "”. " + tr("that's today's one thing."), orb: "in" }); // surface the Plan-Tomorrow intention set at day-one
     beatRunner({
       id: "morningdoor", title: tr("Morning"), logTitle: "Morning switch", catK: "restore", color: "#ffc83d", spark: 5, voiceProf: VPROF.relax,
-      intro: { tag: tr("the switch into your day · 60 sec"), what: tr("A tiny switch from sleep-you to day-you: three body beats, one breath on a word you're becoming, then I read your energy and set my voice for the day."), how: [tr("Roll the shoulders back, once."), tr("Unclench the jaw, let it drop loose."), tr("Feet flat, feel the floor take your weight."), tr("Inhale your word; exhale, and settle into the day.")], why: tr("The body leads the mind. A short switch plus morning light tells your whole system the day has begun, and cortisol, focus, and mood fall in behind it.") },
+      intro: opts.lesson ? null : { tag: tr("the switch into your day · 60 sec"), what: tr("A tiny switch from sleep-you to day-you: three body beats, one breath on a word you're becoming, then I read your energy and set my voice for the day."), how: [tr("Roll the shoulders back, once."), tr("Unclench the jaw, let it drop loose."), tr("Feet flat, feel the floor take your weight."), tr("Inhale your word; exhale, and settle into the day.")], why: tr("The body leads the mind. A short switch plus morning light tells your whole system the day has begun, and cortisol, focus, and mood fall in behind it.") },
       beats: mBeats, lastLabel: tr("I'm in ✓"),
-      onFinish: function (skipped) { if (onDone) onDone(); if (skipped) return;
+      onFinish: function (skipped) { if (onDone) onDone(skipped); if (skipped) return;
         try { if (S.guide && S.guide.fd && !S.guide.fd.done && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); try { drawJourney(true); } catch (e) {} } } catch (e) {} // Day-1 rebuild: the Switch IS Lesson 1 — completing it lights the first stone
+        if (opts.lesson) return; // the lesson's landing (NAME/CHECK/PLACE/SEAL) replaces the deck card + gauge
         var toGauge = function () { try { S.gaugeK = null; gaugeOpen(function () {}); } catch (e) {} };
         try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Good", true, function () { c.remove(); toGauge(); }); } else { c.remove(); toGauge(); } } catch (e) { toGauge(); } } // → deal an am-open card (why the morning switch mattered), then the gauge = the day's voice gate
     });

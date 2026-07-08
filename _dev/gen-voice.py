@@ -66,6 +66,11 @@ if m:
         for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*\]', cuesarr): add(un(a))
 # breath sub-cues spoken in the carousel breath act
 for c in ["fill up slowly","longer than the in-breath"]: add(c)
+# 11) DAY1_LESSONS (stone 1 rebuild 2026-07-08): runLesson speaks t/q/reply/line via say() — bank them so the first impression is neural voice, not Web-Speech. Over-matching opts' t: (button labels, unspoken) is harmless.
+m = re.search(r'var DAY1_LESSONS = \{(.*?)\n  \};', src, re.S)
+if m:
+    for key in ('t','q','reply','line'):
+        for s in re.findall(key + r':\s*' + STR, m.group(1)): add(un(s))
 # de-dupe
 uniq=[]; seen=set()
 for l in lines:
