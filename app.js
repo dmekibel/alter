@@ -1147,13 +1147,13 @@
       { k: "seal", line: "There is a space — and it's mine." },
       { k: "door", t: "Now feel it once — ninety seconds, eyes open.", btn: "Find it \u25b8", rep: function () { theGapLesson(); } }] },
     fd4: { c: "#ff5fa8", beats: [
-      { k: "line", t: "Masterpiece days aren't found. They're framed — and the frame is the evening.", big: true, orb: true },
+      { k: "line", t: "Your mind keeps every unfinished thing running in the background, like a browser with too many tabs open. That's why the day follows you to bed. Closing the day on purpose is how you shut the tabs.", big: true, orb: true },
       { k: "mirror", q: "How do your days usually end?", save: "dayEnd", onPick: function (o) { S.profile = S.profile || {}; S.profile.dayEnd = o.tag; save(); }, opts: [
         { t: "Mid-scroll", tag: "scroll", reply: "Then closing on purpose will feel like getting hours back." },
         { t: "Still working", tag: "work", reply: "Then \u201cshutdown complete\u201d will become your favorite spell." },
         { t: "Worrying about tomorrow", tag: "worry", reply: "Then we'll aim tomorrow BEFORE the worry gets to it." },
         { t: "I just… fall asleep", tag: "sleep", reply: "Then we'll catch the day before it slips out unnoticed." }] },
-      { k: "line", t: "Every day ends a win or a lesson — both count. A rough day closed well scores like a victory." },
+      { k: "line", t: "Win or learn, every day still closes. A hard day you close on purpose counts the same as a good one." },
       { k: "seal", line: "I close my days kindly. Win or learn." },
       { k: "door", t: "Close day one the way it deserves.", btn: "Close it \u25b8", rep: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }] }
   };
