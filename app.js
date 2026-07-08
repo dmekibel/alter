@@ -7215,7 +7215,7 @@
   }
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
   function meditationQuick(onDone, durSec) {
-    var seq = ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"];
+    var seq = ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the tip of the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds, they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this, just be aware"];
     TTS.unlock(); TTS.warm(seq);
     var tail = seq.slice(-3), perCue = medCadence(), totalSec = durSec || 300, segs = [], t = 0, ci = 0;
     while (t < totalSec - 1) { segs.push({ text: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], label: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], sub: "" }); t += perCue; ci++; }
@@ -9213,15 +9213,16 @@
   };
   function composeRitual(o) { // {timeOfDay:'am'|'pm', mins} → timelinePlayer segments. Pure function — testable headless.
     var am = (o.timeOfDay || "am") === "am", mins = o.mins || 5, segs = [], pt = 0;
+    var attMul = pauseFor("absorb") / 9.55; // MEASURED-ATTENTION multiplier (David 2026-07-08 depth mandate): scattered minds → shorter contemplative silences + tap-anchors sooner; steady minds → longer silences to sit in. Neutral (untested) ≈ 1.0.
     function line(text, gap) { segs.push({ text: text, label: text.length > 64 ? "" : text, sub: text.length > 64 ? text : "", gap: gap }); }
     function point(gap) { var p = "Now tap " + RITUAL_POINTS[pt % RITUAL_POINTS.length] + "."; segs.push({ text: p, label: "◦ " + RITUAL_POINTS[pt % RITUAL_POINTS.length], sub: "keep tapping, gently", gap: gap != null ? gap : 1.6 }); pt++; }
-    function round(pool, dwell, spoken) { pool.forEach(function (t) { point(); line(t, spoken ? 8.5 : dwell); }); }
+    function round(pool, dwell, spoken) { pool.forEach(function (t) { point(); line(t, spoken ? 8.5 * attMul : dwell); }); }
     var arr = am ? (mins <= 5 ? RITUAL_POOLS.arrive.slice(0, 2) : RITUAL_POOLS.arrive) : [RITUAL_POOLS.arrive[0], RITUAL_POOLS.arrivePM[0]];
     arr.forEach(function (t) { line(t, 5); });
     line(RITUAL_POOLS.speakHint[0], 4);
     var rel = am ? RITUAL_POOLS.releaseAM : RITUAL_POOLS.releasePM;
-    (mins <= 5 ? rel.slice(0, 2) : rel.slice(0, 3)).forEach(function (t) { point(1.4); line(t, 9.5); }); // release = side-of-hand territory; ladder starts advancing after
-    var dwell = mins <= 5 ? 11 : mins <= 10 ? 14 : 18;
+    (mins <= 5 ? rel.slice(0, 2) : rel.slice(0, 3)).forEach(function (t) { point(1.4); line(t, 9.5 * attMul); }); // release = side-of-hand territory; ladder starts advancing after
+    var dwell = Math.round((mins <= 5 ? 11 : mins <= 10 ? 14 : 18) * attMul);
     if (am) {
       round(mins <= 5 ? RITUAL_POOLS.gratitudeRound.slice(0, 4) : RITUAL_POOLS.gratitudeRound, dwell, false);
       if (mins > 5) round(RITUAL_POOLS.futureRound, dwell, false);
@@ -9231,7 +9232,7 @@
       if (mins > 5) round(RITUAL_POOLS.reflectPM, dwell, false);
       round(mins <= 5 ? RITUAL_POOLS.scanPM.slice(0, 3) : RITUAL_POOLS.scanPM, dwell, false);
     }
-    line((am ? RITUAL_POOLS.bridgeAM : RITUAL_POOLS.bridgePM)[0], 15);
+    line((am ? RITUAL_POOLS.bridgeAM : RITUAL_POOLS.bridgePM)[0], 15 * attMul);
     line(RITUAL_POOLS.law[(new Date().getDate()) % RITUAL_POOLS.law.length], 6);
     line(RITUAL_POOLS.forget[0], 4);
     return segs;
