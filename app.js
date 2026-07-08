@@ -8659,9 +8659,9 @@
       var lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 0.011; lfo.connect(lg); lg.connect(gain.gain); lfo.start(); oscs.push(lfo); // a slow breathing swell
       gain.gain.linearRampToValueAtTime(0.075, actx.currentTime + 1.8); // louder ambient bed (David 2026-07-01)
     } } catch (e) { actx = null; } }
-    var i = 0, done = false;
+    var i = 0, done = false, autoT = null;
     function finish(skip) {
-      if (done) return; done = true; TTS.stop();
+      if (done) return; done = true; if (autoT) { clearTimeout(autoT); autoT = null; } TTS.stop();
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); oscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.6); } catch (e) {} }); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) {
@@ -8675,14 +8675,16 @@
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
     function paint() {
       if (done) return;
+      if (autoT) { clearTimeout(autoT); autoT = null; }
       if (i >= opts.beats.length) { lab.textContent = "Done ✓"; sub.textContent = "carry it forward"; nextB.style.display = "none"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { finish(false); }, 1400); return; }
       var b = opts.beats[i];
       lab.textContent = b.lab; sub.textContent = b.sub || "";
       orb.style.transition = "transform 1.1s ease"; orb.style.transform = b.orb === "in" ? "scale(1.3)" : b.orb === "out" ? "scale(.6)" : "scale(1)";
       say((b.lab + (b.sub ? ". " + b.sub : "")), voiceProf);
       nextB.textContent = (i === opts.beats.length - 1) ? (opts.lastLabel || "Finish ✓") : "Next ▶";
+      if (b.hold) { autoT = setTimeout(function () { if (!done) { i++; paint(); } }, b.hold * 1000); } // OPTIONAL auto-advance (David 2026-07-08): a beat with `hold` seconds descends hands-free (the countdown leads you, no tapping); tapping Next still skips ahead. Beats without `hold` stay tap-paced.
     }
-    nextB.onclick = function () { if (done) return; i++; paint(); };
+    nextB.onclick = function () { if (done) return; if (autoT) { clearTimeout(autoT); autoT = null; } i++; paint(); };
     // INTRO CARD (David 2026-07-01): the tools jumped straight into the beats with no context — "the black cloud just jumps in." Now each guided tool opens with full instructions (what it is · how to do it · the science). FIRST time = the whole thing; after that = a one-line reminder with a "how does this work?" expander. Never oversimplified.
     if (opts.intro) startWithIntro(); else setTimeout(paint, 500);
     function startWithIntro() {
@@ -10301,30 +10303,46 @@
       "Right now, in this relaxed state, your mind is open and receptive.", // 1. set the receptive frame
       "Picture yourself moving through your day steady, capable, and at ease.", // 2. the desired image (present-tense, vivid)
       "With every breath, that calm, capable feeling grows stronger and more natural.", // 3. compounding suggestion
-      "This is simply who you are now — it needs no effort, it's already yours.", // 4. identity assumption (Murphy/Goddard)
+      "This is simply who you are now, it needs no effort, it's already yours.", // 4. identity assumption (Murphy/Goddard)
       "And it stays with you, long after you open your eyes." // 5. post-hypnotic carry-over
     ];
     var BEATS = [
-      { lab: "Eyes open, soft gaze", sub: "you don't need to close your eyes — just read along, slowly, in your mind or aloud" },
-      { lab: "Let your body settle", sub: "shoulders drop… jaw unclenches… each breath a little slower", orb: "in" },
-      { lab: "A quiet beach", sub: "picture a calm shore — warm light, the slow rhythm of the water", orb: "out" },
-      { lab: "Down the steps… 10", sub: "ten… nine… eight… each number takes you deeper and calmer", orb: "out" },
-      { lab: "…3, 2, 1", sub: "all the way down now, deeply relaxed, completely at ease", orb: "out" },
-      { lab: "The reading room", sub: "a still, safe place inside — and here you read the words that take hold" },
+      { lab: "Eyes soft, or closed", sub: "let the gaze go soft and unfocused, or let the eyes close. read along slowly, in your mind or aloud" },
+      // progressive relaxation, hands-free
+      { lab: "Soften the face", sub: "let the forehead smooth, the jaw unclench, the eyes grow heavy", orb: "in", hold: 5 },
+      { lab: "Drop the shoulders", sub: "let them fall, and the arms go heavy, all the way to the fingertips", orb: "out", hold: 5 },
+      { lab: "Soften the body", sub: "the chest, the belly, the legs. each breath a little slower than the last", orb: "out", hold: 5.5 },
+      { lab: "Ten soft steps down", sub: "warm light below, and the slow rhythm of the water. we go down together", orb: "out", hold: 5 },
+      // the FULL countdown, one number at a time, each deepening — auto-descending so it leads you
+      { lab: "Ten", sub: "step down, deeper and calmer", orb: "out", hold: 4.5 },
+      { lab: "Nine", sub: "heavier, softer, letting go", orb: "out", hold: 4.5 },
+      { lab: "Eight", sub: "twice as relaxed with every number", orb: "out", hold: 4.5 },
+      { lab: "Seven", sub: "the body sinking, the mind going quiet", orb: "out", hold: 4.5 },
+      { lab: "Six", sub: "down and down, nothing to hold onto", orb: "out", hold: 4.5 },
+      { lab: "Five", sub: "halfway now, deeply at ease", orb: "out", hold: 4.5 },
+      { lab: "Four", sub: "warmer, heavier, safer", orb: "out", hold: 4.5 },
+      { lab: "Three", sub: "so calm now, so far down", orb: "out", hold: 4.5 },
+      { lab: "Two", sub: "almost there, completely relaxed", orb: "out", hold: 4.5 },
+      { lab: "One", sub: "all the way down. still, safe, and open", orb: "out", hold: 5.5 },
+      { lab: "The reading room", sub: "a quiet place inside, where the words you read take hold. take your time here" },
+      // the suggestions, read at your own pace (tap when each has landed)
       { lab: SUGG[0], sub: "read it slowly", orb: "" },
       { lab: SUGG[1], sub: "see it", orb: "" },
       { lab: SUGG[2], sub: "feel it grow", orb: "in" },
       { lab: SUGG[3], sub: "it's already true", orb: "" },
       { lab: SUGG[4], sub: "let it lock in", orb: "" },
-      { lab: "Coming back up… 1", sub: "one… beginning to return", orb: "in" },
-      { lab: "…4, 5 — eyes bright", sub: "fully back, calm and clear, carrying it with you", orb: "in" }
+      // the count back up, hands-free
+      { lab: "Coming up. One", sub: "beginning to return, the body waking gently", orb: "in", hold: 3.5 },
+      { lab: "Two, three", sub: "energy flowing back into the arms and the legs", orb: "in", hold: 3.5 },
+      { lab: "Four", sub: "clear and awake, carrying the calm", orb: "in", hold: 3.5 },
+      { lab: "Five, eyes bright", sub: "fully back, calm and clear. it stays with you" }
     ];
     beatRunner({ id: "selfhyp", title: "Self-Hypnosis", logTitle: "Self-Hypnosis", catK: "love", color: "#8a5cf0", spark: 8, voiceProf: VPROF.mantra, beats: BEATS, lastLabel: "Open eyes ✓",
       intro: {
-        tag: "read yourself into a calmer state · 2–3 min",
-        what: "An eyes-open way to settle deeply and read a few calming lines into yourself. You stay awake and just read along — reading the words slowly IS the whole technique.",
-        how: ["Keep your eyes open with a soft gaze — no need to close them.", "Let your body settle: shoulders drop, breath slows.", "Picture a calm beach, then count slowly down the steps.", "In the quiet, read the lines slowly — let each one take hold.", "Count back up, eyes bright, carrying the calm with you."],
-        why: "A relaxed, focused state is when a calm suggestion lands most easily. Reading a present-tense line slowly, as if already true, is a gentle, well-worn technique."
+        tag: "settle deep, then read one calm line into yourself · 3 to 4 min",
+        what: "A guided way to settle into a deeply relaxed, focused state, then read a few calming lines into yourself while your mind is most open. The countdown does the settling for you, hands-free. The suggestions you read slowly, at your own pace, and mean.",
+        how: ["Let the body soften: face, shoulders, chest, legs.", "Ride the countdown down, ten to one, deeper with each number.", "In the quiet at the bottom, read each line slowly, as if already true.", "Let each one land before the next.", "Count back up, eyes bright, carrying the calm with you."],
+        why: "A relaxed, focused state is when a calm suggestion lands most easily, slipping past the critical mind. A slow, faithful countdown is the classic way in. Reading a present-tense line as if it's already true is how a new self-image installs."
       }
     });
   }
