@@ -1164,7 +1164,7 @@
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     add(body, "div", "ob-kick", tr("LESSON 3 · ONE REAL THING"));
     add(body, "div", "ob-q", tr("Pick one. Small on purpose."));
-    add(body, "div", "ob-sb", tr("a plan is a promise — doing is a vote. I'll hold the clock while you go.")).style.cssText = "text-align:center;margin-top:6px;";
+    add(body, "div", "ob-sb", tr("A plan is a promise. Doing it is the vote. I'll hold the clock while you go.")).style.cssText = "text-align:center;margin-top:6px;";
     var w = add(body, "div", "obv-rows"); w.style.maxWidth = "400px"; w.style.marginTop = "14px";
     opts.forEach(function (o) {
       var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", o.c); r.style.setProperty("--ost", tfStripeDoor(o.c));
@@ -1416,7 +1416,7 @@
     if (oneThing && !planned.some(function (b) { return isOneThing(b.title); })) {
       var aimedAhead = !!am.aimedAhead; // set last night via the PM "name tomorrow's one thing" beat → greet it as today's first move (the night-before → morning loop, David 2026-07-01)
       nodes.push({ key: "onething", icon: aimedAhead ? "ti-target-arrow" : "ti-star", emoji: "⭐", title: oneThing, catK: null, _aimed: aimedAhead,
-        line: aimedAhead ? "You aimed at this last night — one move toward it." : "Your one thing today — the vote that matters most.",
+        line: aimedAhead ? "You named this last night, before the day could argue. Go do it first." : "Your one move today. Doing it beats a perfect plan.",
         color: DOM.focus.c, done: (logs(k) || []).some(function (l) { return isOneThing(l.title); }), act: function () { startTimer({ title: oneThing, emoji: "⭐", color: DOM.focus.c }); closeJourney(); renderAll(); toast("▶ started " + oneThing); } });
     }
 
