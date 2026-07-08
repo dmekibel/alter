@@ -4833,7 +4833,7 @@
     d2.voice = "";
     var BEATS = [{ t: "intro" }, { t: "stackintro" }, { t: "stack" }, { t: "stackdone" }, { t: "pace" }]; // intro (Beat 1 hook) → STACKINTRO (frame the guided micro-session) → STACK (plan it, run it, self-tracks) → STACKDONE (guardian names the loop) → PACE → survey. theOpen stays the DAILY ceremony only.
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
-    BEATS.push({ t: "constel" }, { t: "plan" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate' (commitment lands better after tasting the app), the WALL moved to chapter 2 where the course puts it (Obstacle-Crusher) — onboarding = intro → 3 parts → breath → payoff → THIS IS YOU → plan → voice → card → world
+    BEATS.push({ t: "constel" }, { t: "plan" }, { t: "plantom" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate'. PLANTOM (Node 2 "Plan tomorrow", David 2026-07-08) sits after the survey so its options can be adaptive to the answers.
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
     // BATTERY PROGRESS — 3 labeled section segments, cells = that section's questions
@@ -4999,6 +4999,38 @@
         }
         add(body, "div", null, tr("That is the whole loop. Tomorrow, with your real day.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
         stdFoot(tr("Keep going") + " ▸", false);
+        return; }
+      if (B.t === "plantom") { // NODE 2 "PLAN TOMORROW" (David 2026-07-08): one thing for tomorrow, no typing. Options ADAPT to what the survey just learned; the pick is stored as a gentle intention (S.tomorrow) and surfaced next morning.
+        obMark(body, 92);
+        add(body, "div", "ob-q", tr("One thing for tomorrow."));
+        add(body, "div", "ob-sb", tr("not a list. one thing that would make tomorrow feel like a win.")).style.cssText = "text-align:center;margin-top:6px;";
+        var Ft = d2.overwhelm || [], It = d2.ingredients || [], pool = [];
+        if (d2.bed === "battle" || d2.bed === "creaky") pool.push(["Get up before your mind argues", "ti-sunrise"]);
+        if (Ft.indexOf("cant") >= 0) pool.push(["Ten minutes of the thing you keep avoiding", "ti-player-play"]);
+        if (Ft.indexOf("doubt") >= 0) pool.push(["One small proof it matters", "ti-seedling"]);
+        if (Ft.indexOf("forget") >= 0) pool.push(["Put tomorrow's one thing where you'll see it", "ti-bell"]);
+        if (It.indexOf("moved") >= 0) pool.push(["A ten-minute walk, first thing", "ti-walk"]);
+        if (It.indexOf("people") >= 0) pool.push(["One message to a good person", "ti-message-heart"]);
+        if (It.indexOf("quiet") >= 0) pool.push(["Ten quiet minutes before the noise", "ti-coffee"]);
+        if (It.indexOf("early") >= 0 || It.indexOf("slept") >= 0) pool.push(["Lights out ten minutes earlier tonight", "ti-moon"]);
+        var defs = [["One honest conversation", "ti-messages"], ["The two-minute version of the hard thing", "ti-player-play"], ["One small thing, on purpose", "ti-star"]];
+        var picks = pool.slice(0, 3); defs.forEach(function (d) { if (picks.length < 3 && !picks.some(function (p) { return p[0] === d[0]; })) picks.push(d); });
+        var more = [["Move my body", "ti-run"], ["Rest, on purpose", "ti-moon"], ["Reach out to someone", "ti-message-heart"], ["Ten quiet minutes", "ti-coffee"], ["Start the avoided thing", "ti-player-play"], ["Lights out earlier", "ti-moon"]];
+        var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:9px;width:100%;max-width:400px;margin-top:14px;";
+        function chooseTom(line) {
+          try { S.tomorrow = { k: tomK(), line: line, ts: Date.now() }; save(); } catch (e) {} // gentle intention, surfaced next morning
+          while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild);
+          obMark(body, 110);
+          var r = add(body, "div"); r.style.cssText = "text-align:center;font-size:18px;font-weight:800;color:#f0e6ef;max-width:340px;margin-top:16px;line-height:1.4;"; r.innerHTML = '<span style="color:#cbb6e6;font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">' + esc(tr("Tomorrow")) + '</span><br>' + esc(tr(line));
+          add(body, "div", null, tr("I'll have it ready when you wake.")).style.cssText = "text-align:center;font-size:14px;font-weight:600;color:#cbb6e6;margin-top:10px;";
+          try { speak(tr(line) + ". " + tr("I'll have it ready when you wake.")); } catch (e) {}
+          stdFoot(tr("Keep going") + " ▸", false);
+        }
+        function renderOpts(list, showMore) {
+          list.forEach(function (o) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#b07aff"); b.style.minHeight = "54px"; b.innerHTML = '<i class="ti ' + o[1] + ' oi"></i><span class="ol">' + esc(tr(o[0])) + '</span>'; b.onclick = function () { chooseTom(o[0]); }; });
+          if (showMore) { var mb = add(wrap, "button", "obv-row"); mb.style.cssText = "min-height:46px;opacity:.75;border-style:dashed;"; mb.innerHTML = '<i class="ti ti-dots oi"></i><span class="ol">' + esc(tr("Something else")) + '</span>'; mb.onclick = function () { while (wrap.firstChild) wrap.removeChild(wrap.firstChild); renderOpts(more, false); }; }
+        }
+        renderOpts(picks, true);
         return; }
       if (B.t === "pace") { // THE PACE DOOR (SPEC-FIRST-RUN §2 Phase 3, P2): the FIRST thing the map asks → P.door (scholar|player|doer). The liturgy will modulate depth by it; NEVER announced as a persona, and changeable any day.
         obMark(body, 92);
@@ -9878,16 +9910,18 @@
   function morningDoor(onDone) {
     var words = ((S.profile || {}).words) || [], WMAP = { calmer: "calm", stronger: "strong", builder: "the builder", consistent: "steady", present: "present", freer: "free", brave: "brave", kind: "kind", focused: "focus", disciplined: "discipline" };
     var word = words.length ? (WMAP[words[0]] || words[0]) : "here";
+    var mBeats = [
+      { lab: tr("Roll your shoulders back"), sub: tr("once, slow, let sleep fall off them"), orb: "" },
+      { lab: tr("Unclench the jaw"), sub: tr("drop it loose, soften the face"), orb: "out" },
+      { lab: tr("Feet flat on the floor"), sub: tr("feel it take your weight. you're here now"), orb: "" },
+      { lab: tr("Inhale") + ": “" + esc(tr(word)) + "”", sub: tr("breathe the word in… exhale, and settle into the day"), orb: "in" },
+      { lab: tr("Get some light if you can"), sub: tr("morning light sets the whole day's clock"), orb: "" }
+    ];
+    if (S.tomorrow && S.tomorrow.k === todayK() && S.tomorrow.line) mBeats.unshift({ lab: tr("Last night, you chose"), sub: "“" + esc(tr(S.tomorrow.line)) + "”. " + tr("that's today's one thing."), orb: "in" }); // surface the Plan-Tomorrow intention set at day-one
     beatRunner({
       id: "morningdoor", title: tr("Morning"), logTitle: "Morning switch", catK: "restore", color: "#ffc83d", spark: 5, voiceProf: VPROF.relax,
-      intro: { tag: tr("the switch into your day · 60 sec"), what: tr("A tiny switch from sleep-you to day-you: three body beats, one breath on a word you're becoming, then I read your energy and set my voice for the day."), how: [tr("Roll the shoulders back, once."), tr("Unclench the jaw, let it drop loose."), tr("Feet flat — feel the floor take your weight."), tr("Inhale your word; exhale, and settle into the day.")], why: tr("The body leads the mind. A short switch plus morning light tells your whole system the day has begun — cortisol, focus, and mood fall in behind it.") },
-      beats: [
-        { lab: tr("Roll your shoulders back"), sub: tr("once, slow — let sleep fall off them"), orb: "" },
-        { lab: tr("Unclench the jaw"), sub: tr("drop it loose, soften the face"), orb: "out" },
-        { lab: tr("Feet flat on the floor"), sub: tr("feel it take your weight — you're here now"), orb: "" },
-        { lab: tr("Inhale") + ": “" + esc(tr(word)) + "”", sub: tr("breathe the word in… exhale, and settle into the day"), orb: "in" },
-        { lab: tr("Get some light if you can"), sub: tr("morning light sets the whole day's clock"), orb: "" }
-      ], lastLabel: tr("I'm in ✓"),
+      intro: { tag: tr("the switch into your day · 60 sec"), what: tr("A tiny switch from sleep-you to day-you: three body beats, one breath on a word you're becoming, then I read your energy and set my voice for the day."), how: [tr("Roll the shoulders back, once."), tr("Unclench the jaw, let it drop loose."), tr("Feet flat, feel the floor take your weight."), tr("Inhale your word; exhale, and settle into the day.")], why: tr("The body leads the mind. A short switch plus morning light tells your whole system the day has begun, and cortisol, focus, and mood fall in behind it.") },
+      beats: mBeats, lastLabel: tr("I'm in ✓"),
       onFinish: function (skipped) { if (onDone) onDone(); if (skipped) return;
         try { if (S.guide && S.guide.fd && !S.guide.fd.done && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); try { drawJourney(true); } catch (e) {} } } catch (e) {} // Day-1 rebuild: the Switch IS Lesson 1 — completing it lights the first stone
         var toGauge = function () { try { S.gaugeK = null; gaugeOpen(function () {}); } catch (e) {} };
