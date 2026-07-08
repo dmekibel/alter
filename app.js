@@ -1092,12 +1092,11 @@
       { k: "line", t: "Every resolution dies the same way. You miss one day, decide you have already failed, and quit. Skipping that last step is the one skill worth having." },
       { k: "door", t: "So here is all I am asking today. Sixty seconds. One minute, once, and you owe me nothing after. That is a yes you can afford to make.", btn: "Yes, one minute \u25b8", rep: function () { morningDoor(function (skipped) { if (!skipped) runLesson(DAY1_LESSONS.fd0b); }, { lesson: true }); } }] },
     fd0b: { c: "#ffc83d", beats: [ // the landing after the rep: name it, check it honestly, place tomorrow's offer, seal
-      { k: "line", t: "That was you, steering your own state.", big: true, orb: true },
-      { k: "line", t: "Sixty seconds, on purpose. Most people never learn the wheel exists." },
-      { k: "mirror", q: "Anything shift? Even two percent.", save: "switchFelt", onPick: function (o) { S.profile = S.profile || {}; S.profile.switchFelt = o.tag; save(); }, opts: [
-        { t: "A little", tag: "yes", reply: "That two percent was you. Not coffee, not luck. You." },
-        { t: "Honestly, no", tag: "no", reply: "Good. An honest zero beats a polite maybe. Some tools won't be yours. Finding the ones that are is what this path is for." }] },
-      { k: "mirror", q: "Tomorrow I'll offer this again, at the moment it actually helps. When is that, honestly?", save: "switchWhen", onPick: function (o) { S.profile = S.profile || {}; S.profile.switchWhen = o.tag; save(); }, opts: [
+      { k: "line", t: "Feel that drop in your shoulders? That was me, coming back into range.", big: true, orb: true },
+      { k: "mirror", q: "Did anything move? Even two percent, or an honest nothing.", save: "switchFelt", onPick: function (o) { S.profile = S.profile || {}; S.profile.switchFelt = o.tag; save(); }, opts: [
+        { t: "A little", tag: "yes", reply: "Two percent quieter than a minute ago. Small on purpose, because small is the size that survives a hard day." },
+        { t: "Honestly, no", tag: "no", reply: "An honest no. This one may not be yours. We keep the ones that land." }] },
+      { k: "mirror", q: "Then here is the next yes, a little bigger. Let me catch you tomorrow, one minute, before the noise wins. When does it usually win?", save: "switchWhen", onPick: function (o) { S.profile = S.profile || {}; S.profile.switchWhen = o.tag; save(); }, opts: [
         { t: "Before I'm out of bed", tag: "bed", reply: "Then it'll be there before your feet hit the floor." },
         { t: "With the first coffee", tag: "coffee", reply: "Then it pairs with the coffee. Good ritual glue." },
         { t: "After the phone has already had me", tag: "phone", reply: "Honest. Then it becomes the way you take the morning back." },
@@ -4899,7 +4898,7 @@
       if (d2.vibe) { var _lv = d2.vibe === "thriving" ? "high" : d2.vibe === "coasting" ? "floor" : "low";
         var _as = S.guide.appetiteState = S.guide.appetiteState || { level: _lv, nodeCap: 2, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0, lastDeclineK: null, lastInviteSentK: null };
         if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); } }
-      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = (new Date().getHours() >= 17) ? { k: tomK(), eve: 1 } : { k: todayK() }; // TIME-OF-DAY (SPEC-FIRST-RUN §2, P2b): an evening first-run arms the stones for TOMORROW — tonight the trail is one node, the floor close ("We start properly tomorrow.")
+      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) { var _fh = new Date().getHours(); S.guide.fd = (_fh >= 23 || _fh < 4) ? { k: tomK(), eve: 1 } : { k: todayK(), eve: _fh >= 17 ? 1 : 0 }; } // TIME-OF-DAY (David 2026-07-08): the first-day journey IS the tutorial / entry, so it runs TODAY at any normal hour (evening included; `eve` flag drives evening-aware copy). Only genuine late-night (11pm-4am) defers to tomorrow with the floor close ("we start properly tomorrow").
       save(); ov.remove();
       try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
     }
