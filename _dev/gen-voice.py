@@ -52,7 +52,9 @@ if m:
 m = re.search(r'var FEELINGS = \[(.*?)\];', src, re.S)
 if m:
     for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)):
-        add("Even though I feel " + un(a) + ", I deeply and completely accept myself."); add("“" + un(b) + "”")
+        bb = un(b); noun = bb[5:] if bb.startswith("this ") else bb
+        add("Even though I feel " + un(a) + ", I deeply and completely accept myself."); add("“" + bb + "”")
+        add("“this remaining " + noun + "”"); add("“what's left of this " + noun + "”")  # EFT reminder-phrase variation across re-rate rounds (2026-07-08)
 m = re.search(r'var PTS = \[(.*?)\];', src, re.S)
 if m:
     for a, b in re.findall(r'\[\s*' + STR + r'\s*,\s*' + STR + r'\s*\]', m.group(1)): add(un(a))

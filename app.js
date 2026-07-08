@@ -7211,28 +7211,31 @@
       ov.innerHTML = "";
       var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
-      box.innerHTML = '<div style="font-size:26px;font-weight:800;"><i class="ti ti-hand-finger"></i> Tapping</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:6px;">EFT — tap the points, let it move through you</div>';
+      box.innerHTML = '<div style="font-size:26px;font-weight:800;"><i class="ti ti-hand-finger"></i> Tapping</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:6px;">EFT: tap the points, let it move through you</div>';
       var lbl = add(box, "div", null, "what's bumping you?"); lbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;";
       var r = add(box, "div"); r.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
       FEELINGS.forEach(function (f) { var b = add(r, "button", null, f[0]); b.style.cssText = "border:2.5px solid #6a5a9a;border-radius:14px;padding:9px 13px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#efeaff;background:" + (cfg.feel === f ? "#ff7ab8" : "rgba(255,255,255,.06)") + ";"; b.onclick = function () { cfg.feel = f; build(); }; });
-      var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:22px;background:#ff7ab8;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
-      var hint = add(box, "div", null, "Tap each point ~7× with two fingers. No need to believe it — just tap and say the words."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
+      var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:22px;background:#ff7ab8;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = function () { gauge010("How strong is it, right now?", "0 = gone, 10 = all-consuming", function (pre) { runTapping(pre, pre, 0); }); }; // EFT SUDS pre-rating (David 2026-07-08): rate the distress FIRST, so the re-rate after each round can measure the drop — the mechanism the evidence base is built on
+      var hint = add(box, "div", null, "Tap each point ~7× with two fingers. No need to believe it, just tap and say the words."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
-    function run() {
-      TTS.unlock(); // gesture-bound: inside the "Begin ▶" tap
-      ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
+    function nounOf(ph) { return ph.replace(/^this /, ""); }
+    function reminderPhrase(pass) { var b = cfg.feel[1]; return pass <= 0 ? b : pass === 1 ? "this remaining " + nounOf(b) : "what's left of this " + nounOf(b); } // EFT reminder-phrase variation (Craig): later rounds acknowledge the charge is already dropping, so the words track the felt reality instead of re-asserting the full original intensity
+    function runTapping(origPre, prevRating, pass) { // origPre = the very first SUDS · prevRating = the SUDS this pass is working down from · pass = 0 (with setup) then 1,2 follow-ups
+      TTS.unlock(); // gesture-bound: inside the tap that got here
+      ov.style.display = ""; ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
       addVoiceToggle(ov);
       var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
       var AC = window.AudioContext || window.webkitAudioContext, actx = null, osc = null, gain = null;
       try { if (AC) { actx = sharedAudioCtx(); osc = actx.createOscillator(); gain = actx.createGain(); osc.type = "sine"; osc.frequency.value = 180; gain.gain.value = 0; osc.connect(gain); gain.connect(bgBus() || actx.destination); osc.start(); } } catch (e) { actx = null; }
       function blip(freq) { if (!actx) return; var now = actx.currentTime; osc.frequency.setValueAtTime(freq, now); gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.006, now + 0.4); }
-      var steps = [], setupLine = "Even though I feel " + cfg.feel[0] + ", I deeply and completely accept myself.";
-      for (var s = 0; s < 3; s++) steps.push({ pt: "Setup — side of hand", say: setupLine, setup: true });
-      for (var rd = 0; rd < cfg.rounds; rd++) PTS.forEach(function (p) { steps.push({ pt: p[0], loc: p[1], say: "“" + cfg.feel[1] + "”" }); });
+      var reminder = reminderPhrase(pass), steps = [];
+      if (pass === 0) { var setupLine = "Even though I feel " + cfg.feel[0] + ", I deeply and completely accept myself."; for (var s = 0; s < 3; s++) steps.push({ pt: "Setup — side of hand", say: setupLine, setup: true }); }
+      var nR = pass === 0 ? cfg.rounds : 1; // follow-up passes are a single tightening round
+      for (var rd = 0; rd < nR; rd++) PTS.forEach(function (p) { steps.push({ pt: p[0], loc: p[1], say: "“" + reminder + "”" }); });
       steps.push({ pt: "Take a slow breath", say: "and notice how it feels now", end: true });
-      // SCHEDULE the spoken cues up front (inside this Begin tap) so they actually play on iOS — no timer-fired speak. Matches step()'s pacing below.
+      // SCHEDULE the spoken cues up front (inside this tap) so they actually play on iOS — no timer-fired speak. Schedule the PIECES (point name, then feeling phrase) — both are literals with clips (B3 2026-07-02); the varied reminders are banked too.
       var schedSrcs = [];
-      (function () { var t0 = (TTS.ctx() || {}).currentTime || 0, tSec = 0.7; steps.forEach(function (st) { // B3 (David 2026-07-02, "tapping has no audio at all"): the old path scheduled ONE clip of the composed "pt. say" — a string that exists in NO bank (the cues are runtime combinations of point × feeling, never extractable). Schedule the PIECES instead: the point name, then the feeling phrase — both are literals with clips in both languages. scheduleClipAsync = cold-cache safe.
+      (function () { var t0 = (TTS.ctx() || {}).currentTime || 0, tSec = 0.7; steps.forEach(function (st) {
         if (st.setup) { var s1 = TTS.scheduleClipAsync(st.say, tSec, VPROF.eft.volume, t0); if (s1) schedSrcs.push(s1); }
         else { var sp = TTS.scheduleClipAsync(st.pt, tSec, VPROF.eft.volume, t0); if (sp) schedSrcs.push(sp);
                var s2 = TTS.scheduleClipAsync(st.say, tSec + 1.5, VPROF.eft.volume, t0); if (s2) schedSrcs.push(s2); }
@@ -7244,7 +7247,7 @@
         if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3); osc.stop(actx.currentTime + 0.4); } catch (e) {} }
         if (skip) { if (ov.parentNode) ov.remove(); return; }
         lab.textContent = "Done ✓"; sub.textContent = "let it settle"; orb.style.animation = ""; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)";
-        setTimeout(function () { if (ov.parentNode) ov.remove(); var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Tapping (EFT)", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); tickTool("tapping"); save(); renderAll(); }, 1500);
+        setTimeout(function () { sudsPost(origPre, prevRating, pass); }, 1300); // RE-RATE (the EFT mechanism) instead of just ending
       }
       ov.querySelector(".bw-x").onclick = function () { finish(true); };
       function step() {
@@ -7253,12 +7256,32 @@
         var st = steps[i];
         lab.textContent = st.pt; sub.textContent = st.say + (st.loc ? "  ·  " + st.loc : "");
         orb.style.animation = st.end ? "breathe 6s ease-in-out infinite" : "breathe 1s ease-in-out infinite";
-        // (voice cues pre-scheduled up front — no timer-fired speak)
         blip(st.setup ? 165 : (st.end ? 150 : 175 + i * 6));
         i++; tmr = setTimeout(step, st.setup ? 6400 : (st.end ? 5600 : 4400));
       }
       orb.style.animation = "breathe 1s ease-in-out infinite";
       setTimeout(step, 700);
+    }
+    function sudsPost(origPre, prevRating, pass) {
+      gauge010("And now? Same scale.", "0 = gone, 10 = all-consuming", function (post) {
+        if (post <= 2 || (origPre - post) >= 3 || pass >= 2) closeTapping(origPre, post); // low enough, big total drop, or capped at 3 passes
+        else offerAnother(origPre, post, pass, prevRating - post); // still charged and moving (or worth one more shot) — re-rate drives the decision, exactly like real EFT
+      });
+    }
+    function offerAnother(origPre, post, pass, moved) {
+      ov.style.display = ""; while (ov.firstChild) ov.removeChild(ov.firstChild);
+      var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:400px;color:#efeaff;font-family:var(--bub);text-align:center;";
+      var head = moved > 0 ? ("From " + origPre + " down to " + post + ".") : ("Still around " + post + ".");
+      var msg = moved > 0 ? "It's moving. One more pass usually takes it lower." : "Sometimes it takes a few passes, or a sharper target. Want another round?";
+      box.innerHTML = '<div style="font-size:21px;font-weight:800;margin-bottom:7px;">' + head + '</div><div style="font-size:13.5px;color:#cbb6e6;line-height:1.5;margin-bottom:22px;">' + msg + '</div>';
+      var again = add(box, "button", null, "Tap again ▸"); again.style.cssText = "display:block;margin:0 auto 12px;background:#ff7ab8;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:12px 26px;font-family:var(--bub);font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; again.onclick = function () { runTapping(origPre, post, pass + 1); };
+      var good = add(box, "button", null, "I'm good ✓"); good.style.cssText = "display:block;margin:0 auto;background:none;border:none;color:#9a86c0;font-size:14px;font-weight:700;cursor:pointer;"; good.onclick = function () { closeTapping(origPre, post); };
+    }
+    function closeTapping(origPre, post) {
+      if (ov.parentNode) ov.remove();
+      var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Tapping (EFT)", mins: 3, catK: "love", color: "#ff7ab8" }); earn(7, { catK: "love" }); tickTool("tapping"); save(); renderAll();
+      var drop = origPre - post;
+      toast(drop > 0 ? "✦ " + origPre + " to " + post + ", " + drop + (drop === 1 ? " point" : " points") + " lighter." : "✦ done. noticing it is the work.");
     }
     build();
   }
