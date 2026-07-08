@@ -872,7 +872,7 @@
     function gate(ok, fn) { return function () { if (!ok) { toast(tr("one lesson at a time — the glowing one first")); return; } fn(); }; } // sequential Duolingo locks
     nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Lesson 1 · The Switch"), _lead: lead(s0, false),
       line: s0 ? tr("Switched on. The body leads the mind, and you led the body.") : tr("You have already met the best version of you. Let's close the gap."),
-      color: "#ffc83d", done: s0, act: gate(true, function () { runLesson(DAY1_LESSONS.fd0); }) });
+      color: "#ffc83d", done: s0, act: gate(true, function () { firstDayStack(function () { try { if (S.guide && S.guide.fd && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); } } catch (e) {} try { runLesson(DAY1_LESSONS.fd0b); } catch (e) { try { drawJourney(true); } catch (e2) {} } }); }) }); // STONE 1 = the intro micro-stack (David 2026-07-08), then the fd0b landing (name/check/tomorrow-yes/seal). The old runLesson(fd0) opener slideshow is retired.
     nodes.push({ key: "fd1", icon: "ti-cards", title: tr("Lesson 2 · Your Words"), locked: !s0, _lead: lead(s1, !s0),
       line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Areté — the gap between who you are and who you could be."),
       color: "#b07aff", done: s1, act: gate(s0, function () { runLesson(DAY1_LESSONS.fd1); }) });
@@ -4835,7 +4835,7 @@
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }, { t: "stackintro" }, { t: "stack" }, { t: "stackdone" }, { t: "pace" }]; // intro (Beat 1 hook) → STACKINTRO (frame the guided micro-session) → STACK (plan it, run it, self-tracks) → STACKDONE (guardian names the loop) → PACE → survey. theOpen stays the DAILY ceremony only.
+    var BEATS = [{ t: "intro" }, { t: "pace" }]; // ONBOARDING = QUESTIONS ONLY (David 2026-07-08): the intro micro-stack MOVED OUT of onboarding to become Journey Stone 1 (firstDayStack). Onboarding is now intro (Beat 1 hook) → PACE → survey → plan → seed. The stackintro/stack/stackdone beat handlers stay defined but are no longer scheduled.
     var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "plantom" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate'. PLANTOM (Node 2 "Plan tomorrow", David 2026-07-08) sits after the survey so its options can be adaptive to the answers.
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
@@ -9420,6 +9420,56 @@
       }
     });
     return { segs: segs, acts: acts };
+  }
+  function firstDayStack(onDone) { // STONE 1 = THE APP IN ONE MINUTE (David 2026-07-08): the intro micro-stack (plan -> do -> track) IS the first journey stone now, no longer an onboarding beat. Standalone overlay: plan the stack, runFirstStack (carousel + before/after gauge = the felt-shift proof, self-logs to the day), then the show-don't-tell recap. Plan-UI + recap are the proven onboarding code, lifted verbatim. onDone() closes it.
+    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
+    add(body, "div", "ob-q", tr("How much time do you have?"));
+    add(body, "div", "ob-sb", tr("a tiny version of the whole app: plan it, run it, watch it land")).style.cssText = "text-align:center;margin-top:6px;";
+    var STK = [
+      { id: "stretch", nm: "Loosen the body", ic: "ti-stretching", c: "#ff8a1e", secs: 40, on: true, run: function (s, cb) { stretchFloor(cb, s); } },
+      { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: 40, on: true, run: function (s, cb) { relaxMoment(cb); } },
+      { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: 48, on: true, run: function (s, cb) { breathwork(Math.max(2, Math.round(s / 16)), cb); } },
+      { id: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", secs: 40, on: true, run: function (s, cb) { stackMantra(cb, s); } },
+      { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: 60, on: false, run: function (s, cb) { meditationQuick(cb, s); } }
+    ];
+    var PRE = { quick: [30, 30, 32, 30, 45], some: [40, 40, 48, 40, 60], deep: [55, 50, 64, 50, 90] }, presetK = "some";
+    function fmtS(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }
+    function stackTotal() { return STK.reduce(function (a, t) { return a + (t.on ? t.secs : 0); }, 0); }
+    var pbox = add(body, "div"); pbox.style.cssText = "width:100%;max-width:400px;margin-top:12px;";
+    var chipRow = add(pbox, "div"); chipRow.style.cssText = "display:flex;gap:8px;justify-content:center;margin-bottom:14px;"; var chips = {};
+    [["quick", "Quick"], ["some", "A bit"], ["deep", "Deeper"]].forEach(function (p) { var b = add(chipRow, "button", "obv-row"); b.style.cssText = "flex:1;min-height:0;padding:9px 4px;justify-content:center;text-align:center;font-weight:800;"; b.textContent = tr(p[1]); chips[p[0]] = b; b.onclick = function () { presetK = p[0]; STK.forEach(function (t, i) { t.secs = PRE[p[0]][i]; }); refreshStack(); }; });
+    var rows = {}, addRow;
+    var totB = add(pbox, "div"); totB.style.cssText = "text-align:center;font-weight:900;font-size:21px;color:#ffcf6a;letter-spacing:.5px;margin:2px 0 14px;";
+    function updTot() { totB.textContent = tr("about") + " " + fmtS(stackTotal()); }
+    STK.forEach(function (t) {
+      var r = add(pbox, "div", "obv-row"); r.style.cssText = "min-height:52px;margin-bottom:8px;"; r.style.setProperty("--oc", t.c);
+      r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
+      var ctrl = add(r, "span"); ctrl.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:6px;";
+      var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:16px;"; mn.onclick = function (e) { e.stopPropagation(); t.secs = Math.max(20, t.secs - 10); du.textContent = fmtS(t.secs); updTot(); };
+      var du = add(ctrl, "b"); du.textContent = fmtS(t.secs); du.style.cssText = "min-width:40px;text-align:center;";
+      var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:16px;"; pl.onclick = function (e) { e.stopPropagation(); t.secs = Math.min(120, t.secs + 10); du.textContent = fmtS(t.secs); updTot(); };
+      if (t.id === "medit") { var rm = add(ctrl, "button"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;opacity:.6;font-size:16px;"; rm.onclick = function (e) { e.stopPropagation(); t.on = false; r.style.display = "none"; addRow.style.display = ""; updTot(); }; r.style.display = "none"; }
+      rows[t.id] = { r: r, du: du };
+    });
+    addRow = add(pbox, "button", "obv-row"); addRow.style.cssText = "min-height:46px;margin-bottom:8px;opacity:.75;border-style:dashed;"; addRow.innerHTML = '<i class="ti ti-plus oi"></i><span class="ol">' + esc(tr("Add stillness (meditation)")) + '</span>'; addRow.onclick = function () { STK[4].on = true; rows.medit.r.style.display = ""; addRow.style.display = "none"; updTot(); };
+    function refreshStack() { STK.forEach(function (t) { if (rows[t.id]) rows[t.id].du.textContent = fmtS(t.secs); }); for (var k in chips) chips[k].style.background = (k === presetK) ? tfStripeDoor("#b07aff") : ""; updTot(); }
+    refreshStack();
+    var sb = add(foot, "button", "ob-btn", tr("Start") + " ▸");
+    sb.onclick = function () { var list = STK.filter(function (t) { return t.on; }); if (!list.length) return; runFirstStack(list, function (pre, post) { showRecap(list, pre, post); }); };
+    function showRecap(list, pre, post) {
+      while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild);
+      add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
+      var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
+      list.forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
+      if (pre != null && post != null) {
+        var drop = add(body, "div"); drop.style.cssText = "margin-top:18px;text-align:center;";
+        add(drop, "div", null, tr("Tension")).style.cssText = "font-size:13px;font-weight:800;letter-spacing:1px;color:#cbb6e6;text-transform:uppercase;";
+        var nums = add(drop, "div"); nums.style.cssText = "font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:2px;"; nums.innerHTML = '<span style="color:#ffcf6a;">' + pre + '</span><i class="ti ti-arrow-right" style="font-size:19px;opacity:.5;color:#fff;"></i><span style="color:#8fe6a8;">' + post + '</span>';
+        var dl = pre - post; add(drop, "div", null, dl > 0 ? (tr("you brought it down by") + " " + dl) : tr("you showed up. that's the rep.")).style.cssText = "font-size:13px;font-weight:700;color:#cbb6e6;margin-top:4px;";
+      }
+      add(body, "div", null, tr("That is the whole loop. Tomorrow, with your real day.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
+      var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+    }
   }
   function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07, unified v938): a before/after tension gauge (the felt-shift PROOF) wraps ONE composed timelinePlayer session (all acts + transitions in one surface). Logs the stack to the day (tracking). onDone(pre, post) feeds the show-don't-tell recap.
     gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
