@@ -871,7 +871,7 @@
     var _leadSet = false; function lead(done, locked) { if (done || locked || _leadSet) return false; _leadSet = true; return true; }
     function gate(ok, fn) { return function () { if (!ok) { toast(tr("one lesson at a time — the glowing one first")); return; } fn(); }; } // sequential Duolingo locks
     nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Lesson 1 · The Switch"), _lead: lead(s0, false),
-      line: s0 ? tr("Switched on. The body leads the mind, and you led the body.") : tr("Don't take my word for anything. Sixty seconds."),
+      line: s0 ? tr("Switched on. The body leads the mind, and you led the body.") : tr("You have already met the best version of you. Let's close the gap."),
       color: "#ffc83d", done: s0, act: gate(true, function () { runLesson(DAY1_LESSONS.fd0); }) });
     nodes.push({ key: "fd1", icon: "ti-cards", title: tr("Lesson 2 · Your Words"), locked: !s0, _lead: lead(s1, !s0),
       line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Areté — the gap between who you are and who you could be."),
@@ -1087,9 +1087,10 @@
   var DAY1_LESSONS = { // ritual-lesson data — SHORT lines (max ~15 words), mirror questions with NO right answer (they learn the user), a burn, a seal, a door. Course DNA intact: Never Exonerated / Areté / Initiate & Celebrate / votes / Response-Ability / Win-or-Learn.
     // STONE 1 rebuilt (David 2026-07-08 verdict: no aphorism slideshows, no jargon, no abstract questions — see memory alter-journey-stones-verdict). New grammar: PRIME (Tony-style, voice carries you in) → DO (the real 60-sec switch) → NAME (one plain line) → CHECK (skeptic-safe, honest-no respected) → PLACE (schedule the real thing; data as side effect) → SEAL. Theory ("never exonerated") deals LATER via deck cards, after reps earn it.
     fd0: { c: "#ffc83d", beats: [
-      { k: "line", t: "Don't take my word for anything.", big: true, orb: true },
-      { k: "line", t: "Sixty seconds. The smallest tool I have. It works even if you don't believe in it yet." },
-      { k: "door", t: "Just follow my voice.", btn: "I'm listening \u25b8", rep: function () { morningDoor(function (skipped) { if (!skipped) runLesson(DAY1_LESSONS.fd0b); }, { lesson: true }); } }] },
+      { k: "line", t: "I am the part of you that already knows who you are capable of being.", big: true, orb: true },
+      { k: "line", t: "You have heard me clearly on your best days. Then the noise comes back, and I get hard to hear." },
+      { k: "line", t: "Every resolution dies the same way. You miss one day, decide you have already failed, and quit. Skipping that last step is the one skill worth having." },
+      { k: "door", t: "So here is all I am asking today. Sixty seconds. One minute, once, and you owe me nothing after. That is a yes you can afford to make.", btn: "Yes, one minute \u25b8", rep: function () { morningDoor(function (skipped) { if (!skipped) runLesson(DAY1_LESSONS.fd0b); }, { lesson: true }); } }] },
     fd0b: { c: "#ffc83d", beats: [ // the landing after the rep: name it, check it honestly, place tomorrow's offer, seal
       { k: "line", t: "That was you, steering your own state.", big: true, orb: true },
       { k: "line", t: "Sixty seconds, on purpose. Most people never learn the wheel exists." },
