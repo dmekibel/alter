@@ -7123,6 +7123,41 @@
     var segs = STEPS.map(function (s) { return { text: s[0] + ", " + s[1], label: s[0], sub: s[1] }; });
     timelinePlayer({ id: "relax", title: "Mindful moment", logTitle: "Mindful moment", catK: "energy", color: "#9a5cf0", spark: 5, vol: VPROF.relax.volume, drone: true, cadenceSec: 4.2, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
+  // TRUE PROGRESSIVE MUSCLE RELAXATION (David 2026-07-08 depth mandate — the real Jacobson / Bernstein-Borkovec protocol, not the Maltz soften-only "Relax all muscles"). The DEFINING mechanism is the tense-then-release CONTRAST: squeeze a group hard ~5s (orb swells), then let go all at once and rest in the rebound ~15-20s (orb falls). Head-to-toe order. Runs on beatRunner (intro card + hands-free `hold` auto-advance + logging); every cue is a real neural clip (gen-voice extracts lab+sub).
+  function muscleRelease() {
+    var PMR_BEATS = [
+      { lab: "Settle in", sub: "lie or sit back, let your weight drop. we begin at the hands", orb: "", hold: 12 },
+      { lab: "Make tight fists", sub: "both hands, squeeze hard, and hold", orb: "in", hold: 5 },
+      { lab: "Let go", sub: "fingers loose, feel the blood flow back in, warm", orb: "out", hold: 18 },
+      { lab: "Curl your arms up", sub: "fists to your shoulders, tighten the biceps hard", orb: "in", hold: 5 },
+      { lab: "Drop your arms", sub: "let them fall heavy at your sides", orb: "out", hold: 18 },
+      { lab: "Lift your eyebrows", sub: "raise them as high as they go, hold the stretch", orb: "in", hold: 5 },
+      { lab: "Smooth the forehead", sub: "let it unfold, flat and wide", orb: "out", hold: 15 },
+      { lab: "Clench the jaw", sub: "press your tongue to the roof of your mouth, and hold", orb: "in", hold: 5 },
+      { lab: "Let the jaw hang", sub: "lips part, teeth come apart, the whole face soft", orb: "out", hold: 15 },
+      { lab: "Shrug to your ears", sub: "lift your shoulders straight up, tight", orb: "in", hold: 5 },
+      { lab: "Drop your shoulders", sub: "feel the space open up in your neck", orb: "out", hold: 18 },
+      { lab: "Pinch the shoulder blades", sub: "pull them back and together, like holding something between them", orb: "in", hold: 5 },
+      { lab: "Let them settle", sub: "shoulders roll forward, the chest widens with the next breath", orb: "out", hold: 18 },
+      { lab: "Brace your stomach", sub: "pull it in hard, like bracing for a punch", orb: "in", hold: 5 },
+      { lab: "Soften the belly", sub: "let the next breath fill it back out, easy", orb: "out", hold: 15 },
+      { lab: "Squeeze thighs and seat", sub: "press your thighs together, tighten, hard", orb: "in", hold: 5 },
+      { lab: "Release the legs", sub: "feel their weight sink down into the surface beneath you", orb: "out", hold: 18 },
+      { lab: "Point your toes back", sub: "pull them up toward your knees, hold it through the calves", orb: "in", hold: 5 },
+      { lab: "Let the feet fall", sub: "loose and heavy, the release travels all the way up your legs", orb: "out", hold: 20 },
+      { lab: "One full sweep", sub: "from your feet to your scalp, let any last spot of tension drain out", orb: "out", hold: 18 },
+      { lab: "Notice the difference", sub: "how wired you felt when we started, against how you feel right now", orb: "", hold: 14 },
+      { lab: "Stay as long as you like", sub: "your body already knows the way back to this", orb: "", hold: 8 }
+    ];
+    beatRunner({
+      id: "pmr", title: "Tense and Release", logTitle: "Tense and Release", catK: "restore", color: "#63d3c9", spark: 8, voiceProf: VPROF.relax,
+      intro: { tag: "tense, then release · 7 min · Jacobson",
+        what: "Progressive Muscle Relaxation, the real protocol. You tense each muscle group hard for about five seconds, then release and rest in the contrast for fifteen to twenty. It moves through the body in order: hands, arms, face, neck, torso, legs.",
+        how: ["Find somewhere you won't be disturbed for a few minutes.", "When a cue says tense, squeeze that group firmly, not to pain, and hold.", "When it says release, let go all at once, not slowly.", "Stay with each release for the full count. That is where the relaxation happens."],
+        why: "Tensing a muscle hard and then letting go triggers a rebound: it relaxes further than if you had just tried to relax it cold. It also resets the muscle spindles that keep a muscle geared up, lowering their baseline. Over time you learn to feel tension arriving early, before it becomes a headache or a clenched jaw." },
+      beats: PMR_BEATS, lastLabel: "Done ✓"
+    });
+  }
   // adaptive guided meditation: YOU choose how often it re-anchors you (for a 0-attention-span mind) + modular focus + tiny durations
   // MED_GUIDES at module scope (Full Stack, David 2026-07-02) so the flagship session reuses the deep guides without meditation() having run; meditation() aliases it — zero behavior change.
   var MED_GUIDES = {
@@ -8422,6 +8457,7 @@
   var TOOLS = [
     { id: "breathe",  layer: "Steady the body",        name: "Breathe",          ti: "ti-wind",           emoji: "🌬️", thinker: "Huberman · Weil · Tactical", when: "acute stress, a spike, focus before something hard, or winding down for sleep", why: "Four real protocols, one per need: the physiological sigh to drop stress fast, box breath to focus, 4-7-8 for sleep, a calming breath to settle. Each pulls the vagal brake on a different curve.", fn: function () { breathPicker(); } },
     { id: "relax",    layer: "Steady the body",        name: "Relax all muscles", ti: "ti-ripple",         emoji: "🧘", thinker: "Maltz — Psycho-Cybernetics", when: "tension, pre-sleep, or pre-focus", why: "Releasing muscle tension signals the brain the threat is over — the body leads, the mind follows.", fn: function () { relaxMoment(); } },
+    { id: "pmr",      layer: "Steady the body",        name: "Tense and Release", ti: "ti-stretching",     emoji: "🧘", thinker: "Jacobson · Bernstein-Borkovec", when: "body-tension you can't think your way out of: wired after a hard day, restless before sleep, braced from stress you can feel but can't name", why: "Muscles tensed hard then released rebound past their starting point into deeper calm, and the contrast teaches your system to catch tension early, before it becomes a headache or a clenched jaw.", fn: function () { muscleRelease(); } },
     { id: "meditate", layer: "Clear the mind",          name: "Meditate",          ti: "ti-atom",           emoji: "🧘", thinker: "Harris · Headspace · Blackstone · Adyashanti", when: "scattered, racing mind — when you can't detect what's off", why: "Watching thoughts without grabbing them quiets the mind's default chatter — focus returns.", fn: function () { medEditor(); } },
     { id: "tapping",  layer: "Feel it through",         name: "Tapping (EFT)",     ti: "ti-hand-finger",    emoji: "👆", thinker: "EFT — Craig", when: "a named feeling (anxious / stuck / frustrated / sad) you want to move through", why: "Tapping pressure points while naming a feeling lowers amygdala arousal — the charge drains.", fn: function () { tapping(); } },
     { id: "reversal", layer: "Feel it through",         name: "Reversal of Desire",ti: "ti-flame",          emoji: "🔥", thinker: "Stutz — Tool 1", when: "right before something you've been avoiding", why: "Moving toward the discomfort flips avoidance into approach — the brain learns the thing is safe.", fn: function () { reversalOfDesire(null); } },
@@ -8433,7 +8469,7 @@
     { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   ti: "ti-mountain",       emoji: "🦁", thinker: "Stutz — Tool 3", when: "before a hard conversation or performance, or when you freeze up", why: "Rehearsing your grounded self first primes the brain to actually run that version live.", fn: function () { innerAuthority(); } },
     { id: "reprogram",layer: "Become who you're being", name: "Rewire",            ti: "ti-brain",          emoji: "🧠", thinker: "Silva · Dispenza · Maltz", when: "to install a new belief or self-image — the core reset", why: "A calm, focused state lets a new self-image slip past the critical mind and land — your brain rehearses it as real.", fn: function () { reprogramTool(); } },
     { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     ti: "ti-spiral",         emoji: "🌀", thinker: "Blair — eyes-open induction", when: "to install a new self-image, or to wind down at night", why: "A light trance quiets the critical mind so a new self-image can land — the induction is what makes it stick.", fn: function () { selfHypnosis(); } },
-    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Stutz — Tool 4", when: "a negative-thought loop with no live grievance — light a different room", why: "Gratitude shifts you out of the threat network into the care network — a different brain state, on demand.", fn: function () { gratefulFlow(); } },
+    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Emmons · Seligman · Koo & Wilson", when: "a negative-thought loop with no live grievance, or an evening you want to feel what the day actually gave you", why: "One specific moment, traced to its cause and savored, then briefly imagined gone, shifts you out of the threat network into the care network. Specificity and mental subtraction move the needle where generic lists don't.", fn: function () { gratitudeBeat(); } },
     { id: "reset",    layer: "Steady the body",         name: "Reset",             ti: "ti-sparkles",       emoji: "✨", thinker: "Carpe · care-not-duty", when: "a cluttered space that's quietly draining you — or when you can't start anything", why: "Ten minutes of caring for one small zone lightens the room AND the nervous system — outer order, inner calm.", fn: function () { resetSprint(); } },
     { id: "coherence",layer: "Steady the body",         name: "Coherence Beat",    ti: "ti-heartbeat",      emoji: "💓", thinker: "Doc Childre — HeartMath", when: "60 seconds before anything that matters — a focus block, a hard talk, sleep", why: "The heart's rhythm is upstream of the thinking brain — smooth it first and the prefrontal cortex comes back online.", fn: function () { coherenceBeat(); } },
     { id: "resistance",layer: "Become who you're being", name: "Resistance Compass", ti: "ti-compass",        emoji: "🧭", thinker: "Steven Pressfield — The War of Art", when: "something you keep avoiding — the thing that scares you most", why: "Resistance is proportional to importance; the fear is the arrow. Name the force, do two minutes — that's Turning Pro.", fn: function () { resistanceCompass(); } },
@@ -9144,31 +9180,28 @@
     step();
   }
   // Gratitude beat: three timed prompts, NO typing, no required taps (eyes-closed law — the typed Grateful Flow stays as the journal variant).
+  // GRATEFUL FLOW rebuilt (David 2026-07-08 depth mandate): not a rotating prompt list. A real evidence-based practice (Emmons on specificity, Seligman's cause step, Koo & Wilson's Mental Subtraction, Bryant on savoring) that MOVES you: one specific moment, held deeply, then the counterintuitive core — imagine it never happened, feel the gap, let it return. On beatRunner (intro card + hands-free holds + real neural clips). onDone/secs kept for the stack registry; beatRunner is beat-paced so secs is advisory.
   function gratitudeBeat(onDone, secs) {
-    secs = Math.max(30, secs || 45); TTS.unlock();
-    var PR_ALL = ["Something small from today…", "Someone who makes life warmer…", "This body — it carried you here.", "A door that opened without you pushing…", "Something you'd miss if tomorrow forgot it…", "One thing that just… works, and you never notice."];
-    var _pOff = (new Date().getDate() % 2) * 3, PR = PR_ALL.slice(_pOff, _pOff + 3); // rotate the two prompt-triplets by date so day 2 doesn't repeat day 1 (POOLS-v1 §14)
-    TTS.warm(PR);
-    var ov = document.createElement("div"); ov.id = "breatheOv";
-    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb" style="animation-duration:9s;"></div><div class="bw-label"></div><div class="bw-sub">let it fill you — nothing to type</div>';
-    document.body.appendChild(ov);
-    var lab = ov.querySelector(".bw-label"), done = false, tmr = null;
-    function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
-      if (ov.parentNode) ov.parentNode.removeChild(ov);
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Gratitude", mins: 1, catK: "love", color: "#ff5fa0" }); earn(5, { catK: "love" }); save(); renderAll(); }
-      if (onDone) onDone();
-    }
-    ov.querySelector(".bw-x").onclick = function () { finish(true); };
-    var pi = 0;
-    function step() {
-      if (done) return;
-      if (pi >= PR.length) { finish(false); return; }
-      lab.textContent = PR[pi];
-      try { TTS.speak(PR[pi], { volume: VPROF.relax.volume }); } catch (e) {}
-      tmr = setTimeout(step, Math.round(secs / PR.length * 1000)); pi++;
-    }
-    step();
+    beatRunner({
+      id: "gratitude", title: "Grateful Flow", logTitle: "Gratitude", catK: "love", color: "#ff5fa0", spark: 6, voiceProf: VPROF.relax,
+      intro: { tag: "one thing, felt fully · 3 min · gratitude science",
+        what: "This isn't a gratitude list. It's one good thing from today, held long enough to actually feel it. You trace where it came from, sit with it in your body, then briefly imagine today without it. That last part sounds strange. It's the part that works.",
+        how: ["Pick one specific moment, not a category.", "Notice who or what made it possible, including you.", "Feel where it sits in your body, and stay there.", "Imagine it never happened, then let it back in."],
+        why: "Generic gratitude (my health, my family) barely moves the needle. Specific moments do. And picturing a good thing's absence, even for a few seconds, makes the mind register it as a gift again instead of a given." },
+      beats: [
+        { lab: "Let your shoulders drop", sub: "you're just going to remember. nothing to solve here", orb: "out", hold: 5 },
+        { lab: "One specific good thing from today", sub: "not a category. a moment: a look, a taste, five minutes that went right", orb: "", hold: 11 },
+        { lab: "See it clearly", sub: "where were you. who else was there. let the scene come back, not just the idea of it", orb: "" },
+        { lab: "How did this happen", sub: "someone's choice, a bit of luck, or something you did on purpose", orb: "", hold: 9 },
+        { lab: "Notice your own hand in it", sub: "you showed up, you asked, you stayed. that counts", orb: "", hold: 7 },
+        { lab: "Feel where it sits in your body", sub: "chest, jaw, hands. let it be warm there a moment longer", orb: "in", hold: 11 },
+        { lab: "Now imagine today without it", sub: "it just never happened. picture that version of today, missing this piece", orb: "out", hold: 9 },
+        { lab: "Notice the gap", sub: "flatter, quieter, something missing you can't quite name", orb: "", hold: 8 },
+        { lab: "Now bring it back", sub: "it happened. it's yours. feel the difference between the gap and this", orb: "in", hold: 8 },
+        { lab: "Most days are quietly full like this", sub: "you didn't need a big day. you needed to notice this one", orb: "" }
+      ], lastLabel: "Done ✓",
+      onFinish: function (skip) { if (onDone) onDone(skip); }
+    });
   }
   // ===== R1 — THE RITUAL GRAMMAR × CHANNEL SCHEDULER (HANDOFF-stacks-and-meditation §10, David 2026-07-02) =====
   // ONE grammar for every guided ritual: ARRIVE → RELEASE (spoken) → themed ROUNDS over the point ladder → INSTALL/SCAN → BRIDGE → LAW → FORGET.
