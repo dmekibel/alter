@@ -9642,11 +9642,16 @@
     var val = 5;
     function hueFor(n) { return n <= 5 ? mixHex("#46e2a4", "#ffd24a", n / 5) : mixHex("#ffd24a", "#ff5fa0", (n - 5) / 5); } // 0 at-ease green -> 5 gold -> 10 maxed pink
     var read = add(body, "div"); read.style.cssText = "font-family:var(--bub);font-size:56px;font-weight:900;line-height:1;margin:16px 0 12px;";
-    // TAPPABLE GRADED SCALE (David 2026-07-09: the native range slider was off-brand + ugly) — 11 chunky game-piece bars, tap to set, filled up to the pick, gold-ring on the current, color-graded ease->maxed. No slider, no drag.
-    var scale = add(body, "div"); scale.style.cssText = "display:flex;gap:3px;align-items:flex-end;justify-content:center;width:100%;max-width:322px;height:54px;";
+    // GRADED SCALE (David 2026-07-09: replaced the native range slider) — 11 chunky game-piece bars, color-graded ease->maxed, gold-ring on the current. TAP a bar OR press-and-DRAG across it to sweep smoothly through the levels (David 2026-07-09). Drag FEEL is DEVICE-UNTESTED (synthetic pointers lie).
+    var scale = add(body, "div"); scale.style.cssText = "display:flex;gap:3px;align-items:flex-end;justify-content:center;width:100%;max-width:322px;height:54px;touch-action:none;cursor:pointer;";
     var bars = [];
-    for (var i = 0; i <= 10; i++) { (function (n) { var b = add(scale, "button"); b.style.cssText = "flex:1;height:100%;padding:0;background:none;border:none;display:flex;align-items:flex-end;cursor:pointer;"; var fill = add(b, "span"); fill.style.cssText = "display:block;width:100%;border-radius:5px 5px 3px 3px;border:2px solid #160510;box-shadow:0 2px 0 #160510;transition:background .12s, box-shadow .12s;"; b._fill = fill; b.onclick = function () { val = n; paint(); }; bars.push(b); })(i); }
+    for (var i = 0; i <= 10; i++) { var b = add(scale, "div"); b.style.cssText = "flex:1;height:100%;display:flex;align-items:flex-end;"; var fill = add(b, "span"); fill.style.cssText = "display:block;width:100%;border-radius:5px 5px 3px 3px;border:2px solid #160510;box-shadow:0 2px 0 #160510;transition:background .12s, box-shadow .12s;"; b._fill = fill; bars.push(b); }
     function paint() { read.textContent = val; read.style.color = hueFor(val); bars.forEach(function (b, n) { var on = n <= val; b._fill.style.height = (22 + n * 3) + "px"; b._fill.style.background = on ? hueFor(n) : "#3a1730"; b._fill.style.boxShadow = (n === val) ? "0 0 0 3px #ffd24a, 0 2px 0 #160510" : "0 2px 0 #160510"; }); }
+    function setFromX(cx) { var r = scale.getBoundingClientRect(); if (!(r.width > 0)) return; var v = Math.max(0, Math.min(10, Math.round((cx - r.left) / r.width * 10))); if (v !== val) { val = v; paint(); } }
+    var dragging = false;
+    scale.addEventListener("pointerdown", function (e) { e.preventDefault(); dragging = true; try { scale.setPointerCapture(e.pointerId); } catch (_e) {} setFromX(e.clientX); }); // press starts the drag (and sets where you pressed)
+    scale.addEventListener("pointermove", function (e) { if (dragging) setFromX(e.clientX); }); // slide sweeps through each level
+    function endDrag() { dragging = false; } scale.addEventListener("pointerup", endDrag); scale.addEventListener("pointercancel", endDrag);
     paint();
     add(body, "div", "ob-sb", "0 = at ease · 10 = maxed out").style.marginTop = "12px";
     var foot = add(card, "div", "ob-foot");
