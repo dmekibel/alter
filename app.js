@@ -8898,7 +8898,7 @@
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     var _xb0 = ov.querySelector(".bw-x"); if (_xb0) { _xb0.innerHTML = '<i class="ti ti-x"></i>'; _xb0.style.zIndex = "10"; } // ref: bare ✕ top-left — z above the carousel track so it always takes taps
-    orb.style.animation = "breatheReal 16s ease-in-out infinite"; // BREATH-CADENCE orb (David 2026-07-09): 4-4-6-2 to match the breath cues; re-synced to each "Breathe in" in paintNow, and keeps breathing through the other exercises to keep pacing you.
+    orb.style.animation = "none"; orb.style.willChange = "transform"; // ORB DRIVE (David 2026-07-09): the orb's scale is computed PER FRAME in paintNow from the actual cue timing (one clock), so it tracks the breath cues exactly. The old fixed 16s CSS keyframe fought the adaptive pauseFor() gaps → hold-too-short / cut-when-full / shrinks-on-hold. Non-breath segments get a gentle ambient breath so it keeps pacing you.
     ov.style.setProperty("--gp-c", col); // PLAYER 1:1 (mock #20): element-tint everything (map pips, catch dots, ripple) to this session's color
     orb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(col, "#ffffff", 0.26) + " 0%," + col + " 55%," + mixHex(col, "#160510", 0.26) + " 100%)"; // ref: a SOLID element sphere with soft top-light, not a white-core glow
     orb.style.boxShadow = "0 0 60px " + mixHex(col, "#160510", 0.2) + ", 0 0 120px " + mixHex(col, "#160510", 0.5);
@@ -8919,7 +8919,7 @@
       orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; // the single template content is unused in acts mode
       track = add(ov, "div", "gp-track"); track.style.cssText = "position:fixed;inset:0;display:flex;width:" + (acts.length * 100) + "vw;z-index:2;transition:transform .44s cubic-bezier(.4,0,.2,1);will-change:transform;pointer-events:none;";
       pages = [];
-      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "breatheReal 16s ease-in-out infinite"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
+      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
       orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; // live refs point at the current page
     }
     function onActEnter(ai) { // SLIDE the whole page to activity ai (its page is pre-tinted) + point the live refs at that page + set its current line + tint the shared transport
@@ -9016,15 +9016,24 @@
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bedStop(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // pause the background bed too
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    var _lastSeg = null; // breath-cue sync tracker (David 2026-07-09)
     function paintNow(e) { paintMap(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
       var pct, curTxt, totTxt;
       if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total), _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); }
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
-      var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
-      if (seg && seg !== _lastSeg) { _lastSeg = seg; if (seg.breath === "in" && orb) { orb.style.animation = "none"; void orb.offsetWidth; orb.style.animation = "breatheReal 16s ease-in-out infinite"; } } // BREATH SYNC (David 2026-07-09): restart the orb's cycle exactly when a "Breathe in" cue lands, so it expands with the inhale.
+      var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      if (orb) { // ORB DRIVE (David 2026-07-09): ONE clock. Scale the orb from the CURRENT segment's breath phase across its REAL span (audio + adaptive gap), so it tracks the cues exactly — fixes hold-too-short, cut-when-full, shrinks-on-hold. Non-breath segments keep a gentle ~11s ambient breath so it still guides you.
+        var _ph = seg && seg.breath, _sc, _op;
+        if (_ph === "in" || _ph === "out" || _ph === "hold" || _ph === "rest") {
+          var _end = (segs[_si + 1] ? segs[_si + 1].start : total), _sp = Math.max(0.1, _end - seg.start), _p = Math.max(0, Math.min(1, (e - seg.start) / _sp)), _es = _p * _p * (3 - 2 * _p); // smoothstep
+          if (_ph === "in") { _sc = 0.84 + 0.30 * _es; _op = 0.60 + 0.40 * _es; }
+          else if (_ph === "hold") { _sc = 1.14; _op = 1; }
+          else if (_ph === "out") { _sc = 1.14 - 0.30 * _es; _op = 1 - 0.40 * _es; }
+          else { _sc = 0.84; _op = 0.60; }
+        } else { var _amb = 0.5 - 0.5 * Math.cos(e * 0.5712); _sc = 0.90 + 0.15 * _amb; _op = 0.76 + 0.22 * _amb; } // 2π/11 ≈ 0.5712 → a calm ~11s resting breath
+        orb.style.transform = "scale(" + _sc.toFixed(3) + ")"; orb.style.opacity = _op.toFixed(3);
+      }
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
     function tick() {
       if (done) return; var e = curElapsed();
@@ -9058,7 +9067,7 @@
       if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
         try { var mins = Math.max(0.5, total / 60), rate = driftCount / mins, mf = (S.tools && S.tools.medFocus) || { rate: rate, n: 0 }; mf.rate = mf.n ? mf.rate * 0.7 + rate * 0.3 : rate; mf.n = (mf.n || 0) + 1; mf.lastDrift = driftCount; S.tools = S.tools || {}; S.tools.medFocus = mf; } catch (e) {}
       }
-      if (!skip) { lab.textContent = "Done ✓"; sub.textContent = opts.drift ? (driftCount === 0 ? "steady the whole way — beautiful" : "you noticed " + driftCount + " time" + (driftCount === 1 ? "" : "s") + " — that noticing IS the practice") : "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease"; orb.style.transform = "scale(.7)"; }
+      if (!skip) { lab.textContent = "Done ✓"; sub.textContent = opts.drift ? (driftCount === 0 ? "steady the whole way — beautiful" : "you noticed " + driftCount + " time" + (driftCount === 1 ? "" : "s") + " — that noticing IS the practice") : "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease, opacity 1.3s ease"; orb.style.transform = "scale(.7)"; orb.style.opacity = "1"; }
       setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : (opts.drift && driftCount ? 2600 : 1500));
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: Math.max(1, Math.round(total / 60)), catK: opts.catK || "love", color: col }); earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id); try { celebrateGated(col, curStreak() || 1); } catch (e) {} save(); renderAll(); }
       if (opts.onFinish) opts.onFinish(skip);
@@ -9424,7 +9433,7 @@
         });
       } else if (C.breath) {
         var cyc = Math.max(2, Math.round(t.secs / 16));
-        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in"), breath: "in" }); P({ text: "Hold", label: "Hold", sub: "", gap: pauseFor("hold"), breath: "hold" }); P({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: pauseFor("out"), breath: "out" }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest"), breath: "rest" }); } // tagged so the player re-syncs the orb's breath cycle to the "in" cue (David 2026-07-09)
+        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in. Fill up slowly.", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in"), breath: "in" }); P({ text: "Hold. Stay full.", label: "Hold", sub: "stay full", gap: pauseFor("hold"), breath: "hold" }); P({ text: "Breathe out. Slow and long.", label: "Breathe out", sub: "slow and long", gap: pauseFor("out"), breath: "out" }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest"), breath: "rest" }); } // David 2026-07-09: the voice speaks the small coaching line too (text = label + sub), subs are readable, and breath is tagged so the orb tracks the phase
       } else if (C.cues) {
         var per = Math.max(3.5, t.secs / C.cues.length); // body cues fill the tool's own time (the pose IS the pause), so time-driven not attention-driven
         C.cues.forEach(function (q) { P({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
@@ -9518,20 +9527,23 @@
       "Noticing you drifted and gently coming back is the whole practice, so the moment you catch yourself is already the win.",
       "Do that enough times and you get a little kinder to yourself everywhere else too.",
       "Come sit for a few minutes and see what is there." ];
-    var MANTRA_PRIME = [
-      "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way.",
-      "A mantra rewires you the same way a real experience does. Say it as if you lived it, and the nervous system starts to believe it. The body keeps no distinction." ];
-    function showEscalation() { clearBoth();
-      add(body, "div", "ob-q", tr("Keep the momentum. Complete the set."));
+    var MANTRA_PRIME = [ // one plain Withers-grounded line (inherited self-talk). The old clinical "rewires / body keeps no distinction" line was David-KILLED and is cut; a fuller mantra pitch is owed from its own explainer tournament.
+      "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way." ];
+    var PACE = { per: 0.08 }; // the priming explainers read at a CALM pace (David 2026-07-09)
+    function showEscalation() { // SELL FIRST (David 2026-07-09): show the meditation + mantra priming (the pitch) BEFORE any commit, to win a skeptic to at least 30 seconds. Then the time-offer + press-hold, then the tools run straight through (no priming mid-flow).
+      narrate(MED_PRIME.slice(0, 4), "Go on", function () {
+        narrate(MED_PRIME.slice(4), "And a mantra", function () {
+          narrate(MANTRA_PRIME, "I'm in", function () { escalationOffer(); }, PACE); }, PACE); }, PACE);
+    }
+    function escalationOffer() { clearBoth(); addBack(showEscalation);
+      add(body, "div", "ob-q", tr("How long for the set?"));
       add(body, "div", "ob-sb", tr("a short meditation, then a mantra to carry.")).style.cssText = "text-align:center;margin-top:8px;max-width:340px;";
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], runGuidedPair, showEscalation, "a meditation and a mantra"); }; });
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], runGuidedPair, escalationOffer, "a meditation and a mantra"); }; });
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
     }
-    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)), PACE = { per: 0.08 }; // the explainer primes read at a CALM pace (David 2026-07-09); 2 gentle screens -> meditate -> prime -> mantra
-      narrate(MED_PRIME.slice(0, 4), "Go on", function () {
-        narrate(MED_PRIME.slice(4), "Begin", function () { runOneTool("medit", half, function () {
-          narrate(MANTRA_PRIME, "Begin", function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); }, PACE); }); }, PACE); }, PACE);
+    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)); // sold already (priming shown pre-commit) — straight into meditate -> mantra
+      runOneTool("medit", half, function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); });
     }
     function runOneTool(id, secs, onFinish) {
       var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })(), novice = !!bp.practiceNovice;
