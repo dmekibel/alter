@@ -9463,17 +9463,18 @@
     }
     function showOffer() { clearBoth(); addBack(showHook);
       add(body, "div", "ob-q", tr("How much will you commit?"));
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1]); }; });
+      add(body, "div", "ob-sb", tr("to tell your body the emergency is over.")).style.cssText = "text-align:center;margin-top:8px;max-width:330px;";
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], launch, showOffer); }; });
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
-    function showCommit(totalSecs) { clearBoth(); addBack(showOffer);
+    function showCommit(totalSecs, onCommit, backFn) { clearBoth(); addBack(backFn || showOffer); // generic press-hold commit; onCommit(totalSecs) fires when the ring fills (round 1 -> launch, round 2 -> runRound2)
       add(body, "div", "ob-q", tr("Press and hold to commit."));
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
       function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} launch(totalSecs); }, _hMs); });
+      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} (onCommit || launch)(totalSecs); }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
     }
     function launch(totalSecs) { // reuse the working carousel: breath first, then a gentle relax sweep (round 1's easy two), scaled to the chosen time
@@ -9495,20 +9496,22 @@
       add(body, "div", null, tr("That is one piece of evidence. One line on your record. Tomorrow a second line lands under it, and two lines are already an argument.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
       var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { showEscalation(); };
     }
-    function showEscalation() { clearBoth(); // ROUND 2 (Phase D, David 2026-07-09): after the breath+relax rep, offer to complete the set. ADAPTS to blueprint() -> low-energy/novice = gratitude + a gentle sit; otherwise = stillness + mantra (mantra last so its power lands after the momentum, per spec).
+    function showEscalation() { clearBoth(); // ROUND 2 (Phase D, David 2026-07-09): SAME shape as round 1 now (context on the two tools -> pick a time -> press-hold). ADAPTS to blueprint() -> low-energy/novice = gratitude + a gentle sit; otherwise = stillness + mantra (mantra last so its power lands after the momentum, per spec).
       var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })();
       var lowDoor = !!(bp.lowStart || bp.vibe === "overwhelmed" || bp.vibe === "stuck");
       add(body, "div", "ob-q", tr("Keep the momentum. Complete the set."));
-      add(body, "div", "ob-sb", tr(lowDoor ? "a gentle finish: a little gratitude, then a minute of stillness." : "a minute of stillness, then a line to carry.")).style.cssText = "text-align:center;margin-top:8px;max-width:340px;";
-      var yb = add(foot, "button", "ob-btn", tr("Finish the set") + " ▸"); yb.onclick = function () { runRound2(lowDoor, bp); };
+      add(body, "div", "ob-sb", tr(lowDoor ? "two more: name one good thing from today, then a quiet sit." : "two more: a quiet sit, then a line to carry.")).style.cssText = "text-align:center;margin-top:8px;max-width:340px;"; // CONTEXT on the next two (David 2026-07-09)
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], function (s) { runRound2(s, lowDoor, bp); }, showEscalation); }; });
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
     }
-    function runRound2(lowDoor, bp) {
-      var novice = !!bp.practiceNovice;
-      var med = { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: novice ? 40 : 60 };
+    function runRound2(totalSecs, lowDoor, bp) {
+      var novice = !!bp.practiceNovice, half = Math.max(15, Math.round((totalSecs || 60) / 2));
+      var med = { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: novice ? Math.min(half, 45) : half };
       if (novice) med.med = [{ k: "settle" }]; // baby-step: one gentle section for a first sit
-      var list2 = lowDoor ? [ { id: "gratitude", nm: "Gratitude", ic: "ti-heart", c: "#ff9ec4", secs: 35 }, med ]
-                          : [ med, { id: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", secs: 40 } ];
+      var oSecs = Math.max(15, (totalSecs || 60) - med.secs); // the chosen time splits across the two tools
+      var list2 = lowDoor ? [ { id: "gratitude", nm: "Gratitude", ic: "ti-heart", c: "#ff9ec4", secs: oSecs }, med ]
+                          : [ med, { id: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", secs: oSecs } ];
       var built = composeStackSegs(list2);
       try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
       timelinePlayer({ id: "introset2", title: tr("Complete the set"), logTitle: "First stack round 2", catK: "love", color: list2[0].c, spark: 6, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, autostart: true, onFinish: function () {
