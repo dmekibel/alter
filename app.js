@@ -9384,6 +9384,7 @@
     });
   }
   var MED_SEC = { // meditation SECTIONS (moved to module scope 2026-07-08 so the stack carousel can render a meditation's sections + section-ticks, not just medEditor). t.med = [{k, d}] references these keys.
+    firstsit: { name: "Stillness", col: "#46e2a4", ti: "ti-yoga", lines: ["Feel yourself sitting here, and find your breath", "Let it move on its own, nothing to fix", "Soon your mind will drift off somewhere, and that is fine", "The moment you notice you have drifted, you are back", "That noticing is the whole exercise", "Bring your attention to the breath again, gently", "No need to be hard on yourself for drifting. Come back to the breath.", "Rest here a while, and keep coming back"] }, // the first-stone sit: the wander/notice/come-back teaching delivered AS instruction, in-sit (David 2026-07-09). Both gates + adversarial judge.
     settle: { name: "Arrival", col: "#9a7cff", ti: "ti-seedling", lines: ["Settle in…, let your eyes soften", "Soften your forehead, and unclench your jaw", "Drop your shoulders, let them fall", "Soften your chest, and your belly", "Let your arms go heavy, down to your fingertips", "Release your legs, all the way to your feet", "Your whole body is heavy and calm, nothing to do, nowhere to be", "One mindful moment, just be here, now"] },
     breath: { name: "Breath", col: "#63d3c9", ti: "ti-wind", lines: ["Soft focus — just aware of the space around you", "A few big breaths… in through the nose, out through the mouth", "Let the body soften with each out-breath", "Nothing to do, nothing to respond to — just time for you", "Feel the weight of the body pressing down", "Find the breath rising and falling", "One on the in-breath… two on the out-breath", "Feel that sense of space with each exhale", "Thoughts come — that's fine. Gently back to the breath", "Now let the mind be completely free"] },
     body: { name: "Body", col: "#ff8a5c", ti: "ti-body-scan", lines: ["Calm, even breath — nothing happening but this breath", "Come down into your feet — deep contact", "Attune to the quality of self inside your feet", "Inhabit your legs… your hips… settle down into them", "Inhabit your belly — attune to the quality of power there", "Inhabit your chest — attune to the quality of love", "Let the breath move gently through the heart", "Inhabit your whole body at once — this is yours", "Find the space outside your body, in the room", "Feel that you ARE that space"] },
@@ -9445,7 +9446,7 @@
   }
   function firstDayStack(onDone) { // STONE 1 = THE APP IN ONE MINUTE (David 2026-07-08): the intro micro-stack (plan -> do -> track) IS the first journey stone now, no longer an onboarding beat. Standalone overlay: plan the stack, runFirstStack (carousel + before/after gauge = the felt-shift proof, self-logs to the day), then the show-don't-tell recap. Plan-UI + recap are the proven onboarding code, lifted verbatim. onDone() closes it.
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
-    // ===== INTRO STONE (Phase B rebuild, David 2026-07-09 — Opus, regression-zone care): typed HOOK -> OFFER -> time chips -> press-hold COMMIT -> the EXISTING breath+relax carousel (runFirstStack/timelinePlayer, untouched) -> proof recap = the clean forward close. Copy through both gates. Press-hold reuses the seal ring gesture; gesture FEEL is DEVICE-UNTESTED. The old plan-UI opening (showIntro/showPlan below) is retained-but-DEAD (unscheduled) to keep this edit off the fragile plan-UI code; delete in a clean pass. =====
+    // ===== INTRO STONE (David 2026-07-10 — ONE STACK, ONE COMMIT): HOOK (body -> breath+relax) -> SETUP2 (meditation + self-talk) -> STACK-COMMIT (all four moves, toggle one off, press-hold) -> runFirstStack (the four-act carousel, one surface, pre/post tension gauge) -> showClose. The two-round split (breath/relax then meditate/mantra) was removed — it broke the stack feel. Copy through both gates + adversarial judge. Press-hold + carousel gesture FEEL is DEVICE-UNTESTED. showPlan/showRecap below are DEAD (unscheduled) — delete in a clean pass. =====
     var backEl = null;
     function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; }
     function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = fn; } // BACK (David 2026-07-09): accidental forward -> step back a screen. Full IG-story tap-navigation is the queued bigger pass.
@@ -9462,8 +9463,9 @@
       exhale: "#5fb0ff", safe: "#46e2a4",
       changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff",
       thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff",
-      worry: "#ff5fa8", win: "#ffd24a", kinder: "#ffd24a", wander: "#5fb0ff", wandered: "#5fb0ff", quiet: "#5fb0ff" };
-    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15 };
+      worry: "#ff5fa8", win: "#ffd24a", kinder: "#ffd24a", wander: "#5fb0ff", wandered: "#5fb0ff", quiet: "#5fb0ff",
+      history: "#5fb0ff", screen: "#ff5fa8", meditation: "#ffd24a", mantra: "#ffd24a", words: "#5fb0ff", learned: "#ff5fa8" };
+    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15 };
     function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
@@ -9482,82 +9484,44 @@
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
       body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
     }
-    function showHook() { narrate(HOOK, "Show me", showOffer); }
-    function showOffer() { clearBoth(); addBack(showHook);
-      add(body, "div", "ob-q", tr("How much will you commit?"));
-      add(body, "div", "ob-sb", tr("to tell your body the emergency is over.")).style.cssText = "text-align:center;margin-top:8px;max-width:330px;";
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], launch, showOffer, "a breath, then your body"); }; });
+    function showHook() { narrate(HOOK, "Next", showMindSetup); } // PAGE 1: the body-tension hook sets up breath + relax
+    function showMindSetup() { narrate(SETUP2, "Next", showStackCommit, { per: 0.08, back: showHook }); } // PAGE 2: meditation + self-talk, at a calm read
+    function showStackCommit() { clearBoth(); addBack(showMindSetup); // ONE stack, ONE commit (David 2026-07-09): the four moves in order, a plain word on why the momentum/order/stack matter, toggle one off if you want, press-hold commits to whatever is on.
+      add(body, "div", "ob-q", tr("Your first stack"));
+      add(body, "div", "ob-sb", tr("Four small moves, in this order for a reason. The breath settles the body, a settled body lets the mind go quiet, and a quiet mind can finally sit with itself and speak to itself kindly. Turn one off if you want, but each one softens you for the next.")).style.cssText = "text-align:center;margin-top:8px;max-width:344px;line-height:1.5;";
+      var STK = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: 32, on: true },
+        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: 34, on: true },
+        { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: 50, med: [{ k: "firstsit" }], on: true },
+        { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: 28, on: true } ];
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px;margin-top:14px;";
+      STK.forEach(function (t) { var r = add(wrap, "button", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "48px";
+        r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
+        var tog = add(r, "span"); tog.style.cssText = "margin-left:auto;font-size:23px;display:flex;align-items:center;";
+        function paint() { tog.innerHTML = t.on ? '<i class="ti ti-circle-check-filled" style="color:' + t.c + ';"></i>' : '<i class="ti ti-circle"></i>'; r.style.opacity = t.on ? "1" : "0.45"; }
+        paint(); r.onclick = function () { t.on = !t.on; paint(); }; });
+      var go = add(foot, "button", "ob-btn", tr("Set the stack") + " ▸"); go.onclick = function () { var list = STK.filter(function (t) { return t.on; }); if (!list.length) return; showCommit(0, function () { beginStack(list); }, showStackCommit, "your first stack"); };
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
-    function showCommit(totalSecs, onCommit, backFn, whatLabel) { clearBoth(); addBack(backFn || showOffer); // generic press-hold commit; onCommit(totalSecs) fires when the ring fills. whatLabel names EXACTLY what you're committing to (David 2026-07-09).
+    function beginStack(list) { // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
+      runFirstStack(list, function (pre, post) { _pre = pre; _done = list.map(function (t) { return { nm: t.nm, ic: t.ic, c: t.c }; });
+        if (post == null) { if (ov.parentNode) ov.remove(); if (onDone) onDone(); return; }
+        showClose(post); });
+    }
+    function showCommit(totalSecs, onCommit, backFn, whatLabel) { clearBoth(); addBack(backFn || showStackCommit); // generic press-hold commit; onCommit(totalSecs) fires when the ring fills. whatLabel names EXACTLY what you're committing to (David 2026-07-09).
       add(body, "div", "ob-q", whatLabel ? ("Press and hold to commit to " + whatLabel + ".") : tr("Press and hold to commit."));
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
       function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} (onCommit || launch)(totalSecs); }, _hMs); });
+      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} if (onCommit) onCommit(totalSecs); }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
     }
-    var _pre = null, _done = [], _r2 = []; // ROUND-FLOW STATE (David 2026-07-09): the pre-rating, everything actually done, and the round-2 picks (for their deep explanations). The POST-rating + close come after BOTH halves (or after round 1 if round 2 is skipped).
-    function launch(totalSecs) { // ROUND 1: rate BEFORE, run breath+relax, then straight into the pick-two offer (no rating yet).
-      var half = Math.max(15, Math.round(totalSecs / 2));
-      var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: half },
-        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(15, totalSecs - half) } ];
-      gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
-        _pre = pre; _done = [];
-        runCarousel(list, "First stack", "#9a5cf0", function (skip) { if (skip) { if (ov.parentNode) ov.remove(); if (onDone) onDone(); return; } _done = list.slice(); showEscalation(); });
-      });
-    }
-    function runCarousel(list, logTitle, color, onFinish) { // gauge-less carousel run — the pre/post gauges are orchestrated by the flow now (rating after BOTH halves), not per-run. Logs to the day.
-      var built = composeStackSegs(list), segs = built.segs;
-      try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
-      timelinePlayer({ id: "introcar", title: tr(logTitle), logTitle: logTitle, catK: "energy", color: color, spark: 6, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, autostart: true, onFinish: function (skip) {
-        if (!skip) { try { var _d = new Date(); logs(todayK()).push({ id: uid(), time: pad(_d.getHours()) + ":" + pad(_d.getMinutes()), title: logTitle, mins: Math.max(1, Math.round(segs.reduce(function (a, s) { return a + (s.gap || 5); }, 0) / 60)), catK: "energy", color: color }); save(); renderAll(); } catch (e) {} }
-        if (onFinish) onFinish(skip);
-      } });
-    }
-    // ROUND 2 (David 2026-07-09): a GUIDED meditation -> mantra, each PRIMED with a genius sentence before it (gratitude cancelled, no pick menu). Offer + time pick + press-hold mirror round 1; then prime -> meditate -> prime -> mantra -> post-rating -> close. Priming copy: judge rated the kept lines DEEP/EPIC. Meditation channels the Sam Harris "lost in the stream of thought" idea + a concrete two-systems science nod; mantra channels Withers (inherited self-talk) + Dispenza (rehearsal rewires) without naming them.
-    var MED_PRIME = [ // WON the copy tournament (School of Life / Kurzgesagt explainer voice, David 2026-07-09). Warm build that INTRODUCES meditation and walks the reader in, never jumps to sounding smart. Shown across two gentle screens.
-      "Meditation is simpler than people make it sound: a few minutes of sitting still, paying attention to what is already happening.",
+    var _pre = null, _done = []; // the pre-rating + everything actually done, for the close (David 2026-07-09: one stack, one commit — the two-round scaffolding is gone)
+    // PAGE-2 SETUP: the meditation + self-talk intro, kept SHORT. The "wander / notice / come back / kinder" nuance moved INTO the meditation itself (MED_SEC.firstsit) since it is an instruction, not a preamble (David 2026-07-09). Both gates + adversarial judge.
+    var SETUP2 = [
       "For nearly all of human history, a quiet moment was just the texture of an ordinary day, and a screen was never there to fill it first.",
-      "And here is the strange part: leave your mind alone with nothing today, and it does not relax, it goes looking for something to worry about instead.",
-      "None of this is mystical, and emptying your mind was never the assignment, nobody manages that.",
-      "Your attention will wander anyway, and that was never the part you were getting wrong.",
-      "Noticing you drifted and gently coming back is the whole practice, so the moment you catch yourself is already the win.",
-      "Do that enough times and you get a little kinder to yourself everywhere else too.",
-      "Come sit for a few minutes and see what is there." ];
-    var MANTRA_PRIME = [ // one plain Withers-grounded line (inherited self-talk). The old clinical "rewires / body keeps no distinction" line was David-KILLED and is cut; a fuller mantra pitch is owed from its own explainer tournament.
-      "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way." ];
-    var PACE = { per: 0.08 }; // the priming explainers read at a CALM pace (David 2026-07-09)
-    function showEscalation() { // SELL FIRST (David 2026-07-09): show the meditation + mantra priming (the pitch) BEFORE any commit, to win a skeptic to at least 30 seconds. Then the time-offer + press-hold, then the tools run straight through (no priming mid-flow).
-      narrate(MED_PRIME.slice(0, 4), "Go on", function () {
-        narrate(MED_PRIME.slice(4), "And a mantra", function () {
-          narrate(MANTRA_PRIME, "I'm in", function () { escalationOffer(); }, PACE); }, PACE); }, PACE);
-    }
-    function escalationOffer() { clearBoth(); addBack(showEscalation);
-      add(body, "div", "ob-q", tr("How long for the set?"));
-      add(body, "div", "ob-sb", tr("a short meditation, then a mantra to carry.")).style.cssText = "text-align:center;margin-top:8px;max-width:340px;";
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], runGuidedPair, escalationOffer, "a meditation and a mantra"); }; });
-      var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
-    }
-    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)); // sold already (priming shown pre-commit) — straight into meditate -> mantra
-      runOneTool("medit", half, function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); });
-    }
-    function runOneTool(id, secs, onFinish) {
-      var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })(), novice = !!bp.practiceNovice;
-      var META = { medit: { nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", log: "Meditation" }, mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d", log: "Mantra" } };
-      var m = META[id] || { nm: id, ic: "ti-circle", c: "#9a7cff", log: id }; var t = { id: id, nm: m.nm, ic: m.ic, c: m.c, secs: Math.max(15, secs) };
-      if (id === "medit" && novice) { t.secs = Math.min(t.secs, 45); t.med = [{ k: "settle" }]; } // baby-step the first sit
-      runCarousel([t], m.log, m.c, function (skip) { if (!skip) _done = _done.concat([{ nm: m.nm, ic: m.ic, c: m.c }]); if (onFinish) onFinish(skip); });
-    }
-    function finishSession() { // POST-rating after both halves (or after round 1 if round 2 was skipped), then the proof + strong close
-      gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
-        try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "intro", pre: _pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); save(); } catch (e) {}
-        showClose(post);
-      });
-    }
+      "Meditation is simpler than people make it sound: a few minutes of sitting still, paying attention to what is already happening.",
+      "And the voice you use on yourself was learned too, picked up from the people around you. A mantra is where you start choosing your own words." ];
     function showClose(post) { clearBoth(); // the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
       var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
