@@ -9449,14 +9449,14 @@
       var b = add(foot, "button", "ob-btn", (i < HOOK.length - 1 ? tr("Go on") : tr("Show me")) + " ▸"); b.onclick = function () { if (i < HOOK.length - 1) showHook(i + 1); else showOffer(); };
     }
     function showOffer() { clearBoth();
-      add(body, "div", "ob-q", tr("Do you have thirty seconds to try this?"));
-      add(body, "div", "ob-sb", tr("pick how long. thirty seconds is enough to feel it move.")).style.cssText = "text-align:center;margin-top:8px;";
+      add(body, "div", "ob-q", tr("How much time do you have?"));
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
       [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1]); }; });
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
     function showCommit(totalSecs) { clearBoth();
       add(body, "div", "ob-q", tr("Hold to begin."));
+      add(body, "div", "ob-sb", tr("A minute you commit to on purpose is one you are far likelier to finish.")).style.cssText = "text-align:center;margin-top:8px;max-width:330px;";
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
@@ -9624,12 +9624,18 @@
     var body = add(card, "div", "ob-body center");
     add(body, "div", "ob-q", title);
     add(body, "div", "ob-sb", sub);
-    var read = add(body, "div"); read.style.cssText = "font-family:var(--bub);font-size:44px;font-weight:800;color:#ff8fc4;margin:10px 0 2px;"; read.textContent = "5";
-    var sl = document.createElement("input"); sl.type = "range"; sl.min = "0"; sl.max = "10"; sl.value = "5"; sl.style.cssText = "width:86%;max-width:300px;accent-color:#ff5fa0;"; body.appendChild(sl);
-    add(body, "div", "ob-sb", "0 = at ease · 10 = maxed out");
-    sl.oninput = function () { read.textContent = sl.value; };
+    var val = 5;
+    function hueFor(n) { return n <= 5 ? mixHex("#46e2a4", "#ffd24a", n / 5) : mixHex("#ffd24a", "#ff5fa0", (n - 5) / 5); } // 0 at-ease green -> 5 gold -> 10 maxed pink
+    var read = add(body, "div"); read.style.cssText = "font-family:var(--bub);font-size:56px;font-weight:900;line-height:1;margin:16px 0 12px;";
+    // TAPPABLE GRADED SCALE (David 2026-07-09: the native range slider was off-brand + ugly) — 11 chunky game-piece bars, tap to set, filled up to the pick, gold-ring on the current, color-graded ease->maxed. No slider, no drag.
+    var scale = add(body, "div"); scale.style.cssText = "display:flex;gap:3px;align-items:flex-end;justify-content:center;width:100%;max-width:322px;height:54px;";
+    var bars = [];
+    for (var i = 0; i <= 10; i++) { (function (n) { var b = add(scale, "button"); b.style.cssText = "flex:1;height:100%;padding:0;background:none;border:none;display:flex;align-items:flex-end;cursor:pointer;"; var fill = add(b, "span"); fill.style.cssText = "display:block;width:100%;border-radius:5px 5px 3px 3px;border:2px solid #160510;box-shadow:0 2px 0 #160510;transition:background .12s, box-shadow .12s;"; b._fill = fill; b.onclick = function () { val = n; paint(); }; bars.push(b); })(i); }
+    function paint() { read.textContent = val; read.style.color = hueFor(val); bars.forEach(function (b, n) { var on = n <= val; b._fill.style.height = (22 + n * 3) + "px"; b._fill.style.background = on ? hueFor(n) : "#3a1730"; b._fill.style.boxShadow = (n === val) ? "0 0 0 3px #ffd24a, 0 2px 0 #160510" : "0 2px 0 #160510"; }); }
+    paint();
+    add(body, "div", "ob-sb", "0 = at ease · 10 = maxed out").style.marginTop = "12px";
     var foot = add(card, "div", "ob-foot");
-    add(foot, "button", "ob-btn go", "Mark it").onclick = function () { var n = +sl.value; ov.remove(); cb(n); };
+    add(foot, "button", "ob-btn go", "Mark it").onclick = function () { ov.remove(); cb(val); };
     var sk = add(foot, "button", "ob-skip", "skip"); sk.onclick = function () { ov.remove(); cb(null); };
   }
   // The relief-door ritual: pre-gauge → the micro-stack → post-gauge → the DELTA, kindly. Every run feeds the efficacy ledger (S.tools.gauge) — over time the app learns what moves YOUR number.
