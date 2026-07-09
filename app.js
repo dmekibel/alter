@@ -9452,8 +9452,9 @@
       attention: "#ff5fa8", hunting: "#ffd24a", threats: "#ff5fa8",
       exhale: "#5fb0ff", safe: "#46e2a4",
       changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff",
-      thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff" };
-    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16 };
+      thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff",
+      worry: "#ff5fa8", win: "#ffd24a", kinder: "#ffd24a", wander: "#5fb0ff", wandered: "#5fb0ff", quiet: "#5fb0ff" };
+    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15 };
     function animLines(container, lines, start) { var t0 = start || 0.2;
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
@@ -9508,9 +9509,15 @@
       } });
     }
     // ROUND 2 (David 2026-07-09): a GUIDED meditation -> mantra, each PRIMED with a genius sentence before it (gratitude cancelled, no pick menu). Offer + time pick + press-hold mirror round 1; then prime -> meditate -> prime -> mantra -> post-rating -> close. Priming copy: judge rated the kept lines DEEP/EPIC. Meditation channels the Sam Harris "lost in the stream of thought" idea + a concrete two-systems science nod; mantra channels Withers (inherited self-talk) + Dispenza (rehearsal rewires) without naming them.
-    var MED_PRIME = [
-      "You did not pick your last thought, and you cannot name your next one. Most hours you are narrating your own day in your head and calling it thinking.",
-      "The mind that wanders and the mind that notices are two different gears. Meditation is where you practice catching yourself, and every catch trains the one that keeps you here." ];
+    var MED_PRIME = [ // WON the copy tournament (School of Life / Kurzgesagt explainer voice, David 2026-07-09). Warm build that INTRODUCES meditation and walks the reader in, never jumps to sounding smart. Shown across two gentle screens.
+      "Meditation is simpler than people make it sound: a few minutes of sitting still, paying attention to what is already happening.",
+      "For nearly all of human history, a quiet moment was just the texture of an ordinary day, and a screen was never there to fill it first.",
+      "And here is the strange part: leave your mind alone with nothing today, and it does not relax, it goes looking for something to worry about instead.",
+      "None of this is mystical, and emptying your mind was never the assignment, nobody manages that.",
+      "Your attention will wander anyway, and that was never the part you were getting wrong.",
+      "Noticing you drifted and gently coming back is the whole practice, so the moment you catch yourself is already the win.",
+      "Do that enough times and you get a little kinder to yourself everywhere else too.",
+      "Come sit for a few minutes and see what is there." ];
     var MANTRA_PRIME = [
       "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way.",
       "A mantra rewires you the same way a real experience does. Say it as if you lived it, and the nervous system starts to believe it. The body keeps no distinction." ];
@@ -9521,9 +9528,10 @@
       [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], runGuidedPair, showEscalation, "a meditation and a mantra"); }; });
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
     }
-    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)); // PRIME -> meditate -> PRIME -> mantra; the priming lands right before each practice
-      narrate(MED_PRIME, "Begin", function () { runOneTool("medit", half, function () {
-        narrate(MANTRA_PRIME, "Begin", function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); }); }); });
+    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)); // PRIME (the explainer builds across 2 gentle screens) -> meditate -> PRIME -> mantra
+      narrate(MED_PRIME.slice(0, 4), "Go on", function () {
+        narrate(MED_PRIME.slice(4), "Begin", function () { runOneTool("medit", half, function () {
+          narrate(MANTRA_PRIME, "Begin", function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); }); }); }); });
     }
     function runOneTool(id, secs, onFinish) {
       var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })(), novice = !!bp.practiceNovice;
