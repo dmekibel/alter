@@ -9441,12 +9441,23 @@
       "Some of it you have carried so long it just feels like your personality.",
       "A tight body keeps your mind on edge too, and that is part of why you can feel wound up with no idea why."
     ];
-    function showHook(i) { clearBoth();
-      var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;margin-top:16px;";
-      var d = add(iw, "div", "obi-line"); var line = tr(HOOK[i]); var ld = 0.15;
-      line.split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.085; });
-      try { speak(line); } catch (e) {}
-      var b = add(foot, "button", "ob-btn", (i < HOOK.length - 1 ? tr("Go on") : tr("Show me")) + " ▸"); b.onclick = function () { if (i < HOOK.length - 1) showHook(i + 1); else showOffer(); };
+    function showHook() { clearBoth(); // OPENING-STYLE REVEAL (David 2026-07-09): lines arrive ONE AT A TIME like the app's intro, but each line's words cascade in FAST (sped up) so a line reads as landing at once, not a slow typewriter. Key words are colored + sized up for interest. Tap anywhere to fast-forward.
+      var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:210px;margin-top:8px;gap:8px;";
+      var HUES = { tension: "#ff5fa8", tuned: "#ffd24a", personality: "#ffd24a", edge: "#ff5fa8", wound: "#ffd24a" };
+      var BIG = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16 };
+      var t0 = 0.22;
+      function hline(txt) { var d = add(iw, "div", "obi-line"); var ld = t0;
+        tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
+          if (BIG[bare]) sp.style.fontSize = BIG[bare] + "em";
+          if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + '</b>'; else sp.textContent = w;
+          d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.045; }); // 0.045s per word = fast cascade
+        t0 = ld + 0.3; // next line begins a beat after this one finishes -> one line at a time
+      }
+      HOOK.forEach(function (l) { hline(l); });
+      try { speak(HOOK.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
+      var b = add(foot, "button", "ob-btn asleep", tr("Show me") + " ▸"); b.onclick = function () { body.onclick = null; showOffer(); };
+      var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
+      body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
     }
     function showOffer() { clearBoth();
       add(body, "div", "ob-q", tr("How much time do you have?"));
