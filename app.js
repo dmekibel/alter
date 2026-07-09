@@ -4838,9 +4838,7 @@
       { sec: 0, key: "experience", q: "What have you tried before?", multi: true, opts: [["meditation", "Meditation", "ti-yoga", "#46e2a4"], ["journaling", "Journaling", "ti-pencil", "#ffd24a"], ["therapy", "Therapy", "ti-messages", "#ff5fa8"], ["breathwork", "Breathwork", "ti-lungs", "#5fa8ff"], ["none", "None yet", "ti-seedling", "#b07aff"]] }, // BLUEPRINT practice history. "none" is the exclusive tile (the q-beat handles it); drives the stone's baby-stepping in round 2.
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
-      { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
-      // the good-day ingredients → P.ingredients — the raw material the comeback offer + starter plan are built from ("one rung up, made of what your good days are made of").
-      { sec: 1, key: "ingredients", q: "Your good days — what's usually in them?", multi: true, opts: [["slept", "Slept enough", "ti-zzz", "#5fa8ff"], ["moved", "Moved my body", "ti-run", "#ff8a3a"], ["quiet", "A quiet morning", "ti-coffee", "#46e2a4"], ["plan", "Had a plan", "ti-list-check", "#36b3f0"], ["people", "Good people", "ti-users", "#ff5fa8"], ["music", "Music", "ti-music", "#b07aff"], ["early", "Started early", "ti-sunrise", "#ffd24a"], ["alone", "Time alone", "ti-user", "#7f9bc4"]] },
+      // CUT (David 2026-07-09): 'how easy to get out of bed' + 'what's in your good days' trimmed as unnecessary. NOTE the good-days question fed the starter-plan personalization ("made of what your good days are made of"); the plan now builds from friction + vibe only (planItems' ingredient branches simply don't fire). Restore this one question if the plan feels thin.
       { sec: 2, key: "challenges", q: "Where do you want the most help?", rows: 1, multi: true, opts: [["focus", "Focus", "ti-target", "#36b3f0", "I lose the thread and drift to my phone"], ["sleep", "Sleep", "ti-moon", "#5fa8ff", "I wake up tired, or wake at 3am"], ["stress", "Stress", "ti-urgent", "#ff5fa8", "shoulders and jaw stay tight all day"], ["energy", "Energy", "ti-battery-1", "#ffd24a", "I run out of steam by the afternoon"], ["mood", "Mood", "ti-mood-neutral", "#b07aff", "flat, or on edge, for no clear reason"], ["consistency", "Consistency", "ti-repeat", "#46e2a4", "I start strong, then fade by day three"]] }, // BLUEPRINT: where they want help. Short label + specific-moment sub (the vibe-question pattern, both copy-gates passed 2026-07-09). Sits before the friction question; dispatches which tools/lessons surface first.
       // THE FRICTION QUESTION: concrete, true for everyone, and it SETS the Motivation Dial's default route (P.mlDrift). Every answer teaches an engine.
       { sec: 2, key: "overwhelm", q: "When something needs doing and you don't do it — what's usually true?", rows: 1, multi: true, opts: [["cant", "I can't get started", "ti-player-pause", "#ff8a3a"], ["doubt", "I doubt it'll matter", "ti-help-circle", "#48b8e0"], ["bored", "It bores me", "ti-mood-neutral", "#b07aff"], ["empty", "I'm out of fuel", "ti-battery-1", "#7f9bc4"], ["forget", "I just forget", "ti-bulb-off", "#ffd24a"], ["none", "I mostly just do it", "ti-circle-check", "#46e2a4"]] }
@@ -4848,22 +4846,21 @@
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
     var BEATS = [{ t: "intro" }, { t: "pace" }]; // ONBOARDING = QUESTIONS ONLY (David 2026-07-08): the intro micro-stack MOVED OUT of onboarding to become Journey Stone 1 (firstDayStack). Onboarding is now intro (Beat 1 hook) → PACE → survey → plan → seed. The stackintro/stack/stackdone beat handlers stay defined but are no longer scheduled.
-    var _qi = 0; SECTIONS.forEach(function (sec, si) { QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); }); // BIOME REGION-GATES REMOVED (David 2026-07-09): no full-screen region-transition screens; questions flow one to the next in the established clean-card style. The echo (listen-back) beats stay — they're recognition, not biome.
-    BEATS.push({ t: "constel" }, { t: "plan" }, { t: "plantom" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate'. PLANTOM (Node 2 "Plan tomorrow", David 2026-07-08) sits after the survey so its options can be adaptive to the answers.
+    SECTIONS.forEach(function (sec, si) { QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); }); // BIOME GATES + per-section ECHOES removed (David 2026-07-09): questions flow straight through; the single "This is you" recap (constel) replaces the 3 repeated listen-backs.
+    BEATS.push({ t: "voice" }, { t: "constel" }, { t: "plan" }, { t: "seed" }); // TRIMMED (David 2026-07-09): PLANTOM + MINT cut, VOICE pulled up next to the questions. Flow = questions -> voice -> single recap -> starter plan -> close. The echo/plantom/mint/gate handlers stay defined but are no longer scheduled.
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    // BATTERY PROGRESS — 3 labeled section segments, cells = that section's questions
-    var bar = add(card, "div", "obv-bar"), segEls = [];
-    var backB = add(bar, "button", "ob-back"); backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; do { bi2--; } while (bi2 > 0 && BEATS[bi2].t === "gate"); drawObV2(); };
-    SECTIONS.forEach(function (sec, si) { var sg = add(bar, "div", "obv-seg"); sg.style.setProperty("--sc", sec.c); add(sg, "div", "obv-seglbl", tr(sec.l)); var cw = add(sg, "div", "obv-cells"); var qn = QS.filter(function (q) { return q.sec === si; }).length; for (var ci = 0; ci < qn; ci++) add(cw, "div", "obv-cell"); segEls.push(sg); });
+    // PROGRESS BAR (David 2026-07-09: symmetrical + whole-flow) — ONE continuous row of equal ticks, one per screen after the intro. Fills exactly at the final beat, so it can never read "done" while pages remain. Replaces the uneven 3-section battery.
+    var bar = add(card, "div", "obv-bar");
+    var backB = add(bar, "button", "ob-back"); backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; bi2--; drawObV2(); };
+    var track = add(bar, "div", "obv-cells"); track.style.flex = "1"; var tickEls = [];
+    for (var _tk = 1; _tk < BEATS.length; _tk++) tickEls.push(add(track, "div", "obv-cell")); // one equal tick per non-intro beat
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     // THE POINTS PLACE (David 2026-07-04): one corner counter — every earned spark flies HERE, never to the progress bar
     d2.pts = 0; var ptsEl = add(card, "div", "ob-pts"); ptsEl.innerHTML = '<i class="ti ti-sparkles"></i><b>0</b>'; ptsEl.style.display = "none";
     function awardPts(n, skipEarn) { d2.pts += n; if (!skipEarn) { try { earn(n, { label: "onboard-award" }); } catch (e) {} } ptsEl.style.display = ""; var bc = ptsEl.querySelector("b"); if (bc) bc.textContent = d2.pts; ptsEl.classList.remove("pop"); ptsEl.classList.remove("rain"); void ptsEl.offsetWidth; ptsEl.classList.add("pop"); ptsEl.classList.add("rain"); setTimeout(function () { ptsEl.classList.remove("rain"); }, 1150); }
     function secAward(si, fromEl) { if (d2._sd[si]) return; var done = QS.filter(function (q) { return q.sec === si; }).every(function (q) { return q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key]; }); if (!done) return; d2._sd[si] = 1; obConfetti(fromEl, 6); } // points land at MOMENTS, not every tap (David: per-step points = cheesy)
-    function paintBar() { var counted = {}; QS.forEach(function (q) { counted[q.key] = (q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key]); });
-      SECTIONS.forEach(function (sec, si) { var qs = QS.filter(function (q) { return q.sec === si; }); var cells = segEls[si].querySelectorAll(".obv-cell"); var curSec = (BEATS[bi2] && ((BEATS[bi2].t === "q" && BEATS[bi2].q.sec === si) || (BEATS[bi2].t === "gate" && BEATS[bi2].sec === si)));
-        segEls[si].classList.toggle("on", !!curSec); qs.forEach(function (q, qi2) { if (cells[qi2]) cells[qi2].classList.toggle("on", !!counted[q.key]); }); }); }
+    function paintBar() { for (var i = 0; i < tickEls.length; i++) tickEls[i].classList.toggle("on", i < bi2); } // tick i <-> beat i+1; lit once reached, all lit at the final beat
     function obConfetti(fromEl, pts, skipEarn) { // SPARK CONFETTI (locked D+glow) — fired only at award MOMENTS; carries its points into THE POINTS PLACE
       try {
         ptsEl.style.display = ""; var tgt = ptsEl; if (!fromEl) return;
@@ -4939,8 +4936,7 @@
       paintBar(); body.innerHTML = ""; foot.innerHTML = "";
       backB.style.visibility = bi2 > 0 ? "" : "hidden";
       var B = BEATS[bi2];
-      var _inSurvey = (B.t === "q" || B.t === "gate" || B.t === "echo" || B.t === "write"); // punch-list #2+#4: the battery bar exists ONLY during the survey — not on the intro, the Beat-2 breath win, or the ritual beats after (so it can never read "done" while screens keep coming)
-      segEls.forEach(function (sg) { sg.style.display = _inSurvey ? "" : "none"; });
+      track.style.visibility = (B.t === "intro") ? "hidden" : ""; // the whole-flow bar shows on every screen except the immersive intro hook; it fills exactly at the final beat
       ov.setAttribute("data-sec", ""); // BIOME ROOM-TINT REMOVED (David 2026-07-09: "don't like the biome idea for onboarding"). Questions render in the established clean-card style, no per-section screen wash. The 'burst' reward tint is still set by the write beat itself.
       body.className = "ob-body center";
       if (B.t === "intro") { // THE SPARK OPEN (locked intro B): the real animated mark + the script arriving word by word, like it's being spoken
@@ -5070,7 +5066,7 @@
         add(g, "div", "gsub", tr(sec.sub)); // the warm one-liner — why this part matters (punch-list #6)
         advT = setTimeout(next, 1800); return; }
       if (B.t === "q") { var q = B.q;
-        add(body, "div", "ob-kick", tr("PART") + " " + (q.sec + 1) + " · " + tr(SECTIONS[q.sec].l));
+        add(body, "div", "ob-kick", tr(SECTIONS[q.sec].l)); // just the section name — with the continuous whole-flow bar, "PART N of 3" no longer maps to visible segments (David 2026-07-09)
         add(body, "div", "ob-q", tr(q.q));
         var wrap = add(body, "div", q.rows ? "obv-rows" : "obv-tiles");
         // IN-PLACE toggling (punch-list #7, David device 2026-07-04): a tap must NEVER rebuild the screen — the full drawObV2() replayed the entrance cascade (opacity-0 first frame = the "black flash + menu reset"). Tiles repaint themselves; the bar, reply line and Next button update in place. Also: no plus badge, no checkmark (punch-list #11+#12) — selection IS the lit stripe; and NO caps ever (punch-list #8) — pick as many as you like.
