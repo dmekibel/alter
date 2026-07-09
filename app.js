@@ -9477,16 +9477,63 @@
       pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} (onCommit || launch)(totalSecs); }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
     }
-    function launch(totalSecs) { // reuse the working carousel: breath first, then a gentle relax sweep (round 1's easy two), scaled to the chosen time
+    var _pre = null, _done = []; // ROUND-FLOW STATE (David 2026-07-09): the pre-rating + everything actually done, so the POST-rating + recap come after BOTH halves (or after round 1 if round 2 is skipped).
+    function launch(totalSecs) { // ROUND 1: rate BEFORE, run breath+relax, then straight into the pick-two offer (no rating yet).
       var half = Math.max(15, Math.round(totalSecs / 2));
-      var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: half, on: true, run: function (s, cb) { breathwork(Math.max(2, Math.round(s / 16)), cb); } },
-        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(15, totalSecs - half), on: true, run: function (s, cb) { relaxMoment(cb); } } ];
-      runFirstStack(list, function (pre, post) { stackRecap(list, pre, post); });
+      var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: half },
+        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(15, totalSecs - half) } ];
+      gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
+        _pre = pre; _done = [];
+        runCarousel(list, "First stack", "#9a5cf0", function (skip) { if (skip) { if (ov.parentNode) ov.remove(); if (onDone) onDone(); return; } _done = list.slice(); showEscalation(); });
+      });
+    }
+    function runCarousel(list, logTitle, color, onFinish) { // gauge-less carousel run — the pre/post gauges are orchestrated by the flow now (rating after BOTH halves), not per-run. Logs to the day.
+      var built = composeStackSegs(list), segs = built.segs;
+      try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
+      timelinePlayer({ id: "introcar", title: tr(logTitle), logTitle: logTitle, catK: "energy", color: color, spark: 6, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, autostart: true, onFinish: function (skip) {
+        if (!skip) { try { var _d = new Date(); logs(todayK()).push({ id: uid(), time: pad(_d.getHours()) + ":" + pad(_d.getMinutes()), title: logTitle, mins: Math.max(1, Math.round(segs.reduce(function (a, s) { return a + (s.gap || 5); }, 0) / 60)), catK: "energy", color: color }); save(); renderAll(); } catch (e) {} }
+        if (onFinish) onFinish(skip);
+      } });
+    }
+    function showEscalation() { clearBoth(); // ROUND 2 (David 2026-07-09): LET THEM PICK two more tools (tap to toggle), then pick a time + press-hold — mirrors round 1. The post-rating + recap come after this.
+      add(body, "div", "ob-q", tr("Keep the momentum. Pick two more."));
+      add(body, "div", "ob-sb", tr("your last two. tap to choose.")).style.cssText = "text-align:center;margin-top:8px;";
+      var MENU = [ { id: "medit", nm: "A quiet sit", ic: "ti-yoga", c: "#46e2a4", desc: "just your breath and you." },
+        { id: "mantra", nm: "A mantra", ic: "ti-quote", c: "#ffc83d", desc: "a line to carry" },
+        { id: "gratitude", nm: "A moment of thanks", ic: "ti-heart", c: "#ff9ec4", desc: "one good thing today" },
+        { id: "breath", nm: "More breath", ic: "ti-lungs", c: "#5fb0ff", desc: "make your exhales longer." } ];
+      var picked = [], rows = [], goB;
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:9px;width:100%;max-width:340px;margin-top:16px;";
+      function repaint() { rows.forEach(function (r) { var on = picked.indexOf(r.t.id) >= 0; r.el.classList.toggle("on", on); r.el.style.background = on ? tfStripeDoor(r.t.c) : ""; }); if (goB) goB.classList.toggle("asleep", picked.length < 2); }
+      MENU.forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", t.c); b.style.minHeight = "56px"; b.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '<span class="os">' + esc(tr(t.desc)) + '</span></span>'; rows.push({ el: b, t: t });
+        b.onclick = function () { var i = picked.indexOf(t.id); if (i >= 0) picked.splice(i, 1); else { if (picked.length >= 2) picked.shift(); picked.push(t.id); } repaint(); }; });
+      goB = add(foot, "button", "ob-btn asleep", tr("Add them") + " ▸"); goB.onclick = function () { if (picked.length < 2) return; showR2Time(picked.slice()); };
+      var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
+      repaint();
+    }
+    function showR2Time(picked) { clearBoth(); addBack(showEscalation);
+      add(body, "div", "ob-q", tr("How much will you commit?"));
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], function (s) { runRound2Picked(picked, s); }, function () { showR2Time(picked); }); }; });
+      var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
+    }
+    function runRound2Picked(picked, totalSecs) {
+      var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })(), novice = !!bp.practiceNovice;
+      var per = Math.max(15, Math.round((totalSecs || 60) / Math.max(1, picked.length)));
+      var META = { medit: { nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4" }, mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d" }, gratitude: { nm: "Gratitude", ic: "ti-heart", c: "#ff9ec4" }, breath: { nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff" } };
+      var list2 = picked.map(function (id) { var m = META[id] || { nm: id, ic: "ti-circle", c: "#9a7cff" }; var t = { id: id, nm: m.nm, ic: m.ic, c: m.c, secs: per }; if (id === "medit" && novice) { t.secs = Math.min(per, 45); t.med = [{ k: "settle" }]; } return t; });
+      runCarousel(list2, "Complete the set", (list2[0] || {}).c || "#9a5cf0", function (skip) { if (!skip) _done = _done.concat(list2); finishSession(); });
+    }
+    function finishSession() { // POST-rating after both halves (or after round 1 if round 2 was skipped), then the proof recap
+      gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
+        try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "intro", pre: _pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); save(); } catch (e) {}
+        stackRecap(_done, _pre, post);
+      });
     }
     function stackRecap(list, pre, post) { clearBoth();
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
       var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
-      list.forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
+      (list || []).forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
       if (pre != null && post != null) {
         var drop = add(body, "div"); drop.style.cssText = "margin-top:18px;text-align:center;";
         add(drop, "div", null, tr("Tension")).style.cssText = "font-size:13px;font-weight:800;letter-spacing:1px;color:#cbb6e6;text-transform:uppercase;";
@@ -9494,35 +9541,6 @@
         var dl = pre - post; add(drop, "div", null, dl > 0 ? (tr("you brought it down by") + " " + dl) : tr("you showed up. that's the rep.")).style.cssText = "font-size:13px;font-weight:700;color:#cbb6e6;margin-top:4px;";
       }
       add(body, "div", null, tr("That is one piece of evidence. One line on your record. Tomorrow a second line lands under it, and two lines are already an argument.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
-      var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { showEscalation(); };
-    }
-    function showEscalation() { clearBoth(); // ROUND 2 (Phase D, David 2026-07-09): SAME shape as round 1 now (context on the two tools -> pick a time -> press-hold). ADAPTS to blueprint() -> low-energy/novice = gratitude + a gentle sit; otherwise = stillness + mantra (mantra last so its power lands after the momentum, per spec).
-      var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })();
-      var lowDoor = !!(bp.lowStart || bp.vibe === "overwhelmed" || bp.vibe === "stuck");
-      add(body, "div", "ob-q", tr("Keep the momentum. Complete the set."));
-      add(body, "div", "ob-sb", tr(lowDoor ? "two more: name one good thing from today, then a quiet sit." : "two more: a quiet sit, then a line to carry.")).style.cssText = "text-align:center;margin-top:8px;max-width:340px;"; // CONTEXT on the next two (David 2026-07-09)
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], function (s) { runRound2(s, lowDoor, bp); }, showEscalation); }; });
-      var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
-    }
-    function runRound2(totalSecs, lowDoor, bp) {
-      var novice = !!bp.practiceNovice, half = Math.max(15, Math.round((totalSecs || 60) / 2));
-      var med = { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: novice ? Math.min(half, 45) : half };
-      if (novice) med.med = [{ k: "settle" }]; // baby-step: one gentle section for a first sit
-      var oSecs = Math.max(15, (totalSecs || 60) - med.secs); // the chosen time splits across the two tools
-      var list2 = lowDoor ? [ { id: "gratitude", nm: "Gratitude", ic: "ti-heart", c: "#ff9ec4", secs: oSecs }, med ]
-                          : [ med, { id: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", secs: oSecs } ];
-      var built = composeStackSegs(list2);
-      try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
-      timelinePlayer({ id: "introset2", title: tr("Complete the set"), logTitle: "First stack round 2", catK: "love", color: list2[0].c, spark: 6, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, autostart: true, onFinish: function () {
-        try { var _d = new Date(); logs(todayK()).push({ id: uid(), time: pad(_d.getHours()) + ":" + pad(_d.getMinutes()), title: "Complete the set", mins: 1, catK: "love", color: "#9a5cf0" }); save(); renderAll(); } catch (e) {}
-        showPower(lowDoor);
-      } });
-    }
-    function showPower(lowDoor) { clearBoth();
-      add(body, "div", "ob-kick", tr("That is the whole set."));
-      add(body, "div", null, tr(lowDoor ? "You found a few good things and gave them a quiet minute. Naming them is what makes them stick." : "The line you kept repeating is one your mind starts to file as true.")).style.cssText = "text-align:center;font-size:17px;font-weight:800;color:#f0e6ef;margin-top:16px;max-width:340px;line-height:1.5;";
-      try { earn(6, { label: "intro-round2" }); } catch (e) {}
       var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
     }
     function showPlan() {
