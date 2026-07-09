@@ -9435,7 +9435,9 @@
   function firstDayStack(onDone) { // STONE 1 = THE APP IN ONE MINUTE (David 2026-07-08): the intro micro-stack (plan -> do -> track) IS the first journey stone now, no longer an onboarding beat. Standalone overlay: plan the stack, runFirstStack (carousel + before/after gauge = the felt-shift proof, self-logs to the day), then the show-don't-tell recap. Plan-UI + recap are the proven onboarding code, lifted verbatim. onDone() closes it.
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     // ===== INTRO STONE (Phase B rebuild, David 2026-07-09 — Opus, regression-zone care): typed HOOK -> OFFER -> time chips -> press-hold COMMIT -> the EXISTING breath+relax carousel (runFirstStack/timelinePlayer, untouched) -> proof recap = the clean forward close. Copy through both gates. Press-hold reuses the seal ring gesture; gesture FEEL is DEVICE-UNTESTED. The old plan-UI opening (showIntro/showPlan below) is retained-but-DEAD (unscheduled) to keep this edit off the fragile plan-UI code; delete in a clean pass. =====
-    function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); }
+    var backEl = null;
+    function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; }
+    function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = fn; } // BACK (David 2026-07-09): accidental forward -> step back a screen. Full IG-story tap-navigation is the queued bigger pass.
     var HOOK = [
       "Right now your body is holding tension you have completely tuned out.",
       "Some of it you have carried so long it just feels like your personality.",
@@ -9459,15 +9461,14 @@
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
       body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
     }
-    function showOffer() { clearBoth();
-      add(body, "div", "ob-q", tr("How much time do you have?"));
+    function showOffer() { clearBoth(); addBack(showHook);
+      add(body, "div", "ob-q", tr("How much will you commit?"));
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
       [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1]); }; });
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
-    function showCommit(totalSecs) { clearBoth();
-      add(body, "div", "ob-q", tr("Hold to begin."));
-      add(body, "div", "ob-sb", tr("A minute you commit to on purpose is one you are far likelier to finish.")).style.cssText = "text-align:center;margin-top:8px;max-width:330px;";
+    function showCommit(totalSecs) { clearBoth(); addBack(showOffer);
+      add(body, "div", "ob-q", tr("Press and hold to commit."));
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
