@@ -9451,8 +9451,9 @@
       sentences: "#ffd24a", repeat: "#ff5fa8", "default": "#ffd24a", chose: "#ff5fa8",
       attention: "#ff5fa8", hunting: "#ffd24a", threats: "#ff5fa8",
       exhale: "#5fb0ff", safe: "#46e2a4",
-      changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff" };
-    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22 };
+      changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff",
+      thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff" };
+    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16 };
     function animLines(container, lines, start) { var t0 = start || 0.2;
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
@@ -9506,51 +9507,36 @@
         if (onFinish) onFinish(skip);
       } });
     }
-    function showEscalation() { clearBoth(); // ROUND 2 (David 2026-07-09): LET THEM PICK two more tools (tap to toggle), then pick a time + press-hold — mirrors round 1. The post-rating + recap come after this.
-      add(body, "div", "ob-q", tr("Keep the momentum. Pick two more."));
-      add(body, "div", "ob-sb", tr("your last two. tap to choose.")).style.cssText = "text-align:center;margin-top:8px;";
-      var MENU = [ { id: "medit", nm: "A quiet sit", ic: "ti-yoga", c: "#46e2a4", desc: "just your breath and you." },
-        { id: "mantra", nm: "A mantra", ic: "ti-quote", c: "#ffc83d", desc: "a line to carry" },
-        { id: "gratitude", nm: "A moment of thanks", ic: "ti-heart", c: "#ff9ec4", desc: "one good thing today" },
-        { id: "breath", nm: "More breath", ic: "ti-lungs", c: "#5fb0ff", desc: "make your exhales longer." } ];
-      var picked = [], rows = [], goB;
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:9px;width:100%;max-width:340px;margin-top:16px;";
-      function repaint() { rows.forEach(function (r) { var on = picked.indexOf(r.t.id) >= 0; r.el.classList.toggle("on", on); r.el.style.background = on ? tfStripeDoor(r.t.c) : ""; }); if (goB) goB.classList.toggle("asleep", picked.length < 2); }
-      MENU.forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", t.c); b.style.minHeight = "56px"; b.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '<span class="os">' + esc(tr(t.desc)) + '</span></span>'; rows.push({ el: b, t: t });
-        b.onclick = function () { var i = picked.indexOf(t.id); if (i >= 0) picked.splice(i, 1); else { if (picked.length >= 2) picked.shift(); picked.push(t.id); } repaint(); }; });
-      goB = add(foot, "button", "ob-btn asleep", tr("Add them") + " ▸"); goB.onclick = function () { if (picked.length < 2) return; var ORD = { breath: 0, medit: 1, gratitude: 2, mantra: 3 }; showR2Time(picked.slice().sort(function (a, b) { return (ORD[a] == null ? 9 : ORD[a]) - (ORD[b] == null ? 9 : ORD[b]); })); }; // CANONICAL ORDER (David 2026-07-09: meditation always before mantra): breath -> sit -> thanks -> mantra, regardless of tap order.
-      var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
-      repaint();
-    }
-    var NM2 = { medit: "a quiet sit", mantra: "a mantra", gratitude: "a moment of thanks", breath: "more breath" }; // for the commit's "commit to X and Y" (David 2026-07-09: say exactly what you commit to)
-    function showR2Time(picked) { clearBoth(); addBack(showEscalation);
-      var what = picked.map(function (id) { return NM2[id] || id; }).join(" and ");
-      add(body, "div", "ob-q", tr("How much will you commit?"));
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], function (s) { runRound2Picked(picked, s); }, function () { showR2Time(picked); }, what); }; });
+    // ROUND 2 (David 2026-07-09): a GUIDED meditation -> mantra, each PRIMED with a genius sentence before it (gratitude cancelled, no pick menu). Offer + time pick + press-hold mirror round 1; then prime -> meditate -> prime -> mantra -> post-rating -> close. Priming copy: judge rated the kept lines DEEP/EPIC. Meditation channels the Sam Harris "lost in the stream of thought" idea + a concrete two-systems science nod; mantra channels Withers (inherited self-talk) + Dispenza (rehearsal rewires) without naming them.
+    var MED_PRIME = [
+      "You did not pick your last thought, and you cannot name your next one. Most hours you are narrating your own day in your head and calling it thinking.",
+      "The mind that wanders and the mind that notices are two different gears. Meditation is where you practice catching yourself, and every catch trains the one that keeps you here." ];
+    var MANTRA_PRIME = [
+      "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way.",
+      "A mantra rewires you the same way a real experience does. Say it as if you lived it, and the nervous system starts to believe it. The body keeps no distinction." ];
+    function showEscalation() { clearBoth();
+      add(body, "div", "ob-q", tr("Keep the momentum. Complete the set."));
+      add(body, "div", "ob-sb", tr("a short meditation, then a mantra to carry.")).style.cssText = "text-align:center;margin-top:8px;max-width:340px;";
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], runGuidedPair, showEscalation, "a meditation and a mantra"); }; });
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
     }
-    function runRound2Picked(picked, totalSecs) {
+    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)); // PRIME -> meditate -> PRIME -> mantra; the priming lands right before each practice
+      narrate(MED_PRIME, "Begin", function () { runOneTool("medit", half, function () {
+        narrate(MANTRA_PRIME, "Begin", function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); }); }); });
+    }
+    function runOneTool(id, secs, onFinish) {
       var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })(), novice = !!bp.practiceNovice;
-      var per = Math.max(15, Math.round((totalSecs || 60) / Math.max(1, picked.length)));
-      var META = { medit: { nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4" }, mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d" }, gratitude: { nm: "Gratitude", ic: "ti-heart", c: "#ff9ec4" }, breath: { nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff" } };
-      var list2 = picked.map(function (id) { var m = META[id] || { nm: id, ic: "ti-circle", c: "#9a7cff" }; var t = { id: id, nm: m.nm, ic: m.ic, c: m.c, secs: per }; if (id === "medit" && novice) { t.secs = Math.min(per, 45); t.med = [{ k: "settle" }]; } return t; });
-      runCarousel(list2, "Complete the set", (list2[0] || {}).c || "#9a5cf0", function (skip) { if (!skip) { _done = _done.concat(list2); _r2 = picked.slice(); } finishSession(); });
+      var META = { medit: { nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", log: "Meditation" }, mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d", log: "Mantra" } };
+      var m = META[id] || { nm: id, ic: "ti-circle", c: "#9a7cff", log: id }; var t = { id: id, nm: m.nm, ic: m.ic, c: m.c, secs: Math.max(15, secs) };
+      if (id === "medit" && novice) { t.secs = Math.min(t.secs, 45); t.med = [{ k: "settle" }]; } // baby-step the first sit
+      runCarousel([t], m.log, m.c, function (skip) { if (!skip) _done = _done.concat([{ nm: m.nm, ic: m.ic, c: m.c }]); if (onFinish) onFinish(skip); });
     }
-    function finishSession() { // POST-rating after both halves (or after round 1 if round 2 was skipped) -> deep per-tool explanations (round 2) -> the proof + strong close
+    function finishSession() { // POST-rating after both halves (or after round 1 if round 2 was skipped), then the proof + strong close
       gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
         try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "intro", pre: _pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); save(); } catch (e) {}
-        if (_r2.length) showExplain(_r2, post); else showClose(post);
+        showClose(post);
       });
-    }
-    function showExplain(ids, post) { // DEEP per-tool mechanism (David 2026-07-09: much deeper copy for the second half), one idea per screen, animated. Both copy-gates passed; judge rated the set DEEP (breath + mantra "EPIC").
-      var EXPLAIN = {
-        medit: "You just watched how fast your mind grabs a thought and runs off with it. All day it does that, and you go two hours without choosing. The sit is where you practice noticing, and getting to choose again.",
-        mantra: "The sentences you repeat become the ones that run on their own, the ones you never chose. Say a better one on purpose, enough times, and it starts to be the default.",
-        gratitude: "Naming one good thing on purpose points your attention at it. Do that often, and your mind starts hunting for more of them instead of cataloging the threats.",
-        breath: "A long exhale is the one signal your body reads as safe. You sent it on purpose, which is something almost no one knows they can do." };
-      var q = ids.map(function (id) { return EXPLAIN[id]; }).filter(Boolean);
-      (function step(i) { if (i >= q.length) { showClose(post); return; } narrate([q[i]], (i < q.length - 1 ? "Go on" : "Keep going"), function () { step(i + 1); }); })(0);
     }
     function showClose(post) { clearBoth(); // the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
