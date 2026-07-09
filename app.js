@@ -9455,19 +9455,19 @@
       thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff",
       worry: "#ff5fa8", win: "#ffd24a", kinder: "#ffd24a", wander: "#5fb0ff", wandered: "#5fb0ff", quiet: "#5fb0ff" };
     var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15 };
-    function animLines(container, lines, start) { var t0 = start || 0.2;
+    function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
           if (BIG_ALL[bare]) sp.style.fontSize = BIG_ALL[bare] + "em";
           if (HUES_ALL[bare]) sp.innerHTML = '<b style="color:' + HUES_ALL[bare] + '">' + esc(w) + '</b>'; else sp.textContent = w;
-          d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.045; });
-        t0 = ld + 0.3; });
+          d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += pw; });
+        t0 = ld + 0.35; });
       return t0; // total reveal time
     }
     function narrate(lines, btnLabel, onNext, opts) { clearBoth(); opts = opts || {}; if (opts.back) addBack(opts.back);
       if (opts.kick) add(body, "div", "ob-kick", tr(opts.kick));
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;margin-top:8px;gap:8px;";
-      var t0 = animLines(iw, lines, 0.2);
+      var t0 = animLines(iw, lines, 0.2, opts.per);
       try { speak(lines.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
       var b = add(foot, "button", "ob-btn asleep", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { body.onclick = null; onNext(); };
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
@@ -9528,10 +9528,10 @@
       [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], runGuidedPair, showEscalation, "a meditation and a mantra"); }; });
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
     }
-    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)); // PRIME (the explainer builds across 2 gentle screens) -> meditate -> PRIME -> mantra
+    function runGuidedPair(totalSecs) { var half = Math.max(20, Math.round((totalSecs || 60) / 2)), PACE = { per: 0.08 }; // the explainer primes read at a CALM pace (David 2026-07-09); 2 gentle screens -> meditate -> prime -> mantra
       narrate(MED_PRIME.slice(0, 4), "Go on", function () {
         narrate(MED_PRIME.slice(4), "Begin", function () { runOneTool("medit", half, function () {
-          narrate(MANTRA_PRIME, "Begin", function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); }); }); }); });
+          narrate(MANTRA_PRIME, "Begin", function () { runOneTool("mantra", (totalSecs || 60) - half, function () { finishSession(); }); }, PACE); }); }, PACE); }, PACE);
     }
     function runOneTool(id, secs, onFinish) {
       var bp = (function () { try { return blueprint(); } catch (e) { return {}; } })(), novice = !!bp.practiceNovice;
