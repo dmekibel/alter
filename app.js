@@ -9443,33 +9443,42 @@
       "Some of it you have carried so long it just feels like your personality.",
       "A tight body keeps your mind on edge too, and that is part of why you can feel wound up with no idea why."
     ];
-    function showHook() { clearBoth(); // OPENING-STYLE REVEAL (David 2026-07-09): lines arrive ONE AT A TIME like the app's intro, but each line's words cascade in FAST (sped up) so a line reads as landing at once, not a slow typewriter. Key words are colored + sized up for interest. Tap anywhere to fast-forward.
-      var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:210px;margin-top:8px;gap:8px;";
-      var HUES = { tension: "#ff5fa8", tuned: "#ffd24a", personality: "#ffd24a", edge: "#ff5fa8", wound: "#ffd24a" };
-      var BIG = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16 };
-      var t0 = 0.22;
-      function hline(txt) { var d = add(iw, "div", "obi-line"); var ld = t0;
+    // ANIMATED PROSE (David 2026-07-09: "the text should always be animated and colored and multi-sized"). ONE reusable renderer for every guardian line: words cascade in FAST (0.045s each) so a line reads as landing at once, not a slow typewriter; key words are colored (pink/yellow) + sized up. Matched by bare lowercase word.
+    var HUES_ALL = { tension: "#ff5fa8", tuned: "#ffd24a", personality: "#ffd24a", edge: "#ff5fa8", wound: "#ffd24a",
+      thought: "#ffd24a", noticing: "#ff5fa8", choose: "#ffd24a", choosing: "#ffd24a",
+      sentences: "#ffd24a", repeat: "#ff5fa8", "default": "#ffd24a", chose: "#ff5fa8",
+      attention: "#ff5fa8", hunting: "#ffd24a", threats: "#ff5fa8",
+      exhale: "#5fb0ff", safe: "#46e2a4",
+      changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff" };
+    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22 };
+    function animLines(container, lines, start) { var t0 = start || 0.2;
+      lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
-          if (BIG[bare]) sp.style.fontSize = BIG[bare] + "em";
-          if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + '</b>'; else sp.textContent = w;
-          d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.045; }); // 0.045s per word = fast cascade
-        t0 = ld + 0.3; // next line begins a beat after this one finishes -> one line at a time
-      }
-      HOOK.forEach(function (l) { hline(l); });
-      try { speak(HOOK.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
-      var b = add(foot, "button", "ob-btn asleep", tr("Show me") + " ▸"); b.onclick = function () { body.onclick = null; showOffer(); };
+          if (BIG_ALL[bare]) sp.style.fontSize = BIG_ALL[bare] + "em";
+          if (HUES_ALL[bare]) sp.innerHTML = '<b style="color:' + HUES_ALL[bare] + '">' + esc(w) + '</b>'; else sp.textContent = w;
+          d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.045; });
+        t0 = ld + 0.3; });
+      return t0; // total reveal time
+    }
+    function narrate(lines, btnLabel, onNext, opts) { clearBoth(); opts = opts || {}; if (opts.back) addBack(opts.back);
+      if (opts.kick) add(body, "div", "ob-kick", tr(opts.kick));
+      var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;margin-top:8px;gap:8px;";
+      var t0 = animLines(iw, lines, 0.2);
+      try { speak(lines.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
+      var b = add(foot, "button", "ob-btn asleep", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { body.onclick = null; onNext(); };
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
       body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
     }
+    function showHook() { narrate(HOOK, "Show me", showOffer); }
     function showOffer() { clearBoth(); addBack(showHook);
       add(body, "div", "ob-q", tr("How much will you commit?"));
       add(body, "div", "ob-sb", tr("to tell your body the emergency is over.")).style.cssText = "text-align:center;margin-top:8px;max-width:330px;";
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:18px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], launch, showOffer); }; });
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], launch, showOffer, "a breath, then your body"); }; });
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
-    function showCommit(totalSecs, onCommit, backFn) { clearBoth(); addBack(backFn || showOffer); // generic press-hold commit; onCommit(totalSecs) fires when the ring fills (round 1 -> launch, round 2 -> runRound2)
-      add(body, "div", "ob-q", tr("Press and hold to commit."));
+    function showCommit(totalSecs, onCommit, backFn, whatLabel) { clearBoth(); addBack(backFn || showOffer); // generic press-hold commit; onCommit(totalSecs) fires when the ring fills. whatLabel names EXACTLY what you're committing to (David 2026-07-09).
+      add(body, "div", "ob-q", whatLabel ? ("Press and hold to commit to " + whatLabel + ".") : tr("Press and hold to commit."));
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
@@ -9477,7 +9486,7 @@
       pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} (onCommit || launch)(totalSecs); }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
     }
-    var _pre = null, _done = []; // ROUND-FLOW STATE (David 2026-07-09): the pre-rating + everything actually done, so the POST-rating + recap come after BOTH halves (or after round 1 if round 2 is skipped).
+    var _pre = null, _done = [], _r2 = []; // ROUND-FLOW STATE (David 2026-07-09): the pre-rating, everything actually done, and the round-2 picks (for their deep explanations). The POST-rating + close come after BOTH halves (or after round 1 if round 2 is skipped).
     function launch(totalSecs) { // ROUND 1: rate BEFORE, run breath+relax, then straight into the pick-two offer (no rating yet).
       var half = Math.max(15, Math.round(totalSecs / 2));
       var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: half },
@@ -9511,10 +9520,12 @@
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
       repaint();
     }
+    var NM2 = { medit: "a quiet sit", mantra: "a mantra", gratitude: "a moment of thanks", breath: "more breath" }; // for the commit's "commit to X and Y" (David 2026-07-09: say exactly what you commit to)
     function showR2Time(picked) { clearBoth(); addBack(showEscalation);
+      var what = picked.map(function (id) { return NM2[id] || id; }).join(" and ");
       add(body, "div", "ob-q", tr("How much will you commit?"));
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
-      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], function (s) { runRound2Picked(picked, s); }, function () { showR2Time(picked); }); }; });
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1], function (s) { runRound2Picked(picked, s); }, function () { showR2Time(picked); }, what); }; });
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
     }
     function runRound2Picked(picked, totalSecs) {
@@ -9522,25 +9533,37 @@
       var per = Math.max(15, Math.round((totalSecs || 60) / Math.max(1, picked.length)));
       var META = { medit: { nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4" }, mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d" }, gratitude: { nm: "Gratitude", ic: "ti-heart", c: "#ff9ec4" }, breath: { nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff" } };
       var list2 = picked.map(function (id) { var m = META[id] || { nm: id, ic: "ti-circle", c: "#9a7cff" }; var t = { id: id, nm: m.nm, ic: m.ic, c: m.c, secs: per }; if (id === "medit" && novice) { t.secs = Math.min(per, 45); t.med = [{ k: "settle" }]; } return t; });
-      runCarousel(list2, "Complete the set", (list2[0] || {}).c || "#9a5cf0", function (skip) { if (!skip) _done = _done.concat(list2); finishSession(); });
+      runCarousel(list2, "Complete the set", (list2[0] || {}).c || "#9a5cf0", function (skip) { if (!skip) { _done = _done.concat(list2); _r2 = picked.slice(); } finishSession(); });
     }
-    function finishSession() { // POST-rating after both halves (or after round 1 if round 2 was skipped), then the proof recap
+    function finishSession() { // POST-rating after both halves (or after round 1 if round 2 was skipped) -> deep per-tool explanations (round 2) -> the proof + strong close
       gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
         try { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || []; S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "intro", pre: _pre, post: post }); if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); save(); } catch (e) {}
-        stackRecap(_done, _pre, post);
+        if (_r2.length) showExplain(_r2, post); else showClose(post);
       });
     }
-    function stackRecap(list, pre, post) { clearBoth();
+    function showExplain(ids, post) { // DEEP per-tool mechanism (David 2026-07-09: much deeper copy for the second half), one idea per screen, animated. Both copy-gates passed; judge rated the set DEEP (breath + mantra "EPIC").
+      var EXPLAIN = {
+        medit: "You just watched how fast your mind grabs a thought and runs off with it. All day it does that, and you go two hours without choosing. The sit is where you practice noticing, and getting to choose again.",
+        mantra: "The sentences you repeat become the ones that run on their own, the ones you never chose. Say a better one on purpose, enough times, and it starts to be the default.",
+        gratitude: "Naming one good thing on purpose points your attention at it. Do that often, and your mind starts hunting for more of them instead of cataloging the threats.",
+        breath: "A long exhale is the one signal your body reads as safe. You sent it on purpose, which is something almost no one knows they can do." };
+      var q = ids.map(function (id) { return EXPLAIN[id]; }).filter(Boolean);
+      (function step(i) { if (i >= q.length) { showClose(post); return; } narrate([q[i]], (i < q.length - 1 ? "Go on" : "Keep going"), function () { step(i + 1); }); })(0);
+    }
+    function showClose(post) { clearBoth(); // the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
       var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
-      (list || []).forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
-      if (pre != null && post != null) {
-        var drop = add(body, "div"); drop.style.cssText = "margin-top:18px;text-align:center;";
+      (_done || []).forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
+      if (_pre != null && post != null) {
+        var drop = add(body, "div"); drop.style.cssText = "margin-top:16px;text-align:center;";
         add(drop, "div", null, tr("Tension")).style.cssText = "font-size:13px;font-weight:800;letter-spacing:1px;color:#cbb6e6;text-transform:uppercase;";
-        var nums = add(drop, "div"); nums.style.cssText = "font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:2px;"; nums.innerHTML = '<span style="color:#ffcf6a;">' + pre + '</span><i class="ti ti-arrow-right" style="font-size:19px;opacity:.5;color:#fff;"></i><span style="color:#8fe6a8;">' + post + '</span>';
-        var dl = pre - post; add(drop, "div", null, dl > 0 ? (tr("you brought it down by") + " " + dl) : tr("you showed up. that's the rep.")).style.cssText = "font-size:13px;font-weight:700;color:#cbb6e6;margin-top:4px;";
+        var nums = add(drop, "div"); nums.style.cssText = "font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:2px;"; nums.innerHTML = '<span style="color:#ffcf6a;">' + _pre + '</span><i class="ti ti-arrow-right" style="font-size:19px;opacity:.5;color:#fff;"></i><span style="color:#8fe6a8;">' + post + '</span>';
+        var dl = _pre - post; add(drop, "div", null, dl > 0 ? (tr("you brought it down by") + " " + dl) : tr("you showed up. that's the rep.")).style.cssText = "font-size:13px;font-weight:700;color:#cbb6e6;margin-top:4px;";
       }
-      add(body, "div", null, tr("That is one piece of evidence. One line on your record. Tomorrow a second line lands under it, and two lines are already an argument.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
+      var ew = add(body, "div"); ew.style.cssText = "margin-top:16px;width:100%;display:flex;flex-direction:column;align-items:center;";
+      var END = "You reached into your own body and mind and changed them. That is the whole skill, and it is already yours. Tomorrow, you bring it to your real day.";
+      animLines(ew, [END], 0.2);
+      try { speak(tr(END)); } catch (e) {}
       var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
     }
     function showPlan() {
