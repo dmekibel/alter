@@ -441,6 +441,15 @@
   CATS.forEach(function (c) { c.groups.forEach(function (g) { g.tasks.forEach(function (t) { TITLE2CAT[t.l.toLowerCase()] = c.k; TITLE2META[t.l.toLowerCase()] = { title: t.l, catK: c.k, emoji: t.e, color: c.color, habitId: t.id || null }; }); }); });
   OCCUPATIONS.forEach(function (o) { if (o.work) o.work.forEach(function (g) { g.tasks.forEach(function (t) { var lc = t.l.toLowerCase(); if (!TITLE2CAT[lc]) { TITLE2CAT[lc] = "work"; TITLE2META[lc] = { title: t.l, catK: "work", emoji: t.e, color: "#2a9fe0", habitId: null }; } }); }); });
   function activeCats() { var o = OCC_BY_K[(typeof S !== "undefined" && S && S.profile) ? S.profile.occ : null]; return CATS.map(function (c) { if (c.k === "work" && o && o.work) return { k: c.k, label: c.label, e: c.e, color: c.color, groups: o.work }; return c; }); }
+  // BLUEPRINT READER (Phase A, 2026-07-09) — the single normalized read the day-one stone + adaptive surfaces call to know WHO this is. Onboarding stores the raw fields on S.profile; this hands them back shaped, with the booleans the stone actually branches on (everMeditated → do we baby-step meditation in round 2; practiceNovice → gentlest dose, more why per move). Read via blueprint(), never poke S.profile.experience directly, so the shape can move under it.
+  function blueprint() { var P = (typeof S !== "undefined" && S && S.profile) || {}; var exp = P.experience || [], ch = P.challenges || []; function has(a, k) { return a.indexOf(k) >= 0; }
+    return { age: P.age || "", occ: P.occ || "", stage: P.stage || "", stages: (P.stages || []).slice(),
+      experience: exp.slice(), challenges: ch.slice(),
+      everMeditated: has(exp, "meditation"), everJournaled: has(exp, "journaling"), everTherapy: has(exp, "therapy"), everBreathwork: has(exp, "breathwork"),
+      practiceNovice: !exp.length || has(exp, "none"), // no practice ticked (or "none yet") → gentlest onboarding into every tool
+      wantsFocus: has(ch, "focus"), wantsSleep: has(ch, "sleep"), wantsStress: has(ch, "stress"), wantsEnergy: has(ch, "energy"), wantsMood: has(ch, "mood"), wantsConsistency: has(ch, "consistency"),
+      vibe: P.vibe || "", lowStart: !!P.lowStart, door: P.door || "", register: P.register || "" };
+  }
   var HABIT2CAT = { move: "energy", breathe: "energy", tidy: "energy", deep: "work", send: "work", read: "hobby" };
   // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
   // Domain palette — the ORIGINAL varied/beautiful set restored (David 2026-06-25: collapsing the energy family to orange made it "ugly orange"). Each domain its own colour; drift is the solid dark-red.
@@ -4815,7 +4824,7 @@
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
-    var d2 = { name: "", gender: "", age: "", stage: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], door: "", block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
+    var d2 = { name: "", gender: "", age: "", stage: [], experience: [], challenges: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], door: "", block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
     var SECTIONS = [
       { id: "you", l: "ABOUT YOU", c: "#b07aff", ic: "ti-user-star", sub: "so I build for your life — not a template", pat: "radial-gradient(1.5px 1.5px at 22% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 72% 40%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%, #3a2358 0%, #241038 55%, #0c0418 100%)" },
       { id: "energy", l: "ENERGY", c: "#ff8a3a", ic: "ti-bolt", sub: "where your fuel comes from — and where it leaks", pat: "repeating-conic-gradient(from 0deg at 50% 62%, #3a1a08 0deg 9deg, #7a4212 9deg 18deg), radial-gradient(110% 95% at 50% 62%, #5a2a06 0%, #3a1a08 82%)" },
@@ -4824,19 +4833,22 @@
     // THE MAP — shortened survey (SPEC-FIRST-RUN §2 Phase 3, P2): SIX questions only — address · life-shape · vibe · bed · ingredients · friction. "Serve first, ask after": THE OPEN already gave the felt win, so the ask stays short. Dropped from the survey (2026-07-04): age (unused), words (→ Day-1 Words lesson / Phase 2), peak (deferred), struggles + wants (their personalization now rides ingredients + friction + vibe). Pace is asked FIRST via its own beat, not here.
     var QS = [
       { sec: 0, key: "gender", q: "How should I address you?", opts: [["m", "He", "ti-user", "#5fa8ff"], ["f", "She", "ti-user", "#ff5fa8"], ["x", "Doesn't matter", "ti-sparkles", "#ffd24a"]] },
+      { sec: 0, key: "age", q: "How old are you, roughly?", opts: [["Under 20", "Under 20", "ti-user", "#ffd24a"], ["20s", "20s", "ti-user", "#ff8a3a"], ["30s", "30s", "ti-user", "#ff5fa8"], ["40s", "40s", "ti-user", "#b07aff"], ["50s", "50s", "ti-user", "#5fa8ff"], ["60+", "60+", "ti-user", "#46e2a4"]] }, // BLUEPRINT age band (Phase A). value === display string, so P.age reads "30s" like the demo/char-sheet profiles do.
       { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["job", "A job", "ti-briefcase", "#7f9bc4"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["care", "Caring for someone", "ti-heart-handshake", "#46e2a4"], ["between", "Between chapters", "ti-compass", "#ff8a3a"]] }, // wide-range life shapes — a caregiver and a student both find their tile
+      { sec: 0, key: "experience", q: "What have you tried before?", multi: true, opts: [["meditation", "Meditation", "ti-yoga", "#46e2a4"], ["journaling", "Journaling", "ti-pencil", "#ffd24a"], ["therapy", "Therapy", "ti-messages", "#ff5fa8"], ["breathwork", "Breathwork", "ti-lungs", "#5fa8ff"], ["none", "None yet", "ti-seedling", "#b07aff"]] }, // BLUEPRINT practice history. "none" is the exclusive tile (the q-beat handles it); drives the stone's baby-stepping in round 2.
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that — right now.", coasting: "Steady. One real thing on purpose — that changes a day.", stuck: "I know that one. Knowing isn't the problem — we'll just move one small thing.", overwhelmed: "Okay. Then we go small today — I'll carry the rest." } },
       { sec: 1, key: "bed", q: "How easy is it for you to get out of bed?", opts: [["easy", "Easy", "ti-sunrise", "#ffd24a"], ["creaky", "Takes some creaking", "ti-alarm-snooze", "#48b8e0"], ["battle", "Every morning is a battle", "ti-swords", "#ff5fa8"]] },
       // the good-day ingredients → P.ingredients — the raw material the comeback offer + starter plan are built from ("one rung up, made of what your good days are made of").
       { sec: 1, key: "ingredients", q: "Your good days — what's usually in them?", multi: true, opts: [["slept", "Slept enough", "ti-zzz", "#5fa8ff"], ["moved", "Moved my body", "ti-run", "#ff8a3a"], ["quiet", "A quiet morning", "ti-coffee", "#46e2a4"], ["plan", "Had a plan", "ti-list-check", "#36b3f0"], ["people", "Good people", "ti-users", "#ff5fa8"], ["music", "Music", "ti-music", "#b07aff"], ["early", "Started early", "ti-sunrise", "#ffd24a"], ["alone", "Time alone", "ti-user", "#7f9bc4"]] },
+      { sec: 2, key: "challenges", q: "Where do you want the most help?", rows: 1, multi: true, opts: [["focus", "Focus", "ti-target", "#36b3f0", "I lose the thread and drift to my phone"], ["sleep", "Sleep", "ti-moon", "#5fa8ff", "I wake up tired, or wake at 3am"], ["stress", "Stress", "ti-urgent", "#ff5fa8", "shoulders and jaw stay tight all day"], ["energy", "Energy", "ti-battery-1", "#ffd24a", "I run out of steam by the afternoon"], ["mood", "Mood", "ti-mood-neutral", "#b07aff", "flat, or on edge, for no clear reason"], ["consistency", "Consistency", "ti-repeat", "#46e2a4", "I start strong, then fade by day three"]] }, // BLUEPRINT: where they want help. Short label + specific-moment sub (the vibe-question pattern, both copy-gates passed 2026-07-09). Sits before the friction question; dispatches which tools/lessons surface first.
       // THE FRICTION QUESTION: concrete, true for everyone, and it SETS the Motivation Dial's default route (P.mlDrift). Every answer teaches an engine.
       { sec: 2, key: "overwhelm", q: "When something needs doing and you don't do it — what's usually true?", rows: 1, multi: true, opts: [["cant", "I can't get started", "ti-player-pause", "#ff8a3a"], ["doubt", "I doubt it'll matter", "ti-help-circle", "#48b8e0"], ["bored", "It bores me", "ti-mood-neutral", "#b07aff"], ["empty", "I'm out of fuel", "ti-battery-1", "#7f9bc4"], ["forget", "I just forget", "ti-bulb-off", "#ffd24a"], ["none", "I mostly just do it", "ti-circle-check", "#46e2a4"]] }
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
     var BEATS = [{ t: "intro" }, { t: "pace" }]; // ONBOARDING = QUESTIONS ONLY (David 2026-07-08): the intro micro-stack MOVED OUT of onboarding to become Journey Stone 1 (firstDayStack). Onboarding is now intro (Beat 1 hook) → PACE → survey → plan → seed. The stackintro/stack/stackdone beat handlers stay defined but are no longer scheduled.
-    var _qi = 0; SECTIONS.forEach(function (sec, si) { BEATS.push({ t: "gate", sec: si }); QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); });
+    var _qi = 0; SECTIONS.forEach(function (sec, si) { QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); BEATS.push({ t: "echo", sec: si }); }); // BIOME REGION-GATES REMOVED (David 2026-07-09): no full-screen region-transition screens; questions flow one to the next in the established clean-card style. The echo (listen-back) beats stay — they're recognition, not biome.
     BEATS.push({ t: "constel" }, { t: "plan" }, { t: "plantom" }, { t: "voice" }, { t: "mint" }, { t: "seed" }); // ONBOARDING SHORTENED (David 2026-07-04): the PACT moved to the journey as Lesson 3 'Initiate & Celebrate'. PLANTOM (Node 2 "Plan tomorrow", David 2026-07-08) sits after the survey so its options can be adaptive to the answers.
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
@@ -4873,8 +4885,11 @@
       S.profile = S.profile || {}; var P = S.profile;
       if (d2.name) P.name = d2.name;
       if (d2.gender) P.gender = d2.gender;
-      if (d2.age) P.ageBand = d2.age;
-      if (d2.stage.length) { P.stage = d2.stage[0]; P.stages = d2.stage.slice(); }
+      if (d2.age) P.age = d2.age; // BLUEPRINT (Phase A, 2026-07-09): age band → P.age (what the char sheet + profile line + AI prompt read; was orphaned to an unread P.ageBand)
+      if (d2.stage.length) { P.stage = d2.stage[0]; P.stages = d2.stage.slice();
+        if (!P.occ) P.occ = ({ study: "student", job: "employee", own: "founder", home: "homemaker", care: "caregiver", between: "figuring" })[d2.stage[0]] || P.occ; } // OCCUPATION from life-shape → an OCCUPATIONS key (powers activeCats work relevance + char sheet + AI context); no redundant second "what do you do" screen
+      if (d2.experience && d2.experience.length) P.experience = d2.experience.slice(); // BLUEPRINT: practice history (meditation/journaling/therapy/breathwork/none) → the stone baby-steps anything not ticked
+      if (d2.challenges && d2.challenges.length) P.challenges = d2.challenges.slice();   // BLUEPRINT: where they want help (focus/sleep/stress/...) → dispatch which tools + lessons surface first
       P.vibe = d2.vibe || P.vibe || ""; P.lowStart = (d2.vibe === "overwhelmed" || d2.vibe === "stuck") || !!P.lowStart;
       if (d2.bed) P.bed = d2.bed; if (d2.peak) { P.peak = d2.peak === "am" ? "lark" : d2.peak === "night" ? "owl" : "mixed"; P.peakBand = d2.peak; }
       if (d2.struggles.length) P.struggles = d2.struggles.slice();
@@ -4926,7 +4941,7 @@
       var B = BEATS[bi2];
       var _inSurvey = (B.t === "q" || B.t === "gate" || B.t === "echo" || B.t === "write"); // punch-list #2+#4: the battery bar exists ONLY during the survey — not on the intro, the Beat-2 breath win, or the ritual beats after (so it can never read "done" while screens keep coming)
       segEls.forEach(function (sg) { sg.style.display = _inSurvey ? "" : "none"; });
-      var _sc3 = (B.t === "q") ? B.q.sec : (B.t === "gate") ? B.sec : -1; ov.setAttribute("data-sec", _sc3 >= 0 ? String(_sc3) : ""); // the whole ROOM shifts biome per section (Pokemon region feel)
+      ov.setAttribute("data-sec", ""); // BIOME ROOM-TINT REMOVED (David 2026-07-09: "don't like the biome idea for onboarding"). Questions render in the established clean-card style, no per-section screen wash. The 'burst' reward tint is still set by the write beat itself.
       body.className = "ob-body center";
       if (B.t === "intro") { // THE SPARK OPEN (locked intro B): the real animated mark + the script arriving word by word, like it's being spoken
         obMark(body, 160);
