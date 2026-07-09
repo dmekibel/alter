@@ -879,9 +879,9 @@
     var evening = new Date().getHours() >= 17;
     var _leadSet = false; function lead(done, locked) { if (done || locked || _leadSet) return false; _leadSet = true; return true; }
     function gate(ok, fn) { return function () { if (!ok) { toast(tr("one lesson at a time — the glowing one first")); return; } fn(); }; } // sequential Duolingo locks
-    nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Lesson 1 · The Switch"), _lead: lead(s0, false),
+    nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Intro"), _lead: lead(s0, false),
       line: s0 ? tr("Switched on. The body leads the mind, and you led the body.") : tr("You have already met the best version of you. Let's close the gap."),
-      color: "#ffc83d", done: s0, act: gate(true, function () { firstDayStack(function () { try { if (S.guide && S.guide.fd && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); } } catch (e) {} try { runLesson(DAY1_LESSONS.fd0b); } catch (e) { try { drawJourney(true); } catch (e2) {} } }); }) }); // STONE 1 = the intro micro-stack (David 2026-07-08), then the fd0b landing (name/check/tomorrow-yes/seal). The old runLesson(fd0) opener slideshow is retired.
+      color: "#ffc83d", done: s0, act: gate(true, function () { firstDayStack(function () { try { if (S.guide && S.guide.fd && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); } } catch (e) {} try { drawJourney(true); } catch (e) {} }); }) }); // INTRO STONE (Phase B, David 2026-07-09): the rebuilt firstDayStack (hook -> offer -> hold-commit -> breath+relax carousel -> proof recap) IS the whole stone. The recap is the clean forward close; the old fd0b landing/seal (orb + spinning rays) is dropped.
     nodes.push({ key: "fd1", icon: "ti-cards", title: tr("Lesson 2 · Your Words"), locked: !s0, _lead: lead(s1, !s0),
       line: s1 ? tr("Five words. I'll speak them back to you the whole way.") : tr("Areté — the gap between who you are and who you could be."),
       color: "#b07aff", done: s1, act: gate(s0, function () { runLesson(DAY1_LESSONS.fd1); }) });
@@ -9434,14 +9434,55 @@
   }
   function firstDayStack(onDone) { // STONE 1 = THE APP IN ONE MINUTE (David 2026-07-08): the intro micro-stack (plan -> do -> track) IS the first journey stone now, no longer an onboarding beat. Standalone overlay: plan the stack, runFirstStack (carousel + before/after gauge = the felt-shift proof, self-logs to the day), then the show-don't-tell recap. Plan-UI + recap are the proven onboarding code, lifted verbatim. onDone() closes it.
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
-    var INTRO = [ // CLEVER + TRANSPARENT gamification from stone 1 (David 2026-07-08): the guardian names its own game out loud (the trust flex no rival can copy), reframes points as EVIDENCE, and openly refuses punishing streaks. Then into the loop.
-      "Before we start, the one thing no app admits: yes, this is a game, and yes, I am built to hook you. The difference is I am going to show you exactly how.",
-      "Every loop you finish, I mark it. Not a point to chase. Evidence. Proof, in your own record, of who you are becoming.",
-      "And I will never punish a miss. Skip a week and nothing breaks, because I only count the days you showed up. Those were the only real ones anyway.",
-      "So here is the first mark to earn. One small loop, about a minute. Watch what lands on your record."
-    ];
+    // ===== INTRO STONE (Phase B rebuild, David 2026-07-09 — Opus, regression-zone care): typed HOOK -> OFFER -> time chips -> press-hold COMMIT -> the EXISTING breath+relax carousel (runFirstStack/timelinePlayer, untouched) -> proof recap = the clean forward close. Copy through both gates. Press-hold reuses the seal ring gesture; gesture FEEL is DEVICE-UNTESTED. The old plan-UI opening (showIntro/showPlan below) is retained-but-DEAD (unscheduled) to keep this edit off the fragile plan-UI code; delete in a clean pass. =====
     function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); }
-    function showIntro(i) { clearBoth(); var d = add(body, "div"); d.style.cssText = "text-align:center;font-size:18.5px;font-weight:800;color:#f0e6ef;line-height:1.5;max-width:380px;margin-top:24px;"; d.textContent = tr(INTRO[i]); try { speak(tr(INTRO[i])); } catch (e) {} var b = add(foot, "button", "ob-btn", (i < INTRO.length - 1 ? tr("Go on") : tr("Let's do it")) + " ▸"); b.onclick = function () { if (i < INTRO.length - 1) showIntro(i + 1); else { clearBoth(); showPlan(); } }; }
+    var HOOK = [
+      "Right now your body is holding tension you have completely tuned out.",
+      "Some of it you have carried so long it just feels like your personality.",
+      "A tight body keeps your mind on edge too, and that is part of why you can feel wound up with no idea why."
+    ];
+    function showHook(i) { clearBoth();
+      var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;margin-top:16px;";
+      var d = add(iw, "div", "obi-line"); var line = tr(HOOK[i]); var ld = 0.15;
+      line.split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.085; });
+      try { speak(line); } catch (e) {}
+      var b = add(foot, "button", "ob-btn", (i < HOOK.length - 1 ? tr("Go on") : tr("Show me")) + " ▸"); b.onclick = function () { if (i < HOOK.length - 1) showHook(i + 1); else showOffer(); };
+    }
+    function showOffer() { clearBoth();
+      add(body, "div", "ob-q", tr("Do you have thirty seconds to try this?"));
+      add(body, "div", "ob-sb", tr("pick how long. thirty seconds is enough to feel it move.")).style.cssText = "text-align:center;margin-top:8px;";
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px;margin-top:22px;";
+      [["30 seconds", 30], ["1 minute", 60], ["2 minutes", 120]].forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", "#ffc83d"); b.style.minHeight = "56px"; b.style.justifyContent = "center"; b.innerHTML = '<span class="ol" style="text-align:center;font-weight:800;">' + esc(tr(t[0])) + '</span>'; b.onclick = function () { showCommit(t[1]); }; });
+      var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
+    }
+    function showCommit(totalSecs) { clearBoth();
+      add(body, "div", "ob-q", tr("Hold to begin."));
+      var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
+      pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
+      var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
+      function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} launch(totalSecs); }, _hMs); });
+      pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+    }
+    function launch(totalSecs) { // reuse the working carousel: breath first, then a gentle relax sweep (round 1's easy two), scaled to the chosen time
+      var half = Math.max(15, Math.round(totalSecs / 2));
+      var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: half, on: true, run: function (s, cb) { breathwork(Math.max(2, Math.round(s / 16)), cb); } },
+        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(15, totalSecs - half), on: true, run: function (s, cb) { relaxMoment(cb); } } ];
+      runFirstStack(list, function (pre, post) { stackRecap(list, pre, post); });
+    }
+    function stackRecap(list, pre, post) { clearBoth();
+      add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
+      var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
+      list.forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
+      if (pre != null && post != null) {
+        var drop = add(body, "div"); drop.style.cssText = "margin-top:18px;text-align:center;";
+        add(drop, "div", null, tr("Tension")).style.cssText = "font-size:13px;font-weight:800;letter-spacing:1px;color:#cbb6e6;text-transform:uppercase;";
+        var nums = add(drop, "div"); nums.style.cssText = "font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:2px;"; nums.innerHTML = '<span style="color:#ffcf6a;">' + pre + '</span><i class="ti ti-arrow-right" style="font-size:19px;opacity:.5;color:#fff;"></i><span style="color:#8fe6a8;">' + post + '</span>';
+        var dl = pre - post; add(drop, "div", null, dl > 0 ? (tr("you brought it down by") + " " + dl) : tr("you showed up. that's the rep.")).style.cssText = "font-size:13px;font-weight:700;color:#cbb6e6;margin-top:4px;";
+      }
+      add(body, "div", null, tr("That is one piece of evidence. One line on your record. Tomorrow a second line lands under it, and two lines are already an argument.")).style.cssText = "text-align:center;font-size:15px;font-weight:700;color:#f0e6ef;margin-top:16px;max-width:340px;";
+      var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+    }
     function showPlan() {
     add(body, "div", "ob-q", tr("How much time do you have?"));
     add(body, "div", "ob-sb", tr("a tiny version of the whole app: plan it, run it, watch it land")).style.cssText = "text-align:center;margin-top:6px;";
@@ -9491,7 +9532,7 @@
       var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
     }
     }
-    showIntro(0);
+    showHook(0);
   }
   function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07, unified v938): a before/after tension gauge (the felt-shift PROOF) wraps ONE composed timelinePlayer session (all acts + transitions in one surface). Logs the stack to the day (tracking). onDone(pre, post) feeds the show-don't-tell recap.
     gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
