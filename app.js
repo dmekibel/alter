@@ -8898,7 +8898,7 @@
     document.body.appendChild(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     var _xb0 = ov.querySelector(".bw-x"); if (_xb0) { _xb0.innerHTML = '<i class="ti ti-x"></i>'; _xb0.style.zIndex = "10"; } // ref: bare ✕ top-left — z above the carousel track so it always takes taps
-    orb.style.animation = "breathe 9s ease-in-out infinite";
+    orb.style.animation = "breatheReal 16s ease-in-out infinite"; // BREATH-CADENCE orb (David 2026-07-09): 4-4-6-2 to match the breath cues; re-synced to each "Breathe in" in paintNow, and keeps breathing through the other exercises to keep pacing you.
     ov.style.setProperty("--gp-c", col); // PLAYER 1:1 (mock #20): element-tint everything (map pips, catch dots, ripple) to this session's color
     orb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(col, "#ffffff", 0.26) + " 0%," + col + " 55%," + mixHex(col, "#160510", 0.26) + " 100%)"; // ref: a SOLID element sphere with soft top-light, not a white-core glow
     orb.style.boxShadow = "0 0 60px " + mixHex(col, "#160510", 0.2) + ", 0 0 120px " + mixHex(col, "#160510", 0.5);
@@ -8919,7 +8919,7 @@
       orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; // the single template content is unused in acts mode
       track = add(ov, "div", "gp-track"); track.style.cssText = "position:fixed;inset:0;display:flex;width:" + (acts.length * 100) + "vw;z-index:2;transition:transform .44s cubic-bezier(.4,0,.2,1);will-change:transform;pointer-events:none;";
       pages = [];
-      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "breathe 9s ease-in-out infinite"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
+      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "breatheReal 16s ease-in-out infinite"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
       orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; // live refs point at the current page
     }
     function onActEnter(ai) { // SLIDE the whole page to activity ai (its page is pre-tinted) + point the live refs at that page + set its current line + tint the shared transport
@@ -9016,6 +9016,7 @@
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bedStop(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // pause the background bed too
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
+    var _lastSeg = null; // breath-cue sync tracker (David 2026-07-09)
     function paintNow(e) { paintMap(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
       var pct, curTxt, totTxt;
@@ -9023,6 +9024,7 @@
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) seg = segs[i]; else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      if (seg && seg !== _lastSeg) { _lastSeg = seg; if (seg.breath === "in" && orb) { orb.style.animation = "none"; void orb.offsetWidth; orb.style.animation = "breatheReal 16s ease-in-out infinite"; } } // BREATH SYNC (David 2026-07-09): restart the orb's cycle exactly when a "Breathe in" cue lands, so it expands with the inhale.
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
     function tick() {
       if (done) return; var e = curElapsed();
@@ -9422,7 +9424,7 @@
         });
       } else if (C.breath) {
         var cyc = Math.max(2, Math.round(t.secs / 16));
-        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in") }); P({ text: "Hold", label: "Hold", sub: "", gap: pauseFor("hold") }); P({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: pauseFor("out") }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest") }); }
+        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in"), breath: "in" }); P({ text: "Hold", label: "Hold", sub: "", gap: pauseFor("hold"), breath: "hold" }); P({ text: "Breathe out", label: "Breathe out", sub: "longer than the in-breath", gap: pauseFor("out"), breath: "out" }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest"), breath: "rest" }); } // tagged so the player re-syncs the orb's breath cycle to the "in" cue (David 2026-07-09)
       } else if (C.cues) {
         var per = Math.max(3.5, t.secs / C.cues.length); // body cues fill the tool's own time (the pose IS the pause), so time-driven not attention-driven
         C.cues.forEach(function (q) { P({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
@@ -9516,7 +9518,7 @@
       function repaint() { rows.forEach(function (r) { var on = picked.indexOf(r.t.id) >= 0; r.el.classList.toggle("on", on); r.el.style.background = on ? tfStripeDoor(r.t.c) : ""; }); if (goB) goB.classList.toggle("asleep", picked.length < 2); }
       MENU.forEach(function (t) { var b = add(wrap, "button", "obv-row"); b.style.setProperty("--oc", t.c); b.style.minHeight = "56px"; b.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '<span class="os">' + esc(tr(t.desc)) + '</span></span>'; rows.push({ el: b, t: t });
         b.onclick = function () { var i = picked.indexOf(t.id); if (i >= 0) picked.splice(i, 1); else { if (picked.length >= 2) picked.shift(); picked.push(t.id); } repaint(); }; });
-      goB = add(foot, "button", "ob-btn asleep", tr("Add them") + " ▸"); goB.onclick = function () { if (picked.length < 2) return; showR2Time(picked.slice()); };
+      goB = add(foot, "button", "ob-btn asleep", tr("Add them") + " ▸"); goB.onclick = function () { if (picked.length < 2) return; var ORD = { breath: 0, medit: 1, gratitude: 2, mantra: 3 }; showR2Time(picked.slice().sort(function (a, b) { return (ORD[a] == null ? 9 : ORD[a]) - (ORD[b] == null ? 9 : ORD[b]); })); }; // CANONICAL ORDER (David 2026-07-09: meditation always before mantra): breath -> sit -> thanks -> mantra, regardless of tap order.
       var sk = add(foot, "button", "ob-skip", tr("I'm good for now")); sk.onclick = function () { finishSession(); };
       repaint();
     }

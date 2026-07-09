@@ -651,6 +651,7 @@
   .breathorb{width:124px;height:124px;border-radius:50%;margin:26px auto;background:radial-gradient(circle,rgba(255,150,200,.55),rgba(255,79,160,0) 70%);box-shadow:0 0 42px rgba(255,120,190,.4);animation:breathe 6s ease-in-out infinite;}
   .breathorb--slow{animation-duration:11s;background:radial-gradient(circle,rgba(255,220,120,.55),rgba(255,200,80,0) 70%);box-shadow:0 0 52px rgba(255,210,110,.4);}
   @keyframes breathe{0%,100%{transform:scale(.68);opacity:.55;}50%{transform:scale(1.12);opacity:1;}}
+  @keyframes breatheReal{0%{transform:scale(.84);opacity:.6;}25%{transform:scale(1.12);opacity:1;}50%{transform:scale(1.12);opacity:1;}87.5%{transform:scale(.84);opacity:.6;}100%{transform:scale(.84);opacity:.6;}} /* 16s = 4s inhale (0-25%) + 4s hold (25-50%) + 6s exhale (50-87.5%) + 2s rest (87.5-100%) — matches the breath-cue cadence so the player orb expands with the inhale (David 2026-07-09) */
   /* guided breathwork overlay (first self-help module) */
   #breatheOv{position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
   @keyframes toolIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
@@ -2667,6 +2668,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=991"></script>
+  <script src="app.js?v=992"></script>
 </body>
 </html>
