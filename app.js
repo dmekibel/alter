@@ -4898,7 +4898,9 @@
       var tiles = Array.prototype.slice.call(body.querySelectorAll(".obv-tile, .obv-row")), d0 = 0.16;
       function reveal(el, delaySec) { el.style.animation = "none"; el.style.opacity = "0"; el.style.transition = "opacity .34s ease"; setTimeout(function () { el.style.opacity = "1"; }, Math.round(Math.max(0, delaySec) * 1000)); }
       tiles.forEach(function (t, i) { if (t.parentNode) t.parentNode.style.animation = "none"; reveal(t, d0 + i * 0.06); });
-      reveal(b, (btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1));
+      var _bd = (btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1);
+      b.style.animation = "none"; b.style.opacity = "0"; b.style.transition = "opacity .34s ease";
+      setTimeout(function () { b.style.opacity = "1"; if (!b.classList.contains("asleep")) b.classList.add("ignite"); }, Math.round(_bd * 1000)); // reveal + the pink sheen sweep (David 2026-07-11: restore the Let's-go sheen); gated buttons ignite when answered instead
       return b; } // Next = full-width ob-btn; skip lives top-right
     function finishV2() {
       S.profile = S.profile || {}; var P = S.profile;
@@ -4965,7 +4967,7 @@
         obMark(body, 160);
         var iw = add(body, "div"); iw.style.cssText = "margin-top:16px;display:flex;flex-direction:column;align-items:center;";
         var t0 = 0.4, HUES = { spark: "#ffd24a", "искрой": "#ffd24a", waits: "#ff5fa8", "ждёт": "#ff5fa8", yours: "#ffd24a", "твоя": "#ffd24a", alter: "#ff5fa8", "альтер": "#ff5fa8" };
-        function iline(txt, big) { var d = add(iw, "div", "obi-line" + (big ? " big" : "")); var ld = t0; tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase(); if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + "</b>"; else sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); }); t0 += 0.9; } // ONE LINE AT A TIME (David 2026-07-07): every word in a line shares the line's delay, so the whole line reveals at once (not word by word)
+        function iline(txt, big) { var d = add(iw, "div", "obi-line" + (big ? " big" : "")); var ld = t0; tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase(); if (HUES[bare]) sp.innerHTML = '<b style="color:' + HUES[bare] + '">' + esc(w) + "</b>"; else sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += 0.06; }); t0 = ld + 0.34; } // WORD BY WORD (David 2026-07-11): each word cascades 0.06s after the last, like the first stone
         iline("Everyone is born with a spark.");
         iline("Life buries it. Under noise, under screens, under Tuesdays.");
         iline("It never goes out. It waits.");
@@ -4975,7 +4977,7 @@
         ib.onclick = function () { // BEAT 1 -> BEAT 2 (SPEC-FIRST-DAY-REDESIGN): the guided breath is the first earned win now; theOpen stays the DAILY ceremony only (day 2+)
           if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} }
           next(); };
-        body.onclick = function () { iw.classList.add("obi-fast"); ib.style.transition = "none"; ib.style.opacity = "1"; body.onclick = null; }; // restless thumbs fast-forward: text + button appear at once
+        body.onclick = function () { iw.classList.add("obi-fast"); ib.style.transition = "none"; ib.style.opacity = "1"; ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward: text + button (with sheen) appear at once
         return; }
       if (B.t === "stackintro") { // frame the guided micro-session so it doesn't cold-open on a form (David 2026-07-07: "not clear we're doing onboarding")
         obMark(body, 120);

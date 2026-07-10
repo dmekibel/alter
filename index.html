@@ -2037,6 +2037,9 @@
   .obv-row.on{ background:var(--ost,#ff5fa8); transform:translateY(-2px); box-shadow:0 6px 0 #160510; }
   .obv-row.on i.oi, .obv-row.on .ol, .obv-row.on .os{ color:#160510; }
   .obv-row:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  /* SHEEN on the option you pick (David 2026-07-11): a one-time shimmer sweeps across when .on is added */
+  .obv-tile.on, .obv-row.on{ overflow:hidden; }
+  .obv-tile.on::after, .obv-row.on::after{ content:""; position:absolute; top:-30%; bottom:-30%; left:0; width:38%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); transform:skewX(-14deg) translateX(-280%); animation:obIgn .7s ease-out 1; pointer-events:none; }
   /* SECTION GATE — a biome card sweeps in (worlds-v3 grammar: wild pattern + foil + gold-ring disc) */
   .obv-gate{ width:100%; max-width:400px; border:3px solid var(--sc,#ff5fa8); border-radius:20px; padding:26px 20px; text-align:center; position:relative; overflow:hidden; box-shadow:0 6px 0 #160510, 0 0 30px color-mix(in srgb, var(--sc,#ff5fa8) 25%, transparent); animation:bentoIn .4s var(--ease-spring) both; font-family:"Jost",sans-serif; }
   .obv-gate .gic{ width:64px; height:64px; border-radius:50%; margin:0 auto 12px; background:rgba(10,3,8,.72); border:2.5px solid #ffd24a; color:#ffd24a; display:flex; align-items:center; justify-content:center; font-size:30px; position:relative; z-index:1; }
@@ -2687,6 +2690,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1024"></script>
+  <script src="app.js?v=1025"></script>
 </body>
 </html>
