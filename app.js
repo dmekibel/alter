@@ -9501,11 +9501,15 @@
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;margin-top:4px;gap:8px;";
       animLines(iw, [intro], 0.2, 0.055); try { speak(tr(intro)); } catch (e) {}
       add(body, "div", "ob-sb", tr("How much time can you give it?")).style.cssText = "text-align:center;margin-top:16px;font-weight:800;opacity:.85;";
+      var sel = rec; // SELECT, don't advance (David 2026-07-10): tapping a pill picks it (recommendation pre-selected); the Next button commits. So you can change your mind first.
       var row = add(body, "div"); row.style.cssText = "display:flex;gap:9px;justify-content:center;width:100%;max-width:340px;margin-top:12px;";
-      [[30, "30s", "#5fb0ff"], [60, "1 min", "#c77dff"], [120, "2 min", "#ff5fa8"], [180, "3 min", "#ffc83d"]].forEach(function (o) { var b = add(row, "button"); b.textContent = tr(o[1]); var isRec = (o[0] === rec);
-        b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + o[2] + ";color:#160510;box-shadow:0 3px 0 #160510" + (isRec ? ",0 0 0 3px #ffd76a,0 0 15px " + o[2] : "") + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .08s;" + (isRec ? "transform:translateY(-3px);" : "");
-        b.onpointerdown = function () { b.style.transform = "translateY(2px)"; b.style.boxShadow = "0 1px 0 #160510"; };
-        b.onclick = function (e) { if (e) e.stopPropagation(); commit[kind] = o[0]; next(); }; });
+      var btns = [];
+      [[30, "30s", "#5fb0ff"], [60, "1 min", "#c77dff"], [120, "2 min", "#ff5fa8"], [180, "3 min", "#ffc83d"]].forEach(function (o) { var b = add(row, "button"); b.textContent = tr(o[1]); b._secs = o[0]; b._col = o[2]; btns.push(b);
+        b.onclick = function (e) { if (e) e.stopPropagation(); sel = o[0]; paint(); }; });
+      function paint() { btns.forEach(function (b) { var isSel = (b._secs === sel);
+        b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + b._col + ";color:#160510;box-shadow:0 3px 0 #160510" + (isSel ? ",0 0 0 3px #ffd76a,0 0 15px " + b._col : "") + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .1s,box-shadow .1s;opacity:" + (isSel ? "1" : ".78") + ";" + (isSel ? "transform:translateY(-3px);" : ""); }); }
+      paint();
+      var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { commit[kind] = sel; next(); };
     }
     function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): show the whole stack + the time already committed, the order/momentum note, per-piece adjust, then ONE press-hold to commit to all three.
       add(body, "div", "ob-q", tr("Your first stack"));
