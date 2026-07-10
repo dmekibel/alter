@@ -9464,7 +9464,7 @@
       changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff",
       thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff",
       worry: "#ff5fa8", win: "#ffd24a", kinder: "#ffd24a", wander: "#5fb0ff", wandered: "#5fb0ff", quiet: "#5fb0ff",
-      history: "#5fb0ff", screen: "#ff5fa8", meditation: "#ffd24a", mantra: "#ffd24a", words: "#5fb0ff", learned: "#ff5fa8" };
+      history: "#5fb0ff", screen: "#ff5fa8", meditation: "#ffd24a", mantra: "#ffd24a", words: "#5fb0ff", learned: "#ff5fa8", mind: "#5fb0ff", doubts: "#ff5fa8", picking: "#ffd24a" };
     var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15 };
     function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
@@ -9518,10 +9518,12 @@
     }
     var _pre = null, _done = []; // the pre-rating + everything actually done, for the close (David 2026-07-09: one stack, one commit — the two-round scaffolding is gone)
     // PAGE-2 SETUP: the meditation + self-talk intro, kept SHORT. The "wander / notice / come back / kinder" nuance moved INTO the meditation itself (MED_SEC.firstsit) since it is an instruction, not a preamble (David 2026-07-09). Both gates + adversarial judge.
-    var SETUP2 = [
-      "For nearly all of human history, a quiet moment was just the texture of an ordinary day, and a screen was never there to fill it first.",
+    var SETUP2 = [ // WON the page-2 tournament (David 2026-07-10, "plain and proven"): bends his two loved lines directly; body-to-mind hinge, demystify both practices, land on agency. Both gates + kill panel.
+      "That was the body. Now it is the mind's turn.",
       "Meditation is simpler than people make it sound: a few minutes of sitting still, paying attention to what is already happening.",
-      "And the voice you use on yourself was learned too, picked up from the people around you. A mantra is where you start choosing your own words." ];
+      "A mantra is plain too, once you see it. Just a line you choose to say to yourself.",
+      "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way.",
+      "A mantra is where you start picking your own words for a change." ];
     function showClose(post) { clearBoth(); // the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
       var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";

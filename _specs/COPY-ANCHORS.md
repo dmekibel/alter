@@ -43,6 +43,8 @@ For each candidate line: name which KILLED pattern it most resembles (if any) an
 
 ---
 
+- **THE PAGE-2 SETUP (David chose from a tournament, 2026-07-10):** "That was the body. Now it is the mind's turn. / Meditation is simpler than people make it sound: a few minutes of sitting still, paying attention to what is already happening. / A mantra is plain too, once you see it. Just a line you choose to say to yourself. / The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way. / A mantra is where you start picking your own words for a change." → the "plain and proven" pick: BENDS the already-loved lines instead of reaching for new ones, hinges body→mind in one plain sentence, demystifies BOTH practices, lands agency as an earned payoff ("picking your own words for a change"). Confirms the rule: when a loved line exists, bend it; don't out-write it.
+
 ## THE ONE DISCIPLINE UNDER ALL OF IT
 State the real thing plainly. Reach for an image ONLY when it maps exactly and teaches. Read it aloud. If it sounds like writing, or like a guy trying to sound cool, it dies. Depth comes from a true, non-obvious mechanism said simply, never from a clever phrase.
 For DEEP/TEACHING surfaces, plain is not enough and clever is death: the winning move (see the meditation-priming EPIC) is a WARM BUILDING EXPLAINER (School of Life / Kurzgesagt / Barada) that introduces the thing and walks the reader in, so the nuance arrives by teaching, never by a smart line.
