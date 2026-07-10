@@ -9528,14 +9528,17 @@
     // ===== INTRO STONE (David 2026-07-10 — ONE STACK, ONE COMMIT): HOOK (body -> breath+relax) -> SETUP2 (meditation + self-talk) -> STACK-COMMIT (all four moves, toggle one off, press-hold) -> runFirstStack (the four-act carousel, one surface, pre/post tension gauge) -> showClose. The two-round split (breath/relax then meditate/mantra) was removed — it broke the stack feel. Copy through both gates + adversarial judge. Press-hold + carousel gesture FEEL is DEVICE-UNTESTED. showPlan/showRecap below are DEAD (unscheduled) — delete in a clean pass. =====
     var backEl = null;
     function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; reviewSwipeIn = null; navBack = navNext = navMid = null; } // disarm the review swipe + side-click nav on every screen wipe (each screen re-arms what it wants)
-    function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = fn; } // BACK: sits BELOW the full-width IG story bars. Accidental forward -> step back a screen.
+    function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = function () { _goingBack = true; fn(); }; } // BACK: sits BELOW the story bars. Flags backward nav so the previous page shows its text instantly (already read).
     // ===== CAROUSEL SHELL — INCREMENT 1 (David 2026-07-10): IG-story progress bars + the single into-the-stack swipe. One segment per intro beat (hook · breath-ask · meditation · med-ask · mantra · mantra-ask · review); fills as the button nav advances, animates in via the width transition, un-fills on Back. The tool player draws its OWN act-bars, so these HIDE once the stack begins (hideBars in beginStack). Gesture feel is DEVICE-UNTESTED. =====
-    var barFills = [];
+    var barFills = [], _curStep = 0, _goingBack = false;
     var barsWrap = add(ov, "div", "ob-bars"); barsWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:14px;right:14px;display:flex;gap:5px;z-index:7;pointer-events:none;"; // full-width across the very top, IG-story style — the back chevron sits BELOW it
     var BAR_COLS_INTRO = ["#5fb0ff", "#5fb0ff", "#46e2a4", "#46e2a4", "#ffc83d", "#ffc83d", "#ff5fa8"]; // beats tinted to the practice they lead to: breath (blue) · meditation (green) · mantra (gold) · review (pink)
     var BAR_COLS_OUTRO = ["#8fe6a8", "#ffc83d", "#ff5fa8"]; // proof (done-green) · the loop (gold) · attention (pink)
     function buildBars(n) { while (barsWrap.firstChild) barsWrap.removeChild(barsWrap.firstChild); barFills = []; var cols = (n === 3) ? BAR_COLS_OUTRO : BAR_COLS_INTRO; for (var _bi = 0; _bi < n; _bi++) { var c = cols[_bi] || "#c9a6ff"; var _tk = add(barsWrap, "div"); _tk.style.cssText = "flex:1;height:8px;border-radius:4px;background:" + mixHex(c, "#160510", 0.62) + ";overflow:hidden;"; var _fl = add(_tk, "div"); _fl.style.cssText = "height:100%;width:0%;border-radius:4px;background:" + c + ";transition:width .5s cubic-bezier(.4,0,.2,1);"; barFills.push(_fl); } } // thicker rounded COLORED segments (matches the player's gp-story bars), dark-tinted track + bright fill; targeted removeChild rebuild, not an innerHTML wipe
-    function setStep(i, n) { n = n || 7; if (n !== barFills.length) buildBars(n); barsWrap.style.display = "flex"; for (var b = 0; b < barFills.length; b++) barFills[b].style.width = (b <= i ? 100 : 0) + "%"; } // INTRO story = 7 beats (default); OUTRO story = 3. past + current full, future empty. NB: "flex" not "" — an empty string REMOVES the property and the row reverts to block (segments stack)
+    function setStep(i, n) { n = n || 7; if (n !== barFills.length) buildBars(n); barsWrap.style.display = "flex"; _curStep = i; // INTRO story = 7 beats (default); OUTRO story = 3. NB: "flex" not "" — an empty string REMOVES the property and the row reverts to block (segments stack)
+      for (var b = 0; b < barFills.length; b++) { var f = barFills[b]; if (b < i) { f.style.transition = "width .25s linear"; f.style.width = "100%"; } else if (b > i) { f.style.transition = "width .25s linear"; f.style.width = "0%"; } } // past = held full, future = empty
+      fillBar(0.5); } // default fill for screens without an animated cascade (the review); narrate/timeAsk re-drive the current bar over the TEXT-REVEAL time so it fills at the reading pace, then holds
+    function fillBar(sec) { var f = barFills[_curStep]; if (!f) return; f.style.transition = "none"; f.style.width = "0%"; void f.offsetWidth; f.style.transition = "width " + Math.max(0.15, sec || 0.5) + "s linear"; f.style.width = "100%"; } // fill the CURRENT bar 0->100 over `sec` (the cascade duration), IG-story style, then hold — no auto-advance (you click Next)
     function hideBars() { barsWrap.style.display = "none"; }
     buildBars(7);
     // THE SINGLE INTO-THE-STACK SWIPE: one listener pair on the persistent body, armed only while reviewSwipeIn is set (showStackReview sets it, clearBoth nulls it). Swipe-left off the review = enter the stack (the IG-continuous twin of the press-hold). Horizontal-dominant only; ignored on the ring / buttons.
@@ -9587,17 +9590,17 @@
         t0 = ld + 0.35; });
       return t0; // total reveal time
     }
-    function narrate(lines, btnLabel, onNext, opts) { clearBoth(); opts = opts || {}; if (opts.back) addBack(opts.back);
+    function narrate(lines, btnLabel, onNext, opts) { clearBoth(); opts = opts || {}; var goingBack = _goingBack; _goingBack = false; if (opts.back) addBack(opts.back);
       if (opts.kick) add(body, "div", "ob-kick", tr(opts.kick));
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;margin-top:8px;gap:8px;";
       var t0 = animLines(iw, lines, 0.2, opts.per);
-      try { speak(lines.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
-      var b = add(foot, "button", "ob-btn asleep", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { onNext(); };
-      var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
-      var ffDone = false;
-      function fastFwd() { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); ffDone = true; }
+      var b = add(foot, "button", "ob-btn", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { onNext(); };
+      var ffDone = false, armT = null;
+      function fastFwd() { iw.classList.add("obi-fast"); if (armT) clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); fillBar(0.25); ffDone = true; }
+      if (goingBack) { iw.classList.add("obi-fast"); b.classList.add("ignite"); fillBar(0.12); ffDone = true; } // BACKWARD (David 2026-07-11): you already read this — text instantly present, bar already full, no re-narration
+      else { try { speak(lines.map(function (l) { return tr(l); }).join(" ")); } catch (e) {} b.classList.add("asleep"); armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200); fillBar(t0); } // FORWARD: blank -> cascade in; the bar fills at the reading pace then holds (no auto-advance)
       // SIDE-CLICK NAV: left third = back, right third = next, middle = fast-forward the cascade then continue (the ov-level delegator calls these by tap position).
-      navBack = opts.back || null; navNext = onNext; navMid = function () { if (!ffDone) fastFwd(); else onNext(); };
+      navBack = opts.back ? function () { _goingBack = true; opts.back(); } : null; navNext = onNext; navMid = function () { if (!ffDone) fastFwd(); else onNext(); };
     }
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
     var commit = { breath: 30, relax: 30, medit: 60, mantra: 30, stretch: 40, reprogram: 60, gratitude: 40 }, stackActive = null; // seconds PER ACTIVITY; the 4 core start on, extras (stretch / self-hypnosis / gratitude) start OFF and are added on the review via + (David 2026-07-10). mins 20, meditation 30.
@@ -9607,9 +9610,9 @@
     function askMedit() { setStep(3); timeAsk("medit", "After the breathing and muscle release, I recommend a short sit. A minute is enough to catch yourself in the churn and step back out.", 120, showMantraSetup, showMindSetup); }
     function showMantraSetup() { setStep(4); narrate(SETUP3, "Next", askMantra, { per: 0.08, back: askMedit }); } // PAGE 3: mantra (the belief machinery)
     function askMantra() { setStep(5); timeAsk("mantra", "After the sit, I recommend a mantra. A short set of chosen beliefs, each one built to answer a doubt and feed your subconscious something you would pick on purpose.", 60, showStackReview, showMantraSetup); }
-    function timeAsk(kind, intro, rec, next, back) { clearBoth(); if (back) addBack(back); // LEAD with the guided-practice recommendation (animated, multi-colored), THEN a COLORFUL pill row; the recommended time glows (David 2026-07-10: the yellow-button menu was ugly + boring).
+    function timeAsk(kind, intro, rec, next, back) { clearBoth(); var goingBack = _goingBack; _goingBack = false; if (back) addBack(back); // LEAD with the guided-practice recommendation (animated, multi-colored), THEN a COLORFUL pill row; the recommended time glows (David 2026-07-10: the yellow-button menu was ugly + boring).
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;margin-top:4px;gap:8px;";
-      animLines(iw, [intro], 0.2, 0.055); try { speak(tr(intro)); } catch (e) {}
+      var t0 = animLines(iw, [intro], 0.2, 0.055); if (goingBack) { iw.classList.add("obi-fast"); fillBar(0.12); } else { try { speak(tr(intro)); } catch (e) {} fillBar(t0); } // forward = cascade + paced bar; backward = instant text + full bar
       add(body, "div", "ob-sb", tr("How much time can you give it?")).style.cssText = "text-align:center;margin-top:16px;font-weight:800;opacity:.85;";
       var sel = rec; // SELECT, don't advance (David 2026-07-10): tapping a pill picks it (recommendation pre-selected); the Next button commits. So you can change your mind first.
       var row = add(body, "div"); row.style.cssText = "display:flex;gap:9px;justify-content:center;width:100%;max-width:340px;margin-top:12px;";
@@ -9623,7 +9626,7 @@
       paint();
       function goNext() { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); } // the body ask feeds breath + relax (each half the pick, min 20)
       var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = goNext;
-      navBack = back || null; navNext = goNext; navMid = goNext; // side-click nav: left = back, right/middle = commit the picked time + advance
+      navBack = back ? function () { _goingBack = true; back(); } : null; navNext = goNext; navMid = goNext; // side-click nav: left = back (flags backward), right/middle = commit the picked time + advance
     }
     function showStackReview() { setStep(6); clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): the stack is EDITABLE. Delete any row (x), or + Add an extra (stretch / self-hypnosis / gratitude); the app keeps the best order. Extras start hidden so a first-timer is not overwhelmed. Then press-hold to commit.
       add(body, "div", "ob-q", tr("Your first stack"));
