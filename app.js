@@ -9081,7 +9081,11 @@
       var tapL = add(ov, "div", "gp-tapz"); tapL.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);left:0;width:28%;z-index:5;"; tapL.onclick = function () { gotoAct(curAct - 1); }; // start BELOW the ✕ / gear / story-bar (the safe-area inset pushes them down on device — the old top:64px covered them and ate their taps)
       var tapR = add(ov, "div", "gp-tapz"); tapR.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);right:0;width:28%;z-index:5;"; tapR.onclick = function () { gotoAct(curAct + 1); };
       var _sx = null; ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && (e.target.closest(".gp-bar") || e.target.closest(".bw-x") || e.target.closest(".gp-cog"))) { _sx = null; return; } _sx = e.touches ? e.touches[0].clientX : null; }, { passive: true }); // ignore drags that start on the transport, the exit, or the gear
-      ov.addEventListener("touchend", function (e) { if (_sx == null) return; var ex = e.changedTouches ? e.changedTouches[0].clientX : _sx, dx = ex - _sx; _sx = null; if (Math.abs(dx) > 55) gotoAct(curAct + (dx < 0 ? 1 : -1)); }, { passive: true }); // swipe left = next act, right = previous (resumes where you left off)
+      ov.addEventListener("touchend", function (e) { if (_sx == null) return; var ex = e.changedTouches ? e.changedTouches[0].clientX : _sx, dx = ex - _sx; _sx = null; if (Math.abs(dx) <= 55) return; var j = curAct + (dx < 0 ? 1 : -1);
+        // EDGE BEHAVIORS (David 2026-07-10, carousel increment 2 — SWIPE only; tapzones still clamp): swipe past the LAST tool completes the session (-> post-gauge -> outro); swipe before the FIRST tool tears the player down and returns to the editable review. Both opt-in via opts so daily rituals keep clamping. Gesture feel DEVICE-UNTESTED.
+        if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
+        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); try { TTS.stop(); } catch (er) {} _activeBed = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
+        gotoAct(j); }, { passive: true }); // swipe left = next act, right = previous (resumes where you left off)
     }
 
     function finish(skip) {
@@ -9476,11 +9480,12 @@
     function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; reviewSwipeIn = null; } // disarm the review swipe on every screen wipe (only showStackReview re-arms it)
     function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = fn; } // BACK (David 2026-07-09): accidental forward -> step back a screen. Full IG-story tap-navigation is the queued bigger pass.
     // ===== CAROUSEL SHELL — INCREMENT 1 (David 2026-07-10): IG-story progress bars + the single into-the-stack swipe. One segment per intro beat (hook · breath-ask · meditation · med-ask · mantra · mantra-ask · review); fills as the button nav advances, animates in via the width transition, un-fills on Back. The tool player draws its OWN act-bars, so these HIDE once the stack begins (hideBars in beginStack). Gesture feel is DEVICE-UNTESTED. =====
-    var STEP_N = 7, barFills = [];
+    var barFills = [];
     var barsWrap = add(ov, "div", "ob-bars"); barsWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 15px);left:46px;right:16px;display:flex;gap:6px;z-index:6;pointer-events:none;";
-    for (var _bi = 0; _bi < STEP_N; _bi++) { var _tk = add(barsWrap, "div"); _tk.style.cssText = "flex:1;height:4px;border-radius:3px;background:rgba(240,230,239,.20);overflow:hidden;"; var _fl = add(_tk, "div"); _fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:#f5ecf4;transition:width .5s cubic-bezier(.4,0,.2,1);"; barFills.push(_fl); }
-    function setStep(i) { barsWrap.style.display = ""; for (var b = 0; b < barFills.length; b++) barFills[b].style.width = (b <= i ? 100 : 0) + "%"; } // past + current full, future empty
+    function buildBars(n) { while (barsWrap.firstChild) barsWrap.removeChild(barsWrap.firstChild); barFills = []; for (var _bi = 0; _bi < n; _bi++) { var _tk = add(barsWrap, "div"); _tk.style.cssText = "flex:1;height:4px;border-radius:3px;background:rgba(240,230,239,.20);overflow:hidden;"; var _fl = add(_tk, "div"); _fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:#f5ecf4;transition:width .5s cubic-bezier(.4,0,.2,1);"; barFills.push(_fl); } } // targeted removeChild rebuild, not an innerHTML wipe
+    function setStep(i, n) { n = n || 7; if (n !== barFills.length) buildBars(n); barsWrap.style.display = ""; for (var b = 0; b < barFills.length; b++) barFills[b].style.width = (b <= i ? 100 : 0) + "%"; } // INTRO story = 7 beats (default); OUTRO story = 3. past + current full, future empty
     function hideBars() { barsWrap.style.display = "none"; }
+    buildBars(7);
     // THE SINGLE INTO-THE-STACK SWIPE: one listener pair on the persistent body, armed only while reviewSwipeIn is set (showStackReview sets it, clearBoth nulls it). Swipe-left off the review = enter the stack (the IG-continuous twin of the press-hold). Horizontal-dominant only; ignored on the ring / buttons.
     var reviewSwipeIn = null, _rsx = null, _rsy = null;
     body.addEventListener("touchstart", function (e) { if (!reviewSwipeIn) { _rsx = null; return; } if (e.target && e.target.closest && e.target.closest("button, .ob-pwrap, .pring")) { _rsx = null; return; } var t = e.touches && e.touches[0]; _rsx = t ? t.clientX : null; _rsy = t ? t.clientY : null; }, { passive: true });
@@ -9605,7 +9610,7 @@
     function beginStack(list) { hideBars(); // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
       runFirstStack(list, function (pre, post) { _pre = pre; _done = list.map(function (t) { return { nm: t.nm, ic: t.ic, c: t.c }; });
         if (post == null) { if (ov.parentNode) ov.remove(); if (onDone) onDone(); return; }
-        showClose(post); });
+        showClose(post); }, function () { showStackReview(); }); // onEdgePrev: swipe-left off the first tool returns to the editable review (re-arms its bars + swipe)
     }
     var _pre = null, _done = []; // the pre-rating + everything actually done, for the close (David 2026-07-09: one stack, one commit — the two-round scaffolding is gone)
     // PAGE-2 SETUP: the meditation + self-talk intro, kept SHORT. The "wander / notice / come back / kinder" nuance moved INTO the meditation itself (MED_SEC.firstsit) since it is an instruction, not a preamble (David 2026-07-09). Both gates + adversarial judge.
@@ -9627,7 +9632,7 @@
       "If you cannot hold your thoughts still for even a second, you cannot use your attention to control how you see the world. Every random thought just tugs at you, and your mood goes with it.",
       "These two exercises train that skill back. The steadier your attention, the less you get dragged by whatever thought shows up, and the more you decide what a moment means.",
       "That is the difference between running on autopilot and being awake for your own life. More human, less NPC." ];
-    function showClose(post) { clearBoth(); // the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
+    function showClose(post) { clearBoth(); setStep(0, 3); // OUTRO story (3 beats: proof -> the loop -> attention). the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
       var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
       (_done || []).forEach(function (a) { var chip = add(arow, "div"); chip.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:5px;width:66px;"; var ic = add(chip, "div"); ic.style.cssText = "width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:" + a.c + ";color:#160510;font-size:23px;box-shadow:0 3px 0 #160510;"; ic.innerHTML = '<i class="ti ' + a.ic + '"></i>'; var chk = add(chip, "div"); chk.style.cssText = "font-size:11px;font-weight:800;color:#8fe6a8;white-space:nowrap;"; chk.innerHTML = '<i class="ti ti-check"></i> ' + tr("done"); });
@@ -9643,8 +9648,8 @@
       try { speak(tr(END)); } catch (e) {}
       // THE DEEPER EXPLANATION AT THE END (David 2026-07-10): reps first, theory after. Proof -> the loop they just cut (Sapolsky alarm + breath spiral, why the ORDER mattered) -> attention as the skill under it all -> out.
       var kb = add(foot, "button", "ob-btn", tr("Why it worked") + " ▸"); kb.onclick = function () {
-        narrate(AFTER_LOOP, "And one more thing", function () {
-          narrate(AFTER_SKILL, "Done for today", function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, { per: 0.08 }); }, { per: 0.08 });
+        setStep(1, 3); narrate(AFTER_LOOP, "And one more thing", function () {
+          setStep(2, 3); narrate(AFTER_SKILL, "Done for today", function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, { per: 0.08 }); }, { per: 0.08 });
       };
     }
     function showPlan() {
@@ -9698,11 +9703,11 @@
     }
     showHook(0);
   }
-  function runFirstStack(list, onDone) { // DAY-ONE MICRO-LOOP run (David 2026-07-07, unified v938): a before/after tension gauge (the felt-shift PROOF) wraps ONE composed timelinePlayer session (all acts + transitions in one surface). Logs the stack to the day (tracking). onDone(pre, post) feeds the show-don't-tell recap.
+  function runFirstStack(list, onDone, onBack) { // DAY-ONE MICRO-LOOP run (David 2026-07-07, unified v938): a before/after tension gauge (the felt-shift PROOF) wraps ONE composed timelinePlayer session (all acts + transitions in one surface). Logs the stack to the day (tracking). onDone(pre, post) feeds the show-don't-tell recap. onBack (v1013) = swipe-left off the first tool → back to the review.
     gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
       var built = composeStackSegs(list), segs = built.segs;
       try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
-      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, autostart: true, onFinish: function (skip) {
+      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, autostart: true, edgeNextFinish: true, onEdgePrev: onBack || null, onFinish: function (skip) {
         if (skip) { save(); if (onDone) onDone(pre, null); return; }
         gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
           S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
