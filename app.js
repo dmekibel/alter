@@ -9652,21 +9652,25 @@
       function activeKeys() { return ORDER.filter(function (k) { return stackActive[k]; }); }
       var totEl, pickerOpen = false;
       function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(activeKeys().reduce(function (a, k) { return a + commit[k]; }, 0)); }
-      var stepCss = "width:29px;height:29px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.14);border:1.5px solid #160510;color:#160510;font-size:14px;cursor:pointer;flex:none;";
+      var stepBtn = "width:30px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:#160510;font-size:16px;cursor:pointer;border-radius:9px;flex:none;"; // clean borderless glyphs in a rounded inset (David 2026-07-11: the circular +/- looked bad)
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:334px;margin-top:14px;"; wrap.style.animation = "none"; var _rowsAnimed = false; // the rows reveal one-by-one; the block itself doesn't pop
       function render() { while (wrap.firstChild) wrap.removeChild(wrap.firstChild); // targeted removeChild clear (keeps the wipe ratchet flat, not a wipe-and-rebuild)
         activeKeys().forEach(function (k, _ri) { var t = CAT[k];
-          var rw = add(wrap, "div"); rw.style.cssText = "display:flex;align-items:center;gap:9px;"; if (!_rowsAnimed) riseIn(rw, 0.12 + _ri * 0.07); // ONE AT A TIME (David 2026-07-11): the "your first stack" rows rise in staggered on first render (not on edits) // row = the colored pill + a detached delete OUTSIDE it (David 2026-07-10: the x sat beside the + and read the same; pull it off the chip into the dark gutter)
-          var r = add(rw, "div"); r.style.cssText = "flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;";
+          var rw = add(wrap, "div"); rw.style.cssText = "position:relative;overflow:hidden;border-radius:14px;"; if (!_rowsAnimed) riseIn(rw, 0.12 + _ri * 0.07); // ONE AT A TIME (David 2026-07-11): the rows rise in staggered on first render
+          var del = add(rw, "button"); del.innerHTML = '<i class="ti ti-trash"></i>'; del.style.cssText = "position:absolute;top:0;right:0;bottom:0;width:64px;display:flex;align-items:center;justify-content:center;border:none;background:#c0325a;color:#fff;font-size:20px;cursor:pointer;"; // hidden BEHIND the pill; revealed by swiping the row LEFT (David 2026-07-11)
+          var r = add(rw, "div"); r.style.cssText = "position:relative;z-index:1;display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;transition:transform .22s cubic-bezier(.4,0,.2,1);touch-action:pan-y;";
           r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:19px;flex:none;"></i><span style="flex:1;min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(tr(t.nm)) + '</span>';
-          var ctrl = add(r, "span"); ctrl.style.cssText = "display:flex;align-items:center;gap:6px;flex:none;";
-          var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
-          var du = add(ctrl, "b"); du.textContent = fmt(commit[k]); du.style.cssText = "min-width:40px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:15px;";
-          var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
-          var del = add(rw, "button"); del.innerHTML = '<i class="ti ti-x"></i>'; del.style.cssText = "width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;color:#9a7a96;font-size:14px;cursor:pointer;"; // dim, off the chip, in the dark gutter — no longer confusable with the + stepper
+          var ctrl = add(r, "span"); ctrl.style.cssText = "display:flex;align-items:center;gap:1px;flex:none;background:rgba(22,5,16,.12);border:1.5px solid rgba(22,5,16,.30);border-radius:11px;padding:2px;"; // the +/- live in one rounded inset group now
+          var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepBtn;
+          var du = add(ctrl, "b"); du.textContent = fmt(commit[k]); du.style.cssText = "min-width:42px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:14px;";
+          var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepBtn;
           mn.onclick = function (e) { e.stopPropagation(); commit[k] = Math.max(t.min, commit[k] - 10); du.textContent = fmt(commit[k]); updTot(); };
           pl.onclick = function (e) { e.stopPropagation(); commit[k] = Math.min(600, commit[k] + 10); du.textContent = fmt(commit[k]); updTot(); };
-          del.onclick = function (e) { e.stopPropagation(); delete stackActive[k]; if (!activeKeys().length) stackActive[k] = 1; render(); updTot(); }; });
+          del.onclick = function (e) { e.stopPropagation(); delete stackActive[k]; if (!activeKeys().length) stackActive[k] = 1; render(); updTot(); };
+          (function () { var sx = null, cur = 0, open = false; // SWIPE THE PILL LEFT to reveal delete; release past a third keeps it open, tap the pill back to close. Feel DEVICE-UNTESTED.
+            r.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && e.target.closest("button")) { sx = null; return; } var tt = e.touches && e.touches[0]; sx = tt ? tt.clientX : null; }, { passive: true });
+            r.addEventListener("touchmove", function (e) { if (sx == null) return; var tt = e.touches && e.touches[0]; if (!tt) return; var dx = tt.clientX - sx; cur = Math.max(-64, Math.min(0, (open ? -64 : 0) + dx)); r.style.transition = "none"; r.style.transform = "translateX(" + cur + "px)"; }, { passive: true });
+            r.addEventListener("touchend", function (e) { if (sx == null) return; sx = null; r.style.transition = "transform .22s cubic-bezier(.4,0,.2,1)"; if (Math.abs(cur) > 6) e.stopPropagation(); open = cur < -32; cur = open ? -64 : 0; r.style.transform = "translateX(" + cur + "px)"; }, { passive: true }); })(); });
         var inactive = ORDER.filter(function (k) { return !stackActive[k]; });
         if (inactive.length) { var addRow = add(wrap, "button"); addRow.innerHTML = '<i class="ti ti-plus"></i> ' + esc(tr(pickerOpen ? "Pick one to add" : "Add something")); addRow.style.cssText = "display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:44px;border:2px dashed #6a4a6a;border-radius:14px;background:rgba(255,255,255,.03);color:#cbb6e6;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;"; addRow.onclick = function (e) { e.stopPropagation(); pickerOpen = !pickerOpen; render(); };
           if (pickerOpen) { var pick = add(wrap, "div"); pick.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;justify-content:center;";
@@ -9688,6 +9692,7 @@
       }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
       reviewSwipeIn = function () { var list = buildRunList(); if (list.length) beginStack(list); }; // arm the single into-the-stack swipe for this screen (disarmed by the next clearBoth)
+      navBack = function () { _goingBack = true; askMantra(); }; // TAP-LEFT goes back from the review too (David 2026-07-11: "the app doesnt let u go back with the tap")
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
     function beginStack(list) { hideBars(); // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
