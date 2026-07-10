@@ -9515,7 +9515,7 @@
       setTimeout(function () { body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; }; }, 90);
     }
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
-    var commit = { breath: 30, relax: 30, medit: 60, mantra: 30 }; // seconds PER ACTIVITY (breath + relax separate now, David 2026-07-10); set by the asks, fine-tuned on the review. mins: breath/relax/mantra 20, meditation 30.
+    var commit = { breath: 30, relax: 30, medit: 60, mantra: 30, stretch: 40, reprogram: 60, gratitude: 40 }, stackActive = null; // seconds PER ACTIVITY; the 4 core start on, extras (stretch / self-hypnosis / gratitude) start OFF and are added on the review via + (David 2026-07-10). mins 20, meditation 30.
     function showHook() { narrate(HOOK, "Next", askBody); } // PAGE 1: the body-tension hook
     function askBody() { timeAsk("body", "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.", 60, showMindSetup, showHook); }
     function showMindSetup() { narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
@@ -9538,37 +9538,52 @@
       paint();
       var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); }; // the body ask feeds breath + relax (each half the pick, min 20)
     }
-    function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): show the whole stack + the time already committed, the order/momentum note, per-piece adjust, then ONE press-hold to commit to all three.
+    function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): the stack is EDITABLE. Delete any row (x), or + Add an extra (stretch / self-hypnosis / gratitude); the app keeps the best order. Extras start hidden so a first-timer is not overwhelmed. Then press-hold to commit.
       add(body, "div", "ob-q", tr("Your first stack"));
       add(body, "div", "ob-sb", tr("Best in this order. Each one settles you for the next, and the momentum carries.")).style.cssText = "text-align:center;margin-top:6px;max-width:330px;line-height:1.45;font-size:14px;";
-      var ROWS = [ { k: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", min: 20 },
-        { k: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", min: 20 },
-        { k: "medit", nm: "Meditation", ic: "ti-yoga", c: "#46e2a4", min: 30 },
-        { k: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", min: 20 } ];
+      var CAT = { stretch: { nm: "Stretch", ic: "ti-stretching", c: "#ff8a1e", min: 20 },
+        breath: { nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", min: 20 },
+        relax: { nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", min: 20 },
+        medit: { nm: "Meditation", ic: "ti-yoga", c: "#46e2a4", min: 30, med: [{ k: "firstsit" }] },
+        reprogram: { nm: "Self-hypnosis", ic: "ti-wand", c: "#9a7cff", min: 30 },
+        gratitude: { nm: "Gratitude", ic: "ti-heart", c: "#ff9ec9", min: 20 },
+        mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d", min: 20 } };
+      var ORDER = ["stretch", "breath", "relax", "medit", "reprogram", "gratitude", "mantra"]; // the canonical best order: loosen -> breathe -> release -> sit -> rewire -> give thanks -> carry a line out
+      if (!stackActive) stackActive = { breath: 1, relax: 1, medit: 1, mantra: 1 }; // the 4 core; extras added via +
       function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }
-      var totEl;
-      function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(commit.breath + commit.relax + commit.medit + commit.mantra); }
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px;margin-top:14px;";
-      ROWS.forEach(function (t) { var r = add(wrap, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;"; // FULL activity-color game piece (David 2026-07-10: the muted rows were ugly)
-        r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:21px;"></i><span style="font-weight:800;font-size:15px;">' + esc(tr(t.nm)) + '</span>';
-        var ctrl = add(r, "span"); ctrl.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:8px;";
-        var stepCss = "width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.14);border:1.5px solid #160510;color:#160510;font-size:16px;cursor:pointer;flex:none;"; // dark steppers read cleanly on the colored row
-        var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
-        var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:46px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:16px;";
-        var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
-        mn.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.max(t.min, commit[t.k] - 10); du.textContent = fmt(commit[t.k]); updTot(); };
-        pl.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.min(600, commit[t.k] + 10); du.textContent = fmt(commit[t.k]); updTot(); }; });
+      function activeKeys() { return ORDER.filter(function (k) { return stackActive[k]; }); }
+      var totEl, pickerOpen = false;
+      function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(activeKeys().reduce(function (a, k) { return a + commit[k]; }, 0)); }
+      var stepCss = "width:29px;height:29px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.14);border:1.5px solid #160510;color:#160510;font-size:14px;cursor:pointer;flex:none;";
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:334px;margin-top:14px;";
+      function render() { wrap.innerHTML = "";
+        activeKeys().forEach(function (k) { var t = CAT[k];
+          var r = add(wrap, "div"); r.style.cssText = "display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;";
+          r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:19px;flex:none;"></i><span style="flex:1;min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(tr(t.nm)) + '</span>';
+          var ctrl = add(r, "span"); ctrl.style.cssText = "display:flex;align-items:center;gap:6px;flex:none;";
+          var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
+          var du = add(ctrl, "b"); du.textContent = fmt(commit[k]); du.style.cssText = "min-width:40px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:15px;";
+          var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
+          var del = add(ctrl, "button"); del.innerHTML = '<i class="ti ti-x"></i>'; del.style.cssText = "width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.18);border:1.5px solid #160510;color:#160510;font-size:12px;cursor:pointer;flex:none;margin-left:2px;";
+          mn.onclick = function (e) { e.stopPropagation(); commit[k] = Math.max(t.min, commit[k] - 10); du.textContent = fmt(commit[k]); updTot(); };
+          pl.onclick = function (e) { e.stopPropagation(); commit[k] = Math.min(600, commit[k] + 10); du.textContent = fmt(commit[k]); updTot(); };
+          del.onclick = function (e) { e.stopPropagation(); delete stackActive[k]; if (!activeKeys().length) stackActive[k] = 1; render(); updTot(); }; });
+        var inactive = ORDER.filter(function (k) { return !stackActive[k]; });
+        if (inactive.length) { var addRow = add(wrap, "button"); addRow.innerHTML = '<i class="ti ti-plus"></i> ' + esc(tr(pickerOpen ? "Pick one to add" : "Add something")); addRow.style.cssText = "display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:44px;border:2px dashed #6a4a6a;border-radius:14px;background:rgba(255,255,255,.03);color:#cbb6e6;font-family:var(--bub);font-weight:800;font-size:13.5px;cursor:pointer;"; addRow.onclick = function (e) { e.stopPropagation(); pickerOpen = !pickerOpen; render(); };
+          if (pickerOpen) { var pick = add(wrap, "div"); pick.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;justify-content:center;";
+            inactive.forEach(function (k) { var t = CAT[k]; var c = add(pick, "button"); c.innerHTML = '<i class="ti ' + t.ic + '"></i> ' + esc(tr(t.nm)); c.style.cssText = "display:flex;align-items:center;gap:6px;border:2px solid " + t.c + ";border-radius:11px;padding:8px 12px;background:" + t.c + "22;color:#f0e6ef;font-family:var(--bub);font-weight:800;font-size:12.5px;cursor:pointer;"; c.onclick = function (e) { e.stopPropagation(); stackActive[k] = 1; pickerOpen = false; render(); updTot(); }; }); } }
+      }
+      render();
       totEl = add(body, "div"); totEl.style.cssText = "text-align:center;font-weight:900;font-size:20px;color:#ffcf6a;letter-spacing:.5px;margin-top:14px;"; updTot();
       add(body, "div", "ob-sb", tr("Press and hold to lock it in.")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;";
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none"; pw.style.marginTop = "6px";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
       function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+      var RUNNM = { breath: "Breathe", relax: "Relax the muscles", medit: "Sit in stillness", mantra: "A line to carry", stretch: "Stretch", reprogram: "Self-hypnosis", gratitude: "Gratitude" };
       pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
-        var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: Math.max(20, commit.breath) },
-          { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(20, commit.relax) },
-          { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: Math.max(30, commit.medit), med: [{ k: "firstsit" }] },
-          { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: Math.max(20, commit.mantra) } ];
+        var list = activeKeys().map(function (k) { var t = CAT[k]; var o = { id: k, nm: RUNNM[k] || t.nm, ic: t.ic, c: t.c, secs: Math.max(t.min, commit[k]) }; if (t.med) o.med = t.med; return o; });
+        if (!list.length) return;
         beginStack(list);
       }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
