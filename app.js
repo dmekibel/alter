@@ -8887,7 +8887,11 @@
     add(card, "div", null, tr("Background sound")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 4px;";
     var bedChips = [];
     function paintBed() { bedChips.forEach(function (c) { var on = bedMode() === c.dataset.bed; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; }); }
-    function setBed(key) { S.audio.bed = key; save(); paintBed(); if (_activeBed) { _activeBed(key); } else { try { BGM.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} } }
+    var previewPad = null;
+    function stopPreview() { try { BGBED.stop(); } catch (e) {} try { BGM.stop(); } catch (e) {} try { if (previewPad) { previewPad.stop(); previewPad = null; } } catch (e) {} } // David 2026-07-10: preview beds right in Settings, no player needed
+    function preview(key) { stopPreview(); var pctx = sharedAudioCtx(); if (!pctx) return;
+      if (key === "music") { BGM.start(); } else if (key === "pad") { previewPad = startPad(pctx, bgBus() || pctx.destination, 0.22); } else if (BG_FILES[key]) { BGBED.start(key, 0.5); } }
+    function setBed(key) { S.audio.bed = key; save(); paintBed(); if (_activeBed) _activeBed(key); preview(key); } // update the (paused) player's target bed AND preview the sound now
     [ { n: tr("Ambient"), o: [["pad", tr("Peaceful")], ["music", tr("Mysterious")]] },
       { n: tr("Nature"), o: [["forest", tr("Forest")], ["birds", tr("Birds")]] },
       { n: tr("Binaural · headphones"), o: [["deep4", "Deep · 4 Hz"], ["theta6", "Theta · 6 Hz"], ["focus13", "Focus · 13 Hz"], ["gamma33", "Gamma · 33 Hz"], ["floating", tr("Floating")]] },
@@ -8903,8 +8907,8 @@
     function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("App background music") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("warm, slow chords while you browse") + '</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
     amPaint();
     amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
-    var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { ov.remove(); };
-    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { stopPreview(); ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) { stopPreview(); ov.remove(); } });
   }
   // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
@@ -8950,7 +8954,7 @@
       for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.opacity = (li <= ai) ? "1" : "0.34"; // done + current activities light up to full color; upcoming stay dim
       if (ticks) { while (ticks.firstChild) ticks.removeChild(ticks.firstChild); var _st = acts[ai]._secTimes || [], _as = acts[ai]._start || 0, _ad = ((acts[ai]._end != null ? acts[ai]._end : total) - _as) || 1; if (_st.length) { _st.forEach(function (x) { var tk = add(ticks, "i"); tk.style.left = ((x - _as) / _ad * 100) + "%"; }); ticks.style.display = ""; } else { ticks.style.display = "none"; } } // section-ticks on THIS activity's local timeline — only where it has real sections (meditation); clean bar everywhere else
     }
-    var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { openVolumePanel(); }; // voice + background volume, adjustable while it plays
+    var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { if (playing) pause(); openVolumePanel(); }; // opening Sound pauses the player so you can preview beds freely (David 2026-07-10)
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
     var driftCount = 0;
     function medChime() { var c = TTS.ctx && TTS.ctx(); if (!c) return; var t = c.currentTime, out = (typeof bgBus === "function" && bgBus()) || c.destination; [528, 792].forEach(function (f, i) { var o = c.createOscillator(), g = c.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.04); g.gain.linearRampToValueAtTime(0.13 - i * 0.06, t + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); o.connect(g); g.connect(out); o.start(t); o.stop(t + 1.6); }); }
