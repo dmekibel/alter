@@ -9464,8 +9464,11 @@
       changed: "#ff5fa8", skill: "#ffd24a", yours: "#ffd24a", tomorrow: "#5fb0ff",
       thinking: "#ffd24a", gears: "#5fb0ff", "catch": "#ff5fa8", catching: "#ff5fa8", notices: "#5fb0ff", voice: "#ff5fa8", parents: "#ffd24a", rewires: "#ff5fa8", believe: "#ffd24a", body: "#5fb0ff",
       worry: "#ff5fa8", win: "#ffd24a", kinder: "#ffd24a", wander: "#5fb0ff", wandered: "#5fb0ff", quiet: "#5fb0ff",
-      history: "#5fb0ff", screen: "#ff5fa8", meditation: "#ffd24a", mantra: "#ffd24a", words: "#5fb0ff", learned: "#ff5fa8", mind: "#5fb0ff", doubts: "#ff5fa8", picking: "#ffd24a" };
-    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15 };
+      history: "#5fb0ff", screen: "#ff5fa8", meditation: "#ffd24a", mantra: "#ffd24a", words: "#5fb0ff", learned: "#ff5fa8", mind: "#5fb0ff", doubts: "#ff5fa8", picking: "#ffd24a",
+      monologue: "#ffd24a", trance: "#ff5fa8", psychosis: "#ff5fa8", senses: "#5fb0ff", wandering: "#5fb0ff", unhappiness: "#ff5fa8", movie: "#ffd24a", theater: "#ffd24a",
+      belief: "#ffd24a", beliefs: "#ffd24a", repeated: "#ff5fa8", repetition: "#ff5fa8", subconscious: "#5fb0ff", autopilot: "#ff5fa8", obey: "#ff5fa8", invisible: "#5fb0ff", wants: "#ffd24a",
+      alarm: "#ff5fa8", lion: "#ffd24a", loop: "#ff5fa8", churning: "#ff5fa8", npc: "#ff5fa8", human: "#ffd24a", awake: "#ffd24a", waking: "#ffd24a" };
+    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15, trance: 1.18, theater: 1.15, belief: 1.18, beliefs: 1.18, subconscious: 1.15, autopilot: 1.15, alarm: 1.15, awake: 1.15, npc: 1.18 };
     function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
@@ -9485,21 +9488,33 @@
       body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
     }
     function showHook() { narrate(HOOK, "Next", showMindSetup); } // PAGE 1: the body-tension hook sets up breath + relax
-    function showMindSetup() { narrate(SETUP2, "Next", showStackCommit, { per: 0.08, back: showHook }); } // PAGE 2: meditation + self-talk, at a calm read
-    function showStackCommit() { clearBoth(); addBack(showMindSetup); // ONE stack, ONE commit (David 2026-07-09): the four moves in order, a plain word on why the momentum/order/stack matter, toggle one off if you want, press-hold commits to whatever is on.
+    function showMindSetup() { narrate(SETUP2, "Next", showMantraSetup, { per: 0.08, back: showHook }); } // PAGE 2: meditation (the trance)
+    function showMantraSetup() { narrate(SETUP3, "Next", showStackCommit, { per: 0.08, back: showMindSetup }); } // PAGE 3: mantra (the belief machinery)
+    function showStackCommit() { clearBoth(); addBack(showMantraSetup); // EXPLAIN-THEN-COMMIT (David 2026-07-10): all the teaching is done up front (pages 1-3, nothing tried yet), so HERE they pick a TIME, choose the activities, then hold to commit both. Durations split the chosen total across the active tools by weight.
       add(body, "div", "ob-q", tr("Your first stack"));
-      add(body, "div", "ob-sb", tr("Four small moves, in this order for a reason. The breath settles the body, a settled body lets the mind go quiet, and a quiet mind can finally sit with itself and speak to itself kindly. Turn one off if you want, but each one softens you for the next.")).style.cssText = "text-align:center;margin-top:8px;max-width:344px;line-height:1.5;";
-      var STK = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: 32, on: true },
-        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: 34, on: true },
-        { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: 50, med: [{ k: "firstsit" }], on: true },
-        { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: 28, on: true } ];
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px;margin-top:14px;";
-      STK.forEach(function (t) { var r = add(wrap, "button", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "48px";
+      add(body, "div", "ob-sb", tr("Four small moves, in this order for a reason. The breath settles the body, a settled body lets the mind go quiet, and a quiet mind can finally sit with itself and speak to itself kindly. Turn one off if you want, but each one softens you for the next.")).style.cssText = "text-align:center;margin-top:6px;max-width:344px;line-height:1.45;font-size:14px;";
+      var totalSecs = 120; // the committed time (default 2 min), split across the chosen tools
+      var STK = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", w: 1.0, on: true },
+        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", w: 1.0, on: true },
+        { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", w: 1.6, med: [{ k: "firstsit" }], on: true },
+        { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", w: 0.9, on: true } ];
+      add(body, "div", "ob-sb", tr("How long?")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;opacity:.85;";
+      var tRow = add(body, "div"); tRow.style.cssText = "display:flex;gap:8px;justify-content:center;width:100%;max-width:330px;margin-top:6px;"; var tChips = {};
+      [["1 min", 60], ["2 min", 120], ["4 min", 240]].forEach(function (o) { var b = add(tRow, "button", "obv-row"); b.style.cssText = "flex:1;min-height:44px;justify-content:center;font-weight:800;"; b.textContent = tr(o[0]); tChips[o[1]] = b; b.onclick = function () { totalSecs = o[1]; paintTime(); }; });
+      function paintTime() { for (var k in tChips) { var on = (+k === totalSecs); tChips[k].style.background = on ? "#ffc83d" : ""; tChips[k].style.color = on ? "#160510" : ""; } }
+      paintTime();
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:7px;width:100%;max-width:330px;margin-top:12px;";
+      STK.forEach(function (t) { var r = add(wrap, "button", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "44px";
         r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
-        var tog = add(r, "span"); tog.style.cssText = "margin-left:auto;font-size:23px;display:flex;align-items:center;";
+        var tog = add(r, "span"); tog.style.cssText = "margin-left:auto;font-size:22px;display:flex;align-items:center;";
         function paint() { tog.innerHTML = t.on ? '<i class="ti ti-circle-check-filled" style="color:' + t.c + ';"></i>' : '<i class="ti ti-circle"></i>'; r.style.opacity = t.on ? "1" : "0.45"; }
         paint(); r.onclick = function () { t.on = !t.on; paint(); }; });
-      var go = add(foot, "button", "ob-btn", tr("Set the stack") + " ▸"); go.onclick = function () { var list = STK.filter(function (t) { return t.on; }); if (!list.length) return; showCommit(0, function () { beginStack(list); }, showStackCommit, "your first stack"); };
+      var go = add(foot, "button", "ob-btn", tr("Continue") + " ▸"); go.onclick = function () {
+        var list = STK.filter(function (t) { return t.on; }); if (!list.length) return;
+        var sumW = list.reduce(function (a, t) { return a + t.w; }, 0);
+        list.forEach(function (t) { t.secs = Math.max(15, Math.round(totalSecs * t.w / sumW)); });
+        showCommit(totalSecs, function () { beginStack(list); }, showStackCommit, "your " + Math.round(totalSecs / 60) + "-minute stack");
+      };
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
     function beginStack(list) { // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
@@ -9518,12 +9533,27 @@
     }
     var _pre = null, _done = []; // the pre-rating + everything actually done, for the close (David 2026-07-09: one stack, one commit — the two-round scaffolding is gone)
     // PAGE-2 SETUP: the meditation + self-talk intro, kept SHORT. The "wander / notice / come back / kinder" nuance moved INTO the meditation itself (MED_SEC.firstsit) since it is an instruction, not a preamble (David 2026-07-09). Both gates + adversarial judge.
-    var SETUP2 = [ // WON the page-2 tournament (David 2026-07-10, "plain and proven"): bends his two loved lines directly; body-to-mind hinge, demystify both practices, land on agency. Both gates + kill panel.
-      "That was the body. Now it is the mind's turn.",
-      "Meditation is simpler than people make it sound: a few minutes of sitting still, paying attention to what is already happening.",
-      "A mantra is plain too, once you see it. Just a line you choose to say to yourself.",
-      "The voice in your head that doubts you was not born with you. You picked it up line by line, from parents, from friends, from a world that talks to everyone that way.",
-      "A mantra is where you start picking your own words for a change." ];
+    // PAGES 2-3 + THE AFTER (David 2026-07-10, assembled BY DAVID from his chosen Sam Harris lines + KB-mined Withers verbatim; the verbatim-anchor law in action). Page 2 = meditation (the trance; line 2's body-disconnect is the bridge from page 1's body hook). Page 3 = mantra (the belief machinery, Withers). After the 4 practices: the LOOP page (Sapolsky alarm + McKeown breath spiral, why the order mattered) then the ATTENTION page (skill, more human less NPC). All lines through Gate 1 + iterated line-by-line with David in chat.
+    var SETUP2 = [
+      "We talk to ourselves all day long, silently. An endless inner monologue, narrating our lives.",
+      "Being lost in thought is more than a distraction. It is a kind of waking trance, even a mild psychosis, where you go deaf to your own senses and lose touch with your own body.",
+      "We spend nearly 50% of our lives in this state of mental wandering, which is consistently linked to unhappiness.",
+      "Meditation is waking up from the movie of your life long enough to notice you are sitting in the theater." ];
+    var SETUP3 = [
+      "A belief is just a thought repeated until it feels true. The subconscious cannot tell truth from repetition. It records whatever gets fed in often enough, and plays it back. And on autopilot, nobody is choosing what gets fed in.",
+      "And a thought repeated long enough stops feeling like a thought at all. It feels like the way things are. That is why your worst beliefs are invisible: you never argue with them, you just obey.",
+      "Most were recorded before you were ten, when you believed whatever the adults around you repeated. They have been running ever since.",
+      "Beliefs always win over your wants. You can want confidence all day while a thought repeated ten thousand times says otherwise.",
+      "A mantra runs the same machinery in your favor: for once, you choose the thought that gets fed in, and repeat it with feeling, until it feels true too." ];
+    var AFTER_LOOP = [
+      "Here is the loop you just stepped out of. A worry is theoretical, but the body cannot tell: it fires the same alarm for an email as for a lion, and a lion is gone in minutes while a dreaded Monday can run the alarm for weeks.",
+      "The alarm changes your breath: short, shallow, up in the chest. And that breathing keeps the alarm on, which keeps the mind churning, which keeps the breath shallow. A closed loop, feeding itself all day.",
+      "You just cut it at every link. The long exhale is the body's brake. A loose body quiets the mind. A quiet mind can watch its own thoughts. And a chosen thought feeds the subconscious on purpose." ];
+    var AFTER_SKILL = [
+      "Attention is a skill, and for most of us it has gone weak.",
+      "If you cannot hold your thoughts still for even a second, you cannot use your attention to control how you see the world. Every random thought just tugs at you, and your mood goes with it.",
+      "These two exercises train that skill back. The steadier your attention, the less you get dragged by whatever thought shows up, and the more you decide what a moment means.",
+      "That is the difference between running on autopilot and being awake for your own life. More human, less NPC." ];
     function showClose(post) { clearBoth(); // the proof (tools done + tension drop) with a STRONG animated forward close (David 2026-07-09: the old ending was weak)
       add(body, "div", "ob-kick", tr("YOUR FIRST LOOP"));
       var arow = add(body, "div"); arow.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;";
@@ -9538,7 +9568,11 @@
       var END = "You reached into your own body and mind and changed them. That is the whole skill, and it is already yours. Tomorrow, you bring it to your real day.";
       animLines(ew, [END], 0.2);
       try { speak(tr(END)); } catch (e) {}
-      var kb = add(foot, "button", "ob-btn", tr("Keep going") + " ▸"); kb.onclick = function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); };
+      // THE DEEPER EXPLANATION AT THE END (David 2026-07-10): reps first, theory after. Proof -> the loop they just cut (Sapolsky alarm + breath spiral, why the ORDER mattered) -> attention as the skill under it all -> out.
+      var kb = add(foot, "button", "ob-btn", tr("Why it worked") + " ▸"); kb.onclick = function () {
+        narrate(AFTER_LOOP, "And one more thing", function () {
+          narrate(AFTER_SKILL, "Done for today", function () { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, { per: 0.08 }); }, { per: 0.08 });
+      };
     }
     function showPlan() {
     add(body, "div", "ob-q", tr("How much time do you have?"));
