@@ -9556,7 +9556,7 @@
       function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(activeKeys().reduce(function (a, k) { return a + commit[k]; }, 0)); }
       var stepCss = "width:29px;height:29px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.14);border:1.5px solid #160510;color:#160510;font-size:14px;cursor:pointer;flex:none;";
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:334px;margin-top:14px;";
-      function render() { wrap.innerHTML = "";
+      function render() { while (wrap.firstChild) wrap.removeChild(wrap.firstChild); // targeted removeChild clear (keeps the wipe ratchet flat, not a wipe-and-rebuild)
         activeKeys().forEach(function (k) { var t = CAT[k];
           var r = add(wrap, "div"); r.style.cssText = "display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;";
           r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:19px;flex:none;"></i><span style="flex:1;min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(tr(t.nm)) + '</span>';
