@@ -95,7 +95,20 @@
     function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { [bassBus, padBus, pluckBus, revGain, conv].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); bassBus = padBus = pluckBus = revGain = conv = null; }, 2600); }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
-  function bedMode() { return (S.audio && S.audio.bed) || "pad"; } // 'pad' (peaceful drone, DEFAULT) · 'music' (Mysterious) · 'off'
+  function bedMode() { return (S.audio && S.audio.bed) || "pad"; } // 'pad' (peaceful drone, DEFAULT) · 'music' (Mysterious) · 'off' · or a BG_FILES key
+  // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). =====
+  var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" };
+  var BGBED = (function () {
+    var cache = {}, src = null, gain = null, wanted = null, lvl = 0.5;
+    function load(key) { if (cache[key] || !BG_FILES[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return;
+      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { cache[key] = b; if (wanted === key) start(key, lvl); }).catch(function () {}); }
+    function start(key, level) { stop(); if (!BG_FILES[key]) { wanted = null; return; } wanted = key; if (level != null) lvl = level; var ctx = sharedAudioCtx(); if (!ctx) return;
+      var b = cache[key]; if (!b) { load(key); return; } // decode async, then auto-starts if still wanted
+      try { if (ctx.state === "suspended") ctx.resume(); src = ctx.createBufferSource(); src.buffer = b; src.loop = true; gain = ctx.createGain(); gain.gain.value = lvl; src.connect(gain); gain.connect(bgBus() || ctx.destination); src.start(); } catch (e) {} }
+    function stop() { wanted = null; try { if (src) { src.onended = null; src.stop(0); } } catch (e) {} src = null; gain = null; }
+    return { load: load, start: start, stop: stop };
+  })();
+  var _activeBed = null; // the running timelinePlayer registers a (mode)=>switch fn here so the Sound panel can live-swap its bed
   // ===== APP BACKGROUND MUSIC (David 2026-07-01): the SAME peaceful pad, at a very low level, drifting under the whole app. Auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
   var APPMUSIC = (function () {
     var ctl = null, running = false;
@@ -8860,7 +8873,7 @@
   function openVolumePanel() {
     S.audio = S.audio || { voice: 1, bg: 1 };
     var ov = add(document.body, "div", "vol-ov"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(10,4,14,.55);display:flex;align-items:center;justify-content:center;";
-    var card = add(ov, "div"); card.style.cssText = "width:82%;max-width:340px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;";
+    var card = add(ov, "div"); card.style.cssText = "width:82%;max-width:340px;max-height:86vh;overflow-y:auto;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;";
     add(card, "div", null, tr("Sound")).style.cssText = "font-size:19px;font-weight:800;";
     add(card, "div", null, tr("adjust anytime — even while it plays")).style.cssText = "font-size:12px;color:#b39ab0;margin-bottom:8px;";
     function slider(label, kind) {
@@ -8870,16 +8883,21 @@
       s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
     }
     slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
-    // which background bed plays under the guided tools
-    var bl = add(card, "div", null, tr("Background sound")); bl.style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 8px;";
-    var seg = add(card, "div"); seg.style.cssText = "display:flex;gap:7px;"; var segBtns = [];
-    function paintSeg() { segBtns.forEach(function (b) { b.style.background = bedMode() === b.dataset.bed ? "#9a7cff" : "rgba(255,255,255,.05)"; }); }
-    [["pad", tr("Peaceful")], ["music", tr("Mysterious")], ["off", tr("Off")]].forEach(function (o) {
-      var b = add(seg, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:9px 4px;font-family:var(--bub);font-weight:800;font-size:13px;cursor:pointer;color:#f0e6ef;"; segBtns.push(b);
-      b.onclick = function () { S.audio.bed = o[0]; save(); paintSeg(); if (o[0] !== "music") { try { BGM.stop(); } catch (e) {} } else if (document.getElementById("breatheOv")) { try { BGM.start(); } catch (e) {} } };
+    // BACKGROUND BED — categorized so a sound is quick to pick (David 2026-07-10). Selecting one live-swaps the running player's bed via _activeBed.
+    add(card, "div", null, tr("Background sound")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 4px;";
+    var bedChips = [];
+    function paintBed() { bedChips.forEach(function (c) { var on = bedMode() === c.dataset.bed; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; }); }
+    function setBed(key) { S.audio.bed = key; save(); paintBed(); if (_activeBed) { _activeBed(key); } else { try { BGM.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} } }
+    [ { n: tr("Ambient"), o: [["pad", tr("Peaceful")], ["music", tr("Mysterious")]] },
+      { n: tr("Nature"), o: [["forest", tr("Forest")], ["birds", tr("Birds")]] },
+      { n: tr("Binaural · headphones"), o: [["deep4", "Deep · 4 Hz"], ["theta6", "Theta · 6 Hz"], ["focus13", "Focus · 13 Hz"], ["gamma33", "Gamma · 33 Hz"], ["floating", tr("Floating")]] },
+      { n: "", o: [["off", tr("Off")]] }
+    ].forEach(function (cat) {
+      if (cat.n) add(card, "div", null, cat.n).style.cssText = "font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#b39ab0;margin:11px 0 5px;";
+      var rowc = add(card, "div"); rowc.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+      cat.o.forEach(function (o) { var b = add(rowc, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "border:2px solid #6a4a6a;border-radius:11px;padding:8px 12px;font-family:var(--bub);font-weight:800;font-size:12.5px;cursor:pointer;color:#f0e6ef;"; bedChips.push(b); b.onclick = function () { setBed(o[0]); }; });
     });
-    paintSeg();
-    add(card, "div", null, tr("Peaceful — a warm drifting drone · Mysterious — a deep ambient loop")).style.cssText = "font-size:11px;color:#b39ab0;margin-top:7px;line-height:1.4;";
+    paintBed();
     // whole-app subtle background music toggle
     var amRow = add(card, "button"); amRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:12px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
     function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("App background music") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("warm, slow chords while you browse") + '</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
@@ -8962,8 +8980,10 @@
     bar.style.visibility = "hidden";
     // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
     var padCtl = null, usedBGM = false, bedM = bedMode(), bedOn = false;
-    function bedStart() { if (bedOn || opts.drone === false) return; try { if (bedM === "music") { BGM.start(); usedBGM = true; bedOn = true; } else if (bedM === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); bedOn = true; } } catch (e) {} } // the background bed follows play/pause (David 2026-07-08: pausing should pause the music too)
-    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} try { if (padCtl) padCtl.stop(); } catch (e) {} padCtl = null; bedOn = false; }
+    if (BG_FILES[bedM]) BGBED.load(bedM); // pre-decode the file bed so it is ready by play time
+    function bedStart() { if (bedOn || opts.drone === false) return; try { if (bedM === "music") { BGM.start(); usedBGM = true; bedOn = true; } else if (bedM === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); bedOn = true; } else if (BG_FILES[bedM] && ctx) { BGBED.start(bedM, 0.5); bedOn = true; } } catch (e) {} } // the background bed follows play/pause (David 2026-07-08: pausing should pause the music too)
+    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} try { if (padCtl) padCtl.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} padCtl = null; bedOn = false; }
+    _activeBed = function (m) { bedM = m; if (BG_FILES[m]) BGBED.load(m); bedStop(); bedOn = false; if (playing) bedStart(); }; // Sound panel live-swap of the running bed (David 2026-07-10)
     bedStart();
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
@@ -9062,6 +9082,7 @@
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
+      _activeBed = null; try { BGBED.stop(); } catch (e) {}
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
       if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
