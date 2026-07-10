@@ -9473,8 +9473,18 @@
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     // ===== INTRO STONE (David 2026-07-10 — ONE STACK, ONE COMMIT): HOOK (body -> breath+relax) -> SETUP2 (meditation + self-talk) -> STACK-COMMIT (all four moves, toggle one off, press-hold) -> runFirstStack (the four-act carousel, one surface, pre/post tension gauge) -> showClose. The two-round split (breath/relax then meditate/mantra) was removed — it broke the stack feel. Copy through both gates + adversarial judge. Press-hold + carousel gesture FEEL is DEVICE-UNTESTED. showPlan/showRecap below are DEAD (unscheduled) — delete in a clean pass. =====
     var backEl = null;
-    function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; }
+    function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; reviewSwipeIn = null; } // disarm the review swipe on every screen wipe (only showStackReview re-arms it)
     function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = fn; } // BACK (David 2026-07-09): accidental forward -> step back a screen. Full IG-story tap-navigation is the queued bigger pass.
+    // ===== CAROUSEL SHELL — INCREMENT 1 (David 2026-07-10): IG-story progress bars + the single into-the-stack swipe. One segment per intro beat (hook · breath-ask · meditation · med-ask · mantra · mantra-ask · review); fills as the button nav advances, animates in via the width transition, un-fills on Back. The tool player draws its OWN act-bars, so these HIDE once the stack begins (hideBars in beginStack). Gesture feel is DEVICE-UNTESTED. =====
+    var STEP_N = 7, barFills = [];
+    var barsWrap = add(ov, "div", "ob-bars"); barsWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 15px);left:46px;right:16px;display:flex;gap:6px;z-index:6;pointer-events:none;";
+    for (var _bi = 0; _bi < STEP_N; _bi++) { var _tk = add(barsWrap, "div"); _tk.style.cssText = "flex:1;height:4px;border-radius:3px;background:rgba(240,230,239,.20);overflow:hidden;"; var _fl = add(_tk, "div"); _fl.style.cssText = "height:100%;width:0%;border-radius:3px;background:#f5ecf4;transition:width .5s cubic-bezier(.4,0,.2,1);"; barFills.push(_fl); }
+    function setStep(i) { barsWrap.style.display = ""; for (var b = 0; b < barFills.length; b++) barFills[b].style.width = (b <= i ? 100 : 0) + "%"; } // past + current full, future empty
+    function hideBars() { barsWrap.style.display = "none"; }
+    // THE SINGLE INTO-THE-STACK SWIPE: one listener pair on the persistent body, armed only while reviewSwipeIn is set (showStackReview sets it, clearBoth nulls it). Swipe-left off the review = enter the stack (the IG-continuous twin of the press-hold). Horizontal-dominant only; ignored on the ring / buttons.
+    var reviewSwipeIn = null, _rsx = null, _rsy = null;
+    body.addEventListener("touchstart", function (e) { if (!reviewSwipeIn) { _rsx = null; return; } if (e.target && e.target.closest && e.target.closest("button, .ob-pwrap, .pring")) { _rsx = null; return; } var t = e.touches && e.touches[0]; _rsx = t ? t.clientX : null; _rsy = t ? t.clientY : null; }, { passive: true });
+    body.addEventListener("touchend", function (e) { if (_rsx == null || !reviewSwipeIn) { _rsx = null; return; } var t = e.changedTouches && e.changedTouches[0], sx = _rsx, sy = _rsy; _rsx = null; if (!t) return; var dx = t.clientX - sx, dy = t.clientY - sy; if (dx < -55 && Math.abs(dx) > Math.abs(dy) * 1.5) reviewSwipeIn(); }, { passive: true });
     var HOOK = [
       "Right now your body is holding tension you have completely tuned out.",
       "Some of it you have carried so long it just feels like your personality.",
@@ -9516,12 +9526,12 @@
     }
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
     var commit = { breath: 30, relax: 30, medit: 60, mantra: 30, stretch: 40, reprogram: 60, gratitude: 40 }, stackActive = null; // seconds PER ACTIVITY; the 4 core start on, extras (stretch / self-hypnosis / gratitude) start OFF and are added on the review via + (David 2026-07-10). mins 20, meditation 30.
-    function showHook() { narrate(HOOK, "Next", askBody); } // PAGE 1: the body-tension hook
-    function askBody() { timeAsk("body", "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.", 60, showMindSetup, showHook); }
-    function showMindSetup() { narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
-    function askMedit() { timeAsk("medit", "After the breathing and muscle release, I recommend a short sit. A minute is enough to catch yourself in the churn and step back out.", 120, showMantraSetup, showMindSetup); }
-    function showMantraSetup() { narrate(SETUP3, "Next", askMantra, { per: 0.08, back: askMedit }); } // PAGE 3: mantra (the belief machinery)
-    function askMantra() { timeAsk("mantra", "After the sit, I recommend a mantra. A short set of chosen beliefs, each one built to answer a doubt and feed your subconscious something you would pick on purpose.", 60, showStackReview, showMantraSetup); }
+    function showHook() { setStep(0); narrate(HOOK, "Next", askBody); } // PAGE 1: the body-tension hook
+    function askBody() { setStep(1); timeAsk("body", "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.", 60, showMindSetup, showHook); }
+    function showMindSetup() { setStep(2); narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
+    function askMedit() { setStep(3); timeAsk("medit", "After the breathing and muscle release, I recommend a short sit. A minute is enough to catch yourself in the churn and step back out.", 120, showMantraSetup, showMindSetup); }
+    function showMantraSetup() { setStep(4); narrate(SETUP3, "Next", askMantra, { per: 0.08, back: askMedit }); } // PAGE 3: mantra (the belief machinery)
+    function askMantra() { setStep(5); timeAsk("mantra", "After the sit, I recommend a mantra. A short set of chosen beliefs, each one built to answer a doubt and feed your subconscious something you would pick on purpose.", 60, showStackReview, showMantraSetup); }
     function timeAsk(kind, intro, rec, next, back) { clearBoth(); if (back) addBack(back); // LEAD with the guided-practice recommendation (animated, multi-colored), THEN a COLORFUL pill row; the recommended time glows (David 2026-07-10: the yellow-button menu was ugly + boring).
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;margin-top:4px;gap:8px;";
       animLines(iw, [intro], 0.2, 0.055); try { speak(tr(intro)); } catch (e) {}
@@ -9538,7 +9548,7 @@
       paint();
       var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); }; // the body ask feeds breath + relax (each half the pick, min 20)
     }
-    function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): the stack is EDITABLE. Delete any row (x), or + Add an extra (stretch / self-hypnosis / gratitude); the app keeps the best order. Extras start hidden so a first-timer is not overwhelmed. Then press-hold to commit.
+    function showStackReview() { setStep(6); clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): the stack is EDITABLE. Delete any row (x), or + Add an extra (stretch / self-hypnosis / gratitude); the app keeps the best order. Extras start hidden so a first-timer is not overwhelmed. Then press-hold to commit.
       add(body, "div", "ob-q", tr("Your first stack"));
       add(body, "div", "ob-sb", tr("Best in this order. Each one settles you for the next, and the momentum carries.")).style.cssText = "text-align:center;margin-top:6px;max-width:330px;line-height:1.45;font-size:14px;";
       var CAT = { stretch: { nm: "Stretch", ic: "ti-stretching", c: "#ff8a1e", min: 20 },
@@ -9581,15 +9591,17 @@
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
       function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
       var RUNNM = { breath: "Breathe", relax: "Relax the muscles", medit: "Sit in stillness", mantra: "A line to carry", stretch: "Stretch", reprogram: "Self-hypnosis", gratitude: "Gratitude" };
+      function buildRunList() { return activeKeys().map(function (k) { var t = CAT[k]; var o = { id: k, nm: RUNNM[k] || t.nm, ic: t.ic, c: t.c, secs: Math.max(t.min, commit[k]) }; if (t.med) o.med = t.med; return o; }); } // shared by the press-hold and the into-the-stack swipe
       pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
-        var list = activeKeys().map(function (k) { var t = CAT[k]; var o = { id: k, nm: RUNNM[k] || t.nm, ic: t.ic, c: t.c, secs: Math.max(t.min, commit[k]) }; if (t.med) o.med = t.med; return o; });
+        var list = buildRunList();
         if (!list.length) return;
         beginStack(list);
       }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+      reviewSwipeIn = function () { var list = buildRunList(); if (list.length) beginStack(list); }; // arm the single into-the-stack swipe for this screen (disarmed by the next clearBoth)
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
-    function beginStack(list) { // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
+    function beginStack(list) { hideBars(); // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
       runFirstStack(list, function (pre, post) { _pre = pre; _done = list.map(function (t) { return { nm: t.nm, ic: t.ic, c: t.c }; });
         if (post == null) { if (ov.parentNode) ov.remove(); if (onDone) onDone(); return; }
         showClose(post); });
