@@ -9640,12 +9640,12 @@
       add(body, "div", "ob-q", tr("Your first stack"));
       add(body, "div", "ob-sb", tr("Best in this order. Each one settles you for the next, and the momentum carries.")).style.cssText = "text-align:center;margin-top:6px;max-width:330px;line-height:1.45;font-size:14px;";
       var CAT = { stretch: { nm: "Stretch", ic: "ti-stretching", c: "#ff8a1e", min: 20 },
-        breath: { nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", min: 20 },
-        relax: { nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", min: 20 },
+        breath: { nm: "Breathe", ic: "ti-ripple", c: "#5fb0ff", min: 20 },
+        relax: { nm: "Relax the muscles", ic: "ti-barbell", c: "#c77dff", min: 20 },
         medit: { nm: "Meditation", ic: "ti-yoga", c: "#46e2a4", min: 30, med: [{ k: "firstsit" }] },
         reprogram: { nm: "Self-hypnosis", ic: "ti-wand", c: "#9a7cff", min: 30 },
         gratitude: { nm: "Gratitude", ic: "ti-heart", c: "#ff9ec9", min: 20 },
-        mantra: { nm: "Mantra", ic: "ti-quote", c: "#ffc83d", min: 20 } };
+        mantra: { nm: "Mantra", ic: "ti-message-circle", c: "#ffc83d", min: 20 } };
       var ORDER = ["stretch", "breath", "relax", "medit", "reprogram", "gratitude", "mantra"]; // the canonical best order: loosen -> breathe -> release -> sit -> rewire -> give thanks -> carry a line out
       if (!stackActive) stackActive = { breath: 1, relax: 1, medit: 1, mantra: 1 }; // the 4 core; extras added via +
       function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }

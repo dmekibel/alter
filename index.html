@@ -724,7 +724,7 @@
   #breatheOv.gp-ov.gp-min{background:transparent;pointer-events:none;}
   #breatheOv.gp-ov.gp-min > *{display:none !important;}
   #breatheOv.gp-ov.gp-min > .gp-mini{display:flex !important;}
-  .gp-mini{display:none;position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);height:62px;border-radius:16px;background:#251020;border:2px solid #160510;box-shadow:0 4px 0 #160510;align-items:center;gap:11px;padding:0 10px 0 14px;z-index:9;pointer-events:auto;cursor:pointer;}
+  .gp-mini{display:none;position:fixed;left:8px;right:8px;bottom:74px;height:62px;border-radius:16px;background:#251020;border:2px solid #160510;box-shadow:0 4px 0 #160510;align-items:center;gap:11px;padding:0 10px 0 14px;z-index:9;pointer-events:auto;cursor:pointer;} /* bottom:74 like #liveDock — sits ABOVE the bottom nav, doesn't cover it */
   .gpm-dot{width:30px;height:30px;border-radius:50%;flex:none;border:2px solid #160510;}
   .gpm-lab{flex:1;min-width:0;color:#fff2f9;font-family:"Jost",sans-serif;font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .gpm-pp{flex:none;width:42px;height:42px;border-radius:50%;background:var(--gp-c,#9a5cf0);border:2px solid #160510;box-shadow:0 3px 0 #160510;color:#160510;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
@@ -2002,7 +2002,7 @@
   .ob-ov.ob-min::before, .ob-ov.ob-min::after{ opacity:0 !important; display:none !important; }
   .ob-ov.ob-min > *{ display:none !important; }
   .ob-ov.ob-min > .ob-mini{ display:flex !important; }
-  .ob-mini{ display:none; position:fixed; left:12px; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 16px); height:60px; border-radius:16px; background:#251020; border:2px solid #160510; box-shadow:0 4px 0 #160510; align-items:center; gap:11px; padding:0 12px 0 16px; z-index:9; pointer-events:auto; cursor:pointer; }
+  .ob-mini{ display:none; position:fixed; left:8px; right:8px; bottom:74px; height:60px; border-radius:16px; background:#251020; border:2px solid #160510; box-shadow:0 4px 0 #160510; align-items:center; gap:11px; padding:0 12px 0 16px; z-index:9; pointer-events:auto; cursor:pointer; } /* bottom:74 like #liveDock — sits ABOVE the bottom nav */
   .obm-dot{ width:26px; height:26px; border-radius:50%; flex:none; border:2px solid #160510; background:radial-gradient(circle at 38% 30%,#ffd0ec 0%,#ff5fa8 60%,#8a2f66 100%); }
   .obm-lab{ flex:1; min-width:0; color:#fff2f9; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .obm-up{ flex:none; width:34px; height:34px; border-radius:50%; background:none; border:none; color:rgba(240,230,239,.6); font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
@@ -2687,6 +2687,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1019"></script>
+  <script src="app.js?v=1020"></script>
 </body>
 </html>
