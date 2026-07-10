@@ -6574,6 +6574,45 @@
     "Never exonerated — and never unarmed. Learn the hero's first move.": "Тебя не освободят — но ты и не безоружен. Выучи первый ход героя.", "Masterpiece days are framed — and the frame is the evening.": "Дни-шедевры обрамляют — и рама это вечер.", "Areté — the gap between who you are and who you could be.": "Арете — зазор между тем, кто ты есть, и кем мог бы быть.",
     "Committed — and celebrated. That's how returns are wired. ": "Обязался — и отпраздновал. Так прошивается возвращение."
   });
+  Object.assign(I18N.ru, { // STONE 1 / THE INTRO (David 2026-07-11: "stone 1 needs better translation") — the intro-stone teaching carousel + review + close. Natural spoken RU (ты-form), meaning-first not literal; the source lines are Harris (meditation) / Withers (beliefs) / Sapolsky (the alarm loop).
+    // HOOK (body)
+    "Right now your body is holding tension you have completely tuned out.": "Прямо сейчас в твоём теле есть напряжение, которого ты уже совсем не замечаешь.",
+    "Some of it you have carried so long it just feels like your personality.": "Часть его ты носишь так давно, что принимаешь за свой характер.",
+    "A tight body keeps your mind on edge too, and that is part of why you can feel wound up with no idea why.": "Зажатое тело держит на взводе и ум — отчасти поэтому бывает не по себе, а почему, непонятно.",
+    // SETUP2 (meditation / the trance)
+    "We talk to ourselves all day long, silently. An endless inner monologue, narrating our lives.": "Мы весь день молча говорим сами с собой. Бесконечный внутренний монолог, который проговаривает нашу жизнь.",
+    "Being lost in thought is more than a distraction. It is a kind of waking trance, where you lose touch with your own body.": "Потеряться в мыслях — это не просто отвлечься. Это своего рода транс наяву, где теряешь связь с собственным телом.",
+    "We spend nearly 50% of our lives in this state of mental wandering, which is consistently linked to unhappiness.": "Почти половину жизни мы проводим в этом блуждании ума — и оно устойчиво связано с ощущением несчастья.",
+    // SETUP3 (mantra / beliefs)
+    "A belief is just a thought repeated until it feels true. The mind cannot tell truth from repetition, so it keeps whatever it hears most, and plays it back.": "Убеждение — это просто мысль, повторённая столько раз, что стала ощущаться правдой. Ум не отличает правду от повтора: он запоминает то, что слышит чаще всего, и проигрывает обратно.",
+    "The loudest are the doubts you never chose, recorded before you were ten and running ever since. Beliefs always win over your wants.": "Громче всего — сомнения, которые ты не выбирал: записанные лет до десяти и с тех пор не умолкающие. Убеждения всегда сильнее желаний.",
+    "A mantra is you consciously choosing the thoughts that get fed into your subconscious, instead of letting them run on autopilot.": "Мантра — это когда ты осознанно выбираешь, какие мысли подать в подсознание, вместо того чтобы они крутились на автопилоте.",
+    // AFTER_LOOP (Sapolsky — the alarm loop)
+    "Here is the loop you just stepped out of. A worry is theoretical, but the body cannot tell: it fires the same alarm for an email as for a lion, and a lion is gone in minutes while a dreaded Monday can run the alarm for weeks.": "Вот петля, из которой ты только что вышел. Тревога — это лишь мысль, но тело не различает: оно бьёт одну и ту же тревогу и на письмо, и на льва. Только лев исчезает за минуты, а страшный понедельник держит сигнал неделями.",
+    "The alarm changes your breath: short, shallow, up in the chest. And that breathing keeps the alarm on, which keeps the mind churning, which keeps the breath shallow. A closed loop, feeding itself all day.": "Тревога меняет дыхание: короткое, поверхностное, где-то в груди. А такое дыхание держит тревогу, тревога гоняет мысли, мысли не дают дыханию углубиться. Замкнутая петля, которая весь день кормит сама себя.",
+    "You just cut it at every link. The long exhale is the body's brake. A loose body quiets the mind. A quiet mind can watch its own thoughts. And a chosen thought feeds the subconscious on purpose.": "Ты только что разорвал её в каждом звене. Долгий выдох — тормоз тела. Расслабленное тело успокаивает ум. Спокойный ум способен наблюдать свои мысли. А выбранная мысль кормит подсознание намеренно.",
+    // AFTER_SKILL (attention)
+    "Attention is a skill, and for most of us it has gone weak.": "Внимание — это навык, и у большинства из нас он ослаб.",
+    "If you cannot hold your thoughts still for even a second, you cannot use your attention to control how you see the world. Every random thought just tugs at you, and your mood goes with it.": "Если не можешь удержать мысли хотя бы на секунду, ты не управляешь тем, как видишь мир. Любая случайная мысль дёргает тебя, и настроение идёт за ней следом.",
+    "These two exercises train that skill back. The steadier your attention, the less you get dragged by whatever thought shows up, and the more you decide what a moment means.": "Эти два упражнения возвращают навык. Чем устойчивее внимание, тем меньше тебя тащит за собой любая всплывшая мысль — и тем больше ты сам решаешь, что значит момент.",
+    "That is the difference between running on autopilot and being awake for your own life. More human, less NPC.": "В этом и разница между жизнью на автопилоте и присутствием в собственной жизни. Больше человека, меньше болванчика.",
+    // TIME-ASK intros
+    "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.": "Проведу тебя через медленное дыхание и расслабление мышц. Это самый быстрый переключатель, которым тело отменяет реакцию на стресс.",
+    "After the breathing and muscle release, I recommend a short sit. A minute is enough to catch yourself in the churn and step back out.": "После дыхания и расслабления советую короткую медитацию. Минуты хватает, чтобы поймать себя в круговороте мыслей и выйти из него.",
+    "After the sit, I recommend a mantra. A short set of chosen beliefs, each one built to answer a doubt and feed your subconscious something you would pick on purpose.": "После медитации советую мантру. Небольшой набор выбранных убеждений: каждое отвечает на какое-то сомнение и даёт подсознанию то, что ты выбрал бы нарочно.",
+    // CLOSE + review UI
+    "You reached into your own body and mind and changed them. That is the whole skill, and it is already yours. Tomorrow, you bring it to your real day.": "Ты дотянулся до собственного тела и ума — и изменил их. В этом весь навык, и он уже твой. Завтра ты принесёшь его в свой настоящий день.",
+    "Your first stack": "Твоя первая связка",
+    "Best in this order. Each one settles you for the next, and the momentum carries.": "Лучше всего в таком порядке. Каждое настраивает на следующее, и разгон несёт дальше.",
+    "How much time can you give it?": "Сколько времени можешь на это дать?",
+    "Press and hold to lock it in.": "Нажми и удержи, чтобы закрепить.",
+    "Add something": "Добавить", "Pick one to add": "Выбери, что добавить",
+    "not now": "не сейчас", "Why it worked": "Почему это сработало", "And one more thing": "И ещё кое-что", "Done for today": "На сегодня всё",
+    "YOUR FIRST LOOP": "ТВОЯ ПЕРВАЯ ПЕТЛЯ", "Tension": "Напряжение", "you brought it down by": "ты снизил его на", "you showed up. that's the rep.": "ты пришёл. это и есть повтор.",
+    "Sit in stillness": "Побудь в тишине", "A line to carry": "Строка, чтобы унести с собой", "Self-hypnosis": "Самогипноз",
+    // the pre/post tension gauge shown inside the run
+    "Where's the tension right now?": "Где сейчас напряжение?", "gut answer, no wrong number": "отвечай нутром — неправильных чисел нет", "And now?": "А теперь?", "same scale, just notice": "та же шкала — просто заметь"
+  });
   Object.assign(I18N.ru, { // DAY-1 REBUILD — THE FIRST LESSON: five lessons, five colors, zero typing (B4 law)
     "Lesson 1 · The Switch": "Урок 1 · Переключение", "Switched on. The body leads the mind — and you led the body.": "Включился. Тело ведёт ум — а ты повёл тело.", "60 seconds. Wake the body, breathe your word, step into the day.": "60 секунд. Разбуди тело, вдохни своё слово, шагни в день.",
     "Lesson 2 · Your Words": "Урок 2 · Твои слова", "Five words. I'll speak them back to you the whole way.": "Пять слов. Я буду возвращать их тебе всю дорогу.", "Eight taps — find the five words you're becoming.": "Восемь касаний — найди пять слов, которыми ты становишься.",
