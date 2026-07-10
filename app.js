@@ -9528,7 +9528,9 @@
       [[30, "30s", "#5fb0ff"], [60, "1 min", "#c77dff"], [120, "2 min", "#ff5fa8"], [180, "3 min", "#ffc83d"]].forEach(function (o) { var b = add(row, "button"); b.textContent = tr(o[1]); b._secs = o[0]; b._col = o[2]; btns.push(b);
         b.onclick = function (e) { if (e) e.stopPropagation(); sel = o[0]; paint(); }; });
       function paint() { btns.forEach(function (b) { var isSel = (b._secs === sel);
-        b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + b._col + ";color:#160510;box-shadow:0 3px 0 #160510" + (isSel ? ",0 0 0 3px #ffd76a,0 0 15px " + b._col : "") + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .1s,box-shadow .1s;opacity:" + (isSel ? "1" : ".78") + ";" + (isSel ? "transform:translateY(-3px);" : ""); }); }
+        // SELECTED: gold ring + glow only (no hard drop-shadow, so the ink border stays a uniform 2px all around — David 2026-07-10). UNSELECTED: the game-piece drop-shadow, dimmed.
+        var sh = isSel ? "0 0 0 3px #ffd76a,0 0 16px " + b._col : "0 3px 0 #160510";
+        b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + b._col + ";color:#160510;box-shadow:" + sh + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .1s,box-shadow .1s;opacity:" + (isSel ? "1" : ".78") + ";" + (isSel ? "transform:scale(1.05);" : ""); }); }
       paint();
       var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { commit[kind] = sel; next(); };
     }
@@ -9542,12 +9544,12 @@
       var totEl;
       function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(commit.body + commit.medit + commit.mantra); }
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px;margin-top:14px;";
-      ROWS.forEach(function (t) { var r = add(wrap, "div", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "52px";
-        r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
+      ROWS.forEach(function (t) { var r = add(wrap, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;"; // FULL activity-color game piece (David 2026-07-10: the muted rows were ugly)
+        r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:21px;"></i><span style="font-weight:800;font-size:15px;">' + esc(tr(t.nm)) + '</span>';
         var ctrl = add(r, "span"); ctrl.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:8px;";
-        var stepCss = "width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:" + t.c + "22;border:1.5px solid " + t.c + ";color:" + t.c + ";font-size:16px;cursor:pointer;flex:none;"; // steppers wear the activity color so they read (David 2026-07-10: they were muted + hard to see)
+        var stepCss = "width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.14);border:1.5px solid #160510;color:#160510;font-size:16px;cursor:pointer;flex:none;"; // dark steppers read cleanly on the colored row
         var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
-        var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:46px;text-align:center;font-variant-numeric:tabular-nums;color:" + t.c + ";font-weight:900;font-size:16px;";
+        var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:46px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:16px;";
         var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
         mn.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.max(30, commit[t.k] - 30); du.textContent = fmt(commit[t.k]); updTot(); };
         pl.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.min(600, commit[t.k] + 30); du.textContent = fmt(commit[t.k]); updTot(); }; });
