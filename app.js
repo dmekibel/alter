@@ -8991,7 +8991,7 @@
     bedStart();
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
-    var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0;
+    var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
     function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
 
     function layout(bufs, autoplay) {
@@ -9047,6 +9047,7 @@
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      if (minimized && miniLab) miniLab.textContent = lab.textContent; // keep the minimized dock's label live while audio keeps playing
       if (orb) { // ORB DRIVE (David 2026-07-09): ONE clock. Scale the orb from the CURRENT segment's breath phase across its REAL span (audio + adaptive gap), so it tracks the cues exactly — fixes hold-too-short, cut-when-full, shrinks-on-hold. Non-breath segments keep a gentle ~11s ambient breath so it still guides you.
         var _ph = seg && seg.breath, _sc, _op;
         if (_ph === "in" || _ph === "out" || _ph === "hold" || _ph === "rest") {
@@ -9075,17 +9076,46 @@
       function up() { if (!dragging) return; dragging = false; if (scrub._wasP) startFrom(offset); }
       scrub.addEventListener("pointerdown", down); window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
     })();
+    var miniLab = null; // minimized-dock live label (declared at player scope; paintNow reads it)
     if (acts) { // STORY-NAV (David 2026-07-07): tap left/right or swipe to move between activities. The voice CROSSFADES (fadeStopSources) instead of hard-cutting, and each act remembers where you left off so a slip is recoverable.
       function gotoAct(j) { if (!ready || done || j < 0 || j >= acts.length || j === curAct) return; actResume[curAct] = curElapsed(); var target = (actResume[j] != null) ? actResume[j] : (acts[j]._start || 0);
         if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } curAct = j; paintNow(target); }
-      var tapL = add(ov, "div", "gp-tapz"); tapL.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);left:0;width:28%;z-index:5;"; tapL.onclick = function () { gotoAct(curAct - 1); }; // start BELOW the ✕ / gear / story-bar (the safe-area inset pushes them down on device — the old top:64px covered them and ate their taps)
-      var tapR = add(ov, "div", "gp-tapz"); tapR.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);right:0;width:28%;z-index:5;"; tapR.onclick = function () { gotoAct(curAct + 1); };
-      var _sx = null; ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && (e.target.closest(".gp-bar") || e.target.closest(".bw-x") || e.target.closest(".gp-cog"))) { _sx = null; return; } _sx = e.touches ? e.touches[0].clientX : null; }, { passive: true }); // ignore drags that start on the transport, the exit, or the gear
-      ov.addEventListener("touchend", function (e) { if (_sx == null) return; var ex = e.changedTouches ? e.changedTouches[0].clientX : _sx, dx = ex - _sx; _sx = null; if (Math.abs(dx) <= 55) return; var j = curAct + (dx < 0 ? 1 : -1);
-        // EDGE BEHAVIORS (David 2026-07-10, carousel increment 2 — SWIPE only; tapzones still clamp): swipe past the LAST tool completes the session (-> post-gauge -> outro); swipe before the FIRST tool tears the player down and returns to the editable review. Both opt-in via opts so daily rituals keep clamping. Gesture feel DEVICE-UNTESTED.
+      // EDGE-AWARE NAV (David 2026-07-10, increment 3): taps AND swipes share this so the boundaries behave identically — past the last tool completes -> post-gauge -> outro; before the first returns to the review (both opt-in via opts, so daily rituals just clamp). Gesture feel DEVICE-UNTESTED.
+      function navBy(dir) { if (!ready || done) return; var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
         if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); try { TTS.stop(); } catch (er) {} _activeBed = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
-        gotoAct(j); }, { passive: true }); // swipe left = next act, right = previous (resumes where you left off)
+        gotoAct(j); }
+      // SIDE-CLICK NAV (David 2026-07-10): left third = back, right third = forward. Zones start BELOW the story bars / ✕ / gear and stop ABOVE the transport.
+      var _tzTop = "top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);z-index:5;";
+      var tapL = add(ov, "div", "gp-tapz"); tapL.style.cssText = "position:fixed;left:0;width:33%;" + _tzTop; tapL.onclick = function () { navBy(-1); };
+      var tapR = add(ov, "div", "gp-tapz"); tapR.style.cssText = "position:fixed;right:0;width:33%;" + _tzTop; tapR.onclick = function () { navBy(1); };
+      // MIDDLE third: quick tap = pause/play; PRESS-HOLD = 2x fast-forward (silent scan, then resumes the audio at the new spot — stays in sync). Skipped in drift sessions where the orb-tap owns the center (catch = the unit).
+      if (!opts.drift) {
+        var midZ = add(ov, "div", "gp-tapz gp-mid"); midZ.style.cssText = "position:fixed;left:33%;width:34%;" + _tzTop;
+        var fastFwd = false, ffRaf = 0, ffWasP = false, holdT = null, mDownX = 0, mDownY = 0, mMoved = false;
+        function startFF() { if (!ready || done || fastFwd) return; fastFwd = true; ffWasP = playing; if (playing) pause(); var base = ctx.currentTime, s0 = offset;
+          (function scan() { if (!fastFwd) return; var e = s0 + (ctx.currentTime - base) * 2; if (e >= total) { fastFwd = false; finish(false); return; } offset = e; paintNow(e); ffRaf = requestAnimationFrame(scan); })(); } // 2x silent scan on the ctx clock
+        function stopFF() { if (!fastFwd) return; fastFwd = false; if (ffRaf) cancelAnimationFrame(ffRaf); if (ffWasP && !done) startFrom(offset); } // resume audio at the scanned position
+        midZ.addEventListener("pointerdown", function (e) { if (!ready || done) return; mMoved = false; mDownX = e.clientX; mDownY = e.clientY; holdT = setTimeout(startFF, 260); });
+        midZ.addEventListener("pointermove", function (e) { if (!mMoved && (Math.abs(e.clientX - mDownX) > 10 || Math.abs(e.clientY - mDownY) > 10)) { mMoved = true; clearTimeout(holdT); } }); // a real drag (swipe) cancels the hold
+        midZ.addEventListener("pointerup", function () { clearTimeout(holdT); if (fastFwd) { stopFF(); } else if (!mMoved) { if (playing) pause(); else if (ready && !done) startFrom(offset); } });
+        midZ.addEventListener("pointercancel", function () { clearTimeout(holdT); if (fastFwd) stopFF(); });
+        midZ.addEventListener("pointerleave", function () { clearTimeout(holdT); if (fastFwd) stopFF(); });
+      }
+      // SWIPE: left/right = nav (edge-aware), DOWN = minimize to the mini-player. Ignores drags starting on the transport / exit / gear / mini dock.
+      var _sx = null, _sy = null;
+      ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && (e.target.closest(".gp-bar") || e.target.closest(".bw-x") || e.target.closest(".gp-cog") || e.target.closest(".gp-mini"))) { _sx = null; return; } var t = e.touches ? e.touches[0] : null; _sx = t ? t.clientX : null; _sy = t ? t.clientY : null; }, { passive: true });
+      ov.addEventListener("touchend", function (e) { if (_sx == null) return; var t = e.changedTouches ? e.changedTouches[0] : null, sx = _sx, sy = _sy; _sx = null; if (!t) return; var dx = t.clientX - sx, dy = t.clientY - sy;
+        if (dy > 70 && Math.abs(dy) > Math.abs(dx) * 1.3) { minimize(); return; } // swipe DOWN = minimize (the player docks; audio keeps going)
+        if (Math.abs(dx) <= 55) return; navBy(dx < 0 ? 1 : -1); }, { passive: true }); // swipe left = forward, right = back
+      // MINI-PLAYER (David 2026-07-10): swipe-down docks the player to a bottom now-playing bar; audio + rAF keep running (visual state only), tap to expand. Full cockpit-surface unification is deeper REBUILD work; this delivers the minimize behavior. Feel DEVICE-UNTESTED.
+      var miniEl = null;
+      function minimize() { if (minimized || done) return; minimized = true; if (!miniEl) miniEl = buildMini(); if (miniLab) miniLab.textContent = lab.textContent || opts.title || ""; if (miniEl._sync) miniEl._sync(); ov.classList.add("gp-min"); }
+      function expand() { if (!minimized) return; minimized = false; ov.classList.remove("gp-min"); }
+      function buildMini() { var m = add(ov, "div", "gp-mini"); var dot = add(m, "span", "gpm-dot"); dot.style.background = "radial-gradient(circle at 38% 30%," + mixHex(col, "#ffffff", 0.26) + " 0%," + col + " 60%," + mixHex(col, "#160510", 0.26) + " 100%)"; miniLab = add(m, "span", "gpm-lab", opts.title || "");
+        var pp = add(m, "button", "gpm-pp"); function sync() { pp.innerHTML = '<i class="ti ' + (playing ? "ti-player-pause-filled" : "ti-player-play-filled") + '"></i>'; } sync();
+        pp.onclick = function (ev) { ev.stopPropagation(); if (playing) pause(); else if (ready && !done) startFrom(offset); sync(); };
+        var up = add(m, "button", "gpm-up"); up.innerHTML = '<i class="ti ti-chevron-up"></i>'; m.onclick = function () { expand(); }; m._sync = sync; return m; }
     }
 
     function finish(skip) {
