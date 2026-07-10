@@ -9485,7 +9485,8 @@
       try { speak(lines.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
       var b = add(foot, "button", "ob-btn asleep", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { body.onclick = null; onNext(); };
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
-      body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
+      // tap-anywhere fast-forwards the cascade — but INSTALL it a tick late so the very tap that opened this page (a chip, a Next button) does not bubble in and instantly skip the animation (David 2026-07-10: "the animation on page 2 is missing").
+      setTimeout(function () { body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; }; }, 90);
     }
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
     var commit = { body: 60, medit: 60, mantra: 60 }; // seconds committed per chapter; set by the asks, fine-tuned on the review
@@ -9503,7 +9504,7 @@
       [["30 sec", 30], ["1 min", 60], ["2 min", 120], ["3 min", 180]].forEach(function (o) { var b = add(grid, "button"); b.textContent = tr(o[0]);
         b.style.cssText = "min-height:64px;border:2px solid #160510;border-radius:15px;background:linear-gradient(#ffd76a,#ffc83d);color:#160510;box-shadow:0 3px 0 #160510;font-weight:900;font-size:18px;cursor:pointer;transition:transform .08s;";
         b.onpointerdown = function () { b.style.transform = "translateY(2px)"; b.style.boxShadow = "0 1px 0 #160510"; };
-        b.onclick = function () { commit[kind] = o[1]; next(); }; });
+        b.onclick = function (e) { if (e) e.stopPropagation(); commit[kind] = o[1]; next(); }; });
     }
     function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): show the whole stack + the time already committed, the order/momentum note, per-piece adjust, then ONE press-hold to commit to all three.
       add(body, "div", "ob-q", tr("Your first stack"));
@@ -9548,11 +9549,10 @@
     var _pre = null, _done = []; // the pre-rating + everything actually done, for the close (David 2026-07-09: one stack, one commit — the two-round scaffolding is gone)
     // PAGE-2 SETUP: the meditation + self-talk intro, kept SHORT. The "wander / notice / come back / kinder" nuance moved INTO the meditation itself (MED_SEC.firstsit) since it is an instruction, not a preamble (David 2026-07-09). Both gates + adversarial judge.
     // PAGES 2-3 + THE AFTER (David 2026-07-10, assembled BY DAVID from his chosen Sam Harris lines + KB-mined Withers verbatim; the verbatim-anchor law in action). Page 2 = meditation (the trance; line 2's body-disconnect is the bridge from page 1's body hook). Page 3 = mantra (the belief machinery, Withers). After the 4 practices: the LOOP page (Sapolsky alarm + McKeown breath spiral, why the order mattered) then the ATTENTION page (skill, more human less NPC). All lines through Gate 1 + iterated line-by-line with David in chat.
-    var SETUP2 = [
+    var SETUP2 = [ // David 2026-07-10: trimmed for length + de-fancied. Cut the theater line (the ask names the sit), kept one of trance/psychosis, dropped "go deaf to your senses". The body-disconnect stays as the bridge from page 1.
       "We talk to ourselves all day long, silently. An endless inner monologue, narrating our lives.",
-      "Being lost in thought is more than a distraction. It is a kind of waking trance, even a mild psychosis, where you go deaf to your own senses and lose touch with your own body.",
-      "We spend nearly 50% of our lives in this state of mental wandering, which is consistently linked to unhappiness.",
-      "Meditation is waking up from the movie of your life long enough to notice you are sitting in the theater." ];
+      "Being lost in thought is more than a distraction. It is a kind of waking trance, where you lose touch with your own body.",
+      "We spend nearly 50% of our lives in this state of mental wandering, which is consistently linked to unhappiness." ];
     var SETUP3 = [
       "A belief is just a thought repeated until it feels true. The subconscious cannot tell truth from repetition. It records whatever gets fed in often enough, and plays it back. And on autopilot, nobody is choosing what gets fed in.",
       "And a thought repeated long enough stops feeling like a thought at all. It feels like the way things are. That is why your worst beliefs are invisible: you never argue with them, you just obey.",
