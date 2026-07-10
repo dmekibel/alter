@@ -9507,7 +9507,7 @@
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     // ===== INTRO STONE (David 2026-07-10 — ONE STACK, ONE COMMIT): HOOK (body -> breath+relax) -> SETUP2 (meditation + self-talk) -> STACK-COMMIT (all four moves, toggle one off, press-hold) -> runFirstStack (the four-act carousel, one surface, pre/post tension gauge) -> showClose. The two-round split (breath/relax then meditate/mantra) was removed — it broke the stack feel. Copy through both gates + adversarial judge. Press-hold + carousel gesture FEEL is DEVICE-UNTESTED. showPlan/showRecap below are DEAD (unscheduled) — delete in a clean pass. =====
     var backEl = null;
-    function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; reviewSwipeIn = null; } // disarm the review swipe on every screen wipe (only showStackReview re-arms it)
+    function clearBoth() { while (body.firstChild) body.removeChild(body.firstChild); while (foot.firstChild) foot.removeChild(foot.firstChild); if (backEl && backEl.parentNode) backEl.remove(); backEl = null; reviewSwipeIn = null; navBack = navNext = navMid = null; } // disarm the review swipe + side-click nav on every screen wipe (each screen re-arms what it wants)
     function addBack(fn) { backEl = add(ov, "button", "ob-back"); backEl.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:12px;z-index:6;"; backEl.innerHTML = '<i class="ti ti-chevron-left"></i>'; backEl.onclick = fn; } // BACK: sits BELOW the full-width IG story bars. Accidental forward -> step back a screen.
     // ===== CAROUSEL SHELL — INCREMENT 1 (David 2026-07-10): IG-story progress bars + the single into-the-stack swipe. One segment per intro beat (hook · breath-ask · meditation · med-ask · mantra · mantra-ask · review); fills as the button nav advances, animates in via the width transition, un-fills on Back. The tool player draws its OWN act-bars, so these HIDE once the stack begins (hideBars in beginStack). Gesture feel is DEVICE-UNTESTED. =====
     var barFills = [];
@@ -9522,6 +9522,22 @@
     var reviewSwipeIn = null, _rsx = null, _rsy = null;
     body.addEventListener("touchstart", function (e) { if (!reviewSwipeIn) { _rsx = null; return; } if (e.target && e.target.closest && e.target.closest("button, .ob-pwrap, .pring")) { _rsx = null; return; } var t = e.touches && e.touches[0]; _rsx = t ? t.clientX : null; _rsy = t ? t.clientY : null; }, { passive: true });
     body.addEventListener("touchend", function (e) { if (_rsx == null || !reviewSwipeIn) { _rsx = null; return; } var t = e.changedTouches && e.changedTouches[0], sx = _rsx, sy = _rsy; _rsx = null; if (!t) return; var dx = t.clientX - sx, dy = t.clientY - sy; if (dx < -55 && Math.abs(dx) > Math.abs(dy) * 1.5) reviewSwipeIn(); }, { passive: true });
+    // SIDE-CLICK NAV + PULL-DOWN MINIMIZE (David 2026-07-10): tap the LEFT third = previous menu, RIGHT third = next menu, MIDDLE = fast-forward/continue; each teaching screen sets navBack/navNext/navMid (cleared by clearBoth; the review leaves them null so its editing taps are safe). Swipe DOWN = minimize the whole stone to a dock — it sits over the LIVE journey, so this reveals the app; tap the dock to resume. Gesture feel DEVICE-UNTESTED.
+    var navBack = null, navNext = null, navMid = null, minimizedIntro = false, introMini = null;
+    ov.addEventListener("click", function (e) {
+      if (minimizedIntro) return;
+      if (e.target && e.target.closest && e.target.closest("button, .ob-pwrap, .pring, .ob-bars, .ob-mini, a, input, textarea")) return; // controls own their own taps
+      var W = window.innerWidth || 375, x = (e.clientX != null ? e.clientX : W / 2);
+      if (x < W * 0.32) { if (navBack) navBack(); }
+      else if (x > W * 0.68) { if (navNext) navNext(); }
+      else if (navMid) navMid();
+    });
+    var _iy = null, _ix = null;
+    ov.addEventListener("touchstart", function (e) { if (e.target && e.target.closest && e.target.closest("button, .ob-pwrap, .pring, .ob-mini")) { _iy = null; return; } var t = e.touches && e.touches[0]; _iy = t ? t.clientY : null; _ix = t ? t.clientX : null; }, { passive: true });
+    ov.addEventListener("touchend", function (e) { if (_iy == null) return; var t = e.changedTouches && e.changedTouches[0], sy = _iy, sx = _ix; _iy = null; if (!t) return; var dy = t.clientY - sy, dx = t.clientX - sx; if (dy > 70 && Math.abs(dy) > Math.abs(dx) * 1.3) minimizeIntro(); }, { passive: true });
+    function buildIntroMini() { var m = add(ov, "div", "ob-mini"); add(m, "span", "obm-dot"); add(m, "span", "obm-lab", tr("Your first stone")); var up = add(m, "button", "obm-up"); up.innerHTML = '<i class="ti ti-chevron-up"></i>'; m.onclick = function () { expandIntro(); }; return m; }
+    function minimizeIntro() { if (minimizedIntro) return; minimizedIntro = true; if (!introMini) introMini = buildIntroMini(); ov.classList.add("ob-min"); }
+    function expandIntro() { if (!minimizedIntro) return; minimizedIntro = false; ov.classList.remove("ob-min"); }
     var HOOK = [
       "Right now your body is holding tension you have completely tuned out.",
       "Some of it you have carried so long it just feels like your personality.",
@@ -9556,10 +9572,12 @@
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;margin-top:8px;gap:8px;";
       var t0 = animLines(iw, lines, 0.2, opts.per);
       try { speak(lines.map(function (l) { return tr(l); }).join(" ")); } catch (e) {}
-      var b = add(foot, "button", "ob-btn asleep", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { body.onclick = null; onNext(); };
+      var b = add(foot, "button", "ob-btn asleep", tr(btnLabel || "Keep going") + " ▸"); b.onclick = function () { onNext(); };
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
-      // tap-anywhere fast-forwards the cascade — but INSTALL it a tick late so the very tap that opened this page (a chip, a Next button) does not bubble in and instantly skip the animation (David 2026-07-10: "the animation on page 2 is missing").
-      setTimeout(function () { body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; }; }, 90);
+      var ffDone = false;
+      function fastFwd() { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); ffDone = true; }
+      // SIDE-CLICK NAV: left third = back, right third = next, middle = fast-forward the cascade then continue (the ov-level delegator calls these by tap position).
+      navBack = opts.back || null; navNext = onNext; navMid = function () { if (!ffDone) fastFwd(); else onNext(); };
     }
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
     var commit = { breath: 30, relax: 30, medit: 60, mantra: 30, stretch: 40, reprogram: 60, gratitude: 40 }, stackActive = null; // seconds PER ACTIVITY; the 4 core start on, extras (stretch / self-hypnosis / gratitude) start OFF and are added on the review via + (David 2026-07-10). mins 20, meditation 30.
@@ -9583,7 +9601,9 @@
         var sh = isSel ? "0 0 0 3px #ffd76a,0 0 16px " + b._col : "0 3px 0 #160510";
         b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + b._col + ";color:#160510;box-shadow:" + sh + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .1s,box-shadow .1s;opacity:" + (isSel ? "1" : ".78") + ";" + (isSel ? "transform:scale(1.05);" : ""); }); }
       paint();
-      var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); }; // the body ask feeds breath + relax (each half the pick, min 20)
+      function goNext() { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); } // the body ask feeds breath + relax (each half the pick, min 20)
+      var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = goNext;
+      navBack = back || null; navNext = goNext; navMid = goNext; // side-click nav: left = back, right/middle = commit the picked time + advance
     }
     function showStackReview() { setStep(6); clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): the stack is EDITABLE. Delete any row (x), or + Add an extra (stretch / self-hypnosis / gratitude); the app keeps the best order. Extras start hidden so a first-timer is not overwhelmed. Then press-hold to commit.
       add(body, "div", "ob-q", tr("Your first stack"));
