@@ -9487,49 +9487,59 @@
       var armT = setTimeout(function () { b.classList.remove("asleep"); b.classList.add("ignite"); }, Math.round(t0 * 1000) + 200);
       body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; };
     }
-    function showHook() { narrate(HOOK, "Next", showMindSetup); } // PAGE 1: the body-tension hook sets up breath + relax
-    function showMindSetup() { narrate(SETUP2, "Next", showMantraSetup, { per: 0.08, back: showHook }); } // PAGE 2: meditation (the trance)
-    function showMantraSetup() { narrate(SETUP3, "Next", showStackCommit, { per: 0.08, back: showMindSetup }); } // PAGE 3: mantra (the belief machinery)
-    function showStackCommit() { clearBoth(); addBack(showMantraSetup); // EXPLAIN-THEN-COMMIT (David 2026-07-10): all the teaching is done up front (pages 1-3, nothing tried yet), so HERE they pick a TIME, choose the activities, then hold to commit both. Durations split the chosen total across the active tools by weight.
+    // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
+    var commit = { body: 60, medit: 60, mantra: 60 }; // seconds committed per chapter; set by the asks, fine-tuned on the review
+    function showHook() { narrate(HOOK, "Next", askBody); } // PAGE 1: the body-tension hook
+    function askBody() { timeAsk("body", "A tiny exercise to loosen the body and tell it the emergency is over.", showMindSetup, showHook); }
+    function showMindSetup() { narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
+    function askMedit() { timeAsk("medit", "A tiny sit, to step out of the churn.", showMantraSetup, showMindSetup); }
+    function showMantraSetup() { narrate(SETUP3, "Next", askMantra, { per: 0.08, back: askMedit }); } // PAGE 3: mantra (the belief machinery)
+    function askMantra() { timeAsk("mantra", "A tiny exercise to plant one thought on purpose.", showStackReview, showMantraSetup); }
+    function timeAsk(kind, sub, next, back) { clearBoth(); if (back) addBack(back); // "how much time can you give it?" -> 4 chips -> store commit[kind] + advance
+      add(body, "div", "ob-q", tr("How much time can you give it?"));
+      add(body, "div", "ob-sb", tr(sub)).style.cssText = "text-align:center;margin-top:8px;max-width:330px;line-height:1.5;";
+      var grid = add(body, "div"); grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:330px;margin-top:20px;";
+      [["30 sec", 30], ["1 min", 60], ["2 min", 120], ["3 min", 180]].forEach(function (o) { var b = add(grid, "button", "obv-row"); b.style.cssText = "min-height:58px;justify-content:center;font-weight:800;font-size:16px;"; b.style.setProperty("--oc", "#ffc83d"); b.textContent = tr(o[0]); b.onclick = function () { commit[kind] = o[1]; next(); }; });
+    }
+    function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): show the whole stack + the time already committed, the order/momentum note, per-piece adjust, then ONE press-hold to commit to all three.
       add(body, "div", "ob-q", tr("Your first stack"));
-      add(body, "div", "ob-sb", tr("Four small moves, in this order for a reason. The breath settles the body, a settled body lets the mind go quiet, and a quiet mind can finally sit with itself and speak to itself kindly. Turn one off if you want, but each one softens you for the next.")).style.cssText = "text-align:center;margin-top:6px;max-width:344px;line-height:1.45;font-size:14px;";
-      var totalSecs = 120; // the committed time (default 2 min), split across the chosen tools
-      var STK = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", w: 1.0, on: true },
-        { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", w: 1.0, on: true },
-        { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", w: 1.6, med: [{ k: "firstsit" }], on: true },
-        { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", w: 0.9, on: true } ];
-      add(body, "div", "ob-sb", tr("How long?")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;opacity:.85;";
-      var tRow = add(body, "div"); tRow.style.cssText = "display:flex;gap:8px;justify-content:center;width:100%;max-width:330px;margin-top:6px;"; var tChips = {};
-      [["1 min", 60], ["2 min", 120], ["4 min", 240]].forEach(function (o) { var b = add(tRow, "button", "obv-row"); b.style.cssText = "flex:1;min-height:44px;justify-content:center;font-weight:800;"; b.textContent = tr(o[0]); tChips[o[1]] = b; b.onclick = function () { totalSecs = o[1]; paintTime(); }; });
-      function paintTime() { for (var k in tChips) { var on = (+k === totalSecs); tChips[k].style.background = on ? "#ffc83d" : ""; tChips[k].style.color = on ? "#160510" : ""; } }
-      paintTime();
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:7px;width:100%;max-width:330px;margin-top:12px;";
-      STK.forEach(function (t) { var r = add(wrap, "button", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "44px";
+      add(body, "div", "ob-sb", tr("Best in this order. Each one settles you for the next, and the momentum carries.")).style.cssText = "text-align:center;margin-top:6px;max-width:330px;line-height:1.45;font-size:14px;";
+      var ROWS = [ { k: "body", nm: "Breathe and relax", ic: "ti-lungs", c: "#5fb0ff" },
+        { k: "medit", nm: "Meditation", ic: "ti-yoga", c: "#46e2a4" },
+        { k: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d" } ];
+      function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }
+      var totEl;
+      function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(commit.body + commit.medit + commit.mantra); }
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px;margin-top:14px;";
+      ROWS.forEach(function (t) { var r = add(wrap, "div", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "52px";
         r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
-        var tog = add(r, "span"); tog.style.cssText = "margin-left:auto;font-size:22px;display:flex;align-items:center;";
-        function paint() { tog.innerHTML = t.on ? '<i class="ti ti-circle-check-filled" style="color:' + t.c + ';"></i>' : '<i class="ti ti-circle"></i>'; r.style.opacity = t.on ? "1" : "0.45"; }
-        paint(); r.onclick = function () { t.on = !t.on; paint(); }; });
-      var go = add(foot, "button", "ob-btn", tr("Continue") + " ▸"); go.onclick = function () {
-        var list = STK.filter(function (t) { return t.on; }); if (!list.length) return;
-        var sumW = list.reduce(function (a, t) { return a + t.w; }, 0);
-        list.forEach(function (t) { t.secs = Math.max(15, Math.round(totalSecs * t.w / sumW)); });
-        showCommit(totalSecs, function () { beginStack(list); }, showStackCommit, "your " + Math.round(totalSecs / 60) + "-minute stack");
-      };
+        var ctrl = add(r, "span"); ctrl.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:8px;";
+        var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:17px;";
+        var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:42px;text-align:center;font-variant-numeric:tabular-nums;";
+        var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:17px;";
+        mn.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.max(30, commit[t.k] - 30); du.textContent = fmt(commit[t.k]); updTot(); };
+        pl.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.min(600, commit[t.k] + 30); du.textContent = fmt(commit[t.k]); updTot(); }; });
+      totEl = add(body, "div"); totEl.style.cssText = "text-align:center;font-weight:900;font-size:20px;color:#ffcf6a;letter-spacing:.5px;margin-top:14px;"; updTot();
+      add(body, "div", "ob-sb", tr("Press and hold to lock it in.")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;";
+      var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none"; pw.style.marginTop = "6px";
+      pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
+      var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
+      function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+        var half = Math.round(commit.body / 2);
+        var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: Math.max(15, half) },
+          { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(15, commit.body - half) },
+          { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: Math.max(15, commit.medit), med: [{ k: "firstsit" }] },
+          { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: Math.max(15, commit.mantra) } ];
+        beginStack(list);
+      }, _hMs); });
+      pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
     }
     function beginStack(list) { // pre-gauge -> the four-act carousel (one surface) -> post-gauge -> strong close. runFirstStack owns the gauges + logging; we set _pre/_done for the close.
       runFirstStack(list, function (pre, post) { _pre = pre; _done = list.map(function (t) { return { nm: t.nm, ic: t.ic, c: t.c }; });
         if (post == null) { if (ov.parentNode) ov.remove(); if (onDone) onDone(); return; }
         showClose(post); });
-    }
-    function showCommit(totalSecs, onCommit, backFn, whatLabel) { clearBoth(); addBack(backFn || showStackCommit); // generic press-hold commit; onCommit(totalSecs) fires when the ring fills. whatLabel names EXACTLY what you're committing to (David 2026-07-09).
-      add(body, "div", "ob-q", whatLabel ? ("Press and hold to commit to " + whatLabel + ".") : tr("Press and hold to commit."));
-      var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none";
-      pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-      var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
-      function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} if (onCommit) onCommit(totalSecs); }, _hMs); });
-      pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
     }
     var _pre = null, _done = []; // the pre-rating + everything actually done, for the close (David 2026-07-09: one stack, one commit — the two-round scaffolding is gone)
     // PAGE-2 SETUP: the meditation + self-talk intro, kept SHORT. The "wander / notice / come back / kinder" nuance moved INTO the meditation itself (MED_SEC.firstsit) since it is an instruction, not a preamble (David 2026-07-09). Both gates + adversarial judge.
