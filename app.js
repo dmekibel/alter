@@ -9467,7 +9467,8 @@
       history: "#5fb0ff", screen: "#ff5fa8", meditation: "#ffd24a", mantra: "#ffd24a", words: "#5fb0ff", learned: "#ff5fa8", mind: "#5fb0ff", doubts: "#ff5fa8", picking: "#ffd24a",
       monologue: "#ffd24a", trance: "#ff5fa8", psychosis: "#ff5fa8", senses: "#5fb0ff", wandering: "#5fb0ff", unhappiness: "#ff5fa8", movie: "#ffd24a", theater: "#ffd24a",
       belief: "#ffd24a", beliefs: "#ffd24a", repeated: "#ff5fa8", repetition: "#ff5fa8", subconscious: "#5fb0ff", autopilot: "#ff5fa8", obey: "#ff5fa8", invisible: "#5fb0ff", wants: "#ffd24a",
-      alarm: "#ff5fa8", lion: "#ffd24a", loop: "#ff5fa8", churning: "#ff5fa8", npc: "#ff5fa8", human: "#ffd24a", awake: "#ffd24a", waking: "#ffd24a" };
+      alarm: "#ff5fa8", lion: "#ffd24a", loop: "#ff5fa8", churning: "#ff5fa8", npc: "#ff5fa8", human: "#ffd24a", awake: "#ffd24a", waking: "#ffd24a",
+      breath: "#5fb0ff", breathing: "#5fb0ff", release: "#c77dff", stress: "#ff5fa8", sit: "#46e2a4", churn: "#ff5fa8", "true": "#ffd24a", line: "#5fb0ff", muscle: "#c77dff" };
     var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15, trance: 1.18, theater: 1.15, belief: 1.18, beliefs: 1.18, subconscious: 1.15, autopilot: 1.15, alarm: 1.15, awake: 1.15, npc: 1.18 };
     function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
@@ -9491,20 +9492,20 @@
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
     var commit = { body: 60, medit: 60, mantra: 60 }; // seconds committed per chapter; set by the asks, fine-tuned on the review
     function showHook() { narrate(HOOK, "Next", askBody); } // PAGE 1: the body-tension hook
-    function askBody() { timeAsk("body", "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.", showMindSetup, showHook); }
+    function askBody() { timeAsk("body", "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.", 60, showMindSetup, showHook); }
     function showMindSetup() { narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
-    function askMedit() { timeAsk("medit", "Now let me guide you through a short sit. A minute is enough to catch yourself in the churn and step back out.", showMantraSetup, showMindSetup); }
+    function askMedit() { timeAsk("medit", "After the breathing and muscle release, I recommend a short sit. A minute is enough to catch yourself in the churn and step back out.", 120, showMantraSetup, showMindSetup); }
     function showMantraSetup() { narrate(SETUP3, "Next", askMantra, { per: 0.08, back: askMedit }); } // PAGE 3: mantra (the belief machinery)
-    function askMantra() { timeAsk("mantra", "Now let me guide you through your first mantra. One line, chosen on purpose, repeated until it starts to feel true.", showStackReview, showMantraSetup); }
-    function timeAsk(kind, intro, next, back) { clearBoth(); if (back) addBack(back); // LEAD with what I'll guide you through + why it works (David 2026-07-10: the old menu was vague), THEN the time, as chunky game-piece chips.
+    function askMantra() { timeAsk("mantra", "After the sit, I recommend a mantra. One line, chosen on purpose, repeated until it starts to feel true.", 60, showStackReview, showMantraSetup); }
+    function timeAsk(kind, intro, rec, next, back) { clearBoth(); if (back) addBack(back); // LEAD with the guided-practice recommendation (animated, multi-colored), THEN a COLORFUL pill row; the recommended time glows (David 2026-07-10: the yellow-button menu was ugly + boring).
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;margin-top:4px;gap:8px;";
       animLines(iw, [intro], 0.2, 0.055); try { speak(tr(intro)); } catch (e) {}
       add(body, "div", "ob-sb", tr("How much time can you give it?")).style.cssText = "text-align:center;margin-top:16px;font-weight:800;opacity:.85;";
-      var grid = add(body, "div"); grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:11px;width:100%;max-width:320px;margin-top:10px;";
-      [["30 sec", 30], ["1 min", 60], ["2 min", 120], ["3 min", 180]].forEach(function (o) { var b = add(grid, "button"); b.textContent = tr(o[0]);
-        b.style.cssText = "min-height:64px;border:2px solid #160510;border-radius:15px;background:linear-gradient(#ffd76a,#ffc83d);color:#160510;box-shadow:0 3px 0 #160510;font-weight:900;font-size:18px;cursor:pointer;transition:transform .08s;";
+      var row = add(body, "div"); row.style.cssText = "display:flex;gap:9px;justify-content:center;width:100%;max-width:340px;margin-top:12px;";
+      [[30, "30s", "#5fb0ff"], [60, "1 min", "#c77dff"], [120, "2 min", "#ff5fa8"], [180, "3 min", "#ffc83d"]].forEach(function (o) { var b = add(row, "button"); b.textContent = tr(o[1]); var isRec = (o[0] === rec);
+        b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + o[2] + ";color:#160510;box-shadow:0 3px 0 #160510" + (isRec ? ",0 0 0 3px #ffd76a,0 0 15px " + o[2] : "") + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .08s;" + (isRec ? "transform:translateY(-3px);" : "");
         b.onpointerdown = function () { b.style.transform = "translateY(2px)"; b.style.boxShadow = "0 1px 0 #160510"; };
-        b.onclick = function (e) { if (e) e.stopPropagation(); commit[kind] = o[1]; next(); }; });
+        b.onclick = function (e) { if (e) e.stopPropagation(); commit[kind] = o[0]; next(); }; });
     }
     function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): show the whole stack + the time already committed, the order/momentum note, per-piece adjust, then ONE press-hold to commit to all three.
       add(body, "div", "ob-q", tr("Your first stack"));
