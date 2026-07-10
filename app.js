@@ -9496,7 +9496,7 @@
     function showMindSetup() { narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
     function askMedit() { timeAsk("medit", "After the breathing and muscle release, I recommend a short sit. A minute is enough to catch yourself in the churn and step back out.", 120, showMantraSetup, showMindSetup); }
     function showMantraSetup() { narrate(SETUP3, "Next", askMantra, { per: 0.08, back: askMedit }); } // PAGE 3: mantra (the belief machinery)
-    function askMantra() { timeAsk("mantra", "After the sit, I recommend a mantra. One line, chosen on purpose, repeated until it starts to feel true.", 60, showStackReview, showMantraSetup); }
+    function askMantra() { timeAsk("mantra", "After the sit, I recommend a mantra. A short set of chosen beliefs, each one built to answer a doubt and feed your subconscious something you would pick on purpose.", 60, showStackReview, showMantraSetup); }
     function timeAsk(kind, intro, rec, next, back) { clearBoth(); if (back) addBack(back); // LEAD with the guided-practice recommendation (animated, multi-colored), THEN a COLORFUL pill row; the recommended time glows (David 2026-07-10: the yellow-button menu was ugly + boring).
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;margin-top:4px;gap:8px;";
       animLines(iw, [intro], 0.2, 0.055); try { speak(tr(intro)); } catch (e) {}
@@ -9524,9 +9524,10 @@
       ROWS.forEach(function (t) { var r = add(wrap, "div", "obv-row"); r.style.setProperty("--oc", t.c); r.style.minHeight = "52px";
         r.innerHTML = '<i class="ti ' + t.ic + ' oi"></i><span class="ol">' + esc(tr(t.nm)) + '</span>';
         var ctrl = add(r, "span"); ctrl.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:8px;";
-        var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:17px;";
-        var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:42px;text-align:center;font-variant-numeric:tabular-nums;";
-        var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = "padding:6px 8px;background:none;border:none;color:inherit;font-size:17px;";
+        var stepCss = "width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:" + t.c + "22;border:1.5px solid " + t.c + ";color:" + t.c + ";font-size:16px;cursor:pointer;flex:none;"; // steppers wear the activity color so they read (David 2026-07-10: they were muted + hard to see)
+        var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
+        var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:46px;text-align:center;font-variant-numeric:tabular-nums;color:" + t.c + ";font-weight:900;font-size:16px;";
+        var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
         mn.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.max(30, commit[t.k] - 30); du.textContent = fmt(commit[t.k]); updTot(); };
         pl.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.min(600, commit[t.k] + 30); du.textContent = fmt(commit[t.k]); updTot(); }; });
       totEl = add(body, "div"); totEl.style.cssText = "text-align:center;font-weight:900;font-size:20px;color:#ffcf6a;letter-spacing:.5px;margin-top:14px;"; updTot();
@@ -9558,12 +9559,10 @@
       "We talk to ourselves all day long, silently. An endless inner monologue, narrating our lives.",
       "Being lost in thought is more than a distraction. It is a kind of waking trance, where you lose touch with your own body.",
       "We spend nearly 50% of our lives in this state of mental wandering, which is consistently linked to unhappiness." ];
-    var SETUP3 = [
-      "A belief is just a thought repeated until it feels true. The subconscious cannot tell truth from repetition. It records whatever gets fed in often enough, and plays it back. And on autopilot, nobody is choosing what gets fed in.",
-      "And a thought repeated long enough stops feeling like a thought at all. It feels like the way things are. That is why your worst beliefs are invisible: you never argue with them, you just obey.",
-      "Most were recorded before you were ten, when you believed whatever the adults around you repeated. They have been running ever since.",
-      "Beliefs always win over your wants. You can want confidence all day while a thought repeated ten thousand times says otherwise.",
-      "A mantra runs the same machinery in your favor: for once, you choose the thought that gets fed in, and repeat it with feeling, until it feels true too." ];
+    var SETUP3 = [ // David 2026-07-10: cut from 5 lines to 3, his mantra line at the end in its fuller form.
+      "A belief is just a thought repeated until it feels true. The mind cannot tell truth from repetition, so it keeps whatever it hears most, and plays it back.",
+      "The loudest are the doubts you never chose, recorded before you were ten and running ever since. Beliefs always win over your wants.",
+      "A mantra is you consciously choosing the thoughts that get fed into your subconscious, instead of letting them run on autopilot." ];
     var AFTER_LOOP = [
       "Here is the loop you just stepped out of. A worry is theoretical, but the body cannot tell: it fires the same alarm for an email as for a lion, and a lion is gone in minutes while a dreaded Monday can run the alarm for weeks.",
       "The alarm changes your breath: short, shallow, up in the chest. And that breathing keeps the alarm on, which keeps the mind churning, which keeps the breath shallow. A closed loop, feeding itself all day.",
