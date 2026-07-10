@@ -9631,6 +9631,13 @@
       alarm: "#ff5fa8", lion: "#ffd24a", loop: "#ff5fa8", churning: "#ff5fa8", npc: "#ff5fa8", human: "#ffd24a", awake: "#ffd24a", waking: "#ffd24a",
       breath: "#5fb0ff", breathing: "#5fb0ff", release: "#c77dff", stress: "#ff5fa8", sit: "#46e2a4", churn: "#ff5fa8", "true": "#ffd24a", line: "#5fb0ff", muscle: "#c77dff" };
     var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15, trance: 1.18, theater: 1.15, belief: 1.18, beliefs: 1.18, subconscious: 1.15, autopilot: 1.15, alarm: 1.15, awake: 1.15, npc: 1.18 };
+    Object.assign(HUES_ALL, { // RU KEY WORDS (David 2026-07-11): animLines matches emphasis by lowercase word, so the Russian forms need their own colors to get the same beautiful treatment. Same scheme: pink = tension/alarm/loop, yellow = concept, blue = body/breath/time, purple = release.
+      "напряжение": "#ff5fa8", "взводе": "#ff5fa8", "транс": "#ff5fa8", "несчастья": "#ff5fa8", "тревога": "#ff5fa8", "тревогу": "#ff5fa8", "петля": "#ff5fa8", "петлю": "#ff5fa8", "автопилоте": "#ff5fa8", "внимание": "#ff5fa8", "болванчика": "#ff5fa8", "сомнения": "#ff5fa8", "повтора": "#ff5fa8", "изменил": "#ff5fa8", "стресс": "#ff5fa8",
+      "характер": "#ffd24a", "монолог": "#ffd24a", "мысль": "#ffd24a", "мыслях": "#ffd24a", "мысли": "#ffd24a", "убеждение": "#ffd24a", "убеждения": "#ffd24a", "желаний": "#ffd24a", "льва": "#ffd24a", "мантра": "#ffd24a", "мантру": "#ffd24a", "навык": "#ffd24a", "человека": "#ffd24a", "твой": "#ffd24a",
+      "тело": "#5fb0ff", "теле": "#5fb0ff", "телом": "#5fb0ff", "дыхание": "#5fb0ff", "выдох": "#5fb0ff", "подсознание": "#5fb0ff", "блуждании": "#5fb0ff", "завтра": "#5fb0ff",
+      "расслабление": "#c77dff", "мышц": "#c77dff"
+    });
+    Object.assign(BIG_ALL, { "напряжение": 1.24, "характер": 1.18, "транс": 1.18, "монолог": 1.15, "убеждение": 1.18, "мантра": 1.18, "тревога": 1.18, "внимание": 1.2, "человека": 1.15, "болванчика": 1.18, "петля": 1.15, "навык": 1.15, "изменил": 1.2 });
     function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
       lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
         tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
