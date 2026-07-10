@@ -9515,7 +9515,7 @@
       setTimeout(function () { body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); b.classList.remove("asleep"); b.classList.add("ignite"); body.onclick = null; }; }, 90);
     }
     // FLOW (David 2026-07-10): each teaching page is followed IMMEDIATELY by its own tiny time-commit, so the person relates the page to its practice and commits in three small yeses. Then a review of the whole stack (with the order/momentum note) and ONE press-hold. educate -> commit -> educate -> commit -> educate -> commit -> review -> hold -> run -> after.
-    var commit = { body: 60, medit: 60, mantra: 60 }; // seconds committed per chapter; set by the asks, fine-tuned on the review
+    var commit = { breath: 30, relax: 30, medit: 60, mantra: 30 }; // seconds PER ACTIVITY (breath + relax separate now, David 2026-07-10); set by the asks, fine-tuned on the review. mins: breath/relax/mantra 20, meditation 30.
     function showHook() { narrate(HOOK, "Next", askBody); } // PAGE 1: the body-tension hook
     function askBody() { timeAsk("body", "Let me guide you through a slow breath and a muscle release. It is the fastest switch your body has for calling off the stress response.", 60, showMindSetup, showHook); }
     function showMindSetup() { narrate(SETUP2, "Next", askMedit, { per: 0.08, back: askBody }); } // PAGE 2: meditation (the trance)
@@ -9536,17 +9536,18 @@
         var sh = isSel ? "0 0 0 3px #ffd76a,0 0 16px " + b._col : "0 3px 0 #160510";
         b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + b._col + ";color:#160510;box-shadow:" + sh + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .1s,box-shadow .1s;opacity:" + (isSel ? "1" : ".78") + ";" + (isSel ? "transform:scale(1.05);" : ""); }); }
       paint();
-      var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { commit[kind] = sel; next(); };
+      var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = function () { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); }; // the body ask feeds breath + relax (each half the pick, min 20)
     }
     function showStackReview() { clearBoth(); addBack(askMantra); // THE REVIEW (David 2026-07-10): show the whole stack + the time already committed, the order/momentum note, per-piece adjust, then ONE press-hold to commit to all three.
       add(body, "div", "ob-q", tr("Your first stack"));
       add(body, "div", "ob-sb", tr("Best in this order. Each one settles you for the next, and the momentum carries.")).style.cssText = "text-align:center;margin-top:6px;max-width:330px;line-height:1.45;font-size:14px;";
-      var ROWS = [ { k: "body", nm: "Breathe and relax", ic: "ti-lungs", c: "#5fb0ff" },
-        { k: "medit", nm: "Meditation", ic: "ti-yoga", c: "#46e2a4" },
-        { k: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d" } ];
+      var ROWS = [ { k: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", min: 20 },
+        { k: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", min: 20 },
+        { k: "medit", nm: "Meditation", ic: "ti-yoga", c: "#46e2a4", min: 30 },
+        { k: "mantra", nm: "Mantra", ic: "ti-quote", c: "#ffc83d", min: 20 } ];
       function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m ? (m + ":" + (r < 10 ? "0" : "") + r) : (r + "s"); }
       var totEl;
-      function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(commit.body + commit.medit + commit.mantra); }
+      function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(commit.breath + commit.relax + commit.medit + commit.mantra); }
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px;margin-top:14px;";
       ROWS.forEach(function (t) { var r = add(wrap, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;"; // FULL activity-color game piece (David 2026-07-10: the muted rows were ugly)
         r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:21px;"></i><span style="font-weight:800;font-size:15px;">' + esc(tr(t.nm)) + '</span>';
@@ -9555,8 +9556,8 @@
         var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
         var du = add(ctrl, "b"); du.textContent = fmt(commit[t.k]); du.style.cssText = "min-width:46px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:16px;";
         var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
-        mn.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.max(30, commit[t.k] - 30); du.textContent = fmt(commit[t.k]); updTot(); };
-        pl.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.min(600, commit[t.k] + 30); du.textContent = fmt(commit[t.k]); updTot(); }; });
+        mn.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.max(t.min, commit[t.k] - 10); du.textContent = fmt(commit[t.k]); updTot(); };
+        pl.onclick = function (e) { e.stopPropagation(); commit[t.k] = Math.min(600, commit[t.k] + 10); du.textContent = fmt(commit[t.k]); updTot(); }; });
       totEl = add(body, "div"); totEl.style.cssText = "text-align:center;font-weight:900;font-size:20px;color:#ffcf6a;letter-spacing:.5px;margin-top:14px;"; updTot();
       add(body, "div", "ob-sb", tr("Press and hold to lock it in.")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;";
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none"; pw.style.marginTop = "6px";
@@ -9564,11 +9565,10 @@
       var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
       function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
       pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
-        var half = Math.round(commit.body / 2);
-        var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: Math.max(15, half) },
-          { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(15, commit.body - half) },
-          { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: Math.max(15, commit.medit), med: [{ k: "firstsit" }] },
-          { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: Math.max(15, commit.mantra) } ];
+        var list = [ { id: "breath", nm: "Breathe", ic: "ti-lungs", c: "#5fb0ff", secs: Math.max(20, commit.breath) },
+          { id: "relax", nm: "Relax the muscles", ic: "ti-ripple", c: "#c77dff", secs: Math.max(20, commit.relax) },
+          { id: "medit", nm: "Sit in stillness", ic: "ti-yoga", c: "#46e2a4", secs: Math.max(30, commit.medit), med: [{ k: "firstsit" }] },
+          { id: "mantra", nm: "A line to carry", ic: "ti-quote", c: "#ffc83d", secs: Math.max(20, commit.mantra) } ];
         beginStack(list);
       }, _hMs); });
       pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
