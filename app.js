@@ -4895,8 +4895,8 @@
     function stdFoot(label, canSkip, btnDelay) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; skipB.style.display = (canSkip !== false) ? "" : "none";
       // REVEAL ORDER (David 2026-07-11): text is already in; the option tiles rise in ONE AT A TIME, then the Next button appears LAST — like the first stone. btnDelay overrides for text-only screens (button after the text).
       var tiles = Array.prototype.slice.call(body.querySelectorAll(".obv-tile, .obv-row")), d0 = 0.16;
-      tiles.forEach(function (t, i) { if (t.parentNode) t.parentNode.style.animation = "none"; t.style.animation = "obRise .4s cubic-bezier(.34,1.42,.5,1) both"; t.style.animationDelay = (d0 + i * 0.06).toFixed(2) + "s"; });
-      b.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; b.style.animationDelay = ((btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1)).toFixed(2) + "s";
+      tiles.forEach(function (t, i) { if (t.parentNode) t.parentNode.style.animation = "none"; t.style.opacity = "0"; t.style.animation = "obRise .4s cubic-bezier(.34,1.42,.5,1) both"; t.style.animationDelay = (d0 + i * 0.06).toFixed(2) + "s"; });
+      b.style.opacity = "0"; b.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; b.style.animationDelay = ((btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1)).toFixed(2) + "s"; // opacity:0 up front kills the iOS first-frame flash (backwards-fill lag) that made the button appear-then-disappear
       return b; } // Next = full-width ob-btn; skip lives top-right
     function finishV2() {
       S.profile = S.profile || {}; var P = S.profile;
@@ -9545,7 +9545,7 @@
       for (var b = 0; b < barFills.length; b++) { var f = barFills[b]; if (b < i) { f.style.transition = "none"; f.style.width = "100%"; } else if (b > i) { f.style.transition = "none"; f.style.width = "0%"; } } // past = SNAP full instantly (skipping forward completes the previous bar at once), future = CUT to empty instantly (going back doesn't animate down) — David 2026-07-11; only the current bar animates (fillBar)
       fillBar(0.5); } // default fill for screens without an animated cascade (the review); narrate/timeAsk re-drive the current bar over the TEXT-REVEAL time so it fills at the reading pace, then holds
     function fillBar(sec) { var f = barFills[_curStep]; if (!f) return; f.style.transition = "none"; f.style.width = "0%"; void f.offsetWidth; f.style.transition = "width " + Math.max(0.15, sec || 0.5) + "s linear"; f.style.width = "100%"; } // fill the CURRENT bar 0->100 over `sec` (the cascade duration), IG-story style, then hold — no auto-advance (you click Next)
-    function riseIn(el, delaySec) { if (!el) return; el.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; el.style.animationDelay = Math.max(0, delaySec || 0).toFixed(2) + "s"; } // staggered spring reveal (David 2026-07-11): inline animation OVERRIDES the .ob-body>* obPop so buttons/rows come in one at a time, after the text
+    function riseIn(el, delaySec) { if (!el) return; el.style.opacity = "0"; el.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; el.style.animationDelay = Math.max(0, delaySec || 0).toFixed(2) + "s"; } // staggered spring reveal (David 2026-07-11): opacity:0 up front kills the iOS first-frame flash; inline animation OVERRIDES the .ob-body>* obPop so things come in one at a time, after the text
     function hideBars() { barsWrap.style.display = "none"; }
     buildBars(7);
     // THE SINGLE INTO-THE-STACK SWIPE: one listener pair on the persistent body, armed only while reviewSwipeIn is set (showStackReview sets it, clearBoth nulls it). Swipe-left off the review = enter the stack (the IG-continuous twin of the press-hold). Horizontal-dominant only; ignored on the ring / buttons.
