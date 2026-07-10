@@ -4894,9 +4894,11 @@
     function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } drawObV2(); }
     function stdFoot(label, canSkip, btnDelay) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; skipB.style.display = (canSkip !== false) ? "" : "none";
       // REVEAL ORDER (David 2026-07-11): text is already in; the option tiles rise in ONE AT A TIME, then the Next button appears LAST — like the first stone. btnDelay overrides for text-only screens (button after the text).
+      // REVEAL (David 2026-07-11): tiles fade/rise in one at a time, then the Next button LAST. JS sets opacity:1 after the delay (setTimeout) — fails VISIBLE, never the stuck-invisible / flash the CSS-animation approach caused on iOS.
       var tiles = Array.prototype.slice.call(body.querySelectorAll(".obv-tile, .obv-row")), d0 = 0.16;
-      tiles.forEach(function (t, i) { if (t.parentNode) t.parentNode.style.animation = "none"; t.style.opacity = "0"; t.style.animation = "obRise .4s cubic-bezier(.34,1.42,.5,1) both"; t.style.animationDelay = (d0 + i * 0.06).toFixed(2) + "s"; });
-      b.style.opacity = "0"; b.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; b.style.animationDelay = ((btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1)).toFixed(2) + "s"; // opacity:0 up front kills the iOS first-frame flash (backwards-fill lag) that made the button appear-then-disappear
+      function reveal(el, delaySec) { el.style.animation = "none"; el.style.opacity = "0"; el.style.transition = "opacity .34s ease"; setTimeout(function () { el.style.opacity = "1"; }, Math.round(Math.max(0, delaySec) * 1000)); }
+      tiles.forEach(function (t, i) { if (t.parentNode) t.parentNode.style.animation = "none"; reveal(t, d0 + i * 0.06); });
+      reveal(b, (btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1));
       return b; } // Next = full-width ob-btn; skip lives top-right
     function finishV2() {
       S.profile = S.profile || {}; var P = S.profile;
@@ -4973,7 +4975,7 @@
         ib.onclick = function () { // BEAT 1 -> BEAT 2 (SPEC-FIRST-DAY-REDESIGN): the guided breath is the first earned win now; theOpen stays the DAILY ceremony only (day 2+)
           if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} }
           next(); };
-        body.onclick = function () { iw.classList.add("obi-fast"); ib.style.animationDelay = "0s"; body.onclick = null; }; // restless thumbs fast-forward: text + button appear at once
+        body.onclick = function () { iw.classList.add("obi-fast"); ib.style.transition = "none"; ib.style.opacity = "1"; body.onclick = null; }; // restless thumbs fast-forward: text + button appear at once
         return; }
       if (B.t === "stackintro") { // frame the guided micro-session so it doesn't cold-open on a form (David 2026-07-07: "not clear we're doing onboarding")
         obMark(body, 120);
@@ -9545,7 +9547,7 @@
       for (var b = 0; b < barFills.length; b++) { var f = barFills[b]; if (b < i) { f.style.transition = "none"; f.style.width = "100%"; } else if (b > i) { f.style.transition = "none"; f.style.width = "0%"; } } // past = SNAP full instantly (skipping forward completes the previous bar at once), future = CUT to empty instantly (going back doesn't animate down) — David 2026-07-11; only the current bar animates (fillBar)
       fillBar(0.5); } // default fill for screens without an animated cascade (the review); narrate/timeAsk re-drive the current bar over the TEXT-REVEAL time so it fills at the reading pace, then holds
     function fillBar(sec) { var f = barFills[_curStep]; if (!f) return; f.style.transition = "none"; f.style.width = "0%"; void f.offsetWidth; f.style.transition = "width " + Math.max(0.15, sec || 0.5) + "s linear"; f.style.width = "100%"; } // fill the CURRENT bar 0->100 over `sec` (the cascade duration), IG-story style, then hold — no auto-advance (you click Next)
-    function riseIn(el, delaySec) { if (!el) return; el.style.opacity = "0"; el.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; el.style.animationDelay = Math.max(0, delaySec || 0).toFixed(2) + "s"; } // staggered spring reveal (David 2026-07-11): opacity:0 up front kills the iOS first-frame flash; inline animation OVERRIDES the .ob-body>* obPop so things come in one at a time, after the text
+    function riseIn(el, delaySec) { if (!el) return; el.style.animation = "none"; el.style.opacity = "0"; el.style.transform = "translateY(12px)"; el.style.transition = "opacity .34s ease, transform .38s cubic-bezier(.34,1.42,.5,1)"; setTimeout(function () { el.style.opacity = "1"; el.style.transform = "none"; }, Math.round(Math.max(0, delaySec || 0) * 1000)); } // staggered reveal (David 2026-07-11): JS sets opacity:1 after the delay (fails VISIBLE, never stuck-invisible like CSS animation fill-mode did on iOS); setTimeout fires even in a hidden tab, so it's verifiable
     function hideBars() { barsWrap.style.display = "none"; }
     buildBars(7);
     // THE SINGLE INTO-THE-STACK SWIPE: one listener pair on the persistent body, armed only while reviewSwipeIn is set (showStackReview sets it, clearBoth nulls it). Swipe-left off the review = enter the stack (the IG-continuous twin of the press-hold). Horizontal-dominant only; ignored on the ring / buttons.
