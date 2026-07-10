@@ -4863,17 +4863,22 @@
     BEATS.push({ t: "voice" }, { t: "constel" }, { t: "plan" }, { t: "seed" }); // TRIMMED (David 2026-07-09): PLANTOM + MINT cut, VOICE pulled up next to the questions. Flow = questions -> voice -> single recap -> starter plan -> close. The echo/plantom/mint/gate handlers stay defined but are no longer scheduled.
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    // PROGRESS BAR (David 2026-07-09: symmetrical + whole-flow) — ONE continuous row of equal ticks, one per screen after the intro. Fills exactly at the final beat, so it can never read "done" while pages remain. Replaces the uneven 3-section battery.
-    var bar = add(card, "div", "obv-bar");
-    var backB = add(bar, "button", "ob-back"); backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; bi2--; drawObV2(); };
+    // PROGRESS BAR (David 2026-07-11): the first-stone's COLORED IG-story carousel bars — one per non-intro beat, tinted to its section (you=purple · energy=orange · way=blue) or its accent; dark-tint track, bright fill when reached. Back chevron + skip sit BELOW the bars (top-left / top-right) like the intro stone; side-click nav ported too.
+    var BEAT_COL = { pace: "#ff5fa8", voice: "#ffd24a", constel: "#46e2a4", plan: "#ff8a3a", seed: "#ff5fa8" };
+    var bar = add(ov, "div", "obv-bar"); // on OV (not the card) so its fixed top isn't anchored to the card's popIn transform — pins to the viewport top like the intro stone
     var track = add(bar, "div", "obv-cells"); track.style.flex = "1"; var tickEls = [];
-    for (var _tk = 1; _tk < BEATS.length; _tk++) tickEls.push(add(track, "div", "obv-cell")); // one equal tick per non-intro beat
+    for (var _tk = 1; _tk < BEATS.length; _tk++) { var _B = BEATS[_tk], _cc = (_B.t === "q") ? ((SECTIONS[_B.q.sec] || {}).c || "#b07aff") : (BEAT_COL[_B.t] || "#b07aff"); var _cell = add(track, "div", "obv-cell"); _cell._c = _cc; _cell.style.background = mixHex(_cc, "#160510", 0.62); tickEls.push(_cell); } // one COLORED tick per non-intro beat
+    var backB = add(ov, "button", "ob-back"); backB.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:12px;z-index:7;"; backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; bi2--; drawObV2(); }; // append to OV not the card (the card's popIn transform would anchor position:fixed to itself); sits BELOW the bars like the intro stone
+    var skipB = add(ov, "button", "ob-skip"); skipB.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 32px);right:14px;z-index:7;display:none;"; skipB.textContent = tr("skip"); skipB.onclick = function () { finishV2(); }; // top-right, mirroring the back chevron
+    ov.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest("button, input, textarea, [contenteditable]")) return; var W = window.innerWidth || 375, x = (e.clientX != null ? e.clientX : W / 2); // TAP NAV (David 2026-07-11): left third = back, right third = advance (only when Next is awake), like the first stone
+      if (x < W * 0.30) { if (bi2 > 0 && backB.style.visibility !== "hidden") backB.click(); }
+      else if (x > W * 0.70) { var pb = foot.querySelector(".ob-btn"); if (pb && !pb.classList.contains("asleep")) pb.click(); } });
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     // THE POINTS PLACE (David 2026-07-04): one corner counter — every earned spark flies HERE, never to the progress bar
     d2.pts = 0; var ptsEl = add(card, "div", "ob-pts"); ptsEl.innerHTML = '<i class="ti ti-sparkles"></i><b>0</b>'; ptsEl.style.display = "none";
     function awardPts(n, skipEarn) { d2.pts += n; if (!skipEarn) { try { earn(n, { label: "onboard-award" }); } catch (e) {} } ptsEl.style.display = ""; var bc = ptsEl.querySelector("b"); if (bc) bc.textContent = d2.pts; ptsEl.classList.remove("pop"); ptsEl.classList.remove("rain"); void ptsEl.offsetWidth; ptsEl.classList.add("pop"); ptsEl.classList.add("rain"); setTimeout(function () { ptsEl.classList.remove("rain"); }, 1150); }
     function secAward(si, fromEl) { if (d2._sd[si]) return; var done = QS.filter(function (q) { return q.sec === si; }).every(function (q) { return q.multi ? (d2[q.key] && d2[q.key].length) : !!d2[q.key]; }); if (!done) return; d2._sd[si] = 1; obConfetti(fromEl, 6); } // points land at MOMENTS, not every tap (David: per-step points = cheesy)
-    function paintBar() { for (var i = 0; i < tickEls.length; i++) tickEls[i].classList.toggle("on", i < bi2); } // tick i <-> beat i+1; lit once reached, all lit at the final beat
+    function paintBar() { for (var i = 0; i < tickEls.length; i++) { var on = i < bi2; tickEls[i].style.background = on ? tickEls[i]._c : mixHex(tickEls[i]._c, "#160510", 0.62); tickEls[i].classList.toggle("on", on); } } // tick i <-> beat i+1; lit (bright color) once reached, dark-tint track otherwise
     function obConfetti(fromEl, pts, skipEarn) { // SPARK CONFETTI (locked D+glow) — fired only at award MOMENTS; carries its points into THE POINTS PLACE
       try {
         ptsEl.style.display = ""; var tgt = ptsEl; if (!fromEl) return;
@@ -4890,7 +4895,7 @@
       } catch (e) {}
     }
     function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } drawObV2(); }
-    function stdFoot(label, canSkip) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; if (canSkip !== false) { var sk = add(foot, "button", "ob-skip", tr("skip")); sk.onclick = finishV2; } return b; }
+    function stdFoot(label, canSkip) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; skipB.style.display = (canSkip !== false) ? "" : "none"; return b; } // Next = full-width ob-btn (like the first stone); skip lives top-right now
     function finishV2() {
       S.profile = S.profile || {}; var P = S.profile;
       if (d2.name) P.name = d2.name;
@@ -4947,7 +4952,7 @@
     }
     function drawObV2() {
       paintBar(); body.innerHTML = ""; foot.innerHTML = "";
-      backB.style.visibility = bi2 > 0 ? "" : "hidden";
+      backB.style.visibility = bi2 > 0 ? "" : "hidden"; skipB.style.display = "none"; // each beat's stdFoot re-shows skip if allowed
       var B = BEATS[bi2];
       track.style.visibility = (B.t === "intro") ? "hidden" : ""; // the whole-flow bar shows on every screen except the immersive intro hook; it fills exactly at the final beat
       ov.setAttribute("data-sec", ""); // BIOME ROOM-TINT REMOVED (David 2026-07-09: "don't like the biome idea for onboarding"). Questions render in the established clean-card style, no per-section screen wash. The 'burst' reward tint is still set by the write beat itself.
@@ -9536,9 +9541,10 @@
     var BAR_COLS_OUTRO = ["#8fe6a8", "#ffc83d", "#ff5fa8"]; // proof (done-green) · the loop (gold) · attention (pink)
     function buildBars(n) { while (barsWrap.firstChild) barsWrap.removeChild(barsWrap.firstChild); barFills = []; var cols = (n === 3) ? BAR_COLS_OUTRO : BAR_COLS_INTRO; for (var _bi = 0; _bi < n; _bi++) { var c = cols[_bi] || "#c9a6ff"; var _tk = add(barsWrap, "div"); _tk.style.cssText = "flex:1;height:8px;border-radius:4px;background:" + mixHex(c, "#160510", 0.62) + ";overflow:hidden;"; var _fl = add(_tk, "div"); _fl.style.cssText = "height:100%;width:0%;border-radius:4px;background:" + c + ";transition:width .5s cubic-bezier(.4,0,.2,1);"; barFills.push(_fl); } } // thicker rounded COLORED segments (matches the player's gp-story bars), dark-tinted track + bright fill; targeted removeChild rebuild, not an innerHTML wipe
     function setStep(i, n) { n = n || 7; if (n !== barFills.length) buildBars(n); barsWrap.style.display = "flex"; _curStep = i; // INTRO story = 7 beats (default); OUTRO story = 3. NB: "flex" not "" — an empty string REMOVES the property and the row reverts to block (segments stack)
-      for (var b = 0; b < barFills.length; b++) { var f = barFills[b]; if (b < i) { f.style.transition = "width .25s linear"; f.style.width = "100%"; } else if (b > i) { f.style.transition = "width .25s linear"; f.style.width = "0%"; } } // past = held full, future = empty
+      for (var b = 0; b < barFills.length; b++) { var f = barFills[b]; if (b < i) { f.style.transition = "none"; f.style.width = "100%"; } else if (b > i) { f.style.transition = "none"; f.style.width = "0%"; } } // past = SNAP full instantly (skipping forward completes the previous bar at once), future = CUT to empty instantly (going back doesn't animate down) — David 2026-07-11; only the current bar animates (fillBar)
       fillBar(0.5); } // default fill for screens without an animated cascade (the review); narrate/timeAsk re-drive the current bar over the TEXT-REVEAL time so it fills at the reading pace, then holds
     function fillBar(sec) { var f = barFills[_curStep]; if (!f) return; f.style.transition = "none"; f.style.width = "0%"; void f.offsetWidth; f.style.transition = "width " + Math.max(0.15, sec || 0.5) + "s linear"; f.style.width = "100%"; } // fill the CURRENT bar 0->100 over `sec` (the cascade duration), IG-story style, then hold — no auto-advance (you click Next)
+    function riseIn(el, delaySec) { if (!el) return; el.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; el.style.animationDelay = Math.max(0, delaySec || 0).toFixed(2) + "s"; } // staggered spring reveal (David 2026-07-11): inline animation OVERRIDES the .ob-body>* obPop so buttons/rows come in one at a time, after the text
     function hideBars() { barsWrap.style.display = "none"; }
     buildBars(7);
     // THE SINGLE INTO-THE-STACK SWIPE: one listener pair on the persistent body, armed only while reviewSwipeIn is set (showStackReview sets it, clearBoth nulls it). Swipe-left off the review = enter the stack (the IG-continuous twin of the press-hold). Horizontal-dominant only; ignored on the ring / buttons.
@@ -9613,9 +9619,9 @@
     function timeAsk(kind, intro, rec, next, back) { clearBoth(); var goingBack = _goingBack; _goingBack = false; if (back) addBack(back); // LEAD with the guided-practice recommendation (animated, multi-colored), THEN a COLORFUL pill row; the recommended time glows (David 2026-07-10: the yellow-button menu was ugly + boring).
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;margin-top:4px;gap:8px;";
       var t0 = animLines(iw, [intro], 0.2, 0.055); if (goingBack) { iw.classList.add("obi-fast"); fillBar(0.12); } else { try { speak(tr(intro)); } catch (e) {} fillBar(t0); } // forward = cascade + paced bar; backward = instant text + full bar
-      add(body, "div", "ob-sb", tr("How much time can you give it?")).style.cssText = "text-align:center;margin-top:16px;font-weight:800;opacity:.85;";
+      var sbEl = add(body, "div", "ob-sb", tr("How much time can you give it?")); sbEl.style.cssText = "text-align:center;margin-top:16px;font-weight:800;opacity:.85;";
       var sel = rec; // SELECT, don't advance (David 2026-07-10): tapping a pill picks it (recommendation pre-selected); the Next button commits. So you can change your mind first.
-      var row = add(body, "div"); row.style.cssText = "display:flex;gap:9px;justify-content:center;width:100%;max-width:340px;margin-top:12px;";
+      var row = add(body, "div"); row.style.cssText = "display:flex;gap:9px;justify-content:center;width:100%;max-width:340px;margin-top:12px;"; row.style.animation = "none"; // the pills reveal one-by-one; the row itself doesn't pop as a block
       var btns = [];
       [[30, "30s", "#5fb0ff"], [60, "1 min", "#c77dff"], [120, "2 min", "#ff5fa8"], [180, "3 min", "#ffc83d"]].forEach(function (o) { var b = add(row, "button"); b.textContent = tr(o[1]); b._secs = o[0]; b._col = o[2]; btns.push(b);
         b.onclick = function (e) { if (e) e.stopPropagation(); sel = o[0]; paint(); }; });
@@ -9624,6 +9630,8 @@
         var sh = isSel ? "0 0 0 3px #ffd76a,0 0 16px " + b._col : "0 3px 0 #160510";
         b.style.cssText = "flex:1;min-height:56px;border:2px solid #160510;border-radius:14px;background:" + b._col + ";color:#160510;box-shadow:" + sh + ";font-weight:900;font-size:15px;cursor:pointer;transition:transform .1s,box-shadow .1s;opacity:" + (isSel ? "1" : ".78") + ";" + (isSel ? "transform:scale(1.05);" : ""); }); }
       paint();
+      // TOP-TO-BOTTOM REVEAL (David 2026-07-11): forward = text cascades first, THEN the label + pills rise in one at a time (spring, not slow); backward = instant. Set AFTER paint() so its cssText rewrite doesn't wipe the animation.
+      if (!goingBack) { var _d0 = t0 + 0.05; riseIn(sbEl, _d0); btns.forEach(function (b, i) { riseIn(b, _d0 + 0.14 + i * 0.08); }); }
       function goNext() { if (kind === "body") { var h = Math.max(20, Math.round(sel / 2)); commit.breath = h; commit.relax = h; } else { commit[kind] = sel; } next(); } // the body ask feeds breath + relax (each half the pick, min 20)
       var go = add(foot, "button", "ob-btn", tr("Next") + " ▸"); go.onclick = goNext;
       navBack = back ? function () { _goingBack = true; back(); } : null; navNext = goNext; navMid = goNext; // side-click nav: left = back (flags backward), right/middle = commit the picked time + advance
@@ -9645,10 +9653,10 @@
       var totEl, pickerOpen = false;
       function updTot() { if (totEl) totEl.textContent = tr("about") + " " + fmt(activeKeys().reduce(function (a, k) { return a + commit[k]; }, 0)); }
       var stepCss = "width:29px;height:29px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.14);border:1.5px solid #160510;color:#160510;font-size:14px;cursor:pointer;flex:none;";
-      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:334px;margin-top:14px;";
+      var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:334px;margin-top:14px;"; wrap.style.animation = "none"; var _rowsAnimed = false; // the rows reveal one-by-one; the block itself doesn't pop
       function render() { while (wrap.firstChild) wrap.removeChild(wrap.firstChild); // targeted removeChild clear (keeps the wipe ratchet flat, not a wipe-and-rebuild)
-        activeKeys().forEach(function (k) { var t = CAT[k];
-          var rw = add(wrap, "div"); rw.style.cssText = "display:flex;align-items:center;gap:9px;"; // row = the colored pill + a detached delete OUTSIDE it (David 2026-07-10: the x sat beside the + and read the same; pull it off the chip into the dark gutter)
+        activeKeys().forEach(function (k, _ri) { var t = CAT[k];
+          var rw = add(wrap, "div"); rw.style.cssText = "display:flex;align-items:center;gap:9px;"; if (!_rowsAnimed) riseIn(rw, 0.12 + _ri * 0.07); // ONE AT A TIME (David 2026-07-11): the "your first stack" rows rise in staggered on first render (not on edits) // row = the colored pill + a detached delete OUTSIDE it (David 2026-07-10: the x sat beside the + and read the same; pull it off the chip into the dark gutter)
           var r = add(rw, "div"); r.style.cssText = "flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;";
           r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:19px;flex:none;"></i><span style="flex:1;min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(tr(t.nm)) + '</span>';
           var ctrl = add(r, "span"); ctrl.style.cssText = "display:flex;align-items:center;gap:6px;flex:none;";
@@ -9664,7 +9672,7 @@
           if (pickerOpen) { var pick = add(wrap, "div"); pick.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;justify-content:center;";
             inactive.forEach(function (k) { var t = CAT[k]; var c = add(pick, "button"); c.innerHTML = '<i class="ti ' + t.ic + '"></i> ' + esc(tr(t.nm)); c.style.cssText = "display:flex;align-items:center;gap:6px;border:2px solid " + t.c + ";border-radius:11px;padding:8px 12px;background:" + t.c + "22;color:#f0e6ef;font-family:var(--bub);font-weight:800;font-size:12.5px;cursor:pointer;"; c.onclick = function (e) { e.stopPropagation(); stackActive[k] = 1; pickerOpen = false; render(); updTot(); }; }); } }
       }
-      render();
+      render(); _rowsAnimed = true; // subsequent renders (stepper / delete / add) don't re-stagger
       totEl = add(body, "div"); totEl.style.cssText = "text-align:center;font-weight:900;font-size:20px;color:#ffcf6a;letter-spacing:.5px;margin-top:14px;"; updTot();
       add(body, "div", "ob-sb", tr("Press and hold to lock it in.")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;";
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none"; pw.style.marginTop = "6px";

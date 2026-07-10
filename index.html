@@ -1978,6 +1978,7 @@
   /* ONBOARDING SPARKLE (epic, 2026-07-03): every step's content pops in staggered — being onboarded should feel ALIVE (Finch, and better) */
   @keyframes obPop{ from{ opacity:0; transform:translateY(10px) scale(.94); } to{ opacity:1; transform:none; } }
   .ob-body > *{ animation:obPop .4s var(--ease-spring) both; }
+  @keyframes obRise{ from{ opacity:0; transform:translateY(15px) scale(.95); } to{ opacity:1; transform:none; } } /* first-stone staggered reveal (David 2026-07-11): text first, then buttons/rows one at a time, spring overshoot */
   .ob-body > *:nth-child(1){ animation-delay:.02s; } .ob-body > *:nth-child(2){ animation-delay:.08s; } .ob-body > *:nth-child(3){ animation-delay:.14s; }
   .ob-body > *:nth-child(4){ animation-delay:.20s; } .ob-body > *:nth-child(5){ animation-delay:.26s; } .ob-body > *:nth-child(6){ animation-delay:.32s; }
   .ob-body > *:nth-child(7){ animation-delay:.38s; } .ob-body > *:nth-child(n+8){ animation-delay:.44s; }
@@ -2010,13 +2011,13 @@
   .gspin{ position:absolute; inset:-58%; animation:obRaySpin 38s linear infinite; z-index:0; pointer-events:none; } /* any living card's ray/foil layer rotates around its center — the gates AND the THIS-IS-YOU profile card (punch-list, David 2026-07-04) */
   .obv-gate .gfoil, .obv-gate .gic, .obv-gate .gk, .obv-gate .gt, .obv-gate .gsub{ position:relative; z-index:1; }
   .obv-gate .gsub{ font-size:13.5px; font-weight:700; color:rgba(255,242,249,.82); margin-top:7px; line-height:1.4; } /* the gate's warm one-liner — why this part matters (punch-list #6) */
-  .obv-bar{ display:flex; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 0; align-items:center; }
+  .obv-bar{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 10px); left:14px; right:14px; z-index:6; display:flex; gap:5px; } /* pinned to the very top like the intro stone; back chevron + skip sit BELOW it */
   .obv-seg{ flex:1; display:flex; flex-direction:column; gap:5px; }
   .obv-seglbl{ font-family:"Jost",sans-serif; font-weight:800; font-size:11px; letter-spacing:1.1px; color:#7a5e72; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .obv-seg.on .obv-seglbl{ color:var(--sc,#ff8fc0); }
-  .obv-cells{ display:flex; gap:3px; }
-  .obv-cell{ flex:1; height:10px; border-radius:4px; border:1.5px solid rgba(255,255,255,.16); background:#33132a; transition:background .3s, box-shadow .3s; }
-  .obv-cell.on{ background:var(--sc,#ffd24a); border-color:#160510; box-shadow:0 0 7px var(--sc,#ffd24a); }
+  .obv-cells{ display:flex; gap:5px; }
+  .obv-cell{ flex:1; height:8px; border-radius:4px; transition:background .25s; } /* colored IG-story bars — track + fill colors set inline per beat */
+  .obv-cell.on{ box-shadow:0 0 6px rgba(255,255,255,.10); }
   /* option TILES — the mood-jewel grammar: every option wears ITS hue on border+icon+label; picked = own-hue striped fill + ink + check */
   .obv-tiles{ display:flex; flex-wrap:wrap; gap:11px; margin-top:22px; justify-content:center; }
   .obv-tile{ flex:1 1 40%; min-width:138px; max-width:184px; display:flex; flex-direction:column; align-items:center; gap:9px; background:#35142a; border:2.5px solid #160510; border-radius:17px; box-shadow:0 5px 0 #160510; padding:18px 12px 15px; cursor:pointer; font-family:"Jost",sans-serif; transition:transform .15s var(--ease-spring), box-shadow .15s; position:relative; }
@@ -2686,6 +2687,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1018"></script>
+  <script src="app.js?v=1019"></script>
 </body>
 </html>
