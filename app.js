@@ -9568,13 +9568,14 @@
       var wrap = add(body, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;max-width:334px;margin-top:14px;";
       function render() { while (wrap.firstChild) wrap.removeChild(wrap.firstChild); // targeted removeChild clear (keeps the wipe ratchet flat, not a wipe-and-rebuild)
         activeKeys().forEach(function (k) { var t = CAT[k];
-          var r = add(wrap, "div"); r.style.cssText = "display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;";
+          var rw = add(wrap, "div"); rw.style.cssText = "display:flex;align-items:center;gap:9px;"; // row = the colored pill + a detached delete OUTSIDE it (David 2026-07-10: the x sat beside the + and read the same; pull it off the chip into the dark gutter)
+          var r = add(rw, "div"); r.style.cssText = "flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:50px;padding:7px 11px;border:2px solid #160510;border-radius:14px;background:" + t.c + ";color:#160510;box-shadow:0 3px 0 #160510;";
           r.innerHTML = '<i class="ti ' + t.ic + '" style="font-size:19px;flex:none;"></i><span style="flex:1;min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(tr(t.nm)) + '</span>';
           var ctrl = add(r, "span"); ctrl.style.cssText = "display:flex;align-items:center;gap:6px;flex:none;";
           var mn = add(ctrl, "button"); mn.innerHTML = '<i class="ti ti-minus"></i>'; mn.style.cssText = stepCss;
           var du = add(ctrl, "b"); du.textContent = fmt(commit[k]); du.style.cssText = "min-width:40px;text-align:center;font-variant-numeric:tabular-nums;color:#160510;font-weight:900;font-size:15px;";
           var pl = add(ctrl, "button"); pl.innerHTML = '<i class="ti ti-plus"></i>'; pl.style.cssText = stepCss;
-          var del = add(ctrl, "button"); del.innerHTML = '<i class="ti ti-x"></i>'; del.style.cssText = "width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(22,5,16,.18);border:1.5px solid #160510;color:#160510;font-size:12px;cursor:pointer;flex:none;margin-left:2px;";
+          var del = add(rw, "button"); del.innerHTML = '<i class="ti ti-x"></i>'; del.style.cssText = "width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;color:#9a7a96;font-size:14px;cursor:pointer;"; // dim, off the chip, in the dark gutter — no longer confusable with the + stepper
           mn.onclick = function (e) { e.stopPropagation(); commit[k] = Math.max(t.min, commit[k] - 10); du.textContent = fmt(commit[k]); updTot(); };
           pl.onclick = function (e) { e.stopPropagation(); commit[k] = Math.min(600, commit[k] + 10); du.textContent = fmt(commit[k]); updTot(); };
           del.onclick = function (e) { e.stopPropagation(); delete stackActive[k]; if (!activeKeys().length) stackActive[k] = 1; render(); updTot(); }; });
