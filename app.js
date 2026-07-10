@@ -4846,7 +4846,7 @@
     // THE MAP — shortened survey (SPEC-FIRST-RUN §2 Phase 3, P2): SIX questions only — address · life-shape · vibe · bed · ingredients · friction. "Serve first, ask after": THE OPEN already gave the felt win, so the ask stays short. Dropped from the survey (2026-07-04): age (unused), words (→ Day-1 Words lesson / Phase 2), peak (deferred), struggles + wants (their personalization now rides ingredients + friction + vibe). Pace is asked FIRST via its own beat, not here.
     var QS = [
       { sec: 0, key: "gender", q: "How should I address you?", opts: [["m", "He", "ti-user", "#5fa8ff"], ["f", "She", "ti-user", "#ff5fa8"], ["x", "Doesn't matter", "ti-sparkles", "#ffd24a"]] },
-      { sec: 0, key: "age", q: "How old are you, roughly?", opts: [["Under 20", "Under 20", "ti-user", "#ffd24a"], ["20s", "20s", "ti-user", "#ff8a3a"], ["30s", "30s", "ti-user", "#ff5fa8"], ["40s", "40s", "ti-user", "#b07aff"], ["50s", "50s", "ti-user", "#5fa8ff"], ["60+", "60+", "ti-user", "#46e2a4"]] }, // BLUEPRINT age band (Phase A). value === display string, so P.age reads "30s" like the demo/char-sheet profiles do.
+      { sec: 0, key: "age", q: "How old are you, roughly?", opts: [["Under 20", "Under 20", "ti-user", "#ffd24a"], ["20-25", "20-25", "ti-user", "#ff8a3a"], ["25-30", "25-30", "ti-user", "#ff5fa8"], ["30-35", "30-35", "ti-user", "#c77dff"], ["35-40", "35-40", "ti-user", "#b07aff"], ["40-50", "40-50", "ti-user", "#5fa8ff"], ["50+", "50+", "ti-user", "#46e2a4"]] }, // BLUEPRINT age band (David 2026-07-11: split into 5-year bands). value === display string, read by the char sheet / AI context.
       { sec: 0, key: "stage", q: "What's your life mostly about right now?", rows: 1, multi: true, opts: [["study", "Studying", "ti-backpack", "#36b3f0"], ["job", "A job", "ti-briefcase", "#7f9bc4"], ["own", "My own thing", "ti-rocket", "#b07aff"], ["home", "Home & family", "ti-home-heart", "#ff5fa8"], ["care", "Caring for someone", "ti-heart-handshake", "#46e2a4"], ["between", "Between chapters", "ti-compass", "#ff8a3a"]] }, // wide-range life shapes — a caregiver and a student both find their tile
       { sec: 0, key: "experience", q: "What have you tried before?", multi: true, opts: [["meditation", "Meditation", "ti-yoga", "#46e2a4"], ["journaling", "Journaling", "ti-pencil", "#ffd24a"], ["therapy", "Therapy", "ti-messages", "#ff5fa8"], ["breathwork", "Breathwork", "ti-lungs", "#5fa8ff"], ["none", "None yet", "ti-seedling", "#b07aff"]] }, // BLUEPRINT practice history. "none" is the exclusive tile (the q-beat handles it); drives the stone's baby-stepping in round 2.
       { sec: 1, key: "vibe", q: "Honestly — how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move — I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do — I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
@@ -4858,21 +4858,18 @@
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
-    var BEATS = [{ t: "intro" }, { t: "pace" }]; // ONBOARDING = QUESTIONS ONLY (David 2026-07-08): the intro micro-stack MOVED OUT of onboarding to become Journey Stone 1 (firstDayStack). Onboarding is now intro (Beat 1 hook) → PACE → survey → plan → seed. The stackintro/stack/stackdone beat handlers stay defined but are no longer scheduled.
-    SECTIONS.forEach(function (sec, si) { QS.forEach(function (q) { if (q.sec === si) BEATS.push({ t: "q", q: q }); }); }); // BIOME GATES + per-section ECHOES removed (David 2026-07-09): questions flow straight through; the single "This is you" recap (constel) replaces the 3 repeated listen-backs.
-    BEATS.push({ t: "voice" }, { t: "constel" }, { t: "plan" }, { t: "seed" }); // TRIMMED (David 2026-07-09): PLANTOM + MINT cut, VOICE pulled up next to the questions. Flow = questions -> voice -> single recap -> starter plan -> close. The echo/plantom/mint/gate handlers stay defined but are no longer scheduled.
+    var BEATS = [{ t: "intro" }, { t: "pace" }]; // SHORTER onboarding (David 2026-07-11): 7 non-intro beats, like the first stone. Only the 4 essential questions here; life-shape / experience / friction / recap moved OUT (asked later, in-context or Settings — "serve first, ask after"). finishV2 reads them all guarded, so cutting the beats just leaves those fields at defaults.
+    ["gender", "age", "vibe", "challenges"].forEach(function (key) { var q = QS.filter(function (x) { return x.key === key; })[0]; if (q) BEATS.push({ t: "q", q: q }); });
+    BEATS.push({ t: "voice" }, { t: "plan" }); // the 7: pace · address · age · how-you-are · where-help · voice · plan (plan now CLOSES via finishV2; seed/constel beats cut)
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    // PROGRESS BAR (David 2026-07-11): the first-stone's COLORED IG-story carousel bars — one per non-intro beat, tinted to its section (you=purple · energy=orange · way=blue) or its accent; dark-tint track, bright fill when reached. Back chevron + skip sit BELOW the bars (top-left / top-right) like the intro stone; side-click nav ported too.
-    var BEAT_COL = { pace: "#ff5fa8", voice: "#ffd24a", constel: "#46e2a4", plan: "#ff8a3a", seed: "#ff5fa8" };
-    var bar = add(ov, "div", "obv-bar"); // on OV (not the card) so its fixed top isn't anchored to the card's popIn transform — pins to the viewport top like the intro stone
+    // PROGRESS BAR (David 2026-07-11): the first-stone's COLORED IG-story bars, blue -> green -> gold -> pink by position; dark-tint track, bright fill when reached. Back chevron + skip sit BELOW the bars. NO side-click nav here (David: questions are semi-mandatory + the buttons are ~full-screen, so tap-to-advance made no sense and made the buttons flicker).
+    var BAR_RAMP = ["#5fb0ff", "#5fb0ff", "#46e2a4", "#46e2a4", "#ffc83d", "#ffc83d", "#ff5fa8"];
+    var bar = add(ov, "div", "obv-bar"); // on OV (not the card) so its fixed top isn't anchored to the card's popIn transform
     var track = add(bar, "div", "obv-cells"); track.style.flex = "1"; var tickEls = [];
-    for (var _tk = 1; _tk < BEATS.length; _tk++) { var _B = BEATS[_tk], _cc = (_B.t === "q") ? ((SECTIONS[_B.q.sec] || {}).c || "#b07aff") : (BEAT_COL[_B.t] || "#b07aff"); var _cell = add(track, "div", "obv-cell"); _cell._c = _cc; _cell.style.background = mixHex(_cc, "#160510", 0.62); tickEls.push(_cell); } // one COLORED tick per non-intro beat
-    var backB = add(ov, "button", "ob-back"); backB.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:12px;z-index:7;"; backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; bi2--; drawObV2(); }; // append to OV not the card (the card's popIn transform would anchor position:fixed to itself); sits BELOW the bars like the intro stone
+    for (var _tk = 1; _tk < BEATS.length; _tk++) { var _cc = BAR_RAMP[(_tk - 1) % BAR_RAMP.length]; var _cell = add(track, "div", "obv-cell"); _cell._c = _cc; _cell.style.background = mixHex(_cc, "#160510", 0.62); tickEls.push(_cell); } // blue -> pink ramp, one tick per non-intro beat
+    var backB = add(ov, "button", "ob-back"); backB.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:12px;z-index:7;"; backB.innerHTML = '<i class="ti ti-chevron-left"></i>'; backB.onclick = function () { if (bi2 <= 0) return; clearTimeout(advT); advT = null; bi2--; drawObV2(); }; // below the bars, top-left
     var skipB = add(ov, "button", "ob-skip"); skipB.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 32px);right:14px;z-index:7;display:none;"; skipB.textContent = tr("skip"); skipB.onclick = function () { finishV2(); }; // top-right, mirroring the back chevron
-    ov.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest("button, input, textarea, [contenteditable]")) return; var W = window.innerWidth || 375, x = (e.clientX != null ? e.clientX : W / 2); // TAP NAV (David 2026-07-11): left third = back, right third = advance (only when Next is awake), like the first stone
-      if (x < W * 0.30) { if (bi2 > 0 && backB.style.visibility !== "hidden") backB.click(); }
-      else if (x > W * 0.70) { var pb = foot.querySelector(".ob-btn"); if (pb && !pb.classList.contains("asleep")) pb.click(); } });
     var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
     // THE POINTS PLACE (David 2026-07-04): one corner counter — every earned spark flies HERE, never to the progress bar
     d2.pts = 0; var ptsEl = add(card, "div", "ob-pts"); ptsEl.innerHTML = '<i class="ti ti-sparkles"></i><b>0</b>'; ptsEl.style.display = "none";
@@ -4895,7 +4892,12 @@
       } catch (e) {}
     }
     function next() { clearTimeout(advT); advT = null; bi2++; if (bi2 >= BEATS.length) { finishV2(); return; } drawObV2(); }
-    function stdFoot(label, canSkip) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; skipB.style.display = (canSkip !== false) ? "" : "none"; return b; } // Next = full-width ob-btn (like the first stone); skip lives top-right now
+    function stdFoot(label, canSkip, btnDelay) { var b = add(foot, "button", "ob-btn", label || tr("Next") + " ▸"); b.onclick = next; skipB.style.display = (canSkip !== false) ? "" : "none";
+      // REVEAL ORDER (David 2026-07-11): text is already in; the option tiles rise in ONE AT A TIME, then the Next button appears LAST — like the first stone. btnDelay overrides for text-only screens (button after the text).
+      var tiles = Array.prototype.slice.call(body.querySelectorAll(".obv-tile, .obv-row")), d0 = 0.16;
+      tiles.forEach(function (t, i) { if (t.parentNode) t.parentNode.style.animation = "none"; t.style.animation = "obRise .4s cubic-bezier(.34,1.42,.5,1) both"; t.style.animationDelay = (d0 + i * 0.06).toFixed(2) + "s"; });
+      b.style.animation = "obRise .42s cubic-bezier(.34,1.42,.5,1) both"; b.style.animationDelay = ((btnDelay != null) ? btnDelay : (d0 + tiles.length * 0.06 + 0.1)).toFixed(2) + "s";
+      return b; } // Next = full-width ob-btn; skip lives top-right
     function finishV2() {
       S.profile = S.profile || {}; var P = S.profile;
       if (d2.name) P.name = d2.name;
@@ -4967,12 +4969,11 @@
         iline("It never goes out. It waits.");
         iline("My whole job is keeping yours lit.");
         iline("I'm Alter, your guardian.", true);
-        var ib = stdFoot(tr("Let's go") + " ▸", false); ib.classList.add("asleep"); // no skip on the very first screen — the intro IS the app's handshake
+        var ib = stdFoot(tr("Let's go") + " ▸", false, t0); // FIRST SCREEN (David 2026-07-11): the button appears only AFTER the whole text has arrived (btnDelay = t0), no dark-then-ignite
         ib.onclick = function () { // BEAT 1 -> BEAT 2 (SPEC-FIRST-DAY-REDESIGN): the guided breath is the first earned win now; theOpen stays the DAILY ceremony only (day 2+)
           if (!(S.guide && S.guide.openDone)) { S.guide = S.guide || {}; S.guide.openDone = 1; try { save(); } catch (e) {} }
           next(); };
-        var armT = setTimeout(function () { ib.classList.remove("asleep"); ib.classList.add("ignite"); }, t0 * 1000 + 300);
-        body.onclick = function () { iw.classList.add("obi-fast"); clearTimeout(armT); ib.classList.remove("asleep"); ib.classList.add("ignite"); body.onclick = null; }; // restless thumbs fast-forward
+        body.onclick = function () { iw.classList.add("obi-fast"); ib.style.animationDelay = "0s"; body.onclick = null; }; // restless thumbs fast-forward: text + button appear at once
         return; }
       if (B.t === "stackintro") { // frame the guided micro-session so it doesn't cold-open on a form (David 2026-07-07: "not clear we're doing onboarding")
         obMark(body, 120);
@@ -5183,7 +5184,7 @@
         items.forEach(function (it, ii) { var r = add(rows, "div", "obv-plan-row" + (it.done ? " done" : "")); r.style.animationDelay = (0.25 + ii * 0.4) + "s";
           r.style.border = "2.5px solid #160510"; r.style.boxShadow = "0 3px 0 #160510"; r.style.background = it.done ? "rgba(40,207,134,.12)" : mixHex(it.c, "#160510", 0.82); // game-piece rows (component language): solid, ink-bordered, hard shadow
           r.innerHTML = '<i class="ti ' + (it.done ? "ti-check" : it.ic) + ' pi" style="background:' + (it.done ? "#28cf86" : it.c) + ';color:#160510"></i><span class="pt">' + esc(tr(it.t)) + '<span class="ptr">' + esc(tr(it.trace)) + '</span></span>'; });
-        stdFoot(tr("I'll take it") + " ✓"); return; }
+        stdFoot(tr("I'll take it") + " ✓", false, 0.4 + items.length * 0.4); return; } // the plan is the last beat now — "I'll take it" -> next() -> finishV2 (opens the world); Next appears after the plan rows land
       if (B.t === "wall") { obMark(body, 110); // punch-list #16: plain, unambiguous phrasing + in-place picks + no checkmark
         add(body, "div", "ob-q", tr("Is there something you keep putting off?"));
         add(body, "div", "ob-sb", tr("You don't have to tell me what it is. Just tell me what's in the way.")).style.cssText = "text-align:center;margin-top:6px;";
