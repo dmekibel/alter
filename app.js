@@ -7240,6 +7240,17 @@
       b.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(P.cyc, onDone, k); };
       ov.appendChild(b);
     });
+    // SOUND picker (David 2026-07-12): choose the breathing sound — the chord that breathes, a soft bell at each turn, or silent. Sticks across sessions (S.breathSound) and applies to quick internal calls too.
+    var snd = document.createElement("div"); snd.style.cssText = "display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap;justify-content:center;";
+    var sndL = document.createElement("span"); sndL.style.cssText = "font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;"; sndL.textContent = tr("sound"); snd.appendChild(sndL);
+    var sBtns = [];
+    [["chord", "chord"], ["bell", "bell"], ["silent", "silent"]].forEach(function (s) {
+      var b = document.createElement("button"); b.textContent = tr(s[0]);
+      function paint() { b.style.cssText = "border:2px solid #4a3670;border-radius:11px;padding:6px 13px;font-size:12px;font-weight:800;cursor:pointer;color:#efeaff;background:" + ((S.breathSound || "chord") === s[1] ? "#9a7cff" : "rgba(255,255,255,.05)") + ";"; }
+      paint(); b.onclick = function () { S.breathSound = s[1]; save(); sBtns.forEach(function (p) { p(); }); };
+      sBtns.push(paint); snd.appendChild(b);
+    });
+    ov.appendChild(snd);
     var x = document.createElement("button"); x.style.cssText = "margin-top:8px;background:none;border:none;color:#9a86c0;font-size:14px;font-weight:600;cursor:pointer;"; x.textContent = tr("not now"); x.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); if (onDone) onDone(); };
     ov.appendChild(x); document.body.appendChild(ov);
   }
@@ -7253,11 +7264,23 @@
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div>';
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-    // BREATH HUM (David 2026-07-01): NOT a prominent chord — a soft low background pad, like the ambient bed in the other tools. The "breathing" comes from a gentle volume SWELL (louder on the in-breath, softer on the out) rather than a melodic change. Subtle, almost the sound of someone breathing.
-    var AC = window.AudioContext || window.webkitAudioContext, actx = null, bwOscs = [], bwGain = null;
-    try { if (AC) { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0.006; bwGain.connect(bgBus() || actx.destination);
-      [[130.81, "sine", 1], [196.0, "sine", 0.4], [261.63, "triangle", 0.14]].forEach(function (o) { var os = actx.createOscillator(), g = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g.gain.value = o[2]; os.connect(g); g.connect(bwGain); os.start(); bwOscs.push(os); });
-    } } catch (e) { actx = null; }
+    // BREATH SOUND (David 2026-07-12): three modes, chosen in the picker. "chord" = the soft low pad that swells louder on the in-breath AND glides up ~a semitone, settling back down on the out (the missing "breathing" feel). "bell" = a soft chime at each in/out turn, holds stay silent. "silent" = orb only. Plain UI pref (S.breathSound), no schema shape. The spoken cues stay on their own voice toggle, independent of this.
+    var bwSound = S.breathSound || "chord";
+    var AC = window.AudioContext || window.webkitAudioContext, actx = null, bwOscs = [], bwBase = [130.81, 196.0, 261.63], bwGain = null;
+    try {
+      if (AC && bwSound === "chord") { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0.006; bwGain.connect(bgBus() || actx.destination);
+        [[130.81, "sine", 1], [196.0, "sine", 0.4], [261.63, "triangle", 0.14]].forEach(function (o) { var os = actx.createOscillator(), g = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g.gain.value = o[2]; os.connect(g); g.connect(bwGain); os.start(); bwOscs.push(os); });
+      } else if (AC && bwSound === "bell") { actx = sharedAudioCtx(); }
+    } catch (e) { actx = null; }
+    // a soft bell at the turn of the breath (bell mode only): a rising two-note on the in-breath, a falling one on the out; holds stay silent, which is itself the cue to hold
+    function breathBell(kind) {
+      if (!actx || bwSound !== "bell") return;
+      try {
+        var t = actx.currentTime, out = bgBus() || actx.destination;
+        var notes = (kind === "in" || kind === "in2") ? [523.25, 659.25] : [440.0, 329.63];
+        notes.forEach(function (f, i) { var o = actx.createOscillator(), g = actx.createGain(); o.type = "sine"; o.frequency.value = f; var st = t + i * 0.11; g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.05, st + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, st + 1.3); o.connect(g); g.connect(out); o.start(st); o.stop(st + 1.4); });
+      } catch (e) {}
+    }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
     var schedSrcs = [];
     (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClipAsync(PH[pi][3] || PH[pi][0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
@@ -7265,7 +7288,7 @@
     function finish(skip) {
       if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
-      if (actx) { try { bwGain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); bwOscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.5); } catch (e) {} }); } catch (e) {} }
+      if (actx && bwGain) { try { bwGain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); bwOscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.5); } catch (e) {} }); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); tickTool("breathe"); save(); renderAll(); }
       if (onDone) onDone();
@@ -7281,11 +7304,15 @@
       // (voice cues are pre-scheduled up front — no timer-fired speak, which iOS silences)
       orb.style.transition = "transform " + (dur / 1000) + "s cubic-bezier(.45,0,.4,1)";
       if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "in2") orb.style.transform = "scale(1.44)"; else if (kind === "out") orb.style.transform = "scale(.5)";
-      if (actx) { var now = actx.currentTime, t = dur / 1000;
+      if (actx && bwGain) { var now = actx.currentTime, t = dur / 1000;
         bwGain.gain.cancelScheduledValues(now); bwGain.gain.setValueAtTime(bwGain.gain.value, now);
         if (kind === "in" || kind === "in2") bwGain.gain.linearRampToValueAtTime(kind === "in2" ? 0.07 : 0.06, now + t * 0.95);         // soft swell, like an in-breath (louder — David 2026-07-01); in2 = the physiological-sigh top-up
         else if (kind === "out") bwGain.gain.linearRampToValueAtTime(0.018, now + t);        // fade, like an out-breath
-        else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.042 : 0.012, now + 0.5); } // hold sustains gently; rest near-silent
+        else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.042 : 0.012, now + 0.5); // hold sustains gently; rest near-silent
+        // PITCH glides with the breath (David 2026-07-12): rises ~a semitone on the in-breath, settles back down on the out — the missing "breathing" feel. Kept subtle (±~6%) so it stays a chord, never a slide. Holds leave the pitch where the breath left it.
+        if (kind === "in" || kind === "in2" || kind === "out") { var mul = kind === "in" ? 1.05 : kind === "in2" ? 1.08 : 0.95;
+          bwOscs.forEach(function (os, i) { try { os.frequency.cancelScheduledValues(now); os.frequency.setValueAtTime(os.frequency.value, now); os.frequency.linearRampToValueAtTime(bwBase[i] * mul, now + t * 0.95); } catch (e) {} }); }
+      } else if (actx && bwSound === "bell" && (kind === "in" || kind === "in2" || kind === "out")) { breathBell(kind); }
       phi++; if (phi >= PH.length) { phi = 0; cyc++; }
       tmr = setTimeout(step, dur);
     }
