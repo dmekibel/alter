@@ -40,6 +40,8 @@ For each candidate line: name which KILLED pattern it most resembles (if any) an
 
 - "Most of your good hours went to your body today." (PM-close honest-observation, Gate-2-killed 2026-07-12, not David-rated) → **GENERIC-CATEGORY BEAT** (reportorial: any fitness app says "you spent time on fitness"; naked data with no frame, no principle, no warmth, and "good" is unearned). Fix: an observation must state a plain mechanism OR reframe the day (like the KEPT "Rest is part of the work" / "the quiet version of a good day"), never just report a stat.
 
+- STREAK lines "Tomorrow keeps arriving to a plan already waiting." / "Close tonight and the chain reconnects." / "The plan-ahead chain went cold. One close tonight lights it again." (Gate-2-killed 2026-07-12, not David-rated) → **FORCED ANALOGY + STREAK-SHAME LEAN.** The fire/chain metaphor ("chain," "lit," "went cold," "reconnects") is pure ornament the streak never earned, AND it induces streak-anxiety (a slip reads as "you broke it / it's dead") which violates reward-never-shame. NEW LAW for streak copy: state the count and the plain next action, no fire/chain imagery; a miss must read as neutral and effortlessly repairable ("tonight you just pick it back up"), never as a dead chain to rescue.
+
 ## EPIC (survived the gates AND David kept / "makes me excited")
 - "A tight body keeps your mind on edge too, and that's part of why you can feel wound up with no idea why." → the body→mind loop, plain and deep, real metacognition.
 - "Some you've carried so long it just feels like your personality." → names the identity-fusion trap (mistaking a symptom for who you are), natural cadence.
