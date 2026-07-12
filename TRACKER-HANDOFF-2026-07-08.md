@@ -7,7 +7,19 @@ The PM close already existed as a 6-beat cockpit stage (win → learn → rating
 2. **Carry-forward** — the TOMORROW beat now lists today's undone blocks (`mr.missBlocks`) as tap-chips → existing `pmCarryToTomorrow(b)` safe path (blocks(tomK()).push + reflow, de-duped). Count rides into the event.
 3. **THE CLEAN PLAN-AHEAD EVENT (load-bearing for next session)** — `S.plannedAhead[tomK()] = { plannedOn: todayK(), ts, oneThing, carried }`, written UNCONDITIONALLY on PM-close commit (`pmRecordPlanAhead`, called from the `exitStage('pm')` commit branch). Completing the close IS the plan-ahead action. Unambiguous: keyed by the TARGET date; `plannedOn < targetKey` = planned before the day arrived. **The next-session "Planned Ahead" hero streak reads THIS map** — do not re-derive from bk/blocks. Additive state, NO SCHEMA bump (S.tools/S.bk/S.dayClose precedent; defaulted in load() base defaults).
 - Verified in preview: boots clean, no console errors, full beat-walk drives, observation renders, carry chip writes + confirms, `S.plannedAhead["2026-07-13"]={plannedOn:"2026-07-12",oneThing,carried:1}` recorded, dayClose recorded. **Flow feel is DEVICE-UNTESTED — gesture/tap feel confirm on phone.** Timeline render untouched (regression zone not entered).
-- **NEXT SESSION (the two-streak system):** decision in FOUNDATION-PITCH "STREAK DECISION". Planned Ahead (hero) reads `S.plannedAhead`; Followed Through (quiet) ties to the timeline charge; repair-mechanic reuses Return/Relight; rest-days count. Do NOT build a 5-counter stats page.
+## UPDATE 2026-07-12 (cont.) — THE TWO-STREAK SYSTEM built (v1029, same session, Opus, cockpit-only)
+Built immediately after the PM close (David: "keep going"). FOUNDATION-PITCH "STREAK DECISION" delivered.
+- **Engine (pure, read-only, `@SEC:COCKPIT` near the pm helpers):** `paDaysPlanned()` (days the user did a valid plan-ahead), `streakAhead()` → `{n, status: lit|ready|repairable|cold}`, `streakFollow()` → `{n}`, `heroProjectedClose()` (the count tonight's close will reach, since the event commits on "Rest now"). Shared `_streakWalk` allows ONE bridged gap = the make-up window (repairing IS the rep); `S.away` softens 'cold'→'repairable' (rest held). NO new stored state, NO SCHEMA change. `DEV.streaks()` inspects it.
+- **HERO "Planned Ahead"** surfaces ONLY in the guardian's existing voice: the PM deal footer (projected count: "N evenings running now, planned before the day arrives...") and the AM greeting's GENERIC slot (never clobbers the identity/one-thing greetings above it; shows 'ready'/'repairable'/'cold' variants).
+- **QUIET "Followed Through"** = one companion line in the deal footer at n≥2 only. Never its own surface (honors "never a 5-counter stats page").
+- **Copy:** all Gate 1 + Gate 2. Judge KILLED every fire/chain-metaphor line ("chain reconnects", "went cold", "lights it again") for FORCED ANALOGY + streak-shame; rewrites are plain + effortlessly-repairable ("tonight you just pick it back up"). New streak-copy LAW logged in COPY-ANCHORS: no fire/chain imagery, a slip reads neutral, never a dead chain to rescue.
+- **Verified in preview:** engine exact (ready n=3, repairable n=2, cold n=2 across seeded histories), deal footer shows projected count 4, no console errors. **AM greeting line is time-gated (`phase()==='morning'`) → its rendered display is DEVICE-UNTESTED; the engine it reads is verified.** Timeline render untouched.
+- **NOT DAVID-RATED yet:** none of the PM-close or streak copy is an EPIC anchor until David verdicts it on his phone.
+
+## NEXT (open)
+- Get David's verdict on the PM close + streak voice on-device (rate lines → COPY-ANCHORS).
+- Possible: a subtle VISUAL treatment for the hero streak if David wants one (kept to voice-only this session per the "no stats page" law — a visual badge would be additive, options-first).
+- The de-game subtraction pass (FOUNDATION-PITCH §3) is still its own scoped session.
 
 ## STATE RIGHT NOW
 - **Live: v976** on the phone (https://dmekibel.github.io/alter/fresh.html). Boots clean, verified.
