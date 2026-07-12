@@ -7361,23 +7361,69 @@
     });
   }
   // adaptive guided meditation: YOU choose how often it re-anchors you (for a 0-attention-span mind) + modular focus + tiny durations
-  // MED_GUIDES at module scope (Full Stack, David 2026-07-02) so the flagship session reuses the deep guides without meditation() having run; meditation() aliases it — zero behavior change.
-  var MED_GUIDES = {
-    harris: { name: "witness", who: "Sam Harris", orb: 8, seq: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"] },
-    headspace: { name: "reset", who: "Headspace", orb: 8, seq: ["Soft focus — just aware of the space around you", "A few big breaths… in through the nose, out through the mouth", "Let the body soften with each out-breath", "Nothing to do, nothing to respond to — just time for you", "Feel the weight of the body pressing down", "Nothing to change — just noticing how the body feels", "Find the breath rising and falling", "One on the in-breath… two on the out-breath", "Feel that sense of space with each exhale", "Thoughts come — that's fine. Gently back to the breath", "Now let the mind be completely free"] },
-    blackstone: { name: "embody", who: "Blackstone", orb: 10, seq: ["Calm, even breath — nothing happening but this breath", "Come down into your feet — deep contact", "Attune to the quality of self inside your feet", "Inhabit your legs… your hips… settle down into them", "Inhabit your belly — attune to the quality of power there", "Inhabit your chest — attune to the quality of love", "Let the breath move gently through the heart", "Inhabit your whole body at once — this is yours", "Find the space outside your body, in the room", "Inside and outside are one continuous space", "Feel that you ARE that space"] },
-    adya: { name: "rest", who: "Adyashanti", orb: 12, seq: ["There's nothing to do here", "Awareness is already present — you don't make it happen", "Relinquish the doer — pat it on the head, it's irrelevant", "Not the watcher, not the witness — just resting", "Let everything be exactly as it is, right now", "The mind says 'understand one more thing' — don't take the bait", "Just rest as awareness", "Whenever you've drifted, simply rest again", "Nothing for the mind to do… and that's okay", "You and awareness are not two"] }
+  // MEDITATION BLOCKS (David 2026-07-12): the guided pack rebuilt as composable technique BLOCKS, not fixed teacher scripts. Each block = one meditation MOVE with an entry line (taught once) + a pool of short re-anchor lines (repeat to fill the block's time). All copy is an ORIGINAL amalgamation of David's influences in the tradition's shared plain register (see COPY-ANCHORS "GUIDED-VOICE REGISTER LAW") — no living-teacher phrasing lifted. Retires the old MED_GUIDES 4-teacher scripts.
+  var MED_BLOCKS = {
+    settle: { entry: "Find a comfortable position, and when you're ready, gently close your eyes.",
+      pool: ["Feel the weight of your body pressing down. The contact of the seat, the floor beneath your feet.", "There's nowhere to be right now, and nothing to respond to. This time is yours.", "Take a few deep breaths. With each out-breath, let the body soften a little more."] },
+    breath: { entry: "Now bring your attention to the breath. Notice where you feel it most clearly. The nostrils, the chest, or the rise and fall of the belly.",
+      pool: ["There's no need to control it or deepen it. The body knows how to breathe. Just let it come and go.", "Follow one full breath, from the beginning of the in-breath, through the pause, to the end of the out-breath.", "Notice whether it's long or short, deep or shallow. However the breath is right now is fine."] },
+    count: { entry: "If it helps to steady the mind, you can count each breath as it passes. One on the in-breath. Two on the out.",
+      pool: ["One, breathing in. Two, breathing out. Then begin again at one.", "If you lose count, that's perfectly normal. Just begin again at one.", "Give the out-breath your full attention. Notice the body softening each time you breathe out."] },
+    scan: { entry: "Now we'll scan through the body. Starting at the top of the head, and slowly moving down.",
+      pool: ["Forehead, jaw, shoulders. Notice each part as you pass, and let it soften.", "Down through the chest and the belly. No need to change anything. Just noticing how each part feels.", "Your arms, down to the fingertips. Your legs, all the way to your feet.", "If you find tension somewhere, you don't have to fix it. Notice it, and let it be as it is.", "Feel the body now as one whole, sitting here, breathing."] },
+    listen: { entry: "Now open your attention to sounds. The ones nearby, and the ones far away.",
+      pool: ["You don't have to go looking for them. Sounds arrive on their own.", "There's no need to name them or judge them. Let each sound come, and let it go.", "Sounds appear, change, and pass away, all by themselves."] },
+    watch: { entry: "Thoughts will keep coming. This time, instead of following them, see if you can watch one arrive.",
+      pool: ["A thought appears. It might be words, or a picture. Watch it, without following it.", "Like the sounds, thoughts come and go on their own. Watch one pass.", "And notice the quiet space after one thought ends, before the next appears."] },
+    feel: { entry: "If there's a feeling here, let it be here. Notice where you feel it in the body. The chest, the throat, the belly.",
+      pool: ["You don't need to name it or push it away. Just feel it, as sensation.", "Notice how it shifts and changes as you watch."] },
+    open: { entry: "For these last minutes, let go of every technique. There's nothing more to do.",
+      pool: ["Let everything be exactly as it is. Thoughts, sounds, sensations, all coming and going on their own.", "Rest here, aware of whatever comes, holding on to none of it.", "If you drift into thought, no problem. The moment you notice, you're already back."] },
+    close: { entry: "Now let go of any effort. For these last moments, let the mind rest, free to do as it pleases.",
+      pool: ["Bring your attention back to the body. The weight, the contact, the sounds around you.", "And in your own time, gently open your eyes."] }
   };
+  var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
+  // SESSIONS (arcs): beginner/intermediate/advanced = ordered blocks with time weights. The engine allocates the chosen length across the blocks by weight, so a long sit stays ON the block's technique instead of looping the last 3 lines (the retired tail hack). Adding a new session or the missing heart/love block is a data edit, not an engine change.
+  var MED_SESSIONS = {
+    anchor: { name: "Anchor", sub: "settle and count the breath · for beginners", blocks: [["settle", 1], ["breath", 1.1], ["count", 2.6], ["close", 0.7]] },
+    explore: { name: "Explore", sub: "a tour of the senses · intermediate", blocks: [["settle", 0.9], ["breath", 0.9], ["scan", 1.6], ["listen", 1.2], ["watch", 1.4], ["close", 0.7]] },
+    open: { name: "Open", sub: "rest in open awareness · advanced", blocks: [["settle", 0.9], ["breath", 0.7], ["watch", 1.2], ["feel", 1.2], ["open", 1.8], ["close", 0.5]] }
+  };
+  function medSessionLines(sessKey) { // every line a session can speak — for TTS.warm (pre-decode before Begin)
+    var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor, out = [];
+    S.blocks.forEach(function (b) { var blk = MED_BLOCKS[b[0]]; if (blk) { out.push(blk.entry); out = out.concat(blk.pool); } });
+    return out.concat(MED_RETURN);
+  }
+  function medComposeSegments(sessKey, totalSec, perCue) { // allocate the length across the session's blocks by weight; each block plays its entry once, then fills its slice with its own pool + woven RETURN cues at the cadence
+    var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor, sumW = 0;
+    S.blocks.forEach(function (b) { sumW += b[1]; });
+    var segs = [], t = 0, ri = 0;
+    S.blocks.forEach(function (b) {
+      var blk = MED_BLOCKS[b[0]]; if (!blk) return;
+      var bEnd = t + totalSec * (b[1] / (sumW || 1));
+      segs.push({ text: blk.entry, label: blk.entry, sub: "" }); t += perCue; // entry line, taught once
+      var weave = b[0] === "count" || b[0] === "scan" || b[0] === "listen" || b[0] === "watch" || b[0] === "feel"; // RETURN cues only in the working blocks (not settle/close/open, which carry their own)
+      var pi = 0, cc = 0;
+      while (t < bEnd - perCue * 0.5) {
+        cc++;
+        var line = (weave && cc % 3 === 0 && MED_RETURN.length) ? MED_RETURN[ri++ % MED_RETURN.length] : (blk.pool.length ? blk.pool[pi++ % blk.pool.length] : blk.entry);
+        segs.push({ text: line, label: line, sub: "" }); t += perCue;
+      }
+    });
+    if (!segs.length) segs.push({ text: MED_BLOCKS.settle.entry, label: MED_BLOCKS.settle.entry, sub: "" });
+    var lastBlk = MED_BLOCKS[S.blocks[S.blocks.length - 1][0]]; // always end on the closing line ("gently open your eyes"), never mid-pool
+    if (lastBlk && lastBlk.pool.length) { var fin = lastBlk.pool[lastBlk.pool.length - 1]; if (segs[segs.length - 1].text !== fin) segs.push({ text: fin, label: fin, sub: "" }); }
+    return segs;
+  }
   function meditation() {
     var FREQ = { often: 11, some: 24, spacious: 42 };  // seconds between gentle re-anchoring cues
     // David's actual 4-in-1: each guide is an ORDERED sequence in that teacher's own voice (drawn from his transcripts in meditation-scripts/),
     // and once it reaches the end it rests on the last 3 lines so a long sit still feels guided. orb = breathe-animation seconds.
-    var GUIDES = MED_GUIDES;
-    var cfg = { mins: 5, freq: "often", guide: "harris" };
+    var cfg = { mins: 5, freq: "often", sess: "anchor" };
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     function build() {
       ov.innerHTML = "";
-      TTS.unlock(); TTS.warm(GUIDES[cfg.guide].seq); // pre-decode this guide's lines WHILE the user is still choosing → by the time they hit Begin the clips are cached, so Begin itself starts playback in one tap (David 2026-07-01)
+      TTS.unlock(); TTS.warm(medSessionLines(cfg.sess)); // pre-decode this session's lines WHILE the user is still choosing → by the time they hit Begin the clips are cached, so Begin itself starts playback in one tap (David 2026-07-01)
       var x = add(ov, "button", "bw-x", "close"); x.onclick = function () { TTS.stop(); if (ov.parentNode) ov.remove(); };
       var box = add(ov, "div"); box.style.cssText = "width:88%;max-width:420px;color:#efeaff;font-family:var(--bub);text-align:center;";
       box.innerHTML = '<div style="font-size:26px;font-weight:800;"><i class="ti ti-moon"></i> Meditate</div><div style="font-size:13px;color:#bcb0e8;margin-bottom:12px;">even a tiny one counts</div>';
@@ -7388,18 +7434,17 @@
       }
       row("how long", [["2 min", 2], ["5 min", 5], ["10 min", 10]], "mins");
       row("remind me", [["often", "often"], ["some", "some"], ["spacious", "spacious"]], "freq");
-      row("guide", [["witness", "harris"], ["reset", "headspace"], ["embody", "blackstone"], ["rest", "adya"]], "guide");
-      var who = add(box, "div", null, "with " + GUIDES[cfg.guide].who); who.style.cssText = "font-size:11px;color:#9c8fc4;margin-top:6px;font-style:italic;";
+      row("session", [["Anchor", "anchor"], ["Explore", "explore"], ["Open", "open"]], "sess");
+      var who = add(box, "div", null, MED_SESSIONS[cfg.sess].sub); who.style.cssText = "font-size:11px;color:#9c8fc4;margin-top:6px;font-style:italic;";
       var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:18px;background:#9a7cff;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
       // COMPOSE the session as a fixed timeline (David 2026-07-01): guide lines spaced at the chosen cadence, filling the chosen length. The player schedules every clip up front on Web Audio + gives the Headspace transport (play/pause · ±15s · scrub). Fixes the iOS timer-silence AND makes it length/frequency-adaptive.
-      var G = GUIDES[cfg.guide], seq = G.seq, tail = seq.slice(-3), perCue = FREQ[cfg.freq], totalSec = cfg.mins * 60;
-      var segs = [], t = 0, ci = 0;
-      while (t < totalSec - 1) { var line = ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length]; segs.push({ text: line, label: line, sub: "" }); t += perCue; ci++; }
+      var perCue = FREQ[cfg.freq], totalSec = cfg.mins * 60;
+      var segs = medComposeSegments(cfg.sess, totalSec, perCue);
       if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
-      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + G.who, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true });
+      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + MED_SESSIONS[cfg.sess].name, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true });
     }
     build();
   }
@@ -7504,11 +7549,10 @@
   }
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
   function meditationQuick(onDone, durSec) {
-    var seq = ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the tip of the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds, they arise on their own", "Let each sound reveal the space it appears in", "Simply witness whatever arises and passes", "Nothing falls outside this, just be aware"];
-    TTS.unlock(); TTS.warm(seq);
-    var tail = seq.slice(-3), perCue = medCadence(), totalSec = durSec || 300, segs = [], t = 0, ci = 0;
-    while (t < totalSec - 1) { segs.push({ text: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], label: ci < seq.length ? seq[ci] : tail[(ci - seq.length) % tail.length], sub: "" }); t += perCue; ci++; }
-    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · Sam Harris", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
+    var perCue = medCadence(), totalSec = durSec || 300; // the in-stack "Sit in stillness" now runs the Anchor session (David 2026-07-12): same block engine, clean amalgam copy
+    TTS.unlock(); TTS.warm(medSessionLines("anchor"));
+    var segs = medComposeSegments("anchor", totalSec, perCue);
+    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
@@ -9989,7 +10033,7 @@
   function runFullStack(mins, tapOn) {
     mins = mins || 10;
     var attSecs = Math.round(mins * 60 * 0.2), chargeSecs = Math.round(mins * 60 * 0.3), deepSecs = Math.round(mins * 60 * 0.25);
-    var deepSeq = MED_GUIDES.blackstone.seq, deepCad = Math.max(9, Math.round(deepSecs / deepSeq.length));
+    var deepSeq = [MED_BLOCKS.scan.entry].concat(MED_BLOCKS.scan.pool), deepCad = Math.max(9, Math.round(deepSecs / deepSeq.length)); // embodiment block (David 2026-07-12: retired MED_GUIDES.blackstone; heart/love block still owed)
     var bcyc = mins <= 10 ? 3 : mins <= 20 ? 5 : 8;
     var track = [ // the flagship stack, now as ONE carousel: breathe -> attention -> charge -> love & embodiment -> mantra. charge + deep supply their own cue segments (rawSegs).
       { k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: bcyc * 16 },
