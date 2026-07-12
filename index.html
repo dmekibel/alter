@@ -661,6 +661,10 @@
   #breatheOv .bw-orb{width:165px;height:165px;border-radius:50%;background:radial-gradient(circle,rgba(205,185,255,.92),rgba(150,120,255,.3) 58%,rgba(150,120,255,0) 74%);box-shadow:0 0 80px rgba(170,140,255,.55);transform:scale(.55);}
   #breatheOv .bw-label{font-family:var(--bub);font-size:28px;font-weight:800;color:#efeaff;margin-top:34px;letter-spacing:.5px;}
   #breatheOv .bw-sub{font-size:13px;color:#bcb0e8;font-weight:600;margin-top:4px;}
+  /* THE ORB STAYS PERFECTLY STILL (David 2026-07-12): the cue text lives in .bw-cap, pulled OUT of the centered flex flow and hung from a fixed line below the orb, so cue lines of any length grow DOWNWARD and can never push the orb up or down. The orb is now the only centered flow child. */
+  #breatheOv .bw-cap{position:absolute;left:0;right:0;top:calc(50% + 72px);z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 18px;pointer-events:none;}
+  #breatheOv .bw-cap .bw-label{margin-top:0;}
+  #breatheOv .bw-cap .bw-next{pointer-events:auto;}
   #breatheOv .bw-x{position:fixed;top:calc(env(safe-area-inset-top,0px) + 18px);right:18px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);color:#efeaff;border-radius:14px;padding:8px 15px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;}
   #breatheOv .bw-voice{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:18px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);border-radius:14px;width:44px;height:40px;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:2;}
   /* Headspace-style transport for the composed timeline player (David 2026-07-01) */
@@ -711,6 +715,7 @@
   #breatheOv.gp-ov .gp-play{width:92px;height:92px;font-size:34px;border:3px solid #160510;box-shadow:0 6px 0 #160510;color:#160510 !important;} /* ref: bigger disc, ink ring, INK pause glyph, chunky shadow */
   #breatheOv.gp-ov .bw-label{font-family:"Jost",sans-serif;font-size:24px;line-height:1.25;color:#fff2f9;max-width:82vw;text-align:center;margin-top:40px;}
   #breatheOv.gp-ov .bw-sub{max-width:82vw;text-align:center;font-size:17px;color:#e7d9f2;font-weight:600;margin-top:8px;} /* readable subtitle, not tiny (David 2026-07-09) */
+  #breatheOv.gp-ov .bw-cap{top:calc(50% + 126px);} /* the composed player's orb is bigger — hang the cue line lower so it clears the resting orb (still never moves it) */
   #breatheOv.gp-ov .gp-knob{background:#ff5fa8;box-shadow:0 0 8px rgba(255,95,168,.8);}
   #breatheOv.gp-ov .gp-times{align-items:center;}
   #breatheOv.gp-ov .gp-silence{width:auto;max-width:none;margin:0;flex:1;justify-content:center;}
@@ -2690,6 +2695,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1031"></script>
+  <script src="app.js?v=1032"></script>
 </body>
 </html>

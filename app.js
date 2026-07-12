@@ -7261,7 +7261,7 @@
     TTS.unlock(); // gesture-bound (chip tap) — unlock the speech engine in the same synchronous tick
     var PH = PAT.ph;
     var ov = document.createElement("div"); ov.id = "breatheOv";
-    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div>';
+    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-cap"><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the orb (David 2026-07-12)
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     // BREATH SOUND (David 2026-07-12): three modes, chosen in the picker. "chord" = the soft low pad that swells louder on the in-breath AND glides up ~a semitone, settling back down on the out (the missing "breathing" feel). "bell" = a soft chime at each in/out turn, holds stay silent. "silent" = orb only. Plain UI pref (S.breathSound), no schema shape. The spoken cues stay on their own voice toggle, independent of this.
@@ -9016,7 +9016,7 @@
     TTS.unlock(); // gesture-bound (the tap that opened this) — unlock speech in the same synchronous tick
     var voiceProf = opts.voiceProf || VPROF.relax, col = opts.color || DOM.restore.c;
     var ov = document.createElement("div"); ov.id = "breatheOv";
-    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div><button class="done2 bw-next" style="max-width:260px;margin:30px auto 0;display:block;">Next ▶</button>';
+    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-cap"><div class="bw-label"></div><div class="bw-sub"></div><button class="done2 bw-next" style="max-width:260px;margin:30px auto 0;display:block;">Next ▶</button></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the orb (David 2026-07-12)
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nextB = ov.querySelector(".bw-next");
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, gain = null, oscs = [];
