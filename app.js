@@ -3793,6 +3793,7 @@
       if (ratingV) { recp.pm.wol = recp.pm.wol || { wentWell: "", needsWork: "", optimize: "", dayRating: "" }; recp.pm.wol.dayRating = ratingV; }
       S.dayClose = S.dayClose || {}; S.dayClose[todayK()] = { win: winV, learn: learnV, rating: ratingV, woop: { o: woopO, p: woopP }, installed: 1 }; // THE RECORD
       try { if (oneV) { pmPlantOneThing(oneV); if (woopO && woopP) { var _tb = (blocks(tomK()) || []).filter(function (b) { return (b.title || "").toLowerCase() === oneV.toLowerCase(); })[0]; if (_tb) { _tb.woop = { o: woopO, p: woopP }; _tb.armor = true; } } } } catch (e) {} // WOOP armor onto the block via the SAFE path (pip render deferred — timeline-paint-free this wave)
+      try { pmRecordPlanAhead(oneV, (sbp && +sbp.dataset.carried) || 0); } catch (e) {} // PLAN-AHEAD EVENT (unconditional): the next-session "Planned Ahead" hero streak reads S.plannedAhead[tomorrow]
       try { if (ratingV) earn(pmRatingEarn(ratingV, pmLowDay(bookendMirror(todayK()))), { label: "dayRating-" + ratingV }); } catch (e) {} // parity earn
       if (reflectTxt || mp != null) { recp.journal = (recp.journal || []).concat([{ q: "Win or Learn", text: reflectTxt, mood: mp, ts: Date.now() }]); }
       save();
@@ -4289,7 +4290,7 @@
     return b;
   }
   function pmStageStep(sb) { // entry: reset transient state, render beat 0 (called once per open)
-    sb.dataset.step = "0"; sb.dataset.mood = ""; sb.dataset.win = ""; sb.dataset.learn = ""; sb.dataset.dayRating = ""; sb.dataset.oneThing = ""; sb.dataset.woopO = ""; sb.dataset.woopP = "";
+    sb.dataset.step = "0"; sb.dataset.mood = ""; sb.dataset.win = ""; sb.dataset.learn = ""; sb.dataset.dayRating = ""; sb.dataset.oneThing = ""; sb.dataset.woopO = ""; sb.dataset.woopP = ""; sb.dataset.carried = "0"; sb.dataset.carriedTitles = "";
     pmRenderBeat(sb);
   }
   function pmBeatName(sb) { var live = pmLiveBeats(bookendMirror(todayK())); var step = Math.max(0, Math.min(live.length - 1, +(sb.dataset.step || 0))); return live[step]; }
@@ -4358,6 +4359,8 @@
         blk.innerHTML = '<i class="ti ' + tiClass(b) + '" style="color:' + (st === "miss" ? "#7a6a80" : dom === "drift" ? "#b8bcc6" : (D.ink || "#160510")) + '"></i><span class="pm-mttl" style="color:' + _ink + '">' + esc(b.title) + '</span>' + (dom === "drift" ? '<span class="pm-mtag">' + tr("DRIFT") + '</span>' : st === "miss" ? '<span class="pm-mtag">' + tr("MISSED") + '</span>' : '');
       });
     }
+    var _obs = pmObservation(mr); // ONE honest observation of the charge — reward-never-shame, never a diagnosis
+    if (_obs) add(card, "div", "tfs-sub", _obs).setAttribute("style", "line-height:1.5;color:#e6cfe0;font-size:13.5px;");
     add(card, "div", "pm-moodq", tr("Which was the day's real win?"));
     var wrap = add(card, "div"); wrap.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
     pmWinCandidates(k).forEach(function (w) {
@@ -4444,6 +4447,19 @@
       });
     }
     if (sb.dataset.oneThing && sb.dataset.woopP) { var st = add(card, "div", "tfs-sub"); st.style.cssText = "font-size:13px;color:" + DOM.restore.light + ";"; st.innerHTML = '<i class="ti ti-shield-check"></i> ' + tr("armored — it waits on tomorrow with a plan"); }
+    // CARRY FORWARD (David 2026-07-12): today's undone blocks can ride into tomorrow via the SAFE write path (pmCarryToTomorrow → blocks(tomK()).push + reflow; de-duped by title). Reward-never-shame: a miss is not gone, it just moves. Tapped chips write immediately + count into the plan-ahead event's `carried`.
+    if (mr.missBlocks && mr.missBlocks.length) {
+      add(card, "div", "pm-moodq", tr("Anything worth carrying into tomorrow?"));
+      var carried = (sb.dataset.carriedTitles || "").split("|").filter(Boolean);
+      var cw = add(card, "div"); cw.setAttribute("style", "display:flex;flex-wrap:wrap;gap:7px;");
+      mr.missBlocks.slice(0, 4).forEach(function (b) {
+        var on = carried.indexOf(b.title) >= 0;
+        var cb = add(cw, "button", "tf-chip"); cb.setAttribute("style", on ? "background:" + DOM.restore.c + ";color:#160510;border-color:" + DOM.restore.c + ";" : "");
+        cb.innerHTML = '<i class="ti ti-' + (on ? "check" : "arrow-right") + '"></i> ' + esc(b.title);
+        cb.onclick = function () { if (carried.indexOf(b.title) >= 0) return; try { pmCarryToTomorrow(b); } catch (e) {} carried.push(b.title); sb.dataset.carriedTitles = carried.join("|"); sb.dataset.carried = String(carried.length); pmRenderBeat(sb); };
+      });
+      if (carried.length) { var st2 = add(card, "div", "tfs-sub"); st2.style.cssText = "font-size:13px;color:" + DOM.restore.light + ";"; st2.innerHTML = '<i class="ti ti-check"></i> ' + tr("Carried. It waits on tomorrow with the rest."); }
+    }
   }
   // ---- BEAT 5: THE INSTALL (the crown) — candle-dark, one long exhale, the user's mantra line + today's own best charge as the picture. Skippable forever; soft door to Rewire if no mantra born yet (mantra law: never typed).
   function pmBeatInstall(card, sb, mr, k) {
@@ -4472,6 +4488,11 @@
     var moment = (sb.dataset.dayRating === "rebound") ? "rebound" : (pmLowDay(mr) || (sb.dataset.learn && /slipped|drift/i.test(sb.dataset.learn))) ? "pm-close-hard" : "pm-close";
     renderDeckCard(card, moment);
     if (S.deck && S.deck.pendingVote) { renderDeckCard(card, "first-vote"); S.deck.pendingVote = 0; save(); }
+    // PLANNED-AHEAD footer (David 2026-07-12): names the hero habit the moment it happens — seeds the "Planned Ahead" streak the guardian talks about (next session's build). Shown only when tomorrow got a move set or a block carried.
+    if ((sb.dataset.oneThing || "").trim() || +(sb.dataset.carried || 0) > 0) {
+      var pf = add(card, "div", "tfs-sub", tr("Planned tomorrow before it arrived. That is the habit under all the others."));
+      pf.setAttribute("style", "text-align:center;font-size:12px;color:#b596ad;line-height:1.5;margin-top:2px;");
+    }
   }
   // ---- ORGAN G · WEEK SEAL (DEPTH BUILD WAVE 2): Sunday's close grows one screen. Ceiling = the GOLF CARD (behaviors × 7 days, birdie=kept; "under par is an event, not a verdict") + a "+1 next week?" chip from the biggest-bogey behavior. Floor = the garden grew, no grid ever.
   function pmBeatWeekSeal(card, sb, mr, k) {
@@ -4493,6 +4514,22 @@
     add(card, "div", null, totBirdie + " " + tr(totBirdie === 1 ? "birdie this week" : "birdies this week")).style.cssText = "margin-top:10px;font-weight:800;color:#ffd24a;font-size:14px;";
     if (bogeyHab && bogeyMax >= 3) { var chip = add(card, "button", "tf-chip"); chip.style.marginTop = "6px"; chip.innerHTML = '<i class="ti ti-plus"></i> ' + tr("give") + ' ' + esc(tr(bogeyHab.title)) + ' ' + tr("one more day next week?"); chip.onclick = function () { try { toast("✦ " + tr("noted — one more next week")); } catch (e) {} chip.style.opacity = ".6"; chip.disabled = true; }; }
     renderDeckCard(card, "week-seal"); // ceiling: the golf card + a week-seal domino/plateau card (SN-243/094)
+  }
+  // ---- ONE honest observation of the day's charge (David 2026-07-12): a single guardian read, PURE from bookendMirror, reward-never-shame. Deterministic by day-shape so the line always fits what actually happened. All lines gated (copy-audit + COPY-ANCHORS judge 2026-07-12). Naked stat-report ("most hours went to X") was Gate-2-killed as a generic-category beat — no domain line here on purpose.
+  function pmObservation(mr) {
+    try {
+      if (!mr.planned && mr.totMin > 0) return tr("The day was unplanned and you still moved through it. That counts as a day lived.");
+      if (!mr.planned) return tr("A quiet day, and you still showed up to close it. Rest is part of the work.");
+      if (mr.planned > 0 && mr.missed === 0 && mr.kept > 0) return tr("You did what you planned today. That is the quiet version of a good day.");
+      if (mr.drift) return tr("Some of today slipped away from the plan. You still came to close it, and that is the part that holds.");
+      if (mr.kept > 0 && mr.missed > 0) return tr("You finished some of it and left some for later. What you finished is real and it stays.");
+      return tr("A quiet day, and you still showed up to close it. Rest is part of the work."); // fallback = the warm quiet-day read (never a naked stat)
+    } catch (e) { return ""; }
+  }
+  // ---- THE PLAN-AHEAD EVENT (David 2026-07-12): completing the PM close IS the "plan ahead" action (the Newport shutdown / the hero streak). Record ONE clean, unambiguous event keyed by the TARGET date so next session's "Planned Ahead" streak reads it WITHOUT re-deriving from bk/blocks. plannedOn < targetKey = planned before the day arrived. Written unconditionally on commit (closing the day counts even with no one-thing named); richer when a one-thing / carries exist.
+  function pmRecordPlanAhead(oneThing, carried) {
+    var tk = tomK(); S.plannedAhead = S.plannedAhead || {};
+    S.plannedAhead[tk] = { plannedOn: todayK(), ts: Date.now(), oneThing: (oneThing || "").trim(), carried: carried || 0 };
   }
   // ---- safe tomorrow-write helpers (PM-PLAN / PM-RESTORY) — ONLY skeletonDay / blocks(tomK()).push + reflow(tomK()); never the live timeline render
   function pmPlantOneThing(title) {
@@ -5499,6 +5536,8 @@
     S.acts = S.acts || [];
     S.acts.forEach(function (a) { if (a.children == null) a.children = []; }); /* sub-habits: a custom activity can own children (Deep work → Define the ONE thing, No phone…) — default [] so old data is safe (David 2026-06-27) */
     S.bk = S.bk || {};
+    /* PLAN-AHEAD EVENT LEDGER (David 2026-07-12): keyed by the TARGET date → { plannedOn, ts, oneThing, carried }. The PM close writes ONE clean event; the next-session "Planned Ahead" hero streak reads it (plannedOn < targetKey = planned before the day arrived). Additive, NO SCHEMA bump (matches the S.tools/S.bk/S.dayClose precedent); every read guards (S.plannedAhead||{}); rides export/import + undo for free. */
+    S.plannedAhead = S.plannedAhead || {};
     S.guide = S.guide || { mode: "off", seedTier: 0, unlocked: [], cache: {}, offeredK: null };
     /* WISDOM TOOLBOX (TB-STATE, David 2026-06-28): additive top-level store keyed by toolId — use[id] = COMPLETED reps (Willingness<3 / Habit<12 / Grace ladder), last[id]=todayK of last finish (drives once/day drift-handoff gate). NO SCHEMA bump (matches S.mood/S.acts/S.bk/S.guide precedent); every read guards (S.tools||{}); rides export/import + undo for free. */
     S.tools = S.tools || {};
