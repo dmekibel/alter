@@ -3472,6 +3472,7 @@
   var TF_MODE = null, TF_MODE_USERSET = false, TF_BLOCKID = null;
   var HOME_MODE = false; // §10f.7 (David ✓ 2026-07-13): the cockpit is opened as the app's LANDING home — idle frame + story bars + circle + tools side-scroll. Cleared the moment anything is tracking/staged so the live cockpit is untouched.
   function openHome() { HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); } // land on / return to the home cockpit (animated — a user gesture)
+  function leaveHomeForPlayer() { var tf = el("trackerFull"); if (tf) { tf.classList.remove("on", "tf-bg", "tf-home"); tf.style.height = ""; tf.style.opacity = ""; } TF_OPEN = false; TF_ANIM = false; HOME_MODE = false; } // §10f.7 (David 2026-07-13): launching a tool/session from home hides the home cockpit INSTANTLY so it never lingers behind — or jarringly re-reveals after — the tool player (the cockpit and the player are one surface, you never see both). The player is opaque + full-screen; on its close renderAll lands on the panes below.
   function openHomeInstant() { var tf = el("trackerFull"); if (!tf || TF_OPEN || TF_ANIM) return; HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; TF_OPEN = true; _ringP = 0; tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); renderTrackerFull(); } // §10f.7 boot landing: show the home cockpit with NO morph (the start screen z-200 covers it until Continue; morphing from an unlaid-out dock at boot would misfire)
   // ===== SHARED-ELEMENT MORPH (FLIP) — the folded dock's mini elements FLY/GROW into their big counterparts, and back (David 2026-06-28) =====
   // Replaces the old height-rise + content-crossfade. Pairs: mini #ldStop circle → big #tfRing circle (UNIFORM scale only — never distort);
@@ -4884,7 +4885,7 @@
     var scroll = add(panel, "div", "tf-toolscroll"); scroll.id = "tfHomeTools";
     var use = (S.tools && S.tools.use) || {};
     var tools = STACK_TOOLS.slice().sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }); // most-worn floats to the front (F2 library law)
-    tools.forEach(function (t) { var b = add(scroll, "button", "tf-htool"); b.style.background = mixHex(t.col, "#160510", 0.80); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name)); b.onclick = function () { try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
+    tools.forEach(function (t) { var b = add(scroll, "button", "tf-htool"); b.style.background = mixHex(t.col, "#160510", 0.80); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name)); b.onclick = function () { leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
     var pages = Math.max(1, Math.ceil(tools.length / 4)), dots = add(panel, "div", "tf-tooldots");
     for (var p = 0; p < pages; p++) { add(dots, "i", "dot" + (p === 0 ? " on" : "")); }
     scroll.onscroll = function () { var per = scroll.scrollWidth / pages, idx = Math.max(0, Math.min(pages - 1, Math.round(scroll.scrollLeft / Math.max(1, per)))); var ds = dots.querySelectorAll(".dot"); for (var i = 0; i < ds.length; i++) ds[i].classList.toggle("on", i === idx); };
@@ -7469,11 +7470,12 @@
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
-      // COMPOSE the session as a fixed timeline (David 2026-07-01): guide lines spaced at the chosen cadence, filling the chosen length. The player schedules every clip up front on Web Audio + gives the Headspace transport (play/pause · ±15s · scrub). Fixes the iOS timer-silence AND makes it length/frequency-adaptive.
-      var perCue = FREQ[cfg.freq], totalSec = cfg.mins * 60;
-      var segs = medComposeSegments(cfg.sess, totalSec, perCue);
+      // COMPOSE as the ACTS carousel (David 2026-07-13): one page per block, so a solo sit swipes + slides + re-tints + resets its timeline per section, exactly like the stack. "remind me" (often/some/spacious) sets the silence depth directly; fill is no-loop + dedup + depth-aware.
+      var totalSec = cfg.mins * 60, depthOverride = { often: 0.12, some: 0.5, spacious: 0.9 }[cfg.freq];
+      var SS = MED_SESSIONS[cfg.sess] || MED_SESSIONS.anchor, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
+      var built = composeMeditationSegs(blocks, totalSec, medBlockResolve, depthOverride);
       if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
-      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + MED_SESSIONS[cfg.sess].name, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, actBars: medBars(cfg.sess), autostart: true }); // F5: block arc as top story-bars
+      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + SS.name, catK: "love", color: (built.acts[0] && built.acts[0].color) || "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, totalSec: totalSec, segments: built.segs, acts: built.acts, drift: true, autostart: true });
     }
     build();
   }
@@ -7578,10 +7580,11 @@
   }
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
   function meditationQuick(onDone, durSec) {
-    var perCue = medCadence(), totalSec = durSec || 300; // the in-stack "Sit in stillness" now runs the Anchor session (David 2026-07-12): same block engine, clean amalgam copy
+    var totalSec = durSec || 300; // solo "Sit in stillness" now runs the Anchor session on the ACTS carousel (David 2026-07-13): swipe + per-section slide/color/timeline, no-loop depth fill
     TTS.unlock(); TTS.warm(medSessionLines("anchor"));
-    var segs = medComposeSegments("anchor", totalSec, perCue);
-    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, actBars: medBars("anchor"), autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } }); // F5: block arc as top story-bars
+    var SS = MED_SESSIONS.anchor, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
+    var built = composeMeditationSegs(blocks, totalSec, medBlockResolve);
+    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: (built.acts[0] && built.acts[0].color) || "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, totalSec: totalSec, segments: built.segs, acts: built.acts, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
@@ -9685,32 +9688,37 @@
     try { earn(8, { catK: "love" }); celebrateGated("#9a7cff", curStreak() || 1); save(); renderAll(); } catch (e) {}
   }
   // ===== R0 — THE RELIEF DOOR + MICRO-STACK (HANDOFF-stacks-and-meditation §10, David 2026-07-02) =====
-  // Body floor: stand + reach → forward fold → slow roll-up. Text-coached phases (voice lines warmed — they speak once R2 records them; until then honest silence per the no-robot-voice rule). The highest-ROI single stretch for a screen-slumped body.
+  function _normLine(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 60); } // dedup key: strip to letters/digits so near-identical lines (punctuation/casing) collapse — the session-wide no-repeat guard (David 2026-07-13)
+  // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The player takes as many moves as the chosen time needs (never loops, never stretches 3 over 2 min) — more time = more moves, each a held ~13s. Both gates passed. Add moves here to deepen (a data edit).
+  var STRETCH_MOVES = [
+    ["Reach for the ceiling", "stand tall, both arms long and slow"],
+    ["Fold forward", "hang heavy, let the neck and arms go"],
+    ["Roll up slowly", "stack the spine, head comes up last"],
+    ["Roll your shoulders back", "big and slow, a few times around"],
+    ["Drop one ear toward your shoulder", "let the weight of your head do the work"],
+    ["Now the other side", "just as slow"],
+    ["Pull one arm across your chest", "hold it, and feel the shoulder open"],
+    ["Switch arms", "same easy hold on the other side"],
+    ["Press your palms forward and round your back", "open the space between the shoulder blades"],
+    ["Reach up and lean to one side", "a long stretch down your ribs"],
+    ["And lean the other way", "keep breathing into it"],
+    ["Twist slowly to look behind you", "let your eyes lead the turn"],
+    ["And twist the other way", "easy, all the way around"],
+    ["Clasp your hands behind you and lift your chest", "open the front of the shoulders"]
+  ];
+  function stretchMoveSegs(secs, tag) { // fill `secs` with as many DISTINCT moves as it needs (never looped); more time = more moves, each held; long time lengthens the holds rather than repeating. Returns timelinePlayer segments.
+    secs = Math.max(30, secs || 75);
+    var n = Math.max(3, Math.min(STRETCH_MOVES.length, Math.round(secs / 13))); // ~13s per held move
+    var dwell = Math.max(11, secs / n); // if time exceeds the whole pool, holds lengthen to fill instead of looping
+    return STRETCH_MOVES.slice(0, n).map(function (p) { var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: Math.max(7, dwell - 3.5) }; if (tag != null) o._act = tag; return o; });
+  }
+  // Body floor: a slow head-to-toe stretch flow, on the reliable Web-Audio player (David 2026-07-13: replaced the fixed-3-pose + timer-speak overlay — the long-pause / only-3-moves / iOS-silent bug). The highest-ROI reset for a screen-slumped body.
   function stretchFloor(onDone, secs) {
     secs = Math.max(45, secs || 75); TTS.unlock();
-    var PH = [["Stand up", "reach for the ceiling — a big, slow stretch", 0.3], ["Fold forward", "hang heavy… let the neck go", 0.4], ["Roll up slowly", "one vertebra at a time — and breathe", 0.3]];
-    TTS.warm(PH.map(function (p) { return p[0] + ", " + p[1]; }));
-    var ov = document.createElement("div"); ov.id = "breatheOv";
-    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-label"></div><div class="bw-sub"></div>';
-    document.body.appendChild(ov);
-    var lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), done = false, tmr = null;
-    function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
-      if (ov.parentNode) ov.parentNode.removeChild(ov);
-      if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Wake the body", mins: 1, catK: "energy", color: "#ff8a1e" }); earn(4, { catK: "energy" }); save(); renderAll(); }
-      if (onDone) onDone();
-    }
-    ov.querySelector(".bw-x").onclick = function () { finish(true); };
-    var pi = 0;
-    function step() {
-      if (done) return;
-      if (pi >= PH.length) { finish(false); return; }
-      var p = PH[pi]; lab.textContent = p[0]; sub.textContent = p[1];
-      try { TTS.speak(p[0] + ", " + p[1], { volume: VPROF.relax.volume }); } catch (e) {}
-      try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
-      tmr = setTimeout(step, Math.round(secs * p[2] * 1000)); pi++;
-    }
-    step();
+    var segs = stretchMoveSegs(secs);
+    try { TTS.warm(segs.map(function (s) { return s.text; })); } catch (e) {}
+    timelinePlayer({ id: "stretch", title: "Wake the body", logTitle: "Wake the body", catK: "energy", color: "#ff8a1e", spark: 4, vol: VPROF.relax.volume, drone: true, totalSec: secs, segments: segs, autostart: true,
+      onFinish: function (skip) { if (onDone) onDone(); } }); // timelinePlayer.finish() handles the log + earn + tickTool via logTitle/catK/spark/id — do NOT re-log here (would double-count)
   }
   // Gratitude beat: three timed prompts, NO typing, no required taps (eyes-closed law — the typed Grateful Flow stays as the journal variant).
   // GRATEFUL FLOW rebuilt (David 2026-07-08 depth mandate): not a rotating prompt list. A real evidence-based practice (Emmons on specificity, Seligman's cause step, Koo & Wilson's Mental Subtraction, Bryant on savoring) that MOVES you: one specific moment, held deeply, then the counterintuitive core — imagine it never happened, feel the gap, let it return. On beatRunner (intro card + hands-free holds + real neural clips). onDone/secs kept for the stack registry; beatRunner is beat-paced so secs is advisory.
@@ -9903,7 +9911,7 @@
   }
   function _shuffled(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; } // Fisher-Yates; used so each extra pass through a line pool is a fresh order, never the identical loop
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
-    var segs = [], acts = [];
+    var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" that showed up in both relax AND meditation)
     list.forEach(function (t) {
       var C = STACK_CONTENT[t.id]; if (!C && !(t.rawSegs && t.rawSegs.length)) return;
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
@@ -9911,19 +9919,22 @@
       var introTxt = t.intro || (C && C.intro) || ("Now, " + String(t.nm || "this").toLowerCase() + ".");
       P({ text: introTxt, label: tr(t.nm), sub: "", gap: pauseFor("transition") }); // TRANSITION card — announces the act
       if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")) }); }); } // a tool that supplies its own cue segments (charge, love & embodiment)
+      else if (t.id === "stretch") { stretchMoveSegs(t.secs || 60, ai).forEach(function (s) { segs.push(s); }); } // STRETCH (David 2026-07-13): real held moves that fill the tool's time, never looped — same pool as the solo tool, sane holds instead of 3 cues stretched over 2 min
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
-        var msecs = (t.med && t.med.length) ? t.med.slice() : [{ k: "settle" }, { k: "aware" }, { k: "rest" }];
+        var msecs = (t.med && t.med.length) ? t.med.slice() : (sawBodyPrep ? [{ k: "breath" }, { k: "aware" }, { k: "rest" }] : [{ k: "settle" }, { k: "aware" }, { k: "rest" }]); // if the stack already ran relax/stretch, DROP the redundant body-settle section (that was the doubled "soften / unclench" — David 2026-07-13)
         var depth = sessionDepth(t.secs || 90); // length/preset -> how spacious: long/advanced = long silence, few reminders; short/beginner = dense
         msecs.forEach(function (sc, si) {
           var def = MED_SEC[sc.k]; if (!def) return;
           var dur = sc.d || Math.round((t.secs || 90) / msecs.length);
-          var order = def.lines.slice(), tt = 0, idx = 0, pass = 0, prev = null, first = true;
+          var order = _shuffled(def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order.length) order = def.lines.slice(); // start from lines NOT already said this session (dedup across acts)
+          var tt = 0, idx = 0, pass = 0, prev = null, first = true;
           while (tt < dur - 1) { // NO-LOOP FILL (David 2026-07-11): walk the DISTINCT lines; each full pass reshuffles + adds silence, so longer time = fewer, more-spaced reminders and varied content, never a tight loop
             var cad = pauseFor("absorb", depth) + pass * 3;
             var ln = order[idx]; if (ln === prev && order.length > 1) { idx = (idx + 1) % order.length; ln = order[idx]; } // never the same line twice in a row (incl. across a pass boundary)
+            usedTxt[_normLine(ln)] = 1;
             var seg2 = { text: ln, label: ln, sub: first ? def.name : "", gap: cad }; if (si > 0 && first) seg2._sectionStart = true; P(seg2);
             tt += cad + 3.5; prev = ln; first = false; idx++;
-            if (idx >= order.length) { idx = 0; pass++; order = _shuffled(def.lines); if (order[0] === prev && order.length > 1) { var sw = order[0]; order[0] = order[1]; order[1] = sw; } } // deepen: next pass is a fresh order with more silence
+            if (idx >= order.length) { idx = 0; pass++; var rem = def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order = _shuffled(rem.length ? rem : def.lines); if (order[0] === prev && order.length > 1) { var sw = order[0]; order[0] = order[1]; order[1] = sw; } } // deepen: next pass prefers still-unused lines, more silence
           }
         });
       } else if (C.breath) {
@@ -9933,13 +9944,52 @@
         var per = Math.max(3.5, t.secs / C.cues.length); // body cues fill the tool's own time (the pose IS the pause), so time-driven not attention-driven
         C.cues.forEach(function (q) { P({ text: q[0], label: q[0], sub: q[1] || "", gap: per }); });
       } else if (C.lines) {
-        var depthL = sessionDepth(t.secs || 60), order2 = C.lines.slice(), t2 = 0, li = 0, passL = 0, prevL = null; // same no-loop fill for line-pool tools (mantra / gratitude / rewire / medit-lines)
+        var depthL = sessionDepth(t.secs || 60), order2 = _shuffled(C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order2.length) order2 = C.lines.slice(); // same no-loop fill for line-pool tools (mantra / gratitude / rewire), starting from lines not already said this session
+        var t2 = 0, li = 0, passL = 0, prevL = null;
         while (t2 < t.secs - 1) { var lcad = pauseFor("cue", depthL) + passL * 2; var ln = order2[li]; if (ln === prevL && order2.length > 1) { li = (li + 1) % order2.length; ln = order2[li]; }
-          P({ text: ln, label: ln, sub: "", gap: lcad }); t2 += lcad + 3; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; order2 = _shuffled(C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
+          usedTxt[_normLine(ln)] = 1;
+          P({ text: ln, label: ln, sub: "", gap: lcad }); t2 += lcad + 3; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
       }
+      if (t.id === "relax" || t.id === "stretch") sawBodyPrep = true; // a later meditation act drops its redundant body-settle section
     });
     return { segs: segs, acts: acts };
   }
+  // ===== SOLO MEDITATION on the STACK CAROUSEL (David 2026-07-13): every meditation SECTION becomes one ACT/page, so a solo sit gets the SAME smooth surface as the stack — swipe between sections, the whole page slides, each section re-tints the orb + transport, and the timeline resets per section. Fed to timelinePlayer with `acts` (not the passive actBars header). Fill is no-loop + session-wide dedup + depth-aware silence, so a longer/advanced sit reaches MORE distinct content with more space, never a tight loop. blocks = [{key, weight}]; resolve(key) -> {name,color,icon,entry,pool,weave}. =====
+  function composeMeditationSegs(blocks, totalSec, resolve, depthOverride) {
+    var segs = [], acts = [], used = {}, sumW = 0, ri = 0, t = 0;
+    var depth = (depthOverride != null) ? depthOverride : sessionDepth(totalSec);
+    blocks.forEach(function (b) { sumW += (b.weight || 1); });
+    blocks.forEach(function (b) {
+      var def = resolve(b.key); if (!def || !def.entry) return;
+      acts.push({ name: def.name, color: def.color || "#9a5cf0", icon: def.icon || "ti-circle-filled" });
+      var ai = acts.length - 1, pool = (def.pool || []).filter(Boolean);
+      function P(s) { s._act = ai; segs.push(s); }
+      var bEnd = t + totalSec * ((b.weight || 1) / (sumW || 1)), entryGap = pauseFor("cue", depth);
+      P({ text: def.entry, label: def.entry, sub: def.name, gap: entryGap }); // entry TAUGHT ONCE, its section name as the subtitle
+      used[_normLine(def.entry)] = 1; t += entryGap + 3.5;
+      if (!pool.length) return;
+      var order = _shuffled(pool.filter(function (l) { return !used[_normLine(l)]; })); if (!order.length) order = _shuffled(pool);
+      var idx = 0, pass = 0, prev = def.entry, picks = 0;
+      while (t < bEnd - 1) {
+        var gap = pauseFor("absorb", depth) + pass * 3, ln;
+        picks++;
+        if (def.weave && picks % 4 === 0 && MED_RETURN.length) { ln = MED_RETURN[ri++ % MED_RETURN.length]; } // a "notice you drifted, come back" cue — intentionally recurs, exempt from dedup + the pool walk
+        else {
+          if (idx >= order.length) { pass++; gap = pauseFor("absorb", depth) + pass * 3; var rem = pool.filter(function (l) { return !used[_normLine(l)]; }); order = _shuffled(rem.length ? rem : pool); idx = 0; } // next pass: prefer still-unused lines, reshuffle + add silence; reuse only when the whole pool is spent
+          ln = order[idx]; if (_normLine(ln) === _normLine(prev) && order.length > 1) { idx = (idx + 1) % order.length; ln = order[idx]; } // never the same line twice running
+          used[_normLine(ln)] = 1; idx++;
+        }
+        if (ln == null) break;
+        P({ text: ln, label: ln, sub: "", gap: gap }); t += gap + 3.5; prev = ln;
+      }
+    });
+    if (!acts.length) return { segs: [{ text: MED_BLOCKS.settle.entry, label: MED_BLOCKS.settle.entry, sub: "", _act: 0 }], acts: [{ name: "Settle", color: "#63e6d6", icon: "ti-armchair" }] };
+    var lastB = blocks[blocks.length - 1], lastDef = lastB && resolve(lastB.key); // always land on the true closing line ("gently open your eyes"), never mid-pool
+    if (lastDef && lastDef.pool && lastDef.pool.length) { var fin = lastDef.pool[lastDef.pool.length - 1]; if (segs.length && _normLine(segs[segs.length - 1].text) !== _normLine(fin)) segs.push({ text: fin, label: fin, sub: "", _act: acts.length - 1 }); }
+    return { segs: segs, acts: acts };
+  }
+  function medBlockResolve(k) { var b = MED_BLOCKS[k]; if (!b || !b.entry) return null; return { name: b.name, color: b.c, icon: b.ti, entry: b.entry, pool: b.pool || [], weave: /^(count|scan|listen|watch|feel)$/.test(k) }; } // MED_SESSIONS blocks -> normalized (working blocks weave RETURN cues)
+  function medSecResolve(k) { var s = MED_SEC[k]; if (!s || !s.lines || !s.lines.length) return null; return { name: s.name, color: s.col, icon: s.ti, entry: s.lines[0], pool: s.lines.slice(1), weave: /^(body|aware)$/.test(k) }; } // editor MED_SEC sections -> normalized (lines[0] = entry, rest = pool)
   function firstDayStack(onDone) { // STONE 1 = THE APP IN ONE MINUTE (David 2026-07-08): the intro micro-stack (plan -> do -> track) IS the first journey stone now, no longer an onboarding beat. Standalone overlay: plan the stack, runFirstStack (carousel + before/after gauge = the felt-shift proof, self-logs to the day), then the show-don't-tell recap. Plan-UI + recap are the proven onboarding code, lifted verbatim. onDone() closes it.
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
     // ===== INTRO STONE (David 2026-07-10 — ONE STACK, ONE COMMIT): HOOK (body -> breath+relax) -> SETUP2 (meditation + self-talk) -> STACK-COMMIT (all four moves, toggle one off, press-hold) -> runFirstStack (the four-act carousel, one surface, pre/post tension gauge) -> showClose. The two-round split (breath/relax then meditate/mantra) was removed — it broke the stack feel. Copy through both gates + adversarial judge. Press-hold + carousel gesture FEEL is DEVICE-UNTESTED. showPlan/showRecap below are DEAD (unscheduled) — delete in a clean pass. =====
@@ -10694,7 +10744,11 @@
     cfg = cfg || {};
     var SEC = MED_SEC; // shared module-scope section defs (also used by the stack carousel's meditation sections)
     var ORDER = ["settle", "breath", "body", "aware", "heart", "rest", "bliss", "play"];
-    function playTrack(t, onFin) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0), cad = medCadence(), segs = []; t.forEach(function (x, ti) { var s = SEC[x.k]; if (!s) return; var n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "", _ab: ti }); } }); var bars = t.map(function (x) { var s = SEC[x.k] || {}; return { icon: s.ti || "ti-circle-filled", color: s.col || "#9a5cf0" }; }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, actBars: bars, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); } // F5: the section arc as top story-bars
+    function playTrack(t, onFin) { // ACTS carousel (David 2026-07-13): each editor section = one page (swipe + slide + per-section color/timeline), no-loop depth fill + dedup instead of the old q % lines.length tight loop. Section duration IS its weight, so each gets exactly its set time.
+      var tot = t.reduce(function (a, x) { return a + x.d; }, 0), blocks = t.map(function (x) { return { key: x.k, weight: x.d }; });
+      var built = composeMeditationSegs(blocks, tot, medSecResolve);
+      try { TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
+      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: (built.acts[0] && built.acts[0].color) || "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, totalSec: tot, segments: built.segs, acts: built.acts, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); }
     var track = (cfg.track && cfg.track.length ? cfg.track : ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }])).map(function (x) { return { k: x.k, d: x.d }; });
     if (cfg.playNow) { playTrack(track, cfg.onFinish); return; } // run a pre-built inner meditation directly (no composer UI)
     openSessionComposer({
