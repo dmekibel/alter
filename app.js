@@ -8929,6 +8929,17 @@
       var more = add(sb, "button", "tb-ghost"); more.style.marginTop = "10px"; more.innerHTML = '<i class="ti ti-dots"></i> ' + esc(tr("Show all sessions"));
       more.onclick = function () { sb.dataset.fdall = "1"; try { renderStage("tool"); } catch (e) {} };
     } else {
+      // F3 planner-aware suggestion: if a pocket before your next planned block fits a pack, offer it up top (the doors below stay as the explicit chip-row fallback)
+      var _pg = plannerNextGap(), _fit = _pg ? fitPackFor(_pg.gap) : null;
+      if (_fit) {
+        var pb = add(sb, "button", "tb-plan"); pb.style.marginTop = "12px";
+        add(pb, "div", "tbpl-ic").innerHTML = '<i class="ti ti-calendar-clock"></i>';
+        var bd = add(pb, "div", "tbpl-bd");
+        add(bd, "div", "tbpl-n", "~" + _pg.gap + " " + tr("min free"));
+        add(bd, "div", "tbpl-s", tr("before") + " " + _pg.block.title);
+        add(pb, "div", "tbpl-go").innerHTML = '<i class="ti ti-player-play"></i> ' + esc(tr(_fit.name));
+        pb.onclick = function () { var tr2 = _fit.track.map(function (t) { return { k: t.k, d: t.d }; }); try { runStack(tr2, 0); } catch (e) { try { stackTimeline(tr2); } catch (e2) {} } };
+      }
       add(sb, "div", "tb-fdsec", tr("HOW MUCH TIME DO YOU HAVE"));
       STACK_PACKS.forEach(function (p) { fdDoor(sb, p, false); });
     }
@@ -9423,8 +9434,21 @@
     "long enough that the mind stops hunting for problems": "достаточно, чтобы ум перестал искать проблемы",
     "Low on energy? Here's the short one. I'll do the guiding.": "Мало сил? Вот короткая. Я поведу.",
     "Show all sessions": "Показать все сессии",
-    "HOW MUCH TIME DO YOU HAVE": "СКОЛЬКО У ТЕБЯ ЕСТЬ"
+    "HOW MUCH TIME DO YOU HAVE": "СКОЛЬКО У ТЕБЯ ЕСТЬ",
+    "min free": "мин свободно", "before": "до"
   });
+  // F3 · PLANNER-AWARE TIME (David-decided 2026-07-13, §10e.3): read the real day and offer a session that fits the pocket before your next planned block ("~22 min free before English"). Unique to ALTER — no other tool knows your day. Chip-row fallback = the 3 fixed pack doors below. Suppressed on low-vibe (relief door, not planning pressure — the R0 energy-door law).
+  function plannerNextGap() { // minutes until the next titled block today + that block, or null if no near pocket (must be 7–180 min out)
+    var k = todayK(), now = logicalNowMin(), best = null;
+    (blocks(k) || []).forEach(function (b) {
+      if (!b.title) return;
+      var s = hm(b.time); if (s < DAYSTART) s += 1440; // post-midnight blocks live in the next logical window (mirrors blockStatus)
+      var gap = s - now;
+      if (gap >= 7 && gap <= 180 && (!best || gap < best.gap)) best = { gap: gap, block: b };
+    });
+    return best;
+  }
+  function fitPackFor(gapMin) { var base = null; STACK_PACKS.forEach(function (p) { if (p.min <= gapMin - 2 && (!base || p.min > base.min)) base = p; }); return base; } // the largest ready pack that fits the pocket, leaving a 2-min buffer so you're not late
   function stackTool(id) { for (var i = 0; i < STACK_TOOLS.length; i++) if (STACK_TOOLS[i].id === id) return STACK_TOOLS[i]; return null; }
   // packs + custom chooser
   function stackBuilder() {

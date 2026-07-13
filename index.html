@@ -1721,6 +1721,16 @@
   /* angel-serves-one: the low-vibe served door wears the pink hero frame */
   .tb-fdoor.tb-served{ border-color:#ff8fc0; background:#2c081a; box-shadow:0 5px 0 #160510; }
   .tb-fdserved-kick{ font-size:13px; color:#ffb9d6; line-height:1.4; font-family:"Jost",sans-serif; font-weight:700; margin-top:2px; }
+  /* F3 planner-aware banner: reads the day, offers a session that fits the pocket before the next planned block */
+  .tb-plan{ width:100%; display:flex; align-items:center; gap:11px; background:#1b1330; border:2px solid #160510; border-radius:14px; box-shadow:0 3px 0 #160510; padding:11px 12px; cursor:pointer; font-family:"Jost",sans-serif; text-align:left; }
+  .tb-plan:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .tb-plan .tbpl-ic{ flex:none; width:34px; height:34px; border-radius:10px; background:#2a2150; display:flex; align-items:center; justify-content:center; color:#9a8cff; }
+  .tb-plan .tbpl-ic i{ font-size:19px; }
+  .tb-plan .tbpl-bd{ flex:1; min-width:0; }
+  .tb-plan .tbpl-n{ font-weight:800; font-size:15px; color:#fff2f9; line-height:1.1; }
+  .tb-plan .tbpl-s{ font-size:12px; color:#c3a6d0; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tb-plan .tbpl-go{ flex:none; display:flex; align-items:center; gap:5px; background:#3ad07f; color:#08321f; border:2px solid #160510; border-radius:11px; box-shadow:0 3px 0 #160510; padding:8px 11px; font-weight:800; font-size:12.5px; white-space:nowrap; }
+  .tb-plan .tbpl-go i{ font-size:15px; }
   /* verdict palettes by state */
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
@@ -2716,6 +2726,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1035"></script>
+  <script src="app.js?v=1036"></script>
 </body>
 </html>
