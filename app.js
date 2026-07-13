@@ -5971,6 +5971,12 @@
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
+  // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
+  var FH = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21;
+  var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
+  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; }); }
+  var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
+  function fhDirName(ang) { var k = (((Math.round(ang / (Math.PI / 4))) % 8) + 8) % 8; return FH_KBYK[k]; }
   // spr-dir.png rows are David's hand-picked spin frames, already in compass order
   // (S,SW,W,NW,N,NE,E,SE) = his timestamped screenshots: front 1.43s, left 1.86, back-left 2.29,
   // back 2.91, back-right 3.43, right 3.68, front-right 3.96 (SW reuses front). No mirroring.
@@ -5981,6 +5987,7 @@
   function loadWorld() {
     var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg" };
     Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=3"; WORLD_IMG[k] = im; });
+    loadFarmhand();
   }
   function drawObj(ctx, img, x, y, h) {
     if (!img || !img.complete || !img.naturalWidth) return;
@@ -6173,7 +6180,13 @@
     var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
     var aiming = (aimX !== 0 || aimY !== 0), dr = FAIRY.dir, hHs = 132;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
-    if (dr && dr.complete && dr.naturalWidth) {
+    var fhImg = SANCTUARY ? FH[fhDirName(fhFace)] : null;
+    if (SANCTUARY && fhImg && fhImg.complete && fhImg.naturalWidth) {
+      // David's keyed farmhand: pick the facing sprite, draw the current walk frame, feet anchored at (px,py)
+      var ffw = fhImg.naturalWidth / FH_NF, ffh = fhImg.naturalHeight, ffi = Math.floor(fhFrame) % FH_NF;
+      var FDH = 104, FDW = FDH * ffw / ffh, fbob = fhMoving ? 0 : Math.round(Math.sin(t * 2) * 1.2);
+      ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8 + fbob), FDW, FDH);
+    } else if (dr && dr.complete && dr.naturalWidth) {
       var ms = FAIRY_META.dir, row = 0;
       if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
       var hWs = hHs * ms.fw / ms.fh;
@@ -6226,7 +6239,22 @@
     var t = (performance.now() - GT0) / 1000;
     var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving;
     if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
-    if (skateOn && skateOk()) {
+    if (SANCTUARY) {
+      // ── FARMHAND locomotion (LOCOMOTION-BUILD-SPEC §2-3): FACING (which sprite) decoupled from MOVEMENT (left stick). ──
+      var m = Math.hypot(moveX, moveY), aimActive = (moveX2 !== 0 || moveY2 !== 0), target;
+      if (aimActive) { target = Math.atan2(moveY2, moveX2); }               // right stick = absolute aim → face it
+      else if (m > 0.12) { var a = Math.atan2(moveY, moveX), dd = a - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2; target = (Math.abs(dd) < Math.PI * 0.75) ? a : fhFace; } // <135° steer toward move; ≥135° hold facing (reverse/backpedal)
+      else { target = fhFace; }
+      var df2 = target - fhFace; while (df2 > Math.PI) df2 -= Math.PI * 2; while (df2 < -Math.PI) df2 += Math.PI * 2;
+      fhFace += df2 * (aimActive ? 0.5 : 0.22);                             // rotate toward target (snappier for explicit aim)
+      moving = m > 0.05;
+      if (moving) {
+        px += moveX * SPD; py += moveY * SPD;                              // move along the LEFT stick, independent of facing
+        var mv = Math.atan2(moveY, moveX), sgn = Math.cos(mv - fhFace) >= 0 ? 1 : -1; // signed playback: forward if moving along facing, backward if opposite (walk-backward, no cut)
+        fhFrame += m * sgn * 0.42; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF;
+      } else if (fhFrame !== 0) { fhFrame += 0.42; if (fhFrame >= FH_NF) fhFrame = 0; } // release → finish the step, rest on the stand frame
+      fhMoving = moving;
+    } else if (skateOn && skateOk()) {
       // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
       var mln = Math.hypot(moveX, moveY);
       if (mln > 0.05) {
@@ -6243,7 +6271,7 @@
       skateAng = null; pvx = 0; pvy = 0; moving = (moveX !== 0 || moveY !== 0);
       if (moving) { px += moveX * SPD; py += moveY * SPD; if (moveX > 0.15) pface = 1; else if (moveX < -0.15) pface = -1; walkT++; if (walkT > 8) { walkT = 0; walkF = 1 - walkF; } }
     }
-    if (jvz !== 0 || jz > 0) {
+    if (!SANCTUARY && (jvz !== 0 || jz > 0)) {  // no skateboard jump/tricks in the sanctuary ("being, not doing")
       jz += jvz; jvz -= 0.95;
       if (jz > 24 && tricksOk()) {  // mid-air tricks on the right stick (gated on the trick-deck unlock)
         if (moveX2 < -0.4) bodySpin += 9; else if (moveX2 > 0.4) bodySpin -= 9;
@@ -12584,7 +12612,7 @@
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
-    function _dj(fn) { return function () { var ss = el("startScreen"); if (ss) { ss.classList.remove("on", "leaving"); } document.body.classList.add("overworld"); try { fn(); } catch (e) {} }; } // dev jump: drop the start-screen overlay first, then open the surface
+    function _dj(fn) { return function () { var ss = el("startScreen"); if (ss) { ss.classList.remove("on", "leaving"); } try { leaveHomeForPlayer(); } catch (e) {} document.body.classList.remove("tracker", "overworld"); try { fn(); } catch (e) {} }; } // dev jump: drop the start-screen + home cockpit + overworld overlays (body.overworld floats #screen at z70 OVER the game) so the target surface lands unobstructed
     var acts = [
       // ── JUMP TO a surface in ONE click (David 2026-07-13 — the preview gates are slow; these bypass the start-screen/mood-gate/nav) ──
       ["🏝 Game world (Sanctuary)", _dj(function () { setPaneRest("game"); })],   // canonical pane switch → gameMode on top, no mood gate
