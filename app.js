@@ -7379,6 +7379,8 @@
       pool: ["You don't need to name it or push it away. Just feel it, as sensation.", "Notice how it shifts and changes as you watch."] },
     open: { entry: "For these last minutes, let go of every technique. There's nothing more to do.",
       pool: ["Let everything be exactly as it is. Thoughts, sounds, sensations, all coming and going on their own.", "Rest here, aware of whatever comes, holding on to none of it.", "If you drift into thought, no problem. The moment you notice, you're already back."] },
+    heart: { entry: "Now bring to mind someone who is easy to love. A person, an animal, anyone at all. Picture them here with you, and let a little warmth rise as you do.", // loving-kindness / metta (David 2026-07-13): the missing heart/love layer. Copy = shared metta common tongue ("may you be happy..."), both gates passed; NOT lifted from a living author (see COPY-ANCHORS GUIDED-VOICE REGISTER LAW + SCOPE AMENDMENT)
+      pool: ["Silently wish them well. May you be happy. May you be safe. May you be at ease.", "There's no need to force the feeling. Just hold them in mind, and let whatever warmth is there be there.", "Now turn that same kindness toward yourself. May I be happy. May I be at ease.", "Feel it in the center of the chest, a soft warmth, and let everything around it soften.", "Let it widen now, past this one person, to anyone who comes to mind. May you be happy too."] },
     close: { entry: "Now let go of any effort. For these last moments, let the mind rest, free to do as it pleases.",
       pool: ["Bring your attention back to the body. The weight, the contact, the sounds around you.", "And in your own time, gently open your eyes."] }
   };
@@ -7387,7 +7389,8 @@
   var MED_SESSIONS = {
     anchor: { name: "Anchor", sub: "settle and count the breath · for beginners", blocks: [["settle", 1], ["breath", 1.1], ["count", 2.6], ["close", 0.7]] },
     explore: { name: "Explore", sub: "a tour of the senses · intermediate", blocks: [["settle", 0.9], ["breath", 0.9], ["scan", 1.6], ["listen", 1.2], ["watch", 1.4], ["close", 0.7]] },
-    open: { name: "Open", sub: "rest in open awareness · advanced", blocks: [["settle", 0.9], ["breath", 0.7], ["watch", 1.2], ["feel", 1.2], ["open", 1.8], ["close", 0.5]] }
+    open: { name: "Open", sub: "rest in open awareness · advanced", blocks: [["settle", 0.9], ["breath", 0.7], ["watch", 1.2], ["feel", 1.2], ["open", 1.8], ["close", 0.5]] },
+    heart: { name: "Heart", sub: "warmth and loving-kindness · metta", blocks: [["settle", 0.9], ["breath", 0.6], ["heart", 2.6], ["close", 0.7]] }
   };
   function medSessionLines(sessKey) { // every line a session can speak — for TTS.warm (pre-decode before Begin)
     var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor, out = [];
@@ -7398,7 +7401,8 @@
   var MED_BLOCK_META = {
     settle: { ti: "ti-armchair", c: "#63e6d6" }, breath: { ti: "ti-lungs", c: "#79ccff" }, count: { ti: "ti-list-numbers", c: "#a08fff" },
     scan: { ti: "ti-scan", c: "#ff9a3d" }, listen: { ti: "ti-ear", c: "#ff85be" }, watch: { ti: "ti-eye", c: "#c9a6ff" },
-    feel: { ti: "ti-heart", c: "#ff9a6e" }, open: { ti: "ti-windmill", c: "#63e6d6" }, close: { ti: "ti-moon", c: "#a08fff" }
+    feel: { ti: "ti-heart", c: "#ff9a6e" }, open: { ti: "ti-windmill", c: "#63e6d6" }, close: { ti: "ti-moon", c: "#a08fff" },
+    heart: { ti: "ti-heart-handshake", c: "#ff5f9e" }
   };
   function medBars(sessKey) { var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor; return S.blocks.map(function (b) { var m = MED_BLOCK_META[b[0]] || {}; return { icon: m.ti || "ti-circle-filled", color: m.c || "#9a5cf0" }; }); }
   function medComposeSegments(sessKey, totalSec, perCue) { // allocate the length across the session's blocks by weight; each block plays its entry once, then fills its slice with its own pool + woven RETURN cues at the cadence
@@ -7441,7 +7445,7 @@
       }
       row("how long", [["2 min", 2], ["5 min", 5], ["10 min", 10]], "mins");
       row("remind me", [["often", "often"], ["some", "some"], ["spacious", "spacious"]], "freq");
-      row("session", [["Anchor", "anchor"], ["Explore", "explore"], ["Open", "open"]], "sess");
+      row("session", [["Anchor", "anchor"], ["Explore", "explore"], ["Open", "open"], ["Heart", "heart"]], "sess");
       var who = add(box, "div", null, MED_SESSIONS[cfg.sess].sub); who.style.cssText = "font-size:11px;color:#9c8fc4;margin-top:6px;font-style:italic;";
       var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:18px;background:#9a7cff;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
@@ -9836,10 +9840,12 @@
   var MED_SEC = { // meditation SECTIONS (moved to module scope 2026-07-08 so the stack carousel can render a meditation's sections + section-ticks, not just medEditor). t.med = [{k, d}] references these keys.
     firstsit: { name: "Stillness", col: "#46e2a4", ti: "ti-yoga", lines: ["Feel yourself sitting here, and find your breath", "Let it move on its own, nothing to fix", "Soon your mind will drift off somewhere, and that is fine", "The moment you notice you have drifted, you are back", "That noticing is the whole exercise", "Bring your attention to the breath again, gently", "No need to be hard on yourself for drifting. Come back to the breath.", "Rest here a while, and keep coming back"] }, // the first-stone sit: the wander/notice/come-back teaching delivered AS instruction, in-sit (David 2026-07-09). Both gates + adversarial judge.
     settle: { name: "Arrival", col: "#9a7cff", ti: "ti-seedling", lines: ["Settle in…, let your eyes soften", "Soften your forehead, and unclench your jaw", "Drop your shoulders, let them fall", "Soften your chest, and your belly", "Let your arms go heavy, down to your fingertips", "Release your legs, all the way to your feet", "Your whole body is heavy and calm, nothing to do, nowhere to be", "One mindful moment, just be here, now"] },
-    breath: { name: "Breath", col: "#63d3c9", ti: "ti-wind", lines: ["Soft focus — just aware of the space around you", "A few big breaths… in through the nose, out through the mouth", "Let the body soften with each out-breath", "Nothing to do, nothing to respond to — just time for you", "Feel the weight of the body pressing down", "Find the breath rising and falling", "One on the in-breath… two on the out-breath", "Feel that sense of space with each exhale", "Thoughts come — that's fine. Gently back to the breath", "Now let the mind be completely free"] },
-    body: { name: "Body", col: "#ff8a5c", ti: "ti-body-scan", lines: ["Calm, even breath — nothing happening but this breath", "Come down into your feet — deep contact", "Attune to the quality of self inside your feet", "Inhabit your legs… your hips… settle down into them", "Inhabit your belly — attune to the quality of power there", "Inhabit your chest — attune to the quality of love", "Let the breath move gently through the heart", "Inhabit your whole body at once — this is yours", "Find the space outside your body, in the room", "Feel that you ARE that space"] },
-    aware: { name: "Awareness", col: "#ff5fa0", ti: "ti-eye", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath — the tip of the nose, or the belly", "No need to control it — just let it come and go", "When the mind wanders, gently bring it back to the breath", "Notice a thought arise… and watch where it goes", "Notice the sounds — they arise on their own", "Simply witness whatever arises and passes", "Nothing falls outside this — just be aware"] },
-    rest: { name: "Rest", col: "#ffd24a", ti: "ti-moon", lines: ["There's nothing to do here", "Awareness is already present — you don't make it happen", "Relinquish the doer — pat it on the head, it's irrelevant", "Not the watcher, not the witness — just resting", "Let everything be exactly as it is, right now", "Just rest as awareness", "Whenever you've drifted, simply rest again", "Nothing for the mind to do… and that's okay", "You and awareness are not two"] },
+    // COPYRIGHT DE-RISK (David 2026-07-13): these older sections carried near-verbatim living-author lines (Headspace "sense of space", Blackstone "attune to the quality of", Harris "nothing falls outside this", Adyashanti "pat the doer on the head / you and awareness are not two"). Retired — now single-sourced from the gated MED_BLOCKS content. Structural consolidation of MED_SEC↔MED_BLOCKS still owed; bliss/play below are advanced/esoteric and flagged for their own clean-copy pass (moderate risk, not clear verbatim lifts).
+    breath: { name: "Breath", col: "#63d3c9", ti: "ti-wind", lines: [MED_BLOCKS.breath.entry].concat(MED_BLOCKS.breath.pool) },
+    body: { name: "Body", col: "#ff8a5c", ti: "ti-body-scan", lines: [MED_BLOCKS.scan.entry].concat(MED_BLOCKS.scan.pool) },
+    aware: { name: "Awareness", col: "#ff5fa0", ti: "ti-eye", lines: [MED_BLOCKS.watch.entry].concat(MED_BLOCKS.watch.pool, MED_BLOCKS.listen.pool) },
+    rest: { name: "Rest", col: "#ffd24a", ti: "ti-moon", lines: [MED_BLOCKS.open.entry].concat(MED_BLOCKS.open.pool) },
+    heart: { name: "Heart", col: "#ff5f9e", ti: "ti-heart-handshake", lines: [MED_BLOCKS.heart.entry].concat(MED_BLOCKS.heart.pool) }, // loving-kindness / metta — the clean heart layer reachable in medEditor too (David 2026-07-13)
     bliss: { name: "Bliss", col: "#ff9ec9", ti: "ti-sun-high", adv: true, lines: ["Let attention rest on the shining side of awareness — the glow, not the emptiness", "Sense a quiet fullness there, an overflowing satisfaction. First, just detect it — that's the bliss", "You don't have to fix any feeling, or take apart the story — that's only conflict with yourself", "Whatever is here — sadness, restlessness — let it turn toward the bliss, drawn to it", "Let the feeling and the bliss come together, and fuse", "Come exactly as you are — nothing to become first, nothing to earn", "Notice the bliss arises on its own — you're not making it happen. Just receive it", "If a warmth rises with it, welcome that too — the heart saturating, content, full", "Not I feel bliss — just, bliss is here. Let the sense of self soften into it", "Don't reach for a result. Let this be the only step — no end, nowhere to get to", "If you tighten, that's fine — just notice; it passes on its own. Nothing can hold the bliss back"] },
     play: { name: "Play", col: "#8ad0ff", ti: "ti-confetti", adv: true, lines: ["Set down the need for any of this to make sense — no plan behind it, human or otherwise", "Existence is play, not a serious agenda. There's no goal to reach", "So you can relax, and simply look — no demand, no anger in the looking", "Watch a thought: where it begins, while it's here, and where it goes when it fades", "Don't hunt for an answer. The ache to know is just a weight — let it drop", "Don't try to find a place outside the motion. Let it move, and move with it", "Trust exactly where you are — nothing to fix about your starting point", "Let both meet: the clear seeing and the warm feeling. Ease is their balance", "You don't get rid of the seeker — the seeking just softens into ease, for no reason", "When the demand for sense falls away, insight can arise on its own — uninvited, alive"] }
   };
@@ -10218,7 +10224,7 @@
   function runFullStack(mins, tapOn) {
     mins = mins || 10;
     var attSecs = Math.round(mins * 60 * 0.2), chargeSecs = Math.round(mins * 60 * 0.3), deepSecs = Math.round(mins * 60 * 0.25);
-    var deepSeq = [MED_BLOCKS.scan.entry].concat(MED_BLOCKS.scan.pool), deepCad = Math.max(9, Math.round(deepSecs / deepSeq.length)); // embodiment block (David 2026-07-12: retired MED_GUIDES.blackstone; heart/love block still owed)
+    var deepSeq = [MED_BLOCKS.heart.entry].concat(MED_BLOCKS.heart.pool), deepCad = Math.max(9, Math.round(deepSecs / deepSeq.length)); // love layer = the metta heart block (David 2026-07-13: heart/love block written; retired the scan-block placeholder that stood in for "Love & embodiment")
     var bcyc = mins <= 10 ? 3 : mins <= 20 ? 5 : 8;
     var track = [ // the flagship stack, now as ONE carousel: breathe -> attention -> charge -> love & embodiment -> mantra. charge + deep supply their own cue segments (rawSegs).
       { k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: bcyc * 16 },
@@ -10667,7 +10673,7 @@
   function medEditor(cfg) {
     cfg = cfg || {};
     var SEC = MED_SEC; // shared module-scope section defs (also used by the stack carousel's meditation sections)
-    var ORDER = ["settle", "breath", "body", "aware", "rest", "bliss", "play"];
+    var ORDER = ["settle", "breath", "body", "aware", "heart", "rest", "bliss", "play"];
     function playTrack(t, onFin) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0), cad = medCadence(), segs = []; t.forEach(function (x, ti) { var s = SEC[x.k]; if (!s) return; var n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "", _ab: ti }); } }); var bars = t.map(function (x) { var s = SEC[x.k] || {}; return { icon: s.ti || "ti-circle-filled", color: s.col || "#9a5cf0" }; }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, actBars: bars, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); } // F5: the section arc as top story-bars
     var track = (cfg.track && cfg.track.length ? cfg.track : ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }])).map(function (x) { return { k: x.k, d: x.d }; });
     if (cfg.playNow) { playTrack(track, cfg.onFinish); return; } // run a pre-built inner meditation directly (no composer UI)
