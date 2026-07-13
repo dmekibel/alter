@@ -210,7 +210,7 @@
       if (!text) return; opts = opts || {}; stop();
       function fin() { if (opts.onend) try { opts.onend(); } catch (e) {} }
       if (!vset) { dbg("no-manifest"); fin(); return; }                              // manifest not loaded yet → silent
-      var key = vhash(text); if (!vset[key]) { dbg("no-clip:" + key); fin(); return; }  // no clip for this exact line → silent
+      var key = vhash(text); if (!vset[key]) { dbg("no-clip→synth:" + key); if (typeof voiceOn === "function" && voiceOn()) { speakSynth(text, opts); } else { fin(); } return; }  // SPEAK ALOUD (David 2026-07-13): no recorded clip → device-TTS fallback (was silent per the no-robot rule). Gated by the voice toggle. iOS timer-fired speech is DEVICE-UNTESTED.
       var ctx = sharedAudioCtx(); if (!ctx) { dbg("no-audiocontext"); fin(); return; }
       var vol = opts.volume != null ? opts.volume : 1, myGen = ++playGen;
       function playBuf(buf) {
@@ -256,13 +256,13 @@
       var src = scheduleClip(text, atSec, vol); if (src) return src;
       try {
         var ctx = sharedAudioCtx(); if (!ctx) return null; var start = t0 != null ? t0 : ctx.currentTime;
-        getBuffer(text).then(function (buf) { if (!buf) return; try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); g2.gain.value = vol != null ? vol : 1; s2.connect(g2); g2.connect(voiceBus() || ctx.destination); s2.start(ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime)); } catch (e) {} });
+        getBuffer(text).then(function (buf) { if (!buf) { try { if (typeof voiceOn === "function" && voiceOn()) { var _sd = Math.max(0, (start + atSec - ctx.currentTime)) * 1000; setTimeout(function () { speakSynth(text, { volume: vol }); }, _sd); } } catch (e) {} return; } try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); g2.gain.value = vol != null ? vol : 1; s2.connect(g2); g2.connect(voiceBus() || ctx.destination); s2.start(ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime)); } catch (e) {} }); // SPEAK ALOUD (David 2026-07-13): breath/tapping clip-less cues speak via timer-fired device TTS (iOS device-untested)
       } catch (e) {}
       return null;
     }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return !!(vset && vset[vhash(t)]); } };
+    return { supported: supported, unlock: unlock, speak: speak, speakSynth: speakSynth, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return !!(vset && vset[vhash(t)]); } };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -9173,7 +9173,7 @@
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
   function timelinePlayer(opts) {
     TTS.unlock(); // gesture-bound: schedule while the context is awake
-    var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
+    var col = opts.color || "#9a5cf0", ctx = TTS.ctx(); var _spokeIdx = -1; // SPEAK ALOUD (David 2026-07-13): index of the last clip-less cue synth-spoken
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "gp-ov";
     ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div>';
     document.body.appendChild(ov);
@@ -9315,6 +9315,7 @@
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      if (seg && _si !== _spokeIdx) { _spokeIdx = _si; if (playing && !seg.buf && seg.text && typeof voiceOn === "function" && voiceOn()) { try { TTS.speakSynth(seg.text, { volume: opts.vol != null ? opts.vol : 1 }); } catch (e) {} } } // SPEAK ALOUD (David 2026-07-13): a cue with no recorded clip speaks via device TTS as it appears (device-untested feel on iOS)
       if (minimized && miniLab) miniLab.textContent = lab.textContent; // keep the minimized dock's label live while audio keeps playing
       if (orb) { // ORB DRIVE (David 2026-07-09): ONE clock. Scale the orb from the CURRENT segment's breath phase across its REAL span (audio + adaptive gap), so it tracks the cues exactly — fixes hold-too-short, cut-when-full, shrinks-on-hold. Non-breath segments keep a gentle ~11s ambient breath so it still guides you.
         var _ph = seg && seg.breath, _sc, _op;
@@ -9836,8 +9837,8 @@
   var MED_EXTRA = {
     arrival: { name: "Arrival", col: "#9a7cff", ti: "ti-seedling", lines: ["Settle in…, let your eyes soften", "Soften your forehead, and unclench your jaw", "Drop your shoulders, let them fall", "Soften your chest, and your belly", "Let your arms go heavy, down to your fingertips", "Release your legs, all the way to your feet", "Your whole body is heavy and calm, nothing to do, nowhere to be", "One mindful moment, just be here, now"] },
     firstsit: { name: "Stillness", col: "#46e2a4", ti: "ti-yoga", lines: ["Feel yourself sitting here, and find your breath", "Let it move on its own, nothing to fix", "Soon your mind will drift off somewhere, and that is fine", "The moment you notice you have drifted, you are back", "That noticing is the whole exercise", "Bring your attention to the breath again, gently", "No need to be hard on yourself for drifting. Come back to the breath.", "Rest here a while, and keep coming back"] }, // first-stone sit: wander/notice/come-back AS instruction (David 2026-07-09). Both gates + judge.
-    bliss: { name: "Bliss", col: "#ff9ec9", ti: "ti-sun-high", adv: true, lines: ["Let attention rest on the shining side of awareness — the glow, not the emptiness", "Sense a quiet fullness there, an overflowing satisfaction. First, just detect it — that's the bliss", "You don't have to fix any feeling, or take apart the story — that's only conflict with yourself", "Whatever is here — sadness, restlessness — let it turn toward the bliss, drawn to it", "Let the feeling and the bliss come together, and fuse", "Come exactly as you are — nothing to become first, nothing to earn", "Notice the bliss arises on its own — you're not making it happen. Just receive it", "If a warmth rises with it, welcome that too — the heart saturating, content, full", "Not I feel bliss — just, bliss is here. Let the sense of self soften into it", "Don't reach for a result. Let this be the only step — no end, nowhere to get to", "If you tighten, that's fine — just notice; it passes on its own. Nothing can hold the bliss back"] },
-    play: { name: "Play", col: "#8ad0ff", ti: "ti-confetti", adv: true, lines: ["Set down the need for any of this to make sense — no plan behind it, human or otherwise", "Existence is play, not a serious agenda. There's no goal to reach", "So you can relax, and simply look — no demand, no anger in the looking", "Watch a thought: where it begins, while it's here, and where it goes when it fades", "Don't hunt for an answer. The ache to know is just a weight — let it drop", "Don't try to find a place outside the motion. Let it move, and move with it", "Trust exactly where you are — nothing to fix about your starting point", "Let both meet: the clear seeing and the warm feeling. Ease is their balance", "You don't get rid of the seeker — the seeking just softens into ease, for no reason", "When the demand for sense falls away, insight can arise on its own — uninvited, alive"] }
+    bliss: { name: "Bliss", col: "#ff9ec9", ti: "ti-sun-high", adv: true, lines: ["Now let your attention rest on the pleasant side of being aware. Not the thoughts, but the quiet ease underneath them.", "There's a soft sense of being okay here, easy to miss. Notice it, and let it be enough.", "You don't have to make it bigger. Rest with it, and it tends to fill on its own.", "If a hard feeling is here too, let it sit beside the ease. They can both be here.", "Nothing to reach for. Just this quiet contentment, and you, resting in it."] }, // rewritten to gated originals (David 2026-07-13): the pleasant-awareness (piti/jhana-adjacent) method in shared plain register, both gates passed; retired the Spero/Watts-ish lines
+    play: { name: "Play", col: "#8ad0ff", ti: "ti-confetti", adv: true, lines: ["For these last minutes, set down every task. Nothing here needs solving, and nothing needs to make sense.", "Let things move however they move. You are not steering now, just watching them go.", "The urge to figure something out will come. Let it pass, like any other thought.", "Rest exactly where you are. There is nowhere else to get to."] } // rewritten to gated originals (David 2026-07-13): the effortless letting-be method, both gates passed
   };
   function medView(bk, extraLines) { var b = MED_BLOCKS[bk] || {}; var ls = [b.entry].concat(b.pool || []); if (extraLines && extraLines.length) ls = ls.concat(extraLines); return { name: b.name, col: b.c, ti: b.ti, lines: ls }; }
   // MED_SEC = GENERATED (David 2026-07-13 consolidation): the editor/carousel section bank, now a VIEW over the one canonical MED_BLOCKS (+ MED_EXTRA for the four editor-only sections). One source of truth, no hand-maintained duplication. Legacy keys kept exactly (settle=Arrival, body=Body-scan, aware=Awareness+Sounds, rest=Rest/open) so saved medTracks and t.med refs keep resolving.
