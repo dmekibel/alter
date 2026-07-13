@@ -3470,6 +3470,9 @@
   var TF_OPEN = false, TF_ANIM = false, _ringP = 0, _ringRaf = 0; // TF_ANIM = a morph is in flight → guards against a second open/close firing mid-animation (the "expands all over again" bug — David 2026-06-28)
   // ===== COCKPIT STAGE MODE (CKPT-2, David 2026-06-28): a SINGLE transient axis layered on TOP of trackerState(). null/'track' = today's centered ring (the 6 trackerState branches, UNCHANGED). Non-null = a guided flow that corner-poses the ring + fills #tfStageBody. Reset on close + at the top of load() so a crash never strands a half-built flow with a dangling timer. Default null + S.guide.mode 'off' = byte-for-byte today (no auto-trigger this wave). =====
   var TF_MODE = null, TF_MODE_USERSET = false, TF_BLOCKID = null;
+  var HOME_MODE = false; // §10f.7 (David ✓ 2026-07-13): the cockpit is opened as the app's LANDING home — idle frame + story bars + circle + tools side-scroll. Cleared the moment anything is tracking/staged so the live cockpit is untouched.
+  function openHome() { HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); } // land on / return to the home cockpit (animated — a user gesture)
+  function openHomeInstant() { var tf = el("trackerFull"); if (!tf || TF_OPEN || TF_ANIM) return; HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; TF_OPEN = true; _ringP = 0; tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); renderTrackerFull(); } // §10f.7 boot landing: show the home cockpit with NO morph (the start screen z-200 covers it until Continue; morphing from an unlaid-out dock at boot would misfire)
   // ===== SHARED-ELEMENT MORPH (FLIP) — the folded dock's mini elements FLY/GROW into their big counterparts, and back (David 2026-06-28) =====
   // Replaces the old height-rise + content-crossfade. Pairs: mini #ldStop circle → big #tfRing circle (UNIFORM scale only — never distort);
   // mini #ldAct → big #tfTitle; mini #ldEl → big #tfTime; mini .ld-seg → big #tfCtrls. Secondary content (verdict/ctx/chips/clock/spark) just fades.
@@ -3649,7 +3652,7 @@
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; } // reset off-plan border + any prior tap wiring before a state re-paints the disc
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet");
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home");
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
@@ -3685,23 +3688,11 @@
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(null)) + '</b>';
       if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb; the big play button now actually TRACKS (David device 2026-07-03)
       el("tfElabel").textContent = nb ? "starts" : "";
-      setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips(""); renderTFControls("idle");
-      var _sh = el("tfNextSheet");
-      if (_sh && nb) { tf.classList.add("tf-nextsheet"); _sh.style.display = "block"; _sh.innerHTML = ""; // §12 frame 07: the docked sheet — "<block> — сколько?" + duration chips = plan+track the next block NOW in one tap
-        var _shh = add(_sh, "div", "tns-h"); _shh.innerHTML = '<i class="ti ' + ND.ti + '" style="color:' + ND.c + '"></i><b>' + esc(nb.title) + '</b><span> — </span><span>' + tr("how long?") + '</span>';
-        var _shr = add(_sh, "div", "tns-row");
-        [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var _on = (nb.mins || 30) === dd[0]; var ch = add(_shr, "button", "k-dur" + (_on ? " on" : "")); ch.innerHTML = (_on ? '<i class="ti ti-calendar-check" style="font-size:11px"></i> ' : "") + dd[1]; ch.onclick = function () { startNextNow(nb, dd[0]); }; }); // active chip wears ti-calendar-check = "this is the plan"
-        var _esc = add(_sh, "button", "tns-escape"); _esc.innerHTML = '<i class="ti ti-player-play"></i>' + tr("no time — just track"); _esc.onclick = function () { tfTrackNoTime(nb); }; // real 44pt ghost escape row
-        add(_sh, "div", "tns-foot", tr("a plan earns more"));
-      } else if (_sh) { var _echo = tfYesterdayEcho();
-        if (_echo) { tf.classList.add("tf-nextsheet"); _sh.style.display = "block"; _sh.innerHTML = ""; var _ED = DOM[_echo.dom] || DOM.focus; // RUN-1 mock 2: yesterday's echo docks as the suggestion sheet
-          add(_sh, "div", "tns-eyebrow", tr("YESTERDAY NOW"));
-          var _eh = add(_sh, "div", "tns-h"); _eh.style.marginTop = "7px"; _eh.innerHTML = '<i class="ti ' + _ED.ti + '" style="color:' + _ED.c + '"></i><b>' + esc(_echo.title) + '</b><span> — </span><span>' + tr("again?") + '</span>';
-          var _er = add(_sh, "div", "tns-row");
-          [[15, "15m"], [30, "30m"], [60, "1h"], [120, "2h"]].forEach(function (dd) { var _on = _echo.mins >= dd[0] && (dd[0] === 120 || _echo.mins < dd[0] * 2) && Math.abs(_echo.mins - dd[0]) <= 30; var ch = add(_er, "button", "k-dur" + (_on ? " on" : "")); ch.innerHTML = (_on ? '<i class="ti ti-history" style="font-size:11px"></i> ' : "") + dd[1]; ch.onclick = function () { tfEchoStart(_echo, dd[0]); }; });
-          add(_sh, "div", "tns-foot", tr("one tap — plan and track at once"));
-        } else { _sh.style.display = "none"; }
-      }
+      setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips("");
+      // §10f.7 HOME (David ✓ 2026-07-13): the idle cockpit IS the app's landing home — story bars on top, the pink Track CIRCLE, Plan-my-day above a tools side-scroll. Supersedes the old 3-door §12 frame + docked next-sheet.
+      HOME_MODE = true; tf.classList.add("tf-home");
+      var _sh = el("tfNextSheet"); if (_sh) _sh.style.display = "none";
+      renderHomeFace(nb);
       return;
     }
     if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _bend = B.start + B.mins * 60000, _rem = _bend - Date.now(), _up = _rem <= 0;
@@ -4865,6 +4856,38 @@
     var prim = ctrls.filter(function (x) { return x.primary; }), sec = ctrls.filter(function (x) { return !x.primary; });
     prim.forEach(function (x) { var bn = add(c, "button", "tf-b tf-done"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; });
     if (sec.length) { var row = add(c, "div", "tf-row"); sec.forEach(function (x) { var bn = add(row, "button", "tf-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; }); }
+  }
+  // ===== §10f.7 HOME FACE (David ✓ 2026-07-13, "Refined C2"): the idle cockpit rendered as the app's landing — story bars on top (the day's titled blocks, filled where lived) + the pink Track CIRCLE (styled in CSS) + Plan-my-day above a STACK_TOOLS side-scroll. Reuses the v1040 actBars visual + the F2 most-worn float law. =====
+  function homeStory() { // today's titled blocks in time order, each with its lived fraction (done / past = full, current = partial, future = empty)
+    var k = todayK(), now = logicalNowMin();
+    return (blocks(k) || []).filter(function (b) { return b.title; }).sort(function (a, b) { return hm(a.time) - hm(b.time); }).map(function (b) {
+      var s = hm(b.time), e = s + (b.mins || 30), D = DOM[domainOf(b)] || DOM.focus;
+      var f = b.done ? 1 : (now >= e ? 1 : now <= s ? 0 : (now - s) / Math.max(1, e - s));
+      return { color: D.c, icon: tiClass(b), fill: Math.max(0, Math.min(1, f)) };
+    });
+  }
+  function renderHomeBars() {
+    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
+    var bars = el("tfHomeBars"); if (!bars) { bars = document.createElement("div"); bars.id = "tfHomeBars"; inner.insertBefore(bars, inner.querySelector(".tf-stage")); }
+    while (bars.firstChild) bars.removeChild(bars.firstChild); // targeted rebuild, not an innerHTML wipe (ratchet convention, cf. buildBars)
+    var story = homeStory();
+    if (!story.length) { bars.style.display = "none"; return; } // empty day = no story yet; the circle is the whole invitation
+    bars.style.display = "flex";
+    story.slice(0, 8).forEach(function (a) { var col = add(bars, "div", "tf-hb"); var bar = add(col, "div", "tf-hb-bar"); bar.style.background = mixHex(a.color, "#160510", 0.64); var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = (a.fill * 100) + "%"; fl.style.background = a.color; var ic = add(col, "i", "ti " + a.icon); ic.style.color = a.color; ic.style.opacity = a.fill > 0 ? "1" : "0.4"; });
+  }
+  function renderHomeFace(nb) {
+    renderHomeBars();
+    var lm = el("tfLiveMeta"); if (lm) lm.innerHTML = ""; // no live meta on the idle home
+    var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
+    var plan = add(c, "button", "tf-planday"); plan.innerHTML = '<i class="ti ti-map-2"></i> ' + esc(tr("Plan my day")); plan.onclick = function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} };
+    var panel = add(c, "div", "tf-toolspanel");
+    var scroll = add(panel, "div", "tf-toolscroll"); scroll.id = "tfHomeTools";
+    var use = (S.tools && S.tools.use) || {};
+    var tools = STACK_TOOLS.slice().sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }); // most-worn floats to the front (F2 library law)
+    tools.forEach(function (t) { var b = add(scroll, "button", "tf-htool"); b.style.background = mixHex(t.col, "#160510", 0.80); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name)); b.onclick = function () { try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
+    var pages = Math.max(1, Math.ceil(tools.length / 4)), dots = add(panel, "div", "tf-tooldots");
+    for (var p = 0; p < pages; p++) { add(dots, "i", "dot" + (p === 0 ? " on" : "")); }
+    scroll.onscroll = function () { var per = scroll.scrollWidth / pages, idx = Math.max(0, Math.min(pages - 1, Math.round(scroll.scrollLeft / Math.max(1, per)))); var ds = dots.querySelectorAll(".dot"); for (var i = 0; i < ds.length; i++) ds[i].classList.toggle("on", i === idx); };
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
@@ -12583,6 +12606,8 @@
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
     try { if ((S.guide || {}).mode === "guided") journeyTick(); } catch (e) {}
     setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot. The start screen (below) sits ON TOP of it until you tap Continue.
+    // §10f.7 HOME LANDING (David ✓ 2026-07-13): a set-up returning user with nothing tracking lands on the home cockpit (idle frame + tools). Opened instant behind the start screen (z-200); tapping Continue reveals it. Sliding it down docks/reveals the panes below (the built morph). New users (onboarding) and mid-activity users are untouched.
+    try { if (S.profile && S.profile.set && !activeTimers().length) setTimeout(function () { try { openHomeInstant(); } catch (e) {} }, 230); } catch (e) {}
     showStartScreen(); // v652: the animated launch screen gates the cold open; its primary button enters the app (or starts onboarding)
     if (!_ssShown && !(S.profile && S.profile.set)) setTimeout(onboard, 350); // fallback ONLY if the start screen didn't show
     try { i18nObserve(); if (curLang() !== "en") { translateTree(document.body); setTimeout(function () { translateTree(document.body); }, 400); } } catch (e) {} // v656: live translation (display-only; safe — app never reads rendered text)
