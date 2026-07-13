@@ -5972,9 +5972,9 @@
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
-  var FH = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21;
+  var FH = {}, FHSTAND = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21;
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
-  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; }); }
+  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=3"; FHSTAND[d] = st; }); } // walk strips + clean stand poses (idle)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
   function fhDirName(ang) { var k = (((Math.round(ang / (Math.PI / 4))) % 8) + 8) % 8; return FH_KBYK[k]; }
   // spr-dir.png rows are David's hand-picked spin frames, already in compass order
@@ -6180,11 +6180,14 @@
     var aimX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, aimY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
     var aiming = (aimX !== 0 || aimY !== 0), dr = FAIRY.dir, hHs = 132;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
-    var fhImg = SANCTUARY ? FH[fhDirName(fhFace)] : null;
+    var fhDN = SANCTUARY ? fhDirName(fhFace) : null;
+    var fhWalk = fhDN ? FH[fhDN] : null, fhStand = fhDN ? FHSTAND[fhDN] : null;
+    var fhImg = fhMoving ? fhWalk : (fhStand && fhStand.complete && fhStand.naturalWidth ? fhStand : fhWalk); // idle → clean stand pose (never a foot in the air); walking → the strip
     if (SANCTUARY && fhImg && fhImg.complete && fhImg.naturalWidth) {
-      // David's keyed farmhand: pick the facing sprite, draw the current walk frame, feet anchored at (px,py)
-      var ffw = fhImg.naturalWidth / FH_NF, ffh = fhImg.naturalHeight, ffi = Math.floor(fhFrame) % FH_NF;
-      var FDH = 104, FDW = FDH * ffw / ffh, fbob = fhMoving ? 0 : Math.round(Math.sin(t * 2) * 1.2);
+      // David's keyed farmhand: facing sprite; walk frame when moving, standing frame when idle; feet anchored at (px,py)
+      var fhIsWalk = (fhImg === fhWalk), fhNF = fhIsWalk ? FH_NF : 1;
+      var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight, ffi = fhIsWalk ? Math.floor(fhFrame) % FH_NF : 0;
+      var FDH = 104, FDW = FDH * ffw / ffh, fbob = fhMoving ? 0 : Math.round(Math.sin(t * 2.2) * 1.1); // gentle breathing bob at rest
       ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8 + fbob), FDW, FDH);
     } else if (dr && dr.complete && dr.naturalWidth) {
       var ms = FAIRY_META.dir, row = 0;
@@ -6240,19 +6243,17 @@
     var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving;
     if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
     if (SANCTUARY) {
-      // ── FARMHAND locomotion (LOCOMOTION-BUILD-SPEC §2-3): FACING (which sprite) decoupled from MOVEMENT (left stick). ──
-      var m = Math.hypot(moveX, moveY), aimActive = (moveX2 !== 0 || moveY2 !== 0), target;
-      if (aimActive) { target = Math.atan2(moveY2, moveX2); }               // right stick = absolute aim → face it
-      else if (m > 0.12) { var a = Math.atan2(moveY, moveX), dd = a - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2; target = (Math.abs(dd) < Math.PI * 0.75) ? a : fhFace; } // <135° steer toward move; ≥135° hold facing (reverse/backpedal)
-      else { target = fhFace; }
-      var df2 = target - fhFace; while (df2 > Math.PI) df2 -= Math.PI * 2; while (df2 < -Math.PI) df2 += Math.PI * 2;
-      fhFace += df2 * (aimActive ? 0.5 : 0.22);                             // rotate toward target (snappier for explicit aim)
-      moving = m > 0.05;
-      if (moving) {
-        px += moveX * SPD; py += moveY * SPD;                              // move along the LEFT stick, independent of facing
-        var mv = Math.atan2(moveY, moveX), sgn = Math.cos(mv - fhFace) >= 0 ? 1 : -1; // signed playback: forward if moving along facing, backward if opposite (walk-backward, no cut)
-        fhFrame += m * sgn * 0.42; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF;
-      } else if (fhFrame !== 0) { fhFrame += 0.42; if (fhFrame >= FH_NF) fhFrame = 0; } // release → finish the step, rest on the stand frame
+      // ── FARMHAND locomotion (David 2026-07-13): he DRIVES in the direction he FACES — a 2D-car feel, so the walk always matches the motion (NO foot-sliding). Steering is sharper than a car (he can whip around). ──
+      var sX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, sY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
+      var m = Math.hypot(sX, sY); moving = false;
+      if (m > 0.12) {
+        var tgt = Math.atan2(sY, sX), dd = tgt - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2;
+        fhFace += dd * 0.40;                                               // steer toward the stick — SHARP (a car turns ~0.08/frame; this whips ~0.4)
+        var align = Math.cos(dd), fwd = m * Math.max(0, align);           // translate ONLY along facing, scaled by how aligned we are → a hard turn PIVOTS (feet turn in place) instead of sliding sideways
+        if (fwd > 0.02) { px += Math.cos(fhFace) * SPD * fwd; py += Math.sin(fhFace) * SPD * fwd; fhFrame += fwd * 0.42; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; }
+        moving = fwd > 0.03;                                               // walking (legs cycle) only while actually translating forward
+      }
+      if (!moving && fhFrame !== 0) { fhFrame += 0.42; if (fhFrame >= FH_NF) fhFrame = 0; } // finish the last step so we never freeze mid-stride
       fhMoving = moving;
     } else if (skateOn && skateOk()) {
       // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
