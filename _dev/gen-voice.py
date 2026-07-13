@@ -32,9 +32,16 @@ for c in ["Breathe in","Hold","Breathe out"]: add(c)
 # 6) tapping steps: pt + ". " + say  AND  say alone (covers setup) AND pt alone (B3: the runtime now schedules pt + say as separate clips)
 for pt,say in re.findall(r'pt:\s*'+STR+r'\s*,\s*say:\s*'+STR, src):
     pt,say=un(pt),un(say); add(pt+". "+say); add(say); add(pt)
-# 7) medEditor section pools: lines: [...]  (settle/breath/body/aware/rest/bliss/play)
+# 7) medEditor section pools: lines: [...]  (MED_EXTRA arrival/firstsit/bliss/play)
 for arr in re.findall(r'lines:\s*\[([^\]]*)\]', src):
     for s in re.findall(STR, arr): add(un(s))
+# 7b) MED_BLOCKS block engine (2026-07-13): entry: "..." + pool: [...] per block (settle/breath/count/scan/listen/watch/feel/heart/open/close) + MED_RETURN. The generated MED_SEC views reuse these exact strings, so recording them covers the editor too.
+for m in re.findall(r'entry:\s*'+STR, src): add(un(m))
+for arr in re.findall(r'pool:\s*\[([^\]]*)\]', src):
+    for s in re.findall(STR, arr): add(un(s))
+m = re.search(r'var MED_RETURN\s*=\s*\[([^\]]*)\]', src)
+if m:
+    for s in re.findall(STR, m.group(1)): add(un(s))
 # 8) THE RITUAL ENGINE (R2, 2026-07-02): RITUAL_POOLS strings + composed "Now tap X." point cues + stretchFloor/gratitudeBeat lines
 m = re.search(r'var RITUAL_POOLS = \{(.*?)\n  \};', src, re.S)
 if m:

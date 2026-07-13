@@ -210,7 +210,7 @@
       if (!text) return; opts = opts || {}; stop();
       function fin() { if (opts.onend) try { opts.onend(); } catch (e) {} }
       if (!vset) { dbg("no-manifest"); fin(); return; }                              // manifest not loaded yet → silent
-      var key = vhash(text); if (!vset[key]) { dbg("no-clip→synth:" + key); if (typeof voiceOn === "function" && voiceOn()) { speakSynth(text, opts); } else { fin(); } return; }  // SPEAK ALOUD (David 2026-07-13): no recorded clip → device-TTS fallback (was silent per the no-robot rule). Gated by the voice toggle. iOS timer-fired speech is DEVICE-UNTESTED.
+      var key = vhash(text); if (!vset[key]) { dbg("no-clip:" + key); fin(); return; }  // no clip for this exact line → STAY SILENT, never the robotic browser TTS (David 2026-07-13: "I never want to fall back to TTS, it sounds horrible — record every line"). The real voice comes from generated neural clips (gen-voice), not speechSynthesis.
       var ctx = sharedAudioCtx(); if (!ctx) { dbg("no-audiocontext"); fin(); return; }
       var vol = opts.volume != null ? opts.volume : 1, myGen = ++playGen;
       function playBuf(buf) {
@@ -256,13 +256,13 @@
       var src = scheduleClip(text, atSec, vol); if (src) return src;
       try {
         var ctx = sharedAudioCtx(); if (!ctx) return null; var start = t0 != null ? t0 : ctx.currentTime;
-        getBuffer(text).then(function (buf) { if (!buf) { try { if (typeof voiceOn === "function" && voiceOn()) { var _sd = Math.max(0, (start + atSec - ctx.currentTime)) * 1000; setTimeout(function () { speakSynth(text, { volume: vol }); }, _sd); } } catch (e) {} return; } try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); g2.gain.value = vol != null ? vol : 1; s2.connect(g2); g2.connect(voiceBus() || ctx.destination); s2.start(ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime)); } catch (e) {} }); // SPEAK ALOUD (David 2026-07-13): breath/tapping clip-less cues speak via timer-fired device TTS (iOS device-untested)
+        getBuffer(text).then(function (buf) { if (!buf) return; try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); g2.gain.value = vol != null ? vol : 1; s2.connect(g2); g2.connect(voiceBus() || ctx.destination); s2.start(ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime)); } catch (e) {} });
       } catch (e) {}
       return null;
     }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, speakSynth: speakSynth, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return !!(vset && vset[vhash(t)]); } };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return !!(vset && vset[vhash(t)]); } };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -9173,7 +9173,7 @@
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
   function timelinePlayer(opts) {
     TTS.unlock(); // gesture-bound: schedule while the context is awake
-    var col = opts.color || "#9a5cf0", ctx = TTS.ctx(); var _spokeIdx = -1; // SPEAK ALOUD (David 2026-07-13): index of the last clip-less cue synth-spoken
+    var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "gp-ov";
     ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div>';
     document.body.appendChild(ov);
@@ -9315,7 +9315,6 @@
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
-      if (seg && _si !== _spokeIdx) { _spokeIdx = _si; if (playing && !seg.buf && seg.text && typeof voiceOn === "function" && voiceOn()) { try { TTS.speakSynth(seg.text, { volume: opts.vol != null ? opts.vol : 1 }); } catch (e) {} } } // SPEAK ALOUD (David 2026-07-13): a cue with no recorded clip speaks via device TTS as it appears (device-untested feel on iOS)
       if (minimized && miniLab) miniLab.textContent = lab.textContent; // keep the minimized dock's label live while audio keeps playing
       if (orb) { // ORB DRIVE (David 2026-07-09): ONE clock. Scale the orb from the CURRENT segment's breath phase across its REAL span (audio + adaptive gap), so it tracks the cues exactly — fixes hold-too-short, cut-when-full, shrinks-on-hold. Non-breath segments keep a gentle ~11s ambient breath so it still guides you.
         var _ph = seg && seg.breath, _sc, _op;
