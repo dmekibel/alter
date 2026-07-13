@@ -5968,6 +5968,9 @@
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
   var SANCTUARY = true, OCEAN_C = "#00042a";  // @SEC:GAME berry-night SANCTUARY reskin (David 2026-07-13): the walkable island is now the designed BIGBLK art (assets/sanctuary-island.jpg) drawn in world space; locomotion + camera unchanged. Flip SANCTUARY=false to restore the old Cuphead procedural island (§8 safety toggle).
+  var SANCT_DBG = false; // draw collider boxes for tuning
+  // solid-object footprints in WORLD coords [cx,cy,halfW,halfH] — the walker's feet can't enter these (house base, well, statue, barrel). Baked-object positions on sanctuary-island.jpg; tune with SANCT_DBG.
+  var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
@@ -6154,6 +6157,7 @@
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
       if (simg && simg.complete && simg.naturalWidth) { var IW = RG * 3.75, IH = IW * simg.naturalHeight / simg.naturalWidth; ctx.drawImage(simg, -IW / 2, -IH / 2 - RG * 0.12, IW, IH); }
+      if (SANCT_DBG) { ctx.strokeStyle = "rgba(255,80,160,0.9)"; ctx.lineWidth = 3; for (var _di = 0; _di < SANCT_COLL.length; _di++) { var _c = SANCT_COLL[_di]; ctx.strokeRect(_c[0] - _c[2], _c[1] - _c[3], _c[2] * 2, _c[3] * 2); } ctx.strokeStyle = "rgba(120,200,255,0.8)"; ctx.beginPath(); ctx.arc(0, RG * 0.16, RG * 0.9, 0, 7); ctx.stroke(); }
     } else {
       if (!grassBlob) buildIsland();
       var GS = 200;
@@ -6298,7 +6302,10 @@
       }
     }
     if (shake > 0.3) shake *= 0.82; else shake = 0;
-    if (SANCTUARY) { var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } } // keep the walker on the sanctuary grass (below the house, off the water)
+    if (SANCTUARY) {
+      var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } // island edge: stay on the grass, off the water
+      for (var ci = 0; ci < SANCT_COLL.length; ci++) { var c = SANCT_COLL[ci], cdx = px - c[0], cdy = py - c[1]; if (Math.abs(cdx) < c[2] && Math.abs(cdy) < c[3]) { var ox = c[2] - Math.abs(cdx), oy = c[3] - Math.abs(cdy); if (ox < oy) px = c[0] + (cdx < 0 ? -c[2] : c[2]); else py = c[1] + (cdy < 0 ? -c[3] : c[3]); } } // solid objects: push the feet out of the base footprint (can't walk through walls)
+    }
     else { var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; } }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
     // (purple night tint removed — David 2026-06-28: island shows in its natural warm pixel colors)
