@@ -8900,12 +8900,12 @@
   }
   function toolboxStageStep(sb) { // renders the kit into #tfStageBody (the 'tool' cockpit stage). Reuses .tf-stagecard / .tf-chip material + berry palette. No new menu, no timeline touch.
     sb.innerHTML = "";
+    if (sb.dataset.tbview === "library") { toolboxLibraryView(sb); return; } // F2 (David-decided 2026-07-13): "All tools" navigates INTO the library as its own view of this same stage (no third menu system); back returns to the front door
     // §12 FRAME-FIDELITY (toolbox one-door frame): bare header row, the frame's hero-card body, 54px daily circles
     var head = add(sb, "div"); head.style.cssText = "display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#fff2f9;padding:2px 2px 0;";
     head.innerHTML = '<i class="ti ti-briefcase" style="color:#9a8cff"></i> Your toolbox';
     var _hx = add(head, "button"); _hx.setAttribute("style", "margin-left:auto;width:30px;height:30px;border-radius:50%;background:#3a1430;border:2px solid #160510;color:#d2aae8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"); _hx.innerHTML = '<i class="ti ti-x" style="font-size:14px"></i>'; _hx.onclick = closeTrackerFull; // the frame's circle-X
     // FRONT DOOR (F1, David-decided 2026-07-13, §10e.3): time-first pack DOORS are the toolbox's opening face — each shows time-numeral + name + purpose + named steps + a weighted battery, and PLAYS on tap (press-play, no pre-tweak; the builder is remix-only, post-session). Drops into "angel serves one" (a single served door, the R0 relief pack) when the vibe read is low — reward-never-shame, a depleted user is never handed a wall of choices. The old single-tool "for right now" pick lives in the All-tools library now.
-    var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool; // still read: seeds the library's default category tab further down
     function fdSteps(row, track) { track.forEach(function (t, i) { var m = stackTool(t.k); if (!m) return; var st = add(row, "span", "tbfd-step"); st.innerHTML = '<i class="ti ' + m.ti + '" style="color:' + m.col + '"></i>' + esc(tr(m.name)) + (i < track.length - 1 ? '<span class="tbfd-arr">›</span>' : ''); }); } // named block steps: arrow-joined icon+label in each tool's own color
     function fdBatt(parent, track) { var b = add(parent, "div", "tb-batt"); track.forEach(function (t) { var m = stackTool(t.k); var c = add(b, "i", "tb-cell"); c.style.flex = (t.d || 60) + " 1 0"; c.style.background = (m && m.col) || "#9a7cff"; }); } // battery strip, each cell grows in proportion to its step's duration (flex-grow fills the row exactly, gaps included)
     function fdDoor(parent, p, served) {
@@ -8945,58 +8945,76 @@
         add(cell, "div", null, T.name).style.cssText = "font-size:11.5px;font-weight:700;margin-top:4px;color:" + (doneToday ? "#46e2a4" : "#9a7288") + ";overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
       });
     }
-    // ONE-DOOR (F1, David's pick): everything below the daily shelf folds behind calm rows — for-right-now first, the library on request
-    var _open = sb.dataset.tbopen === "1";
+    // FRONT-DOOR FOLDS: quiet rows below the daily shelf. "All tools" now NAVIGATES into the F2 library view (of this same stage); the rest open their own surfaces.
     function foldRow(icon, iconColor, label, right, fn) { var r = add(sb, "button"); r.style.cssText = "margin-top:9px;width:100%;display:flex;align-items:center;gap:10px;background:#241328;border:2px solid #160510;border-radius:13px;box-shadow:0 2px 0 #160510;padding:13px 14px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:800;font-size:14px;color:#e6cfe0;"; r.innerHTML = '<i class="ti ' + icon + '" style="color:' + iconColor + ';font-size:18px"></i><span style="flex:1;text-align:left;">' + label + '</span>' + (right || '') + '<i class="ti ti-chevron-right" style="color:#8a7898;font-size:15px"></i>'; r.onclick = fn; return r; }
-    foldRow("ti-layout-grid", "#c9a6ff", "All tools", '<span style="color:#8a7898;font-size:12.5px;">' + TOOLS.length + '</span>', function () { sb.dataset.tbopen = _open ? "" : "1"; try { renderStage("tool"); } catch (e) {} });
+    foldRow("ti-layout-grid", "#c9a6ff", esc(tr("All tools")), '<span style="color:#8a7898;font-size:12.5px;">' + TOOLS.length + '</span>', function () { sb.dataset.tbview = "library"; try { renderStage("tool"); } catch (e) {} });
     foldRow("ti-stack-2", "#63d3c9", "Build a session", "", function () { try { stackBuilder(); } catch (e) {} });
     foldRow("ti-notebook", "#ffc41f", "Lessons", '<span style="color:#8a7898;font-size:12.5px;">' + WS_REG.filter(function (w) { return wsDone(w.id); }).length + "/" + WS_REG.length + '</span>', function () { try { worksheetShelf(); } catch (e) {} }); // guided worksheets shelf (epic tandem, 2026-07-03)
     foldRow("ti-brain", "#5ec4f5", "Sharpen the mind", "", function () { try { brainGym(); } catch (e) {} });
-    var lib = add(sb, "div"); if (!_open) lib.style.display = "none"; // the folded library: triage + recents + category tabs + cards
-    var sos = add(lib, "button", "tb-sos"); sos.innerHTML = '<span class="tb-sosic"><i class="ti ti-urgent"></i></span><span class="tb-sostx">' + esc(tr("Something specific is loud — help me pick")) + '</span><span class="tb-soschev"><i class="ti ti-chevron-right"></i></span>'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
-    // Favorites / Recents pinned row
-    var pins = []; (S.tools && S.tools.fav || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); }); (S.tools && S.tools.recents || []).forEach(function (id) { if (pins.indexOf(id) < 0) pins.push(id); });
-    pins = pins.slice(0, 4);
-    if (pins.length) { var pwrap = add(lib, "div"); add(pwrap, "div", "tfs-sub", "Recent").style.marginTop = "8px"; var prow = add(pwrap, "div"); prow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;"; pins.forEach(function (id) { var T = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!T) return; var c = add(prow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + T.ti + '"></i> ' + esc(T.name); c.onclick = function () { runTool(T); }; }); }
-    // CATEGORY TABS (David 2026-07-01): the tools are already grouped into 5 layers (+ Yours). Show ONE category at a time via a tab switcher so it's never a long, overwhelming scroll.
-    var TB_CATS = [
-      { l: "Body",   ti: "ti-lungs",     layer: "Steady the body" },
-      { l: "Mind",   ti: "ti-atom",      layer: "Clear the mind" },
-      { l: "Feel",   ti: "ti-heart",     layer: "Feel it through" },
-      { l: "Become", ti: "ti-user-star", layer: "Become who you're being" },
-      { l: "Lift",   ti: "ti-sun-high",  layer: "Lift the lens" },
-      { l: "Yours",  ti: "ti-star",      layer: "__custom" }
-    ];
-    if (!sb.dataset.tbcat) sb.dataset.tbcat = (!_isC && _pt && _pt.layer) ? _pt.layer : "Steady the body"; // open on the FOR-RIGHT-NOW tool's category so it's relevant
+  }
+  // ===== F2 · THE LIBRARY (David-decided 2026-07-13, §10e.3): layer tabs (Body/Mind/Feelings/Become/Lift/Yours) as the structure + a learned "Your usual" strip that floats your most-worn tools to the top (#7 learning) + a core+drawer cap so a long category never becomes a wall (#6). David REJECTED the when-index — category tabs, not moment-grouping. Renders as a VIEW of the tool stage (sb.dataset.tbview="library"); back returns to the front door. =====
+  var TB_CATS = [
+    { l: "Body",     ti: "ti-lungs",     layer: "Steady the body" },
+    { l: "Mind",     ti: "ti-atom",      layer: "Clear the mind" },
+    { l: "Feelings", ti: "ti-heart",     layer: "Feel it through" },
+    { l: "Become",   ti: "ti-user-star", layer: "Become who you're being" },
+    { l: "Lift",     ti: "ti-sun-high",  layer: "Lift the lens" },
+    { l: "Yours",    ti: "ti-star",      layer: "__custom" }
+  ];
+  Object.assign(I18N.ru, { // F2 LIBRARY strings (B4 law: EN source + RU dict, same commit). RU тире kept where native.
+    "Your usual": "Твои частые", "All tools": "Все инструменты", "Show more": "Показать ещё", "Show less": "Свернуть",
+    "Nothing here yet. Make a little tool that's yours.": "Здесь пока пусто. Собери свой маленький инструмент.",
+    "Body": "Тело", "Mind": "Ум", "Feelings": "Чувства", "Become": "Стать", "Lift": "Взгляд", "Yours": "Твои"
+  });
+  function toolboxLibraryView(sb) {
+    var use = (S.tools && S.tools.use) || {};
+    // header: back to the front door + title + count + close
+    var head = add(sb, "div"); head.style.cssText = "display:flex;align-items:center;gap:9px;padding:2px 2px 0;";
+    var back = add(head, "button"); back.setAttribute("style", "width:30px;height:30px;border-radius:50%;background:#3a1430;border:2px solid #160510;color:#d2aae8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"); back.innerHTML = '<i class="ti ti-chevron-left" style="font-size:15px"></i>'; back.onclick = function () { sb.dataset.tbview = ""; try { renderStage("tool"); } catch (e) {} };
+    add(head, "div", null, esc(tr("All tools"))).style.cssText = "flex:1;font-weight:800;font-size:17px;color:#fff2f9;";
+    add(head, "div", null, String(TOOLS.length)).style.cssText = "color:#8a7898;font-size:12.5px;font-weight:700;";
+    var _hx = add(head, "button"); _hx.setAttribute("style", "width:30px;height:30px;border-radius:50%;background:#3a1430;border:2px solid #160510;color:#d2aae8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"); _hx.innerHTML = '<i class="ti ti-x" style="font-size:14px"></i>'; _hx.onclick = closeTrackerFull;
+    // YOUR USUAL (#7 learning): the tools you actually reach for, floated to the top by use-count. Appears only once you've worn some in.
+    var worn = TOOLS.filter(function (t) { return (use[t.id] || 0) > 0; }).sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }).slice(0, 5);
+    if (worn.length) {
+      add(sb, "div", "tfs-sub", tr("Your usual")).style.cssText = "margin-top:14px;font-weight:800;font-size:12px;letter-spacing:1.1px;color:#b596ad;text-transform:uppercase;";
+      var wrow = add(sb, "div"); wrow.style.cssText = "display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;";
+      worn.forEach(function (t) { var c = add(wrow, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + t.ti + '"></i> ' + esc(tr(t.name)); c.onclick = function () { runTool(t); }; });
+    }
+    // SOS door: something specific is loud
+    var sos = add(sb, "button", "tb-sos"); sos.innerHTML = '<span class="tb-sosic"><i class="ti ti-urgent"></i></span><span class="tb-sostx">' + esc(tr("Something specific is loud — help me pick")) + '</span><span class="tb-soschev"><i class="ti ti-chevron-right"></i></span>'; sos.onclick = function () { partXTriage({ hot: (currentMood() <= 1) || haveLiveGrievance() }); };
+    // CATEGORY TABS: one layer at a time (never a long overwhelming scroll)
+    var _pkL = toolForNow(), _isCL = !!_pkL.custom, _ptL = _pkL.custom || _pkL.tool;
+    if (!sb.dataset.tbcat) sb.dataset.tbcat = (!_isCL && _ptL && _ptL.layer) ? _ptL.layer : "Steady the body"; // open on the for-now tool's category so it's relevant
     var _cat = sb.dataset.tbcat;
-    var tabs = add(lib, "div", "tb-tabrow"); // TOOLBOX 1:1: chunky layer tabs w/ gold-ring selection
+    var tabs = add(sb, "div", "tb-tabrow");
     TB_CATS.forEach(function (c) {
       var on = _cat === c.layer, tb = add(tabs, "button", "tb-tab" + (on ? " on" : ""));
-      tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + esc(tr(c.l)) + (c.layer === "Feel it through" ? ' <i class="ti ti-chevron-down" style="font-size:13px;opacity:.7"></i>' : '');
-      tb.onclick = function () { sb.dataset.tbcat = c.layer; try { renderStage("tool"); } catch (e) {} };
+      tb.innerHTML = '<i class="ti ' + c.ti + '"></i> ' + esc(tr(c.l));
+      tb.onclick = function () { sb.dataset.tbcat = c.layer; sb.dataset.tbmore = ""; try { renderStage("tool"); } catch (e) {} }; // switching category collapses the drawer back to core
     });
-    var pane = add(lib, "div"); pane.style.marginTop = "10px";
-    function builtinCard(parent, t) { // TOOLBOX 1:1 (verdict #19): one when-line + why-fold + Stutz ladder + outcome label + 44pt pin
+    var pane = add(sb, "div"); pane.style.marginTop = "10px";
+    function builtinCard(parent, t) { // one when-line + why-fold + Stutz ladder + outcome label + 44pt pin
       var rung = toolRung(t.id), isGrace = rung >= 3;
       var card = add(parent, "button", "tb-card" + (isGrace ? " tb-grace" : ""));
       var top = add(card, "div", "tbc-top");
       add(top, "span", "tbc-ic").innerHTML = '<i class="ti ' + t.ti + '"></i>';
-      var nm = add(top, "div", "tbc-nm"); add(nm, "div", "tbc-name", t.name); add(nm, "div", "tbc-thk", t.thinker);
+      var nm = add(top, "div", "tbc-nm"); add(nm, "div", "tbc-name", tr(t.name)); add(nm, "div", "tbc-thk", t.thinker);
       var _pinned = dailyTools().indexOf(t.id) >= 0;
       var pinB = add(top, "button", "tbc-pin" + (_pinned ? " on" : "")); pinB.innerHTML = '<i class="ti ti-pin"></i>'; pinB.title = tr("add to your daily");
       pinB.onclick = function (e) { e.stopPropagation(); toggleDaily(t.id); try { renderStage("tool"); } catch (err) {} };
-      add(card, "div", "tbc-when", esc(t.when));
+      add(card, "div", "tbc-when", esc(tr(t.when)));
       var foot = add(card, "div", "tbc-foot");
       var pips = add(foot, "span", "tbc-pips"); for (var p = 0; p < 3; p++) { add(pips, "i", "tbc-pip" + (p < rung ? " lit" : "")); }
       add(foot, "span", "tbc-out", tr(toolRungLabel(Math.max(1, rung))));
       var chev = add(foot, "i", "tbc-chev"); chev.innerHTML = '<i class="ti ti-chevron-down"></i>';
-      var why = add(card, "div", "tbc-why"); why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> ' + esc(t.why);
+      var why = add(card, "div", "tbc-why"); why.innerHTML = '<b>' + esc(tr("Why it works:")) + '</b> ' + esc(tr(t.why));
       chev.onclick = function (e) { e.stopPropagation(); var o = why.classList.toggle("open"); chev.innerHTML = '<i class="ti ti-chevron-' + (o ? "up" : "down") + '"></i>'; };
       card.onclick = function (e) { if (e.target.closest(".tbc-chev") || e.target.closest(".tbc-pin")) return; runTool(t); };
     }
     if (_cat === "__custom") {
       var _mine = customTools();
-      if (!_mine.length) add(pane, "div", "tfs-sub", "Nothing here yet — make a little tool that's yours.").style.cssText = "font-size:12.5px;color:#b596ad;margin-bottom:8px;";
+      if (!_mine.length) add(pane, "div", "tfs-sub", tr("Nothing here yet. Make a little tool that's yours.")).style.cssText = "font-size:12.5px;color:#b596ad;margin-bottom:8px;";
       _mine.forEach(function (t) {
         var mc = add(pane, "button", "tf-stagecard"); mc.style.cssText = "text-align:left;cursor:pointer;width:100%;display:block;";
         var mtop = add(mc, "div"); mtop.style.cssText = "display:flex;align-items:center;gap:9px;";
@@ -9009,7 +9027,11 @@
       });
       var mk = add(pane, "button", "tf-chip"); mk.style.marginTop = "6px"; mk.innerHTML = '<i class="ti ti-plus"></i> Build your own tool'; mk.onclick = function () { buildToolFlow(); };
     } else {
-      TOOLS.filter(function (t) { return t.layer === _cat; }).forEach(function (t) { builtinCard(pane, t); });
+      // #6 core+drawer + #7 within-category float: sort the category by use-count (worn rise), show a core CAP, tuck the tail behind one drawer toggle
+      var list = TOOLS.filter(function (t) { return t.layer === _cat; }).sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); });
+      var CAP = 4, _more = sb.dataset.tbmore === "1", shown = (list.length > CAP && !_more) ? list.slice(0, CAP) : list;
+      shown.forEach(function (t) { builtinCard(pane, t); });
+      if (list.length > CAP) { var dr = add(pane, "button", "tb-ghost"); dr.style.marginTop = "11px"; dr.innerHTML = '<i class="ti ti-chevron-' + (_more ? "up" : "down") + '"></i> ' + esc(tr(_more ? "Show less" : "Show more")); dr.onclick = function () { sb.dataset.tbmore = _more ? "" : "1"; try { renderStage("tool"); } catch (e) {} }; }
     }
   }
   function runTool(t) { try { t.fn(); } catch (e) { toast("couldn't open that one"); } } // launch a tool from the grid (it logs its own use on finish via tickTool)
