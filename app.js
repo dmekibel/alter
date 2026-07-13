@@ -7394,25 +7394,32 @@
     S.blocks.forEach(function (b) { var blk = MED_BLOCKS[b[0]]; if (blk) { out.push(blk.entry); out = out.concat(blk.pool); } });
     return out.concat(MED_RETURN);
   }
+  // F5 (David-decided 2026-07-13): the meditation player shows its block arc as the SAME top story-bars as the stack player — icon + color per block, filling as you pass through, pure-follow (no block-nav, one continuous orb). Icon/color per block; canon stripe family. Names optional (bars show icons only, like the stack).
+  var MED_BLOCK_META = {
+    settle: { ti: "ti-armchair", c: "#63e6d6" }, breath: { ti: "ti-lungs", c: "#79ccff" }, count: { ti: "ti-list-numbers", c: "#a08fff" },
+    scan: { ti: "ti-scan", c: "#ff9a3d" }, listen: { ti: "ti-ear", c: "#ff85be" }, watch: { ti: "ti-eye", c: "#c9a6ff" },
+    feel: { ti: "ti-heart", c: "#ff9a6e" }, open: { ti: "ti-windmill", c: "#63e6d6" }, close: { ti: "ti-moon", c: "#a08fff" }
+  };
+  function medBars(sessKey) { var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor; return S.blocks.map(function (b) { var m = MED_BLOCK_META[b[0]] || {}; return { icon: m.ti || "ti-circle-filled", color: m.c || "#9a5cf0" }; }); }
   function medComposeSegments(sessKey, totalSec, perCue) { // allocate the length across the session's blocks by weight; each block plays its entry once, then fills its slice with its own pool + woven RETURN cues at the cadence
     var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor, sumW = 0;
     S.blocks.forEach(function (b) { sumW += b[1]; });
     var segs = [], t = 0, ri = 0;
-    S.blocks.forEach(function (b) {
+    S.blocks.forEach(function (b, bi) {
       var blk = MED_BLOCKS[b[0]]; if (!blk) return;
       var bEnd = t + totalSec * (b[1] / (sumW || 1));
-      segs.push({ text: blk.entry, label: blk.entry, sub: "" }); t += perCue; // entry line, taught once
+      segs.push({ text: blk.entry, label: blk.entry, sub: "", _ab: bi }); t += perCue; // entry line, taught once ( _ab = block index → the top story-bar it fills, F5)
       var weave = b[0] === "count" || b[0] === "scan" || b[0] === "listen" || b[0] === "watch" || b[0] === "feel"; // RETURN cues only in the working blocks (not settle/close/open, which carry their own)
       var pi = 0, cc = 0;
       while (t < bEnd - perCue * 0.5) {
         cc++;
         var line = (weave && cc % 3 === 0 && MED_RETURN.length) ? MED_RETURN[ri++ % MED_RETURN.length] : (blk.pool.length ? blk.pool[pi++ % blk.pool.length] : blk.entry);
-        segs.push({ text: line, label: line, sub: "" }); t += perCue;
+        segs.push({ text: line, label: line, sub: "", _ab: bi }); t += perCue;
       }
     });
-    if (!segs.length) segs.push({ text: MED_BLOCKS.settle.entry, label: MED_BLOCKS.settle.entry, sub: "" });
+    if (!segs.length) segs.push({ text: MED_BLOCKS.settle.entry, label: MED_BLOCKS.settle.entry, sub: "", _ab: 0 });
     var lastBlk = MED_BLOCKS[S.blocks[S.blocks.length - 1][0]]; // always end on the closing line ("gently open your eyes"), never mid-pool
-    if (lastBlk && lastBlk.pool.length) { var fin = lastBlk.pool[lastBlk.pool.length - 1]; if (segs[segs.length - 1].text !== fin) segs.push({ text: fin, label: fin, sub: "" }); }
+    if (lastBlk && lastBlk.pool.length) { var fin = lastBlk.pool[lastBlk.pool.length - 1]; if (segs[segs.length - 1].text !== fin) segs.push({ text: fin, label: fin, sub: "", _ab: S.blocks.length - 1 }); }
     return segs;
   }
   function meditation() {
@@ -7444,7 +7451,7 @@
       var perCue = FREQ[cfg.freq], totalSec = cfg.mins * 60;
       var segs = medComposeSegments(cfg.sess, totalSec, perCue);
       if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
-      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + MED_SESSIONS[cfg.sess].name, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true });
+      timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + MED_SESSIONS[cfg.sess].name, catK: "love", color: "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, actBars: medBars(cfg.sess), autostart: true }); // F5: block arc as top story-bars
     }
     build();
   }
@@ -7552,7 +7559,7 @@
     var perCue = medCadence(), totalSec = durSec || 300; // the in-stack "Sit in stillness" now runs the Anchor session (David 2026-07-12): same block engine, clean amalgam copy
     TTS.unlock(); TTS.warm(medSessionLines("anchor"));
     var segs = medComposeSegments("anchor", totalSec, perCue);
-    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
+    timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, cadenceSec: perCue, totalSec: totalSec, segments: segs, actBars: medBars("anchor"), autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } }); // F5: block arc as top story-bars
   }
   function renderQuick() {
     var Q = el("quick"); if (!Q) return; Q.innerHTML = ""; var st = microState();
@@ -9197,6 +9204,14 @@
       acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
       orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; // live refs point at the current page
     }
+    // F5 · ACT-BARS (David 2026-07-13): a bars-ONLY sequence indicator (meditation blocks) — the same top story-bars as the stack, but with the single continuous orb below (no page-slide, no block-nav). Independent of `acts`, so it touches none of the acts/pages/nav machinery.
+    var actBars = (!acts && opts.actBars && opts.actBars.length > 1) ? opts.actBars : null, abFills = [], abIcons = [];
+    if (acts || actBars) ov.classList.add("gp-bars"); // the ✕ / gear drop below the bars only when bars are present (fixes v1035: no-bar players keep the ✕ at the top)
+    if (actBars) {
+      mapWrap.style.display = "none"; var _gtb = ov.querySelector(".gp-title"); if (_gtb) _gtb.style.display = "none"; // the block bars ARE the header — drop the per-cue pip row + centered title (like the stack)
+      var abWrap = add(ov, "div", "gp-story"); abWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:9px;z-index:6;pointer-events:none;";
+      actBars.forEach(function (a) { var colx = add(abWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(a.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + (a.color || col) + ";transition:width .2s linear;"; abFills.push(fl); var ic = add(colx, "i", "ti " + (a.icon || "ti-circle-filled")); ic.style.cssText = "font-size:22px;line-height:1;color:" + (a.color || col) + ";opacity:.34;transition:opacity .3s;"; abIcons.push(ic); });
+    }
     function onActEnter(ai) { // SLIDE the whole page to activity ai (its page is pre-tinted) + point the live refs at that page + set its current line + tint the shared transport
       if (!acts || !pages || !pages[ai]) return;
       orb = pages[ai].orb; lab = pages[ai].lab; sub = pages[ai].sub;
@@ -9252,6 +9267,7 @@
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { acts[_ai]._start = null; acts[_ai]._secTimes = []; } segs.forEach(function (sg) { if (sg._act != null && acts[sg._act]) { if (acts[sg._act]._start == null) acts[sg._act]._start = sg.start; if (sg._sectionStart) acts[sg._act]._secTimes.push(sg.start); } }); for (var _aj = 0; _aj < acts.length; _aj++) acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; }
+      if (actBars) { for (var _bi = 0; _bi < actBars.length; _bi++) actBars[_bi]._start = null; segs.forEach(function (sg) { if (sg._ab != null && actBars[sg._ab] && actBars[sg._ab]._start == null) actBars[sg._ab]._start = sg.start; }); for (var _bj = 0; _bj < actBars.length; _bj++) actBars[_bj]._end = (_bj + 1 < actBars.length && actBars[_bj + 1]._start != null) ? actBars[_bj + 1]._start : total; } // F5: each block's real-time window, from its tagged segments
       ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
       // battery cue ticks (one per segment start) + silence tail sized to silenceSec
       ticks.innerHTML = "";
@@ -9293,7 +9309,7 @@
     }
     function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bedStop(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // pause the background bed too
     function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; if (wasPlaying) startFrom(sec); paintNow(sec); }
-    function paintNow(e) { paintMap(e);
+    function paintNow(e) { paintMap(e); paintBars(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
       var pct, curTxt, totTxt;
       if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total), _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); }
@@ -9313,6 +9329,7 @@
         orb.style.transform = "scale(" + _sc.toFixed(3) + ")"; orb.style.opacity = _op.toFixed(3);
       }
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
+    function paintBars(e) { if (!actBars) return; var cur = 0; for (var qb = 0; qb < actBars.length; qb++) { var a = actBars[qb], f = (a._end > a._start) ? (e - a._start) / (a._end - a._start) : (e >= a._start ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (abFills[qb]) abFills[qb].style.width = (f * 100) + "%"; if (e >= (a._start || 0)) cur = qb; } for (var qi = 0; qi < abIcons.length; qi++) if (abIcons[qi]) abIcons[qi].style.opacity = (qi <= cur) ? "1" : "0.34"; } // F5: fill the block bars + light the icons up to the current block (no slide, no orb-swap)
     function tick() {
       if (done) return; var e = curElapsed();
       if (e >= total) { finish(false); return; }
@@ -10651,7 +10668,7 @@
     cfg = cfg || {};
     var SEC = MED_SEC; // shared module-scope section defs (also used by the stack carousel's meditation sections)
     var ORDER = ["settle", "breath", "body", "aware", "rest", "bliss", "play"];
-    function playTrack(t, onFin) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0), cad = medCadence(), segs = []; t.forEach(function (x) { var s = SEC[x.k]; if (!s) return; var n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "" }); } }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); }
+    function playTrack(t, onFin) { var tot = t.reduce(function (a, x) { return a + x.d; }, 0), cad = medCadence(), segs = []; t.forEach(function (x, ti) { var s = SEC[x.k]; if (!s) return; var n = Math.max(1, Math.round(x.d / cad)); for (var q = 0; q < n; q++) { var ln = s.lines[q % s.lines.length]; segs.push({ text: ln, label: ln, sub: "", _ab: ti }); } }); var bars = t.map(function (x) { var s = SEC[x.k] || {}; return { icon: s.ti || "ti-circle-filled", color: s.col || "#9a5cf0" }; }); timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, cadenceSec: cad, totalSec: tot, segments: segs, actBars: bars, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); } // F5: the section arc as top story-bars
     var track = (cfg.track && cfg.track.length ? cfg.track : ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }])).map(function (x) { return { k: x.k, d: x.d }; });
     if (cfg.playNow) { playTrack(track, cfg.onFinish); return; } // run a pre-built inner meditation directly (no composer UI)
     openSessionComposer({
