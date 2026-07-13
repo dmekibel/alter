@@ -5972,9 +5972,9 @@
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
-  var FH = {}, FHSTAND = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21;
+  var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21;
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
-  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=3"; FHSTAND[d] = st; }); } // walk strips + clean stand poses (idle)
+  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=3"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=3"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
   function fhDirName(ang) { var k = (((Math.round(ang / (Math.PI / 4))) % 8) + 8) % 8; return FH_KBYK[k]; }
   // spr-dir.png rows are David's hand-picked spin frames, already in compass order
@@ -6181,12 +6181,15 @@
     var aiming = (aimX !== 0 || aimY !== 0), dr = FAIRY.dir, hHs = 132;
     if (aimX > 0.12) pface = 1; else if (aimX < -0.12) pface = -1;
     var fhDN = SANCTUARY ? fhDirName(fhFace) : null;
-    var fhWalk = fhDN ? FH[fhDN] : null, fhStand = fhDN ? FHSTAND[fhDN] : null;
-    var fhImg = fhMoving ? fhWalk : (fhStand && fhStand.complete && fhStand.naturalWidth ? fhStand : fhWalk); // idle → clean stand pose (never a foot in the air); walking → the strip
-    if (SANCTUARY && fhImg && fhImg.complete && fhImg.naturalWidth) {
-      // David's keyed farmhand: facing sprite; walk frame when moving, standing frame when idle; feet anchored at (px,py)
-      var fhIsWalk = (fhImg === fhWalk), fhNF = fhIsWalk ? FH_NF : 1;
-      var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight, ffi = fhIsWalk ? Math.floor(fhFrame) % FH_NF : 0;
+    var fhWalk = fhDN ? FH[fhDN] : null, fhIdle = fhDN ? FHIDLE[fhDN] : null, fhStand = fhDN ? FHSTAND[fhDN] : null;
+    var fhImg = null, fhNF = 1, ffi = 0;
+    // walking → the 8-dir walk strip; stopped → the blink-idle (open, with a blink every ~3.4s); stand = fallback. Feet anchored at (px,py).
+    if (fhMoving && fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
+    else if (fhIdle && fhIdle.complete && fhIdle.naturalWidth) { fhImg = fhIdle; fhNF = 3; var _bp = t % 3.4; ffi = _bp < 0.08 ? 1 : _bp < 0.17 ? 2 : _bp < 0.25 ? 1 : 0; }
+    else if (fhStand && fhStand.complete && fhStand.naturalWidth) { fhImg = fhStand; fhNF = 1; ffi = 0; }
+    else if (fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
+    if (SANCTUARY && fhImg) {
+      var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight;
       var FDH = 104, FDW = FDH * ffw / ffh, fbob = fhMoving ? 0 : Math.round(Math.sin(t * 2.2) * 1.1); // gentle breathing bob at rest
       ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8 + fbob), FDW, FDH);
     } else if (dr && dr.complete && dr.naturalWidth) {
@@ -6253,8 +6256,7 @@
         if (fwd > 0.02) { px += Math.cos(fhFace) * SPD * fwd; py += Math.sin(fhFace) * SPD * fwd; fhFrame += fwd * 0.42; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; }
         moving = fwd > 0.03;                                               // walking (legs cycle) only while actually translating forward
       }
-      if (!moving && fhFrame !== 0) { fhFrame += 0.42; if (fhFrame >= FH_NF) fhFrame = 0; } // finish the last step so we never freeze mid-stride
-      fhMoving = moving;
+      fhMoving = moving; // thumb up → moving=false THIS frame → render drops straight to the idle stand (no extra steps, no coasting)
     } else if (skateOn && skateOk()) {
       // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
       var mln = Math.hypot(moveX, moveY);
