@@ -1700,6 +1700,27 @@
   .tb-ghost{ width:100%; margin-top:12px; border:2px dashed #6a4a66; border-radius:15px; background:transparent; color:#c9a6bf; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; padding:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; }
   .tb-ghost i{ font-size:18px; color:#c9a6bf; }
   .tb-ghost:active{ background:rgba(255,255,255,.03); }
+  /* FRONT DOOR (F1, David-decided 2026-07-13): time-first pack doors — each shows time-numeral + name + purpose + named steps + weighted battery. Canon kit values (onboarding-dark ground, ink borders, hard shadows). */
+  .tb-fdoor{ width:100%; text-align:left; display:block; background:#1e0f22; border:2.5px solid #160510; border-radius:16px; box-shadow:0 4px 0 #160510; padding:14px 15px; margin-top:11px; cursor:pointer; font-family:"Jost",sans-serif; color:#e6cfe0; }
+  .tb-fdoor:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
+  .tb-fdoor .tbfd-top{ display:flex; align-items:center; gap:13px; }
+  .tb-fdoor .tbfd-min{ flex:none; font-weight:800; font-size:32px; color:#fff2f9; line-height:.95; min-width:44px; }
+  .tb-fdoor .tbfd-min span{ display:block; font-size:11px; font-weight:800; color:#a07fa0; letter-spacing:.5px; margin-top:1px; }
+  .tb-fdoor .tbfd-hd{ flex:1; min-width:0; }
+  .tb-fdoor .tbfd-nm{ font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1; }
+  .tb-fdoor .tbfd-nm i{ color:#ffc41f; font-size:14px; margin-left:5px; }
+  .tb-fdoor .tbfd-pp{ font-size:12.5px; color:#d6b2cb; line-height:1.35; margin-top:3px; }
+  .tb-fdoor .tbfd-go{ flex:none; width:40px; height:40px; border-radius:50%; background:#3ad07f; color:#08321f; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 0 #160510; border:2px solid #160510; }
+  .tb-fdoor .tbfd-go i{ font-size:19px; margin-left:2px; }
+  .tb-fdoor .tbfd-steps{ display:flex; flex-wrap:wrap; gap:5px 6px; margin-top:12px; }
+  .tb-fdoor .tbfd-step{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#c9a6bf; }
+  .tb-fdoor .tbfd-step i{ font-size:14px; }
+  .tb-fdoor .tbfd-step .tbfd-arr{ color:#6a4a66; font-size:11px; margin-left:2px; }
+  .tb-fdoor.tb-lived{ box-shadow:0 0 0 3px #ffc41f, 0 4px 0 #160510; background:repeating-linear-gradient(135deg,#221026 0 10px,#1c0f22 10px 20px); }
+  .tb-fdsec{ margin-top:14px; margin-bottom:2px; font-weight:800; font-size:12.5px; letter-spacing:1.3px; color:#b596ad; text-transform:uppercase; font-family:"Jost",sans-serif; }
+  /* angel-serves-one: the low-vibe served door wears the pink hero frame */
+  .tb-fdoor.tb-served{ border-color:#ff8fc0; background:#2c081a; box-shadow:0 5px 0 #160510; }
+  .tb-fdserved-kick{ font-size:13px; color:#ffb9d6; line-height:1.4; font-family:"Jost",sans-serif; font-weight:700; margin-top:2px; }
   /* verdict palettes by state */
   #trackerFull.st-break .tf-verdict{ color:#ffd98a; }
   #trackerFull.st-off .tf-verdict{ color:#b88fa8; }
@@ -2695,6 +2716,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1032"></script>
+  <script src="app.js?v=1033"></script>
 </body>
 </html>

@@ -8904,19 +8904,33 @@
     var head = add(sb, "div"); head.style.cssText = "display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#fff2f9;padding:2px 2px 0;";
     head.innerHTML = '<i class="ti ti-briefcase" style="color:#9a8cff"></i> Your toolbox';
     var _hx = add(head, "button"); _hx.setAttribute("style", "margin-left:auto;width:30px;height:30px;border-radius:50%;background:#3a1430;border:2px solid #160510;color:#d2aae8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"); _hx.innerHTML = '<i class="ti ti-x" style="font-size:14px"></i>'; _hx.onclick = closeTrackerFull; // the frame's circle-X
-    // FOR RIGHT NOW — lead with the ONE tool that fits your state + the reason it works (never a wall of choices) (David 2026-07-01)
-    var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool;
-    if (_pt) {
-      var _wl2 = _isC ? ((TB_WHEN.filter(function (x) { return x.k === _pt.when; })[0] || {}).l || _pt.when) : "";
-      var _why2 = _isC ? ("A 20-second reset you built" + (_wl2 ? " for when " + String(_wl2).toLowerCase() : "") + ".") : _pt.why;
-      var _ti2 = _isC ? (((_pt.sigil || [])[0]) || _pt.ti || "ti-sparkles") : _pt.ti;
-      var now = add(sb, "div"); now.style.cssText = "border:2.5px solid #ff8fc0;border-radius:16px;padding:14px 15px;background:#2c081a;margin-top:10px;font-family:'Jost',sans-serif;"; // the frame: pink-outlined night card, NO glow
-      add(now, "div", "tfs-sub", _isC ? "FOR RIGHT NOW · YOUR TOOL" : "FOR RIGHT NOW").style.cssText = "font-size:12px;font-weight:800;letter-spacing:1.2px;color:#ff8fc0;";
-      var nt = add(now, "div"); nt.style.cssText = "display:flex;align-items:center;gap:9px;margin-top:6px;";
-      add(nt, "span").innerHTML = '<i class="ti ' + _ti2 + '" style="font-size:22px;color:#ffb3d9"></i>';
-      var _nm2 = add(nt, "div", null, _pt.name); _nm2.style.cssText = "flex:1;font-weight:800;font-size:19px;color:#fff2f9;"; // frame scale: the tool NAME is the card's voice
-      add(now, "div", "tfs-sub", _why2).style.cssText = "margin-top:5px;font-size:13.5px;line-height:1.4;color:#d6b2cb;";
-      var go = add(now, "button", "tf-b tf-done"); go.style.cssText = "width:100%;margin-top:11px;min-height:52px;font-size:15px;border:2.5px solid #160510;border-radius:12px;box-shadow:0 4px 0 #160510;"; go.innerHTML = '<i class="ti ti-player-play"></i> Try it — 20 seconds'; go.onclick = function () { if (_isC) runCustomTool(_pt); else runTool(_pt); };
+    // FRONT DOOR (F1, David-decided 2026-07-13, §10e.3): time-first pack DOORS are the toolbox's opening face — each shows time-numeral + name + purpose + named steps + a weighted battery, and PLAYS on tap (press-play, no pre-tweak; the builder is remix-only, post-session). Drops into "angel serves one" (a single served door, the R0 relief pack) when the vibe read is low — reward-never-shame, a depleted user is never handed a wall of choices. The old single-tool "for right now" pick lives in the All-tools library now.
+    var _pk = toolForNow(), _isC = !!_pk.custom, _pt = _pk.custom || _pk.tool; // still read: seeds the library's default category tab further down
+    function fdSteps(row, track) { track.forEach(function (t, i) { var m = stackTool(t.k); if (!m) return; var st = add(row, "span", "tbfd-step"); st.innerHTML = '<i class="ti ' + m.ti + '" style="color:' + m.col + '"></i>' + esc(tr(m.name)) + (i < track.length - 1 ? '<span class="tbfd-arr">›</span>' : ''); }); } // named block steps: arrow-joined icon+label in each tool's own color
+    function fdBatt(parent, track) { var b = add(parent, "div", "tb-batt"); track.forEach(function (t) { var m = stackTool(t.k); var c = add(b, "i", "tb-cell"); c.style.flex = (t.d || 60) + " 1 0"; c.style.background = (m && m.col) || "#9a7cff"; }); } // battery strip, each cell grows in proportion to its step's duration (flex-grow fills the row exactly, gaps included)
+    function fdDoor(parent, p, served) {
+      var lived = p.min === 20; // canon: the 20-min pack is the "lived" one — gold ring + check
+      var d = add(parent, "button", "tb-fdoor" + (lived ? " tb-lived" : "") + (served ? " tb-served" : ""));
+      var top = add(d, "div", "tbfd-top");
+      var mn = add(top, "div", "tbfd-min"); mn.innerHTML = p.min + '<span>' + tr("min") + '</span>';
+      var hd = add(top, "div", "tbfd-hd");
+      add(hd, "div", "tbfd-nm").innerHTML = esc(tr(p.name)) + (lived ? ' <i class="ti ti-check"></i>' : '');
+      if (p.pp) add(hd, "div", "tbfd-pp", tr(p.pp));
+      add(top, "div", "tbfd-go").innerHTML = '<i class="ti ti-player-play"></i>';
+      fdSteps(add(d, "div", "tbfd-steps"), p.track);
+      fdBatt(d, p.track);
+      d.onclick = function () { var tr2 = p.track.map(function (t) { return { k: t.k, d: t.d }; }); try { runStack(tr2, 0); } catch (e) { try { stackTimeline(tr2); } catch (e2) {} } };
+      return d;
+    }
+    var _lowVibe = currentMood() <= 1, _fdAll = sb.dataset.fdall === "1";
+    if (_lowVibe && !_fdAll) { // angel serves one: the short relief pack, framed gently + a quiet door to the rest
+      add(sb, "div", "tb-fdserved-kick", tr("Low on energy? Here's the short one. I'll do the guiding.")).style.marginTop = "12px";
+      fdDoor(sb, STACK_PACKS[0], true);
+      var more = add(sb, "button", "tb-ghost"); more.style.marginTop = "10px"; more.innerHTML = '<i class="ti ti-dots"></i> ' + esc(tr("Show all sessions"));
+      more.onclick = function () { sb.dataset.fdall = "1"; try { renderStage("tool"); } catch (e) {} };
+    } else {
+      add(sb, "div", "tb-fdsec", tr("HOW MUCH TIME DO YOU HAVE"));
+      STACK_PACKS.forEach(function (p) { fdDoor(sb, p, false); });
     }
     // YOUR DAILY — the frame's 54px circle shelf. Reward inversion: DONE = green ring + glow + vivid (never dimmed); pending = quiet berry (the invitation)
     var _daily = dailyTools();
@@ -9376,10 +9390,19 @@
   ];
   // prebuilt packs — offered by how much time you have; the proven self-help order (body first → regulate → breathe → go inward → fill up). "Quick reset" IS the relief-door micro-stack (R0, David 2026-07-02).
   var STACK_PACKS = [
-    { name: "Quick reset", min: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "relax", d: 60 }, { k: "meditate", d: 90 }, { k: "gratitude", d: 45 }] },
-    { name: "Go deeper", min: 10, track: [{ k: "stretch", d: 75 }, { k: "relax", d: 60 }, { k: "breathe", d: 120 }, { k: "meditate", d: 300 }, { k: "gratitude", d: 60 }] },
-    { name: "Full reset", min: 20, track: [{ k: "stretch", d: 90 }, { k: "relax", d: 90 }, { k: "breathe", d: 150 }, { k: "meditate", d: 600 }, { k: "reprogram", d: 150 }, { k: "mantra", d: 120 }] }
+    { name: "Quick reset", min: 5, pp: "drop the tension you've been carrying all day", track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "relax", d: 60 }, { k: "meditate", d: 90 }, { k: "gratitude", d: 45 }] },
+    { name: "Go deeper", min: 10, pp: "long enough for the mind to quiet down too", track: [{ k: "stretch", d: 75 }, { k: "relax", d: 60 }, { k: "breathe", d: 120 }, { k: "meditate", d: 300 }, { k: "gratitude", d: 60 }] },
+    { name: "Full reset", min: 20, pp: "long enough that the mind stops hunting for problems", track: [{ k: "stretch", d: 90 }, { k: "relax", d: 90 }, { k: "breathe", d: 150 }, { k: "meditate", d: 600 }, { k: "reprogram", d: 150 }, { k: "mantra", d: 120 }] }
   ];
+  Object.assign(I18N.ru, { // FRONT DOOR strings (F1, B4 law: EN source + RU dict, same commit — mom is a canonical persona). RU тире kept where native.
+    "Quick reset": "Быстрый сброс", "Go deeper": "Глубже", "Full reset": "Полный сброс",
+    "drop the tension you've been carrying all day": "сбрось напряжение, что копилось весь день",
+    "long enough for the mind to quiet down too": "достаточно, чтобы и ум затих",
+    "long enough that the mind stops hunting for problems": "достаточно, чтобы ум перестал искать проблемы",
+    "Low on energy? Here's the short one. I'll do the guiding.": "Мало сил? Вот короткая. Я поведу.",
+    "Show all sessions": "Показать все сессии",
+    "HOW MUCH TIME DO YOU HAVE": "СКОЛЬКО У ТЕБЯ ЕСТЬ"
+  });
   function stackTool(id) { for (var i = 0; i < STACK_TOOLS.length; i++) if (STACK_TOOLS[i].id === id) return STACK_TOOLS[i]; return null; }
   // packs + custom chooser
   function stackBuilder() {
