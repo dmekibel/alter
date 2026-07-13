@@ -5972,7 +5972,7 @@
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
-  var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21;
+  var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30;
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
   function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=3"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=3"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
@@ -6185,7 +6185,7 @@
     var fhImg = null, fhNF = 1, ffi = 0;
     // walking → the 8-dir walk strip; stopped → the blink-idle (open, with a blink every ~3.4s); stand = fallback. Feet anchored at (px,py).
     if (fhMoving && fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
-    else if (fhIdle && fhIdle.complete && fhIdle.naturalWidth) { fhImg = fhIdle; fhNF = 3; var _bp = t % 3.4; ffi = _bp < 0.08 ? 1 : _bp < 0.17 ? 2 : _bp < 0.25 ? 1 : 0; }
+    else if (fhIdle && fhIdle.complete && fhIdle.naturalWidth) { fhImg = fhIdle; fhNF = FH_IDLE_NF; ffi = Math.floor(t * 6) % FH_IDLE_NF; } // the full Seedance idle loop (breathing + blink), ~6fps real-time
     else if (fhStand && fhStand.complete && fhStand.naturalWidth) { fhImg = fhStand; fhNF = 1; ffi = 0; }
     else if (fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
     if (SANCTUARY && fhImg) {
