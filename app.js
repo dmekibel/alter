@@ -1698,7 +1698,7 @@
     try { TTS.unlock(); } catch (e) {} // this Continue/Start tap is a gesture → unlock audio so the app music can begin
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
-    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} } }, 470); } // returning → AFTER the start screen clears: the GAUGE reads state first (once/day — low mood routes to the relief door, F0 David 2026-07-02), then the ≥2wk Welcome-Back if due
+    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} } }, 470); } // returning → AFTER the start screen clears: the GAUGE reads state first (once/day — low mood routes to the relief door, F0 David 2026-07-02), then the ≥2wk Welcome-Back if due, then LAND ON THE HOME COCKPIT (§10f.7, David 2026-07-13 — the reliable landing seam; the boot-time instant-open behind the start screen was getting lost under this gauge flow)
   }
   function openJourney() {
     var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving"); p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
@@ -4870,9 +4870,9 @@
     var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
     var bars = el("tfHomeBars"); if (!bars) { bars = document.createElement("div"); bars.id = "tfHomeBars"; inner.insertBefore(bars, inner.querySelector(".tf-stage")); }
     while (bars.firstChild) bars.removeChild(bars.firstChild); // targeted rebuild, not an innerHTML wipe (ratchet convention, cf. buildBars)
-    var story = homeStory();
-    if (!story.length) { bars.style.display = "none"; return; } // empty day = no story yet; the circle is the whole invitation
     bars.style.display = "flex";
+    var story = homeStory();
+    if (!story.length) { for (var g = 0; g < 5; g++) { var gc = add(bars, "div", "tf-hb ghost"); add(gc, "div", "tf-hb-bar"); add(gc, "i", "ti ti-circle"); } return; } // empty day = ghost placeholder bars so the top is never blank (David 2026-07-13)
     story.slice(0, 8).forEach(function (a) { var col = add(bars, "div", "tf-hb"); var bar = add(col, "div", "tf-hb-bar"); bar.style.background = mixHex(a.color, "#160510", 0.64); var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = (a.fill * 100) + "%"; fl.style.background = a.color; var ic = add(col, "i", "ti " + a.icon); ic.style.color = a.color; ic.style.opacity = a.fill > 0 ? "1" : "0.4"; });
   }
   function renderHomeFace(nb) {
@@ -12606,10 +12606,9 @@
     // ===== COCKPIT-AS-HOME LANDING (CKPT-7 / JX, David 2026-06-28): COLD-OPEN ONLY. With S.guide.mode==='off' (the DEFAULT) this whole block is skipped → app lands on the timeline exactly as before (the acceptance test = zero behavior change). When the dial is 'guided' AND today's node action isn't done, greet by opening the cockpit to the one-next-step. Wrapped in try so a journey-engine error can never block boot. =====
     try { if ((S.guide || {}).mode === "guided") journeyTick(); } catch (e) {}
     setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot. The start screen (below) sits ON TOP of it until you tap Continue.
-    // §10f.7 HOME LANDING (David ✓ 2026-07-13): a set-up returning user with nothing tracking lands on the home cockpit (idle frame + tools). Opened instant behind the start screen (z-200); tapping Continue reveals it. Sliding it down docks/reveals the panes below (the built morph). New users (onboarding) and mid-activity users are untouched.
-    try { if (S.profile && S.profile.set && !activeTimers().length) setTimeout(function () { try { openHomeInstant(); } catch (e) {} }, 230); } catch (e) {}
+    // §10f.7 HOME LANDING (David ✓ 2026-07-13): the home cockpit is opened by ssEnter() when the user taps Continue — AFTER the daily gauge/welcome-back, so it lands reliably on top of the panes (the boot-time instant-open was getting lost under that flow). New users (onboarding) and mid-activity/claim/night states are untouched.
     showStartScreen(); // v652: the animated launch screen gates the cold open; its primary button enters the app (or starts onboarding)
-    if (!_ssShown && !(S.profile && S.profile.set)) setTimeout(onboard, 350); // fallback ONLY if the start screen didn't show
+    if (!_ssShown) { if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); else if (!activeTimers().length) setTimeout(function () { try { openHomeInstant(); } catch (e) {} }, 250); } // fallbacks ONLY if the start screen didn't show: new → onboard; returning-idle → land on home
     try { i18nObserve(); if (curLang() !== "en") { translateTree(document.body); setTimeout(function () { translateTree(document.body); }, 400); } } catch (e) {} // v656: live translation (display-only; safe — app never reads rendered text)
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
