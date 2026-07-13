@@ -6190,8 +6190,8 @@
     else if (fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
     if (SANCTUARY && fhImg) {
       var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight;
-      var FDH = 104, FDW = FDH * ffw / ffh, fbob = fhMoving ? 0 : Math.round(Math.sin(t * 2.2) * 1.1); // gentle breathing bob at rest
-      ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8 + fbob), FDW, FDH);
+      var FDH = 104, FDW = FDH * ffw / ffh; // NO sprite bob — the idle animation carries its own breathing and the frames are feet-pinned, so the feet stay planted
+      ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8), FDW, FDH);
     } else if (dr && dr.complete && dr.naturalWidth) {
       var ms = FAIRY_META.dir, row = 0;
       if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
