@@ -5967,6 +5967,7 @@
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
+  var SANCTUARY = true, OCEAN_C = "#00042a";  // @SEC:GAME berry-night SANCTUARY reskin (David 2026-07-13): the walkable island is now the designed BIGBLK art (assets/sanctuary-island.jpg) drawn in world space; locomotion + camera unchanged. Flip SANCTUARY=false to restore the old Cuphead procedural island (§8 safety toggle).
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
@@ -5978,7 +5979,7 @@
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
-    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png" };
+    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg" };
     Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=3"; WORLD_IMG[k] = im; });
   }
   function drawObj(ctx, img, x, y, h) {
@@ -6139,24 +6140,30 @@
       var wc = document.createElement("canvas"); wc.width = WS; wc.height = WS; wc.getContext("2d").drawImage(wImg, 0, 0, WS, WS);
       waterPat = ctx.createPattern(wc, "repeat");
     }
-    ctx.fillStyle = "#6f8a93"; ctx.fillRect(0, 0, W, H); // base ocean color behind everything (no gaps)
+    ctx.fillStyle = SANCTUARY ? OCEAN_C : "#6f8a93"; ctx.fillRect(0, 0, W, H); // base ocean color behind everything (no gaps)
     ctx.save(); ctx.translate(W / 2 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0), H * 0.6 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0)); ctx.scale(vz, vz); ctx.translate(-(px + camX), -(py + camY)); // camX/camY = free-look pan (look around without moving the guy); character sits lower (David)
-    if (waterPat) { var hw = W / vz, hh = H / vz, cxw = px + camX, cyw = py + camY; ctx.fillStyle = waterPat; ctx.fillRect(cxw - hw, cyw - hh, hw * 2, hh * 2); } // ocean tiles in WORLD space → zooms & pans at the SAME speed as the island (David 2026-06-24)
-    if (!grassBlob) buildIsland();
-    var GS = 200;
-    // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
-    ctx.fillStyle = "#33271a"; ctx.fill(darkBlob);
-    ctx.fillStyle = "#d9c89a"; ctx.fill(sandBlob);
-    if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
-      var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
+    if (waterPat && !SANCTUARY) { var hw = W / vz, hh = H / vz, cxw = px + camX, cyw = py + camY; ctx.fillStyle = waterPat; ctx.fillRect(cxw - hw, cyw - hh, hw * 2, hh * 2); } // ocean tiles in WORLD space → zooms & pans at the SAME speed as the island (David 2026-06-24)
+    if (SANCTUARY) {
+      // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
+      var simg = WORLD_IMG.sanct;
+      if (simg && simg.complete && simg.naturalWidth) { var IW = RG * 3.75, IH = IW * simg.naturalHeight / simg.naturalWidth; ctx.drawImage(simg, -IW / 2, -IH / 2 - RG * 0.12, IW, IH); }
+    } else {
+      if (!grassBlob) buildIsland();
+      var GS = 200;
+      // smooth Cuphead island: dark ink coastline → sandy beach → painted grass
+      ctx.fillStyle = "#33271a"; ctx.fill(darkBlob);
+      ctx.fillStyle = "#d9c89a"; ctx.fill(sandBlob);
+      if (!grassPat && WORLD_IMG.grass && WORLD_IMG.grass.complete && WORLD_IMG.grass.naturalWidth) {
+        var gc = document.createElement("canvas"); gc.width = GS; gc.height = GS; gc.getContext("2d").drawImage(WORLD_IMG.grass, 0, 0, GS, GS); grassPat = ctx.createPattern(gc, "repeat");
+      }
+      ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
+      ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
     }
-    ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
-    ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
     // Cuphead painted object cutouts (drawn back-to-front by y)
     // depth-sorted objects: those whose base is above the fairy draw behind her; those below draw in front (tall trees hide her)
-    var OBJS = [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]];
+    var OBJS = SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]];
     OBJS.forEach(function (o) { if (o[2] <= py) drawObj(ctx, o[0], o[1], o[2], o[3]); });
-    var gden = (S.game && S.game.garden) || [];
+    var gden = (S.game && !SANCTUARY && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t, gden[fi].stage); }
     var jsc = 1 - Math.min(0.45, jz * 0.011);
     ctx.fillStyle = "rgba(20,30,15,0.25)"; ctx.beginPath(); ctx.ellipse(px, py + 2, 14 * jsc, 5 * jsc, 0, 0, 7); ctx.fill();
@@ -6186,7 +6193,7 @@
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
     // ===== DYNAMIC / VOLUMETRIC LIGHTING (David 2026-06-28, redo): a POOL of light around you that falls into real darkness at the edges (line-of-sight feel), warm ADDITIVE glow so lit areas stay rich-not-grey, soft shadows cast off the big objects, and dust motes drifting in the light for actual volume. =====
     var _night = nightAmt();
-    if (_night > 0.03) {
+    if (_night > 0.03 && !SANCTUARY) {  // SANCTUARY art is already night-lit — skip the dynamic darkening (would double-dark)
       function w2s(wx, wy) { return [W / 2 + (wx - (px + camX)) * vz, H * 0.6 + (wy - (py + camY)) * vz]; }
       var GL = w2s(px, py - 12), maxR = Math.max(W, H), fl = 0.93 + Math.sin(t * 3.2) * 0.07; // guardian light + flicker
       ctx.save();
@@ -6209,7 +6216,7 @@
       ctx.beginPath(); ctx.arc(mcx, mcy, mmR, 0, 7); ctx.fillStyle = "rgba(30,12,30,0.55)"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#3a2540"; ctx.stroke();
       ctx.save(); ctx.beginPath(); ctx.arc(mcx, mcy, mmR - 1, 0, 7); ctx.clip();
       ctx.beginPath(); ctx.arc(mcx, mcy, RG * msc, 0, 7); ctx.fillStyle = "#9aae5e"; ctx.fill();
-      [[-58, 2, "#caa15a"], [14, 44, "#ffd24a"], [150, 74, "#46c46a"], [-130, 28, "#ffb23a"]].forEach(function (o) { ctx.beginPath(); ctx.arc(mcx + o[0] * msc, mcy + o[1] * msc, 2.6, 0, 7); ctx.fillStyle = o[2]; ctx.fill(); });
+      if (!SANCTUARY) [[-58, 2, "#caa15a"], [14, 44, "#ffd24a"], [150, 74, "#46c46a"], [-130, 28, "#ffb23a"]].forEach(function (o) { ctx.beginPath(); ctx.arc(mcx + o[0] * msc, mcy + o[1] * msc, 2.6, 0, 7); ctx.fillStyle = o[2]; ctx.fill(); });
       ctx.beginPath(); ctx.arc(mcx + px * msc, mcy + py * msc, 3.4, 0, 7); ctx.fillStyle = "#ff5fa8"; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = "#fff"; ctx.stroke();
       ctx.restore(); ctx.restore();
     }
@@ -6258,7 +6265,8 @@
       }
     }
     if (shake > 0.3) shake *= 0.82; else shake = 0;
-    var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; }
+    if (SANCTUARY) { var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } } // keep the walker on the sanctuary grass (below the house, off the water)
+    else { var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; } }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
     // (purple night tint removed — David 2026-06-28: island shows in its natural warm pixel colors)
     if (ghudT++ % 30 === 0) updGameHud();
@@ -12576,7 +12584,19 @@
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
-    var acts = [[(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], ["— persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], ["— persona: early (day 3)", function () { devLoadPersona("early"); }], ["— persona: building (week 2)", function () { devLoadPersona("building"); }], ["— persona: established (month 1)", function () { devLoadPersona("established"); }], ["— persona: power (all chapters)", function () { devLoadPersona("power"); }]];
+    function _dj(fn) { return function () { var ss = el("startScreen"); if (ss) { ss.classList.remove("on", "leaving"); } document.body.classList.add("overworld"); try { fn(); } catch (e) {} }; } // dev jump: drop the start-screen overlay first, then open the surface
+    var acts = [
+      // ── JUMP TO a surface in ONE click (David 2026-07-13 — the preview gates are slow; these bypass the start-screen/mood-gate/nav) ──
+      ["🏝 Game world (Sanctuary)", _dj(function () { setPaneRest("game"); })],   // canonical pane switch → gameMode on top, no mood gate
+      ["📅 Planner / Today", _dj(function () { setPaneRest("planner"); renderToday(); })],
+      ["🧭 Journey", _dj(function () { setPaneRest("journey"); })],
+      ["🎛 Cockpit (tracker)", _dj(function () { setPaneRest("planner"); TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); })],
+      ["🧰 Toolbox", _dj(function () { setPaneRest("planner"); openToolbox(); })],
+      ["🧘 Full stack (10m)", _dj(function () { runFullStack(10, true); })],
+      ["🌬 Breathe tool", _dj(function () { DEV.tool("breathe"); })],
+      ["👁 Meditate tool", _dj(function () { DEV.tool("meditate"); })],
+      ["— — — — — — —", function () {}],
+      [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], ["— persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], ["— persona: early (day 3)", function () { devLoadPersona("early"); }], ["— persona: building (week 2)", function () { devLoadPersona("building"); }], ["— persona: established (month 1)", function () { devLoadPersona("established"); }], ["— persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
     document.body.appendChild(s);
