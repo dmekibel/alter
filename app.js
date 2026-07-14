@@ -5972,7 +5972,7 @@
   // solid-object footprints in WORLD coords [cx,cy,halfW,halfH] — the walker's feet can't enter these (house base, well, statue, barrel). Baked-object positions on sanctuary-island.jpg; tune with SANCT_DBG.
   var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
   // ===== EXPANDABLE TILE ISLAND (David's vision, 2026-07-14) — the island is a GRID of tiles that can GROW; seamless grass so no seams appear as it expands; square tiles give the blocky BIGBLK coastline for free. Sub-mode of SANCTUARY; flip SANCT_TILES=false for the flat image. =====
-  var SANCT_TILES = true, TILE = 128, ISLE = null, gtilePat = null;
+  var SANCT_TILES = true, TILE = 48, ISLE = null, gtilePat = null;
   var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
   function tkey(tx, ty) { return tx + "," + ty; }
   function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
@@ -6296,7 +6296,7 @@
     }
     // Cuphead painted object cutouts (drawn back-to-front by y)
     // depth-sorted objects: those whose base is above the fairy draw behind her; those below draw in front (tall trees hide her)
-    var OBJS = SANCT_TILES ? [[WORLD_IMG.house2, 0, 0, 150]] : SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]]; // house = depth-sorted sprite (walk-behind masking via the existing o[2]<=py / >py split)
+    var OBJS = SANCT_TILES ? [[WORLD_IMG.house2, 0, -8, 120]] : SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]]; // house = depth-sorted sprite (walk-behind masking via the existing o[2]<=py / >py split)
     OBJS.forEach(function (o) { if (o[2] <= py) drawObj(ctx, o[0], o[1], o[2], o[3]); });
     var gden = (S.game && !SANCTUARY && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t, gden[fi].stage); }
@@ -6318,7 +6318,7 @@
     else if (fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
     if (SANCTUARY && fhImg) {
       var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight;
-      var FDH = 104, FDW = FDH * ffw / ffh; // NO sprite bob — the idle animation carries its own breathing and the frames are feet-pinned, so the feet stay planted
+      var FDH = 66, FDW = FDH * ffw / ffh; // ~1 tile tall (ref proportion); NO sprite bob — the idle animation carries its own breathing and the frames are feet-pinned, so the feet stay planted
       var _cf = ctx.filter; ctx.filter = "brightness(0.86) saturate(0.85) contrast(1.03)"; // color-correct the character to sit in the berry-night island (David 2026-07-14)
       ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8), FDW, FDH);
       ctx.filter = _cf;
