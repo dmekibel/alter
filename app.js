@@ -7478,6 +7478,8 @@
       pool: ["There's no need to control it or deepen it. The body knows how to breathe. Just let it come and go.", "Feel where the breath is clearest right now, and let your attention rest there.", "Notice whether it's long or short, deep or shallow. However it is right now is fine.", "Follow one full breath, from the start of the in-breath, through the pause, to the end of the out-breath.", "Notice the small pause at the top of the in-breath, and the one after you breathe out.", "You don't have to change anything. Just stay with each breath as it comes.", "Notice the breath as sensation now. The cooler air coming in, a little warmer going out.", "See if you can catch the start of the next in-breath, before it fully arrives.", "When you notice your mind has wandered, that's the practice. Gently come back to the breath.", "As the breath settles, let sounds and sensations ease into the background. The breath stays in front.", "You're doing less now. The attention holds the breath more and more on its own.", "Nothing to add, nothing to fix. Just stay with each breath, one after the next.", "If it starts to feel effortless, let it. You don't have to grip the breath to stay with it."] }, // TIERED find->cycle->sensation->effortless (Culadasa TMI stages), delivered in order so a longer sit reaches the deeper lines (David 2026-07-14). Both gates + judge passed.
     count: { name: "Count", ti: "ti-list-numbers", c: "#a08fff", entry: "If it helps to steady the mind, you can count each breath as it passes. One on the in-breath. Two on the out.",
       pool: ["One, breathing in. Two, breathing out. Then begin again at one.", "If you lose count, that's perfectly normal. Just begin again at one.", "Give the out-breath your full attention. Notice the body softening each time you breathe out."] },
+    note: { name: "Note", ti: "ti-focus-2", c: "#5ed0b0", entry: "Now let your attention open out, wider than the breath. Whatever shows up, we'll just notice it and let it pass.", // MINDFULNESS lane spine — Shinzen see/hear/feel noting, tiered widen-field->finer-noting->whole-field (David 2026-07-14). Both gates + judge passed. Original technique in ALTER's own plain words per GUIDED-VOICE REGISTER LAW + copyright pivot.
+      pool: ["Start with sound. Whatever you can hear, near or far, just let it land. You don't have to listen for it.", "When a sound arrives, you can note it softly, hearing, and let it go.", "Now notice a sensation in the body. Maybe the warmth of your hands, or the contact where you're sitting.", "Note that one too, feeling, gently, and let your attention move on.", "Thoughts pass through as well. A word, a picture. Note it, thinking, and let it carry on without you.", "See if you can notice each thought the moment it begins, right as it arrives.", "There's no need to chase anything or hold it. Each sound, each sensation, each thought comes and goes on its own.", "Let the labels grow lighter now. You don't have to say them fully. Just a touch is enough.", "Rest in the whole field at once. Sounds, sensations, and thoughts, all moving through the same open awareness."] },
     scan: { name: "Body", ti: "ti-scan", c: "#ff9a3d", entry: "Now we'll scan through the body. Starting at the top of the head, and slowly moving down.",
       pool: ["Forehead, jaw, shoulders. Notice each part as you pass, and let it soften.", "Down through the chest and the belly. No need to change anything. Just noticing how each part feels.", "Your arms, down to the fingertips. Your legs, all the way to your feet.", "If you find tension somewhere, you don't have to fix it. Notice it, and let it be as it is.", "Feel the body now as one whole, sitting here, breathing."] },
     listen: { name: "Sounds", ti: "ti-ear", c: "#ff85be", entry: "Now open your attention to sounds. The ones nearby, and the ones far away.",
@@ -7486,30 +7488,34 @@
       pool: ["A thought appears. It might be words, or a picture. Watch it, without following it.", "Like the sounds, thoughts come and go on their own. Watch one pass.", "And notice the quiet space after one thought ends, before the next appears."] },
     feel: { name: "Feeling", ti: "ti-heart", c: "#ff9a6e", entry: "If there's a feeling here, let it be here. Notice where you feel it in the body. The chest, the throat, the belly.",
       pool: ["You don't need to name it or push it away. Just feel it, as sensation.", "Notice how it shifts and changes as you watch."] },
-    open: { name: "Rest", ti: "ti-windmill", c: "#63e6d6", entry: "For these last minutes, let go of every technique. There's nothing more to do.",
-      pool: ["Let everything be exactly as it is. Thoughts, sounds, sensations, all coming and going on their own.", "Rest here, aware of whatever comes, holding on to none of it.", "If you drift into thought, no problem. The moment you notice, you're already back."] },
-    heart: { name: "Heart", ti: "ti-heart-handshake", c: "#ff5f9e", entry: "Now bring to mind someone who is easy to love. A person, an animal, anyone at all. Picture them here with you, and let a little warmth rise as you do.", // loving-kindness / metta (David 2026-07-13): shared metta common tongue, both gates passed; not lifted from a living author
-      pool: ["Silently wish them well. May you be happy. May you be safe. May you be at ease.", "There's no need to force the feeling. Just hold them in mind, and let whatever warmth is there be there.", "Now turn that same kindness toward yourself. May I be happy. May I be at ease.", "Feel it in the center of the chest, a soft warmth, and let everything around it soften.", "Let it widen now, past this one person, to anyone who comes to mind. May you be happy too."] },
+    open: { name: "Open", ti: "ti-windmill", c: "#63e6d6", entry: "Now let go of every technique. Nothing to focus on, nothing to fix. Just be aware, and let everything be as it is.", // OPEN AWARENESS lane spine — equanimity / choiceless, tiered allow->rest-as-space->drop-the-watcher (David 2026-07-14). Both gates + judge passed.
+      pool: ["Let everything be exactly as it is. Thoughts, sounds, and sensations, all coming and going on their own.", "You don't have to do anything to be aware. It's already happening, all by itself.", "Notice that awareness has room for all of it. However loud or busy it gets, it can be here.", "When something pleasant arrives, let it be, and enjoy it lightly. When something hard arrives, let it be here too, without a fight.", "Rest here, aware of whatever comes, holding on to none of it.", "If you drift into thought, no problem. The moment you notice, you're already back.", "You don't have to keep watching so closely. Let the effort go, and just be here, aware.", "Nothing to reach for, nothing to keep. Let each moment arrive and pass in its own time."] },
+    heart: { name: "Heart", ti: "ti-heart-handshake", c: "#ff5f9e", entry: "Now bring to mind someone who is easy to love. A person, an animal, anyone at all. Picture them here with you, and let a little warmth rise as you do.", // HEART lane spine — metta / loving-kindness, tiered widening circle easy->self->neutral->difficult(opt-out)->all (David 2026-07-14). Both gates + judge passed; shared metta common tongue, not lifted from a living author.
+      pool: ["Silently wish them well. May you be happy. May you be safe. May you be at ease.", "There's no need to force the feeling. Just hold them in mind, and let whatever warmth is there be there.", "Feel it in the center of the chest, a soft warmth, and let everything around it soften.", "Now turn that same kindness toward yourself. May I be happy. May I be safe. May I be at ease.", "You're as deserving of this warmth as anyone. Let the good wish settle on you too.", "Now bring to mind someone you barely know. Someone you passed today, whose name you may not have. Wish them the same. May you be happy too.", "If it feels okay, bring to mind someone you find hard, and wish them a little ease too. If not, that's fine, stay with who's easy.", "Let the circle keep widening, past this room, to anyone at all. May you be happy. May you be safe. May you be at ease."] },
+    look: { name: "Look", ti: "ti-zoom-question", c: "#b98cff", deep: true, entry: "Now we'll try something different. Instead of watching your experience, look for the one who is watching it.", // INSIGHT lane spine (OPT-IN, safety-gated — Britton/Cheetah House Dark-Night risk per SPIRITUAL-PROGRESSION-CANON). Self-inquiry ladder in ALTER's own words; both gates + judge passed. deep:true -> the engine gives each prompt a 25-45s silence to investigate.
+      pool: ["Notice the next thought the moment it appears. It arrives on its own, and it passes on its own.", "You didn't choose it or build it. It simply showed up, and now it's gone.", "Bring to mind something that bothered you recently. Let the feeling come, and be the space it appears in.", "Hold it the way a mirror holds a reflection. Fully, but without being changed by it.", "Now let a good memory come instead. Notice the mind brighten, and notice you are the one who is aware, while the mood itself comes and goes.", "Picture a place you know. Now picture someone's face. Each one appears, then it's gone. Which one was you?", "You feel like the thinker behind your thoughts. Look for that thinker now. Is there anything there but the next thought?", "Look for the self, the one you call I. Is there a center to all this, or is there just the experience itself?", "You won't find a thing there, and that's fine. Rest as the awareness all of it is appearing in."] },
     close: { name: "Close", ti: "ti-moon", c: "#a08fff", entry: "Now let go of any effort. For these last moments, let the mind rest, free to do as it pleases.",
       pool: ["Bring your attention back to the body. The weight, the contact, the sounds around you.", "And in your own time, gently open your eyes."] }
   };
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
   // SESSIONS (arcs): beginner/intermediate/advanced = ordered blocks with time weights. The engine allocates the chosen length across the blocks by weight, so a long sit stays ON the block's technique instead of looping the last 3 lines (the retired tail hack). Adding a new session or the missing heart/love block is a data edit, not an engine change.
+  // MED LANES (David 2026-07-14, SPIRITUAL-PROGRESSION-CANON "MEDITATION LANE SYSTEM"): depth is a CONSCIOUS lane choice, never a length side-effect. The user picks the lane = their ceiling; length only deepens WITHIN the lane by walking its spine block's tiered pool further (one-shot authored-order fill). Each lane = settle -> brief breath anchor -> its heavily-weighted SPINE block (tiered along that lane's canon ladder) -> close. Keys are UI-facing lanes now (was anchor/explore/open/heart); `concentration` is the default. `gated:true` = Insight (opt-in + energy-door suppressed, see the picker).
   var MED_SESSIONS = {
-    anchor: { name: "Anchor", sub: "settle and count the breath · for beginners", blocks: [["settle", 0.9], ["breath", 3], ["count", 1.2], ["close", 0.7]] }, // breath is the SPINE (David 2026-07-14): a longer sit dwells in the tiered breath arc find->effortless (Culadasa), count is an early stabilizer not the bulk
-    explore: { name: "Explore", sub: "a tour of the senses · intermediate", blocks: [["settle", 0.9], ["breath", 0.9], ["scan", 1.6], ["listen", 1.2], ["watch", 1.4], ["close", 0.7]] },
-    open: { name: "Open", sub: "rest in open awareness · advanced", blocks: [["settle", 0.9], ["breath", 0.7], ["watch", 1.2], ["feel", 1.2], ["open", 1.8], ["close", 0.5]] },
-    heart: { name: "Heart", sub: "warmth and loving-kindness · metta", blocks: [["settle", 0.9], ["breath", 0.6], ["heart", 2.6], ["close", 0.7]] }
+    concentration: { name: "Concentration", sub: "steady the breath, the ground under all the rest · TMI", blocks: [["settle", 0.9], ["breath", 3], ["count", 1.0], ["close", 0.7]] }, // breath is the SPINE (Culadasa TMI): a longer sit dwells in the tiered breath arc find->effortless, count is an early stabilizer not the bulk
+    mindfulness: { name: "Mindfulness", sub: "note whatever comes and goes · Shinzen", blocks: [["settle", 0.9], ["breath", 0.7], ["note", 3], ["close", 0.7]] },
+    open: { name: "Open awareness", sub: "rest as the space things arise in", blocks: [["settle", 0.9], ["breath", 0.6], ["open", 3], ["close", 0.6]] },
+    heart: { name: "Heart", sub: "warmth, widening outward · metta", blocks: [["settle", 0.9], ["breath", 0.6], ["heart", 2.8], ["close", 0.7]] },
+    insight: { name: "Insight", sub: "look for the self · gentle, optional", blocks: [["settle", 0.9], ["breath", 0.9], ["look", 2.6], ["close", 0.8]], gated: true } // OPT-IN + safety-gated (Dark-Night risk); the picker hides it from beginners / on a low energy-door day and asks a one-time consent
   };
   function medSessionLines(sessKey) { // every line a session can speak — for TTS.warm (pre-decode before Begin)
-    var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor, out = [];
+    var S = MED_SESSIONS[sessKey] || MED_SESSIONS.concentration, out = [];
     S.blocks.forEach(function (b) { var blk = MED_BLOCKS[b[0]]; if (blk) { out.push(blk.entry); out = out.concat(blk.pool); } });
     return out.concat(MED_RETURN);
   }
   // F5 (David-decided 2026-07-13): the meditation player shows its block arc as the SAME top story-bars as the stack player — icon + color per block, filling as you pass through. Icon/color read straight from MED_BLOCKS (MED_BLOCK_META retired in the 2026-07-13 consolidation).
-  function medBars(sessKey) { var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor; return S.blocks.map(function (b) { var m = MED_BLOCKS[b[0]] || {}; return { icon: m.ti || "ti-circle-filled", color: m.c || "#9a5cf0" }; }); }
+  function medBars(sessKey) { var S = MED_SESSIONS[sessKey] || MED_SESSIONS.concentration; return S.blocks.map(function (b) { var m = MED_BLOCKS[b[0]] || {}; return { icon: m.ti || "ti-circle-filled", color: m.c || "#9a5cf0" }; }); }
   function medComposeSegments(sessKey, totalSec, perCue) { // allocate the length across the session's blocks by weight; each block plays its entry once, then fills its slice with its own pool + woven RETURN cues at the cadence
-    var S = MED_SESSIONS[sessKey] || MED_SESSIONS.anchor, sumW = 0;
+    var S = MED_SESSIONS[sessKey] || MED_SESSIONS.concentration, sumW = 0;
     S.blocks.forEach(function (b) { sumW += b[1]; });
     var segs = [], t = 0, ri = 0;
     S.blocks.forEach(function (b, bi) {
@@ -7533,7 +7539,7 @@
     var FREQ = { often: 11, some: 24, spacious: 42 };  // seconds between gentle re-anchoring cues
     // David's actual 4-in-1: each guide is an ORDERED sequence in that teacher's own voice (drawn from his transcripts in meditation-scripts/),
     // and once it reaches the end it rests on the last 3 lines so a long sit still feels guided. orb = breathe-animation seconds.
-    var cfg = { mins: 5, freq: "often", sess: "anchor" };
+    var cfg = { mins: 5, freq: "often", sess: "concentration" };
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     function build() {
       ov.innerHTML = "";
@@ -7548,15 +7554,33 @@
       }
       row("how long", [["2 min", 2], ["5 min", 5], ["10 min", 10]], "mins");
       row("remind me", [["often", "often"], ["some", "some"], ["spacious", "spacious"]], "freq");
-      row("session", [["Anchor", "anchor"], ["Explore", "explore"], ["Open", "open"], ["Heart", "heart"]], "sess");
-      var who = add(box, "div", null, MED_SESSIONS[cfg.sess].sub); who.style.cssText = "font-size:11px;color:#9c8fc4;margin-top:6px;font-style:italic;";
+      // LANE PICKER (David 2026-07-14): named by the SKILL each lane trains (= the conscious depth ceiling the user picks). Insight is OPT-IN + safety-gated: hidden entirely for a beginner or on a low energy-door day (Dark-Night risk), and the first time it's chosen it asks a one-time consent with an off-ramp.
+      var LANES = [["Concentration", "concentration"], ["Mindfulness", "mindfulness"], ["Open awareness", "open"], ["Heart", "heart"]];
+      var insightOK = false; try { insightOK = !profile().lowEnergy && !blueprint().practiceNovice; } catch (e) {} // energy-door low OR practice-novice -> Insight is not offered at all
+      if (insightOK) LANES.push(["Insight", "insight"]);
+      function insightConsent() { // one-time consent + off-ramp before the self-inquiry lane can run
+        box.innerHTML = '<div style="font-size:22px;font-weight:800;line-height:1.2;"><i class="ti ti-zoom-question" style="color:#b98cff;"></i> Before you try Insight</div>';
+        var p = add(box, "div", null, "This one looks straight at the sense of being a self, and it can bring up more than the calmer lanes. It's the practice to take slowly. If you feel shaky or oddly far away at any point, stop, open your eyes, and rest with the breath for a while. Nothing here is worth forcing.");
+        p.style.cssText = "font-size:13.5px;color:#d8cff2;line-height:1.5;margin:16px 4px 4px;text-align:left;";
+        var r2 = add(box, "div"); r2.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:20px;";
+        var no = add(r2, "button", null, "Not now"); no.style.cssText = "border:2.5px solid #6a5a9a;border-radius:16px;padding:11px 20px;font-family:var(--bub);font-weight:800;font-size:15px;cursor:pointer;color:#efeaff;background:rgba(255,255,255,.06);"; no.onclick = build;
+        var yes = add(r2, "button", null, "I understand, begin"); yes.style.cssText = "border:3px solid #3a2540;border-radius:16px;padding:11px 20px;font-family:var(--bub);font-weight:800;font-size:15px;cursor:pointer;color:#fff;background:#b98cff;box-shadow:0 4px 0 #3a2540;"; yes.onclick = function () { S.tools = S.tools || {}; S.tools.insightOptIn = 1; save(); cfg.sess = "insight"; run(); };
+      }
+      var lLbl = add(box, "div", null, "lane"); lLbl.style.cssText = "font-size:12px;color:#bcb0e8;font-weight:700;margin:13px 0 7px;text-transform:uppercase;letter-spacing:.5px;";
+      var lRow = add(box, "div"); lRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
+      LANES.forEach(function (o) {
+        var isIn = o[1] === "insight", b = add(lRow, "button", null, null);
+        b.textContent = o[0]; b.style.cssText = "border:2.5px solid " + (isIn ? "#b98cff" : "#6a5a9a") + ";border-radius:14px;padding:9px 14px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#efeaff;background:" + (cfg.sess === o[1] ? "#9a7cff" : "rgba(255,255,255,.06)") + ";";
+        b.onclick = function () { if (isIn && !(S.tools && S.tools.insightOptIn)) { insightConsent(); return; } cfg.sess = o[1]; build(); };
+      });
+      var who = add(box, "div", null, (MED_SESSIONS[cfg.sess] || MED_SESSIONS.concentration).sub); who.style.cssText = "font-size:11px;color:#9c8fc4;margin-top:6px;font-style:italic;";
       var begin = add(box, "button", null, "Begin ▶"); begin.style.cssText = "margin-top:18px;background:#9a7cff;color:#fff;border:3px solid #3a2540;border-radius:18px;padding:13px 28px;font-family:var(--bub);font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #3a2540;"; begin.onclick = run;
       var hint = add(box, "div", null, "0 attention span? pick “often” — I’ll gently bring you back every few seconds, so you can’t fail."); hint.style.cssText = "font-size:11.5px;color:#9c8fc4;margin-top:15px;line-height:1.45;";
     }
     function run() {
       // COMPOSE as the ACTS carousel (David 2026-07-13): one page per block, so a solo sit swipes + slides + re-tints + resets its timeline per section, exactly like the stack. "remind me" (often/some/spacious) sets the silence depth directly; fill is no-loop + dedup + depth-aware.
       var totalSec = cfg.mins * 60, depthOverride = { often: 0.12, some: 0.5, spacious: 0.9 }[cfg.freq];
-      var SS = MED_SESSIONS[cfg.sess] || MED_SESSIONS.anchor, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
+      var SS = MED_SESSIONS[cfg.sess] || MED_SESSIONS.concentration, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
       var built = composeMeditationSegs(blocks, totalSec, medBlockResolve, depthOverride);
       if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
       timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + SS.name, catK: "love", color: (built.acts[0] && built.acts[0].color) || "#9a5cf0", spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, totalSec: totalSec, segments: built.segs, acts: built.acts, drift: true, autostart: true });
@@ -7665,8 +7689,8 @@
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
   function meditationQuick(onDone, durSec) {
     var totalSec = durSec || 300; // solo "Sit in stillness" now runs the Anchor session on the ACTS carousel (David 2026-07-13): swipe + per-section slide/color/timeline, no-loop depth fill
-    TTS.unlock(); TTS.warm(medSessionLines("anchor"));
-    var SS = MED_SESSIONS.anchor, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
+    TTS.unlock(); TTS.warm(medSessionLines("concentration"));
+    var SS = MED_SESSIONS.concentration, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
     var built = composeMeditationSegs(blocks, totalSec, medBlockResolve);
     timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: (built.acts[0] && built.acts[0].color) || "#9a5cf0", spark: 10, vol: VPROF.med.volume, drone: true, totalSec: totalSec, segments: built.segs, acts: built.acts, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
   }
@@ -10074,7 +10098,7 @@
       var idx = 0;
       while (t < bEnd - 1) {
         var ln, gap;
-        if (idx < order.length) { ln = order[idx++]; used[_normLine(ln)] = 1; gap = pauseFor("absorb", depth); } // still have a fresh, never-said line
+        if (idx < order.length) { ln = order[idx++]; used[_normLine(ln)] = 1; gap = def.deep ? Math.max(25, Math.min(45, 30 + depth * 15)) : pauseFor("absorb", depth); } // still have a fresh, never-said line. DEEP (self-inquiry) prompts get a 25-45s silence to actually investigate (Harris: the longest silences fire only after the deepest prompts); normal lines keep the ~11s working pace.
         else if (def.weave) { ln = MED_RETURN[ri++ % MED_RETURN.length]; gap = pauseFor("absorb", depth) + 9; } // pool spent: only the recurring re-anchor cue, spaced FAR apart (never a repeated teaching line)
         else { if (segs.length) segs[segs.length - 1].gap = (segs[segs.length - 1].gap || 0) + (bEnd - t); break; } // non-working block, pool spent: extend the final silence to fill, then stop
         P(medSeg(ln, gap, "")); t += gap + 3.5;
@@ -10085,7 +10109,7 @@
     if (lastDef && lastDef.pool && lastDef.pool.length) { var fin = lastDef.pool[lastDef.pool.length - 1]; if (segs.length && _normLine(segs[segs.length - 1].text) !== _normLine(fin)) segs.push({ text: fin, label: fin, sub: "", _act: acts.length - 1 }); }
     return { segs: segs, acts: acts };
   }
-  function medBlockResolve(k) { var b = MED_BLOCKS[k]; if (!b || !b.entry) return null; return { name: b.name, color: b.c, icon: b.ti, entry: b.entry, pool: b.pool || [], weave: /^(count|scan|listen|watch|feel)$/.test(k) }; } // MED_SESSIONS blocks -> normalized (working blocks weave RETURN cues)
+  function medBlockResolve(k) { var b = MED_BLOCKS[k]; if (!b || !b.entry) return null; return { name: b.name, color: b.c, icon: b.ti, entry: b.entry, pool: b.pool || [], weave: /^(count|scan|listen|watch|feel)$/.test(k), deep: !!b.deep }; } // MED_SESSIONS blocks -> normalized (working blocks weave RETURN cues; deep = self-inquiry, engine gives each prompt a long investigate-silence)
   function medSecResolve(k) { var s = MED_SEC[k]; if (!s || !s.lines || !s.lines.length) return null; return { name: s.name, color: s.col, icon: s.ti, entry: s.lines[0], pool: s.lines.slice(1), weave: /^(body|aware)$/.test(k) }; } // editor MED_SEC sections -> normalized (lines[0] = entry, rest = pool)
   function firstDayStack(onDone) { // STONE 1 = THE APP IN ONE MINUTE (David 2026-07-08): the intro micro-stack (plan -> do -> track) IS the first journey stone now, no longer an onboarding beat. Standalone overlay: plan the stack, runFirstStack (carousel + before/after gauge = the felt-shift proof, self-logs to the day), then the show-don't-tell recap. Plan-UI + recap are the proven onboarding code, lifted verbatim. onDone() closes it.
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
