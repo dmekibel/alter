@@ -6084,10 +6084,13 @@
     while (placed < 14 && tries < 400) { tries++; var wx = wr() * W, wy = wr() * H, wi = ((wy | 0) * W + (wx | 0)); if (island[wi] || idOut[wi] < 60 || idOut[wi] > 210) continue; var ang = Math.atan2(wy - iy, wx - ix) + Math.PI / 2 + (wr() - 0.5) * 0.6, L = 60 + wr() * 90, amp = 5 + wr() * 3, arcs = wr() < 0.66 ? 1 : 2; wcx.beginPath(); for (var t = 0; t <= 8; t++) { var f = t / 8, al = f * L, pp = Math.sin(f * Math.PI * arcs) * amp, ptx = wx + Math.cos(ang) * al - Math.sin(ang) * pp, pty = wy + Math.sin(ang) * al + Math.cos(ang) * pp; if (t === 0) wcx.moveTo(ptx, pty); else wcx.lineTo(ptx, pty); } wcx.stroke(); placed++; }
     return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size };
   }
+  var _isleBaking = false;
   function drawTileGround(ctx) {
     if (!ISLE) buildIsle();
-    if (!_isleBake || _isleBake._stamp !== ISLE._stamp) { try { var b = bakeIsle(); if (b) { b._stamp = ISLE._stamp; _isleBake = b; } } catch (e) { if (window.console) console.warn("bakeIsle failed", e); SANCT_TILES = false; } }
-    if (_isleBake) ctx.drawImage(_isleBake.cv, _isleBake.ox, _isleBake.oy, _isleBake.w * TILE / 172, _isleBake.h * TILE / 172);
+    // cache the baked coast on window (survives across frames + closures) — rebuild only when the island changes
+    var cache = window._isleBakeCache;
+    if (!_isleBaking && (!cache || cache._stamp !== ISLE._stamp)) { _isleBaking = true; try { var b = bakeIsle(); if (b) { b._stamp = ISLE._stamp; window._isleBakeCache = b; cache = b; } } catch (e) { if (window.console) console.warn("bakeIsle failed", e); SANCT_TILES = false; } _isleBaking = false; }
+    if (cache) ctx.drawImage(cache.cv, cache.ox, cache.oy, cache.w * TILE / 172, cache.h * TILE / 172);
     if (SANCT_DBG) { ctx.fillStyle = "rgba(255,80,160,0.9)"; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; ctx.beginPath(); ctx.arc(tx * TILE, ty * TILE, 5, 0, 7); ctx.fill(); }); }
   }
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
