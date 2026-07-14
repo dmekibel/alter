@@ -5972,7 +5972,7 @@
   // solid-object footprints in WORLD coords [cx,cy,halfW,halfH] — the walker's feet can't enter these (house base, well, statue, barrel). Baked-object positions on sanctuary-island.jpg; tune with SANCT_DBG.
   var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
   // ===== EXPANDABLE TILE ISLAND (David's vision, 2026-07-14) — the island is a GRID of tiles that can GROW; seamless grass so no seams appear as it expands; square tiles give the blocky BIGBLK coastline for free. Sub-mode of SANCTUARY; flip SANCT_TILES=false for the flat image. =====
-  var SANCT_TILES = true, TILE = 128, ISLE = null, gtilePat = null;
+  var SANCT_TILES = false, TILE = 128, ISLE = null, gtilePat = null;
   var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
   function tkey(tx, ty) { return tx + "," + ty; }
   function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
