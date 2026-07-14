@@ -6228,16 +6228,16 @@
   }
   var ISLAND = [[0, 0, 1], [-0.5, -0.32, 0.52], [0.54, -0.22, 0.56], [0.32, 0.5, 0.52], [-0.46, 0.46, 0.5], [0.02, -0.62, 0.46], [0, 0.64, 0.42]];
   // ---- tile-based island (squares, not circles): precompute the grid once ----
-  var TILE = 26, SAND = null, GRASS = null, GRASSD = null, SHALLOW = null;
+  var PGTILE = 26, SAND = null, GRASS = null, GRASSD = null, SHALLOW = null; // renamed from TILE (2026-07-15): it was clobbering the island's TILE=128 (same hoisted var scope) -> broke island scale + walk collision
   function blobInside(wx, wy, scale) {
     for (var i = 0; i < ISLAND.length; i++) { var b = ISLAND[i], dx = wx - b[0] * RG, dy = wy - b[1] * RG, r = RG * b[2] * scale; if (dx * dx + dy * dy < r * r) return true; }
     return false;
   }
   function buildIsland() {
     SAND = []; GRASS = []; GRASSD = []; SHALLOW = [];
-    var lim = Math.ceil(RG * 1.4 / TILE);
+    var lim = Math.ceil(RG * 1.4 / PGTILE);
     for (var iy = -lim; iy <= lim; iy++) for (var ix = -lim; ix <= lim; ix++) {
-      var wx = ix * TILE, wy = iy * TILE, g = blobInside(wx, wy, 0.92), s = blobInside(wx, wy, 1.06), sh = blobInside(wx, wy, 1.2);
+      var wx = ix * PGTILE, wy = iy * PGTILE, g = blobInside(wx, wy, 0.92), s = blobInside(wx, wy, 1.06), sh = blobInside(wx, wy, 1.2);
       if (g) { GRASS.push([wx, wy]); if (((ix * 7 + iy * 13) & 3) === 0) GRASSD.push([wx, wy]); }
       if (s) SAND.push([wx, wy]); else if (sh) SHALLOW.push([wx, wy]);
     }
