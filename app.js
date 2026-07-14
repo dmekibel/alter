@@ -5971,6 +5971,26 @@
   var SANCT_DBG = false; // draw collider boxes for tuning
   // solid-object footprints in WORLD coords [cx,cy,halfW,halfH] — the walker's feet can't enter these (house base, well, statue, barrel). Baked-object positions on sanctuary-island.jpg; tune with SANCT_DBG.
   var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
+  // ===== EXPANDABLE TILE ISLAND (David's vision, 2026-07-14) — the island is a GRID of tiles that can GROW; seamless grass so no seams appear as it expands; square tiles give the blocky BIGBLK coastline for free. Sub-mode of SANCTUARY; flip SANCT_TILES=false for the flat image. =====
+  var SANCT_TILES = true, TILE = 128, ISLE = null, gtilePat = null;
+  var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
+  function tkey(tx, ty) { return tx + "," + ty; }
+  function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
+  function buildIsle() {
+    var shape = [[0, -2], [-1, -1], [0, -1], [1, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]; // ~13-tile rounded blob, centered at origin
+    var S = new Set(); shape.forEach(function (t) { S.add(tkey(t[0], t[1])); });
+    ISLE = { tiles: S, house: [0, -1], objects: [] };
+  }
+  function isleRects(ex) { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; p.rect(tx * TILE - TILE / 2 - ex, ty * TILE - TILE / 2 - ex, TILE + ex * 2, TILE + ex * 2); }); return p; }
+  function drawTileGround(ctx) {
+    if (!ISLE) buildIsle();
+    if (!gtilePat) { var g = WORLD_IMG.gtile; if (g && g.complete && g.naturalWidth) { var gc = document.createElement("canvas"); gc.width = TILE; gc.height = TILE; gc.getContext("2d").drawImage(g, 0, 0, TILE, TILE); gtilePat = ctx.createPattern(gc, "repeat"); } }
+    ctx.fillStyle = "#0a2236"; ctx.fill(isleRects(19));   // wet water-edge rim (just darker than ocean)
+    ctx.fillStyle = "#5c4a34"; ctx.fill(isleRects(13));   // sandy shore
+    ctx.fillStyle = "#33240f"; ctx.fill(isleRects(7));    // earth cliff face
+    ctx.save(); ctx.clip(isleRects(0)); ctx.fillStyle = gtilePat || "#26401c"; ctx.fillRect(-4000, -4000, 8000, 8000); ctx.restore(); // seamless grass on the exact tiles → continuous interior, blocky coast on the rim
+    if (SANCT_DBG) { ctx.fillStyle = "rgba(255,80,160,0.9)"; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; ctx.beginPath(); ctx.arc(tx * TILE, ty * TILE, 5, 0, 7); ctx.fill(); ctx.font = "18px sans-serif"; ctx.fillText(tx + "," + ty, tx * TILE + 6, ty * TILE); }); }
+  }
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
@@ -5988,7 +6008,7 @@
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
-    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg" };
+    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg", gtile: "tile-grass.jpg", house2: "obj-house.png" };
     Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=3"; WORLD_IMG[k] = im; });
     loadFarmhand();
   }
@@ -6153,7 +6173,9 @@
     ctx.fillStyle = SANCTUARY ? OCEAN_C : "#6f8a93"; ctx.fillRect(0, 0, W, H); // base ocean color behind everything (no gaps)
     ctx.save(); ctx.translate(W / 2 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0), H * 0.6 + (shake ? (Math.random() - 0.5) * shake * 2.4 : 0)); ctx.scale(vz, vz); ctx.translate(-(px + camX), -(py + camY)); // camX/camY = free-look pan (look around without moving the guy); character sits lower (David)
     if (waterPat && !SANCTUARY) { var hw = W / vz, hh = H / vz, cxw = px + camX, cyw = py + camY; ctx.fillStyle = waterPat; ctx.fillRect(cxw - hw, cyw - hh, hw * 2, hh * 2); } // ocean tiles in WORLD space → zooms & pans at the SAME speed as the island (David 2026-06-24)
-    if (SANCTUARY) {
+    if (SANCT_TILES) {
+      drawTileGround(ctx); // expandable tile island: seamless grass on the tiles + blocky cliff/shore rim
+    } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
       if (simg && simg.complete && simg.naturalWidth) { var IW = RG * 3.75, IH = IW * simg.naturalHeight / simg.naturalWidth; ctx.drawImage(simg, -IW / 2, -IH / 2 - RG * 0.12, IW, IH); }
@@ -6172,7 +6194,7 @@
     }
     // Cuphead painted object cutouts (drawn back-to-front by y)
     // depth-sorted objects: those whose base is above the fairy draw behind her; those below draw in front (tall trees hide her)
-    var OBJS = SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]];
+    var OBJS = SANCT_TILES ? [[WORLD_IMG.house2, 0, 0, 150]] : SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]]; // house = depth-sorted sprite (walk-behind masking via the existing o[2]<=py / >py split)
     OBJS.forEach(function (o) { if (o[2] <= py) drawObj(ctx, o[0], o[1], o[2], o[3]); });
     var gden = (S.game && !SANCTUARY && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t, gden[fi].stage); }
@@ -6249,7 +6271,7 @@
   function drawWorld() {
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
-    var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving;
+    var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving, prevPx = px, prevPy = py; // prev pos for tile-edge collision
     if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
     if (SANCTUARY) {
       // ── FARMHAND locomotion (David 2026-07-13): he DRIVES in the direction he FACES — a 2D-car feel, so the walk always matches the motion (NO foot-sliding). Steering is sharper than a car (he can whip around). ──
@@ -6303,8 +6325,17 @@
     }
     if (shake > 0.3) shake *= 0.82; else shake = 0;
     if (SANCTUARY) {
-      var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } // island edge: stay on the grass, off the water
-      for (var ci = 0; ci < SANCT_COLL.length; ci++) { var c = SANCT_COLL[ci], cdx = px - c[0], cdy = py - c[1]; if (Math.abs(cdx) < c[2] && Math.abs(cdy) < c[3]) { var ox = c[2] - Math.abs(cdx), oy = c[3] - Math.abs(cdy); if (ox < oy) px = c[0] + (cdx < 0 ? -c[2] : c[2]); else py = c[1] + (cdy < 0 ? -c[3] : c[3]); } } // solid objects: push the feet out of the base footprint (can't walk through walls)
+      var COLLS = SANCT_TILES ? SANCT_COLL_T : SANCT_COLL;
+      if (SANCT_TILES) {
+        if (!ISLE) buildIsle();
+        // tile-edge collision: feet must stay on a grass tile. Axis-separated so you slide along the coast instead of sticking.
+        if (!isleHas(Math.round(px / TILE), Math.round(prevPy / TILE))) px = prevPx;
+        if (!isleHas(Math.round(prevPx / TILE), Math.round(py / TILE))) py = prevPy;
+        if (!isleHas(Math.round(px / TILE), Math.round(py / TILE))) { px = prevPx; py = prevPy; }
+      } else {
+        var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } // island edge: stay on the grass, off the water
+      }
+      for (var ci = 0; ci < COLLS.length; ci++) { var c = COLLS[ci], cdx = px - c[0], cdy = py - c[1]; if (Math.abs(cdx) < c[2] && Math.abs(cdy) < c[3]) { var ox = c[2] - Math.abs(cdx), oy = c[3] - Math.abs(cdy); if (ox < oy) px = c[0] + (cdx < 0 ? -c[2] : c[2]); else py = c[1] + (cdy < 0 ? -c[3] : c[3]); } } // solid objects: push the feet out of the base footprint (can't walk through walls)
     }
     else { var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; } }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
@@ -9388,7 +9419,12 @@
       if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total), _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); }
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
-      var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; } if (seg) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; }
+      var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; }
+      if (seg) { // CAPTION CYCLING (David 2026-07-13): a long line's voice clip stays whole, but the on-screen text steps through its short chunks over the CLIP's duration (2 lines max), then holds the last chunk through the silence
+        if (seg.caps && seg.caps.length > 1 && seg.dur > 1.4) { var _span = Math.max(0.6, seg.dur), _into = Math.max(0, e - seg.start), _cx = Math.min(seg.caps.length - 1, Math.floor(_into / (_span / seg.caps.length))); lab.textContent = seg.caps[_cx]; }
+        else { lab.textContent = seg.label || ""; }
+        sub.textContent = seg.sub || "";
+      }
       if (minimized && miniLab) miniLab.textContent = lab.textContent; // keep the minimized dock's label live while audio keeps playing
       if (orb) { // ORB DRIVE (David 2026-07-09): ONE clock. Scale the orb from the CURRENT segment's breath phase across its REAL span (audio + adaptive gap), so it tracks the cues exactly — fixes hold-too-short, cut-when-full, shrinks-on-hold. Non-breath segments keep a gentle ~11s ambient breath so it still guides you.
         var _ph = seg && seg.breath, _sc, _op;
@@ -9737,6 +9773,16 @@
   }
   // ===== R0 — THE RELIEF DOOR + MICRO-STACK (HANDOFF-stacks-and-meditation §10, David 2026-07-02) =====
   function _normLine(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 60); } // dedup key: strip to letters/digits so near-identical lines (punctuation/casing) collapse — the session-wide no-repeat guard (David 2026-07-13)
+  function capSplit(text, max) { // split ONE guide line into short captions (<= ~2 lines) at sentence/clause boundaries. Display-only: the VOICE clip stays the whole line, the caption cycles through these over the clip's duration (David 2026-07-13: "2 lines max, split long statements into shorter faster captions")
+    max = max || 48; text = String(text || "").trim(); if (!text || text.length <= max) return [text];
+    var units = text.match(/[^.!?,]+[.!?,]*\s*/g) || [text], packed = [], buf = "";
+    units.forEach(function (u) { if ((buf + u).trim().length > max && buf) { packed.push(buf.trim()); buf = u; } else buf += u; });
+    if (buf.trim()) packed.push(buf.trim());
+    var out = []; packed.forEach(function (c) { if (c.length <= max) { out.push(c); return; } var words = c.split(/\s+/), b = ""; words.forEach(function (w) { var p = b ? b + " " + w : w; if (p.length > max && b) { out.push(b); b = w; } else b = p; }); if (b) out.push(b); }); // any clause still too long: greedy word-pack
+    for (var k = out.length - 1; k > 0; k--) { if (out[k].split(/\s+/).length <= 1 && out[k].length <= 8) { out[k - 1] = out[k - 1] + " " + out[k]; out.splice(k, 1); } } // merge a lone tiny orphan ("love.") back into the previous caption
+    return out.length ? out : [text];
+  }
+  function medSeg(ln, gap, subName, act) { var caps = capSplit(ln); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles
   // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The player takes as many moves as the chosen time needs (never loops, never stretches 3 over 2 min) — more time = more moves, each a held ~13s. Both gates passed. Add moves here to deepen (a data edit).
   var STRETCH_MOVES = [
     ["Reach for the ceiling", "stand tall, both arms long and slow"],
@@ -9959,7 +10005,8 @@
   }
   function _shuffled(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; } // Fisher-Yates; used so each extra pass through a line pool is a fresh order, never the identical loop
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
-    var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" that showed up in both relax AND meditation)
+    var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false, medRI = 0; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" in both relax AND meditation); medRI cycles the sparse re-anchor cues across sections
+
     list.forEach(function (t) {
       var C = STACK_CONTENT[t.id]; if (!C && !(t.rawSegs && t.rawSegs.length)) return;
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
@@ -9974,15 +10021,16 @@
         msecs.forEach(function (sc, si) {
           var def = MED_SEC[sc.k]; if (!def) return;
           var dur = sc.d || Math.round((t.secs || 90) / msecs.length);
+          var weave = /^(body|aware)$/.test(sc.k); // working sections re-anchor; settle/rest/etc. rest in silence
           var order = _shuffled(def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order.length) order = def.lines.slice(); // start from lines NOT already said this session (dedup across acts)
-          var tt = 0, idx = 0, pass = 0, prev = null, first = true;
-          while (tt < dur - 1) { // NO-LOOP FILL (David 2026-07-11): walk the DISTINCT lines; each full pass reshuffles + adds silence, so longer time = fewer, more-spaced reminders and varied content, never a tight loop
-            var cad = pauseFor("absorb", depth) + pass * 3;
-            var ln = order[idx]; if (ln === prev && order.length > 1) { idx = (idx + 1) % order.length; ln = order[idx]; } // never the same line twice in a row (incl. across a pass boundary)
-            usedTxt[_normLine(ln)] = 1;
-            var seg2 = { text: ln, label: ln, sub: first ? def.name : "", gap: cad }; if (si > 0 && first) seg2._sectionStart = true; P(seg2);
-            tt += cad + 3.5; prev = ln; first = false; idx++;
-            if (idx >= order.length) { idx = 0; pass++; var rem = def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order = _shuffled(rem.length ? rem : def.lines); if (order[0] === prev && order.length > 1) { var sw = order[0]; order[0] = order[1]; order[1] = sw; } } // deepen: next pass prefers still-unused lines, more silence
+          var tt = 0, idx = 0, first = true;
+          while (tt < dur - 1) { // ONE-SHOT FILL (David 2026-07-13): each distinct line ONCE; when spent, working sections drop sparse "come back" cues, others rest in silence — a teaching line is never re-said
+            var ln, cad;
+            if (idx < order.length) { ln = order[idx++]; usedTxt[_normLine(ln)] = 1; cad = pauseFor("absorb", depth); }
+            else if (weave) { ln = MED_RETURN[medRI++ % MED_RETURN.length]; cad = pauseFor("absorb", depth) + 9; }
+            else { break; } // pool spent, non-working: let the section end (its slice becomes lead-in silence for the next)
+            var seg2 = medSeg(ln, cad, first ? def.name : ""); if (si > 0 && first) seg2._sectionStart = true; P(seg2);
+            tt += cad + 3.5; first = false;
           }
         });
       } else if (C.breath) {
@@ -10013,22 +10061,18 @@
       var ai = acts.length - 1, pool = (def.pool || []).filter(Boolean);
       function P(s) { s._act = ai; segs.push(s); }
       var bEnd = t + totalSec * ((b.weight || 1) / (sumW || 1)), entryGap = pauseFor("cue", depth);
-      P({ text: def.entry, label: def.entry, sub: def.name, gap: entryGap }); // entry TAUGHT ONCE, its section name as the subtitle
+      P(medSeg(def.entry, entryGap, def.name)); // entry TAUGHT ONCE, its section name as the subtitle
       used[_normLine(def.entry)] = 1; t += entryGap + 3.5;
       if (!pool.length) return;
+      // ONE-SHOT FILL (David 2026-07-13: "still see repetition in stuff made longer"): each distinct teaching line plays EXACTLY ONCE. When the pool is spent, the rest of the section is silence + (for working blocks) SPARSE "come back" re-anchors — a teaching line is NEVER re-delivered.
       var order = _shuffled(pool.filter(function (l) { return !used[_normLine(l)]; })); if (!order.length) order = _shuffled(pool);
-      var idx = 0, pass = 0, prev = def.entry, picks = 0;
+      var idx = 0;
       while (t < bEnd - 1) {
-        var gap = pauseFor("absorb", depth) + pass * 3, ln;
-        picks++;
-        if (def.weave && picks % 4 === 0 && MED_RETURN.length) { ln = MED_RETURN[ri++ % MED_RETURN.length]; } // a "notice you drifted, come back" cue — intentionally recurs, exempt from dedup + the pool walk
-        else {
-          if (idx >= order.length) { pass++; gap = pauseFor("absorb", depth) + pass * 3; var rem = pool.filter(function (l) { return !used[_normLine(l)]; }); order = _shuffled(rem.length ? rem : pool); idx = 0; } // next pass: prefer still-unused lines, reshuffle + add silence; reuse only when the whole pool is spent
-          ln = order[idx]; if (_normLine(ln) === _normLine(prev) && order.length > 1) { idx = (idx + 1) % order.length; ln = order[idx]; } // never the same line twice running
-          used[_normLine(ln)] = 1; idx++;
-        }
-        if (ln == null) break;
-        P({ text: ln, label: ln, sub: "", gap: gap }); t += gap + 3.5; prev = ln;
+        var ln, gap;
+        if (idx < order.length) { ln = order[idx++]; used[_normLine(ln)] = 1; gap = pauseFor("absorb", depth); } // still have a fresh, never-said line
+        else if (def.weave) { ln = MED_RETURN[ri++ % MED_RETURN.length]; gap = pauseFor("absorb", depth) + 9; } // pool spent: only the recurring re-anchor cue, spaced FAR apart (never a repeated teaching line)
+        else { if (segs.length) segs[segs.length - 1].gap = (segs[segs.length - 1].gap || 0) + (bEnd - t); break; } // non-working block, pool spent: extend the final silence to fill, then stop
+        P(medSeg(ln, gap, "")); t += gap + 3.5;
       }
     });
     if (!acts.length) return { segs: [{ text: MED_BLOCKS.settle.entry, label: MED_BLOCKS.settle.entry, sub: "", _act: 0 }], acts: [{ name: "Settle", color: "#63e6d6", icon: "ti-armchair" }] };
@@ -12619,6 +12663,7 @@
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
   window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }).slice(1); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } return { depth: +sessionDepth(secs).toFixed(2), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, gaps: cues.slice(0, 6).map(function (s2) { return +s2.gap.toFixed(1); }) }; } };
+  window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (seamless)"; }; // DEV: expand the island one ring → prove tiles add with no seam
   function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
   function soundMuted() { return !!(S.audio && S.audio.voice === 0 && S.audio.bg === 0); } // dev: fully silenced = both master buses at 0
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
