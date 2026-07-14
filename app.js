@@ -6099,7 +6099,7 @@
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
   var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30;
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
-  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=3"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=3"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=3"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
+  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=4"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=4"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=4"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
   function fhDirName(ang) { var k = (((Math.round(ang / (Math.PI / 4))) % 8) + 8) % 8; return FH_KBYK[k]; }
   // spr-dir.png rows are David's hand-picked spin frames, already in compass order
