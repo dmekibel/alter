@@ -5972,29 +5972,123 @@
   // solid-object footprints in WORLD coords [cx,cy,halfW,halfH] — the walker's feet can't enter these (house base, well, statue, barrel). Baked-object positions on sanctuary-island.jpg; tune with SANCT_DBG.
   var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
   // ===== EXPANDABLE TILE ISLAND (David's vision, 2026-07-14) — the island is a GRID of tiles that can GROW; seamless grass so no seams appear as it expands; square tiles give the blocky BIGBLK coastline for free. Sub-mode of SANCTUARY; flip SANCT_TILES=false for the flat image. =====
-  var SANCT_TILES = false, TILE = 128, ISLE = null, gtilePat = null;
+  var SANCT_TILES = true, TILE = 128, ISLE = null, gtilePat = null;
   var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
   function tkey(tx, ty) { return tx + "," + ty; }
   function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
   function buildIsle() {
-    var shape = [[0, -2], [-1, -1], [0, -1], [1, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]; // ~13-tile rounded blob, centered at origin
-    var S = new Set(); shape.forEach(function (t) { S.add(tkey(t[0], t[1])); });
-    ISLE = { tiles: S, house: [0, -1], objects: [] };
+    var S = new Set(); // bigger rounded test island (~40 tiles) so the house (upper-center) AND the walking character both sit on grass
+    for (var i = -3; i <= 3; i++) for (var j = -4; j <= 4; j++) if (i * i + j * j <= 13) S.add(tkey(i, j));
+    ISLE = { tiles: S, house: [0, -1], objects: [], _stamp: 1 };
   }
   function isleRects(ex) { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; p.rect(tx * TILE - TILE / 2 - ex, ty * TILE - TILE / 2 - ex, TILE + ex * 2, TILE + ex * 2); }); return p; }
   function isleOutline() { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1], x = tx * TILE - TILE / 2, y = ty * TILE - TILE / 2; if (!isleHas(tx, ty - 1)) { p.moveTo(x, y); p.lineTo(x + TILE, y); } if (!isleHas(tx, ty + 1)) { p.moveTo(x, y + TILE); p.lineTo(x + TILE, y + TILE); } if (!isleHas(tx - 1, ty)) { p.moveTo(x, y); p.lineTo(x, y + TILE); } if (!isleHas(tx + 1, ty)) { p.moveTo(x + TILE, y); p.lineTo(x + TILE, y + TILE); } }); return p; } // ONLY the exposed island edges (no interior grid) → the coastline
+  // ===== BAKED COAST RENDERER (port of _experiments/sanctuary-gen/tiles/render_proof.py R24, David-approved) =====
+  // Runs ONCE per island change to an offscreen canvas; drawWorld just blits it. Everything derives from ISLE.tiles
+  // so expansion is correct by construction (no seams). Constants are the python P dict verbatim (BTB=172 scale).
+  var _isleBake = null; // { cv, ox, oy, w, h, key }
+  function _cv(w, h) { var c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  function _blurThr(shape, W, H, blurPx, thr) { // shape=canvas(white on black) -> Uint8 mask via gaussian blur + threshold (= morphology)
+    var b = _cv(W, H), x = b.getContext("2d"); x.filter = "blur(" + blurPx + "px)"; x.drawImage(shape, 0, 0); x.filter = "none";
+    var d = x.getImageData(0, 0, W, H).data, m = new Uint8Array(W * H); for (var i = 0; i < m.length; i++) m[i] = d[i * 4] > thr ? 1 : 0; return m;
+  }
+  function _dist(m, W, H, outside) { // chamfer 3-4 distance transform (px) from the target set (outside=true -> distance into ~m)
+    var INF = 1e9, D = new Float32Array(W * H), i;
+    for (i = 0; i < D.length; i++) D[i] = (outside ? !m[i] : m[i]) ? INF : 0;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) { i = y * W + x; var v = D[i]; if (x > 0) v = Math.min(v, D[i - 1] + 3); if (y > 0) v = Math.min(v, D[i - W] + 3); if (x > 0 && y > 0) v = Math.min(v, D[i - W - 1] + 4); if (x < W - 1 && y > 0) v = Math.min(v, D[i - W + 1] + 4); D[i] = v; }
+    for (var y2 = H - 1; y2 >= 0; y2--) for (var x2 = W - 1; x2 >= 0; x2--) { i = y2 * W + x2; var v2 = D[i]; if (x2 < W - 1) v2 = Math.min(v2, D[i + 1] + 3); if (y2 < H - 1) v2 = Math.min(v2, D[i + W] + 3); if (x2 < W - 1 && y2 < H - 1) v2 = Math.min(v2, D[i + W + 1] + 4); if (x2 > 0 && y2 < H - 1) v2 = Math.min(v2, D[i + W - 1] + 4); D[i] = v2; }
+    for (i = 0; i < D.length; i++) D[i] /= 3; return D; // normalize ortho step -> 1px
+  }
+  function bakeIsle() {
+    var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile;
+    if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null;
+    var BTB = 172, PAD = 2, GEY = 90, EXTRA = 150;
+    var txs = [], tys = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); txs.push(+a[0]); tys.push(+a[1]); });
+    var minx = Math.min.apply(0, txs), maxx = Math.max.apply(0, txs), miny = Math.min.apply(0, tys), maxy = Math.max.apply(0, tys);
+    var W = (maxx - minx + 1 + PAD * 2) * BTB, H = (maxy - miny + 1 + PAD * 2) * BTB + EXTRA;
+    function bx(tx) { return (tx - minx + PAD) * BTB; } function by(ty) { return (ty - miny + PAD) * BTB; }
+    var has = function (tx, ty) { return ISLE.tiles.has(tkey(tx, ty)); };
+    // --- baseA: tile rects -> round the stepped corners ---
+    var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
+    var baseA = _blurThr(rc, W, H, 14, 127);
+    // --- cloud-lobe grass mask: walk baseA contour (angle-order), stamp overlapping lobes, skip sharp corners ---
+    var eb = [], i; for (var y = 1; y < H - 1; y++) for (var x = 1; x < W - 1; x++) { i = y * W + x; if (baseA[i] && !(baseA[i - 1] && baseA[i + 1] && baseA[i - W] && baseA[i + W])) eb.push([y, x]); }
+    var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= eb.length; ccx /= eb.length;
+    eb.sort(function (a, b) { return Math.atan2(a[0] - ccy, a[1] - ccx) - Math.atan2(b[0] - ccy, b[1] - ccx); });
+    var arc = [0]; for (i = 1; i < eb.length; i++) arc[i] = arc[i - 1] + Math.hypot(eb[i][0] - eb[i - 1][0], eb[i][1] - eb[i - 1][1]);
+    var total = arc[arc.length - 1];
+    var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
+    var seed = 12345, rnd = function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    var findK = function (p) { var lo = 0, hi = arc.length - 1; while (lo < hi) { var m = (lo + hi) >> 1; if (arc[m] < p) lo = m + 1; else hi = m; } return Math.min(lo, eb.length - 2); };
+    var curv = function (k) { var ka = Math.max(0, k - 9), kb = Math.min(eb.length - 1, k + 9); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
+    var pos = 0, s = 42 + rnd() * 12;
+    while (pos < total) {
+      var k = findK(pos);
+      if (curv(k) > 0.55) { s = 42 + rnd() * 12; pos += s; continue; } // sharp corner -> no lobe (rounded base carries it)
+      var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1);
+      var ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx, tn = Math.hypot(tx2, ty2) + 1e-6, ry = 13 + rnd() * 3, rxl = 0.58 * s;
+      var nx = cx - ccx, ny = cy - ccy, nn = Math.hypot(nx, ny) + 1e-6;
+      lx.save(); lx.translate(cx + nx / nn * ry * 0.2, cy + ny / nn * ry * 0.2); lx.rotate(Math.atan2(ty2, tx2));
+      lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore();
+      s = 42 + rnd() * 12; pos += s;
+    }
+    var gmA = _blurThr(lc, W, H, 4, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
+    // --- cliff drape (south only): per-column depth from baseA -> sample the real strip ---
+    var sc = _cv(strip.naturalWidth, strip.naturalHeight), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(strip, 0, 0); scx.filter = "none";
+    var sd = scx.getImageData(0, 0, strip.naturalWidth, strip.naturalHeight).data, sw = strip.naturalWidth, sh = strip.naturalHeight;
+    var cliff = new Uint8Array(W * H), cmax = Math.round((182 - GEY - 13) / 1.06), depth = new Int32Array(W);
+    for (i = 0; i < W; i++) depth[i] = 99999;
+    var out = new Uint8ClampedArray(W * H * 4);
+    for (i = 0; i < W * H; i++) { out[i * 4] = 5; out[i * 4 + 1] = 11; out[i * 4 + 2] = 44; out[i * 4 + 3] = 255; } // water
+    for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) {
+      i = yy * W + xx; depth[xx] = baseA[i] ? 0 : depth[xx] + 1; var dp = depth[xx];
+      if (dp >= 1 && dp <= cmax) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; }
+    }
+    var landcliff = new Uint8Array(W * H); for (i = 0; i < W * H; i++) landcliff[i] = baseA[i] || cliff[i] ? 1 : 0;
+    // --- sand ring: gradual taper thin(top)->thick(bottom), rounded (dist from smoothed landcliff); never north ---
+    var lcc = _cv(W, H), lccx = lcc.getContext("2d"); { var im = lccx.createImageData(W, H); for (i = 0; i < W * H; i++) { im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = landcliff[i] ? 255 : 0; im.data[i * 4 + 3] = 255; } lccx.putImageData(im, 0, 0); }
+    var lcS = _blurThr(lcc, W, H, 28, 120), distout = _dist(lcS, W, H, true);
+    var north = new Uint8Array(W * H); txs.forEach(function (tx, n) { var ty = tys[n]; if (!has(tx, ty - 1)) { var x0 = Math.max(0, bx(tx) - 9), x1 = Math.min(W, bx(tx) + BTB + 9), y0 = Math.max(0, by(ty) - 160), y1 = Math.min(H, by(ty) + 24); for (var yb = y0; yb < y1; yb++) for (var xb = x0; xb < x1; xb++) north[yb * W + xb] = 1; } });
+    var ytop = H, ybot = 0; for (i = 0; i < W * H; i++) if (landcliff[i]) { var yr = (i / W) | 0; if (yr < ytop) ytop = yr; if (yr > ybot) ybot = yr; }
+    var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 }, SO = { r: 40, g: 22, b: 26 };
+    // rows-below-cliff for the cliff shadow on the sand
+    var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
+    for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
+      i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
+      if (landcliff[i] || north[i]) continue;
+      var fr = Math.max(0, Math.min(1, (yy2 - ytop) / Math.max(1, ybot - ytop))), wy = 9 + (40 - 9) * fr;
+      if (distout[i] >= 1 && distout[i] <= wy) {
+        sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
+        out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
+      }
+    }
+    // --- grass with edge-darkening (defined shadow band), sampled from the tiled bright grass ---
+    var GS = BTB * 6, gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grassImg, 0, 0, GS, GS); gcx.filter = "none";
+    var gsd = gcx.getImageData(0, 0, GS, GS).data;
+    var gdist = _dist(gmA, W, H, false);
+    for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = ((yr2 % GS) * GS + (xr2 % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
+    // --- brown sand outline (painted first) then BLACK grass+cliff outline on top ---
+    var erode1 = function (m) { var e = new Uint8Array(W * H); for (var y = 1; y < H - 1; y++) for (var x = 1; x < W - 1; x++) { var j = y * W + x; e[j] = m[j] && m[j - 1] && m[j + 1] && m[j - W] && m[j + W] ? 1 : 0; } return e; };
+    var island = new Uint8Array(W * H); for (i = 0; i < W * H; i++) island[i] = landcliff[i] || sand[i] ? 1 : 0;
+    var idOut = _dist(island, W, H, true); for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 1 && idOut[i] <= 6) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; }
+    // ink = smooth outer stroke (dist outside grass) minus grass interior; same for cliff silhouette
+    var gEro = erode1(gmA), gfOut = _dist(gmA, W, H, true), lcEro = erode1(landcliff), lcOut = _dist(landcliff, W, H, true);
+    for (i = 0; i < W * H; i++) { var ink = ((gfOut[i] >= 1 && gfOut[i] <= 9) && !gEro[i]) || ((lcOut[i] >= 1 && lcOut[i] <= 9) && !lcEro[i]); if (ink && !gEro[i]) { if ((gfOut[i] >= 1 && gfOut[i] <= 9) || (lcOut[i] >= 1 && lcOut[i] <= 9)) { out[i * 4] = 10; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; } } }
+    // --- blue coastline just outside the brown, + wave glyphs tangent to the coast ---
+    for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
+    var cvOut = _cv(W, H); cvOut.getContext("2d").putImageData(new ImageData(out, W, H), 0, 0);
+    var wcx = cvOut.getContext("2d"); wcx.strokeStyle = "rgb(54,66,145)"; wcx.lineWidth = 11; wcx.lineCap = "round";
+    var iy = ytop + (ybot - ytop) / 2, ix = W / 2, ws = 777;
+    var wr = function () { ws = (ws * 1103515245 + 12345) & 0x7fffffff; return ws / 0x7fffffff; };
+    var placed = 0, tries = 0;
+    while (placed < 14 && tries < 400) { tries++; var wx = wr() * W, wy = wr() * H, wi = ((wy | 0) * W + (wx | 0)); if (island[wi] || idOut[wi] < 60 || idOut[wi] > 210) continue; var ang = Math.atan2(wy - iy, wx - ix) + Math.PI / 2 + (wr() - 0.5) * 0.6, L = 60 + wr() * 90, amp = 5 + wr() * 3, arcs = wr() < 0.66 ? 1 : 2; wcx.beginPath(); for (var t = 0; t <= 8; t++) { var f = t / 8, al = f * L, pp = Math.sin(f * Math.PI * arcs) * amp, ptx = wx + Math.cos(ang) * al - Math.sin(ang) * pp, pty = wy + Math.sin(ang) * al + Math.cos(ang) * pp; if (t === 0) wcx.moveTo(ptx, pty); else wcx.lineTo(ptx, pty); } wcx.stroke(); placed++; }
+    return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size };
+  }
   function drawTileGround(ctx) {
     if (!ISLE) buildIsle();
-    if (!gtilePat) { var g = WORLD_IMG.gtile; if (g && g.complete && g.naturalWidth) { var GTS = TILE * 3; var gc = document.createElement("canvas"); gc.width = GTS; gc.height = GTS; gc.getContext("2d").drawImage(g, 0, 0, GTS, GTS); gtilePat = ctx.createPattern(gc, "repeat"); } } // grass repeats every 3 tiles (not every tile) so the baked tufts don't form a grid
-    var base = ISLE._p0 || (ISLE._p0 = isleRects(0)), out = ISLE._out || (ISLE._out = isleOutline()), CH = 24, SH = 8; // cliff height, sand height
-    ctx.save(); ctx.translate(7, CH + SH + 12); ctx.fillStyle = "rgba(3,5,12,0.42)"; ctx.fill(base); ctx.restore(); // soft drop shadow on the water
-    ctx.save(); ctx.translate(0, CH + SH + 7); ctx.strokeStyle = "rgba(74,104,196,0.5)"; ctx.lineWidth = 3; ctx.stroke(out); ctx.restore(); // light-blue wave line hugging the coast (like the reference)
-    ctx.save(); ctx.translate(0, CH + SH); ctx.fillStyle = "#6b5030"; ctx.fill(base); ctx.restore(); // sandy shore
-    for (var e = CH; e >= 1; e -= 2) { var f = e / CH; ctx.fillStyle = "rgb(" + Math.round(78 - 44 * f) + "," + Math.round(30 - 18 * f) + "," + Math.round(36 - 22 * f) + ")"; ctx.save(); ctx.translate(0, e); ctx.fill(base); ctx.restore(); } // painted earth-cliff face: maroon, lighter at top → darker at the bottom
-    ctx.save(); ctx.translate(0, CH * 0.5); ctx.clip(base); ctx.strokeStyle = "rgba(16,6,10,0.5)"; ctx.lineWidth = 2; for (var sx = -1600; sx < 1600; sx += 16) { ctx.beginPath(); ctx.moveTo(sx, -CH); ctx.lineTo(sx, CH); ctx.stroke(); } ctx.restore(); // vertical dirt striations on the cliff
-    ctx.save(); ctx.clip(base); ctx.fillStyle = gtilePat || "#2c4a1e"; ctx.fillRect(-4000, -4000, 8000, 8000); ctx.restore(); // seamless tufted grass on the exact tiles
-    ctx.strokeStyle = "rgba(8,12,6,0.8)"; ctx.lineWidth = 4; ctx.stroke(out); // dark ink grass-edge outline (the overhang) — ONLY the coastline, no interior grid
-    if (SANCT_DBG) { ctx.fillStyle = "rgba(255,80,160,0.9)"; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; ctx.beginPath(); ctx.arc(tx * TILE, ty * TILE, 5, 0, 7); ctx.fill(); ctx.font = "18px sans-serif"; ctx.fillText(tx + "," + ty, tx * TILE + 6, ty * TILE); }); }
+    if (!_isleBake || _isleBake._stamp !== ISLE._stamp) { try { var b = bakeIsle(); if (b) { b._stamp = ISLE._stamp; _isleBake = b; } } catch (e) { if (window.console) console.warn("bakeIsle failed", e); SANCT_TILES = false; } }
+    if (_isleBake) ctx.drawImage(_isleBake.cv, _isleBake.ox, _isleBake.oy, _isleBake.w * TILE / 172, _isleBake.h * TILE / 172);
+    if (SANCT_DBG) { ctx.fillStyle = "rgba(255,80,160,0.9)"; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; ctx.beginPath(); ctx.arc(tx * TILE, ty * TILE, 5, 0, 7); ctx.fill(); }); }
   }
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
@@ -6013,7 +6107,7 @@
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
-    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg", gtile: "tile-grass.jpg", house2: "obj-house.png" };
+    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg", gtile: "tile-grass.jpg", house2: "obj-house.png", coast: "coast-south.png" };
     Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=3"; WORLD_IMG[k] = im; });
     loadFarmhand();
   }
@@ -12692,8 +12786,8 @@
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
   window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }).slice(1); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } return { depth: +sessionDepth(secs).toFixed(2), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, gaps: cues.slice(0, 6).map(function (s2) { return +s2.gap.toFixed(1); }) }; } };
-  window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (seamless)"; }; // DEV: expand the island one ring → prove tiles add with no seam
-  function devInit() { if (!devOn() || el("devBtn")) return; var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); }
+  window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
+  function devInit() { if (el("devBtn")) return; try { localStorage.setItem("alter_dev", "1"); } catch (e) {} var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); } // David 2026-07-14: dev tools ALWAYS available from the first screen (single-user build; re-gate with devOn() before public launch)
   function soundMuted() { return !!(S.audio && S.audio.voice === 0 && S.audio.bg === 0); } // dev: fully silenced = both master buses at 0
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
