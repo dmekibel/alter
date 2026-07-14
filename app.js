@@ -7475,7 +7475,7 @@
     settle: { name: "Settle", ti: "ti-armchair", c: "#63e6d6", entry: "Find a comfortable position, and when you're ready, gently close your eyes.",
       pool: ["Feel the weight of your body pressing down. The contact of the seat, the floor beneath your feet.", "There's nowhere to be right now, and nothing to respond to. This time is yours.", "Take a few deep breaths. With each out-breath, let the body soften a little more."] },
     breath: { name: "Breath", ti: "ti-lungs", c: "#79ccff", entry: "Now bring your attention to the breath. Notice where you feel it most clearly. The nostrils, the chest, or the rise and fall of the belly.",
-      pool: ["There's no need to control it or deepen it. The body knows how to breathe. Just let it come and go.", "Follow one full breath, from the beginning of the in-breath, through the pause, to the end of the out-breath.", "Notice whether it's long or short, deep or shallow. However the breath is right now is fine."] },
+      pool: ["There's no need to control it or deepen it. The body knows how to breathe. Just let it come and go.", "Feel where the breath is clearest right now, and let your attention rest there.", "Notice whether it's long or short, deep or shallow. However it is right now is fine.", "Follow one full breath, from the start of the in-breath, through the pause, to the end of the out-breath.", "Notice the small pause at the top of the in-breath, and the one after you breathe out.", "You don't have to change anything. Just stay with each breath as it comes.", "Notice the breath as sensation now. The cooler air coming in, a little warmer going out.", "See if you can catch the start of the next in-breath, before it fully arrives.", "When you notice your mind has wandered, that's the practice. Gently come back to the breath.", "As the breath settles, let sounds and sensations ease into the background. The breath stays in front.", "You're doing less now. The attention holds the breath more and more on its own.", "Nothing to add, nothing to fix. Just stay with each breath, one after the next.", "If it starts to feel effortless, let it. You don't have to grip the breath to stay with it."] }, // TIERED find->cycle->sensation->effortless (Culadasa TMI stages), delivered in order so a longer sit reaches the deeper lines (David 2026-07-14). Both gates + judge passed.
     count: { name: "Count", ti: "ti-list-numbers", c: "#a08fff", entry: "If it helps to steady the mind, you can count each breath as it passes. One on the in-breath. Two on the out.",
       pool: ["One, breathing in. Two, breathing out. Then begin again at one.", "If you lose count, that's perfectly normal. Just begin again at one.", "Give the out-breath your full attention. Notice the body softening each time you breathe out."] },
     scan: { name: "Body", ti: "ti-scan", c: "#ff9a3d", entry: "Now we'll scan through the body. Starting at the top of the head, and slowly moving down.",
@@ -7496,7 +7496,7 @@
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
   // SESSIONS (arcs): beginner/intermediate/advanced = ordered blocks with time weights. The engine allocates the chosen length across the blocks by weight, so a long sit stays ON the block's technique instead of looping the last 3 lines (the retired tail hack). Adding a new session or the missing heart/love block is a data edit, not an engine change.
   var MED_SESSIONS = {
-    anchor: { name: "Anchor", sub: "settle and count the breath · for beginners", blocks: [["settle", 1], ["breath", 1.1], ["count", 2.6], ["close", 0.7]] },
+    anchor: { name: "Anchor", sub: "settle and count the breath · for beginners", blocks: [["settle", 0.9], ["breath", 3], ["count", 1.2], ["close", 0.7]] }, // breath is the SPINE (David 2026-07-14): a longer sit dwells in the tiered breath arc find->effortless (Culadasa), count is an early stabilizer not the bulk
     explore: { name: "Explore", sub: "a tour of the senses · intermediate", blocks: [["settle", 0.9], ["breath", 0.9], ["scan", 1.6], ["listen", 1.2], ["watch", 1.4], ["close", 0.7]] },
     open: { name: "Open", sub: "rest in open awareness · advanced", blocks: [["settle", 0.9], ["breath", 0.7], ["watch", 1.2], ["feel", 1.2], ["open", 1.8], ["close", 0.5]] },
     heart: { name: "Heart", sub: "warmth and loving-kindness · metta", blocks: [["settle", 0.9], ["breath", 0.6], ["heart", 2.6], ["close", 0.7]] }
@@ -10027,7 +10027,7 @@
           var def = MED_SEC[sc.k]; if (!def) return;
           var dur = sc.d || Math.round((t.secs || 90) / msecs.length);
           var weave = /^(body|aware)$/.test(sc.k); // working sections re-anchor; settle/rest/etc. rest in silence
-          var order = _shuffled(def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order.length) order = def.lines.slice(); // start from lines NOT already said this session (dedup across acts)
+          var order = def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); if (!order.length) order = def.lines.slice(); // AUTHORED ORDER (David 2026-07-14): pools are tiered basic->subtle, so a longer sit reaches the deeper lines in sequence; dedup skips lines already said this session
           var tt = 0, idx = 0, first = true;
           while (tt < dur - 1) { // ONE-SHOT FILL (David 2026-07-13): each distinct line ONCE; when spent, working sections drop sparse "come back" cues, others rest in silence — a teaching line is never re-said
             var ln, cad;
@@ -10070,7 +10070,7 @@
       used[_normLine(def.entry)] = 1; t += entryGap + 3.5;
       if (!pool.length) return;
       // ONE-SHOT FILL (David 2026-07-13: "still see repetition in stuff made longer"): each distinct teaching line plays EXACTLY ONCE. When the pool is spent, the rest of the section is silence + (for working blocks) SPARSE "come back" re-anchors — a teaching line is NEVER re-delivered.
-      var order = _shuffled(pool.filter(function (l) { return !used[_normLine(l)]; })); if (!order.length) order = _shuffled(pool);
+      var order = pool.filter(function (l) { return !used[_normLine(l)]; }); if (!order.length) order = pool.slice(); // AUTHORED ORDER (David 2026-07-14): pools are tiered basic->subtle, so a longer sit reaches the deeper lines in sequence, never a shuffle
       var idx = 0;
       while (t < bEnd - 1) {
         var ln, gap;
