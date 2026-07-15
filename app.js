@@ -6110,7 +6110,9 @@
   // Cuphead world assets (AI-generated, 1930s rubber-hose)
   var WORLD_IMG = {}, waterPat = null, grassPat = null, grassBlob = null, sandBlob = null, darkBlob = null;
   function loadWorld() {
-    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg", gtile: "tile-grass.jpg", house2: "obj-house.png", coast: "coast-south.png", treeK: "obj-treeK.png", flowerK1: "obj-flowerK1.png", flowerK2: "obj-flowerK2.png", tentK: "obj-tentK.png", wellK: "obj-wellK.png", statueK: "obj-statueK.png", barrelK: "obj-barrelK.png", bushK: "obj-bushK.png", ptreeK: "obj-ptreeK.png" };
+    var srcs = { water: "cup-water2.png", grass: "cup-grass2.png", tree: "obj-tree.png", cabin: "obj-cabin.png", bush: "obj-bush.png", rock: "obj-rock.png", chest: "obj-chest.png", sign: "obj-sign.png", sanct: "sanctuary-island.jpg", gtile: "tile-grass.jpg", house2: "obj-house.png", coast: "coast-south.png", treeK: "obj-treeK.png", flowerK1: "obj-flowerK1.png", flowerK2: "obj-flowerK2.png", tentK: "obj-tentK.png", wellK: "obj-wellK.png", statueK: "obj-statueK.png", barrelK: "obj-barrelK.png", bushK: "obj-bushK.png", ptreeK: "obj-ptreeK.png",
+      flCherry: "obj-fl-cherry.png", flLav: "obj-fl-lavender.png", flButter: "obj-fl-buttercup.png", flStar: "obj-fl-star.png", flGlow: "obj-fl-glow.png", flLily: "obj-fl-lily.png", flPoppy: "obj-fl-poppy.png", flForget: "obj-fl-forget.png",
+      plFern: "obj-pl-fern.png", plMoss: "obj-pl-moss.png", plReed: "obj-pl-reed.png", plMush: "obj-pl-mushroom.png", plLavb: "obj-pl-lavbush.png", plPampas: "obj-pl-pampas.png", plClover: "obj-pl-clover.png", plRosem: "obj-pl-rosemary.png" };
     Object.keys(srcs).forEach(function (k) { var im = new Image(); im.src = "assets/" + srcs[k] + "?v=6"; WORLD_IMG[k] = im; });
     loadFarmhand();
   }
@@ -6136,14 +6138,17 @@
           [WORLD_IMG.treeK, -152, 54, 104, 28, 16], [WORLD_IMG.treeK, 154, 64, 104, 28, 16],
           [WORLD_IMG.wellK, -110, 18, 74, 34, 21], [WORLD_IMG.barrelK, 118, 28, 50, 22, 15],
           [WORLD_IMG.statueK, -76, 124, 82, 28, 17],
-          [WORLD_IMG.flowerK1, 74, 128, 26, 0, 0], [WORLD_IMG.flowerK2, -18, 140, 24, 0, 0] ]
-      : [ strct, [WORLD_IMG.treeK, -78, 44, 82, 24, 14], [WORLD_IMG.flowerK1, 72, 64, 28, 0, 0], [WORLD_IMG.flowerK2, -36, 84, 26, 0, 0] ];
+          // scattered flora — decorative (fw/fh 0 = walk-through, no collision), just edge-clamped onto grass
+          [WORLD_IMG.flGlow, -34, 108, 30, 0, 0], [WORLD_IMG.flCherry, 64, 150, 26, 0, 0], [WORLD_IMG.flButter, -96, 168, 24, 0, 0],
+          [WORLD_IMG.flForget, 128, 138, 24, 0, 0], [WORLD_IMG.flPoppy, 150, 150, 24, 0, 0], [WORLD_IMG.plMush, -150, 96, 26, 0, 0],
+          [WORLD_IMG.plClover, 34, 182, 22, 0, 0], [WORLD_IMG.plFern, 150, 104, 30, 0, 0], [WORLD_IMG.flStar, -6, 196, 22, 0, 0] ]
+      : [ strct, [WORLD_IMG.treeK, -78, 44, 82, 24, 14], [WORLD_IMG.flGlow, -40, 78, 26, 0, 0], [WORLD_IMG.flCherry, 72, 64, 26, 0, 0], [WORLD_IMG.flButter, -8, 96, 24, 0, 0] ];
     var objs = raw.map(function (o) { return { img: o[0], dx: o[1], dy: o[2], h: o[3], fw: o[4] || 0, fh: o[5] || 0 }; });
-    var fixed = big ? objs[3] : objs[0]; // the house/tent is the anchor — never moved by the resolver
+    var fixed = objs[raw.indexOf(strct)]; // the house/tent is the anchor — never moved by the resolver (index-robust)
     function onGrass(x, y) { return isleHas(Math.round(x / TILE), Math.round(y / TILE)); }
     function footOK(o) { return onGrass(o.dx, o.dy) && onGrass(o.dx - o.fw, o.dy + o.fh) && onGrass(o.dx + o.fw, o.dy + o.fh) && onGrass(o.dx - o.fw, o.dy - o.fh) && onGrass(o.dx + o.fw, o.dy - o.fh); }
     function clamp(o) { var g = 0; while (g++ < 60 && !footOK(o)) { o.dx *= 0.93; o.dy *= 0.93; } } // pull a straying object in toward center until its whole base sits on grass
-    objs.forEach(function (o) { if (o.fw > 0 && o !== fixed) clamp(o); });
+    objs.forEach(function (o) { if (o !== fixed) clamp(o); }); // clamp every prop AND decorative flower onto grass (fw=0 → checks the center only, so nothing floats on water)
     var block = objs.filter(function (o) { return o.fw > 0; });
     for (var it = 0; it < 14; it++) { // relax overlaps: push intersecting footprints apart (house immovable)
       for (var a = 0; a < block.length; a++) for (var b = a + 1; b < block.length; b++) {
