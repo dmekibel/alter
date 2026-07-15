@@ -5987,6 +5987,8 @@
     ISLE = { tiles: tset, house: [0, -1], objects: [], _stamp: 1 };
   }
   function saveIsle() { if (!ISLE) return; S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.isle = Array.from(ISLE.tiles); save(); }
+  var _saveIsleTimer = null;
+  function _saveIsleSoon() { if (_saveIsleTimer) clearTimeout(_saveIsleTimer); _saveIsleTimer = setTimeout(function () { _saveIsleTimer = null; saveIsle(); }, 600); } // persistence doesn't need a synchronous localStorage write per claimed tile — coalesce to one write 600ms after the last claim (kills the per-claim save() hitch)
   // Island EXPANSION (David 2026-07-15): walk the guardian to the coast, the water tile he FACES glows claimable, tap to spend Spark and grow the island there. Cost rises per tile claimed.
   function claimCost() { return ((S.game && S.game.claims) || 0) + 1; }
   function sanctClaimTile() { // the single water tile directly ahead of the guardian, if it borders land (keeps the island connected)
@@ -6005,12 +6007,12 @@
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
     window._sanctSceneCache = null; // re-resolve object placement (cheap)
-    // LOADING HINT (David 2026-07-15): fire a "materializing" pulse on the tile THIS frame, then bake on the NEXT frame so the
-    // pulse is visible before the ~1.3s synchronous coast bake. The pulse keeps settling over the finished tile after the bake,
-    // so the tile reads as "charging in" rather than freeze-then-pop. (Bake stays one-go: grass + coast still land together.)
-    claimFlash = { x: tx * TILE, y: ty * TILE, life: 1 };
-    if (window.requestAnimationFrame) requestAnimationFrame(function () { _expandVisual(tx, ty); }); else _expandVisual(tx, ty);
-    saveIsle(); try { updGameHud(); } catch (e) {}
+    claimFlash = { x: tx * TILE, y: ty * TILE, life: 1 }; // materializing pulse on the tile
+    // Patch the grass + reconcile the cache stamp SYNCHRONOUSLY, right now — the coast then bakes OFF-THREAD (worker), so this
+    // doesn't block. CRITICAL: it must NOT be deferred to a later rAF — ISLE._stamp was just bumped, and if drawTileGround runs
+    // before the cache stamp is reconciled it does a full synchronous whole-island bake (the ~2.5s claim freeze). (David 2026-07-15)
+    _expandVisual(tx, ty);
+    _saveIsleSoon(); try { updGameHud(); } catch (e) {}
     for (var i = 0; i < 12; i++) dust.push({ x: tx * TILE + (Math.random() - 0.5) * TILE, y: ty * TILE + (Math.random() - 0.5) * TILE, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.6, life: 22 });
     return true;
   }
@@ -6187,7 +6189,9 @@
       if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" || typeof createImageBitmap === "undefined") { __bakeWorker = false; return false; }
       var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile;
       if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; // images not ready yet — try again later
-      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});postMessage({id:d.id,ok:true,buf:r.buf,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[r.buf]);}catch(err){postMessage({id:d.id,ok:false});}};";
+      // worker paints the RGBA buffer into an OffscreenCanvas + hands back a transferable ImageBitmap (a GPU texture) — the
+      // main thread then only does a single drawImage, never a multi-MP putImageData (that CPU pixel-copy was the residual hitch).
+      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
       var w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
       w.onmessage = function (e) { var cb = __bakeCbs[e.data.id]; if (cb) { delete __bakeCbs[e.data.id]; cb(e.data); } };
       w.onerror = function () { __bakeWorker = false; };
@@ -6201,7 +6205,7 @@
     var w = _ensureBakeWorker();
     if (w === false) { done(null, "sync"); return; }
     if (!w || !__bakeImgsReady) { done(null, "retry"); return; }
-    var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? _wrapBake(d) : null); };
+    var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? { cv: d.bmp, w: d.W, h: d.H, minx: d.minx, miny: d.miny, maxx: d.maxx, maxy: d.maxy, PAD: 2, BTB: 172, GEY: 90, EXTRA: 150 } : null); }; // ImageBitmap source — blitted straight onto the cache canvas, no main-thread putImageData
     w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
   }
   // Instant provisional grass patch for a freshly-claimed tile so the player walks on it immediately, then a TRUE debounce
@@ -6242,13 +6246,15 @@
       blit(b); if (window._isleDirtyBox) _doRebake(); // success (off-thread) — re-run if more tiles were claimed while baking
     });
   }
+  var __grassPatchCv = null; // one pre-darkened B×B grass tile → the instant claim patch drawImages it (no per-claim canvas filter, which is slow on WebKit)
+  function _grassPatch(B) { if (__grassPatchCv && __grassPatchCv.width === B) return __grassPatchCv; var g = WORLD_IMG.gtile; if (!g || !g.complete || !g.naturalWidth) return null; var cv = _cv(B, B), x = cv.getContext("2d"); x.filter = "brightness(0.9)"; x.drawImage(g, 0, 0, B, B); x.filter = "none"; __grassPatchCv = cv; return cv; }
   function _expandVisual(tx, ty) {
-    var c = window._isleBakeCache, gimg = WORLD_IMG.gtile;
+    var c = window._isleBakeCache;
     if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake once
     var B = c.BTB || 172, PAD = c.PAD, EXTRA = c.EXTRA || 150, cx = (tx - c.minx + PAD) * B, cy = (ty - c.miny + PAD) * B;
     if (cx < PAD * B || cy < PAD * B || cx + (PAD + 1) * B > c.w || cy + (PAD + 1) * B > c.h) { // grow when the tile lands within PAD of the canvas edge — the coast around it needs that margin, or the incremental blit gets clipped (David 2026-07-15 bug)
       // GROW the provisional canvas to include the new tile — a canvas copy, NOT a bake, so the walk stays smooth
-      var GM = 3, nminx = Math.min(c.minx, tx - GM), nmaxx = Math.max(c.maxx, tx + GM), nminy = Math.min(c.miny, ty - GM), nmaxy = Math.max(c.maxy, ty + GM); // grow with a few tiles of extra margin so we don't re-grow every frontier tile
+      var GM = 9, nminx = Math.min(c.minx, tx - GM), nmaxx = Math.max(c.maxx, tx + GM), nminy = Math.min(c.miny, ty - GM), nmaxy = Math.max(c.maxy, ty + GM); // grow with a GENEROUS margin so a grow (the whole-canvas copy) happens only once per ~9 frontier tiles, not near-every claim
       var nW = (nmaxx - nminx + 1 + PAD * 2) * B, nH = (nmaxy - nminy + 1 + PAD * 2) * B + EXTRA;
       var ncv = _cv(nW, nH), nctx = ncv.getContext("2d");
       nctx.fillStyle = "rgb(5,11,44)"; nctx.fillRect(0, 0, nW, nH); // deep-water fill so newly exposed margins aren't transparent
@@ -6257,7 +6263,7 @@
       c.ox = (nminx - PAD) * TILE - TILE / 2; c.oy = (nminy - PAD) * TILE - TILE / 2;
       cx = (tx - nminx + PAD) * B; cy = (ty - nminy + PAD) * B;
     } else { if (tx < c.minx) c.minx = tx; if (tx > c.maxx) c.maxx = tx; if (ty < c.miny) c.miny = ty; if (ty > c.maxy) c.maxy = ty; }
-    if (gimg && gimg.complete && gimg.naturalWidth) { var pc = c.cv.getContext("2d"); pc.save(); pc.filter = "brightness(0.9)"; pc.drawImage(gimg, cx, cy, B, B); pc.filter = "none"; pc.restore(); }
+    var gp = _grassPatch(B); if (gp) c.cv.getContext("2d").drawImage(gp, cx, cy); // instant walkable patch from the pre-darkened tile (no per-claim filter)
     c._stamp = ISLE._stamp; // mark the patched cache as current so drawTileGround does NOT full-rebake now — the debounce owns that
     var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: tx, y0: ty, x1: tx, y1: ty }; else { if (tx < _d.x0) _d.x0 = tx; if (tx > _d.x1) _d.x1 = tx; if (ty < _d.y0) _d.y0 = ty; if (ty > _d.y1) _d.y1 = ty; } // grow the dirty window so the re-bake only touches the expanded area
     // The instant grass patch above keeps the new tile visible + walkable; the coast then bakes NON-BLOCKING (phase-sliced
@@ -6271,7 +6277,20 @@
     // cache the baked coast on window (survives across frames + closures) — rebuild only when the island changes
     var cache = window._isleBakeCache;
     if (!_isleBaking && (!cache || cache._stamp !== ISLE._stamp)) { _isleBaking = true; try { var b = bakeIsle(); if (b) { b._stamp = ISLE._stamp; window._isleBakeCache = b; cache = b; } } catch (e) { if (window.console) console.warn("bakeIsle failed", e); SANCT_TILES = false; } _isleBaking = false; }
-    if (cache) ctx.drawImage(cache.cv, cache.ox, cache.oy, cache.w * TILE / 172, cache.h * TILE / 172);
+    if (cache) { var _S = TILE / 172, _cWW = cache.w * _S, _cHH = cache.h * _S; // draw ONLY the on-screen sub-rect of the (possibly huge) cache canvas — on a big island 90% is off-camera, and blitting the whole thing every frame is a real per-frame cost (David 2026-07-15 "still choppy")
+      var drew = false;
+      try {
+        var m = ctx.getTransform(), inv = m.inverseSelf ? m.inverse() : null, cw = ctx.canvas.width, ch = ctx.canvas.height;
+        if (inv) { function _wp(x, y) { var p = inv.transformPoint(new DOMPoint(x, y)); return p; } var p0 = _wp(0, 0), p1 = _wp(cw, 0), p2 = _wp(0, ch), p3 = _wp(cw, ch);
+          var vx0 = Math.min(p0.x, p1.x, p2.x, p3.x), vx1 = Math.max(p0.x, p1.x, p2.x, p3.x), vy0 = Math.min(p0.y, p1.y, p2.y, p3.y), vy1 = Math.max(p0.y, p1.y, p2.y, p3.y);
+          var MG = TILE; vx0 -= MG; vy0 -= MG; vx1 += MG; vy1 += MG; // 1-tile margin so nothing pops at the edge
+          var wx0 = Math.max(vx0, cache.ox), wy0 = Math.max(vy0, cache.oy), wx1 = Math.min(vx1, cache.ox + _cWW), wy1 = Math.min(vy1, cache.oy + _cHH);
+          if (wx1 > wx0 && wy1 > wy0) { var sx = (wx0 - cache.ox) / _S, sy = (wy0 - cache.oy) / _S, sw = (wx1 - wx0) / _S, sh = (wy1 - wy0) / _S; ctx.drawImage(cache.cv, sx, sy, sw, sh, wx0, wy0, wx1 - wx0, wy1 - wy0); }
+          drew = true; // (empty intersection = island fully off-screen → correctly draws nothing)
+        }
+      } catch (e) { drew = false; }
+      if (!drew) ctx.drawImage(cache.cv, cache.ox, cache.oy, _cWW, _cHH); // fallback: whole-canvas blit (old behavior) if getTransform/inverse is unavailable
+    }
     if (!__bakeImgsReady) _ensureBakeWorker(); // warm the off-thread bake worker (spins up + decodes the source images once) so the first claim bakes off-thread, not on a retry
     if (SANCT_DBG) { ctx.fillStyle = "rgba(255,80,160,0.9)"; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; ctx.beginPath(); ctx.arc(tx * TILE, ty * TILE, 5, 0, 7); ctx.fill(); }); }
   }
@@ -13244,6 +13263,19 @@
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
   window.DEV.growTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); var before = ISLE.tiles.size, sp = S.game.spark; claimTileAt(water[0], water[1]); return "claim: size " + before + "->" + ISLE.tiles.size + ", spark " + sp + "->" + S.game.spark + ", persisted=" + (!!(S.game.isle && S.game.isle.length === ISLE.tiles.size)); }; // DEV: exercise the real walk-to-edge claim path
+  window.DEV.frameGaps = function (r2, nClaims) { return new Promise(function (res) { // DEV: claim tiles mid-hot-loop and report the worst rAF gap on the MAIN thread → measures expansion smoothness (acceptance: no gap > 50ms). Headless has no GPU so device is strictly better.
+    DEV.isleSize(r2 || 18); nClaims = nClaims || 4;
+    var last = performance.now(), phase = "warm", gaps = [], claimT = 0, claims = 0, stable = 0;
+    var hot = setInterval(function () { requestAnimationFrame(function () { }); }, 25); // keep the event loop hot so preview rAF + worker keep scheduling
+    function ready() { var c = window._isleBakeCache; return c && c._stamp === ISLE._stamp && !window._isleDirtyBox; }
+    function frame() {
+      var now = performance.now(), g = Math.round(now - last); last = now;
+      if (phase === "warm") { if (ready()) stable++; else stable = 0; if (stable > 8) { phase = "claim"; claimT = now; last = performance.now(); } } // only start claiming once the initial FULL bake is fully settled (8 clean frames)
+      else { gaps.push(g); if (claims < nClaims && now - claimT > claims * 500 + 60) { DEV.growTest(); claims++; } if (now - claimT > nClaims * 500 + 3000) { clearInterval(hot); gaps.sort(function (a, b) { return b - a; }); res({ island: ISLE.tiles.size + "t", claims: claims, framesSampled: gaps.length, maxGapMs: gaps[0], top5: gaps.slice(0, 5), over50: gaps.filter(function (x) { return x > 50; }).length, over100: gaps.filter(function (x) { return x > 100; }).length }); return; } }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }); };
   function devInit() { if (el("devBtn")) return; try { localStorage.setItem("alter_dev", "1"); } catch (e) {} var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); } // David 2026-07-14: dev tools ALWAYS available from the first screen (single-user build; re-gate with devOn() before public launch)
   function soundMuted() { return !!(S.audio && S.audio.voice === 0 && S.audio.bg === 0); } // dev: fully silenced = both master buses at 0
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
