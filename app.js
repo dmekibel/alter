@@ -6102,7 +6102,11 @@
     // --- sand ring: gradual taper thin(top)->thick(bottom), rounded (dist from smoothed landcliff); never north ---
     var lcc = _cv(W, H), lccx = lcc.getContext("2d"); { var im = lccx.createImageData(W, H); for (i = 0; i < W * H; i++) { im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = landcliff[i] ? 255 : 0; im.data[i * 4 + 3] = 255; } lccx.putImageData(im, 0, 0); }
     var lcS = _blurThr(lcc, W, H, 28, 120), distout = _dist(lcS, W, H, true);
-    var north = new Uint8Array(W * H); txs.forEach(function (tx, n) { var ty = tys[n]; if (!has(tx, ty - 1)) { var x0 = Math.max(0, bx(tx) - 9), x1 = Math.min(W, bx(tx) + BTB + 9), y0 = Math.max(0, by(ty) - 160), y1 = Math.min(H, by(ty) + 24); for (var yb = y0; yb < y1; yb++) for (var xb = x0; xb < x1; xb++) north[yb * W + xb] = 1; } });
+    // NORTH mask (beach forms on the south + sides, NOT the top edge). PER-PIXEL (was per-tile rectangles that left
+    // gaps at corners → blue coastline bled onto top-right corners on irregular shapes). A water pixel is "north" (no
+    // beach) when GRASS sits just BELOW it (i.e. the water is above/north of the land, or tucked in a notch).
+    var north = new Uint8Array(W * H), ND = 44, gbelow = new Int32Array(W); for (i = 0; i < W; i++) gbelow[i] = 99999;
+    for (var yN = H - 1; yN >= 0; yN--) for (var xN = 0; xN < W; xN++) { i = yN * W + xN; gbelow[xN] = baseA[i] ? 0 : gbelow[xN] + 1; if (!landcliff[i] && gbelow[xN] >= 1 && gbelow[xN] <= ND) north[i] = 1; }
     var ytop = H, ybot = 0; for (i = 0; i < W * H; i++) if (landcliff[i]) { var yr = (i / W) | 0; if (yr < ytop) ytop = yr; if (yr > ybot) ybot = yr; }
     var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 }, SO = { r: 40, g: 22, b: 26 };
     // rows-below-cliff for the cliff shadow on the sand
