@@ -6185,6 +6185,33 @@
     }
     ctx.restore();
   }
+  // Scene shading (the ref's mood): a gentle moonlight falloff on the grass + a soft contact shadow under every object so nothing floats. Drawn on the ground, UNDER the objects.
+  function sanctGroundShade(ctx, scene) {
+    var iR = scene.islandR || 300, objs = scene.objs;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(0, 12, iR * 0.9, iR * 0.8, 0, 0, 7); ctx.clip(); // keep the grade on the grass, off the water
+    var vg = ctx.createRadialGradient(0, -18, iR * 0.12, 0, 12, iR * 0.98);
+    vg.addColorStop(0, "rgba(24,18,46,0)"); vg.addColorStop(0.72, "rgba(12,9,30,0.12)"); vg.addColorStop(1, "rgba(6,5,22,0.40)");
+    ctx.globalCompositeOperation = "multiply"; ctx.fillStyle = vg; ctx.fillRect(-iR * 1.2, -iR * 1.2, iR * 2.4, iR * 2.4);
+    ctx.restore();
+    for (var i = 0; i < objs.length; i++) { var o = objs[i], im = o.img; if (!im || !im.complete || !im.naturalWidth || o.h < 30) continue;
+      var w = o.h * im.naturalWidth / im.naturalHeight, rx = w * (o.fw > 0 ? 0.42 : 0.36), ry = Math.max(5, rx * 0.30);
+      var g = ctx.createRadialGradient(o.dx, o.dy + 2, ry * 0.25, o.dx, o.dy + 2, rx);
+      g.addColorStop(0, "rgba(7,5,17,0.40)"); g.addColorStop(0.6, "rgba(7,5,17,0.20)"); g.addColorStop(1, "rgba(7,5,17,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(o.dx, o.dy + 2, rx, ry, 0, 0, 7); ctx.fill();
+    }
+  }
+  // Warm additive glows on TOP of the scene: the lit house windows spill a soft amber pool, the charged bloom casts a living pink-white light. This is the "add lights to the scene" layer.
+  function sanctGlows(ctx, scene, t) {
+    var fl = 0.9 + 0.1 * Math.sin(t * 2.2);
+    function glow(x, y, r, pre, a) { var g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, pre + (0.9 * a) + ")"); g.addColorStop(0.45, pre + (0.34 * a) + ")"); g.addColorStop(1, pre + "0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < scene.objs.length; i++) { var o = scene.objs[i];
+      if (o.img === WORLD_IMG.house2) glow(o.dx, o.dy - o.h * 0.34, o.h * 0.52, "rgba(255,194,108,", 0.16 * fl);
+      else if (o.img === WORLD_IMG.tentK) glow(o.dx, o.dy - o.h * 0.4, o.h * 0.5, "rgba(255,194,108,", 0.14 * fl);
+      else if (o.img === WORLD_IMG.flGlow) glow(o.dx, o.dy - o.h * 0.34, o.h * 1.25, "rgba(238,178,255,", 0.30 * (0.82 + 0.18 * Math.sin(t * 1.6 + o.dx))); }
+    ctx.restore();
+  }
   // low-res backing store + CSS upscale (image-rendering:pixelated) = true pixel-art look (Heaven Inc model)
   function fitPixelCanvas(c, cssW, cssH, px) {
     c.style.width = cssW + "px"; c.style.height = cssH + "px";
@@ -6343,6 +6370,7 @@
     if (SANCT_TILES) {
       drawTileGround(ctx); // expandable tile island: seamless grass on the tiles + blocky cliff/shore rim
       drawOceanWaves(ctx, t); // living sea over the flat corners the baked square leaves (skipped within islandR → never touches land)
+      sanctGroundShade(ctx, sanctScene()); // ref-mood scene shading: moonlight falloff + soft contact shadows UNDER the objects
     } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
@@ -6408,6 +6436,7 @@
       _dl.push({ y: py, d: _drawHero });
       _dl.sort(function (a, b) { return a.y - b.y; });
       _dl.forEach(function (e) { e.d(); });
+      sanctGlows(ctx, _scene, t); // warm window pools + the charged bloom's living light, over the scene
     } else {
       _drawHero();
       OBJS.forEach(function (o) { if (o[2] > py) drawObj(ctx, o[0], o[1], o[2], o[3]); });  // objects in front of the fairy occlude her
