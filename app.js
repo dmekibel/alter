@@ -13068,6 +13068,39 @@
     return "audit overlay drawn — screenshot it; DEV.auditClose() to dismiss";
   };
   window.DEV.auditClose = function () { var o = document.getElementById("auditOv"); if (o) o.remove(); return "closed"; };
+  // DEV: STRESS BATTERY — bake a dozen pathological tile shapes and lay each full island in a labelled grid so gross coast
+  // failures (black gaps, unrendered holes, thin-neck coast breaks, blue-on-top, broken ink at concave corners) are visible
+  // in ONE screenshot (the preview is slow, so assess programmatically). DEV.stress() grid | DEV.stress(i) zoom shape i full-bleed.
+  window.DEV.stress = function (only) {
+    var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
+    function box(x0, x1, y0, y1) { var a = []; for (var i = x0; i <= x1; i++) for (var j = y0; j <= y1; j++) a.push([i, j]); return a; }
+    function disc(r2) { var a = []; for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) a.push([i, j]); return a; }
+    function sub(a, pred) { return a.filter(function (t) { return !pred(t[0], t[1]); }); }
+    var shapes = [
+      { n: "L deep corner", t: sub(box(-4, 4, -4, 4), function (x, y) { return x > 0 && y > 0; }) },
+      { n: "plus (4 concave)", t: box(-1, 1, -5, 5).concat(box(-5, 5, -1, 1)) },
+      { n: "disc + square bite", t: sub(disc(20), function (x, y) { return x >= 2 && x <= 4 && y >= -1 && y <= 1; }) },
+      { n: "donut (hole)", t: sub(box(-4, 4, -4, 4), function (x, y) { return x >= -1 && x <= 1 && y >= -1 && y <= 1; }) },
+      { n: "1-wide bridge", t: box(-5, -2, -2, 2).concat(box(2, 5, -2, 2)).concat([[-1, 0], [0, 0], [1, 0]]) },
+      { n: "1-tile spikes", t: box(-3, 3, -2, 2).concat([[0, 4], [0, -4], [5, 0], [-5, 0]]) },
+      { n: "staircase", t: [[-4, -4], [-3, -4], [-3, -3], [-2, -3], [-2, -2], [-1, -2], [-1, -1], [0, -1], [0, 0], [1, 0], [1, 1], [2, 1], [2, 2], [3, 2], [3, 3]] },
+      { n: "C cove", t: sub(box(-4, 4, -4, 4), function (x, y) { return x >= 0 && y >= -2 && y <= 2; }) },
+      { n: "cross thin", t: box(-1, 1, -6, 6).concat(box(-6, 6, -1, 1)).concat(box(-3, 3, -3, 3)) },
+      { n: "H bars", t: box(-5, -3, -4, 4).concat(box(3, 5, -4, 4)).concat(box(-3, 3, -1, 1)) },
+      { n: "single tile", t: [[0, 0]] },
+      { n: "2-tile diag", t: [[-1, -1], [0, 0], [1, 1], [2, 2]] }
+    ];
+    function bake(sh) { ISLE = { tiles: (function () { var s = new Set(); sh.t.forEach(function (t) { s.add(tkey(t[0], t[1])); }); return s; })(), house: [0, -1], objects: [], _stamp: 9500 + sh.n.length }; window._isleBakeCache = null; try { return bakeIsle(); } catch (e) { return null; } }
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#071018;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#071018"; g.fillRect(0, 0, vw, vh); g.font = "12px sans-serif";
+    if (only != null) { var sh = shapes[only]; var b = bake(sh); if (b) { var fs = Math.min(vw / b.w, (vh - 24) / b.h) * 0.96; g.drawImage(b.cv, (vw - b.w * fs) / 2, 24 + ((vh - 24) - b.h * fs) / 2, b.w * fs, b.h * fs); } g.fillStyle = "#ffe58a"; g.fillText("[" + only + "] " + sh.n, 6, 16); ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS; return "shape " + only + " full-bleed; DEV.auditClose()"; }
+    var cols = 4, rows = Math.ceil(shapes.length / cols), cw = vw / cols, ch = vh / rows;
+    window._stressDone = 0;
+    function step(i) { if (i >= shapes.length) { window._stressDone = shapes.length; ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS; return; } var sh = shapes[i], cx = (i % cols) * cw, cy = ((i / cols) | 0) * ch; g.strokeStyle = "#1e2b38"; g.strokeRect(cx, cy, cw, ch); var b = bake(sh); if (!b) { g.fillStyle = "#ff6a6a"; g.fillText(sh.n + " BAKE-FAIL", cx + 4, cy + 16); } else { var fs = Math.min(cw / b.w, (ch - 18) / b.h) * 0.92; g.drawImage(b.cv, cx + (cw - b.w * fs) / 2, cy + 16 + ((ch - 18) - b.h * fs) / 2, b.w * fs, b.h * fs); g.fillStyle = "#cfe8ff"; g.fillText("[" + i + "] " + sh.n, cx + 4, cy + 13); } window._stressDone = i + 1; setTimeout(function () { step(i + 1); }, 0); }
+    setTimeout(function () { step(0); }, 0);
+    return "stress grid baking async (" + shapes.length + " shapes); poll window._stressDone; DEV.stress(i) zoom one; DEV.auditClose() dismiss";
+  };
   window.DEV.testInc = function () { // TRULY run the incremental blit and draw it beside a full bake of the same expanded island → find the coord bug
     var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache, sInc = window._incBake, sT = _rebakeTimer;
     var s = new Set(); for (var i = -5; i <= 5; i++) for (var j = -5; j <= 5; j++) if (i * i + j * j <= 20) s.add(tkey(i, j));
