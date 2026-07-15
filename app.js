@@ -9723,6 +9723,9 @@
     function paintMap(e) { for (var mi = 0; mi < mapPips.length; mi++) { var on = opts.segments[mi] && opts.segments[mi].start != null && opts.segments[mi].start <= e; mapPips[mi].className = on ? "on" : ""; } }
     // ACT-LEVEL STORY PAGES (David 2026-07-07): for the stack, the TOP shows one page per activity (Instagram-story style) that fills as you move through it — the whole plan's progress, not per-cue pips. Gated by opts.acts so daily rituals keep the per-segment map.
     var acts = opts.acts || null, actFills = [], actLabels = [], curAct = 0, _prevAct = -1, actResume = [], pages = null, track = null;
+    var zoom = false, curSec = 0, secFills = [], secIcons = [], secWrap = null; // PLAYER ZOOM (David 2026-07-15): a meditation act expands into its sections — the act bar splits into section bars, siblings shrink to stubs, the scrub scopes to the current section; collapses when you leave the act
+    function medAct(ai) { return !!(acts && acts[ai] && acts[ai]._isMed && acts[ai]._sections && acts[ai]._sections.length > 1); }
+    function secListOf(ai) { return (acts && acts[ai] && acts[ai]._secList) || []; }
     if (acts) {
       mapWrap.style.display = "none";
       var _gt = ov.querySelector(".gp-title"); if (_gt) _gt.style.display = "none"; // the section labels are the header now — drop the centered title so they don't collide
@@ -9734,7 +9737,20 @@
       pages = [];
       acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
       orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; // live refs point at the current page
+      secWrap = add(ov, "div", "gp-story"); secWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:none;gap:6px;z-index:6;pointer-events:none;"; // the section bars for an expanded meditation act; replaces the act bars while zoomed
     }
+    // ZOOM helpers: build the section bar row for meditation act `ai` (sibling acts become thin stubs on the sides), and enter/exit the zoom
+    function buildSecBars(ai) {
+      if (!secWrap) return; while (secWrap.firstChild) secWrap.removeChild(secWrap.firstChild); secFills = []; secIcons = [];
+      var secs = acts[ai]._sections || [];
+      function stub(a2, past) { var s = add(secWrap, "div"); s.style.cssText = "flex:0 0 11px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var b = add(s, "div"); b.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + (a2.color || col) + ";opacity:" + (past ? "0.9" : "0.3") + ";"; add(s, "i", "ti " + (a2.icon || "ti-circle-filled")).style.cssText = "font-size:12px;color:" + (a2.color || col) + ";opacity:" + (past ? "0.7" : "0.28") + ";"; }
+      for (var b = 0; b < ai; b++) stub(acts[b], true); // sections BEFORE this act -> done stubs
+      secs.forEach(function (sm) { var colx = add(secWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(sm.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + (sm.color || col) + ";transition:width .2s linear;"; secFills.push(fl); var ic = add(colx, "i", "ti " + (sm.icon || "ti-circle-filled")); ic.style.cssText = "font-size:20px;line-height:1;color:" + (sm.color || col) + ";opacity:.34;transition:opacity .3s;"; secIcons.push(ic); });
+      for (var a2 = ai + 1; a2 < acts.length; a2++) stub(acts[a2], false); // sections AFTER -> upcoming stubs
+    }
+    function enterZoom(ai) { if (!medAct(ai) || !secWrap) return; zoom = true; buildSecBars(ai); secWrap.style.display = "flex"; if (typeof storyWrap !== "undefined" && storyWrap) storyWrap.style.display = "none"; }
+    function exitZoom() { if (!zoom) return; zoom = false; if (secWrap) secWrap.style.display = "none"; try { if (storyWrap) storyWrap.style.display = "flex"; } catch (e) {} }
+    function curSecIdx(e) { var L = secListOf(curAct); for (var i = L.length - 1; i >= 0; i--) if (e >= L[i].start) return i; return 0; }
     // F5 · ACT-BARS (David 2026-07-13): a bars-ONLY sequence indicator (meditation blocks) — the same top story-bars as the stack, but with the single continuous orb below (no page-slide, no block-nav). Independent of `acts`, so it touches none of the acts/pages/nav machinery.
     var actBars = (!acts && opts.actBars && opts.actBars.length > 1) ? opts.actBars : null, abFills = [], abIcons = [];
     if (acts || actBars) ov.classList.add("gp-bars"); // the ✕ / gear drop below the bars only when bars are present (fixes v1035: no-bar players keep the ✕ at the top)
@@ -9752,6 +9768,7 @@
       if (seg && seg._act === ai) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } else { lab.textContent = acts[ai].name; sub.textContent = ""; }
       for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.opacity = (li <= ai) ? "1" : "0.34"; // done + current activities light up to full color; upcoming stay dim
       if (ticks) { while (ticks.firstChild) ticks.removeChild(ticks.firstChild); var _st = acts[ai]._secTimes || [], _as = acts[ai]._start || 0, _ad = ((acts[ai]._end != null ? acts[ai]._end : total) - _as) || 1; if (_st.length) { _st.forEach(function (x) { var tk = add(ticks, "i"); tk.style.left = ((x - _as) / _ad * 100) + "%"; }); ticks.style.display = ""; } else { ticks.style.display = "none"; } } // section-ticks on THIS activity's local timeline — only where it has real sections (meditation); clean bar everywhere else
+      if (medAct(ai)) { enterZoom(ai); curSec = curSecIdx(e2); if (ticks) ticks.style.display = "none"; } else exitZoom(); // ZOOM: entering a meditation act expands it into its sections (scrub becomes per-section, so the whole-act ticks are dropped); leaving collapses it
     }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { if (playing) pause(); openVolumePanel(); }; // opening Sound pauses the player so you can preview beds freely (David 2026-07-10)
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
@@ -9797,7 +9814,7 @@
       var t = 0;
       segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
-      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { acts[_ai]._start = null; acts[_ai]._secTimes = []; } segs.forEach(function (sg) { if (sg._act != null && acts[sg._act]) { if (acts[sg._act]._start == null) acts[sg._act]._start = sg.start; if (sg._sectionStart) acts[sg._act]._secTimes.push(sg.start); } }); for (var _aj = 0; _aj < acts.length; _aj++) acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; }
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { acts[_ai]._start = null; acts[_ai]._secTimes = []; acts[_ai]._secList = []; } segs.forEach(function (sg) { if (sg._act != null && acts[sg._act]) { if (acts[sg._act]._start == null) acts[sg._act]._start = sg.start; if (sg._sectionStart) acts[sg._act]._secTimes.push(sg.start); if (sg._secIdx != null && acts[sg._act]._sections && acts[sg._act]._sections[sg._secIdx]) acts[sg._act]._secList.push({ start: sg.start, idx: sg._secIdx }); } }); for (var _aj = 0; _aj < acts.length; _aj++) { acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; var _sl = acts[_aj]._secList; for (var _si = 0; _si < _sl.length; _si++) _sl[_si].end = (_si + 1 < _sl.length) ? _sl[_si + 1].start : acts[_aj]._end; } } // ZOOM: _secList = each meditation section's real-time [start,end] window, so the player can scope the scrub to one section
       if (actBars) { for (var _bi = 0; _bi < actBars.length; _bi++) actBars[_bi]._start = null; segs.forEach(function (sg) { if (sg._ab != null && actBars[sg._ab] && actBars[sg._ab]._start == null) actBars[sg._ab]._start = sg.start; }); for (var _bj = 0; _bj < actBars.length; _bj++) actBars[_bj]._end = (_bj + 1 < actBars.length && actBars[_bj + 1]._start != null) ? actBars[_bj + 1]._start : total; } // F5: each block's real-time window, from its tagged segments
       ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
       // battery cue ticks (one per segment start) + silence tail sized to silenceSec
@@ -9843,7 +9860,7 @@
     function paintNow(e) { paintMap(e); paintBars(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
       var pct, curTxt, totTxt;
-      if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total), _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); }
+      if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total); if (zoom && _ci === curAct) { var _L = secListOf(curAct), _sIx = curSecIdx(e); if (_L[_sIx]) { _as = _L[_sIx].start; _ae = (_L[_sIx].end != null ? _L[_sIx].end : _ae); curSec = _sIx; } } var _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); } // ZOOM: the scrub scopes to the current SECTION, not the whole meditation act
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; }
@@ -9864,7 +9881,9 @@
         } else { var _amb = 0.5 - 0.5 * Math.cos(e * 0.5712); _sc = 0.90 + 0.15 * _amb; _op = 0.76 + 0.22 * _amb; } // 2π/11 ≈ 0.5712 → a calm ~11s resting breath
         orb.style.transform = "scale(" + _sc.toFixed(3) + ")"; orb.style.opacity = _op.toFixed(3);
       }
-      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; } curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; }
+        if (zoom) { var _L2 = secListOf(curAct); for (var _s2 = 0; _s2 < _L2.length; _s2++) { var _sd = _L2[_s2], _sf = (_sd.end > _sd.start) ? (e - _sd.start) / (_sd.end - _sd.start) : (e >= _sd.start ? 1 : 0); _sf = _sf < 0 ? 0 : _sf > 1 ? 1 : _sf; if (secFills[_s2]) secFills[_s2].style.width = (_sf * 100) + "%"; if (secIcons[_s2]) secIcons[_s2].style.opacity = (e >= _sd.start) ? "1" : "0.34"; } } // ZOOM: fill the section bars + light section icons up to the current one
+        curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
     function paintBars(e) { if (!actBars) return; var cur = 0; for (var qb = 0; qb < actBars.length; qb++) { var a = actBars[qb], f = (a._end > a._start) ? (e - a._start) / (a._end - a._start) : (e >= a._start ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (abFills[qb]) abFills[qb].style.width = (f * 100) + "%"; if (e >= (a._start || 0)) cur = qb; } for (var qi = 0; qi < abIcons.length; qi++) if (abIcons[qi]) abIcons[qi].style.opacity = (qi <= cur) ? "1" : "0.34"; } // F5: fill the block bars + light the icons up to the current block (no slide, no orb-swap)
     function tick() {
       if (done) return; var e = curElapsed();
@@ -9873,12 +9892,12 @@
       raf = requestAnimationFrame(tick);
     }
     bPlay.onclick = function () { if (!ready || done) return; if (playing) pause(); else startFrom(offset); };
-    function _clampAct(sec) { if (!acts) return sec; var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); return Math.max(lo, Math.min(hi - 0.15, sec)); } // ±15 + scrub stay INSIDE the current activity's own timeline
+    function _clampAct(sec) { if (!acts) return sec; var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); if (zoom) { var _L = secListOf(curAct), _s = _L[curSec]; if (_s) { lo = _s.start; hi = (_s.end != null ? _s.end : hi); } } return Math.max(lo, Math.min(hi - 0.15, sec)); } // ±15 + scrub stay INSIDE the current activity — or the current SECTION when zoomed
     bBack.onclick = function () { if (ready) seek(_clampAct(curElapsed() - 15)); };
     bFwd.onclick = function () { if (ready) seek(_clampAct(curElapsed() + 15)); };
     (function () { var dragging = false; function frac(x) { var r = scrub.getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)); }
       function down(ev) { if (!ready) return; dragging = true; ev.preventDefault(); var wasP = playing; if (wasP) pause(); scrub._wasP = wasP; move(ev); }
-      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); if (acts) { var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); offset = lo + frac(x) * (hi - lo); } else { offset = frac(x) * total; } paintNow(offset); }
+      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); if (acts) { var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); if (zoom) { var _L = secListOf(curAct), _s = _L[curSec]; if (_s) { lo = _s.start; hi = (_s.end != null ? _s.end : hi); } } offset = lo + frac(x) * (hi - lo); } else { offset = frac(x) * total; } paintNow(offset); }
       function up() { if (!dragging) return; dragging = false; if (scrub._wasP) startFrom(offset); }
       scrub.addEventListener("pointerdown", down); window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
     })();
@@ -9886,8 +9905,11 @@
     if (acts) { // STORY-NAV (David 2026-07-07): tap left/right or swipe to move between activities. The voice CROSSFADES (fadeStopSources) instead of hard-cutting, and each act remembers where you left off so a slip is recoverable.
       function gotoAct(j) { if (!ready || done || j < 0 || j >= acts.length || j === curAct) return; actResume[curAct] = curElapsed(); var target = (actResume[j] != null) ? actResume[j] : (acts[j]._start || 0);
         if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } curAct = j; paintNow(target); }
+      function gotoSec(j) { var L = secListOf(curAct); if (!L.length || j < 0 || j >= L.length || j === curSec) return; curSec = j; var target = L[j].start; if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } paintNow(target); } // ZOOM: jump between sections of the expanded meditation act (voice crossfades, same as act nav)
       // EDGE-AWARE NAV (David 2026-07-10, increment 3): taps AND swipes share this so the boundaries behave identically — past the last tool completes -> post-gauge -> outro; before the first returns to the review (both opt-in via opts, so daily rituals just clamp). Gesture feel DEVICE-UNTESTED.
-      function navBy(dir) { if (!ready || done) return; var j = curAct + dir;
+      function navBy(dir) { if (!ready || done) return;
+        if (zoom) { var _L = secListOf(curAct), nj = curSec + dir; if (nj >= 0 && nj < _L.length) { gotoSec(nj); return; } exitZoom(); } // ZOOM: step SECTIONS first; only at a section edge does it leave the meditation act to a neighbor
+        var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
         if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); try { TTS.stop(); } catch (er) {} _activeBed = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
@@ -10462,8 +10484,10 @@
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
         var msecs = (t.med && t.med.length) ? t.med.slice() : (sawBodyPrep ? [{ k: "breath" }, { k: "aware" }, { k: "rest" }] : [{ k: "settle" }, { k: "aware" }, { k: "rest" }]); // if the stack already ran relax/stretch, DROP the redundant body-settle section (that was the doubled "soften / unclench" — David 2026-07-13)
         var depth = sessionDepth(t.secs || 90); // length/preset -> how spacious: long/advanced = long silence, few reminders; short/beginner = dense
+        var secMeta = []; // PLAYER ZOOM (David 2026-07-15): per-section metadata so the player can expand this ONE meditation act into its sections (bars split, scrub scopes to the section), then collapse back when you leave it
         msecs.forEach(function (sc, si) {
           var def = MED_SEC[sc.k]; if (!def) return;
+          secMeta.push({ name: def.name, color: def.col || t.c, icon: def.ti || t.ic }); var _sx = secMeta.length - 1;
           var dur = sc.d || Math.round((t.secs || 90) / msecs.length);
           var order = def.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); if (!order.length) order = def.lines.slice(); // AUTHORED ORDER (David 2026-07-14): pools are tiered basic->subtle, so a longer sit reaches the deeper lines in sequence; dedup skips lines already said this session
           var tt = 0, idx = 0, first = true;
@@ -10471,10 +10495,11 @@
             var ln, cad;
             if (idx < order.length) { ln = order[idx++]; usedTxt[_normLine(ln)] = 1; cad = pauseFor("absorb", depth); }
             else { ln = MED_RETURN[medRI++ % MED_RETURN.length]; cad = pauseFor("absorb", depth) + 9; } // pool spent: keep a sparse re-anchor cue going rather than going silent for the rest of the section (David 2026-07-15: "voice over stops" mid-meditation)
-            var seg2 = medSeg(ln, cad, first ? def.name : ""); if (si > 0 && first) seg2._sectionStart = true; P(seg2);
+            var seg2 = medSeg(ln, cad, first ? def.name : ""); if (first) seg2._secIdx = _sx; if (si > 0 && first) seg2._sectionStart = true; P(seg2);
             tt += cad + 3.5; first = false;
           }
         });
+        acts[ai]._sections = secMeta; acts[ai]._isMed = secMeta.length > 1; // the act carries its sections; the player expands it when it becomes current
       } else if (C.breath) {
         var cyc = Math.max(2, Math.round(t.secs / 16));
         for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in"), breath: "in" }); P({ text: "Hold", label: "Hold", sub: "stay full", gap: pauseFor("hold"), breath: "hold" }); P({ text: "Breathe out", label: "Breathe out", sub: "slow and long", gap: pauseFor("out"), breath: "out" }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest"), breath: "rest" }); } // David 2026-07-15: voice text reverted to the bare recorded word (the coaching-line composite had no matching clip → the stack's breath act was totally silent); the sub caption still shows the fuller coaching line on screen. Temporary until a dedicated in/out/hold audio cue replaces spoken words.
