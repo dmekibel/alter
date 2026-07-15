@@ -6029,6 +6029,11 @@
     var b = _cv(W, H), x = b.getContext("2d"); x.filter = "blur(" + blurPx + "px)"; x.drawImage(shape, 0, 0); x.filter = "none";
     var d = x.getImageData(0, 0, W, H).data, m = new Uint8Array(W * H); for (var i = 0; i < m.length; i++) m[i] = d[i * 4] > thr ? 1 : 0; return m;
   }
+  function _mask2cv(m, W, H) { var cv = _cv(W, H), cx = cv.getContext("2d"), im = cx.createImageData(W, H); for (var i = 0; i < W * H; i++) { var v = m[i] ? 255 : 0; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; } cx.putImageData(im, 0, 0); return cv; }
+  // morphological CLOSING (dilate then erode, symmetric thresholds so net size is preserved): rounds CONCAVE corners
+  // (fills the pinched inward "cleavage" at internal corners of an expanded island) while leaving convex corners and
+  // straight edges alone. A no-op on a smooth disc → no regression.
+  function _close(m, W, H, r) { var dil = _blurThr(_mask2cv(m, W, H), W, H, r, 70); return _blurThr(_mask2cv(dil, W, H), W, H, r, 185); }
   function _dist(m, W, H, outside) { // chamfer 3-4 distance transform (px) from the target set (outside=true -> distance into ~m)
     var INF = 1e9, D = new Float32Array(W * H), i;
     for (i = 0; i < D.length; i++) D[i] = (outside ? !m[i] : m[i]) ? INF : 0;
@@ -6066,6 +6071,7 @@
     // --- baseA: tile rects -> round the stepped corners ---
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
     var baseA = _blurThr(rc, W, H, 14, 127);
+    baseA = _close(baseA, W, H, 30); // gently soften the pinched inward (concave) corners an expanded island makes — the "grass cleavage" — without blobbing the tile shape (David 2026-07-15)
     // --- cloud-lobe grass mask: walk baseA contour (TRUE shoreline order via boundary trace), stamp overlapping lobes, skip sharp corners ---
     var eb = _traceContour(baseA, W, H), i;
     var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= (eb.length || 1); ccx /= (eb.length || 1);
