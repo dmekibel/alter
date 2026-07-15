@@ -6161,7 +6161,7 @@
   // interior coast is byte-identical to what a full bake would draw there.
   function _doRebake() {
     _rebakeTimer = null; var c = window._isleBakeCache, d = window._isleDirtyBox; window._isleDirtyBox = null;
-    if (!window._incBake || !c || !c.cv || c.minx === undefined || !d) { window._isleBakeCache = null; return; } // SAFE default = one full bake; incremental blit is behind window._incBake while it's being debugged (David 2026-07-15: it broke the map shape)
+    if (window._incBake === false || !c || !c.cv || c.minx === undefined || !d) { window._isleBakeCache = null; return; } // incremental ON by default (grow-margin bug fixed 2026-07-15); set window._incBake=false to force full bakes
     var B = c.BTB || 172, PAD = c.PAD, CTX = 2, M = 1;
     var b; try { b = bakeIsle({ x0: d.x0 - CTX, y0: d.y0 - CTX, x1: d.x1 + CTX, y1: d.y1 + CTX }); } catch (e) { b = null; }
     if (!b) { window._isleBakeCache = null; return; }
@@ -6169,6 +6169,7 @@
     var sx = (bx0 - b.minx + PAD) * B, sy = (by0 - b.miny + PAD) * B, sw = (bx1 - bx0 + 1) * B, sh = (by1 - by0 + 1 + 1) * B; // +1 tile of height for the south cliff/sand below the bottom changed row
     if (sx < 0) { sw += sx; sx = 0; } if (sy < 0) { sh += sy; sy = 0; } if (sx + sw > b.w) sw = b.w - sx; if (sy + sh > b.h) sh = b.h - sy;
     var dx = (bx0 - c.minx + PAD) * B, dy = (by0 - c.miny + PAD) * B;
+    window._incDbg = { dirty: [d.x0, d.y0, d.x1, d.y1], win: [d.x0 - CTX, d.y0 - CTX, d.x1 + CTX, d.y1 + CTX], cache: [c.minx, c.miny, c.maxx, c.maxy, c.w, c.h], bake: [b.minx, b.miny, b.w, b.h], src: [sx, sy, sw, sh], dst: [dx, dy] };
     if (sw > 0 && sh > 0) c.cv.getContext("2d").drawImage(b.cv, sx, sy, sw, sh, dx, dy, sw, sh);
     c._stamp = ISLE._stamp;
   }
@@ -6176,9 +6177,9 @@
     var c = window._isleBakeCache, gimg = WORLD_IMG.gtile;
     if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake once
     var B = c.BTB || 172, PAD = c.PAD, EXTRA = c.EXTRA || 150, cx = (tx - c.minx + PAD) * B, cy = (ty - c.miny + PAD) * B;
-    if (cx < 0 || cy < 0 || cx + B > c.w || cy + B > c.h) {
+    if (cx < PAD * B || cy < PAD * B || cx + (PAD + 1) * B > c.w || cy + (PAD + 1) * B > c.h) { // grow when the tile lands within PAD of the canvas edge — the coast around it needs that margin, or the incremental blit gets clipped (David 2026-07-15 bug)
       // GROW the provisional canvas to include the new tile — a canvas copy, NOT a bake, so the walk stays smooth
-      var nminx = Math.min(c.minx, tx), nmaxx = Math.max(c.maxx, tx), nminy = Math.min(c.miny, ty), nmaxy = Math.max(c.maxy, ty);
+      var GM = 3, nminx = Math.min(c.minx, tx - GM), nmaxx = Math.max(c.maxx, tx + GM), nminy = Math.min(c.miny, ty - GM), nmaxy = Math.max(c.maxy, ty + GM); // grow with a few tiles of extra margin so we don't re-grow every frontier tile
       var nW = (nmaxx - nminx + 1 + PAD * 2) * B, nH = (nmaxy - nminy + 1 + PAD * 2) * B + EXTRA;
       var ncv = _cv(nW, nH), nctx = ncv.getContext("2d");
       nctx.fillStyle = "rgb(5,11,44)"; nctx.fillRect(0, 0, nW, nH); // deep-water fill so newly exposed margins aren't transparent
@@ -13064,6 +13065,27 @@
     return "audit overlay drawn — screenshot it; DEV.auditClose() to dismiss";
   };
   window.DEV.auditClose = function () { var o = document.getElementById("auditOv"); if (o) o.remove(); return "closed"; };
+  window.DEV.testInc = function () { // TRULY run the incremental blit and draw it beside a full bake of the same expanded island → find the coord bug
+    var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache, sInc = window._incBake, sT = _rebakeTimer;
+    var s = new Set(); for (var i = -5; i <= 5; i++) for (var j = -5; j <= 5; j++) if (i * i + j * j <= 20) s.add(tkey(i, j));
+    ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 6501 }; window._isleBakeCache = null; window._isleDirtyBox = null;
+    var cache = bakeIsle(); cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
+    var mx = 0; s.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; });
+    window._incBake = true; var ntx = mx + 5, nty = 0; // expand a LINE of 5 tiles east (triggers a canvas GROW past the PAD bound)
+    for (var e = 1; e <= 5; e++) { ISLE.tiles.add(tkey(mx + e, 0)); ISLE._stamp++; if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; } _expandVisual(mx + e, 0); }
+    if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
+    _doRebake(); var incCache = window._isleBakeCache;
+    window._isleBakeCache = null; var fullB = bakeIsle(); // full bake of the expanded island (reference)
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh);
+    // crop the east region (around the new tile) from both, matched by world coords
+    var B = incCache.BTB, worldX = ntx * B, cropW = 5 * B, cropH = 6 * B;
+    function crop(cc, lab, x0) { var wx = (worldX - (cc.minx - cc.PAD) * B) - cropW / 2, wy = ((nty * B) - (cc.miny - cc.PAD) * B) - cropH / 2; g.fillStyle = "#e8e0c0"; g.font = "13px sans-serif"; g.fillText(lab, x0 + 6, 18); g.drawImage(cc.cv, wx, wy, cropW, cropH, x0, 24, vw / 2 - 8, (vw / 2 - 8) * cropH / cropW); g.strokeStyle = "#555"; g.strokeRect(x0, 24, vw / 2 - 8, (vw / 2 - 8) * cropH / cropW); }
+    crop(incCache, "INCREMENTAL (blit)", 0); crop(fullB, "FULL (reference)", vw / 2 + 4);
+    ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS; window._incBake = sInc; _rebakeTimer = sT;
+    return "testInc drawn — INCREMENTAL vs FULL of the same expanded island; DEV.auditClose() to dismiss";
+  };
   window.DEV.regTime = function (r2) { var R = r2 || 90, s = new Set(); for (var i = -10; i <= 10; i++) for (var j = -10; j <= 10; j++) if (i * i + j * j <= R) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 7001 }; var mx = 0; ISLE.tiles.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; }); var t0 = performance.now(); var full = bakeIsle(); var tf = performance.now() - t0; var t1 = performance.now(); var reg = bakeIsle({ x0: mx - 1, y0: -1, x1: mx + 2, y1: 2 }); var tr = performance.now() - t1; window._isleBakeCache = null; return ISLE.tiles.size + "t: FULL " + tf.toFixed(0) + "ms (" + full.w + "x" + full.h + ") vs INCREMENTAL window " + tr.toFixed(0) + "ms (" + reg.w + "x" + reg.h + ") = " + (tf / tr).toFixed(1) + "x faster"; }; // DEV: measure incremental window bake vs full bake
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
