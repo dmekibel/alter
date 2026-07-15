@@ -6001,7 +6001,8 @@
     if ((S.game.spark || 0) < cost) return false;
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
-    window._isleBakeCache = null; window._sanctSceneCache = null; // rebake coast + re-resolve scene (seamless by construction)
+    window._sanctSceneCache = null; // re-resolve object placement (cheap)
+    _expandVisual(tx, ty); // instant grass patch on the new tile + debounced full coast re-bake → smooth walk-out, no per-tile hitch, surrounding water untouched
     saveIsle(); try { updGameHud(); } catch (e) {}
     for (var i = 0; i < 12; i++) dust.push({ x: tx * TILE + (Math.random() - 0.5) * TILE, y: ty * TILE + (Math.random() - 0.5) * TILE, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.6, life: 22 });
     return true;
@@ -6127,15 +6128,27 @@
     // ink = smooth outer stroke (dist outside grass) minus grass interior; same for cliff silhouette
     var gEro = erode1(gmA), gfOut = _dist(gmA, W, H, true), lcEro = erode1(landcliff), lcOut = _dist(landcliff, W, H, true);
     for (i = 0; i < W * H; i++) { var ink = ((gfOut[i] >= 1 && gfOut[i] <= 9) && !gEro[i]) || ((lcOut[i] >= 1 && lcOut[i] <= 9) && !lcEro[i]); if (ink && !gEro[i]) { if ((gfOut[i] >= 1 && gfOut[i] <= 9) || (lcOut[i] >= 1 && lcOut[i] <= 9)) { out[i * 4] = 10; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; } } }
-    // --- blue coastline just outside the brown, + wave glyphs tangent to the coast ---
+    // --- blue coastline just outside the brown ---
     for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
     var cvOut = _cv(W, H); cvOut.getContext("2d").putImageData(new ImageData(out, W, H), 0, 0);
-    var wcx = cvOut.getContext("2d"); wcx.strokeStyle = "rgb(54,66,145)"; wcx.lineWidth = 11; wcx.lineCap = "round";
-    var iy = ytop + (ybot - ytop) / 2, ix = W / 2, ws = 777;
-    var wr = function () { ws = (ws * 1103515245 + 12345) & 0x7fffffff; return ws / 0x7fffffff; };
-    var placed = 0, tries = 0;
-    while (placed < 14 && tries < 400) { tries++; var wx = wr() * W, wy = wr() * H, wi = ((wy | 0) * W + (wx | 0)); if (island[wi] || idOut[wi] < 60 || idOut[wi] > 210) continue; var ang = Math.atan2(wy - iy, wx - ix) + Math.PI / 2 + (wr() - 0.5) * 0.6, L = 60 + wr() * 90, amp = 5 + wr() * 3, arcs = wr() < 0.66 ? 1 : 2; wcx.beginPath(); for (var t = 0; t <= 8; t++) { var f = t / 8, al = f * L, pp = Math.sin(f * Math.PI * arcs) * amp, ptx = wx + Math.cos(ang) * al - Math.sin(ang) * pp, pty = wy + Math.sin(ang) * al + Math.cos(ang) * pp; if (t === 0) wcx.moveTo(ptx, pty); else wcx.lineTo(ptx, pty); } wcx.stroke(); placed++; }
-    return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size };
+    // NOTE: the near-shore wave glyphs used to be baked HERE, positioned relative to the canvas size — so growing the
+    // island resized the canvas and made every wave jump ("water reshuffled"). Waves now live ONLY in the stable
+    // world-space drawOceanWaves layer, so expansion never disturbs the surrounding sea (David 2026-07-15).
+    return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size, minx: minx, miny: miny, PAD: PAD, BTB: BTB, GEY: GEY };
+  }
+  // Instant provisional patch for a freshly-claimed tile: drop grass onto the EXISTING baked canvas at that tile so the
+  // player can walk on it immediately, then DEBOUNCE the full high-quality coast re-bake (fires when expansion pauses).
+  // This keeps a continuous walk-out smooth (grass patches, no per-tile full-bake hitch) instead of choppy.
+  var _rebakeTimer = null;
+  function _scheduleRebake() { if (_rebakeTimer) return; _rebakeTimer = setTimeout(function () { _rebakeTimer = null; window._isleBakeCache = null; }, 320); }
+  function _expandVisual(tx, ty) {
+    var c = window._isleBakeCache, gimg = WORLD_IMG.gtile;
+    if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake
+    var B = c.BTB || 172, cx = (tx - c.minx + c.PAD) * B, cy = (ty - c.miny + c.PAD) * B;
+    if (cx < 0 || cy < 0 || cx + B > c.w || cy + B > c.h) { window._isleBakeCache = null; return; } // tile falls outside the baked canvas → must fully re-bake now (bounds grow)
+    if (gimg && gimg.complete && gimg.naturalWidth) { var pc = c.cv.getContext("2d"); pc.save(); pc.filter = "brightness(0.9)"; pc.drawImage(gimg, cx, cy, B, B); pc.filter = "none"; pc.restore(); }
+    c._stamp = ISLE._stamp; // mark the patched cache as current so drawTileGround does NOT full-rebake now — the debounce owns that
+    _scheduleRebake();
   }
   var _isleBaking = false;
   function drawTileGround(ctx) {
@@ -6150,7 +6163,7 @@
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
   var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
-  var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30;
+  var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30, FH_STRIDE = 92; // FH_STRIDE = world px per full 21-frame walk cycle; tune so the feet plant (lower = faster leg cycle)
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
   function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=6"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=6"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=6"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
@@ -6548,7 +6561,7 @@
         var tgt = Math.atan2(sY, sX), dd = tgt - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2;
         fhFace += dd * 0.40;                                               // steer toward the stick — SHARP (a car turns ~0.08/frame; this whips ~0.4)
         var align = Math.cos(dd), fwd = m * Math.max(0, align);           // translate ONLY along facing, scaled by how aligned we are → a hard turn PIVOTS (feet turn in place) instead of sliding sideways
-        if (fwd > 0.02) { px += Math.cos(fhFace) * SPD * fwd; py += Math.sin(fhFace) * SPD * fwd; fhFrame += fwd * 0.42; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; }
+        if (fwd > 0.02) { var step = SPD * fwd; px += Math.cos(fhFace) * step; py += Math.sin(fhFace) * step; fhFrame += (step / FH_STRIDE) * FH_NF; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; } // walk cycle LOCKED to distance (one full stride per FH_STRIDE px) → feet plant at any speed, no sliding (David 2026-07-15)
         moving = fwd > 0.03;                                               // walking (legs cycle) only while actually translating forward
       }
       fhMoving = moving; // thumb up → moving=false THIS frame → render drops straight to the idle stand (no extra steps, no coasting)
