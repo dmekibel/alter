@@ -27,6 +27,11 @@ for arr in re.findall(r'var (?:LINES|seq)\s*=\s*\[([^\]]*)\]', src):
 # 4) relaxMoment STEPS: a + ", " + b  (["a","b",num])
 for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*,\s*\d+\s*\]', src):
     add(un(a)+", "+un(b))
+# 4b) STRETCH_MOVES: a + ", " + b  (["a","b"] — bare 2-tuples, no numeric third element)
+m = re.search(r'var STRETCH_MOVES\s*=\s*\[(.*?)\n  \];', src, re.S)
+if m:
+    for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*\]', m.group(1)):
+        add(un(a)+", "+un(b))
 # 5) breath cues (PH labels, hardcoded — spoken for non-rest phases)
 for c in ["Breathe in","Hold","Breathe out"]: add(c)
 # 6) tapping steps: pt + ". " + say  AND  say alone (covers setup) AND pt alone (B3: the runtime now schedules pt + say as separate clips)
