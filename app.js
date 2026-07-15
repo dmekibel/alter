@@ -6190,8 +6190,11 @@
     } else { if (tx < c.minx) c.minx = tx; if (tx > c.maxx) c.maxx = tx; if (ty < c.miny) c.miny = ty; if (ty > c.maxy) c.maxy = ty; }
     if (gimg && gimg.complete && gimg.naturalWidth) { var pc = c.cv.getContext("2d"); pc.save(); pc.filter = "brightness(0.9)"; pc.drawImage(gimg, cx, cy, B, B); pc.filter = "none"; pc.restore(); }
     c._stamp = ISLE._stamp; // mark the patched cache as current so drawTileGround does NOT full-rebake now — the debounce owns that
-    var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: tx, y0: ty, x1: tx, y1: ty }; else { if (tx < _d.x0) _d.x0 = tx; if (tx > _d.x1) _d.x1 = tx; if (ty < _d.y0) _d.y0 = ty; if (ty > _d.y1) _d.y1 = ty; } // grow the dirty window so the debounced re-bake only touches the expanded area
-    _scheduleRebake();
+    var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: tx, y0: ty, x1: tx, y1: ty }; else { if (tx < _d.x0) _d.x0 = tx; if (tx > _d.x1) _d.x1 = tx; if (ty < _d.y0) _d.y0 = ty; if (ty > _d.y1) _d.y1 = ty; } // grow the dirty window so the re-bake only touches the expanded area
+    // SYNCHRONOUS bake in the SAME claim tick (David 2026-07-15: "should be all in one go, not grass first then everything joins a second later").
+    // The grass placeholder above + the coast bake below both land before the next rendered frame, so the naked-grass intermediate state never displays —
+    // the tile appears fully-formed in one step. (Debounce split them across frames → the two-step look.) One deliberate claim = one ~1.3s hitch, tile complete.
+    _doRebake();
   }
   var _isleBaking = false;
   function drawTileGround(ctx) {
