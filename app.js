@@ -6006,11 +6006,24 @@
     if (!(isleHas(tx + 1, ty) || isleHas(tx - 1, ty) || isleHas(tx, ty + 1) || isleHas(tx, ty - 1))) return false;
     var cost = claimCost(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] };
     if ((S.game.spark || 0) < cost) return false;
+    var holesBefore = getHoleTiles(); // snapshot BEFORE the claim (cheap — cached on the pre-claim stamp, already warm from the last bake)
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
     _pendingIsle[tkey(tx, ty)] = 1; // not walkable until its coast bake blits in (cleared in _release())
     window._sanctSceneCache = null; // re-resolve object placement (cheap)
     claimFlashes.push({ x: tx * TILE, y: ty * TILE, life: 1, pend: true }); if (claimFlashes.length > 8) claimFlashes.shift(); // materializing pulse: LOOPS while pend (coast still baking off-thread), then fades once the coast blits in — so the tile appears all-at-once, never grass-square-then-coast (David 2026-07-15)
+    // WIDE DIRTY BOX (David 2026-07-16): a single claim can change whether OTHER, far-away water tiles are classified as an
+    // enclosed HOLE — e.g. the tile that finally seals a bay into a pond. Those tiles need their coast re-baked too (lobes,
+    // ink, blue rim), or the new pond renders as a stale unrendered navy patch (the "floating black patch" / notch bugs).
+    // Diff the global hole-tile set before vs after this claim and union any tile whose status flipped into the dirty box
+    // BEFORE _expandVisual reads it, so the re-bake window covers the WHOLE region that actually changed, not just (tx,ty).
+    var holesAfter = getHoleTiles();
+    var beforeSet = {}; holesBefore.forEach(function (h) { beforeSet[h[0] + "," + h[1]] = 1; });
+    var afterSet = {}; holesAfter.forEach(function (h) { afterSet[h[0] + "," + h[1]] = 1; });
+    var changed = [[tx - 1, ty], [tx + 1, ty], [tx, ty - 1], [tx, ty + 1]]; // neighbor margin for lobe/cliff continuity, belt-and-braces
+    holesBefore.forEach(function (h) { if (!afterSet[h[0] + "," + h[1]]) changed.push(h); }); // was a hole, now open sea (rare — a hole tile can't itself be claimed, but keep symmetric)
+    holesAfter.forEach(function (h) { if (!beforeSet[h[0] + "," + h[1]]) changed.push(h); }); // newly enclosed — the sealed pond's tiles
+    changed.forEach(function (t) { var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: t[0], y0: t[1], x1: t[0], y1: t[1] }; else { if (t[0] < _d.x0) _d.x0 = t[0]; if (t[0] > _d.x1) _d.x1 = t[0]; if (t[1] < _d.y0) _d.y0 = t[1]; if (t[1] > _d.y1) _d.y1 = t[1]; } });
     // Patch the grass + reconcile the cache stamp SYNCHRONOUSLY, right now — the coast then bakes OFF-THREAD (worker), so this
     // doesn't block. CRITICAL: it must NOT be deferred to a later rAF — ISLE._stamp was just bumped, and if drawTileGround runs
     // before the cache stamp is reconciled it does a full synchronous whole-island bake (the ~2.5s claim freeze). (David 2026-07-15)
@@ -6432,8 +6445,12 @@
   function sanctGroundShade(ctx, scene) {
     var iR = scene.rWorld || 300, cx = scene.cx || 0, cy = scene.cy || 0, objs = scene.objs;
     // Gentle moonlight lift centered on the ACTUAL island (follows expansion, so no stray dark circle). Soft, no hard dark ring.
+    // The gradient MUST fade all the way to alpha 0 by its outer radius (David 2026-07-16: the old last stop was a flat 0.16 —
+    // canvas radial gradients clamp to the final stop color beyond r1, so everything from r1 out to the fillRect's own edge
+    // painted a uniform 0.16 multiply, then hard-cut to nothing at the rect boundary → a visible dark band/line out in open water
+    // on a big island). Fading to 0 means the rect's edge lands somewhere already-transparent — no visible seam regardless of size.
     var vg = ctx.createRadialGradient(cx, cy - 18, iR * 0.1, cx, cy + 8, iR * 1.15);
-    vg.addColorStop(0, "rgba(20,16,42,0)"); vg.addColorStop(0.7, "rgba(12,9,30,0.06)"); vg.addColorStop(1, "rgba(8,6,24,0.16)");
+    vg.addColorStop(0, "rgba(20,16,42,0)"); vg.addColorStop(0.55, "rgba(14,11,34,0.10)"); vg.addColorStop(1, "rgba(8,6,24,0)");
     ctx.save(); ctx.globalCompositeOperation = "multiply"; ctx.fillStyle = vg; ctx.fillRect(cx - iR * 1.3, cy - iR * 1.3, iR * 2.6, iR * 2.6); ctx.restore();
     // soft contact shadows — a wide feathered pool (no hard rim), sat right at each base
     for (var i = 0; i < objs.length; i++) { var o = objs[i], im = o.img; if (!im || !im.complete || !im.naturalWidth || o.h < 30) continue;
@@ -13490,6 +13507,26 @@
   }); };
   function devInit() { if (el("devBtn")) return; try { localStorage.setItem("alter_dev", "1"); } catch (e) {} var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); } // David 2026-07-14: dev tools ALWAYS available from the first screen (single-user build; re-gate with devOn() before public launch)
   function soundMuted() { return !!(S.audio && S.audio.voice === 0 && S.audio.bg === 0); } // dev: fully silenced = both master buses at 0
+  // David has NO console on his iPhone — this is the only way for him to hand me his REAL island's exact tile data when a
+  // coast bug shows up (copy → paste to me → I feed it straight into DEV.claimSeq/bakeCustom for an exact repro, no guessing
+  // at synthetic shapes). Tries the clipboard API first; if that's blocked (permissions, non-secure context), falls back to
+  // a selectable full-screen textarea he can long-press → Select All → Copy.
+  function devCopyIsleData() {
+    if (!ISLE) { try { toast("no island yet"); } catch (e) {} return; }
+    var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); });
+    var json = JSON.stringify(a);
+    function showFallback() {
+      var ov = document.getElementById("isleCopyOv"); if (ov) ov.remove();
+      ov = document.createElement("div"); ov.id = "isleCopyOv"; ov.setAttribute("style", "position:fixed;inset:0;z-index:999999;background:rgba(10,4,14,.96);display:flex;flex-direction:column;padding:16px;gap:10px;");
+      var lbl = document.createElement("div"); lbl.textContent = "Long-press → Select All → Copy, then send this to me:"; lbl.setAttribute("style", "color:#fff;font-size:14px;"); ov.appendChild(lbl);
+      var ta = document.createElement("textarea"); ta.value = json; ta.readOnly = true; ta.setAttribute("style", "flex:1;width:100%;background:#160510;color:#9ee6a8;border:2px solid #b07aff;border-radius:8px;padding:8px;font-family:monospace;font-size:12px;"); ov.appendChild(ta);
+      var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#3a2147;color:#fff;border:none;border-radius:8px;padding:10px;font-size:14px;"); cl.onclick = function () { ov.remove(); }; ov.appendChild(cl);
+      document.body.appendChild(ov); ta.focus(); ta.select();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(json).then(function () { try { toast("island copied (" + a.length + " tiles) — paste it to me"); } catch (e) {} }).catch(showFallback);
+    } else { showFallback(); }
+  }
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
@@ -13505,6 +13542,7 @@
       ["🌬 Breathe tool", _dj(function () { DEV.tool("breathe"); })],
       ["👁 Meditate tool", _dj(function () { DEV.tool("meditate"); })],
       ["✨ +10,000 Spark", function () { S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark = (S.game.spark || 0) + 10000; S.game.total = (S.game.total || 0) + 10000; save(); try { updGameHud(); } catch (e) {} try { toast("dev: +10,000 Spark → " + S.game.spark.toLocaleString()); } catch (e) {} }],
+      ["🏝 Copy island data", devCopyIsleData], // David 2026-07-16: no console on his phone — this is the only way for him to hand me his real island's exact tile data when a coast bug shows up, instead of me guessing at synthetic shapes
       ["— — — — — — —", function () {}],
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], ["— persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], ["— persona: early (day 3)", function () { devLoadPersona("early"); }], ["— persona: building (week 2)", function () { devLoadPersona("building"); }], ["— persona: established (month 1)", function () { devLoadPersona("established"); }], ["— persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
