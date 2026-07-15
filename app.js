@@ -6062,15 +6062,17 @@
     } while ((cy !== sy || cx !== sx) && count < cap);
     return out;
   }
-  function bakeIsle() {
+  function bakeIsle(region) { // region = {x0,y0,x1,y1} tile window → bake ONLY that window (for seamless incremental expansion); omit = whole island
     var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile;
     if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null;
     var BTB = 172, PAD = 2, GEY = 90, EXTRA = 150;
-    var txs = [], tys = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); txs.push(+a[0]); tys.push(+a[1]); });
-    var minx = Math.min.apply(0, txs), maxx = Math.max.apply(0, txs), miny = Math.min.apply(0, tys), maxy = Math.max.apply(0, tys);
+    var txs = [], tys = []; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; if (region && (tx < region.x0 || tx > region.x1 || ty < region.y0 || ty > region.y1)) return; txs.push(tx); tys.push(ty); });
+    var minx, maxx, miny, maxy;
+    if (region) { minx = region.x0; maxx = region.x1; miny = region.y0; maxy = region.y1; }
+    else { minx = Math.min.apply(0, txs); maxx = Math.max.apply(0, txs); miny = Math.min.apply(0, tys); maxy = Math.max.apply(0, tys); }
     var W = (maxx - minx + 1 + PAD * 2) * BTB, H = (maxy - miny + 1 + PAD * 2) * BTB + EXTRA;
     function bx(tx) { return (tx - minx + PAD) * BTB; } function by(ty) { return (ty - miny + PAD) * BTB; }
-    var has = function (tx, ty) { return ISLE.tiles.has(tkey(tx, ty)); };
+    var has = function (tx, ty) { return ISLE.tiles.has(tkey(tx, ty)) && (!region || (tx >= region.x0 && tx <= region.x1 && ty >= region.y0 && ty <= region.y1)); }; // windowed: the region bakes as a standalone piece; its INTERIOR (which we blit) has full context, so it matches the full-island coast exactly
     // --- baseA: tile rects -> round the stepped corners ---
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
     var baseA = _blurThr(rc, W, H, 14, 127);
@@ -6078,23 +6080,16 @@
     // --- cloud-lobe grass mask: walk baseA contour (TRUE shoreline order via boundary trace), stamp overlapping lobes, skip sharp corners ---
     var eb = _traceContour(baseA, W, H), i;
     var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= (eb.length || 1); ccx /= (eb.length || 1);
-    var arc = [0]; for (i = 1; i < eb.length; i++) arc[i] = arc[i - 1] + Math.hypot(eb[i][0] - eb[i - 1][0], eb[i][1] - eb[i - 1][1]);
-    var total = arc[arc.length - 1];
     var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
-    var seed = 12345, rnd = function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-    var findK = function (p) { var lo = 0, hi = arc.length - 1; while (lo < hi) { var m = (lo + hi) >> 1; if (arc[m] < p) lo = m + 1; else hi = m; } return Math.min(lo, eb.length - 2); };
     var curv = function (k) { var ka = Math.max(0, k - 9), kb = Math.min(eb.length - 1, k + 9); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
-    var pos = 0, s = 42 + rnd() * 12;
-    while (pos < total) {
-      var k = findK(pos);
-      if (curv(k) > 0.55) { s = 42 + rnd() * 12; pos += s; continue; } // sharp corner -> no lobe (rounded base carries it)
-      var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1);
-      var ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx, tn = Math.hypot(tx2, ty2) + 1e-6, ry = 13 + rnd() * 3, rxl = 0.58 * s;
-      var nx = cx - ccx, ny = cy - ccy, nn = Math.hypot(nx, ny) + 1e-6;
-      lx.save(); lx.translate(cx + nx / nn * ry * 0.2, cy + ny / nn * ry * 0.2); lx.rotate(Math.atan2(ty2, tx2));
-      lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore();
-      s = 42 + rnd() * 12; pos += s;
-    }
+    // WORLD-DETERMINISTIC lobes: one lobe per ~CELL-px WORLD grid cell the coast crosses, sized by a hash of that cell —
+    // so a region re-bake produces the IDENTICAL lumps a full bake would (no seam when compositing an expanded patch). (David 2026-07-15)
+    var CELL = 46, wox = (minx - PAD) * BTB, woy = (miny - PAD) * BTB, best = {};
+    for (var ci2 = 0; ci2 < eb.length; ci2++) { var wxp = eb[ci2][1] + wox, wyp = eb[ci2][0] + woy, gx = Math.floor(wxp / CELL), gy = Math.floor(wyp / CELL), key = gx + "," + gy, ex = wxp - (gx * CELL + CELL / 2), ey = wyp - (gy * CELL + CELL / 2), d2 = ex * ex + ey * ey; if (!best[key] || d2 < best[key].d2) best[key] = { k: ci2, d2: d2, gx: gx, gy: gy }; }
+    Object.keys(best).forEach(function (key) { var b = best[key], k = b.k; if (curv(k) > 0.55) return; // sharp corner -> no lobe (rounded base carries it)
+      var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1), ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx;
+      var h = ((b.gx * 73856093) ^ (b.gy * 19349663)) >>> 0, ry = 13 + (h % 4), rxl = 0.58 * (42 + ((h >>> 3) % 12));
+      lx.save(); lx.translate(cx, cy); lx.rotate(Math.atan2(ty2, tx2)); lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore(); });
     var gmA = _blurThr(lc, W, H, 4, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
     // --- cliff drape (south only): per-column depth from baseA -> sample the real strip ---
     var sc = _cv(strip.naturalWidth, strip.naturalHeight), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(strip, 0, 0); scx.filter = "none";
@@ -6159,7 +6154,24 @@
   // walk (that was the choppiness): if the new tile falls outside the cached canvas we GROW the canvas by copying the old
   // one into a bigger one (cheap) instead of re-baking. Only the stable surrounding sea is left untouched.
   var _rebakeTimer = null;
-  function _scheduleRebake() { if (_rebakeTimer) clearTimeout(_rebakeTimer); _rebakeTimer = setTimeout(function () { _rebakeTimer = null; window._isleBakeCache = null; }, 260); } // reset on every claim → bakes only when the walk pauses
+  function _scheduleRebake() { if (_rebakeTimer) clearTimeout(_rebakeTimer); _rebakeTimer = setTimeout(_doRebake, 240); } // reset on every claim → the ONE polished re-bake fires only when the walk pauses
+  // INCREMENTAL re-bake (David 2026-07-15): re-bake ONLY the expanded window + a small context margin and blit it onto the
+  // cached canvas — the rest of the island is untouched. On a big island this is a tiny window bake instead of the whole
+  // 8.5s island. Seamless because the scallop lumps are world-deterministic + the grass is world-anchored, so the window's
+  // interior coast is byte-identical to what a full bake would draw there.
+  function _doRebake() {
+    _rebakeTimer = null; var c = window._isleBakeCache, d = window._isleDirtyBox; window._isleDirtyBox = null;
+    if (!c || !c.cv || c.minx === undefined || !d) { window._isleBakeCache = null; return; } // no incremental context → one full bake
+    var B = c.BTB || 172, PAD = c.PAD, CTX = 2, M = 1;
+    var b; try { b = bakeIsle({ x0: d.x0 - CTX, y0: d.y0 - CTX, x1: d.x1 + CTX, y1: d.y1 + CTX }); } catch (e) { b = null; }
+    if (!b) { window._isleBakeCache = null; return; }
+    var bx0 = d.x0 - M, by0 = d.y0 - M, bx1 = d.x1 + M, by1 = d.y1 + M; // blit the changed-coast region (dirty ± M); M < CTX so it sits inside the window's correctly-baked interior
+    var sx = (bx0 - b.minx + PAD) * B, sy = (by0 - b.miny + PAD) * B, sw = (bx1 - bx0 + 1) * B, sh = (by1 - by0 + 1 + 1) * B; // +1 tile of height for the south cliff/sand below the bottom changed row
+    if (sx < 0) { sw += sx; sx = 0; } if (sy < 0) { sh += sy; sy = 0; } if (sx + sw > b.w) sw = b.w - sx; if (sy + sh > b.h) sh = b.h - sy;
+    var dx = (bx0 - c.minx + PAD) * B, dy = (by0 - c.miny + PAD) * B;
+    if (sw > 0 && sh > 0) c.cv.getContext("2d").drawImage(b.cv, sx, sy, sw, sh, dx, dy, sw, sh);
+    c._stamp = ISLE._stamp;
+  }
   function _expandVisual(tx, ty) {
     var c = window._isleBakeCache, gimg = WORLD_IMG.gtile;
     if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake once
@@ -6177,6 +6189,7 @@
     } else { if (tx < c.minx) c.minx = tx; if (tx > c.maxx) c.maxx = tx; if (ty < c.miny) c.miny = ty; if (ty > c.maxy) c.maxy = ty; }
     if (gimg && gimg.complete && gimg.naturalWidth) { var pc = c.cv.getContext("2d"); pc.save(); pc.filter = "brightness(0.9)"; pc.drawImage(gimg, cx, cy, B, B); pc.filter = "none"; pc.restore(); }
     c._stamp = ISLE._stamp; // mark the patched cache as current so drawTileGround does NOT full-rebake now — the debounce owns that
+    var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: tx, y0: ty, x1: tx, y1: ty }; else { if (tx < _d.x0) _d.x0 = tx; if (tx > _d.x1) _d.x1 = tx; if (ty < _d.y0) _d.y0 = ty; if (ty > _d.y1) _d.y1 = ty; } // grow the dirty window so the debounced re-bake only touches the expanded area
     _scheduleRebake();
   }
   var _isleBaking = false;
@@ -13039,6 +13052,7 @@
     return "audit overlay drawn — screenshot it; DEV.auditClose() to dismiss";
   };
   window.DEV.auditClose = function () { var o = document.getElementById("auditOv"); if (o) o.remove(); return "closed"; };
+  window.DEV.regTime = function (r2) { var R = r2 || 90, s = new Set(); for (var i = -10; i <= 10; i++) for (var j = -10; j <= 10; j++) if (i * i + j * j <= R) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 7001 }; var mx = 0; ISLE.tiles.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; }); var t0 = performance.now(); var full = bakeIsle(); var tf = performance.now() - t0; var t1 = performance.now(); var reg = bakeIsle({ x0: mx - 1, y0: -1, x1: mx + 2, y1: 2 }); var tr = performance.now() - t1; window._isleBakeCache = null; return ISLE.tiles.size + "t: FULL " + tf.toFixed(0) + "ms (" + full.w + "x" + full.h + ") vs INCREMENTAL window " + tr.toFixed(0) + "ms (" + reg.w + "x" + reg.h + ") = " + (tf / tr).toFixed(1) + "x faster"; }; // DEV: measure incremental window bake vs full bake
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
   window.DEV.growTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); var before = ISLE.tiles.size, sp = S.game.spark; claimTileAt(water[0], water[1]); return "claim: size " + before + "->" + ISLE.tiles.size + ", spark " + sp + "->" + S.game.spark + ", persisted=" + (!!(S.game.isle && S.game.isle.length === ISLE.tiles.size)); }; // DEV: exercise the real walk-to-edge claim path
