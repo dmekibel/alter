@@ -6066,127 +6066,143 @@
     } while ((cy !== sy || cx !== sx) && count < cap);
     return out;
   }
-  // The coast bake as a list of PHASE closures over shared locals. A driver runs them either all-at-once (sync, for DEV +
-  // first-load) or time-sliced across animation frames (async, for expansion → the render loop keeps animating between
-  // phases so the camera + character never freeze while a new tile's coast loads in). ONE source; two drivers (David 2026-07-15).
-  function bakeIsleJob(region) { // region = {x0,y0,x1,y1} tile window → bake ONLY that window (for seamless incremental expansion); omit = whole island
-    var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile;
-    if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null;
-    var BTB = 172, PAD = 2, GEY = 90, EXTRA = 150;
-    // shared across phases (hoisted)
-    var txs, tys, minx, maxx, miny, maxy, W, H, rc, baseA, ext, hole, wYtop, wYbot, wOyy, gmA, sd, sw, sh, cliff, out, landcliff, distout, north, sand, lsil, island, idOut, cvOut, i;
-    var steps = [];
-    steps.push(function () { // P0 — footprint rects → baseA + corner-close
-      txs = []; tys = []; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; if (region && (tx < region.x0 || tx > region.x1 || ty < region.y0 || ty > region.y1)) return; txs.push(tx); tys.push(ty); });
-      if (region) { minx = region.x0; maxx = region.x1; miny = region.y0; maxy = region.y1; }
-      else { minx = Math.min.apply(0, txs); maxx = Math.max.apply(0, txs); miny = Math.min.apply(0, tys); maxy = Math.max.apply(0, tys); }
-      W = (maxx - minx + 1 + PAD * 2) * BTB; H = (maxy - miny + 1 + PAD * 2) * BTB + EXTRA;
-      function bx(tx) { return (tx - minx + PAD) * BTB; } function by(ty) { return (ty - miny + PAD) * BTB; }
-      rc = _cv(W, H); var rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
-      baseA = _blurThr(rc, W, H, 14, 127);
-      var _cr = (window._closeR == null ? 8 : window._closeR); if (_cr > 0) baseA = _close(baseA, W, H, _cr); // SUBTLE close: soften the sharp inward-corner pinch (live-tunable via window._closeR)
-    });
-    steps.push(function () { // P1 — flood the EXTERIOR sea from the border
-      ext = new Uint8Array(W * H); var fstack = new Int32Array(W * H), fsp = 0;
-      for (i = 0; i < W; i++) { if (!baseA[i] && !ext[i]) { ext[i] = 1; fstack[fsp++] = i; } var _bi = (H - 1) * W + i; if (!baseA[_bi] && !ext[_bi]) { ext[_bi] = 1; fstack[fsp++] = _bi; } }
-      for (var _yE = 0; _yE < H; _yE++) { var _l = _yE * W, _r = _yE * W + (W - 1); if (!baseA[_l] && !ext[_l]) { ext[_l] = 1; fstack[fsp++] = _l; } if (!baseA[_r] && !ext[_r]) { ext[_r] = 1; fstack[fsp++] = _r; } }
-      while (fsp > 0) { var _p = fstack[--fsp], _py = (_p / W) | 0, _px = _p % W;
-        if (_px > 0 && !baseA[_p - 1] && !ext[_p - 1]) { ext[_p - 1] = 1; fstack[fsp++] = _p - 1; }
-        if (_px < W - 1 && !baseA[_p + 1] && !ext[_p + 1]) { ext[_p + 1] = 1; fstack[fsp++] = _p + 1; }
-        if (_py > 0 && !baseA[_p - W] && !ext[_p - W]) { ext[_p - W] = 1; fstack[fsp++] = _p - W; }
-        if (_py < H - 1 && !baseA[_p + W] && !ext[_p + W]) { ext[_p + W] = 1; fstack[fsp++] = _p + W; }
+  // ===== COAST BAKE CORE (David 2026-07-15) =====
+  // ONE self-contained, closure-free pure function: (tiles, region, closeR, constants, images) -> RGBA ArrayBuffer.
+  // It references NOTHING outside its args (no ISLE/WORLD_IMG/window/TILE/outer helpers) so `.toString()` can ship it
+  // verbatim into a Web Worker — the SAME source runs on the main thread (DEV + first-load) AND off-thread (expansion),
+  // so the render loop never computes coast while the game is animating (kills the expansion freeze). Uses OffscreenCanvas
+  // (main-thread + worker both support it on iOS 16.4+ / modern Chromium). If a phase changes, this is the only copy.
+  function __coastBakeCore(p) {
+    var tiles = p.tiles, region = p.region, closeR = p.closeR;
+    var BTB = p.BTB, PAD = p.PAD, GEY = p.GEY, EXTRA = p.EXTRA;
+    var coast = p.coast, coastW = p.coastW, coastH = p.coastH, grass = p.grass;
+    function _cv(w, h) { return (typeof OffscreenCanvas !== "undefined") ? new OffscreenCanvas(w, h) : (function () { var c = document.createElement("canvas"); c.width = w; c.height = h; return c; })(); }
+    function _blurThr(shape, W, H, blurPx, thr) { var b = _cv(W, H), x = b.getContext("2d"); x.filter = "blur(" + blurPx + "px)"; x.drawImage(shape, 0, 0); x.filter = "none"; var d = x.getImageData(0, 0, W, H).data, m = new Uint8Array(W * H); for (var i = 0; i < m.length; i++) m[i] = d[i * 4] > thr ? 1 : 0; return m; }
+    function _mask2cv(m, W, H) { var cv = _cv(W, H), cx = cv.getContext("2d"), im = cx.createImageData(W, H); for (var i = 0; i < W * H; i++) { var v = m[i] ? 255 : 0; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; } cx.putImageData(im, 0, 0); return cv; }
+    function _close(m, W, H, r) { var dil = _blurThr(_mask2cv(m, W, H), W, H, r, 70); return _blurThr(_mask2cv(dil, W, H), W, H, r, 185); }
+    function _dist(m, W, H, outside) { var INF = 1e9, D = new Float32Array(W * H), i; for (i = 0; i < D.length; i++) D[i] = (outside ? !m[i] : m[i]) ? INF : 0; for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) { i = y * W + x; var v = D[i]; if (x > 0) v = Math.min(v, D[i - 1] + 3); if (y > 0) v = Math.min(v, D[i - W] + 3); if (x > 0 && y > 0) v = Math.min(v, D[i - W - 1] + 4); if (x < W - 1 && y > 0) v = Math.min(v, D[i - W + 1] + 4); D[i] = v; } for (var y2 = H - 1; y2 >= 0; y2--) for (var x2 = W - 1; x2 >= 0; x2--) { i = y2 * W + x2; var v2 = D[i]; if (x2 < W - 1) v2 = Math.min(v2, D[i + 1] + 3); if (y2 < H - 1) v2 = Math.min(v2, D[i + W] + 3); if (x2 < W - 1 && y2 < H - 1) v2 = Math.min(v2, D[i + W + 1] + 4); if (x2 > 0 && y2 < H - 1) v2 = Math.min(v2, D[i + W - 1] + 4); D[i] = v2; } for (i = 0; i < D.length; i++) D[i] /= 3; return D; }
+    function _traceContour(mask, W, H) { var start = -1, i; for (i = 0; i < W * H; i++) { if (mask[i]) { start = i; break; } } if (start < 0) return []; var N8 = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]]; var sy = (start / W) | 0, sx = start % W, cy = sy, cx = sx, bdir = 6, out = [[sy, sx]], count = 0, cap = W * H * 4; do { var found = false; for (var t = 1; t <= 8; t++) { var d = (bdir + t) % 8, ny = cy + N8[d][0], nx = cx + N8[d][1]; if (ny < 0 || nx < 0 || ny >= H || nx >= W) continue; if (mask[ny * W + nx]) { bdir = (d + 4) % 8; cy = ny; cx = nx; out.push([cy, cx]); found = true; break; } } if (!found) break; count++; } while ((cy !== sy || cx !== sx) && count < cap); return out; }
+    var i;
+    // P0 — footprint rects -> baseA + corner-close
+    var txs = [], tys = []; for (var ti = 0; ti < tiles.length; ti++) { var tx = tiles[ti][0], ty = tiles[ti][1]; if (region && (tx < region.x0 || tx > region.x1 || ty < region.y0 || ty > region.y1)) continue; txs.push(tx); tys.push(ty); }
+    var minx, maxx, miny, maxy;
+    if (region) { minx = region.x0; maxx = region.x1; miny = region.y0; maxy = region.y1; }
+    else { minx = Math.min.apply(0, txs); maxx = Math.max.apply(0, txs); miny = Math.min.apply(0, tys); maxy = Math.max.apply(0, tys); }
+    var W = (maxx - minx + 1 + PAD * 2) * BTB, H = (maxy - miny + 1 + PAD * 2) * BTB + EXTRA;
+    function bx(t) { return (t - minx + PAD) * BTB; } function by(t) { return (t - miny + PAD) * BTB; }
+    var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; for (var n = 0; n < txs.length; n++) rx.fillRect(bx(txs[n]), by(tys[n]), BTB, BTB);
+    var baseA = _blurThr(rc, W, H, 14, 127);
+    if (closeR > 0) baseA = _close(baseA, W, H, closeR);
+    // P1 — flood the EXTERIOR sea from the border
+    var ext = new Uint8Array(W * H), fstack = new Int32Array(W * H), fsp = 0;
+    for (i = 0; i < W; i++) { if (!baseA[i] && !ext[i]) { ext[i] = 1; fstack[fsp++] = i; } var _bi = (H - 1) * W + i; if (!baseA[_bi] && !ext[_bi]) { ext[_bi] = 1; fstack[fsp++] = _bi; } }
+    for (var _yE = 0; _yE < H; _yE++) { var _l = _yE * W, _r = _yE * W + (W - 1); if (!baseA[_l] && !ext[_l]) { ext[_l] = 1; fstack[fsp++] = _l; } if (!baseA[_r] && !ext[_r]) { ext[_r] = 1; fstack[fsp++] = _r; } }
+    while (fsp > 0) { var _p = fstack[--fsp], _py = (_p / W) | 0, _px = _p % W;
+      if (_px > 0 && !baseA[_p - 1] && !ext[_p - 1]) { ext[_p - 1] = 1; fstack[fsp++] = _p - 1; }
+      if (_px < W - 1 && !baseA[_p + 1] && !ext[_p + 1]) { ext[_p + 1] = 1; fstack[fsp++] = _p + 1; }
+      if (_py > 0 && !baseA[_p - W] && !ext[_p - W]) { ext[_p - W] = 1; fstack[fsp++] = _p - W; }
+      if (_py < H - 1 && !baseA[_p + W] && !ext[_p + W]) { ext[_p + W] = 1; fstack[fsp++] = _p + W; }
+    }
+    // P2 — classify enclosed pockets (tiny sliver -> land; genuine hole -> clean pocket) + full-island world-Y extent
+    var hole = new Uint8Array(W * H), MINHOLE = Math.round(BTB * BTB * 0.2), _seen = new Uint8Array(W * H);
+    for (i = 0; i < W * H; i++) { if (baseA[i] || ext[i] || _seen[i]) continue;
+      var comp = [i]; _seen[i] = 1; var _qh = 0;
+      while (_qh < comp.length) { var _q = comp[_qh++], _qy = (_q / W) | 0, _qx = _q % W;
+        if (_qx > 0 && !baseA[_q - 1] && !ext[_q - 1] && !_seen[_q - 1]) { _seen[_q - 1] = 1; comp.push(_q - 1); }
+        if (_qx < W - 1 && !baseA[_q + 1] && !ext[_q + 1] && !_seen[_q + 1]) { _seen[_q + 1] = 1; comp.push(_q + 1); }
+        if (_qy > 0 && !baseA[_q - W] && !ext[_q - W] && !_seen[_q - W]) { _seen[_q - W] = 1; comp.push(_q - W); }
+        if (_qy < H - 1 && !baseA[_q + W] && !ext[_q + W] && !_seen[_q + W]) { _seen[_q + W] = 1; comp.push(_q + W); }
       }
-    });
-    steps.push(function () { // P2 — classify enclosed pockets: tiny slivers → land (no black line), genuine holes → clean pocket
-      hole = new Uint8Array(W * H); var MINHOLE = Math.round(BTB * BTB * 0.2), _seen = new Uint8Array(W * H);
-      for (i = 0; i < W * H; i++) { if (baseA[i] || ext[i] || _seen[i]) continue;
-        var comp = [i]; _seen[i] = 1; var _qh = 0;
-        while (_qh < comp.length) { var _q = comp[_qh++], _qy = (_q / W) | 0, _qx = _q % W;
-          if (_qx > 0 && !baseA[_q - 1] && !ext[_q - 1] && !_seen[_q - 1]) { _seen[_q - 1] = 1; comp.push(_q - 1); }
-          if (_qx < W - 1 && !baseA[_q + 1] && !ext[_q + 1] && !_seen[_q + 1]) { _seen[_q + 1] = 1; comp.push(_q + 1); }
-          if (_qy > 0 && !baseA[_q - W] && !ext[_q - W] && !_seen[_q - W]) { _seen[_q - W] = 1; comp.push(_q - W); }
-          if (_qy < H - 1 && !baseA[_q + W] && !ext[_q + W] && !_seen[_q + W]) { _seen[_q + W] = 1; comp.push(_q + W); }
-        }
-        if (comp.length < MINHOLE) { for (var _c = 0; _c < comp.length; _c++) baseA[comp[_c]] = 1; }
-        else { for (var _c2 = 0; _c2 < comp.length; _c2++) hole[comp[_c2]] = 1; }
+      if (comp.length < MINHOLE) { for (var _c = 0; _c < comp.length; _c++) baseA[comp[_c]] = 1; }
+      else { for (var _c2 = 0; _c2 < comp.length; _c2++) hole[comp[_c2]] = 1; }
+    }
+    var _gYmin = 1e9, _gYmax = -1e9; for (var gg = 0; gg < tiles.length; gg++) { var _tY = tiles[gg][1]; if (_tY < _gYmin) _gYmin = _tY; if (_tY > _gYmax) _gYmax = _tY; }
+    var wYtop = _gYmin * BTB, wYbot = (_gYmax + 1) * BTB, wOyy = (miny - PAD) * BTB;
+    // P3 — cloud-lobe grass mask (boundary-trace order, world-deterministic lobes)
+    var eb = _traceContour(baseA, W, H);
+    var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
+    var curv = function (k) { var ka = Math.max(0, k - 9), kb = Math.min(eb.length - 1, k + 9); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
+    var CELL = 46, wox = (minx - PAD) * BTB, woy = (miny - PAD) * BTB, best = {};
+    for (var ci2 = 0; ci2 < eb.length; ci2++) { var wxp = eb[ci2][1] + wox, wyp = eb[ci2][0] + woy, gx = Math.floor(wxp / CELL), gy = Math.floor(wyp / CELL), key = gx + "," + gy, ex2 = wxp - (gx * CELL + CELL / 2), ey2 = wyp - (gy * CELL + CELL / 2), d2 = ex2 * ex2 + ey2 * ey2; if (!best[key] || d2 < best[key].d2) best[key] = { k: ci2, d2: d2, gx: gx, gy: gy }; }
+    Object.keys(best).forEach(function (key) { var b = best[key], k = b.k; if (curv(k) > 0.55) return;
+      var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1), ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx;
+      var h = ((b.gx * 73856093) ^ (b.gy * 19349663)) >>> 0, ry = 13 + (h % 4), rxl = 0.58 * (42 + ((h >>> 3) % 12));
+      lx.save(); lx.translate(cx, cy); lx.rotate(Math.atan2(ty2, tx2)); lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore(); });
+    var gmA = _blurThr(lc, W, H, 4, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
+    // P4 — cliff drape (south only) + water fill
+    var sc = _cv(coastW, coastH), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(coast, 0, 0); scx.filter = "none";
+    var sd = scx.getImageData(0, 0, coastW, coastH).data, sw = coastW, sh = coastH;
+    var cliff = new Uint8Array(W * H), cmax = Math.round((182 - GEY - 13) / 1.06), depth = new Int32Array(W);
+    for (i = 0; i < W; i++) depth[i] = 99999;
+    var out = new Uint8ClampedArray(W * H * 4);
+    for (i = 0; i < W * H; i++) { out[i * 4] = 5; out[i * 4 + 1] = 11; out[i * 4 + 2] = 44; out[i * 4 + 3] = 255; }
+    for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) {
+      i = yy * W + xx; depth[xx] = baseA[i] ? 0 : depth[xx] + 1; var dp = depth[xx];
+      if (dp >= 1 && dp <= cmax && !hole[i]) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; }
+    }
+    var landcliff = new Uint8Array(W * H); for (i = 0; i < W * H; i++) landcliff[i] = baseA[i] || cliff[i] ? 1 : 0;
+    // P5 — sand distance field + north mask
+    var lcc = _cv(W, H), lccx = lcc.getContext("2d"); { var im2 = lccx.createImageData(W, H); for (i = 0; i < W * H; i++) { im2.data[i * 4] = im2.data[i * 4 + 1] = im2.data[i * 4 + 2] = landcliff[i] ? 255 : 0; im2.data[i * 4 + 3] = 255; } lccx.putImageData(im2, 0, 0); }
+    var lcS = _blurThr(lcc, W, H, 28, 120), distout = _dist(lcS, W, H, true);
+    var north = new Uint8Array(W * H), ND = 44, gbelow = new Int32Array(W); for (i = 0; i < W; i++) gbelow[i] = 99999;
+    for (var yN = H - 1; yN >= 0; yN--) for (var xN = 0; xN < W; xN++) { i = yN * W + xN; gbelow[xN] = baseA[i] ? 0 : gbelow[xN] + 1; if (!landcliff[i] && ext[i] && gbelow[xN] >= 1 && gbelow[xN] <= ND) north[i] = 1; }
+    // P6 — sand ring (world-Y taper) + cliff shadow
+    var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 };
+    var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
+    for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
+      i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
+      if (landcliff[i] || north[i] || hole[i]) continue;
+      var _wY = wOyy + yy2, fr = Math.max(0, Math.min(1, (_wY - wYtop) / Math.max(1, wYbot - wYtop))), wy = 9 + (40 - 9) * fr;
+      if (distout[i] >= 1 && distout[i] <= wy) {
+        sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
+        out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
       }
-      // full-island world-Y extent (ALL tiles) → sand taper is world-consistent so an incremental patch tapers like a full bake
-      var _gYmin = 1e9, _gYmax = -1e9; ISLE.tiles.forEach(function (k) { var _ty = +k.split(",")[1]; if (_ty < _gYmin) _gYmin = _ty; if (_ty > _gYmax) _gYmax = _ty; });
-      wYtop = _gYmin * BTB; wYbot = (_gYmax + 1) * BTB; wOyy = (miny - PAD) * BTB;
-    });
-    steps.push(function () { // P3 — cloud-lobe grass mask (boundary-trace order, world-deterministic lobes)
-      var eb = _traceContour(baseA, W, H);
-      var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
-      var curv = function (k) { var ka = Math.max(0, k - 9), kb = Math.min(eb.length - 1, k + 9); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
-      var CELL = 46, wox = (minx - PAD) * BTB, woy = (miny - PAD) * BTB, best = {};
-      for (var ci2 = 0; ci2 < eb.length; ci2++) { var wxp = eb[ci2][1] + wox, wyp = eb[ci2][0] + woy, gx = Math.floor(wxp / CELL), gy = Math.floor(wyp / CELL), key = gx + "," + gy, ex2 = wxp - (gx * CELL + CELL / 2), ey2 = wyp - (gy * CELL + CELL / 2), d2 = ex2 * ex2 + ey2 * ey2; if (!best[key] || d2 < best[key].d2) best[key] = { k: ci2, d2: d2, gx: gx, gy: gy }; }
-      Object.keys(best).forEach(function (key) { var b = best[key], k = b.k; if (curv(k) > 0.55) return;
-        var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1), ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx;
-        var h = ((b.gx * 73856093) ^ (b.gy * 19349663)) >>> 0, ry = 13 + (h % 4), rxl = 0.58 * (42 + ((h >>> 3) % 12));
-        lx.save(); lx.translate(cx, cy); lx.rotate(Math.atan2(ty2, tx2)); lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore(); });
-      gmA = _blurThr(lc, W, H, 4, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
-    });
-    steps.push(function () { // P4 — cliff drape (south only) + water fill
-      var sc = _cv(strip.naturalWidth, strip.naturalHeight), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(strip, 0, 0); scx.filter = "none";
-      sd = scx.getImageData(0, 0, strip.naturalWidth, strip.naturalHeight).data; sw = strip.naturalWidth; sh = strip.naturalHeight;
-      cliff = new Uint8Array(W * H); var cmax = Math.round((182 - GEY - 13) / 1.06), depth = new Int32Array(W);
-      for (i = 0; i < W; i++) depth[i] = 99999;
-      out = new Uint8ClampedArray(W * H * 4);
-      for (i = 0; i < W * H; i++) { out[i * 4] = 5; out[i * 4 + 1] = 11; out[i * 4 + 2] = 44; out[i * 4 + 3] = 255; }
-      for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) {
-        i = yy * W + xx; depth[xx] = baseA[i] ? 0 : depth[xx] + 1; var dp = depth[xx];
-        if (dp >= 1 && dp <= cmax && !hole[i]) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; }
-      }
-      landcliff = new Uint8Array(W * H); for (i = 0; i < W * H; i++) landcliff[i] = baseA[i] || cliff[i] ? 1 : 0;
-    });
-    steps.push(function () { // P5 — sand distance field + north mask
-      var lcc = _cv(W, H), lccx = lcc.getContext("2d"); { var im = lccx.createImageData(W, H); for (i = 0; i < W * H; i++) { im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = landcliff[i] ? 255 : 0; im.data[i * 4 + 3] = 255; } lccx.putImageData(im, 0, 0); }
-      var lcS = _blurThr(lcc, W, H, 28, 120); distout = _dist(lcS, W, H, true);
-      north = new Uint8Array(W * H); var ND = 44, gbelow = new Int32Array(W); for (i = 0; i < W; i++) gbelow[i] = 99999;
-      for (var yN = H - 1; yN >= 0; yN--) for (var xN = 0; xN < W; xN++) { i = yN * W + xN; gbelow[xN] = baseA[i] ? 0 : gbelow[xN] + 1; if (!landcliff[i] && ext[i] && gbelow[xN] >= 1 && gbelow[xN] <= ND) north[i] = 1; }
-    });
-    steps.push(function () { // P6 — sand ring (world-Y taper) + cliff shadow
-      sand = new Uint8Array(W * H); var SR = { r: 140, g: 88, b: 74 };
-      var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
-      for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
-        i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
-        if (landcliff[i] || north[i] || hole[i]) continue;
-        var _wY = wOyy + yy2, fr = Math.max(0, Math.min(1, (_wY - wYtop) / Math.max(1, wYbot - wYtop))), wy = 9 + (40 - 9) * fr;
-        if (distout[i] >= 1 && distout[i] <= wy) {
-          sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
-          out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
-        }
-      }
-    });
-    steps.push(function () { // P7 — grass fill with edge-darkening (world-anchored texture)
-      var GS = BTB * 6, gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grassImg, 0, 0, GS, GS); gcx.filter = "none";
-      var gsd = gcx.getImageData(0, 0, GS, GS).data;
-      var gdist = _dist(gmA, W, H, false);
-      var gox = ((((minx - PAD) * BTB) % GS) + GS) % GS, goy = ((((miny - PAD) * BTB) % GS) + GS) % GS;
-      for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = (((yr2 + goy) % GS) * GS + ((xr2 + gox) % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
-    });
-    steps.push(function () { // P8 — brown sand outline (island distance field). Paint order MUST stay brown→black→blue.
-      var SO = { r: 40, g: 22, b: 26 };
-      lsil = new Uint8Array(W * H); for (i = 0; i < W * H; i++) lsil[i] = gmA[i] || cliff[i] ? 1 : 0;
-      island = new Uint8Array(W * H); for (i = 0; i < W * H; i++) island[i] = lsil[i] || sand[i] ? 1 : 0;
-      idOut = _dist(island, W, H, true); for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 1 && idOut[i] <= 6) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; }
-    });
-    steps.push(function () { // P9 — black land-silhouette ink (on top of brown), then blue coastline, finalize canvas
-      var lsilOut = _dist(lsil, W, H, true);
-      for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= 9) { out[i * 4] = 10; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
-      for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
-      cvOut = _cv(W, H); cvOut.getContext("2d").putImageData(new ImageData(out, W, H), 0, 0);
-    });
-    return { steps: steps, result: function () { return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size, minx: minx, miny: miny, maxx: maxx, maxy: maxy, PAD: PAD, BTB: BTB, GEY: GEY, EXTRA: EXTRA }; } };
+    }
+    // P7 — grass fill with edge-darkening (world-anchored texture)
+    var GS = BTB * 6, gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grass, 0, 0, GS, GS); gcx.filter = "none";
+    var gsd = gcx.getImageData(0, 0, GS, GS).data;
+    var gdist = _dist(gmA, W, H, false);
+    var gox = ((((minx - PAD) * BTB) % GS) + GS) % GS, goy = ((((miny - PAD) * BTB) % GS) + GS) % GS;
+    for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = (((yr2 + goy) % GS) * GS + ((xr2 + gox) % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
+    // P8 — brown sand outline (island distance field). Paint order MUST stay brown -> black -> blue.
+    var SO = { r: 40, g: 22, b: 26 };
+    var lsil = new Uint8Array(W * H); for (i = 0; i < W * H; i++) lsil[i] = gmA[i] || cliff[i] ? 1 : 0;
+    var island = new Uint8Array(W * H); for (i = 0; i < W * H; i++) island[i] = lsil[i] || sand[i] ? 1 : 0;
+    var idOut = _dist(island, W, H, true); for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 1 && idOut[i] <= 6) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; }
+    // P9 — black land-silhouette ink (on top of brown), then blue coastline
+    var lsilOut = _dist(lsil, W, H, true);
+    for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= 9) { out[i * 4] = 10; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
+    for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
+    return { buf: out.buffer, W: W, H: H, minx: minx, miny: miny, maxx: maxx, maxy: maxy };
   }
-  function bakeIsle(region) { var j = bakeIsleJob(region); if (!j) return null; for (var s = 0; s < j.steps.length; s++) j.steps[s](); return j.result(); } // SYNC driver (DEV + first-load): run every phase now, return the baked window
-  // ASYNC driver (expansion): run ~one phase per animation frame so the game keeps rendering between phases. done(result|null).
-  function bakeIsleAsync(region, done) {
-    var j; try { j = bakeIsleJob(region); } catch (e) { j = null; }
-    if (!j) { done(null); return; }
-    var s = 0;
-    function tick() { var t0 = performance.now(); try { do { j.steps[s++](); } while (s < j.steps.length && performance.now() - t0 < 6); } catch (e) { done(null); return; } if (s < j.steps.length) requestAnimationFrame(tick); else { var r; try { r = j.result(); } catch (e2) { r = null; } done(r); } }
-    requestAnimationFrame(tick);
+  function _tilesArr() { var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return a; }
+  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
+  function _wrapBake(r) { var PAD = 2, cv = _cv(r.W, r.H); cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(r.buf), r.W, r.H), 0, 0); return { cv: cv, ox: (r.minx - PAD) * TILE - TILE / 2, oy: (r.miny - PAD) * TILE - TILE / 2, w: r.W, h: r.H, key: ISLE.tiles.size, minx: r.minx, miny: r.miny, maxx: r.maxx, maxy: r.maxy, PAD: PAD, BTB: 172, GEY: 90, EXTRA: 150 }; }
+  function bakeIsle(region) { var p = _bakeParams(region); if (!p) return null; var r; try { r = __coastBakeCore(p); } catch (e) { if (window.console) console.warn("bake core failed", e); return null; } return r ? _wrapBake(r) : null; } // SYNC driver (DEV + first-load)
+  // ===== OFF-THREAD bake worker (expansion) — same __coastBakeCore, run in a Worker so the main thread stays at framerate =====
+  var __bakeWorker = null, __bakeImgsReady = false, __bakeReqId = 0, __bakeCbs = {};
+  function _ensureBakeWorker() {
+    if (__bakeWorker !== null) return __bakeWorker; // Worker | false(failed)
+    try {
+      if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" || typeof createImageBitmap === "undefined") { __bakeWorker = false; return false; }
+      var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile;
+      if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; // images not ready yet — try again later
+      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});postMessage({id:d.id,ok:true,buf:r.buf,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[r.buf]);}catch(err){postMessage({id:d.id,ok:false});}};";
+      var w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+      w.onmessage = function (e) { var cb = __bakeCbs[e.data.id]; if (cb) { delete __bakeCbs[e.data.id]; cb(e.data); } };
+      w.onerror = function () { __bakeWorker = false; };
+      __bakeWorker = w;
+      Promise.all([createImageBitmap(strip), createImageBitmap(grassImg)]).then(function (bs) { if (__bakeWorker) { __bakeWorker.postMessage({ t: "img", coast: bs[0], coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: bs[1] }, [bs[0], bs[1]]); __bakeImgsReady = true; } }).catch(function () { __bakeWorker = false; });
+      return w;
+    } catch (e) { __bakeWorker = false; return false; }
+  }
+  // done(result) on success; done(null,"sync") if the worker is permanently unavailable (bake synchronously); done(null,"retry") if it just isn't warm yet
+  function bakeIsleWorker(region, done) {
+    var w = _ensureBakeWorker();
+    if (w === false) { done(null, "sync"); return; }
+    if (!w || !__bakeImgsReady) { done(null, "retry"); return; }
+    var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? _wrapBake(d) : null); };
+    w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
   }
   // Instant provisional grass patch for a freshly-claimed tile so the player walks on it immediately, then a TRUE debounce
   // fires the ONE full high-quality coast re-bake only after expansion actually STOPS. The expensive bake NEVER runs mid-
@@ -6217,7 +6233,14 @@
       c2._stamp = ISLE._stamp;
     }
     if (sync) { var b; try { b = bakeIsle(region); } catch (e) { b = null; } blit(b); return; }
-    _bakeBusy = true; bakeIsleAsync(region, function (b) { _bakeBusy = false; blit(b); if (window._isleDirtyBox) _doRebake(); }); // re-run if more tiles were claimed while baking
+    _bakeBusy = true;
+    function _restoreDirty() { var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: dd.x0, y0: dd.y0, x1: dd.x1, y1: dd.y1 }; else { if (dd.x0 < _d.x0) _d.x0 = dd.x0; if (dd.x1 > _d.x1) _d.x1 = dd.x1; if (dd.y0 < _d.y0) _d.y0 = dd.y0; if (dd.y1 > _d.y1) _d.y1 = dd.y1; } }
+    bakeIsleWorker(region, function (b, mode) {
+      _bakeBusy = false;
+      if (mode === "sync") { var bb; try { bb = bakeIsle(region); } catch (e) { bb = null; } blit(bb); if (window._isleDirtyBox) _doRebake(); return; } // worker permanently unavailable → one synchronous bake
+      if (mode === "retry") { _restoreDirty(); setTimeout(function () { _doRebake(); }, 120); return; } // worker not warm yet (images still decoding) → retry shortly, no freeze
+      blit(b); if (window._isleDirtyBox) _doRebake(); // success (off-thread) — re-run if more tiles were claimed while baking
+    });
   }
   function _expandVisual(tx, ty) {
     var c = window._isleBakeCache, gimg = WORLD_IMG.gtile;
@@ -6249,6 +6272,7 @@
     var cache = window._isleBakeCache;
     if (!_isleBaking && (!cache || cache._stamp !== ISLE._stamp)) { _isleBaking = true; try { var b = bakeIsle(); if (b) { b._stamp = ISLE._stamp; window._isleBakeCache = b; cache = b; } } catch (e) { if (window.console) console.warn("bakeIsle failed", e); SANCT_TILES = false; } _isleBaking = false; }
     if (cache) ctx.drawImage(cache.cv, cache.ox, cache.oy, cache.w * TILE / 172, cache.h * TILE / 172);
+    if (!__bakeImgsReady) _ensureBakeWorker(); // warm the off-thread bake worker (spins up + decodes the source images once) so the first claim bakes off-thread, not on a retry
     if (SANCT_DBG) { ctx.fillStyle = "rgba(255,80,160,0.9)"; ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; ctx.beginPath(); ctx.arc(tx * TILE, ty * TILE, 5, 0, 7); ctx.fill(); }); }
   }
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
