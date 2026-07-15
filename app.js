@@ -5993,16 +5993,18 @@
     if (!(isleHas(tx + 1, ty) || isleHas(tx - 1, ty) || isleHas(tx, ty + 1) || isleHas(tx, ty - 1))) return null;
     return { tx: tx, ty: ty };
   }
-  function sanctClaim() {
-    var c = sanctClaimTile(); if (!c) return;
+  // Grow the island onto tile (tx,ty) if it borders land and the guardian can afford it. Returns true on success. WALK-driven (David 2026-07-15: he simply walks to expand, no tap) — no toast (would spam per tile), just a soft grow-burst.
+  function claimTileAt(tx, ty) {
+    if (!ISLE || isleHas(tx, ty)) return false;
+    if (!(isleHas(tx + 1, ty) || isleHas(tx - 1, ty) || isleHas(tx, ty + 1) || isleHas(tx, ty - 1))) return false;
     var cost = claimCost(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] };
-    if ((S.game.spark || 0) < cost) { toast("need " + cost + " Spark to claim this land — earn a little more"); return; }
+    if ((S.game.spark || 0) < cost) return false;
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
-    ISLE.tiles.add(tkey(c.tx, c.ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
+    ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
     window._isleBakeCache = null; window._sanctSceneCache = null; // rebake coast + re-resolve scene (seamless by construction)
     saveIsle(); try { updGameHud(); } catch (e) {}
-    for (var i = 0; i < 12; i++) dust.push({ x: c.tx * TILE + (Math.random() - 0.5) * TILE, y: c.ty * TILE + (Math.random() - 0.5) * TILE, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.6, life: 22 });
-    toast("+1 tile · your island grew");
+    for (var i = 0; i < 12; i++) dust.push({ x: tx * TILE + (Math.random() - 0.5) * TILE, y: ty * TILE + (Math.random() - 0.5) * TILE, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.6, life: 22 });
+    return true;
   }
   function sanctClaimGlow(ctx, t) {
     var c = sanctClaimTile(); if (!c) return;
@@ -6033,6 +6035,24 @@
     for (var y2 = H - 1; y2 >= 0; y2--) for (var x2 = W - 1; x2 >= 0; x2--) { i = y2 * W + x2; var v2 = D[i]; if (x2 < W - 1) v2 = Math.min(v2, D[i + 1] + 3); if (y2 < H - 1) v2 = Math.min(v2, D[i + W] + 3); if (x2 < W - 1 && y2 < H - 1) v2 = Math.min(v2, D[i + W + 1] + 4); if (x2 > 0 && y2 < H - 1) v2 = Math.min(v2, D[i + W - 1] + 4); D[i] = v2; }
     for (i = 0; i < D.length; i++) D[i] /= 3; return D; // normalize ortho step -> 1px
   }
+  // Moore-neighbor boundary trace → the shoreline pixels in true walk-order, for ANY shape (concave/spiky).
+  // Replaces centroid-angle sorting, which only held for a star-convex disc and scrambled once expansion made the island concave (→ corner artifacts).
+  function _traceContour(mask, W, H) {
+    var start = -1, i;
+    for (i = 0; i < W * H; i++) { if (mask[i]) { start = i; break; } }
+    if (start < 0) return [];
+    var N8 = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]]; // (dy,dx) clockwise from north
+    var sy = (start / W) | 0, sx = start % W, cy = sy, cx = sx, bdir = 6, out = [[sy, sx]], count = 0, cap = W * H * 4;
+    do {
+      var found = false;
+      for (var t = 1; t <= 8; t++) { var d = (bdir + t) % 8, ny = cy + N8[d][0], nx = cx + N8[d][1];
+        if (ny < 0 || nx < 0 || ny >= H || nx >= W) continue;
+        if (mask[ny * W + nx]) { bdir = (d + 4) % 8; cy = ny; cx = nx; out.push([cy, cx]); found = true; break; } }
+      if (!found) break;
+      count++;
+    } while ((cy !== sy || cx !== sx) && count < cap);
+    return out;
+  }
   function bakeIsle() {
     var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile;
     if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null;
@@ -6045,10 +6065,9 @@
     // --- baseA: tile rects -> round the stepped corners ---
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
     var baseA = _blurThr(rc, W, H, 14, 127);
-    // --- cloud-lobe grass mask: walk baseA contour (angle-order), stamp overlapping lobes, skip sharp corners ---
-    var eb = [], i; for (var y = 1; y < H - 1; y++) for (var x = 1; x < W - 1; x++) { i = y * W + x; if (baseA[i] && !(baseA[i - 1] && baseA[i + 1] && baseA[i - W] && baseA[i + W])) eb.push([y, x]); }
-    var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= eb.length; ccx /= eb.length;
-    eb.sort(function (a, b) { return Math.atan2(a[0] - ccy, a[1] - ccx) - Math.atan2(b[0] - ccy, b[1] - ccx); });
+    // --- cloud-lobe grass mask: walk baseA contour (TRUE shoreline order via boundary trace), stamp overlapping lobes, skip sharp corners ---
+    var eb = _traceContour(baseA, W, H), i;
+    var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= (eb.length || 1); ccx /= (eb.length || 1);
     var arc = [0]; for (i = 1; i < eb.length; i++) arc[i] = arc[i - 1] + Math.hypot(eb[i][0] - eb[i - 1][0], eb[i][1] - eb[i - 1][1]);
     var total = arc[arc.length - 1];
     var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
@@ -6571,6 +6590,8 @@
       var COLLS = SANCT_TILES ? sanctScene().colls : SANCT_COLL;
       if (SANCT_TILES) {
         if (!ISLE) buildIsle();
+        // WALK-TO-EXPAND (David 2026-07-15): pushing into the coast grows the island onto the tile ahead if you can afford it, then you step onto it. Land grows where you walk, limited by your Spark.
+        if (moving) { var _gx = Math.round(px / TILE), _gy = Math.round(py / TILE); if (!isleHas(_gx, _gy)) claimTileAt(_gx, _gy); }
         // tile-edge collision: feet must stay on a grass tile. Axis-separated so you slide along the coast instead of sticking.
         if (!isleHas(Math.round(px / TILE), Math.round(prevPy / TILE))) px = prevPx;
         if (!isleHas(Math.round(prevPx / TILE), Math.round(py / TILE))) py = prevPy;
@@ -6593,7 +6614,7 @@
     var hint = "← tap to head back", best = 999;
     for (var i = 0; i < PROMPTS.length; i++) { var d = Math.hypot(px - PROMPTS[i][0], py - PROMPTS[i][1]); if (d < 74 && d < best) { best = d; hint = PROMPTS[i][2]; } }
     var _ct = null; try { _ct = sanctClaimTile(); } catch (e) {}
-    if (_ct) { var _cc = claimCost(); hint = (sp >= _cc) ? ("tap the glow to claim this land · " + _cc + " Spark") : ("need " + _cc + " Spark to claim this land"); }
+    if (_ct) { var _cc = claimCost(); hint = (sp >= _cc) ? ("walk into the glow to grow your island · " + _cc + " Spark") : ("need " + _cc + " Spark to grow here"); }
     h.innerHTML = "✨ " + sp + " Spark" + (hasShippedToday() ? " · 🌱 your island grew today" : " · ship 1 real thing to grow your island") + "<br><span style='opacity:.82;font-size:12px'>" + hint + "</span>";
   }
   // @SEC:GAME — the game world (openGame, islands, guardian, joy controls).
@@ -6657,9 +6678,6 @@
     var panning = false, lmx = 0, lmy = 0, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3, tap = null;
     function rel(ev) { if (pts[ev.pointerId]) delete pts[ev.pointerId]; if (npts() < 2) panning = false; }
     w.addEventListener("pointerup", rel); w.addEventListener("pointercancel", rel); document.addEventListener("pointerup", rel); document.addEventListener("pointercancel", rel);
-    w.addEventListener("pointerup", function (ev) { // a STATIONARY tap (not a swipe/pan) on a claimable edge → grow the island there
-      if (tap && ev.pointerId === tap.id) { var mv = Math.hypot(ev.clientX - tap.x, ev.clientY - tap.y), dt = performance.now() - tap.t; if (mv < 12 && dt < 350 && !panning && SANCT_TILES && sanctClaimTile()) sanctClaim(); tap = null; }
-    });
     w.addEventListener("pointerdown", function (ev) {
       if (ev.target !== w) return; // only the world surface itself — never a joystick/zoom/notebook button on top
       pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
@@ -12939,8 +12957,9 @@
   window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON — tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }).slice(1); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } return { depth: +sessionDepth(secs).toFixed(2), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, gaps: cues.slice(0, 6).map(function (s2) { return +s2.gap.toFixed(1); }) }; } };
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
   window.DEV.isleSize = function (r2) { var S = new Set(); var R = r2 || 13; for (var i = -8; i <= 8; i++) for (var j = -8; j <= 8; j++) if (i * i + j * j <= R) S.add(tkey(i, j)); ISLE = { tiles: S, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 0) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; return "island set to " + S.size + " tiles (r2=" + R + ")"; }; // DEV: set island to a radius^2 for proportion checks (small/med/large)
+  window.DEV.jagged = function () { var s = new Set(); for (var i = -2; i <= 2; i++) for (var j = -2; j <= 2; j++) s.add(tkey(i, j)); s.delete(tkey(2, 2)); s.delete(tkey(-2, 2)); s.delete(tkey(2, -2)); s.add(tkey(3, 0)); s.add(tkey(0, 3)); s.add(tkey(-3, -1)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 1) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; zoom = 1.05; camX = 0; camY = 0; px = 0; py = 0; return "jagged " + s.size + " tiles (spikes + concave notches to stress the coast corners)"; }; // DEV: worst-case coast shape
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
-  window.DEV.growTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); var before = ISLE.tiles.size, sp = S.game.spark; sanctClaim(); return "claim: size " + before + "->" + ISLE.tiles.size + ", spark " + sp + "->" + S.game.spark + ", persisted=" + (!!(S.game.isle && S.game.isle.length === ISLE.tiles.size)); }; // DEV: exercise the real walk-to-edge claim path
+  window.DEV.growTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); var before = ISLE.tiles.size, sp = S.game.spark; claimTileAt(water[0], water[1]); return "claim: size " + before + "->" + ISLE.tiles.size + ", spark " + sp + "->" + S.game.spark + ", persisted=" + (!!(S.game.isle && S.game.isle.length === ISLE.tiles.size)); }; // DEV: exercise the real walk-to-edge claim path
   function devInit() { if (el("devBtn")) return; try { localStorage.setItem("alter_dev", "1"); } catch (e) {} var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); } // David 2026-07-14: dev tools ALWAYS available from the first screen (single-user build; re-gate with devOn() before public launch)
   function soundMuted() { return !!(S.audio && S.audio.voice === 0 && S.audio.bg === 0); } // dev: fully silenced = both master buses at 0
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
