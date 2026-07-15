@@ -6138,18 +6138,29 @@
     // NOTE: the near-shore wave glyphs used to be baked HERE, positioned relative to the canvas size — so growing the
     // island resized the canvas and made every wave jump ("water reshuffled"). Waves now live ONLY in the stable
     // world-space drawOceanWaves layer, so expansion never disturbs the surrounding sea (David 2026-07-15).
-    return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size, minx: minx, miny: miny, PAD: PAD, BTB: BTB, GEY: GEY };
+    return { cv: cvOut, ox: (minx - PAD) * TILE - TILE / 2, oy: (miny - PAD) * TILE - TILE / 2, w: W, h: H, key: ISLE.tiles.size, minx: minx, miny: miny, maxx: maxx, maxy: maxy, PAD: PAD, BTB: BTB, GEY: GEY, EXTRA: EXTRA };
   }
-  // Instant provisional patch for a freshly-claimed tile: drop grass onto the EXISTING baked canvas at that tile so the
-  // player can walk on it immediately, then DEBOUNCE the full high-quality coast re-bake (fires when expansion pauses).
-  // This keeps a continuous walk-out smooth (grass patches, no per-tile full-bake hitch) instead of choppy.
+  // Instant provisional grass patch for a freshly-claimed tile so the player walks on it immediately, then a TRUE debounce
+  // fires the ONE full high-quality coast re-bake only after expansion actually STOPS. The expensive bake NEVER runs mid-
+  // walk (that was the choppiness): if the new tile falls outside the cached canvas we GROW the canvas by copying the old
+  // one into a bigger one (cheap) instead of re-baking. Only the stable surrounding sea is left untouched.
   var _rebakeTimer = null;
-  function _scheduleRebake() { if (_rebakeTimer) return; _rebakeTimer = setTimeout(function () { _rebakeTimer = null; window._isleBakeCache = null; }, 320); }
+  function _scheduleRebake() { if (_rebakeTimer) clearTimeout(_rebakeTimer); _rebakeTimer = setTimeout(function () { _rebakeTimer = null; window._isleBakeCache = null; }, 260); } // reset on every claim → bakes only when the walk pauses
   function _expandVisual(tx, ty) {
     var c = window._isleBakeCache, gimg = WORLD_IMG.gtile;
-    if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake
-    var B = c.BTB || 172, cx = (tx - c.minx + c.PAD) * B, cy = (ty - c.miny + c.PAD) * B;
-    if (cx < 0 || cy < 0 || cx + B > c.w || cy + B > c.h) { window._isleBakeCache = null; return; } // tile falls outside the baked canvas → must fully re-bake now (bounds grow)
+    if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake once
+    var B = c.BTB || 172, PAD = c.PAD, EXTRA = c.EXTRA || 150, cx = (tx - c.minx + PAD) * B, cy = (ty - c.miny + PAD) * B;
+    if (cx < 0 || cy < 0 || cx + B > c.w || cy + B > c.h) {
+      // GROW the provisional canvas to include the new tile — a canvas copy, NOT a bake, so the walk stays smooth
+      var nminx = Math.min(c.minx, tx), nmaxx = Math.max(c.maxx, tx), nminy = Math.min(c.miny, ty), nmaxy = Math.max(c.maxy, ty);
+      var nW = (nmaxx - nminx + 1 + PAD * 2) * B, nH = (nmaxy - nminy + 1 + PAD * 2) * B + EXTRA;
+      var ncv = _cv(nW, nH), nctx = ncv.getContext("2d");
+      nctx.fillStyle = "rgb(5,11,44)"; nctx.fillRect(0, 0, nW, nH); // deep-water fill so newly exposed margins aren't transparent
+      nctx.drawImage(c.cv, (c.minx - nminx) * B, (c.miny - nminy) * B);
+      c.cv = ncv; c.w = nW; c.h = nH; c.minx = nminx; c.miny = nminy; c.maxx = nmaxx; c.maxy = nmaxy;
+      c.ox = (nminx - PAD) * TILE - TILE / 2; c.oy = (nminy - PAD) * TILE - TILE / 2;
+      cx = (tx - nminx + PAD) * B; cy = (ty - nminy + PAD) * B;
+    } else { if (tx < c.minx) c.minx = tx; if (tx > c.maxx) c.maxx = tx; if (ty < c.miny) c.miny = ty; if (ty > c.maxy) c.maxy = ty; }
     if (gimg && gimg.complete && gimg.naturalWidth) { var pc = c.cv.getContext("2d"); pc.save(); pc.filter = "brightness(0.9)"; pc.drawImage(gimg, cx, cy, B, B); pc.filter = "none"; pc.restore(); }
     c._stamp = ISLE._stamp; // mark the patched cache as current so drawTileGround does NOT full-rebake now — the debounce owns that
     _scheduleRebake();
