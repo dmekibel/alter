@@ -6170,7 +6170,7 @@
       // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
       // the sides — LOCAL, so it never drifts as the island grows (the old global world-Y taper re-normalised by the island's
       // total height on every south claim → the sand/ink boundary shifted per tile → horizontal seam lines). Reuses _nP.
-      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = 30 + (48 - 30) * _south; // baseline 30px sand on every non-north edge (David 2026-07-16: wanted MORE sand than v1099, esp. concave/internal corners) + wider (→48) on south-facing beaches; all LOCAL so no seam
+      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = 42 + (52 - 42) * _south; // NEARLY UNIFORM ribbon (David 2026-07-16, measured off the BIGBLK_v1 ref art directly): the ref's side sand is nearly as wide as its south sand, not a strong taper — baseline 42px on every non-north edge, only slightly wider (→52) south-facing; all LOCAL so no seam
       if (distout[i] >= 1 && distout[i] <= wy) {
         sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
@@ -13256,6 +13256,54 @@
   // DEV: STRESS BATTERY — bake a dozen pathological tile shapes and lay each full island in a labelled grid so gross coast
   // failures (black gaps, unrendered holes, thin-neck coast breaks, blue-on-top, broken ink at concave corners) are visible
   // in ONE screenshot (the preview is slow, so assess programmatically). DEV.stress() grid | DEV.stress(i) zoom shape i full-bleed.
+  window.DEV.claimSeq = function (tiles) { // DEV: build `tiles` via the REAL sequential claim path (one tile at a time, each a full sync mini-bake+blit, exactly like real play) starting from a single seed, then compare the resulting cache vs a full bake of the same final island. This is what testInc/incVsFull DON'T cover — many claims compounding, not one. INC | FULL | DIFF, full-bleed. screenshot it; DEV.auditClose().
+    var saved = ISLE, sB = window._isleBakeCache, sInc = window._incBake, sT = _rebakeTimer, sES = window._expandSync;
+    var full = []; tiles.forEach(function (t) { full.push([t[0], t[1]]); });
+    var cx = 0, cy = 0; full.forEach(function (t) { cx += t[0]; cy += t[1]; }); cx /= full.length; cy /= full.length;
+    var seed = full[0], bd = 1e18; full.forEach(function (t) { var d = (t[0] - cx) * (t[0] - cx) + (t[1] - cy) * (t[1] - cy); if (d < bd) { bd = d; seed = t; } });
+    ISLE = { tiles: new Set([tkey(seed[0], seed[1])]), house: [0, -1], objects: [], _stamp: 91001 };
+    window._isleBakeCache = null; window._isleDirtyBox = null;
+    var cache = bakeIsle(); if (!cache) { ISLE = saved; window._isleBakeCache = sB; return "seed bake failed"; }
+    cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
+    window._incBake = true; window._expandSync = true;
+    var claimedSet = new Set(ISLE.tiles), order = 0, guard = full.length * 4;
+    while (claimedSet.size < full.length && guard-- > 0) {
+      var progressed = false;
+      for (var i = 0; i < full.length; i++) { var t = full[i], k = tkey(t[0], t[1]); if (claimedSet.has(k)) continue;
+        if (claimedSet.has(tkey(t[0] + 1, t[1])) || claimedSet.has(tkey(t[0] - 1, t[1])) || claimedSet.has(tkey(t[0], t[1] + 1)) || claimedSet.has(tkey(t[0], t[1] - 1))) {
+          claimedSet.add(k); ISLE.tiles.add(k); ISLE._stamp++; _expandVisual(t[0], t[1]); progressed = true; order++;
+        }
+      }
+      if (!progressed) break; // disconnected remainder in the input shape
+    }
+    if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
+    var inc = window._isleBakeCache; window._isleBakeCache = null; var fullB = bakeIsle();
+    var missing = full.length - claimedSet.size;
+    ISLE = saved; window._isleBakeCache = sB; window._incBake = sInc; _rebakeTimer = sT; window._expandSync = sES;
+    if (!inc || !fullB) return "bake failed";
+    // ALIGN BY WORLD COORDS before comparing — inc and fullB almost never share the same canvas origin/size (inc's canvas
+    // grew from a 1-tile seed with its own margins; fullB is freshly sized to the final island's bbox), so a raw (0,0)-anchored
+    // pixel diff compares unrelated regions and is meaningless. Use fullB's world window as the reference; sample the SAME
+    // world rect out of inc's canvas via each one's own (minx,miny,PAD,BTB).
+    var B = fullB.BTB, PAD = fullB.PAD, W = fullB.w, H = fullB.h;
+    var worldX0 = (fullB.minx - PAD) * B, worldY0 = (fullB.miny - PAD) * B;
+    var incSx = worldX0 - (inc.minx - inc.PAD) * B, incSy = worldY0 - (inc.miny - inc.PAD) * B; // offset into inc's canvas for the same world window
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh); g.font = "13px sans-serif";
+    var pw = vw / 3 - 6, ph = pw * H / W;
+    g.fillStyle = "#cfe8ff"; g.fillText("INCREMENTAL (" + order + " claims)", 4, 16); g.drawImage(inc.cv, incSx, incSy, W, H, 0, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(0, 22, pw, ph);
+    g.fillStyle = "#cfe8ff"; g.fillText("FULL (reference)", vw / 3 + 4, 16); g.drawImage(fullB.cv, 0, 0, W, H, vw / 3, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(vw / 3, 22, pw, ph);
+    // clamp the sample rect to inc's actual canvas bounds (if inc's canvas doesn't fully cover fullB's window, that gap IS a real bug — mark it red too)
+    var id = ctxSafeSample(inc.cv, incSx, incSy, W, H), fdd = fullB.cv.getContext("2d").getImageData(0, 0, W, H), dimg = g.createImageData(W, H);
+    var ndiff = 0; for (var p = 0; p < id.data.length; p += 4) { var dv = Math.abs(id.data[p] - fdd.data[p]) + Math.abs(id.data[p + 1] - fdd.data[p + 1]) + Math.abs(id.data[p + 2] - fdd.data[p + 2]); if (dv > 18) { ndiff++; dimg.data[p] = 255; dimg.data[p + 1] = 0; dimg.data[p + 2] = 0; dimg.data[p + 3] = 255; } else { dimg.data[p] = id.data[p] * 0.35; dimg.data[p + 1] = id.data[p + 1] * 0.35; dimg.data[p + 2] = id.data[p + 2] * 0.35; dimg.data[p + 3] = 255; } }
+    var tmp = document.createElement("canvas"); tmp.width = W; tmp.height = H; tmp.getContext("2d").putImageData(dimg, 0, 0);
+    g.fillStyle = "#ff8080"; g.fillText("DIFF (red) diffPx=" + ndiff, vw * 2 / 3 + 4, 16); g.drawImage(tmp, 0, 0, W, H, vw * 2 / 3, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(vw * 2 / 3, 22, pw, ph);
+    return "claimSeq: " + order + " claims (" + missing + " unreachable), diffPx=" + ndiff + " / " + (W * H) + "; DEV.auditClose()";
+  };
+  function ctxSafeSample(srcCv, sx, sy, w, h) { // getImageData(sx,sy,w,h) but tolerant of a sample rect that hangs outside srcCv's bounds (draws onto a same-size scratch canvas first, so out-of-bounds reads as transparent black instead of throwing)
+    var tmp = _cv(w, h); tmp.getContext("2d").drawImage(srcCv, sx, sy, w, h, 0, 0, w, h); return tmp.getContext("2d").getImageData(0, 0, w, h);
+  }
   window.DEV.exportIsle = function () { if (!ISLE) return "no ISLE"; var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return JSON.stringify(a); }; // DEV: dump the REAL current island's tiles as JSON — paste into DEV.bakeCustom(JSON.parse("...")) or DEV.incVsFull(...) to reproduce an exact reported bug shape, no guessing
   window.DEV.incVsFull = function (tiles, claimX, claimY) { // DEV: bake `tiles` as the base island, then CLAIM one more tile incrementally (the real expansion path) vs a full bake of the resulting island → INCREMENTAL | FULL | DIFF. For repro-ing windowed-bake bugs (e.g. deep bays) from the console. screenshot it; DEV.auditClose().
     var saved = ISLE, sB = window._isleBakeCache, sInc = window._incBake, sT = _rebakeTimer, sES = window._expandSync;
