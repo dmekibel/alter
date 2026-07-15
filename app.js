@@ -10053,14 +10053,18 @@
       tile.onclick = function () { if (ov.parentNode) ov.remove(); stackTimeline(p.track.map(function (t) { return { k: t.k, d: t.d }; })); };
     });
     var cust = add(box, "button", "tb-ghost"); cust.innerHTML = '<i class="ti ti-adjustments-horizontal"></i> ' + esc(tr("Build your own"));
-    cust.onclick = function () { if (ov.parentNode) ov.remove(); programBuilder({ track: ((S.tools && S.tools.stack) || STACK_PACKS[0].track).map(function (t) { return { k: t.k, d: t.d }; }), onSave: function (t) { S.tools = S.tools || {}; S.tools.stack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); } }); }; // F4 builder (canon vertical timeline), seeded from your last custom stack
+    cust.onclick = function () { if (ov.parentNode) ov.remove(); programBuilder({ track: ((S.tools && S.tools.stack) || STACK_PACKS[0].track).map(function (t) { return { k: t.k, d: t.d, med: t.med }; }), onSave: function (t) { S.tools = S.tools || {}; S.tools.stack = t.map(function (x) { return { k: x.k, d: x.d, med: x.med }; }); save(); } }); }; // F4 builder (canon vertical timeline), seeded from your last custom stack — med carries the nested meditation sections
   }
   // ===== F4 · THE BUILDER (David-approved 2026-07-13, pixel ref: _specs/_toolbox-mockups/builder-LOCKED.html) — the vertical live TIMELINE builder. Blocks = bright stripe blobs (tfStripeDoor) on the onboarding-dark ground, BLACK ink text + icon, height = duration; selected block opens as "one card, two zones" (striped header + dark panel: desc + Swap + Delete, one pink halo); faint hairline drag-handle at the bottom edge only. Drag the bottom edge = length; press-hold body = reorder; tap = open. "+ Add a block" = the app's emptyblk. Pink CTA. Entry law = remix-only (born from a lived session). Rides STACK_TOOLS + runStack; saves to S.tools.programs. =====
   function programBuilder(cfg) {
     cfg = cfg || {};
     try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
-    var track = (cfg.track || []).map(function (t) { return { k: t.k, d: t.d }; });
+    var track = (cfg.track || []).map(function (t) { return { k: t.k, d: t.d, med: t.med }; });
+    var isPick = !!cfg.pick; // pick mode (stack nesting): one "Use this" CTA, no save/play
     var sel = -1, PXMIN = 16, look = cfg.lookup || stackTool, POOL = cfg.pool || STACK_TOOLS.map(function (s) { return s.id; });
+    // GROUP-BLOCK nesting (David 2026-07-15): in a STACK, the meditation block holds its own parts. By default any "meditate" block drills into the meditation editor (which is this same programBuilder, in pick mode) and stores the chosen sections on block.med. Meditation-editor instances (their own sections) and pick mode never nest.
+    var canEP = cfg.canEditParts || function (b) { return !isPick && b.k === "meditate"; };
+    var onEP = cfg.onEditParts || function (b, i, render) { medEditor({ pick: true, title: "What's in this meditation", track: b.med, onPick: function (mt) { b.med = (mt && mt.length) ? mt : null; if (cfg.onSave) cfg.onSave(track); render(); } }); };
     function mins(d) { return Math.max(1, Math.round(d / 60)); }
     function stripeOf(m) { var c = m.sc || m.col || "#9a7cff"; return "repeating-linear-gradient(45deg," + c + " 0 9px," + mixHex(c, "#160510", 0.16) + " 9px 18px)"; } // bright canon stripe (visible bands, per builder-LOCKED.html), not the low-contrast door mix
     function blockH(d) { return Math.max(46, Math.round(d / 60 * PXMIN) + 16); } // chunky game-piece blocks; height still tracks duration
@@ -10108,6 +10112,7 @@
           var panel = add(card, "div"); panel.style.cssText = "background:#160b26;border-top:2.5px solid #160510;padding:11px 13px;";
           if (m.desc) add(panel, "div", null, esc(tr(m.desc))).style.cssText = "color:#efe6ff;font-size:12px;font-weight:600;line-height:1.42;";
           add(panel, "div", null, tr("drag the bottom edge to make it longer")).style.cssText = "color:#b9a6de;font-size:10.5px;font-weight:700;margin-top:6px;";
+          if (canEP(t)) { var ep = add(panel, "button"); ep.setAttribute("style", "width:100%;margin-top:11px;text-align:center;padding:9px 0;border-radius:10px;font-weight:800;font-size:12.5px;background:#2a1b48;border:2px solid #160510;color:#c9a6ff;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font-family:inherit;"); ep.innerHTML = '<i class="ti ti-adjustments-horizontal"></i> ' + esc(tr(cfg.partsLabel || "Choose the parts")) + (t.med && t.med.length ? ' · ' + t.med.length : ' · default'); ep.onclick = function () { onEP(t, i, render); }; } // GROUP-BLOCK drill-in (David 2026-07-15): a block that holds parts (meditation) opens its own block editor here
           var acts = add(panel, "div"); acts.style.cssText = "display:flex;gap:8px;margin-top:11px;";
           var sw = add(acts, "button"); sw.setAttribute("style", "flex:1;text-align:center;padding:8px 0;border-radius:10px;font-weight:800;font-size:12px;background:#251640;border:2px solid #160510;color:#efe6ff;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit;"); sw.innerHTML = '<i class="ti ti-repeat"></i> ' + esc(tr("Swap")); sw.onclick = function () { openTray(i); };
           var dl = add(acts, "button"); dl.setAttribute("style", "flex:1;text-align:center;padding:8px 0;border-radius:10px;font-weight:800;font-size:12px;background:#251640;border:2px solid #160510;color:#ff9db4;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit;"); dl.innerHTML = '<i class="ti ti-trash"></i> ' + esc(tr("Delete")); dl.onclick = function () { track.splice(i, 1); sel = -1; persist(); render(); };
@@ -10119,16 +10124,16 @@
         }
       });
       var empty = add(tl, "div"); empty.style.cssText = "position:relative;border:2px dashed #ff5fa0;border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:center;gap:8px;color:#ff9dc6;font-weight:800;font-size:13.5px;background:repeating-linear-gradient(45deg,rgba(255,95,160,.15) 0 7px,rgba(255,95,160,.04) 7px 14px);cursor:pointer;";
-      empty.innerHTML = '<i class="ti ti-plus"></i> ' + esc(tr("Add a block")); empty.onclick = function () { openTray(-1); };
+      empty.innerHTML = '<i class="ti ti-plus"></i> ' + esc(tr(cfg.poolLabel || "Add a block")); empty.onclick = function () { openTray(-1); };
     }
     function openTray(replaceIdx) { // pick a block: append (replaceIdx<0) or swap into replaceIdx
       var t2 = add(document.body, "div"); t2.style.cssText = "position:fixed;inset:0;z-index:60;background:rgba(8,4,12,.66);display:flex;align-items:flex-end;";
       t2.onclick = function (e) { if (e.target === t2) t2.remove(); };
       var sheet = add(t2, "div"); sheet.style.cssText = "width:100%;max-height:74vh;overflow-y:auto;background:#1c0e30;border-top-left-radius:20px;border-top-right-radius:20px;border-top:2.5px solid #160510;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 16px);font-family:'Jost',var(--bub),sans-serif;";
-      add(sheet, "div", null, esc(tr(replaceIdx < 0 ? "Add a block" : "Swap"))).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:11px;";
+      add(sheet, "div", null, esc(tr(replaceIdx < 0 ? (cfg.poolLabel || "Add a block") : "Swap"))).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:11px;";
       POOL.forEach(function (k) { var m = look(k) || {}; var r = add(sheet, "button"); r.setAttribute("style", "width:100%;text-align:left;display:flex;align-items:center;gap:11px;background:" + stripeOf(m) + ";border:2.5px solid #160510;border-radius:14px;box-shadow:0 3px 0 #160510;padding:11px 13px;margin-bottom:9px;cursor:pointer;font-family:inherit;");
         r.innerHTML = '<i class="ti ' + (m.ti || "ti-circle") + '" style="font-size:19px;color:#160510;flex:none;"></i><span style="flex:1;color:#160510;font-weight:800;font-size:14.5px;">' + esc(tr(m.name || k)) + '</span>';
-        r.onclick = function () { t2.remove(); if (replaceIdx < 0) { track.push({ k: k, d: (m.dur || 60) }); sel = track.length - 1; } else { track[replaceIdx].k = k; } persist(); render(); };
+        r.onclick = function () { t2.remove(); if (replaceIdx < 0) { track.push({ k: k, d: (m.dur || cfg.addDur || 60) }); sel = track.length - 1; } else { track[replaceIdx].k = k; } persist(); render(); };
       });
     }
     function saveFlow() {
@@ -10139,11 +10144,23 @@
       add(card, "div", null, esc(tr("Save as my session"))).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:10px;";
       var inp = add(card, "input"); inp.type = "text"; inp.value = cfg.name || "My session"; inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#120718;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:inherit;font-size:15px;font-weight:700;padding:11px 12px;outline:none;");
       var go = add(card, "button"); go.setAttribute("style", "width:100%;margin-top:12px;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:12px;padding:11px;font-weight:800;font-size:14.5px;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:inherit;"); go.innerHTML = '<i class="ti ti-device-floppy"></i> ' + esc(tr("Save as my session"));
-      go.onclick = function () { var nm = (inp.value || "My session").trim() || "My session"; S.tools = S.tools || {}; S.tools.programs = S.tools.programs || []; S.tools.programs.push({ id: "prog_" + uid(), name: nm, track: track.map(function (t) { return { k: t.k, d: t.d }; }), created: todayK() }); save(); t2.remove(); if (ov.parentNode) ov.remove(); toast("✦ “" + nm + "” saved to your sessions"); };
+      go.onclick = function () { var nm = (inp.value || "My session").trim() || "My session"; S.tools = S.tools || {}; var ST = cfg.saveTo || "programs"; S.tools[ST] = S.tools[ST] || []; S.tools[ST].push({ id: "prog_" + uid(), name: nm, track: track.map(function (t) { return { k: t.k, d: t.d, med: t.med }; }), created: todayK() }); save(); t2.remove(); if (ov.parentNode) ov.remove(); toast("✦ “" + nm + "” saved to your sessions"); };
       setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 60);
     }
-    var cta = add(foot, "button"); cta.setAttribute("style", "display:block;width:calc(100% - 28px);margin:8px 14px 0;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:14px;padding:12px;font-weight:800;font-size:14.5px;text-align:center;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:'Jost',var(--bub),sans-serif;"); cta.innerHTML = '<i class="ti ti-device-floppy"></i> ' + esc(tr("Save as my session")); cta.onclick = saveFlow;
-    var play = add(foot, "button"); play.setAttribute("style", "display:block;margin:9px auto 0;background:none;border:none;color:#c9a6ff;font-family:'Jost',var(--bub),sans-serif;font-weight:800;font-size:13.5px;cursor:pointer;"); play.innerHTML = '<i class="ti ti-player-play"></i> ' + esc(tr("Play now")); play.onclick = function () { if (!track.length) return; if (ov.parentNode) ov.remove(); try { runStack(track.map(function (t) { return { k: t.k, d: t.d }; }), 0); } catch (e) {} };
+    if (isPick) { // PICK MODE (stack nesting): the only CTA hands the chosen parts back and closes
+      var use = add(foot, "button"); use.setAttribute("style", "display:block;width:calc(100% - 28px);margin:8px 14px 0;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:14px;padding:12px;font-weight:800;font-size:14.5px;text-align:center;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:'Jost',var(--bub),sans-serif;"); use.innerHTML = '<i class="ti ti-check"></i> ' + esc(tr(cfg.playLabel || "Use this")); use.onclick = function () { if (!track.length) { toast("add a part first"); return; } persist(); if (ov.parentNode) ov.remove(); if (cfg.onPick) cfg.onPick(track.map(function (t) { return { k: t.k, d: t.d }; })); };
+    } else {
+      if (cfg.guidance) { // GUIDANCE PRESET (meditation): how spacious the sit runs — length sets the default, this overrides. Tap the active one again for auto-from-length.
+        var gr = add(foot, "div"); gr.style.cssText = "display:flex;align-items:center;gap:6px;margin:10px 14px 0;";
+        add(gr, "span", null, tr("Guidance")).style.cssText = "font-size:12px;color:#b9a6de;font-weight:800;flex:none;";
+        var gchips = [];
+        [["guided", "Guided"], ["balanced", "Balanced"], ["spacious", "Spacious"]].forEach(function (g) { var b = add(gr, "button", null, tr(g[1])); b._k = g[0]; gchips.push(b); b.onclick = function () { S.tools = S.tools || {}; S.tools.guidance = (S.tools.guidance === g[0]) ? null : g[0]; save(); paintG(); }; });
+        function paintG() { var selg = (S.tools && S.tools.guidance) || null; gchips.forEach(function (b) { var on = b._k === selg; b.style.cssText = "flex:1;padding:7px 4px;border-radius:10px;border:2px solid " + (on ? "#ffd76a" : "#160510") + ";background:" + (on ? "rgba(255,215,106,.16)" : "rgba(255,255,255,.06)") + ";color:#efeaff;font-family:'Jost',var(--bub),sans-serif;font-weight:800;font-size:12px;cursor:pointer;"; }); }
+        paintG();
+      }
+      var cta = add(foot, "button"); cta.setAttribute("style", "display:block;width:calc(100% - 28px);margin:8px 14px 0;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:14px;padding:12px;font-weight:800;font-size:14.5px;text-align:center;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:'Jost',var(--bub),sans-serif;"); cta.innerHTML = '<i class="ti ti-device-floppy"></i> ' + esc(tr("Save as my session")); cta.onclick = saveFlow;
+      var play = add(foot, "button"); play.setAttribute("style", "display:block;margin:9px auto 0;background:none;border:none;color:#c9a6ff;font-family:'Jost',var(--bub),sans-serif;font-weight:800;font-size:13.5px;cursor:pointer;"); play.innerHTML = '<i class="ti ti-player-play"></i> ' + esc(tr(cfg.playLabel || "Play now")); play.onclick = function () { if (!track.length) return; persist(); if (ov.parentNode) ov.remove(); if (cfg.onPlay) { cfg.onPlay(track.map(function (t) { return { k: t.k, d: t.d, med: t.med }; })); } else { try { runStack(track.map(function (t) { return { k: t.k, d: t.d }; }), 0); } catch (e) {} } };
+    }
     render();
     return { close: function () { if (ov.parentNode) ov.remove(); } };
   }
@@ -11267,10 +11284,14 @@
       timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: (built.acts[0] && built.acts[0].color) || "#9a5cf0", spark: Math.max(6, Math.round(tot / 60) * 2), vol: VPROF.med.volume, drone: true, totalSec: tot, segments: built.segs, acts: built.acts, autostart: true, drift: true, onFinish: function () { if (onFin) onFin(); } }); }
     var track = (cfg.track && cfg.track.length ? cfg.track : ((S.tools && S.tools.medTrack) || [{ k: "settle", d: 60 }, { k: "breath", d: 90 }, { k: "aware", d: 120 }, { k: "rest", d: 90 }])).map(function (x) { return { k: x.k, d: x.d }; });
     if (cfg.playNow) { playTrack(track, cfg.onFinish); return; } // run a pre-built inner meditation directly (no composer UI)
-    openSessionComposer({
-      title: cfg.title || "Edit your meditation", track: track, lookup: function (k) { return SEC[k]; }, pool: ORDER, addDur: 60, poolLabel: "Add a section", playLabel: cfg.pick ? "Use this →" : (cfg.playLabel || "Play ▶"),
-      onSave: (cfg.pick || cfg.onFinish) ? function () { } : function (t) { S.tools = S.tools || {}; S.tools.medTrack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); },
-      onPlay: cfg.pick ? function (t) { if (cfg.onPick) cfg.onPick(t.map(function (x) { return { k: x.k, d: x.d }; })); } : function (t) { playTrack(t, cfg.onFinish); }
+    // GAME-PIECE editor (David 2026-07-15): the meditation editor is now the SAME block editor as the stack (programBuilder), so ordering + length + parts look identical to "Make it yours". Each section is a striped block; tap to see its opening line, drag the bottom edge for length, press-hold to reorder. The desc = the section's own first spoken line (already gated), so no new copy.
+    programBuilder({
+      title: cfg.title || "Edit your meditation", track: track, pool: ORDER, addDur: 60, poolLabel: "Add a section",
+      lookup: function (k) { var s = SEC[k] || {}; return { name: s.name, ti: s.ti, col: s.col, sc: s.col, desc: (s.lines && s.lines[0]) || "", dur: 60 }; },
+      guidance: !cfg.pick, saveTo: "medPrograms", pick: cfg.pick, onPick: cfg.onPick,
+      playLabel: cfg.pick ? "Use this" : (cfg.playLabel || "Play"),
+      onSave: (cfg.pick || cfg.onFinish) ? null : function (t) { S.tools = S.tools || {}; S.tools.medTrack = t.map(function (x) { return { k: x.k, d: x.d }; }); save(); },
+      onPlay: function (t) { playTrack(t, cfg.onFinish); }
     });
   }
   // ===== ORGAN I · REWIRE→MANTRA WIRING (DEPTH BUILD WAVE 1/2): the mantra law — a line is never typed into a field; it is BORN inside a Rewire session (feeling attached) and INSTALLED nightly at the PM INSTALL beat (already built) with the user's OWN evidence as the picture. After a completed Rewire, offer to KEEP the line the user just felt — picked from candidates seeded by their year-words, never a blank field. =====
