@@ -6099,7 +6099,7 @@
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
   var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30;
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
-  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=4"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=4"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=4"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
+  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=5"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=5"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=5"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
   function fhDirName(ang) { var k = (((Math.round(ang / (Math.PI / 4))) % 8) + 8) % 8; return FH_KBYK[k]; }
   // spr-dir.png rows are David's hand-picked spin frames, already in compass order
@@ -6129,14 +6129,15 @@
     var cache = window._sanctSceneCache;
     if (cache && cache.stamp === ISLE._stamp) return cache;
     var big = ISLE.tiles.size >= 35;
-    var strct = big ? [WORLD_IMG.house2, 4, 8, 254, 70, 28] : [WORLD_IMG.tentK, 0, 14, 128, 44, 20];
+    var strct = big ? [WORLD_IMG.house2, 4, 2, 254, 84, 30] : [WORLD_IMG.tentK, 0, 14, 128, 46, 22];
+    // footprints (fw,fh) are sized near each prop's VISUAL base width so the resolver keeps real gaps between things — no well tucked under the house, no crowding (David 2026-07-15)
     var raw = big
-      ? [ [WORLD_IMG.ptreeK, -72, -78, 92, 20, 12], [WORLD_IMG.ptreeK, 76, -74, 92, 20, 12], [WORLD_IMG.ptreeK, 4, -106, 96, 20, 12], strct,
-          [WORLD_IMG.treeK, -132, 44, 104, 22, 13], [WORLD_IMG.treeK, 134, 56, 104, 22, 13],
-          [WORLD_IMG.wellK, -80, -6, 74, 30, 18], [WORLD_IMG.barrelK, 92, 8, 50, 20, 14],
-          [WORLD_IMG.statueK, -66, 116, 82, 26, 16],
-          [WORLD_IMG.flowerK1, 70, 122, 26, 0, 0], [WORLD_IMG.flowerK2, -12, 134, 24, 0, 0] ]
-      : [ strct, [WORLD_IMG.treeK, -74, 42, 82, 22, 13], [WORLD_IMG.flowerK1, 70, 62, 28, 0, 0], [WORLD_IMG.flowerK2, -34, 82, 26, 0, 0] ];
+      ? [ [WORLD_IMG.ptreeK, -98, -96, 92, 26, 16], [WORLD_IMG.ptreeK, 98, -92, 92, 26, 16], strct,
+          [WORLD_IMG.treeK, -152, 54, 104, 28, 16], [WORLD_IMG.treeK, 154, 64, 104, 28, 16],
+          [WORLD_IMG.wellK, -110, 18, 74, 34, 21], [WORLD_IMG.barrelK, 118, 28, 50, 22, 15],
+          [WORLD_IMG.statueK, -76, 124, 82, 28, 17],
+          [WORLD_IMG.flowerK1, 74, 128, 26, 0, 0], [WORLD_IMG.flowerK2, -18, 140, 24, 0, 0] ]
+      : [ strct, [WORLD_IMG.treeK, -78, 44, 82, 24, 14], [WORLD_IMG.flowerK1, 72, 64, 28, 0, 0], [WORLD_IMG.flowerK2, -36, 84, 26, 0, 0] ];
     var objs = raw.map(function (o) { return { img: o[0], dx: o[1], dy: o[2], h: o[3], fw: o[4] || 0, fh: o[5] || 0 }; });
     var fixed = big ? objs[3] : objs[0]; // the house/tent is the anchor — never moved by the resolver
     function onGrass(x, y) { return isleHas(Math.round(x / TILE), Math.round(y / TILE)); }
@@ -6146,7 +6147,7 @@
     var block = objs.filter(function (o) { return o.fw > 0; });
     for (var it = 0; it < 14; it++) { // relax overlaps: push intersecting footprints apart (house immovable)
       for (var a = 0; a < block.length; a++) for (var b = a + 1; b < block.length; b++) {
-        var A = block[a], B = block[b], ddx = B.dx - A.dx, ddy = B.dy - A.dy, dist = Math.hypot(ddx, ddy) || 0.01, min = (A.fw + B.fw) * 0.9;
+        var A = block[a], B = block[b], ddx = B.dx - A.dx, ddy = B.dy - A.dy, dist = Math.hypot(ddx, ddy) || 0.01, min = (A.fw + B.fw) * 1.08;
         if (dist < min) { var push = min - dist, ux = ddx / dist, uy = ddy / dist, aMov = A !== fixed, bMov = B !== fixed, share = (aMov && bMov) ? 0.5 : 1;
           if (bMov) { B.dx += ux * push * share; B.dy += uy * push * share; }
           if (aMov) { A.dx -= ux * push * share; A.dy -= uy * push * share; } }
