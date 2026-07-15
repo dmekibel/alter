@@ -6161,7 +6161,7 @@
   // interior coast is byte-identical to what a full bake would draw there.
   function _doRebake() {
     _rebakeTimer = null; var c = window._isleBakeCache, d = window._isleDirtyBox; window._isleDirtyBox = null;
-    if (!c || !c.cv || c.minx === undefined || !d) { window._isleBakeCache = null; return; } // no incremental context → one full bake
+    if (!window._incBake || !c || !c.cv || c.minx === undefined || !d) { window._isleBakeCache = null; return; } // SAFE default = one full bake; incremental blit is behind window._incBake while it's being debugged (David 2026-07-15: it broke the map shape)
     var B = c.BTB || 172, PAD = c.PAD, CTX = 2, M = 1;
     var b; try { b = bakeIsle({ x0: d.x0 - CTX, y0: d.y0 - CTX, x1: d.x1 + CTX, y1: d.y1 + CTX }); } catch (e) { b = null; }
     if (!b) { window._isleBakeCache = null; return; }
