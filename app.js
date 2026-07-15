@@ -1755,6 +1755,9 @@
       // CONTEXT-AWARE (David 2026-07-01): while ANY overlay/menu is open — a tool/player, a modal sheet, the expanded tracker (cockpit) or toolbox, the plan-a-day bento, a radial/duration/onboarding sheet — DON'T let a horizontal swipe switch app panes. The swipe belongs to that surface; close it to switch.
       if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
+      // THUMBSTICK MISTAKE ROOM (David 2026-07-15): in the game, don't let a swipe near either stick (bottom-left / bottom-right corners) steal to Journey. The sticks are canvas-drawn so a near-miss lands on the world; disarm the pane-swipe in those corner bands. Intentional pane swipes come from higher up / center.
+      var _vh = window.innerHeight || 800, _vw = window.innerWidth || 390;
+      if (armed && curPaneName() === "game" && e.clientY > _vh * 0.62 && (e.clientX < _vw * 0.46 || e.clientX > _vw * 0.54)) armed = false;
       sx = e.clientX; sy = e.clientY; W = window.innerWidth || 390;
       if (armed) paneGroup(curPaneName()).forEach(function (el2) { el2.style.willChange = "transform"; }); // pre-promote the current pane's layer on touch-down so the first drag frames don't stutter
     }, true);
@@ -6572,7 +6575,7 @@
   function drawWorld() {
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
-    var SPD = 4.3 * (skateOk() ? 1.6 : 1), moving, prevPx = px, prevPy = py; // prev pos for tile-edge collision
+    var SPD = 5.1 * (skateOk() ? 1.6 : 1), moving, prevPx = px, prevPy = py; // prev pos for tile-edge collision (David 2026-07-15: base walk bumped 4.3→5.1, felt too slow)
     if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
     if (SANCTUARY) {
       // ── FARMHAND locomotion (David 2026-07-13): he DRIVES in the direction he FACES — a 2D-car feel, so the walk always matches the motion (NO foot-sliding). Steering is sharper than a car (he can whip around). ──
@@ -6582,10 +6585,10 @@
         var tgt = Math.atan2(sY, sX), dd = tgt - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2;
         fhFace += dd * 0.40;                                               // steer toward the stick — SHARP (a car turns ~0.08/frame; this whips ~0.4)
         var align = Math.cos(dd), fwd = m * Math.max(0, align);           // translate ONLY along facing, scaled by how aligned we are → a hard turn PIVOTS (feet turn in place) instead of sliding sideways
-        if (fwd > 0.02) { var step = SPD * fwd; px += Math.cos(fhFace) * step; py += Math.sin(fhFace) * step; fhFrame += (step / FH_STRIDE) * FH_NF; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; } // walk cycle LOCKED to distance (one full stride per FH_STRIDE px) → feet plant at any speed, no sliding (David 2026-07-15)
-        moving = fwd > 0.03;                                               // walking (legs cycle) only while actually translating forward
+        if (fwd > 0.02) { var step = SPD * fwd; px += Math.cos(fhFace) * step; py += Math.sin(fhFace) * step; } // move along facing; the walk CYCLE + facing are re-derived from ACTUAL movement AFTER collision (below) so a wall can't foot-slide
+        moving = fwd > 0.03;                                               // intent (drives walk-to-expand + camera); the animation uses actual movement
       }
-      fhMoving = moving; // thumb up → moving=false THIS frame → render drops straight to the idle stand (no extra steps, no coasting)
+      fhMoving = moving; // fallback; overridden by actual movement post-collision on the tile island
     } else if (skateOn && skateOk()) {
       // carving skate physics (ported from studio-sim): gradual turn + momentum + grip/drift + glide
       var mln = Math.hypot(moveX, moveY);
@@ -6639,6 +6642,10 @@
         var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } // island edge: stay on the grass, off the water
       }
       for (var ci = 0; ci < COLLS.length; ci++) { var c = COLLS[ci], cdx = px - c[0], cdy = py - c[1]; if (Math.abs(cdx) < c[2] && Math.abs(cdy) < c[3]) { var ox = c[2] - Math.abs(cdx), oy = c[3] - Math.abs(cdy); if (ox < oy) px = c[0] + (cdx < 0 ? -c[2] : c[2]); else py = c[1] + (cdy < 0 ? -c[3] : c[3]); } } // solid objects: push the feet out of the base footprint (can't walk through walls)
+      // FEET TRUTH (David 2026-07-15): the walk cycle + facing come from how far he ACTUALLY moved (after wall/edge/object collision). Into a wall → adist≈0 → idle stand (no walk-in-place). Aim to the side of a wall → he slides along it AND rotates to face that slide (no glide with feet facing the wall).
+      var _adx = px - prevPx, _ady = py - prevPy, _adist = Math.hypot(_adx, _ady);
+      fhMoving = _adist > 0.35;
+      if (fhMoving) { fhFrame += (_adist / FH_STRIDE) * FH_NF; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; var _aa = Math.atan2(_ady, _adx), _fd = _aa - fhFace; while (_fd > Math.PI) _fd -= Math.PI * 2; while (_fd < -Math.PI) _fd += Math.PI * 2; fhFace += _fd * 0.30; }
     }
     else { var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; } }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
