@@ -6133,7 +6133,8 @@
     var GS = BTB * 6, gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grassImg, 0, 0, GS, GS); gcx.filter = "none";
     var gsd = gcx.getImageData(0, 0, GS, GS).data;
     var gdist = _dist(gmA, W, H, false);
-    for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = ((yr2 % GS) * GS + (xr2 % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
+    var gox = ((((minx - PAD) * BTB) % GS) + GS) % GS, goy = ((((miny - PAD) * BTB) % GS) + GS) % GS; // WORLD-anchor the grass texture (offset by the canvas origin) so it doesn't jump/reset when the island grows and minx/miny shift (David 2026-07-15)
+    for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = (((yr2 + goy) % GS) * GS + ((xr2 + gox) % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
     // --- brown sand outline (painted first) then BLACK grass+cliff outline on top ---
     var erode1 = function (m) { var e = new Uint8Array(W * H); for (var y = 1; y < H - 1; y++) for (var x = 1; x < W - 1; x++) { var j = y * W + x; e[j] = m[j] && m[j - 1] && m[j + 1] && m[j - W] && m[j + W] ? 1 : 0; } return e; };
     // TRUE land silhouette = grass (WITH the cloud-lobes) + cliff — NOT baseA. Basing island/outlines on this means the
@@ -6575,7 +6576,7 @@
   function drawWorld() {
     if (!gameOn || !wctx) return;
     var t = (performance.now() - GT0) / 1000;
-    var SPD = 5.1 * (skateOk() ? 1.6 : 1), moving, prevPx = px, prevPy = py; // prev pos for tile-edge collision (David 2026-07-15: base walk bumped 4.3→5.1, felt too slow)
+    var SPD = 4.6 * (skateOk() ? 1.6 : 1), moving, prevPx = px, prevPy = py; // prev pos for tile-edge collision (David 2026-07-15: 4.3 too slow, 5.1 too fast → 4.6)
     if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
     if (SANCTUARY) {
       // ── FARMHAND locomotion (David 2026-07-13): he DRIVES in the direction he FACES — a 2D-car feel, so the walk always matches the motion (NO foot-sliding). Steering is sharper than a car (he can whip around). ──
