@@ -5891,7 +5891,7 @@
   function tricksOk() { return !!(S.game && S.game.ups && S.game.ups.tricks); }
   function doJump() { if (jz <= 0 && jvz <= 0) { jvz = (skateOn && skateOk()) ? 10.5 : 7.5; bodySpin = 0; flipState = null; } }  // skate = bigger air (studio-sim -3.5 vs -2.5)
   // skate + trick state (ported from studio-sim)
-  var skateOn = false, skateAng = null, pvx = 0, pvy = 0, bodySpin = 0, flipState = null, trickCombo = 0, trickMsg = null, trickMsgT = 0, shake = 0, dust = [], claimFlash = null;
+  var skateOn = false, skateAng = null, pvx = 0, pvy = 0, bodySpin = 0, flipState = null, trickCombo = 0, trickMsg = null, trickMsgT = 0, shake = 0, dust = [], claimFlashes = [];
   var BOARD_FLIPS = { "up": { n: "KICKFLIP", dur: 12 }, "down": { n: "HEELFLIP", dur: 12 }, "left": { n: "BS 180", dur: 10 }, "right": { n: "FS 180", dur: 10 }, "up+left": { n: "VARIAL FLIP", dur: 14 }, "up+right": { n: "HARDFLIP", dur: 14 }, "down+left": { n: "INWARD HEEL", dur: 14 }, "down+right": { n: "TRE FLIP", dur: 16 } };
   var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
@@ -6007,7 +6007,7 @@
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
     window._sanctSceneCache = null; // re-resolve object placement (cheap)
-    claimFlash = { x: tx * TILE, y: ty * TILE, life: 1 }; // materializing pulse on the tile
+    claimFlashes.push({ x: tx * TILE, y: ty * TILE, life: 1, pend: true }); if (claimFlashes.length > 8) claimFlashes.shift(); // materializing pulse: LOOPS while pend (coast still baking off-thread), then fades once the coast blits in — so the tile appears all-at-once, never grass-square-then-coast (David 2026-07-15)
     // Patch the grass + reconcile the cache stamp SYNCHRONOUSLY, right now — the coast then bakes OFF-THREAD (worker), so this
     // doesn't block. CRITICAL: it must NOT be deferred to a later rAF — ISLE._stamp was just bumped, and if drawTileGround runs
     // before the cache stamp is reconciled it does a full synchronous whole-island bake (the ~2.5s claim freeze). (David 2026-07-15)
@@ -6083,6 +6083,7 @@
     function _mask2cv(m, W, H) { var cv = _cv(W, H), cx = cv.getContext("2d"), im = cx.createImageData(W, H); for (var i = 0; i < W * H; i++) { var v = m[i] ? 255 : 0; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; } cx.putImageData(im, 0, 0); return cv; }
     function _close(m, W, H, r) { var dil = _blurThr(_mask2cv(m, W, H), W, H, r, 70); return _blurThr(_mask2cv(dil, W, H), W, H, r, 185); }
     function _dist(m, W, H, outside) { var INF = 1e9, D = new Float32Array(W * H), i; for (i = 0; i < D.length; i++) D[i] = (outside ? !m[i] : m[i]) ? INF : 0; for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) { i = y * W + x; var v = D[i]; if (x > 0) v = Math.min(v, D[i - 1] + 3); if (y > 0) v = Math.min(v, D[i - W] + 3); if (x > 0 && y > 0) v = Math.min(v, D[i - W - 1] + 4); if (x < W - 1 && y > 0) v = Math.min(v, D[i - W + 1] + 4); D[i] = v; } for (var y2 = H - 1; y2 >= 0; y2--) for (var x2 = W - 1; x2 >= 0; x2--) { i = y2 * W + x2; var v2 = D[i]; if (x2 < W - 1) v2 = Math.min(v2, D[i + 1] + 3); if (y2 < H - 1) v2 = Math.min(v2, D[i + W] + 3); if (x2 < W - 1 && y2 < H - 1) v2 = Math.min(v2, D[i + W + 1] + 4); if (x2 > 0 && y2 < H - 1) v2 = Math.min(v2, D[i + W - 1] + 4); D[i] = v2; } for (i = 0; i < D.length; i++) D[i] /= 3; return D; }
+    function _distP(m, W, H, outside) { var INF = 1e9, D = new Float32Array(W * H), P = new Int32Array(W * H), i; for (i = 0; i < D.length; i++) { if (outside ? !m[i] : m[i]) { D[i] = INF; P[i] = -1; } else { D[i] = 0; P[i] = i; } } for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) { i = y * W + x; var v = D[i], pp = P[i]; if (x > 0 && D[i - 1] + 3 < v) { v = D[i - 1] + 3; pp = P[i - 1]; } if (y > 0 && D[i - W] + 3 < v) { v = D[i - W] + 3; pp = P[i - W]; } if (x > 0 && y > 0 && D[i - W - 1] + 4 < v) { v = D[i - W - 1] + 4; pp = P[i - W - 1]; } if (x < W - 1 && y > 0 && D[i - W + 1] + 4 < v) { v = D[i - W + 1] + 4; pp = P[i - W + 1]; } D[i] = v; P[i] = pp; } for (var y2 = H - 1; y2 >= 0; y2--) for (var x2 = W - 1; x2 >= 0; x2--) { i = y2 * W + x2; var v2 = D[i], p2 = P[i]; if (x2 < W - 1 && D[i + 1] + 3 < v2) { v2 = D[i + 1] + 3; p2 = P[i + 1]; } if (y2 < H - 1 && D[i + W] + 3 < v2) { v2 = D[i + W] + 3; p2 = P[i + W]; } if (x2 < W - 1 && y2 < H - 1 && D[i + W + 1] + 4 < v2) { v2 = D[i + W + 1] + 4; p2 = P[i + W + 1]; } if (x2 > 0 && y2 < H - 1 && D[i + W - 1] + 4 < v2) { v2 = D[i + W - 1] + 4; p2 = P[i + W - 1]; } D[i] = v2; P[i] = p2; } return { D: D, P: P }; } // like _dist but also returns P[i] = index of the NEAREST source pixel (for direction-aware coast rules)
     function _traceContour(mask, W, H) { var start = -1, i; for (i = 0; i < W * H; i++) { if (mask[i]) { start = i; break; } } if (start < 0) return []; var N8 = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]]; var sy = (start / W) | 0, sx = start % W, cy = sy, cx = sx, bdir = 6, out = [[sy, sx]], count = 0, cap = W * H * 4; do { var found = false; for (var t = 1; t <= 8; t++) { var d = (bdir + t) % 8, ny = cy + N8[d][0], nx = cx + N8[d][1]; if (ny < 0 || nx < 0 || ny >= H || nx >= W) continue; if (mask[ny * W + nx]) { bdir = (d + 4) % 8; cy = ny; cx = nx; out.push([cy, cx]); found = true; break; } } if (!found) break; count++; } while ((cy !== sy || cx !== sx) && count < cap); return out; }
     var i;
     // P0 — footprint rects -> baseA + corner-close
@@ -6118,8 +6119,6 @@
       if (comp.length < MINHOLE) { for (var _c = 0; _c < comp.length; _c++) baseA[comp[_c]] = 1; }
       else { for (var _c2 = 0; _c2 < comp.length; _c2++) hole[comp[_c2]] = 1; }
     }
-    var _gYmin = 1e9, _gYmax = -1e9; for (var gg = 0; gg < tiles.length; gg++) { var _tY = tiles[gg][1]; if (_tY < _gYmin) _gYmin = _tY; if (_tY > _gYmax) _gYmax = _tY; }
-    var wYtop = _gYmin * BTB, wYbot = (_gYmax + 1) * BTB, wOyy = (miny - PAD) * BTB;
     // P3 — cloud-lobe grass mask (boundary-trace order, world-deterministic lobes)
     var eb = _traceContour(baseA, W, H);
     var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
@@ -6146,15 +6145,23 @@
     // P5 — sand distance field + north mask
     var lcc = _cv(W, H), lccx = lcc.getContext("2d"); { var im2 = lccx.createImageData(W, H); for (i = 0; i < W * H; i++) { im2.data[i * 4] = im2.data[i * 4 + 1] = im2.data[i * 4 + 2] = landcliff[i] ? 255 : 0; im2.data[i * 4 + 3] = 255; } lccx.putImageData(im2, 0, 0); }
     var lcS = _blurThr(lcc, W, H, 28, 120), distout = _dist(lcS, W, H, true);
-    var north = new Uint8Array(W * H), ND = 44, gbelow = new Int32Array(W); for (i = 0; i < W; i++) gbelow[i] = 99999;
-    for (var yN = H - 1; yN >= 0; yN--) for (var xN = 0; xN < W; xN++) { i = yN * W + xN; gbelow[xN] = baseA[i] ? 0 : gbelow[xN] + 1; if (!landcliff[i] && ext[i] && gbelow[xN] >= 1 && gbelow[xN] <= ND) north[i] = 1; }
+    // DIRECTION-AWARE north (David 2026-07-15): a water pixel gets NO beach/blue when its NEAREST land is predominantly
+    // BELOW it (it sits on a TOP edge). This is fully LOCAL (nearest-land vector, within the coast ring) so a window bake
+    // and a full bake agree pixel-for-pixel → kills the horizontal seam lines the old column-scan produced. It also cuts the
+    // blue off cleanly along the SIDE as the edge curves toward the top (tapers into grass at the top corner, no hoop onto the
+    // top), and lets a descending side-rim run all the way DOWN to meet the next patch's top outline. NK = corner cutoff angle.
+    var north = new Uint8Array(W * H), NK = (p.northK == null ? 0.9 : p.northK), _np = _distP(landcliff, W, H, true), _nP = _np.P;
+    for (i = 0; i < W * H; i++) { if (landcliff[i] || !ext[i] || _nP[i] < 0) continue; var _lp = _nP[i], _ldx = (_lp % W) - (i % W), _ldy = ((_lp / W) | 0) - ((i / W) | 0); if (_ldy > Math.abs(_ldx) * NK) north[i] = 1; }
     // P6 — sand ring (world-Y taper) + cliff shadow
     var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 };
     var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
     for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
       i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
       if (landcliff[i] || north[i] || hole[i]) continue;
-      var _wY = wOyy + yy2, fr = Math.max(0, Math.min(1, (_wY - wYtop) / Math.max(1, wYbot - wYtop))), wy = 9 + (40 - 9) * fr;
+      // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
+      // the sides — LOCAL, so it never drifts as the island grows (the old global world-Y taper re-normalised by the island's
+      // total height on every south claim → the sand/ink boundary shifted per tile → horizontal seam lines). Reuses _nP.
+      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = 22 + (40 - 22) * _south; // baseline 22px sand on every non-north edge (keeps the sides sanded like the approved look) + wider (→40) on south-facing beaches; all LOCAL so no seam
       if (distout[i] >= 1 && distout[i] <= wy) {
         sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
@@ -6178,7 +6185,7 @@
     return { buf: out.buffer, W: W, H: H, minx: minx, miny: miny, maxx: maxx, maxy: maxy };
   }
   function _tilesArr() { var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return a; }
-  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
+  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
   function _wrapBake(r) { var PAD = 2, cv = _cv(r.W, r.H); cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(r.buf), r.W, r.H), 0, 0); return { cv: cv, ox: (r.minx - PAD) * TILE - TILE / 2, oy: (r.miny - PAD) * TILE - TILE / 2, w: r.W, h: r.H, key: ISLE.tiles.size, minx: r.minx, miny: r.miny, maxx: r.maxx, maxy: r.maxy, PAD: PAD, BTB: 172, GEY: 90, EXTRA: 150 }; }
   function bakeIsle(region) { var p = _bakeParams(region); if (!p) return null; var r; try { r = __coastBakeCore(p); } catch (e) { if (window.console) console.warn("bake core failed", e); return null; } return r ? _wrapBake(r) : null; } // SYNC driver (DEV + first-load)
   // ===== OFF-THREAD bake worker (expansion) — same __coastBakeCore, run in a Worker so the main thread stays at framerate =====
@@ -6191,7 +6198,7 @@
       if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; // images not ready yet — try again later
       // worker paints the RGBA buffer into an OffscreenCanvas + hands back a transferable ImageBitmap (a GPU texture) — the
       // main thread then only does a single drawImage, never a multi-MP putImageData (that CPU pixel-copy was the residual hitch).
-      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
+      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,northK:d.northK,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
       var w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
       w.onmessage = function (e) { var cb = __bakeCbs[e.data.id]; if (cb) { delete __bakeCbs[e.data.id]; cb(e.data); } };
       w.onerror = function () { __bakeWorker = false; };
@@ -6206,7 +6213,7 @@
     if (w === false) { done(null, "sync"); return; }
     if (!w || !__bakeImgsReady) { done(null, "retry"); return; }
     var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? { cv: d.bmp, w: d.W, h: d.H, minx: d.minx, miny: d.miny, maxx: d.maxx, maxy: d.maxy, PAD: 2, BTB: 172, GEY: 90, EXTRA: 150 } : null); }; // ImageBitmap source — blitted straight onto the cache canvas, no main-thread putImageData
-    w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
+    w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
   }
   // Instant provisional grass patch for a freshly-claimed tile so the player walks on it immediately, then a TRUE debounce
   // fires the ONE full high-quality coast re-bake only after expansion actually STOPS. The expensive bake NEVER runs mid-
@@ -6224,7 +6231,7 @@
     if (window._incBake === false || !c || !c.cv || c.minx === undefined || !d) { if (!d) return; window._isleBakeCache = null; window._isleDirtyBox = null; return; }
     if (_bakeBusy && !sync) return; // a coast bake is already in flight → let the dirty box keep accumulating; we re-run on completion
     window._isleDirtyBox = null; var dd = { x0: d.x0, y0: d.y0, x1: d.x1, y1: d.y1 };
-    var CTX = 2, M = 1, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX };
+    var CTX = 3, M = 2, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX }; // blit dirty±M (was ±1) re-covers the junction shoulders where a new peninsula meets the old edge; CTX>M keeps the blit interior fully-contexted. Off-thread, so the wider window is free.
     function blit(b) { // composite the freshly-baked window onto the (possibly grown) live cache — read the cache FRESH (it may have grown while we baked)
       var c2 = window._isleBakeCache; if (!b || !c2 || !c2.cv || c2.minx === undefined) { if (!b) window._isleBakeCache = null; return; }
       var B = c2.BTB || 172, PAD = c2.PAD;
@@ -6239,15 +6246,14 @@
     if (sync) { var b; try { b = bakeIsle(region); } catch (e) { b = null; } blit(b); return; }
     _bakeBusy = true;
     function _restoreDirty() { var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: dd.x0, y0: dd.y0, x1: dd.x1, y1: dd.y1 }; else { if (dd.x0 < _d.x0) _d.x0 = dd.x0; if (dd.x1 > _d.x1) _d.x1 = dd.x1; if (dd.y0 < _d.y0) _d.y0 = dd.y0; if (dd.y1 > _d.y1) _d.y1 = dd.y1; } }
+    function _release() { if (window._isleDirtyBox) { _doRebake(); return; } for (var f = 0; f < claimFlashes.length; f++) claimFlashes[f].pend = false; } // queue drained → every claimed tile's coast has now blitted → let the pulses fade
     bakeIsleWorker(region, function (b, mode) {
       _bakeBusy = false;
-      if (mode === "sync") { var bb; try { bb = bakeIsle(region); } catch (e) { bb = null; } blit(bb); if (window._isleDirtyBox) _doRebake(); return; } // worker permanently unavailable → one synchronous bake
+      if (mode === "sync") { var bb; try { bb = bakeIsle(region); } catch (e) { bb = null; } blit(bb); _release(); return; } // worker permanently unavailable → one synchronous bake
       if (mode === "retry") { _restoreDirty(); setTimeout(function () { _doRebake(); }, 120); return; } // worker not warm yet (images still decoding) → retry shortly, no freeze
-      blit(b); if (window._isleDirtyBox) _doRebake(); // success (off-thread) — re-run if more tiles were claimed while baking
+      blit(b); _release(); // success (off-thread) — re-run if more tiles were queued, else release the materializing pulses
     });
   }
-  var __grassPatchCv = null; // one pre-darkened B×B grass tile → the instant claim patch drawImages it (no per-claim canvas filter, which is slow on WebKit)
-  function _grassPatch(B) { if (__grassPatchCv && __grassPatchCv.width === B) return __grassPatchCv; var g = WORLD_IMG.gtile; if (!g || !g.complete || !g.naturalWidth) return null; var cv = _cv(B, B), x = cv.getContext("2d"); x.filter = "brightness(0.9)"; x.drawImage(g, 0, 0, B, B); x.filter = "none"; __grassPatchCv = cv; return cv; }
   function _expandVisual(tx, ty) {
     var c = window._isleBakeCache;
     if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake once
@@ -6263,7 +6269,9 @@
       c.ox = (nminx - PAD) * TILE - TILE / 2; c.oy = (nminy - PAD) * TILE - TILE / 2;
       cx = (tx - nminx + PAD) * B; cy = (ty - nminy + PAD) * B;
     } else { if (tx < c.minx) c.minx = tx; if (tx > c.maxx) c.maxx = tx; if (ty < c.miny) c.miny = ty; if (ty > c.maxy) c.maxy = ty; }
-    var gp = _grassPatch(B); if (gp) c.cv.getContext("2d").drawImage(gp, cx, cy); // instant walkable patch from the pre-darkened tile (no per-claim filter)
+    // NO provisional grass patch (David 2026-07-15: "either none of it loads or all of it loads"). The tile stays visually
+    // water + the materializing pulse until the worker's coast (grass + cliff + sand + outlines) blits in as ONE frame.
+    // Collision already flips walkable instantly (isleHas reads ISLE.tiles), so the guardian can step on it while it materializes.
     c._stamp = ISLE._stamp; // mark the patched cache as current so drawTileGround does NOT full-rebake now — the debounce owns that
     var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: tx, y0: ty, x1: tx, y1: ty }; else { if (tx < _d.x0) _d.x0 = tx; if (tx > _d.x1) _d.x1 = tx; if (ty < _d.y0) _d.y0 = ty; if (ty > _d.y1) _d.y1 = ty; } // grow the dirty window so the re-bake only touches the expanded area
     // The instant grass patch above keeps the new tile visible + walkable; the coast then bakes NON-BLOCKING (phase-sliced
@@ -6646,7 +6654,15 @@
     }
     if (hasShippedToday() && !SANCTUARY) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     for (var di = dust.length - 1; di >= 0; di--) { var dp = dust[di]; dp.x += dp.vx; dp.y += dp.vy; dp.vy += 0.13; dp.life--; if (dp.life <= 0) { dust.splice(di, 1); continue; } ctx.globalAlpha = Math.max(0, dp.life / 16); ctx.fillStyle = "#cdbfa6"; ctx.beginPath(); ctx.arc(dp.x, dp.y, 2.6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
-    if (claimFlash) { var cf = claimFlash; cf.life -= 0.045; if (cf.life <= 0) claimFlash = null; else { var e = 1 - cf.life, rr = TILE * (0.34 + e * 0.62), a = cf.life * cf.life; ctx.save(); ctx.globalCompositeOperation = "lighter"; var fg = ctx.createRadialGradient(cf.x, cf.y, rr * 0.2, cf.x, cf.y, rr); fg.addColorStop(0, "rgba(150,240,190," + (0.10 * a) + ")"); fg.addColorStop(0.7, "rgba(120,225,170," + (0.30 * a) + ")"); fg.addColorStop(1, "rgba(120,225,170,0)"); ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "rgba(190,255,215," + (0.6 * a) + ")"; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.stroke(); ctx.restore(); } } // "materializing" pulse on a freshly-claimed tile (loading hint before the coast bake)
+    for (var cfi = claimFlashes.length - 1; cfi >= 0; cfi--) { var cf = claimFlashes[cfi];
+      var rr, a;
+      if (cf.pend) { var ph = 0.5 + 0.5 * Math.sin(t * 4.5); rr = TILE * (0.42 + 0.18 * ph); a = 0.5 + 0.45 * ph; } // still baking → breathe in place, don't die
+      else { cf.life -= 0.05; if (cf.life <= 0) { claimFlashes.splice(cfi, 1); continue; } var e = 1 - cf.life; rr = TILE * (0.5 + e * 0.55); a = cf.life * cf.life; } // materialized → one expanding fade-out
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      var fg = ctx.createRadialGradient(cf.x, cf.y, rr * 0.2, cf.x, cf.y, rr); fg.addColorStop(0, "rgba(150,240,190," + (0.10 * a) + ")"); fg.addColorStop(0.7, "rgba(120,225,170," + (0.30 * a) + ")"); fg.addColorStop(1, "rgba(120,225,170,0)");
+      ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(190,255,215," + (0.6 * a) + ")"; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.stroke(); ctx.restore();
+    } // materializing pulse per freshly-claimed tile: loops while its coast bakes off-thread, then a single fade once it blits in
     ctx.restore();
     if (trickMsgT > 0) { trickMsgT--; ctx.save(); ctx.globalAlpha = Math.min(1, trickMsgT / 18); ctx.font = "800 30px 'Baloo 2',sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 5; ctx.strokeStyle = "#3a2540"; ctx.fillStyle = trickMsg === "BAIL!" ? "#ff6b6b" : "#ffd24a"; ctx.strokeText(trickMsg, W / 2, H * 0.3); ctx.fillText(trickMsg, W / 2, H * 0.3); ctx.restore(); }
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
@@ -13207,6 +13223,24 @@
   // DEV: STRESS BATTERY — bake a dozen pathological tile shapes and lay each full island in a labelled grid so gross coast
   // failures (black gaps, unrendered holes, thin-neck coast breaks, blue-on-top, broken ink at concave corners) are visible
   // in ONE screenshot (the preview is slow, so assess programmatically). DEV.stress() grid | DEV.stress(i) zoom shape i full-bleed.
+  window.DEV.blueCheck = function () { // DEV: high-zoom crops of TOP corners + a top edge + a descending-step junction → verify blue cuts off on the side (no hoop onto top) and runs down to the next patch's top outline (David 2026-07-15). screenshot it; DEV.auditClose().
+    var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
+    function mk(t) { var s = new Set(); t.forEach(function (p) { s.add(tkey(p[0], p[1])); }); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 9700 + t.length }; window._isleBakeCache = null; try { return bakeIsle(); } catch (e) { return null; } }
+    function bx(x0, x1, y0, y1) { var a = []; for (var i = x0; i <= x1; i++) for (var j = y0; j <= y1; j++) a.push([i, j]); return a; }
+    var boxT = bx(-3, 3, -3, 3); // simple box: top edge + both top corners
+    var stair = bx(-3, -1, -3, 3).concat(bx(0, 3, 0, 3)); // an L / descending step on the right side
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.imageSmoothingEnabled = false; g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh); g.font = "13px sans-serif"; g.fillStyle = "#cfe8ff";
+    var bT = mk(boxT), bS = mk(stair);
+    function crop(b, wtx, wty, lab, dx0, dy0) { if (!b) return; var B = b.BTB, cw = 2.2 * B, cx = (wtx - b.minx + b.PAD) * B, cy = (wty - b.miny + b.PAD) * B; var dw = vw / 2 - 12, dh = dw; g.fillStyle = "#cfe8ff"; g.fillText(lab, dx0 + 4, dy0 + 14); g.save(); g.beginPath(); g.rect(dx0, dy0 + 20, dw, dh); g.clip(); g.drawImage(b.cv, cx - cw / 2, cy - cw / 2, cw, cw, dx0, dy0 + 20, dw, dh); g.restore(); g.strokeStyle = "#444"; g.strokeRect(dx0, dy0 + 20, dw, dh); }
+    crop(bT, -3, -3, "TOP-LEFT corner (blue must taper into grass, not hoop onto top)", 0, 0);
+    crop(bT, 3, -3, "TOP-RIGHT corner", vw / 2, 0);
+    crop(bT, 0, -3, "TOP EDGE center (no blue, ink only)", 0, vh / 2);
+    crop(bS, 0, 0, "DESCENDING STEP (right side blue runs DOWN to meet lower top-edge)", vw / 2, vh / 2);
+    ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS;
+    return "blueCheck drawn; DEV.auditClose() to dismiss";
+  };
   window.DEV.stress = function (only) {
     var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
     function box(x0, x1, y0, y1) { var a = []; for (var i = x0; i <= x1; i++) for (var j = y0; j <= y1; j++) a.push([i, j]); return a; }
@@ -13258,6 +13292,53 @@
     crop(incCache, "INCREMENTAL (blit)", 0); crop(fullB, "FULL (reference)", vw / 2 + 4);
     ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS; window._incBake = sInc; _rebakeTimer = sT;
     return "testInc drawn — INCREMENTAL vs FULL of the same expanded island; DEV.auditClose() to dismiss";
+  };
+  window.DEV.seamView = function (dirIdx) { // DEV: render INCREMENTAL | FULL | DIFF for one expansion direction, so the seam is visible. 0=E 1=W 2=S 3=N
+    var saved = ISLE, sB = window._isleBakeCache, sInc = window._incBake, sT = _rebakeTimer, sES = window._expandSync;
+    var D = [[1, 0, "E"], [-1, 0, "W"], [0, 1, "S"], [0, -1, "N"]][dirIdx || 0];
+    var s = new Set(); for (var i = -5; i <= 5; i++) for (var j = -5; j <= 5; j++) if (i * i + j * j <= 20) s.add(tkey(i, j));
+    ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 6600 }; window._isleBakeCache = null; window._isleDirtyBox = null;
+    var cache = bakeIsle(); cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
+    var ext = 0; s.forEach(function (k) { var a = k.split(","), v = D[0] !== 0 ? +a[0] * D[0] : +a[1] * D[1]; if (v > ext) ext = v; });
+    window._incBake = true; window._expandSync = true; var lastTx = 0, lastTy = 0;
+    for (var e = 1; e <= 4; e++) { var tx = D[0] !== 0 ? (ext + e) * D[0] : 0, ty = D[1] !== 0 ? (ext + e) * D[1] : 0; ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp++; _expandVisual(tx, ty); lastTx = tx; lastTy = ty; }
+    window._expandSync = false; if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
+    var inc = window._isleBakeCache; window._isleBakeCache = null; var full = bakeIsle();
+    var B = inc.BTB, vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh); g.font = "13px sans-serif";
+    var cw = 5 * B, ch = 5 * B, wx = lastTx * B, wy = lastTy * B, pw = vw / 3 - 6, ph = pw * ch / cw;
+    function crop(cc, x0, lab) { var sx = (wx - (cc.minx - cc.PAD) * B) - cw / 2, sy = (wy - (cc.miny - cc.PAD) * B) - ch / 2; g.fillStyle = "#cfe8ff"; g.fillText(lab, x0 + 4, 16); g.drawImage(cc.cv, sx, sy, cw, ch, x0, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(x0, 22, pw, ph); return { sx: sx, sy: sy }; }
+    var ci = crop(inc, 0, "INCREMENTAL"), cf = crop(full, vw / 3, "FULL");
+    // diff panel: red where inc != full
+    var id = inc.cv.getContext("2d").getImageData(ci.sx, ci.sy, cw, ch), fdd = full.cv.getContext("2d").getImageData(cf.sx, cf.sy, cw, ch), dimg = g.createImageData(cw, ch);
+    for (var p = 0; p < id.data.length; p += 4) { var dv = Math.abs(id.data[p] - fdd.data[p]) + Math.abs(id.data[p + 1] - fdd.data[p + 1]) + Math.abs(id.data[p + 2] - fdd.data[p + 2]); if (dv > 18) { dimg.data[p] = 255; dimg.data[p + 1] = 0; dimg.data[p + 2] = 0; dimg.data[p + 3] = 255; } else { dimg.data[p] = id.data[p] * 0.4; dimg.data[p + 1] = id.data[p + 1] * 0.4; dimg.data[p + 2] = id.data[p + 2] * 0.4; dimg.data[p + 3] = 255; } }
+    var tmp = document.createElement("canvas"); tmp.width = cw; tmp.height = ch; tmp.getContext("2d").putImageData(dimg, 0, 0);
+    g.fillStyle = "#ff8080"; g.fillText("DIFF (red)", vw * 2 / 3 + 4, 16); g.drawImage(tmp, 0, 0, cw, ch, vw * 2 / 3, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(vw * 2 / 3, 22, pw, ph);
+    ISLE = saved; window._isleBakeCache = sB; window._incBake = sInc; _rebakeTimer = sT; window._expandSync = sES;
+    return "seamView " + D[2] + " drawn; DEV.auditClose()";
+  };
+  window.DEV.seams = function () { // DEV: expand 4 tiles in EACH direction incrementally, pixel-diff vs a full bake over the common region → catch blit-seam lines (esp. horizontal N/S ones testInc's east-only check missed). maxDiff≈0 = seamless.
+    var saved = ISLE, sB = window._isleBakeCache, sInc = window._incBake, sT = _rebakeTimer, sES = window._expandSync, res = [];
+    [[1, 0, "E"], [-1, 0, "W"], [0, 1, "S"], [0, -1, "N"]].forEach(function (D) {
+      var s = new Set(); for (var i = -5; i <= 5; i++) for (var j = -5; j <= 5; j++) if (i * i + j * j <= 20) s.add(tkey(i, j));
+      ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 6600 }; window._isleBakeCache = null; window._isleDirtyBox = null;
+      var cache = bakeIsle(); cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
+      var ext = 0; s.forEach(function (k) { var a = k.split(","), v = D[0] !== 0 ? +a[0] * D[0] : +a[1] * D[1]; if (v > ext) ext = v; });
+      window._incBake = true; window._expandSync = true;
+      for (var e = 1; e <= 4; e++) { var tx = D[0] !== 0 ? (ext + e) * D[0] : 0, ty = D[1] !== 0 ? (ext + e) * D[1] : 0; ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp++; _expandVisual(tx, ty); }
+      window._expandSync = false; if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
+      var inc = window._isleBakeCache; window._isleBakeCache = null; var full = bakeIsle();
+      var B = inc.BTB, PAD = inc.PAD;
+      var wminx = Math.max(inc.minx, full.minx), wmaxx = Math.min(inc.maxx, full.maxx), wminy = Math.max(inc.miny, full.miny), wmaxy = Math.min(inc.maxy, full.maxy);
+      var w = (wmaxx - wminx + 1) * B, h = (wmaxy - wminy + 1) * B;
+      var id = inc.cv.getContext("2d").getImageData((wminx - inc.minx + PAD) * B, (wminy - inc.miny + PAD) * B, w, h).data;
+      var fd = full.cv.getContext("2d").getImageData((wminx - full.minx + PAD) * B, (wminy - full.miny + PAD) * B, w, h).data;
+      var maxd = 0, ndiff = 0, worstRow = -1; for (var p = 0; p < id.length; p += 4) { var dv = Math.abs(id[p] - fd[p]) + Math.abs(id[p + 1] - fd[p + 1]) + Math.abs(id[p + 2] - fd[p + 2]); if (dv > 18) { ndiff++; if (dv > maxd) { maxd = dv; worstRow = ((p / 4 / w) | 0); } } }
+      res.push(D[2] + ":maxDiff=" + maxd + " diffPx=" + ndiff + (worstRow >= 0 ? " row" + worstRow + "/" + h : ""));
+    });
+    ISLE = saved; window._isleBakeCache = sB; window._incBake = sInc; _rebakeTimer = sT; window._expandSync = sES;
+    window.__seamsResult = res.join("  |  "); return window.__seamsResult;
   };
   window.DEV.regTime = function (r2) { var R = r2 || 90, s = new Set(); for (var i = -10; i <= 10; i++) for (var j = -10; j <= 10; j++) if (i * i + j * j <= R) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 7001 }; var mx = 0; ISLE.tiles.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; }); var t0 = performance.now(); var full = bakeIsle(); var tf = performance.now() - t0; var t1 = performance.now(); var reg = bakeIsle({ x0: mx - 1, y0: -1, x1: mx + 2, y1: 2 }); var tr = performance.now() - t1; window._isleBakeCache = null; return ISLE.tiles.size + "t: FULL " + tf.toFixed(0) + "ms (" + full.w + "x" + full.h + ") vs INCREMENTAL window " + tr.toFixed(0) + "ms (" + reg.w + "x" + reg.h + ") = " + (tf / tr).toFixed(1) + "x faster"; }; // DEV: measure incremental window bake vs full bake
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
