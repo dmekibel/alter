@@ -5967,7 +5967,7 @@
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
-  var SANCTUARY = true, OCEAN_C = "#00042a";  // @SEC:GAME berry-night SANCTUARY reskin (David 2026-07-13): the walkable island is now the designed BIGBLK art (assets/sanctuary-island.jpg) drawn in world space; locomotion + camera unchanged. Flip SANCTUARY=false to restore the old Cuphead procedural island (§8 safety toggle).
+  var SANCTUARY = true, OCEAN_C = "#050b2c";  // @SEC:GAME berry-night SANCTUARY reskin (OCEAN_C = the baked coast's deep-water color (5,11,44) so the flat ocean beyond the island reads as ONE continuous sea, no tonal rectangle) (David 2026-07-13): the walkable island is now the designed BIGBLK art (assets/sanctuary-island.jpg) drawn in world space; locomotion + camera unchanged. Flip SANCTUARY=false to restore the old Cuphead procedural island (§8 safety toggle).
   var SANCT_DBG = false; // draw collider boxes for tuning
   // solid-object footprints in WORLD coords [cx,cy,halfW,halfH] — the walker's feet can't enter these (house base, well, statue, barrel). Baked-object positions on sanctuary-island.jpg; tune with SANCT_DBG.
   var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
@@ -6119,6 +6119,65 @@
     var w = h * img.naturalWidth / img.naturalHeight;
     ctx.fillStyle = "rgba(30,22,14,0.16)"; ctx.beginPath(); ctx.ellipse(x, y, w * 0.34, h * 0.07, 0, 0, 7); ctx.fill();
     ctx.drawImage(img, Math.round(x - w / 2), Math.round(y - h), w, h);
+  }
+  // @SEC:GAME sanctuary scene: the ONE source of truth for island objects — their placement (auto-resolved so nothing
+  // overlaps another object or crosses the water edge), their draw order (depth-sorted by base-y → front hides back),
+  // and their collision footprints (so the character can't walk through them). Cached per ISLE._stamp (rebuilds only
+  // when the island changes). Each raw entry = [img, dx, dy, h, fw, fh]; fw/fh = base footprint half-extents (0 = decorative, walk-through).
+  function sanctScene() {
+    if (!ISLE) buildIsle();
+    var cache = window._sanctSceneCache;
+    if (cache && cache.stamp === ISLE._stamp) return cache;
+    var big = ISLE.tiles.size >= 35;
+    var strct = big ? [WORLD_IMG.house2, 4, 8, 254, 70, 28] : [WORLD_IMG.tentK, 0, 14, 128, 44, 20];
+    var raw = big
+      ? [ [WORLD_IMG.ptreeK, -72, -78, 92, 20, 12], [WORLD_IMG.ptreeK, 76, -74, 92, 20, 12], [WORLD_IMG.ptreeK, 4, -106, 96, 20, 12], strct,
+          [WORLD_IMG.treeK, -132, 44, 104, 22, 13], [WORLD_IMG.treeK, 134, 56, 104, 22, 13],
+          [WORLD_IMG.wellK, -80, -6, 74, 30, 18], [WORLD_IMG.barrelK, 92, 8, 50, 20, 14],
+          [WORLD_IMG.statueK, -66, 116, 82, 26, 16],
+          [WORLD_IMG.flowerK1, 70, 122, 26, 0, 0], [WORLD_IMG.flowerK2, -12, 134, 24, 0, 0] ]
+      : [ strct, [WORLD_IMG.treeK, -74, 42, 82, 22, 13], [WORLD_IMG.flowerK1, 70, 62, 28, 0, 0], [WORLD_IMG.flowerK2, -34, 82, 26, 0, 0] ];
+    var objs = raw.map(function (o) { return { img: o[0], dx: o[1], dy: o[2], h: o[3], fw: o[4] || 0, fh: o[5] || 0 }; });
+    var fixed = big ? objs[3] : objs[0]; // the house/tent is the anchor — never moved by the resolver
+    function onGrass(x, y) { return isleHas(Math.round(x / TILE), Math.round(y / TILE)); }
+    function footOK(o) { return onGrass(o.dx, o.dy) && onGrass(o.dx - o.fw, o.dy + o.fh) && onGrass(o.dx + o.fw, o.dy + o.fh) && onGrass(o.dx - o.fw, o.dy - o.fh) && onGrass(o.dx + o.fw, o.dy - o.fh); }
+    function clamp(o) { var g = 0; while (g++ < 60 && !footOK(o)) { o.dx *= 0.93; o.dy *= 0.93; } } // pull a straying object in toward center until its whole base sits on grass
+    objs.forEach(function (o) { if (o.fw > 0 && o !== fixed) clamp(o); });
+    var block = objs.filter(function (o) { return o.fw > 0; });
+    for (var it = 0; it < 14; it++) { // relax overlaps: push intersecting footprints apart (house immovable)
+      for (var a = 0; a < block.length; a++) for (var b = a + 1; b < block.length; b++) {
+        var A = block[a], B = block[b], ddx = B.dx - A.dx, ddy = B.dy - A.dy, dist = Math.hypot(ddx, ddy) || 0.01, min = (A.fw + B.fw) * 0.9;
+        if (dist < min) { var push = min - dist, ux = ddx / dist, uy = ddy / dist, aMov = A !== fixed, bMov = B !== fixed, share = (aMov && bMov) ? 0.5 : 1;
+          if (bMov) { B.dx += ux * push * share; B.dy += uy * push * share; }
+          if (aMov) { A.dx -= ux * push * share; A.dy -= uy * push * share; } }
+      }
+    }
+    objs.forEach(function (o) { if (o.fw > 0 && o !== fixed) clamp(o); }); // re-seat on grass after the relax nudges
+    var colls = block.map(function (o) { return [o.dx, o.dy, o.fw, o.fh]; });
+    var mx = 0; ISLE.tiles.forEach(function (k) { var p = k.split(","), d = Math.hypot(+p[0], +p[1]); if (d > mx) mx = d; });
+    cache = { stamp: ISLE._stamp, objs: objs, colls: colls, islandR: (mx + 1.35) * TILE }; // islandR = circular radius that clears the coast → the ocean-wave layer stays off the land
+    window._sanctSceneCache = cache;
+    return cache;
+  }
+  // Living sea: sparse double-hump wave squiggles (ref-matched periwinkle) scattered across the whole ocean, each gently bobbing/drifting/shimmering. Drawn AFTER the island blit and skipped within islandR, so it fills the flat corners the baked square leaves — killing the "water ends in a square" look — without ever touching the grass. Field generated once, animated per-frame.
+  function waveField() {
+    if (window._waveField) return window._waveField;
+    var f = [], R = 780, step = 140;
+    for (var gx = -R; gx <= R; gx += step) for (var gy = -R; gy <= R; gy += step) {
+      f.push({ x: gx + (Math.random() - 0.5) * step * 0.9, y: gy + (Math.random() - 0.5) * step * 0.9, ph: Math.random() * 6.28, sp: 0.45 + Math.random() * 0.6, amp: 1.5 + Math.random() * 1.8, len: 14 + Math.random() * 18, w: 2 + Math.random() * 1.4 });
+    }
+    window._waveField = f; return f;
+  }
+  function drawOceanWaves(ctx, t) {
+    var iR = sanctScene().islandR || 300, iR2 = iR * iR, f = waveField();
+    ctx.save(); ctx.lineCap = "round";
+    for (var i = 0; i < f.length; i++) {
+      var g = f[i]; if (g.x * g.x + g.y * g.y < iR2) continue; // coast ring is the baked shore's job
+      var a = 0.19 + 0.12 * Math.sin(t * g.sp * 0.8 + g.ph), x = g.x + Math.sin(t * g.sp * 0.5 + g.ph) * 1.4, y = g.y + Math.sin(t * g.sp + g.ph) * g.amp, L = g.len;
+      ctx.strokeStyle = "rgba(84,98,176," + (a < 0 ? 0 : a).toFixed(3) + ")"; ctx.lineWidth = g.w;
+      ctx.beginPath(); ctx.moveTo(x - L, y); ctx.quadraticCurveTo(x - L * 0.5, y - 4, x, y); ctx.quadraticCurveTo(x + L * 0.5, y + 4, x + L, y); ctx.stroke();
+    }
+    ctx.restore();
   }
   // low-res backing store + CSS upscale (image-rendering:pixelated) = true pixel-art look (Heaven Inc model)
   function fitPixelCanvas(c, cssW, cssH, px) {
@@ -6277,6 +6336,7 @@
     if (waterPat && !SANCTUARY) { var hw = W / vz, hh = H / vz, cxw = px + camX, cyw = py + camY; ctx.fillStyle = waterPat; ctx.fillRect(cxw - hw, cyw - hh, hw * 2, hh * 2); } // ocean tiles in WORLD space → zooms & pans at the SAME speed as the island (David 2026-06-24)
     if (SANCT_TILES) {
       drawTileGround(ctx); // expandable tile island: seamless grass on the tiles + blocky cliff/shore rim
+      drawOceanWaves(ctx, t); // living sea over the flat corners the baked square leaves (skipped within islandR → never touches land)
     } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
@@ -6294,18 +6354,10 @@
       ctx.save(); ctx.clip(grassBlob); ctx.fillStyle = grassPat || "#a8b06a"; ctx.fillRect(-RG * 1.8, -RG * 1.8, RG * 3.6, RG * 3.6); ctx.restore();
       ctx.strokeStyle = "rgba(120,92,58,0.4)"; ctx.lineWidth = 13; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-58, -8); ctx.quadraticCurveTo(-30, 70, 18, 150); ctx.stroke();
     }
-    // Cuphead painted object cutouts (drawn back-to-front by y)
-    // depth-sorted objects: those whose base is above the fairy draw behind her; those below draw in front (tall trees hide her)
-    var _isBig = ISLE && ISLE.tiles.size >= 35, _struct = _isBig ? [WORLD_IMG.house2, 4, 8, 254] : [WORLD_IMG.tentK, 0, 14, 128]; // small starter = TENT; upgrades to the full-scale house once the island is big enough (David 2026-07-15)
-    var _sanctObjs = _isBig
-      ? [ [WORLD_IMG.ptreeK, -72, -78, 92], [WORLD_IMG.ptreeK, 76, -74, 92], [WORLD_IMG.ptreeK, 4, -106, 96], _struct,
-          [WORLD_IMG.treeK, -132, 44, 104], [WORLD_IMG.treeK, 134, 56, 104],
-          [WORLD_IMG.wellK, -80, -6, 74], [WORLD_IMG.barrelK, 92, 8, 50],
-          [WORLD_IMG.statueK, -66, 116, 82],
-          [WORLD_IMG.flowerK1, 70, 122, 26], [WORLD_IMG.flowerK2, -12, 134, 24] ]
-      : [_struct, [WORLD_IMG.treeK, -74, 42, 82], [WORLD_IMG.flowerK1, 70, 62, 28], [WORLD_IMG.flowerK2, -34, 82, 26]];
-    var OBJS = SANCT_TILES ? _sanctObjs : SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]]; // house = depth-sorted sprite (walk-behind masking via the existing o[2]<=py / >py split)
-    OBJS.forEach(function (o) { if (o[2] <= py) drawObj(ctx, o[0], o[1], o[2], o[3]); });
+    // Cuphead painted object cutouts, drawn back-to-front by base-y so a nearer object hides whatever is behind it.
+    var _scene = SANCT_TILES ? sanctScene() : null;
+    var OBJS = SANCT_TILES ? [] : SANCTUARY ? [] : [[WORLD_IMG.tree, -152, -84, 158], [WORLD_IMG.tree, 190, -30, 148], [WORLD_IMG.cabin, -58, 2, 132], [WORLD_IMG.bush, 78, -136, 60], [WORLD_IMG.bush, -120, 72, 56], [WORLD_IMG.tree, 150, 74, 156], [WORLD_IMG.rock, -36, 124, 50], [WORLD_IMG.chest, -130, 28, 48], [WORLD_IMG.sign, 14, 44, 60]];
+    if (!SANCT_TILES) OBJS.forEach(function (o) { if (o[2] <= py) drawObj(ctx, o[0], o[1], o[2], o[3]); }); // legacy Cuphead island: crude 2-pass split (sanct tile island uses the sorted list below)
     var gden = (S.game && !SANCTUARY && S.game.garden) || [];
     for (var fi = 0; fi < gden.length; fi++) { var fa = fi * 2.39996 + 1, frr = 56 + (fi % 5) * 22, fx = Math.cos(fa) * frr, fy = Math.sin(fa) * frr; plantSpriteAt(ctx, fx, fy, gden[fi].t, gden[fi].stage); }
     var jsc = 1 - Math.min(0.45, jz * 0.011);
@@ -6324,25 +6376,36 @@
     else if (fhIdle && fhIdle.complete && fhIdle.naturalWidth) { fhImg = fhIdle; fhNF = FH_IDLE_NF; ffi = Math.floor(t * 6) % FH_IDLE_NF; } // the full Seedance idle loop (breathing + blink), ~6fps real-time
     else if (fhStand && fhStand.complete && fhStand.naturalWidth) { fhImg = fhStand; fhNF = 1; ffi = 0; }
     else if (fhWalk && fhWalk.complete && fhWalk.naturalWidth) { fhImg = fhWalk; fhNF = FH_NF; ffi = Math.floor(fhFrame) % FH_NF; }
-    if (SANCTUARY && fhImg) {
-      var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight;
-      var FDH = 66, FDW = FDH * ffw / ffh; // ~1 tile tall (ref proportion); NO sprite bob — the idle animation carries its own breathing and the frames are feet-pinned, so the feet stay planted
-      var _cf = ctx.filter; ctx.filter = "brightness(0.86) saturate(0.85) contrast(1.03)"; // color-correct the character to sit in the berry-night island (David 2026-07-14)
-      ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8), FDW, FDH);
-      ctx.filter = _cf;
-    } else if (dr && dr.complete && dr.naturalWidth) {
-      var ms = FAIRY_META.dir, row = 0;
-      if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
-      var hWs = hHs * ms.fw / ms.fh;
-      if (bodySpin) { ctx.save(); ctx.translate(px, py - jz); ctx.rotate(bodySpin * Math.PI / 180); ctx.translate(-px, -(py - jz)); }
-      ctx.drawImage(dr, 0, row * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16 - jz), hWs, hHs);
-      if (bodySpin) ctx.restore();
-    } else {
-      paintHero(t, st, walkF, moving);
-      var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
-      ctx.drawImage(hspr, 0, 0, HSW, HSH, Math.round(px - hdw / 2), Math.round(py - hdh + 9), hdw, hdh);
+    function _drawHero() {
+      if (SANCTUARY && fhImg) {
+        var ffw = fhImg.naturalWidth / fhNF, ffh = fhImg.naturalHeight;
+        var FDH = 66, FDW = FDH * ffw / ffh; // ~1 tile tall (ref proportion); NO sprite bob — the idle animation carries its own breathing and the frames are feet-pinned, so the feet stay planted
+        var _cf = ctx.filter; ctx.filter = "brightness(0.86) saturate(0.85) contrast(1.03)"; // color-correct the character to sit in the berry-night island (David 2026-07-14)
+        ctx.drawImage(fhImg, ffi * ffw, 0, ffw, ffh, Math.round(px - FDW / 2), Math.round(py - FDH + 8), FDW, FDH);
+        ctx.filter = _cf;
+      } else if (dr && dr.complete && dr.naturalWidth) {
+        var ms = FAIRY_META.dir, row = 0;
+        if (aiming) { var ang = Math.atan2(aimY, aimX), fk = (((Math.round((ang * FACE_DIR + FACE_OFF) / (Math.PI / 4))) % 8) + 8) % 8; row = DIR2CELL[fk]; }
+        var hWs = hHs * ms.fw / ms.fh;
+        if (bodySpin) { ctx.save(); ctx.translate(px, py - jz); ctx.rotate(bodySpin * Math.PI / 180); ctx.translate(-px, -(py - jz)); }
+        ctx.drawImage(dr, 0, row * ms.fh, ms.fw, ms.fh, Math.round(px - hWs / 2), Math.round(py - hHs + 16 - jz), hWs, hHs);
+        if (bodySpin) ctx.restore();
+      } else {
+        paintHero(t, st, walkF, moving);
+        var hs = 2.3, hdw = HSW * hs, hdh = HSH * hs;
+        ctx.drawImage(hspr, 0, 0, HSW, HSH, Math.round(px - hdw / 2), Math.round(py - hdh + 9), hdw, hdh);
+      }
     }
-    OBJS.forEach(function (o) { if (o[2] > py) drawObj(ctx, o[0], o[1], o[2], o[3]); });  // objects in front of the fairy occlude her
+    if (SANCT_TILES && _scene) {
+      // ONE depth-sorted pass: every object + the hero, ordered by base-y → a nearer thing always draws over (hides) whatever is behind it, and the hero is occluded when he walks behind a tree/house and drawn over when in front.
+      var _dl = _scene.objs.map(function (o) { return { y: o.dy, d: function () { drawObj(ctx, o.img, o.dx, o.dy, o.h); } }; });
+      _dl.push({ y: py, d: _drawHero });
+      _dl.sort(function (a, b) { return a.y - b.y; });
+      _dl.forEach(function (e) { e.d(); });
+    } else {
+      _drawHero();
+      OBJS.forEach(function (o) { if (o[2] > py) drawObj(ctx, o[0], o[1], o[2], o[3]); });  // objects in front of the fairy occlude her
+    }
     if (hasShippedToday() && !SANCTUARY) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     for (var di = dust.length - 1; di >= 0; di--) { var dp = dust[di]; dp.x += dp.vx; dp.y += dp.vy; dp.vy += 0.13; dp.life--; if (dp.life <= 0) { dust.splice(di, 1); continue; } ctx.globalAlpha = Math.max(0, dp.life / 16); ctx.fillStyle = "#cdbfa6"; ctx.beginPath(); ctx.arc(dp.x, dp.y, 2.6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
     ctx.restore();
@@ -6435,7 +6498,7 @@
     }
     if (shake > 0.3) shake *= 0.82; else shake = 0;
     if (SANCTUARY) {
-      var COLLS = SANCT_TILES ? SANCT_COLL_T : SANCT_COLL;
+      var COLLS = SANCT_TILES ? sanctScene().colls : SANCT_COLL;
       if (SANCT_TILES) {
         if (!ISLE) buildIsle();
         // tile-edge collision: feet must stay on a grass tile. Axis-separated so you slide along the coast instead of sticking.
