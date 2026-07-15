@@ -5891,7 +5891,7 @@
   function tricksOk() { return !!(S.game && S.game.ups && S.game.ups.tricks); }
   function doJump() { if (jz <= 0 && jvz <= 0) { jvz = (skateOn && skateOk()) ? 10.5 : 7.5; bodySpin = 0; flipState = null; } }  // skate = bigger air (studio-sim -3.5 vs -2.5)
   // skate + trick state (ported from studio-sim)
-  var skateOn = false, skateAng = null, pvx = 0, pvy = 0, bodySpin = 0, flipState = null, trickCombo = 0, trickMsg = null, trickMsgT = 0, shake = 0, dust = [];
+  var skateOn = false, skateAng = null, pvx = 0, pvy = 0, bodySpin = 0, flipState = null, trickCombo = 0, trickMsg = null, trickMsgT = 0, shake = 0, dust = [], claimFlash = null;
   var BOARD_FLIPS = { "up": { n: "KICKFLIP", dur: 12 }, "down": { n: "HEELFLIP", dur: 12 }, "left": { n: "BS 180", dur: 10 }, "right": { n: "FS 180", dur: 10 }, "up+left": { n: "VARIAL FLIP", dur: 14 }, "up+right": { n: "HARDFLIP", dur: 14 }, "down+left": { n: "INWARD HEEL", dur: 14 }, "down+right": { n: "TRE FLIP", dur: 16 } };
   var zoom = 1, pinch0 = 0, zoom0 = 1;
   function hx2(h) { h = h.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
@@ -6005,7 +6005,11 @@
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
     window._sanctSceneCache = null; // re-resolve object placement (cheap)
-    _expandVisual(tx, ty); // instant grass patch on the new tile + debounced full coast re-bake → smooth walk-out, no per-tile hitch, surrounding water untouched
+    // LOADING HINT (David 2026-07-15): fire a "materializing" pulse on the tile THIS frame, then bake on the NEXT frame so the
+    // pulse is visible before the ~1.3s synchronous coast bake. The pulse keeps settling over the finished tile after the bake,
+    // so the tile reads as "charging in" rather than freeze-then-pop. (Bake stays one-go: grass + coast still land together.)
+    claimFlash = { x: tx * TILE, y: ty * TILE, life: 1 };
+    if (window.requestAnimationFrame) requestAnimationFrame(function () { _expandVisual(tx, ty); }); else _expandVisual(tx, ty);
     saveIsle(); try { updGameHud(); } catch (e) {}
     for (var i = 0; i < 12; i++) dust.push({ x: tx * TILE + (Math.random() - 0.5) * TILE, y: ty * TILE + (Math.random() - 0.5) * TILE, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.6, life: 22 });
     return true;
@@ -6077,6 +6081,34 @@
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
     var baseA = _blurThr(rc, W, H, 14, 127);
     var _cr = (window._closeR == null ? 8 : window._closeR); if (_cr > 0) baseA = _close(baseA, W, H, _cr); // SUBTLE close: just soften the sharp inward-corner pinch; live-tunable via window._closeR (0 = off) so it never over-smooths the scallop lumps (David 2026-07-15)
+    // --- interior water: flood the EXTERIOR sea from the border, then classify every enclosed pocket. Tiny enclosed slivers
+    //     (concave pinches between lobes) get FILLED to land → kills the stray black ink lines in the grass. Genuine holes are
+    //     kept in `hole` so the coast passes treat them as clean water pockets, not confused south-cliff/sand (David 2026-07-15). ---
+    var ext = new Uint8Array(W * H), fstack = new Int32Array(W * H), fsp = 0;
+    for (i = 0; i < W; i++) { if (!baseA[i] && !ext[i]) { ext[i] = 1; fstack[fsp++] = i; } var _bi = (H - 1) * W + i; if (!baseA[_bi] && !ext[_bi]) { ext[_bi] = 1; fstack[fsp++] = _bi; } }
+    for (var _yE = 0; _yE < H; _yE++) { var _l = _yE * W, _r = _yE * W + (W - 1); if (!baseA[_l] && !ext[_l]) { ext[_l] = 1; fstack[fsp++] = _l; } if (!baseA[_r] && !ext[_r]) { ext[_r] = 1; fstack[fsp++] = _r; } }
+    while (fsp > 0) { var _p = fstack[--fsp], _py = (_p / W) | 0, _px = _p % W;
+      if (_px > 0 && !baseA[_p - 1] && !ext[_p - 1]) { ext[_p - 1] = 1; fstack[fsp++] = _p - 1; }
+      if (_px < W - 1 && !baseA[_p + 1] && !ext[_p + 1]) { ext[_p + 1] = 1; fstack[fsp++] = _p + 1; }
+      if (_py > 0 && !baseA[_p - W] && !ext[_p - W]) { ext[_p - W] = 1; fstack[fsp++] = _p - W; }
+      if (_py < H - 1 && !baseA[_p + W] && !ext[_p + W]) { ext[_p + W] = 1; fstack[fsp++] = _p + W; }
+    }
+    var hole = new Uint8Array(W * H), MINHOLE = Math.round(BTB * BTB * 0.2), _seen = new Uint8Array(W * H); // < ~0.2 tile² = a thin pinch/sliver (fill it → no black line); a real 1-tile hole (~1 tile²) survives as a clean pond
+    for (i = 0; i < W * H; i++) { if (baseA[i] || ext[i] || _seen[i]) continue;
+      var comp = [i]; _seen[i] = 1; var _qh = 0;
+      while (_qh < comp.length) { var _q = comp[_qh++], _qy = (_q / W) | 0, _qx = _q % W;
+        if (_qx > 0 && !baseA[_q - 1] && !ext[_q - 1] && !_seen[_q - 1]) { _seen[_q - 1] = 1; comp.push(_q - 1); }
+        if (_qx < W - 1 && !baseA[_q + 1] && !ext[_q + 1] && !_seen[_q + 1]) { _seen[_q + 1] = 1; comp.push(_q + 1); }
+        if (_qy > 0 && !baseA[_q - W] && !ext[_q - W] && !_seen[_q - W]) { _seen[_q - W] = 1; comp.push(_q - W); }
+        if (_qy < H - 1 && !baseA[_q + W] && !ext[_q + W] && !_seen[_q + W]) { _seen[_q + W] = 1; comp.push(_q + W); }
+      }
+      if (comp.length < MINHOLE) { for (var _c = 0; _c < comp.length; _c++) baseA[comp[_c]] = 1; } // sliver → land (no black line)
+      else { for (var _c2 = 0; _c2 < comp.length; _c2++) hole[comp[_c2]] = 1; } // genuine hole → clean pocket
+    }
+    // full-island world-Y extent (from ALL tiles, not the bake window) → the sand taper is world-consistent, so an
+    // incremental window patch tapers IDENTICALLY to a full bake (fixes the sand "resetting small" on tall side edges).
+    var _gYmin = 1e9, _gYmax = -1e9; ISLE.tiles.forEach(function (k) { var _ty = +k.split(",")[1]; if (_ty < _gYmin) _gYmin = _ty; if (_ty > _gYmax) _gYmax = _ty; });
+    var wYtop = _gYmin * BTB, wYbot = (_gYmax + 1) * BTB, wOyy = (miny - PAD) * BTB;
     // --- cloud-lobe grass mask: walk baseA contour (TRUE shoreline order via boundary trace), stamp overlapping lobes, skip sharp corners ---
     var eb = _traceContour(baseA, W, H), i;
     var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= (eb.length || 1); ccx /= (eb.length || 1);
@@ -6100,7 +6132,7 @@
     for (i = 0; i < W * H; i++) { out[i * 4] = 5; out[i * 4 + 1] = 11; out[i * 4 + 2] = 44; out[i * 4 + 3] = 255; } // water
     for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) {
       i = yy * W + xx; depth[xx] = baseA[i] ? 0 : depth[xx] + 1; var dp = depth[xx];
-      if (dp >= 1 && dp <= cmax) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; }
+      if (dp >= 1 && dp <= cmax && !hole[i]) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; } // cliff drapes only into the OPEN sea, never down into an enclosed hole
     }
     var landcliff = new Uint8Array(W * H); for (i = 0; i < W * H; i++) landcliff[i] = baseA[i] || cliff[i] ? 1 : 0;
     // --- sand ring: gradual taper thin(top)->thick(bottom), rounded (dist from smoothed landcliff); never north ---
@@ -6110,15 +6142,15 @@
     // gaps at corners → blue coastline bled onto top-right corners on irregular shapes). A water pixel is "north" (no
     // beach) when GRASS sits just BELOW it (i.e. the water is above/north of the land, or tucked in a notch).
     var north = new Uint8Array(W * H), ND = 44, gbelow = new Int32Array(W); for (i = 0; i < W; i++) gbelow[i] = 99999;
-    for (var yN = H - 1; yN >= 0; yN--) for (var xN = 0; xN < W; xN++) { i = yN * W + xN; gbelow[xN] = baseA[i] ? 0 : gbelow[xN] + 1; if (!landcliff[i] && gbelow[xN] >= 1 && gbelow[xN] <= ND) north[i] = 1; }
+    for (var yN = H - 1; yN >= 0; yN--) for (var xN = 0; xN < W; xN++) { i = yN * W + xN; gbelow[xN] = baseA[i] ? 0 : gbelow[xN] + 1; if (!landcliff[i] && ext[i] && gbelow[xN] >= 1 && gbelow[xN] <= ND) north[i] = 1; } // ext[i]: the north (no-beach) rule is for the OPEN top edge only — inside a hole grass sits below too, but we want the hole to keep a clean rim
     var ytop = H, ybot = 0; for (i = 0; i < W * H; i++) if (landcliff[i]) { var yr = (i / W) | 0; if (yr < ytop) ytop = yr; if (yr > ybot) ybot = yr; }
     var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 }, SO = { r: 40, g: 22, b: 26 };
     // rows-below-cliff for the cliff shadow on the sand
     var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
     for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
       i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
-      if (landcliff[i] || north[i]) continue;
-      var fr = Math.max(0, Math.min(1, (yy2 - ytop) / Math.max(1, ybot - ytop))), wy = 9 + (40 - 9) * fr;
+      if (landcliff[i] || north[i] || hole[i]) continue;
+      var _wY = wOyy + yy2, fr = Math.max(0, Math.min(1, (_wY - wYtop) / Math.max(1, wYbot - wYtop))), wy = 9 + (40 - 9) * fr; // world-Y taper (incremental-consistent)
       if (distout[i] >= 1 && distout[i] <= wy) {
         sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
@@ -6557,6 +6589,7 @@
     }
     if (hasShippedToday() && !SANCTUARY) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     for (var di = dust.length - 1; di >= 0; di--) { var dp = dust[di]; dp.x += dp.vx; dp.y += dp.vy; dp.vy += 0.13; dp.life--; if (dp.life <= 0) { dust.splice(di, 1); continue; } ctx.globalAlpha = Math.max(0, dp.life / 16); ctx.fillStyle = "#cdbfa6"; ctx.beginPath(); ctx.arc(dp.x, dp.y, 2.6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
+    if (claimFlash) { var cf = claimFlash; cf.life -= 0.045; if (cf.life <= 0) claimFlash = null; else { var e = 1 - cf.life, rr = TILE * (0.34 + e * 0.62), a = cf.life * cf.life; ctx.save(); ctx.globalCompositeOperation = "lighter"; var fg = ctx.createRadialGradient(cf.x, cf.y, rr * 0.2, cf.x, cf.y, rr); fg.addColorStop(0, "rgba(150,240,190," + (0.10 * a) + ")"); fg.addColorStop(0.7, "rgba(120,225,170," + (0.30 * a) + ")"); fg.addColorStop(1, "rgba(120,225,170,0)"); ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "rgba(190,255,215," + (0.6 * a) + ")"; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.stroke(); ctx.restore(); } } // "materializing" pulse on a freshly-claimed tile (loading hint before the coast bake)
     ctx.restore();
     if (trickMsgT > 0) { trickMsgT--; ctx.save(); ctx.globalAlpha = Math.min(1, trickMsgT / 18); ctx.font = "800 30px 'Baloo 2',sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 5; ctx.strokeStyle = "#3a2540"; ctx.fillStyle = trickMsg === "BAIL!" ? "#ff6b6b" : "#ffd24a"; ctx.strokeText(trickMsg, W / 2, H * 0.3); ctx.fillText(trickMsg, W / 2, H * 0.3); ctx.restore(); }
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
@@ -13088,7 +13121,8 @@
       { n: "cross thin", t: box(-1, 1, -6, 6).concat(box(-6, 6, -1, 1)).concat(box(-3, 3, -3, 3)) },
       { n: "H bars", t: box(-5, -3, -4, 4).concat(box(3, 5, -4, 4)).concat(box(-3, 3, -1, 1)) },
       { n: "single tile", t: [[0, 0]] },
-      { n: "2-tile diag", t: [[-1, -1], [0, 0], [1, 1], [2, 2]] }
+      { n: "2 adj holes", t: sub(box(-4, 4, -3, 3), function (x, y) { return (x === -1 || x === 1) && y === 0; }) },
+      { n: "tall (sand taper)", t: box(-2, 2, -8, 8) }
     ];
     function bake(sh) { ISLE = { tiles: (function () { var s = new Set(); sh.t.forEach(function (t) { s.add(tkey(t[0], t[1])); }); return s; })(), house: [0, -1], objects: [], _stamp: 9500 + sh.n.length }; window._isleBakeCache = null; try { return bakeIsle(); } catch (e) { return null; } }
     var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
@@ -13108,9 +13142,9 @@
     var cache = bakeIsle(); cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
     var mx = 0; s.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; });
     window._incBake = true; var ntx = mx + 5, nty = 0; // expand a LINE of 5 tiles east (triggers a canvas GROW past the PAD bound)
-    for (var e = 1; e <= 5; e++) { ISLE.tiles.add(tkey(mx + e, 0)); ISLE._stamp++; if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; } _expandVisual(mx + e, 0); }
+    for (var e = 1; e <= 5; e++) { ISLE.tiles.add(tkey(mx + e, 0)); ISLE._stamp++; _expandVisual(mx + e, 0); } // _expandVisual now bakes+blits synchronously per tile (v1090)
     if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
-    _doRebake(); var incCache = window._isleBakeCache;
+    var incCache = window._isleBakeCache;
     window._isleBakeCache = null; var fullB = bakeIsle(); // full bake of the expanded island (reference)
     var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
     ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
