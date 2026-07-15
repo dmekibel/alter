@@ -6152,7 +6152,7 @@
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
   var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30;
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
-  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=5"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=5"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=5"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
+  function loadFarmhand() { FH_DIRNAMES.forEach(function (d) { var im = new Image(); im.src = "assets/fh-" + d + ".png?v=6"; FH[d] = im; var st = new Image(); st.src = "assets/fhstand-" + d + ".png?v=6"; FHSTAND[d] = st; var id = new Image(); id.src = "assets/fhidle-" + d + ".png?v=6"; FHIDLE[d] = id; }); } // walk strips + clean stand + 3-frame blink-idle (open/half/closed, from idle.mp4)
   var FH_KBYK = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]; // atan2 octant (0=E, +y down) → sprite dir
   function fhDirName(ang) { var k = (((Math.round(ang / (Math.PI / 4))) % 8) + 8) % 8; return FH_KBYK[k]; }
   // spr-dir.png rows are David's hand-picked spin frames, already in compass order
@@ -6172,7 +6172,7 @@
   function drawObj(ctx, img, x, y, h) {
     if (!img || !img.complete || !img.naturalWidth) return;
     var w = h * img.naturalWidth / img.naturalHeight;
-    ctx.fillStyle = "rgba(30,22,14,0.16)"; ctx.beginPath(); ctx.ellipse(x, y, w * 0.34, h * 0.07, 0, 0, 7); ctx.fill();
+    if (!SANCT_TILES) { ctx.fillStyle = "rgba(30,22,14,0.16)"; ctx.beginPath(); ctx.ellipse(x, y, w * 0.34, h * 0.07, 0, 0, 7); ctx.fill(); } // sanctuary uses the single AO shadow in sanctGroundShade — no double shadow
     ctx.drawImage(img, Math.round(x - w / 2), Math.round(y - h), w, h);
   }
   // @SEC:GAME sanctuary scene: the ONE source of truth for island objects — their placement (auto-resolved so nothing
@@ -6184,7 +6184,7 @@
     var cache = window._sanctSceneCache;
     if (cache && cache.stamp === ISLE._stamp) return cache;
     var big = ISLE.tiles.size >= 35;
-    var strct = big ? [WORLD_IMG.house2, 4, 2, 254, 84, 30] : [WORLD_IMG.tentK, 0, 14, 128, 46, 22];
+    var strct = [WORLD_IMG.house2, 4, 2, 254, 84, 30]; // the house — only on a big-enough island; the small starter has NO structure (David 2026-07-15: killed the tent), it earns the house as it grows
     // footprints (fw,fh) are sized near each prop's VISUAL base width so the resolver keeps real gaps between things — no well tucked under the house, no crowding (David 2026-07-15)
     var raw = big
       ? [ [WORLD_IMG.ptreeK, -98, -96, 92, 26, 16], [WORLD_IMG.ptreeK, 98, -92, 92, 26, 16], strct,
@@ -6195,9 +6195,9 @@
           [WORLD_IMG.flGlow, -34, 108, 44, 0, 0], [WORLD_IMG.flCherry, 66, 152, 42, 0, 0], [WORLD_IMG.flButter, -98, 170, 40, 0, 0],
           [WORLD_IMG.flForget, 130, 140, 40, 0, 0], [WORLD_IMG.flPoppy, 152, 152, 40, 0, 0], [WORLD_IMG.plMush, -152, 96, 42, 0, 0],
           [WORLD_IMG.plClover, 34, 186, 36, 0, 0], [WORLD_IMG.plFern, 152, 104, 46, 0, 0], [WORLD_IMG.flStar, -6, 200, 38, 0, 0] ]
-      : [ strct, [WORLD_IMG.treeK, -78, 44, 82, 24, 14], [WORLD_IMG.flGlow, -40, 78, 42, 0, 0], [WORLD_IMG.flCherry, 74, 64, 40, 0, 0], [WORLD_IMG.flButter, -8, 98, 38, 0, 0] ];
+      : [ [WORLD_IMG.treeK, -70, 40, 88, 24, 14], [WORLD_IMG.flGlow, 40, 70, 44, 0, 0], [WORLD_IMG.flCherry, -46, 82, 40, 0, 0], [WORLD_IMG.flButter, 6, 100, 38, 0, 0], [WORLD_IMG.plMush, -78, -30, 38, 0, 0] ];
     var objs = raw.map(function (o) { return { img: o[0], dx: o[1], dy: o[2], h: o[3], fw: o[4] || 0, fh: o[5] || 0 }; });
-    var fixed = objs[raw.indexOf(strct)]; // the house/tent is the anchor — never moved by the resolver (index-robust)
+    var _fi = raw.indexOf(strct); var fixed = _fi >= 0 ? objs[_fi] : null; // the house is the anchor when present (big island); small island has none
     function onGrass(x, y) { return isleHas(Math.round(x / TILE), Math.round(y / TILE)); }
     function footOK(o) { return onGrass(o.dx, o.dy) && onGrass(o.dx - o.fw, o.dy + o.fh) && onGrass(o.dx + o.fw, o.dy + o.fh) && onGrass(o.dx - o.fw, o.dy - o.fh) && onGrass(o.dx + o.fw, o.dy - o.fh); }
     function clamp(o) { var g = 0; while (g++ < 60 && !footOK(o)) { o.dx *= 0.93; o.dy *= 0.93; } } // pull a straying object in toward center until its whole base sits on grass
@@ -6213,8 +6213,12 @@
     }
     objs.forEach(function (o) { if (o.fw > 0 && o !== fixed) clamp(o); }); // re-seat on grass after the relax nudges
     var colls = block.map(function (o) { return [o.dx, o.dy, o.fw, o.fh]; });
-    var mx = 0; ISLE.tiles.forEach(function (k) { var p = k.split(","), d = Math.hypot(+p[0], +p[1]); if (d > mx) mx = d; });
-    cache = { stamp: ISLE._stamp, objs: objs, colls: colls, islandR: (mx + 1.35) * TILE }; // islandR = circular radius that clears the coast → the ocean-wave layer stays off the land
+    // island centroid + radius in WORLD units (from the tiles) — expansion moves the island off the origin, so the
+    // lighting + wave-skip must follow the ACTUAL center, not (0,0), or the moonlight grade shows as a dark circle.
+    var sx = 0, sy = 0, nT = 0; ISLE.tiles.forEach(function (k) { var p = k.split(","); sx += +p[0]; sy += +p[1]; nT++; });
+    var cix = sx / (nT || 1), ciy = sy / (nT || 1), mx = 0;
+    ISLE.tiles.forEach(function (k) { var p = k.split(","), d = Math.hypot(+p[0] - cix, +p[1] - ciy); if (d > mx) mx = d; });
+    cache = { stamp: ISLE._stamp, objs: objs, colls: colls, cx: cix * TILE, cy: ciy * TILE, rWorld: (mx + 1.35) * TILE, islandR: (mx + 1.35) * TILE };
     window._sanctSceneCache = cache;
     return cache;
   }
@@ -6228,10 +6232,12 @@
     window._waveField = f; return f;
   }
   function drawOceanWaves(ctx, t) {
-    var iR = sanctScene().islandR || 300, iR2 = iR * iR, f = waveField();
+    var _sc = sanctScene(), f = waveField();
     ctx.save(); ctx.lineCap = "round";
     for (var i = 0; i < f.length; i++) {
-      var g = f[i]; if (g.x * g.x + g.y * g.y < iR2) continue; // coast ring is the baked shore's job
+      var g = f[i], wtx = Math.round(g.x / TILE), wty = Math.round(g.y / TILE), near = false; // SHAPE-AWARE skip: stay clear of the actual land (incl. spikes), not a circle that a spike pokes past
+      for (var oy = -2; oy <= 2 && !near; oy++) for (var ox = -2; ox <= 2; ox++) { if (isleHas(wtx + ox, wty + oy)) { near = true; break; } }
+      if (near) continue; // within 2 tiles of land → the baked shore + coastline own this area
       var a = 0.19 + 0.12 * Math.sin(t * g.sp * 0.8 + g.ph), x = g.x + Math.sin(t * g.sp * 0.5 + g.ph) * 1.4, y = g.y + Math.sin(t * g.sp + g.ph) * g.amp, L = g.len;
       ctx.strokeStyle = "rgba(84,98,176," + (a < 0 ? 0 : a).toFixed(3) + ")"; ctx.lineWidth = g.w;
       ctx.beginPath(); ctx.moveTo(x - L, y); ctx.quadraticCurveTo(x - L * 0.5, y - 4, x, y); ctx.quadraticCurveTo(x + L * 0.5, y + 4, x + L, y); ctx.stroke();
@@ -6240,18 +6246,17 @@
   }
   // Scene shading (the ref's mood): a gentle moonlight falloff on the grass + a soft contact shadow under every object so nothing floats. Drawn on the ground, UNDER the objects.
   function sanctGroundShade(ctx, scene) {
-    var iR = scene.islandR || 300, objs = scene.objs;
-    ctx.save();
-    ctx.beginPath(); ctx.ellipse(0, 12, iR * 0.9, iR * 0.8, 0, 0, 7); ctx.clip(); // keep the grade on the grass, off the water
-    var vg = ctx.createRadialGradient(0, -18, iR * 0.12, 0, 12, iR * 0.98);
-    vg.addColorStop(0, "rgba(24,18,46,0)"); vg.addColorStop(0.72, "rgba(12,9,30,0.12)"); vg.addColorStop(1, "rgba(6,5,22,0.40)");
-    ctx.globalCompositeOperation = "multiply"; ctx.fillStyle = vg; ctx.fillRect(-iR * 1.2, -iR * 1.2, iR * 2.4, iR * 2.4);
-    ctx.restore();
+    var iR = scene.rWorld || 300, cx = scene.cx || 0, cy = scene.cy || 0, objs = scene.objs;
+    // Gentle moonlight lift centered on the ACTUAL island (follows expansion, so no stray dark circle). Soft, no hard dark ring.
+    var vg = ctx.createRadialGradient(cx, cy - 18, iR * 0.1, cx, cy + 8, iR * 1.15);
+    vg.addColorStop(0, "rgba(20,16,42,0)"); vg.addColorStop(0.7, "rgba(12,9,30,0.06)"); vg.addColorStop(1, "rgba(8,6,24,0.16)");
+    ctx.save(); ctx.globalCompositeOperation = "multiply"; ctx.fillStyle = vg; ctx.fillRect(cx - iR * 1.3, cy - iR * 1.3, iR * 2.6, iR * 2.6); ctx.restore();
+    // soft contact shadows — a wide feathered pool (no hard rim), sat right at each base
     for (var i = 0; i < objs.length; i++) { var o = objs[i], im = o.img; if (!im || !im.complete || !im.naturalWidth || o.h < 30) continue;
-      var w = o.h * im.naturalWidth / im.naturalHeight, rx = w * (o.fw > 0 ? 0.42 : 0.36), ry = Math.max(5, rx * 0.30);
-      var g = ctx.createRadialGradient(o.dx, o.dy + 2, ry * 0.25, o.dx, o.dy + 2, rx);
-      g.addColorStop(0, "rgba(7,5,17,0.40)"); g.addColorStop(0.6, "rgba(7,5,17,0.20)"); g.addColorStop(1, "rgba(7,5,17,0)");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(o.dx, o.dy + 2, rx, ry, 0, 0, 7); ctx.fill();
+      var w = o.h * im.naturalWidth / im.naturalHeight, rx = w * (o.fw > 0 ? 0.40 : 0.36), ry = Math.max(6, rx * 0.36), sy = o.dy - ry * 0.3;
+      var g = ctx.createRadialGradient(o.dx, sy, ry * 0.15, o.dx, sy, rx);
+      g.addColorStop(0, "rgba(7,5,17,0.34)"); g.addColorStop(0.32, "rgba(7,5,17,0.24)"); g.addColorStop(0.62, "rgba(7,5,17,0.11)"); g.addColorStop(0.82, "rgba(7,5,17,0.04)"); g.addColorStop(1, "rgba(7,5,17,0)"); // long feathered falloff → soft edges
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(o.dx, sy, rx, ry, 0, 0, 7); ctx.fill();
     }
   }
   // Warm additive glows on TOP of the scene: the lit house windows spill a soft amber pool, the charged bloom casts a living pink-white light. This is the "add lights to the scene" layer.
@@ -6424,7 +6429,7 @@
       drawTileGround(ctx); // expandable tile island: seamless grass on the tiles + blocky cliff/shore rim
       drawOceanWaves(ctx, t); // living sea over the flat corners the baked square leaves (skipped within islandR → never touches land)
       sanctGroundShade(ctx, sanctScene()); // ref-mood scene shading: moonlight falloff + soft contact shadows UNDER the objects
-      sanctClaimGlow(ctx, t); // island expansion: the claimable water tile the guardian faces glows (tap to grow)
+      sanctClaimGlow(ctx, t); // island expansion: the claimable water tile the guardian faces glows (walk into it to grow)
     } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
@@ -12976,6 +12981,7 @@
       ["🧘 Full stack (10m)", _dj(function () { runFullStack(10, true); })],
       ["🌬 Breathe tool", _dj(function () { DEV.tool("breathe"); })],
       ["👁 Meditate tool", _dj(function () { DEV.tool("meditate"); })],
+      ["✨ +10,000 Spark", function () { S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark = (S.game.spark || 0) + 10000; S.game.total = (S.game.total || 0) + 10000; save(); try { updGameHud(); } catch (e) {} try { toast("dev: +10,000 Spark → " + S.game.spark.toLocaleString()); } catch (e) {} }],
       ["— — — — — — —", function () {}],
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], ["— persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], ["— persona: early (day 3)", function () { devLoadPersona("early"); }], ["— persona: building (week 2)", function () { devLoadPersona("building"); }], ["— persona: established (month 1)", function () { devLoadPersona("established"); }], ["— persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
