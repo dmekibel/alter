@@ -6071,7 +6071,7 @@
     // --- baseA: tile rects -> round the stepped corners ---
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; txs.forEach(function (tx, n) { rx.fillRect(bx(tx), by(tys[n]), BTB, BTB); });
     var baseA = _blurThr(rc, W, H, 14, 127);
-    baseA = _close(baseA, W, H, 30); // gently soften the pinched inward (concave) corners an expanded island makes — the "grass cleavage" — without blobbing the tile shape (David 2026-07-15)
+    var _cr = (window._closeR == null ? 8 : window._closeR); if (_cr > 0) baseA = _close(baseA, W, H, _cr); // SUBTLE close: just soften the sharp inward-corner pinch; live-tunable via window._closeR (0 = off) so it never over-smooths the scallop lumps (David 2026-07-15)
     // --- cloud-lobe grass mask: walk baseA contour (TRUE shoreline order via boundary trace), stamp overlapping lobes, skip sharp corners ---
     var eb = _traceContour(baseA, W, H), i;
     var ccy = 0, ccx = 0; eb.forEach(function (p) { ccy += p[0]; ccx += p[1]; }); ccy /= (eb.length || 1); ccx /= (eb.length || 1);
@@ -6218,20 +6218,16 @@
     var cache = window._sanctSceneCache;
     if (cache && cache.stamp === ISLE._stamp) return cache;
     var big = ISLE.tiles.size >= 35;
-    var strct = [WORLD_IMG.house2, 4, 2, 254, 84, 30]; // the house — only on a big-enough island; the small starter has NO structure (David 2026-07-15: killed the tent), it earns the house as it grows
-    // footprints (fw,fh) are sized near each prop's VISUAL base width so the resolver keeps real gaps between things — no well tucked under the house, no crowding (David 2026-07-15)
+    // AUTO-SPAWN OFF (David 2026-07-15): no structures (house/well/statue/barrel/purple-trees) spawn automatically anymore
+    // — those become PLACEABLE via the coming place-items system. The island just carries ambient natural flora that
+    // scales gently with size. fixed=null: nothing is a hard anchor now (the resolver just keeps things on grass, apart).
     var raw = big
-      ? [ [WORLD_IMG.ptreeK, -98, -96, 92, 26, 16], [WORLD_IMG.ptreeK, 98, -92, 92, 26, 16], strct,
-          [WORLD_IMG.treeK, -152, 54, 104, 28, 16], [WORLD_IMG.treeK, 154, 64, 104, 28, 16],
-          [WORLD_IMG.wellK, -110, 18, 74, 34, 21], [WORLD_IMG.barrelK, 118, 28, 50, 22, 15],
-          [WORLD_IMG.statueK, -76, 124, 82, 28, 17],
-          // scattered flora — decorative (fw/fh 0 = walk-through, no collision), just edge-clamped onto grass
-          [WORLD_IMG.flGlow, -34, 108, 44, 0, 0], [WORLD_IMG.flCherry, 66, 152, 42, 0, 0], [WORLD_IMG.flButter, -98, 170, 40, 0, 0],
-          [WORLD_IMG.flForget, 130, 140, 40, 0, 0], [WORLD_IMG.flPoppy, 152, 152, 40, 0, 0], [WORLD_IMG.plMush, -152, 96, 42, 0, 0],
-          [WORLD_IMG.plClover, 34, 186, 36, 0, 0], [WORLD_IMG.plFern, 152, 104, 46, 0, 0], [WORLD_IMG.flStar, -6, 200, 38, 0, 0] ]
-      : [ [WORLD_IMG.treeK, -70, 40, 88, 24, 14], [WORLD_IMG.flGlow, 40, 70, 44, 0, 0], [WORLD_IMG.flCherry, -46, 82, 40, 0, 0], [WORLD_IMG.flButter, 6, 100, 38, 0, 0], [WORLD_IMG.plMush, -78, -30, 38, 0, 0] ];
+      ? [ [WORLD_IMG.treeK, -118, 44, 100, 26, 15], [WORLD_IMG.treeK, 124, 58, 100, 26, 15],
+          [WORLD_IMG.flGlow, -30, 104, 44, 0, 0], [WORLD_IMG.flCherry, 66, 140, 42, 0, 0], [WORLD_IMG.flButter, -96, 158, 40, 0, 0],
+          [WORLD_IMG.flForget, 118, 122, 40, 0, 0], [WORLD_IMG.plMush, -146, 84, 42, 0, 0], [WORLD_IMG.flStar, 4, 172, 38, 0, 0] ]
+      : [ [WORLD_IMG.treeK, -64, 38, 84, 24, 14], [WORLD_IMG.flGlow, 46, 66, 42, 0, 0], [WORLD_IMG.flCherry, -30, 84, 40, 0, 0], [WORLD_IMG.flButter, 22, 22, 38, 0, 0] ];
     var objs = raw.map(function (o) { return { img: o[0], dx: o[1], dy: o[2], h: o[3], fw: o[4] || 0, fh: o[5] || 0 }; });
-    var _fi = raw.indexOf(strct); var fixed = _fi >= 0 ? objs[_fi] : null; // the house is the anchor when present (big island); small island has none
+    var fixed = null; // no auto-spawned anchor; every prop is just clamped onto grass + relaxed apart
     function onGrass(x, y) { return isleHas(Math.round(x / TILE), Math.round(y / TILE)); }
     function footOK(o) { return onGrass(o.dx, o.dy) && onGrass(o.dx - o.fw, o.dy + o.fh) && onGrass(o.dx + o.fw, o.dy + o.fh) && onGrass(o.dx - o.fw, o.dy - o.fh) && onGrass(o.dx + o.fw, o.dy - o.fh); }
     function clamp(o) { var g = 0; while (g++ < 60 && !footOK(o)) { o.dx *= 0.93; o.dy *= 0.93; } } // pull a straying object in toward center until its whole base sits on grass
@@ -12997,6 +12993,40 @@
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
   window.DEV.isleSize = function (r2) { var S = new Set(); var R = r2 || 13; for (var i = -8; i <= 8; i++) for (var j = -8; j <= 8; j++) if (i * i + j * j <= R) S.add(tkey(i, j)); ISLE = { tiles: S, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 0) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; return "island set to " + S.size + " tiles (r2=" + R + ")"; }; // DEV: set island to a radius^2 for proportion checks (small/med/large)
   window.DEV.jagged = function () { var s = new Set(); for (var i = -2; i <= 2; i++) for (var j = -2; j <= 2; j++) s.add(tkey(i, j)); s.delete(tkey(2, 2)); s.delete(tkey(-2, 2)); s.delete(tkey(2, -2)); s.add(tkey(3, 0)); s.add(tkey(0, 3)); s.add(tkey(-3, -1)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 1) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; zoom = 1.05; camX = 0; camY = 0; px = 0; py = 0; return "jagged " + s.size + " tiles (spikes + concave notches to stress the coast corners)"; }; // DEV: worst-case coast shape
+  // DEV: fast coast self-audit WITHOUT the slow reload/screenshot loop — bakes several shapes and paints each island +
+  // auto-detected CONCAVE & CONVEX corner closeups onto a fullscreen overlay in ONE shot (screenshot it, DEV.auditClose()).
+  window.DEV.auditCoast = function () {
+    var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
+    function box(x0, x1, y0, y1) { var a = []; for (var i = x0; i <= x1; i++) for (var j = y0; j <= y1; j++) a.push([i, j]); return a; }
+    function disc(r2) { var a = []; for (var i = -8; i <= 8; i++) for (var j = -8; j <= 8; j++) if (i * i + j * j <= r2) a.push([i, j]); return a; }
+    var S1 = disc(12).concat([[4, 0], [0, 4], [-4, -1]]); // disc + convex nubs
+    var S2 = box(-4, 4, -4, 4).filter(function (t) { return !(t[0] > 0 && t[1] > 0); }); // L: one deep concave inner corner
+    var S3 = box(-1, 1, -5, 5).concat(box(-5, 5, -1, 1)); // plus: 4 concave corners
+    var S4 = disc(16).filter(function (t) { return !(t[0] >= 2 && t[0] <= 4 && t[1] >= -1 && t[1] <= 1); }); // disc with a rectangular bite (notch)
+    var shapes = [{ n: "disc+nubs", t: S1 }, { n: "L-corner", t: S2 }, { n: "plus", t: S3 }, { n: "disc+bite", t: S4 }];
+    function cornersOf(arr) { var set = new Set(); arr.forEach(function (t) { set.add(t[0] + "," + t[1]); }); function h(x, y) { return set.has(x + "," + y); } var cv = [], cx = [];
+      arr.forEach(function (t) { var x = t[0], y = t[1];
+        if (h(x + 1, y) && h(x, y + 1) && !h(x + 1, y + 1)) cv.push([x + 0.5, y + 0.5]); if (h(x - 1, y) && h(x, y + 1) && !h(x - 1, y + 1)) cv.push([x - 0.5, y + 0.5]);
+        if (h(x + 1, y) && h(x, y - 1) && !h(x + 1, y - 1)) cv.push([x + 0.5, y - 0.5]); if (h(x - 1, y) && h(x, y - 1) && !h(x - 1, y - 1)) cv.push([x - 0.5, y - 0.5]);
+        if (!h(x + 1, y) && !h(x, y + 1)) cx.push([x + 0.5, y + 0.5]); if (!h(x - 1, y) && !h(x, y - 1)) cx.push([x - 0.5, y - 0.5]); });
+      return { cc: cv, cx: cx }; }
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh); var rowH = vh / shapes.length, cW = vw / 3, _savedCR = window._closeR;
+    function bakeShape(sh, cr) { window._closeR = cr; ISLE = { tiles: (function () { var s = new Set(); sh.t.forEach(function (t) { s.add(tkey(t[0], t[1])); }); return s; })(), house: [0, -1], objects: [], _stamp: 9000 + Math.round(cr * 7) }; window._isleBakeCache = null; try { return bakeIsle(); } catch (e) { return null; } }
+    shapes.forEach(function (sh, si) { var y0 = si * rowH; g.strokeStyle = "#333"; g.strokeRect(0, y0, vw, rowH);
+      var bOn = bakeShape(sh, (window._closeR == null ? 10 : _savedCR)), bOff = bakeShape(sh, 0); if (!bOn || !bOff) return;
+      g.fillStyle = "#e8e0c0"; g.font = "12px sans-serif"; g.fillText(sh.n + " r=" + (_savedCR == null ? 10 : _savedCR), 5, y0 + 14);
+      var fs = Math.min(cW / bOn.w, rowH / bOn.h) * 0.94; g.drawImage(bOn.cv, (cW - bOn.w * fs) / 2, y0 + (rowH - bOn.h * fs) / 2, bOn.w * fs, bOn.h * fs);
+      var cor = cornersOf(sh.t), p = cor.cc[0]; if (!p) return; var crop = 2.4 * bOn.BTB;
+      [[bOff, "OFF (lumps)", "#7fdf7f"], [bOn, "ON (close)", "#ff5f8a"]].forEach(function (pair, pi) { var bb = pair[0], col = (pi + 1) * cW, cxp = (p[0] - bb.minx + bb.PAD) * bb.BTB, cyp = (p[1] - bb.miny + bb.PAD) * bb.BTB;
+        g.save(); g.beginPath(); g.rect(col, y0, cW, rowH); g.clip(); g.drawImage(bb.cv, cxp - crop / 2, cyp - crop / 2, crop, crop, col, y0, cW, cW); g.restore();
+        g.strokeStyle = pair[2]; g.lineWidth = 2; g.strokeRect(col + 2, y0 + 2, cW - 4, cW - 4); g.fillStyle = pair[2]; g.fillText(pair[1], col + 6, y0 + cW - 8);
+        g.strokeStyle = pair[2]; g.beginPath(); g.arc(col + cW / 2, y0 + cW / 2, 5, 0, 7); g.stroke(); }); });
+    window._closeR = _savedCR; ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS;
+    return "audit overlay drawn — screenshot it; DEV.auditClose() to dismiss";
+  };
+  window.DEV.auditClose = function () { var o = document.getElementById("auditOv"); if (o) o.remove(); return "closed"; };
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
   window.DEV.growTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); var before = ISLE.tiles.size, sp = S.game.spark; claimTileAt(water[0], water[1]); return "claim: size " + before + "->" + ISLE.tiles.size + ", spark " + sp + "->" + S.game.spark + ", persisted=" + (!!(S.game.isle && S.game.isle.length === ISLE.tiles.size)); }; // DEV: exercise the real walk-to-edge claim path
   function devInit() { if (el("devBtn")) return; try { localStorage.setItem("alter_dev", "1"); } catch (e) {} var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); } // David 2026-07-14: dev tools ALWAYS available from the first screen (single-user build; re-gate with devOn() before public launch)
