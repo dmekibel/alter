@@ -5979,6 +5979,8 @@
   var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
   function tkey(tx, ty) { return tx + "," + ty; }
   function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
+  var _pendingIsle = {}; // tile keys claimed (in ISLE.tiles, Spark spent, persisted) but whose coast hasn't finished baking/blitting yet
+  function isleSolid(tx, ty) { return isleHas(tx, ty) && !_pendingIsle[tkey(tx, ty)]; } // for COLLISION only — a pending tile is still "there" (counted, cost-spent) but not yet walkable, so the guardian can't outrun the bake (David 2026-07-16: "he should not be able to walk onto it until it appears")
   function buildIsle() {
     var tset = new Set(); // SMALL starter island (David 2026-07-15) — compact plot; objects sized to fit ON its grass
     var saved = (S.game && S.game.isle) || null; // persisted grown island (claimed tiles) survives reloads
@@ -6006,6 +6008,7 @@
     if ((S.game.spark || 0) < cost) return false;
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
+    _pendingIsle[tkey(tx, ty)] = 1; // not walkable until its coast bake blits in (cleared in _release())
     window._sanctSceneCache = null; // re-resolve object placement (cheap)
     claimFlashes.push({ x: tx * TILE, y: ty * TILE, life: 1, pend: true }); if (claimFlashes.length > 8) claimFlashes.shift(); // materializing pulse: LOOPS while pend (coast still baking off-thread), then fades once the coast blits in — so the tile appears all-at-once, never grass-square-then-coast (David 2026-07-15)
     // Patch the grass + reconcile the cache stamp SYNCHRONOUSLY, right now — the coast then bakes OFF-THREAD (worker), so this
@@ -6096,10 +6099,16 @@
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; for (var n = 0; n < txs.length; n++) rx.fillRect(bx(txs[n]), by(tys[n]), BTB, BTB);
     var baseA = _blurThr(rc, W, H, 14, 127);
     if (closeR > 0) baseA = _close(baseA, W, H, closeR);
-    // P1 — flood the EXTERIOR sea from the border
+    // P1 — flood the EXTERIOR sea. Seeded from the canvas border AND from every pixel whose TILE is already known-exterior
+    // by the GLOBAL tile-level classification (p.holeTiles, computed once over the WHOLE island — see computeHoleTiles).
+    // Without the global seed, a bay/pocket deeper than the window's CTX margin looks "enclosed" to a purely window-local
+    // flood fill (it never reaches the canvas border) → gets wrongly treated as a hole → notches/black patches, and
+    // inconsistent results between an incremental window bake and a full bake of the same island (David 2026-07-16).
+    var holeTileSet = null; if (p.holeTiles && p.holeTiles.length) { holeTileSet = {}; for (var hti = 0; hti < p.holeTiles.length; hti++) holeTileSet[p.holeTiles[hti][0] + "," + p.holeTiles[hti][1]] = 1; }
     var ext = new Uint8Array(W * H), fstack = new Int32Array(W * H), fsp = 0;
     for (i = 0; i < W; i++) { if (!baseA[i] && !ext[i]) { ext[i] = 1; fstack[fsp++] = i; } var _bi = (H - 1) * W + i; if (!baseA[_bi] && !ext[_bi]) { ext[_bi] = 1; fstack[fsp++] = _bi; } }
     for (var _yE = 0; _yE < H; _yE++) { var _l = _yE * W, _r = _yE * W + (W - 1); if (!baseA[_l] && !ext[_l]) { ext[_l] = 1; fstack[fsp++] = _l; } if (!baseA[_r] && !ext[_r]) { ext[_r] = 1; fstack[fsp++] = _r; } }
+    if (holeTileSet) { for (i = 0; i < W * H; i++) { if (baseA[i] || ext[i]) continue; var _wtx = Math.floor((i % W) / BTB) + minx - PAD, _wty = Math.floor(((i / W) | 0) / BTB) + miny - PAD; if (!holeTileSet[_wtx + "," + _wty]) { ext[i] = 1; fstack[fsp++] = i; } } }
     while (fsp > 0) { var _p = fstack[--fsp], _py = (_p / W) | 0, _px = _p % W;
       if (_px > 0 && !baseA[_p - 1] && !ext[_p - 1]) { ext[_p - 1] = 1; fstack[fsp++] = _p - 1; }
       if (_px < W - 1 && !baseA[_p + 1] && !ext[_p + 1]) { ext[_p + 1] = 1; fstack[fsp++] = _p + 1; }
@@ -6161,7 +6170,7 @@
       // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
       // the sides — LOCAL, so it never drifts as the island grows (the old global world-Y taper re-normalised by the island's
       // total height on every south claim → the sand/ink boundary shifted per tile → horizontal seam lines). Reuses _nP.
-      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = 22 + (40 - 22) * _south; // baseline 22px sand on every non-north edge (keeps the sides sanded like the approved look) + wider (→40) on south-facing beaches; all LOCAL so no seam
+      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = 30 + (48 - 30) * _south; // baseline 30px sand on every non-north edge (David 2026-07-16: wanted MORE sand than v1099, esp. concave/internal corners) + wider (→48) on south-facing beaches; all LOCAL so no seam
       if (distout[i] >= 1 && distout[i] <= wy) {
         sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
@@ -6185,7 +6194,30 @@
     return { buf: out.buffer, W: W, H: H, minx: minx, miny: miny, maxx: maxx, maxy: maxy };
   }
   function _tilesArr() { var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return a; }
-  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
+  // GLOBAL hole/bay classification (David 2026-07-16): a per-TILE BFS over the WHOLE island (not the bake window) that finds
+  // which water tiles are genuinely enclosed holes vs open sea reachable from outside. Cheap (tile-grid, not pixel-grid) —
+  // runs once per ISLE._stamp change, feeds the core's ext-flood seeding (see P1) so a windowed bake can never misjudge a
+  // deep bay as an enclosed pocket just because the window itself didn't reach open water.
+  function computeHoleTiles(tiles) {
+    if (!tiles.length) return [];
+    var minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9, tileSet = {};
+    tiles.forEach(function (t) { var k = t[0] + "," + t[1]; tileSet[k] = 1; if (t[0] < minx) minx = t[0]; if (t[0] > maxx) maxx = t[0]; if (t[1] < miny) miny = t[1]; if (t[1] > maxy) maxy = t[1]; });
+    var M = 4, x0 = minx - M, x1 = maxx + M, y0 = miny - M, y1 = maxy + M, W = x1 - x0 + 1, H = y1 - y0 + 1;
+    if (W * H > 400000) return []; // safety cap for pathological sizes — the local pixel-level sliver-fill still runs as a fallback
+    var vis = new Uint8Array(W * H); function idx(x, y) { return (y - y0) * W + (x - x0); }
+    var stack = [];
+    for (var x = x0; x <= x1; x++) { [y0, y1].forEach(function (y) { var i = idx(x, y); if (!tileSet[x + "," + y] && !vis[i]) { vis[i] = 1; stack.push(i); } }); }
+    for (var y = y0; y <= y1; y++) { [x0, x1].forEach(function (x) { var i = idx(x, y); if (!tileSet[x + "," + y] && !vis[i]) { vis[i] = 1; stack.push(i); } }); }
+    while (stack.length) { var i = stack.pop(), xx = (i % W) + x0, yy = ((i / W) | 0) + y0;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var nx = xx + d[0], ny = yy + d[1]; if (nx < x0 || nx > x1 || ny < y0 || ny > y1) return; var ni = idx(nx, ny); if (!tileSet[nx + "," + ny] && !vis[ni]) { vis[ni] = 1; stack.push(ni); } });
+    }
+    var holes = [];
+    for (var yy2 = y0; yy2 <= y1; yy2++) for (var xx2 = x0; xx2 <= x1; xx2++) { var k = xx2 + "," + yy2; if (!tileSet[k] && !vis[idx(xx2, yy2)]) holes.push([xx2, yy2]); }
+    return holes;
+  }
+  var _holeTilesCache = null;
+  function getHoleTiles() { if (_holeTilesCache && _holeTilesCache.stamp === ISLE._stamp) return _holeTilesCache.arr; var arr = computeHoleTiles(_tilesArr()); _holeTilesCache = { stamp: ISLE._stamp, arr: arr }; return arr; }
+  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
   function _wrapBake(r) { var PAD = 2, cv = _cv(r.W, r.H); cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(r.buf), r.W, r.H), 0, 0); return { cv: cv, ox: (r.minx - PAD) * TILE - TILE / 2, oy: (r.miny - PAD) * TILE - TILE / 2, w: r.W, h: r.H, key: ISLE.tiles.size, minx: r.minx, miny: r.miny, maxx: r.maxx, maxy: r.maxy, PAD: PAD, BTB: 172, GEY: 90, EXTRA: 150 }; }
   function bakeIsle(region) { var p = _bakeParams(region); if (!p) return null; var r; try { r = __coastBakeCore(p); } catch (e) { if (window.console) console.warn("bake core failed", e); return null; } return r ? _wrapBake(r) : null; } // SYNC driver (DEV + first-load)
   // ===== OFF-THREAD bake worker (expansion) — same __coastBakeCore, run in a Worker so the main thread stays at framerate =====
@@ -6198,7 +6230,7 @@
       if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; // images not ready yet — try again later
       // worker paints the RGBA buffer into an OffscreenCanvas + hands back a transferable ImageBitmap (a GPU texture) — the
       // main thread then only does a single drawImage, never a multi-MP putImageData (that CPU pixel-copy was the residual hitch).
-      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,northK:d.northK,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
+      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,northK:d.northK,holeTiles:d.holeTiles,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
       var w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
       w.onmessage = function (e) { var cb = __bakeCbs[e.data.id]; if (cb) { delete __bakeCbs[e.data.id]; cb(e.data); } };
       w.onerror = function () { __bakeWorker = false; };
@@ -6213,7 +6245,7 @@
     if (w === false) { done(null, "sync"); return; }
     if (!w || !__bakeImgsReady) { done(null, "retry"); return; }
     var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? { cv: d.bmp, w: d.W, h: d.H, minx: d.minx, miny: d.miny, maxx: d.maxx, maxy: d.maxy, PAD: 2, BTB: 172, GEY: 90, EXTRA: 150 } : null); }; // ImageBitmap source — blitted straight onto the cache canvas, no main-thread putImageData
-    w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
+    w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
   }
   // Instant provisional grass patch for a freshly-claimed tile so the player walks on it immediately, then a TRUE debounce
   // fires the ONE full high-quality coast re-bake only after expansion actually STOPS. The expensive bake NEVER runs mid-
@@ -6243,10 +6275,10 @@
       if (sw > 0 && sh > 0) c2.cv.getContext("2d").drawImage(b.cv, sx, sy, sw, sh, dx, dy, sw, sh);
       c2._stamp = ISLE._stamp;
     }
-    if (sync) { var b; try { b = bakeIsle(region); } catch (e) { b = null; } blit(b); return; }
-    _bakeBusy = true;
     function _restoreDirty() { var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: dd.x0, y0: dd.y0, x1: dd.x1, y1: dd.y1 }; else { if (dd.x0 < _d.x0) _d.x0 = dd.x0; if (dd.x1 > _d.x1) _d.x1 = dd.x1; if (dd.y0 < _d.y0) _d.y0 = dd.y0; if (dd.y1 > _d.y1) _d.y1 = dd.y1; } }
-    function _release() { if (window._isleDirtyBox) { _doRebake(); return; } for (var f = 0; f < claimFlashes.length; f++) claimFlashes[f].pend = false; } // queue drained → every claimed tile's coast has now blitted → let the pulses fade
+    function _release() { if (window._isleDirtyBox) { _doRebake(); return; } for (var f = 0; f < claimFlashes.length; f++) claimFlashes[f].pend = false; _pendingIsle = {}; } // queue drained → every claimed tile's coast has now blitted → let the pulses fade + open collision on the newly-solid ground
+    if (sync) { var b; try { b = bakeIsle(region); } catch (e) { b = null; } blit(b); _release(); return; }
+    _bakeBusy = true;
     bakeIsleWorker(region, function (b, mode) {
       _bakeBusy = false;
       if (mode === "sync") { var bb; try { bb = bakeIsle(region); } catch (e) { bb = null; } blit(bb); _release(); return; } // worker permanently unavailable → one synchronous bake
@@ -6756,12 +6788,13 @@
       var COLLS = SANCT_TILES ? sanctScene().colls : SANCT_COLL;
       if (SANCT_TILES) {
         if (!ISLE) buildIsle();
-        // WALK-TO-EXPAND (David 2026-07-15): pushing into the coast grows the island onto the tile ahead if you can afford it, then you step onto it. Land grows where you walk, limited by your Spark.
+        // WALK-TO-EXPAND (David 2026-07-15): pushing into the coast grows the island onto the tile ahead if you can afford it. The tile is claimed (counted, Spark spent) instantly, but stays a collision WALL (isleSolid=false while pending — David
+        // 2026-07-16: "he should not be able to walk onto it until it appears") until its coast finishes baking, so the guardian can't outrun the bake and visibly stand on open water. isleHas (not isleSolid) triggers the claim itself.
         if (moving) { var _gx = Math.round(px / TILE), _gy = Math.round(py / TILE); if (!isleHas(_gx, _gy)) claimTileAt(_gx, _gy); }
-        // tile-edge collision: feet must stay on a grass tile. Axis-separated so you slide along the coast instead of sticking.
-        if (!isleHas(Math.round(px / TILE), Math.round(prevPy / TILE))) px = prevPx;
-        if (!isleHas(Math.round(prevPx / TILE), Math.round(py / TILE))) py = prevPy;
-        if (!isleHas(Math.round(px / TILE), Math.round(py / TILE))) { px = prevPx; py = prevPy; }
+        // tile-edge collision: feet must stay on SOLID (materialized) ground. Axis-separated so you slide along the coast instead of sticking.
+        if (!isleSolid(Math.round(px / TILE), Math.round(prevPy / TILE))) px = prevPx;
+        if (!isleSolid(Math.round(prevPx / TILE), Math.round(py / TILE))) py = prevPy;
+        if (!isleSolid(Math.round(px / TILE), Math.round(py / TILE))) { px = prevPx; py = prevPy; }
       } else {
         var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } // island edge: stay on the grass, off the water
       }
@@ -13223,6 +13256,44 @@
   // DEV: STRESS BATTERY — bake a dozen pathological tile shapes and lay each full island in a labelled grid so gross coast
   // failures (black gaps, unrendered holes, thin-neck coast breaks, blue-on-top, broken ink at concave corners) are visible
   // in ONE screenshot (the preview is slow, so assess programmatically). DEV.stress() grid | DEV.stress(i) zoom shape i full-bleed.
+  window.DEV.exportIsle = function () { if (!ISLE) return "no ISLE"; var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return JSON.stringify(a); }; // DEV: dump the REAL current island's tiles as JSON — paste into DEV.bakeCustom(JSON.parse("...")) or DEV.incVsFull(...) to reproduce an exact reported bug shape, no guessing
+  window.DEV.incVsFull = function (tiles, claimX, claimY) { // DEV: bake `tiles` as the base island, then CLAIM one more tile incrementally (the real expansion path) vs a full bake of the resulting island → INCREMENTAL | FULL | DIFF. For repro-ing windowed-bake bugs (e.g. deep bays) from the console. screenshot it; DEV.auditClose().
+    var saved = ISLE, sB = window._isleBakeCache, sInc = window._incBake, sT = _rebakeTimer, sES = window._expandSync;
+    var set = new Set(); tiles.forEach(function (t) { set.add(tkey(t[0], t[1])); });
+    ISLE = { tiles: set, house: [0, -1], objects: [], _stamp: 88001 }; window._isleBakeCache = null; window._isleDirtyBox = null;
+    var cache = bakeIsle(); if (!cache) { ISLE = saved; window._isleBakeCache = sB; return "base bake failed"; }
+    cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
+    window._incBake = true; window._expandSync = true;
+    ISLE.tiles.add(tkey(claimX, claimY)); ISLE._stamp++; _expandVisual(claimX, claimY);
+    window._expandSync = false; if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
+    var inc = window._isleBakeCache; window._isleBakeCache = null; var full = bakeIsle();
+    ISLE = saved; window._isleBakeCache = sB; window._incBake = sInc; _rebakeTimer = sT; window._expandSync = sES;
+    if (!inc || !full) return "bake failed";
+    var B = inc.BTB, vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh); g.font = "13px sans-serif";
+    var cw = 9 * B, ch = 9 * B, wx = claimX * B, wy = claimY * B, pw = vw / 3 - 6, ph = pw * ch / cw;
+    function crop(cc, x0, lab) { var sx = (wx - (cc.minx - cc.PAD) * B) - cw / 2, sy = (wy - (cc.miny - cc.PAD) * B) - ch / 2; g.fillStyle = "#cfe8ff"; g.fillText(lab, x0 + 4, 16); g.drawImage(cc.cv, sx, sy, cw, ch, x0, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(x0, 22, pw, ph); return { sx: sx, sy: sy }; }
+    var ci = crop(inc, 0, "INCREMENTAL"), cf = crop(full, vw / 3, "FULL");
+    var id = inc.cv.getContext("2d").getImageData(ci.sx, ci.sy, cw, ch), fdd = full.cv.getContext("2d").getImageData(cf.sx, cf.sy, cw, ch), dimg = g.createImageData(cw, ch);
+    var ndiff = 0; for (var p = 0; p < id.data.length; p += 4) { var dv = Math.abs(id.data[p] - fdd.data[p]) + Math.abs(id.data[p + 1] - fdd.data[p + 1]) + Math.abs(id.data[p + 2] - fdd.data[p + 2]); if (dv > 18) { ndiff++; dimg.data[p] = 255; dimg.data[p + 1] = 0; dimg.data[p + 2] = 0; dimg.data[p + 3] = 255; } else { dimg.data[p] = id.data[p] * 0.4; dimg.data[p + 1] = id.data[p + 1] * 0.4; dimg.data[p + 2] = id.data[p + 2] * 0.4; dimg.data[p + 3] = 255; } }
+    var tmp = document.createElement("canvas"); tmp.width = cw; tmp.height = ch; tmp.getContext("2d").putImageData(dimg, 0, 0);
+    g.fillStyle = "#ff8080"; g.fillText("DIFF (red) diffPx=" + ndiff, vw * 2 / 3 + 4, 16); g.drawImage(tmp, 0, 0, cw, ch, vw * 2 / 3, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(vw * 2 / 3, 22, pw, ph);
+    return "incVsFull drawn, diffPx=" + ndiff + "; DEV.auditClose()";
+  };
+  window.DEV.bakeCustom = function (tiles) { // DEV: bake an ARBITRARY tile array full-bleed (for ad-hoc repro shapes from the console, e.g. deep bays). tiles = [[x,y],...]. screenshot it; DEV.auditClose().
+    var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
+    var set = new Set(); tiles.forEach(function (t) { set.add(tkey(t[0], t[1])); });
+    ISLE = { tiles: set, house: [0, -1], objects: [], _stamp: (saved && saved._stamp || 0) + 50000 };
+    window._isleBakeCache = null; var b; try { b = bakeIsle(); } catch (e) { b = null; }
+    ISLE = saved; window._isleBakeCache = sB; window._sanctSceneCache = sS;
+    if (!b) return "bake failed";
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove();
+    ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov);
+    var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh);
+    var fs = Math.min(vw / b.w, vh / b.h) * 0.96; g.drawImage(b.cv, (vw - b.w * fs) / 2, (vh - b.h * fs) / 2, b.w * fs, b.h * fs);
+    return "bakeCustom drawn (" + tiles.length + " tiles, " + b.w + "x" + b.h + "); DEV.auditClose()";
+  };
   window.DEV.blueCheck = function () { // DEV: high-zoom crops of TOP corners + a top edge + a descending-step junction → verify blue cuts off on the side (no hoop onto top) and runs down to the next patch's top outline (David 2026-07-15). screenshot it; DEV.auditClose().
     var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
     function mk(t) { var s = new Set(); t.forEach(function (p) { s.add(tkey(p[0], p[1])); }); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 9700 + t.length }; window._isleBakeCache = null; try { return bakeIsle(); } catch (e) { return null; } }
@@ -13343,6 +13414,18 @@
   window.DEV.regTime = function (r2) { var R = r2 || 90, s = new Set(); for (var i = -10; i <= 10; i++) for (var j = -10; j <= 10; j++) if (i * i + j * j <= R) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 7001 }; var mx = 0; ISLE.tiles.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; }); var t0 = performance.now(); var full = bakeIsle(); var tf = performance.now() - t0; var t1 = performance.now(); var reg = bakeIsle({ x0: mx - 1, y0: -1, x1: mx + 2, y1: 2 }); var tr = performance.now() - t1; window._isleBakeCache = null; return ISLE.tiles.size + "t: FULL " + tf.toFixed(0) + "ms (" + full.w + "x" + full.h + ") vs INCREMENTAL window " + tr.toFixed(0) + "ms (" + reg.w + "x" + reg.h + ") = " + (tf / tr).toFixed(1) + "x faster"; }; // DEV: measure incremental window bake vs full bake
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
+  window.DEV.pendCheck = function () { // DEV: claim a real edge tile and report isleHas/isleSolid immediately after (should be true/false → collision wall) then again after the bake settles (should be true/true → walkable). Verifies the "no walking on unmaterialized water" fix.
+    if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 99999;
+    var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); });
+    if (!stand) return "no edge";
+    claimTileAt(water[0], water[1]);
+    var right_after = { has: isleHas(water[0], water[1]), solid: isleSolid(water[0], water[1]) };
+    return new Promise(function (res) {
+      var t0 = performance.now(); var hot = setInterval(function () { requestAnimationFrame(function () { }); }, 20);
+      function poll() { if (isleSolid(water[0], water[1]) || performance.now() - t0 > 6000) { clearInterval(hot); res("right-after-claim: has=" + right_after.has + " solid=" + right_after.solid + " (want has=true,solid=false) | after-settle(" + Math.round(performance.now() - t0) + "ms): has=" + isleHas(water[0], water[1]) + " solid=" + isleSolid(water[0], water[1]) + " (want both true)"); return; } requestAnimationFrame(poll); }
+      requestAnimationFrame(poll);
+    });
+  };
   window.DEV.growTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); var before = ISLE.tiles.size, sp = S.game.spark; claimTileAt(water[0], water[1]); return "claim: size " + before + "->" + ISLE.tiles.size + ", spark " + sp + "->" + S.game.spark + ", persisted=" + (!!(S.game.isle && S.game.isle.length === ISLE.tiles.size)); }; // DEV: exercise the real walk-to-edge claim path
   window.DEV.frameGaps = function (r2, nClaims) { return new Promise(function (res) { // DEV: claim tiles mid-hot-loop and report the worst rAF gap on the MAIN thread → measures expansion smoothness (acceptance: no gap > 50ms). Headless has no GPU so device is strictly better.
     DEV.isleSize(r2 || 18); nClaims = nClaims || 4;
