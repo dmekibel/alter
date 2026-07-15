@@ -6139,10 +6139,10 @@
           [WORLD_IMG.wellK, -110, 18, 74, 34, 21], [WORLD_IMG.barrelK, 118, 28, 50, 22, 15],
           [WORLD_IMG.statueK, -76, 124, 82, 28, 17],
           // scattered flora — decorative (fw/fh 0 = walk-through, no collision), just edge-clamped onto grass
-          [WORLD_IMG.flGlow, -34, 108, 30, 0, 0], [WORLD_IMG.flCherry, 64, 150, 26, 0, 0], [WORLD_IMG.flButter, -96, 168, 24, 0, 0],
-          [WORLD_IMG.flForget, 128, 138, 24, 0, 0], [WORLD_IMG.flPoppy, 150, 150, 24, 0, 0], [WORLD_IMG.plMush, -150, 96, 26, 0, 0],
-          [WORLD_IMG.plClover, 34, 182, 22, 0, 0], [WORLD_IMG.plFern, 150, 104, 30, 0, 0], [WORLD_IMG.flStar, -6, 196, 22, 0, 0] ]
-      : [ strct, [WORLD_IMG.treeK, -78, 44, 82, 24, 14], [WORLD_IMG.flGlow, -40, 78, 26, 0, 0], [WORLD_IMG.flCherry, 72, 64, 26, 0, 0], [WORLD_IMG.flButter, -8, 96, 24, 0, 0] ];
+          [WORLD_IMG.flGlow, -34, 108, 44, 0, 0], [WORLD_IMG.flCherry, 66, 152, 42, 0, 0], [WORLD_IMG.flButter, -98, 170, 40, 0, 0],
+          [WORLD_IMG.flForget, 130, 140, 40, 0, 0], [WORLD_IMG.flPoppy, 152, 152, 40, 0, 0], [WORLD_IMG.plMush, -152, 96, 42, 0, 0],
+          [WORLD_IMG.plClover, 34, 186, 36, 0, 0], [WORLD_IMG.plFern, 152, 104, 46, 0, 0], [WORLD_IMG.flStar, -6, 200, 38, 0, 0] ]
+      : [ strct, [WORLD_IMG.treeK, -78, 44, 82, 24, 14], [WORLD_IMG.flGlow, -40, 78, 42, 0, 0], [WORLD_IMG.flCherry, 74, 64, 40, 0, 0], [WORLD_IMG.flButter, -8, 98, 38, 0, 0] ];
     var objs = raw.map(function (o) { return { img: o[0], dx: o[1], dy: o[2], h: o[3], fw: o[4] || 0, fh: o[5] || 0 }; });
     var fixed = objs[raw.indexOf(strct)]; // the house/tent is the anchor — never moved by the resolver (index-robust)
     function onGrass(x, y) { return isleHas(Math.round(x / TILE), Math.round(y / TILE)); }
