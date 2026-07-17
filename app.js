@@ -13639,7 +13639,7 @@
     window._isleBakeCache = null; var c0 = bakeIsle(); if (!c0) return "no cache"; c0._stamp = ISLE._stamp; window._isleBakeCache = c0;
     var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); });
     if (!water) return "no edge";
-    var T = water, preStamp = ISLE._stamp, region = { x0: T[0] - 3, y0: T[1] - 3, x1: T[0] + 3, y1: T[1] + 3 };
+    var T = water, preStamp = ISLE._stamp, region = { x0: T[0] - 3, y0: T[1] - 3, x1: T[0] + 3, y1: T[1] + 3 + 1 }; // y1+1 must match _kickSpecBake's region exactly (David 2026-07-17 v1108 extra-bottom-row fix) — this tool hand-builds its own region instead of calling _kickSpecBake, so it silently drifted out of sync and gave a false specMiss
     ISLE.tiles.add(tkey(T[0], T[1])); var specWrap = bakeIsle(region); ISLE.tiles.delete(tkey(T[0], T[1])); ISLE._stamp = preStamp; // sync spec bake of island-as-if-claimed, then restore pre-claim state (as the worker's speculation would leave it)
     if (!specWrap) return "spec bake failed";
     _specBake = { tx: T[0], ty: T[1], stamp: preStamp, region: region, done: true, wrap: specWrap }; // install as if the worker completed
