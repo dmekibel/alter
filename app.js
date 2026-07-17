@@ -6306,7 +6306,7 @@
     if (_bakeBusy || window._incBake === false) return;
     var specTiles = _tilesArr(); specTiles.push([tx, ty]);
     var specHoles = computeHoleTiles(specTiles);
-    var CTX = 3, region = { x0: tx - CTX, y0: ty - CTX, x1: tx + CTX, y1: ty + CTX }, stamp = ISLE._stamp; // CTX3 (not the live claim's CTX2) so the claim's blit slice (claim±2) sits ≥1 tile inside this speculated window = fully contexted
+    var CTX = 3, region = { x0: tx - CTX, y0: ty - CTX, x1: tx + CTX, y1: ty + CTX + 1 }, stamp = ISLE._stamp; // CTX3 (not the live claim's CTX2) so the claim's blit slice (claim±2) sits ≥1 tile inside this speculated window = fully contexted. y1 gets the same +1 EXTRA-bottom-row context as the live region (see _doRebake).
     _specBake = { tx: tx, ty: ty, stamp: stamp, region: region, done: false, wrap: null };
     _bakeBusy = true;
     bakeIsleWorker(region, function (b, mode) {
@@ -6340,7 +6340,7 @@
     if (window._incBake === false || !c || !c.cv || c.minx === undefined || !d) { if (!d) return; window._isleBakeCache = null; window._isleDirtyBox = null; return; }
     if (_bakeBusy && !sync) return; // a coast bake is already in flight → let the dirty box keep accumulating; we re-run on completion
     window._isleDirtyBox = null; var dd = { x0: d.x0, y0: d.y0, x1: d.x1, y1: d.y1 };
-    var CTX = 2, M = 1, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX }; // SPEED (David 2026-07-16): back to CTX2/M1 (smaller bake window ≈ 1.4× faster). The junction-shoulder seams that once needed CTX3/M2 are now covered a better way — the dirty box already includes claim±1 + any hole-flips (claimTileAt), so blit dirty±1 == the old blit claim±2, at a smaller bake. CTX>M keeps the blit interior fully-contexted.
+    var CTX = 2, M = 1, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX + 1 }; // SPEED (David 2026-07-16): CTX2/M1. SEAM FIX (David 2026-07-17): y1 gets +1 EXTRA tile — the blit copies one extra row BELOW the dirty box (sh has +1, to carry the cliff that hangs below a south coast), so without this the extra row sits AT the window's bottom edge with ZERO land-context below → the bake reads water-below → paints a FALSE south coast (cliff/sand/ink) over real grass = the full-width horizontal line one tile under a claim. +1 gives that row its 1-tile context so it bakes as interior grass. (smaller bake window ≈ 1.4× faster). The junction-shoulder seams that once needed CTX3/M2 are now covered a better way — the dirty box already includes claim±1 + any hole-flips (claimTileAt), so blit dirty±1 == the old blit claim±2, at a smaller bake. CTX>M keeps the blit interior fully-contexted.
     function blit(b) { // composite the freshly-baked window onto the (possibly grown) live cache — read the cache FRESH (it may have grown while we baked)
       var c2 = window._isleBakeCache; if (!b || !c2 || !c2.cv || c2.minx === undefined) { if (!b) window._isleBakeCache = null; return; }
       var B = c2.BTB || 172, PAD = c2.PAD;
@@ -6359,7 +6359,7 @@
     // box (with a 1-tile margin so no surprise hole-flip pushed it outside the speculated window)? If so, blit it INSTANTLY.
     if (_specBake && _specBake.done && _specBake.tx === _lastClaimTx && _specBake.ty === _lastClaimTy && _specBake.stamp === ISLE._stamp - 1) {
       var _sr = _specBake.region; // the blit slice is dd±M; require it ≥1 tile inside the speculated window (same context guarantee as a normal bake)
-      if (dd.x0 - M >= _sr.x0 + 1 && dd.x1 + M <= _sr.x1 - 1 && dd.y0 - M >= _sr.y0 + 1 && dd.y1 + M <= _sr.y1 - 1) { window.__specHit = (window.__specHit || 0) + 1; var _sw = _specBake.wrap; _specBake = null; blit(_sw); _release(); return; } // instant — the coast was already baked while he walked over
+      if (dd.x0 - M >= _sr.x0 + 1 && dd.x1 + M <= _sr.x1 - 1 && dd.y0 - M >= _sr.y0 + 1 && dd.y1 + M + 1 <= _sr.y1 - 1) { window.__specHit = (window.__specHit || 0) + 1; var _sw = _specBake.wrap; _specBake = null; blit(_sw); _release(); return; } // instant — the coast was already baked while he walked over (dd.y1+M+1 = the extra bottom blit row must also sit ≥1 tile inside the speculated window)
     }
     window.__specMiss = (window.__specMiss || 0) + 1;
     _specBake = null; // any other claim invalidates a stale speculation
@@ -13454,6 +13454,30 @@
     var ctx = b.cv.getContext("2d"), col = [];
     for (var dy = -100; dy <= 100; dy += 6) { var px = ctx.getImageData(cx, cy + dy, 1, 1).data; col.push(dy + ":(" + px[0] + "," + px[1] + "," + px[2] + ")"); }
     return col.join(" ");
+  };
+  window.DEV.lineProbe = function (base, claimX, claimY) { // DEV: the FALSE-SOUTH-COAST test — bake `base` incrementally, claim (claimX,claimY) ABOVE existing land via the real _expandVisual path, then compare inc-vs-full pixel colours at each tile-row's CENTRE aligned by WORLD coords (dodges the crop/grow harness artifacts). Reports per-row max diff; a big diff on the row just BELOW the claim = the false horizontal coast line. base defaults to a 5×5 block, claim to (2,-1) directly above it.
+    base = base || (function () { var a = []; for (var x = 0; x < 5; x++) for (var y = 0; y < 5; y++) a.push([x, y]); return a; })();
+    if (claimX == null) claimX = 2; if (claimY == null) claimY = -1;
+    var saved = ISLE, sB = window._isleBakeCache, sInc = window._incBake, sT = _rebakeTimer, sES = window._expandSync;
+    var set = new Set(); base.forEach(function (t) { set.add(tkey(t[0], t[1])); });
+    ISLE = { tiles: set, house: [0, -1], objects: [], _stamp: 770101 }; window._isleBakeCache = null; window._isleDirtyBox = null;
+    var cache = bakeIsle(); if (!cache) { ISLE = saved; window._isleBakeCache = sB; return "base bake failed"; }
+    cache._stamp = ISLE._stamp; window._isleBakeCache = cache;
+    window._incBake = true; window._expandSync = true;
+    ISLE.tiles.add(tkey(claimX, claimY)); ISLE._stamp++; _expandVisual(claimX, claimY);
+    window._expandSync = false; if (_rebakeTimer) { clearTimeout(_rebakeTimer); _rebakeTimer = null; }
+    var inc = window._isleBakeCache; window._isleBakeCache = null; var full = bakeIsle();
+    ISLE = saved; window._isleBakeCache = sB; window._incBake = sInc; _rebakeTimer = sT; window._expandSync = sES;
+    if (!inc || !full) return "bake failed";
+    var B = 172, PAD = 2;
+    var xs = {}, minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9; base.forEach(function (t) { if (t[0] < minx) minx = t[0]; if (t[0] > maxx) maxx = t[0]; if (t[1] < miny) miny = t[1]; if (t[1] > maxy) maxy = t[1]; });
+    function px(c, X, Y) { if (X < 0 || Y < 0 || X >= c.w || Y >= c.h) return [-1, -1, -1]; var d = c.cv.getContext("2d").getImageData(X, Y, 1, 1).data; return [d[0], d[1], d[2]]; }
+    var rows = [];
+    // DENSE vertical scan of each tile-row (every 8px, INTERIOR columns only — skip the outer coast at minx/maxx where a
+    // legit ~1px filter-blur seam lives; we want the FALSE INTERIOR coast, not the real edge). A false south coast paints at the
+    // tile's BOTTOM edge, which a centre-only probe would miss — so scan the full tile height.
+    for (var ty = miny; ty <= maxy; ty++) { var maxd = 0, worst = null; for (var tx = minx + 1; tx <= maxx - 1; tx++) { for (var oy = 8; oy < B; oy += 8) { var incX = Math.round((tx - inc.minx + PAD) * B + B / 2), incY = Math.round((ty - inc.miny + PAD) * B + oy), fX = Math.round((tx - full.minx + PAD) * B + B / 2), fY = Math.round((ty - full.miny + PAD) * B + oy); var i = px(inc, incX, incY), f = px(full, fX, fY); var dv = Math.abs(i[0] - f[0]) + Math.abs(i[1] - f[1]) + Math.abs(i[2] - f[2]); if (dv > maxd) { maxd = dv; worst = { tx: tx, oy: oy, inc: i, full: f }; } } } rows.push("y" + ty + " maxd=" + maxd + (maxd > 30 ? " INC" + JSON.stringify(worst.inc) + "!=FULL" + JSON.stringify(worst.full) + "@x" + worst.tx + ",oy" + worst.oy : "")); }
+    return "lineProbe claim(" + claimX + "," + claimY + ") rows[below-claim first]: " + rows.join(" | ");
   };
   window.DEV.bakeCustom = function (tiles) { // DEV: bake an ARBITRARY tile array full-bleed (for ad-hoc repro shapes from the console, e.g. deep bays). tiles = [[x,y],...]. screenshot it; DEV.auditClose().
     var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
