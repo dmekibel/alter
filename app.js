@@ -6072,6 +6072,7 @@
     for (var i = 0; i < 12; i++) dust.push({ x: tx * TILE + (Math.random() - 0.5) * TILE, y: ty * TILE + (Math.random() - 0.5) * TILE, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.6, life: 22 });
     return true;
   }
+  var _claimHold = null, CLAIM_HOLD_MS = 820; // press-and-hold-to-claim state {tx,ty,t0,id} + hold duration (matches the commit-ring feel)
   function sanctClaimGlow(ctx, t) {
     var c = sanctClaimTile(); if (!c) return;
     var cost = claimCost(), afford = ((S.game && S.game.spark) || 0) >= cost;
@@ -6082,13 +6083,14 @@
     ctx.save(); ctx.strokeStyle = "rgba(" + col + "," + (0.55 + 0.4 * pulse) + ")"; ctx.lineWidth = 3; ctx.setLineDash([9, 7]); ctx.strokeRect(cx - hs + 2, cy - hs + 2, TILE - 4, TILE - 4); ctx.restore();
     ctx.save(); ctx.textAlign = "center"; ctx.font = "800 19px 'Baloo 2',sans-serif"; ctx.lineWidth = 4; ctx.strokeStyle = "#241019"; ctx.fillStyle = afford ? "#ffe27a" : "#c9c9d6";
     ctx.strokeText("+" + cost, cx, cy - hs - 6); ctx.fillText("+" + cost, cx, cy - hs - 6); ctx.restore();
-    // TAP-TO-ADD button (David 2026-07-17: claim is now walk-to-highlight + TAP the plus, not auto-claim-by-walking). Small pulsing "+" disc in the tile centre = the tap target.
-    var br = TILE * (0.23 + 0.02 * pulse);
-    ctx.save();
-    ctx.fillStyle = afford ? "rgba(70,220,150,0.95)" : "rgba(150,150,175,0.92)"; ctx.strokeStyle = "#20301f"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(cx, cy, br, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4.5; ctx.lineCap = "round"; var pl = br * 0.5;
-    ctx.beginPath(); ctx.moveTo(cx - pl, cy); ctx.lineTo(cx + pl, cy); ctx.moveTo(cx, cy - pl); ctx.lineTo(cx, cy + pl); ctx.stroke();
+    // PRESS-AND-HOLD CHARGE RING (David 2026-07-17: same feel as the commit ring — a circle that fills clockwise while held, then claims).
+    var charging = !!(_claimHold && _claimHold.tx === c.tx && _claimHold.ty === c.ty), prog = charging ? Math.min(1, (performance.now() - _claimHold.t0) / CLAIM_HOLD_MS) : 0;
+    var rr = hs * 0.6;
+    ctx.save(); ctx.lineCap = "round";
+    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(" + col + "," + (0.34 + 0.12 * pulse) + ")"; // faint background ring = the hold target
+    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke();
+    if (charging) { ctx.lineWidth = 6; ctx.strokeStyle = "rgba(255,226,122,0.98)"; ctx.beginPath(); ctx.arc(cx, cy, rr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog); ctx.stroke(); } // gold progress arc fills as you hold
+    else { ctx.fillStyle = "rgba(" + col + "," + (0.55 + 0.35 * pulse) + ")"; ctx.beginPath(); ctx.arc(cx, cy, hs * 0.13, 0, 7); ctx.fill(); } // idle: a soft centre dot = "press here"
     ctx.restore();
   }
   function isleRects(ex) { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; p.rect(tx * TILE - TILE / 2 - ex, ty * TILE - TILE / 2 - ex, TILE + ex * 2, TILE + ex * 2); }); return p; }
@@ -6978,10 +6980,11 @@
       var COLLS = SANCT_TILES ? sanctScene().colls : SANCT_COLL;
       if (SANCT_TILES) {
         if (!ISLE) buildIsle();
-        // CLICK-TO-ADD (David 2026-07-17): claiming is no longer walk-driven. You walk up to the coast (the water tile you FACE
-        // glows with a "+" button via sanctClaimGlow), and TAP the plus to confirm the claim (wireWorldTap → tapClaim). Walking
-        // just highlights; the tap is the decision. The predictive pre-bake below still warms the FACED tile while you line up, so
-        // the tap-claim blits instantly. (Old walk-to-expand auto-claim removed.)
+        // PRESS-AND-HOLD TO ADD (David 2026-07-17): claiming is no longer walk-driven. You walk up to the coast (the faced water
+        // tile glows with a charge RING via sanctClaimGlow), press and HOLD it — the ring fills like the commit — and it claims on
+        // full. wireWorldTap starts/cancels the hold; here we fire the claim when the ring completes. The predictive pre-bake below
+        // warms the faced tile while you line up + hold, so the claim blits instantly.
+        if (_claimHold && performance.now() - _claimHold.t0 >= CLAIM_HOLD_MS) { var _ch = _claimHold; _claimHold = null; try { if (navigator.vibrate) navigator.vibrate(16); } catch (e) {} claimTileAt(_ch.tx, _ch.ty); }
         // PREDICTIVE PRE-BAKE: while the worker is idle and nothing is pending, speculatively bake the tile he's FACING (the
         // glowing claimable one) so that when he walks into it, the coast is already done → instant. Only if he can afford it.
         if (!_bakeBusy && !window._isleDirtyBox && __bakeImgsReady) { var _pg = sanctClaimTile(); if (_pg && (!_specBake || _specBake.tx !== _pg.tx || _specBake.ty !== _pg.ty || _specBake.stamp !== ISLE._stamp) && ((S.game && S.game.spark) || 0) >= claimCost()) _kickSpecBake(_pg.tx, _pg.ty); }
@@ -7074,32 +7077,30 @@
     function mid() { var v = Object.keys(pts).map(function (i) { return pts[i]; }); return v.length < 2 ? null : { x: (v[0].x + v[1].x) / 2, y: (v[0].y + v[1].y) / 2 }; }
     var panning = false, lmx = 0, lmy = 0, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3, tap = null;
     function rel(ev) { if (pts[ev.pointerId]) delete pts[ev.pointerId]; if (npts() < 2) panning = false; }
-    // CLICK-TO-ADD (David 2026-07-17): a clean single tap on/near the glowing claimable tile confirms the claim. Map the tap's
-    // screen point back through the camera transform (translate(W/2,H*0.6)·scale(zoom)·translate(-(px+camX),-(py+camY)), see
-    // renderWorld) to a world tile; claim if it's within 1 tile of the highlighted one (generous target on a small phone screen).
+    // PRESS-AND-HOLD TO CLAIM (David 2026-07-17: same feel as the commit ring — press the glowing tile, hold while the ring fills,
+    // it claims on full; release early cancels). Map the press point back through the camera transform
+    // (translate(W/2,H*0.6)·scale(zoom)·translate(-(px+camX),-(py+camY)), see renderWorld) to a world tile; start the hold only if
+    // it's within 1 tile of the highlight (generous target on a small phone). Completion is checked each frame in drawWorld.
     function _worldTileAt(sx, sy) { var wx = (sx - WGW / 2) / zoom + (px + camX), wy = (sy - WGH * 0.6) / zoom + (py + camY); return { tx: Math.round(wx / TILE), ty: Math.round(wy / TILE) }; }
-    function tapClaim(ev) {
-      if (!tap || ev.pointerId !== tap.id) return; var _tap = tap; tap = null;
-      if (!SANCT_TILES || performance.now() - _tap.t > 600) return; // >600ms held = not a tap
-      var c = null; try { c = sanctClaimTile(); } catch (e) {} if (!c) return;
-      var tl = _worldTileAt(ev.clientX, ev.clientY);
-      if (Math.abs(tl.tx - c.tx) <= 1 && Math.abs(tl.ty - c.ty) <= 1) { // tapped the highlight (±1 tile)
-        var cost = claimCost();
-        if (((S.game && S.game.spark) || 0) >= cost) { claimTileAt(c.tx, c.ty); }
-        else { try { toast("Need " + cost + " Spark to grow here"); } catch (e) {} }
-      }
-    }
-    w.addEventListener("pointerup", tapClaim);
+    function relHold(ev) { if (_claimHold && ev.pointerId === _claimHold.id) _claimHold = null; } // finger lifted before the ring filled → cancel
+    w.addEventListener("pointerup", relHold); w.addEventListener("pointercancel", relHold);
     w.addEventListener("pointerup", rel); w.addEventListener("pointercancel", rel); document.addEventListener("pointerup", rel); document.addEventListener("pointercancel", rel);
     w.addEventListener("pointerdown", function (ev) {
       if (ev.target !== w) return; // only the world surface itself — never a joystick/zoom/notebook button on top
       pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
-      tap = (npts() === 1) ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY, t: performance.now() } : null; // track a single-finger tap; a 2nd finger cancels it (that's a pan)
-      if (npts() >= 2 && !panning) { var m = mid(); if (m) { panning = true; lmx = m.x; lmy = m.y; } } // second finger down → begin a midpoint-tracked pan
+      if (npts() >= 2) { _claimHold = null; if (!panning) { var m = mid(); if (m) { panning = true; lmx = m.x; lmy = m.y; } } return; } // second finger → pan; abandon any charge
+      if (SANCT_TILES) { var c = null; try { c = sanctClaimTile(); } catch (e) {} // single finger on/near the highlight → begin the charge
+        if (c) { var tl = _worldTileAt(ev.clientX, ev.clientY);
+          if (Math.abs(tl.tx - c.tx) <= 1 && Math.abs(tl.ty - c.ty) <= 1) {
+            if (((S.game && S.game.spark) || 0) >= claimCost()) { _claimHold = { tx: c.tx, ty: c.ty, t0: performance.now(), id: ev.pointerId, sx: ev.clientX, sy: ev.clientY }; }
+            else { try { toast("Need " + claimCost() + " Spark to grow here"); } catch (e) {} }
+          }
+        }
+      }
     });
     document.addEventListener("pointermove", function (e) {
       if (pts[e.pointerId]) { pts[e.pointerId].x = e.clientX; pts[e.pointerId].y = e.clientY; }
-      if (tap && e.pointerId === tap.id && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 12) tap = null; // moved → it's a swipe, not a tap
+      if (_claimHold && e.pointerId === _claimHold.id && Math.hypot(e.clientX - _claimHold.sx, e.clientY - _claimHold.sy) > 20) _claimHold = null; // dragged off → cancel (it was a pan/swipe, not a hold)
       if (!panning || npts() < 2) return;
       var m = mid(); if (!m) return; var dx = m.x - lmx, dy = m.y - lmy; lmx = m.x; lmy = m.y;
       camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom));
