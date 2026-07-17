@@ -6156,7 +6156,7 @@
     function _traceContour(mask, W, H) { var start = -1, i; for (i = 0; i < W * H; i++) { if (mask[i]) { start = i; break; } } if (start < 0) return []; var N8 = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]]; var sy = (start / W) | 0, sx = start % W, cy = sy, cx = sx, bdir = 6, out = [[sy, sx]], count = 0, cap = W * H * 4; do { var found = false; for (var t = 1; t <= 8; t++) { var d = (bdir + t) % 8, ny = cy + N8[d][0], nx = cx + N8[d][1]; if (ny < 0 || nx < 0 || ny >= H || nx >= W) continue; if (mask[ny * W + nx]) { bdir = (d + 4) % 8; cy = ny; cx = nx; out.push([cy, cx]); found = true; break; } } if (!found) break; count++; } while ((cy !== sy || cx !== sx) && count < cap); return out; }
     var i;
     // P0 — footprint rects -> baseA + corner-close
-    var txs = [], tys = []; for (var ti = 0; ti < tiles.length; ti++) { var tx = tiles[ti][0], ty = tiles[ti][1]; if (region && (tx < region.x0 || tx > region.x1 || ty < region.y0 || ty > region.y1)) continue; txs.push(tx); tys.push(ty); }
+    var txs = [], tys = [], _gMinY = 1e9; for (var ti = 0; ti < tiles.length; ti++) { var tx = tiles[ti][0], ty = tiles[ti][1]; if (ty < _gMinY) _gMinY = ty; if (region && (tx < region.x0 || tx > region.x1 || ty < region.y0 || ty > region.y1)) continue; txs.push(tx); tys.push(ty); } // _gMinY = the GLOBAL island top tile-Y (from ALL tiles, before the region filter) → the sand taper anchors to it, so it's the SAME in a windowed bake and a full bake (seam-free for E/W claims; only a new northern row shifts it). (David 2026-07-17)
     var minx, maxx, miny, maxy;
     if (region) { minx = region.x0; maxx = region.x1; miny = region.y0; maxy = region.y1; }
     else { minx = Math.min.apply(0, txs); maxx = Math.max.apply(0, txs); miny = Math.min.apply(0, tys); maxy = Math.max.apply(0, tys); }
@@ -6270,7 +6270,11 @@
       // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
       // the sides — LOCAL, so it never drifts. wy is then scaled by northF so the sand THINS toward a top corner and reaches 0
       // INTO the grass (no sharp cutoff), continuous across stacked steps. Reuses _nP.
-      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = (42 + (52 - 42) * _south) * SC * northF[i]; // NEARLY UNIFORM ribbon (measured off BIGBLK_v1) × the continuous top-edge taper
+      // FULL-LENGTH SIDE TAPER (David 2026-07-17, wants it "like before"): sand thin at the island TOP, widening down over TSPAN
+      // tiles. Anchored to the GLOBAL island top (_gMinY, same in every bake) NOT the window/island height → seam-free for E/W
+      // claims (the v1099 seam was from normalising by the per-bake extent). _tf: 0 at top → 1 by TSPAN tiles down. TMIN = top width fraction.
+      var TSPAN = 7 * BTB, TMIN = 0.45, _tf = Math.max(0, Math.min(1, ((yy2 + woy) - _gMinY * BTB) / TSPAN)), _taper = TMIN + (1 - TMIN) * _tf;
+      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = (42 + (52 - 42) * _south) * SC * northF[i] * _taper; // ribbon × top-edge taper × the full-length side taper
       if (distout[i] >= 1 && distout[i] <= wy) {
         sand[i] = 1; var shf = 1, _cshTh = 18 * SC; if (cbelow[xx2] <= _cshTh) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / _cshTh);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
