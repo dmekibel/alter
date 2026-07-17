@@ -5999,12 +5999,16 @@
     var set = new Set(ISLE.tiles);
     var minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
     ISLE.tiles.forEach(function (k) { var a = k.split(","), x = +a[0], y = +a[1]; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; });
+    // Fill any water tile that is 1-tile PINCHED — land on both LEFT+RIGHT, or both UP+DOWN. That catches BOTH a 3-side dead-end
+    // notch AND a 1-wide channel/slit open at both ends (David 2026-07-17: thin top-edge slits between tongues still rendered as
+    // V-slits — they're pinched L+R but open top+bottom, so the old n>=3 rule missed them). A 2-wide bay or a concave L-corner has
+    // an open OPPOSITE side (never pinched) → stays water. Iterated so a dead-end chain zips shut from its closed end.
     var changed = true, guard = 0;
     while (changed && guard++ < 8) { changed = false;
       for (var y = miny - 1; y <= maxy + 1; y++) for (var x = minx - 1; x <= maxx + 1; x++) {
         if (set.has(tkey(x, y))) continue;
-        var n = (set.has(tkey(x + 1, y)) ? 1 : 0) + (set.has(tkey(x - 1, y)) ? 1 : 0) + (set.has(tkey(x, y + 1)) ? 1 : 0) + (set.has(tkey(x, y - 1)) ? 1 : 0);
-        if (n >= 3) { set.add(tkey(x, y)); changed = true; }
+        var _lr = set.has(tkey(x + 1, y)) && set.has(tkey(x - 1, y)), _ud = set.has(tkey(x, y + 1)) && set.has(tkey(x, y - 1));
+        if (_lr || _ud) { set.add(tkey(x, y)); changed = true; }
       }
     }
     var arr = []; set.forEach(function (k) { var a = k.split(","); arr.push([+a[0], +a[1]]); });
@@ -6078,6 +6082,14 @@
     ctx.save(); ctx.strokeStyle = "rgba(" + col + "," + (0.55 + 0.4 * pulse) + ")"; ctx.lineWidth = 3; ctx.setLineDash([9, 7]); ctx.strokeRect(cx - hs + 2, cy - hs + 2, TILE - 4, TILE - 4); ctx.restore();
     ctx.save(); ctx.textAlign = "center"; ctx.font = "800 19px 'Baloo 2',sans-serif"; ctx.lineWidth = 4; ctx.strokeStyle = "#241019"; ctx.fillStyle = afford ? "#ffe27a" : "#c9c9d6";
     ctx.strokeText("+" + cost, cx, cy - hs - 6); ctx.fillText("+" + cost, cx, cy - hs - 6); ctx.restore();
+    // TAP-TO-ADD button (David 2026-07-17: claim is now walk-to-highlight + TAP the plus, not auto-claim-by-walking). Small pulsing "+" disc in the tile centre = the tap target.
+    var br = TILE * (0.23 + 0.02 * pulse);
+    ctx.save();
+    ctx.fillStyle = afford ? "rgba(70,220,150,0.95)" : "rgba(150,150,175,0.92)"; ctx.strokeStyle = "#20301f"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(cx, cy, br, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4.5; ctx.lineCap = "round"; var pl = br * 0.5;
+    ctx.beginPath(); ctx.moveTo(cx - pl, cy); ctx.lineTo(cx + pl, cy); ctx.moveTo(cx, cy - pl); ctx.lineTo(cx, cy + pl); ctx.stroke();
+    ctx.restore();
   }
   function isleRects(ex) { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; p.rect(tx * TILE - TILE / 2 - ex, ty * TILE - TILE / 2 - ex, TILE + ex * 2, TILE + ex * 2); }); return p; }
   function isleOutline() { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1], x = tx * TILE - TILE / 2, y = ty * TILE - TILE / 2; if (!isleHas(tx, ty - 1)) { p.moveTo(x, y); p.lineTo(x + TILE, y); } if (!isleHas(tx, ty + 1)) { p.moveTo(x, y + TILE); p.lineTo(x + TILE, y + TILE); } if (!isleHas(tx - 1, ty)) { p.moveTo(x, y); p.lineTo(x, y + TILE); } if (!isleHas(tx + 1, ty)) { p.moveTo(x + TILE, y); p.lineTo(x + TILE, y + TILE); } }); return p; } // ONLY the exposed island edges (no interior grid) → the coastline
@@ -6966,9 +6978,10 @@
       var COLLS = SANCT_TILES ? sanctScene().colls : SANCT_COLL;
       if (SANCT_TILES) {
         if (!ISLE) buildIsle();
-        // WALK-TO-EXPAND (David 2026-07-15): pushing into the coast grows the island onto the tile ahead if you can afford it. The tile is claimed (counted, Spark spent) instantly, but stays a collision WALL (isleSolid=false while pending — David
-        // 2026-07-16: "he should not be able to walk onto it until it appears") until its coast finishes baking, so the guardian can't outrun the bake and visibly stand on open water. isleHas (not isleSolid) triggers the claim itself.
-        if (moving) { var _gx = Math.round(px / TILE), _gy = Math.round(py / TILE); if (!isleHas(_gx, _gy)) claimTileAt(_gx, _gy); }
+        // CLICK-TO-ADD (David 2026-07-17): claiming is no longer walk-driven. You walk up to the coast (the water tile you FACE
+        // glows with a "+" button via sanctClaimGlow), and TAP the plus to confirm the claim (wireWorldTap → tapClaim). Walking
+        // just highlights; the tap is the decision. The predictive pre-bake below still warms the FACED tile while you line up, so
+        // the tap-claim blits instantly. (Old walk-to-expand auto-claim removed.)
         // PREDICTIVE PRE-BAKE: while the worker is idle and nothing is pending, speculatively bake the tile he's FACING (the
         // glowing claimable one) so that when he walks into it, the coast is already done → instant. Only if he can afford it.
         if (!_bakeBusy && !window._isleDirtyBox && __bakeImgsReady) { var _pg = sanctClaimTile(); if (_pg && (!_specBake || _specBake.tx !== _pg.tx || _specBake.ty !== _pg.ty || _specBake.stamp !== ISLE._stamp) && ((S.game && S.game.spark) || 0) >= claimCost()) _kickSpecBake(_pg.tx, _pg.ty); }
@@ -7061,6 +7074,22 @@
     function mid() { var v = Object.keys(pts).map(function (i) { return pts[i]; }); return v.length < 2 ? null : { x: (v[0].x + v[1].x) / 2, y: (v[0].y + v[1].y) / 2 }; }
     var panning = false, lmx = 0, lmy = 0, lim = (typeof RS !== "undefined" ? RS : 200) * 1.3, tap = null;
     function rel(ev) { if (pts[ev.pointerId]) delete pts[ev.pointerId]; if (npts() < 2) panning = false; }
+    // CLICK-TO-ADD (David 2026-07-17): a clean single tap on/near the glowing claimable tile confirms the claim. Map the tap's
+    // screen point back through the camera transform (translate(W/2,H*0.6)·scale(zoom)·translate(-(px+camX),-(py+camY)), see
+    // renderWorld) to a world tile; claim if it's within 1 tile of the highlighted one (generous target on a small phone screen).
+    function _worldTileAt(sx, sy) { var wx = (sx - WGW / 2) / zoom + (px + camX), wy = (sy - WGH * 0.6) / zoom + (py + camY); return { tx: Math.round(wx / TILE), ty: Math.round(wy / TILE) }; }
+    function tapClaim(ev) {
+      if (!tap || ev.pointerId !== tap.id) return; var _tap = tap; tap = null;
+      if (!SANCT_TILES || performance.now() - _tap.t > 600) return; // >600ms held = not a tap
+      var c = null; try { c = sanctClaimTile(); } catch (e) {} if (!c) return;
+      var tl = _worldTileAt(ev.clientX, ev.clientY);
+      if (Math.abs(tl.tx - c.tx) <= 1 && Math.abs(tl.ty - c.ty) <= 1) { // tapped the highlight (±1 tile)
+        var cost = claimCost();
+        if (((S.game && S.game.spark) || 0) >= cost) { claimTileAt(c.tx, c.ty); }
+        else { try { toast("Need " + cost + " Spark to grow here"); } catch (e) {} }
+      }
+    }
+    w.addEventListener("pointerup", tapClaim);
     w.addEventListener("pointerup", rel); w.addEventListener("pointercancel", rel); document.addEventListener("pointerup", rel); document.addEventListener("pointercancel", rel);
     w.addEventListener("pointerdown", function (ev) {
       if (ev.target !== w) return; // only the world surface itself — never a joystick/zoom/notebook button on top
