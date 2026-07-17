@@ -1228,7 +1228,7 @@
   .pd-pick .ti{ font-size:13px; }
   .pd-pick.prev{ opacity:.6; cursor:default; }
   /* ARRANGE step rows as game pieces: stripe fill (set inline per domain), ink text/controls */
-  .bento-orow.editrow.gp{ border:2.5px solid #160510; border-radius:15px; box-shadow:0 3px 0 #160510; }
+  .bento-orow.editrow.gp{ border:2.5px solid #160510; border-radius:15px; box-shadow:0 3px 0 #160510; touch-action:pan-y; } /* pan-y: vertical scroll passes to the list, horizontal swipe reaches the swipe-delete handler */
   .editrow.gp .bento-on{ color:#160510; font-weight:800; }
   .editrow.gp .bento-ohandle{ color:#160510; opacity:.6; }
   .editrow.gp .edit-ico{ flex:none; color:#160510; font-size:16px; display:flex; }
@@ -2786,6 +2786,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1117"></script>
+  <script src="app.js?v=1118"></script>
 </body>
 </html>
