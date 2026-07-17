@@ -6153,8 +6153,11 @@
       lx.save(); lx.translate(cx, cy); lx.rotate(Math.atan2(ty2, tx2)); lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore(); });
     var gmA = _blurThr(lc, W, H, 4, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
     // P4 — cliff drape (south only) + water fill
-    var sc = _cv(coastW, coastH), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(coast, 0, 0); scx.filter = "none";
-    var sd = scx.getImageData(0, 0, coastW, coastH).data, sw = coastW, sh = coastH;
+    // The coast strip's pixels (with the brightness pass) depend ONLY on the source image → compute once and cache in
+    // p.prep (the caller passes a persistent object; the worker keeps one across bakes). Saves a filter-draw + getImageData per bake. (David 2026-07-16 speed)
+    var _prep = p.prep || {}, sd, sw, sh;
+    if (_prep.sd) { sd = _prep.sd; sw = _prep.sw; sh = _prep.sh; }
+    else { var sc = _cv(coastW, coastH), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(coast, 0, 0); scx.filter = "none"; sd = scx.getImageData(0, 0, coastW, coastH).data; sw = coastW; sh = coastH; _prep.sd = sd; _prep.sw = sw; _prep.sh = sh; }
     var cliff = new Uint8Array(W * H), cmax = Math.round((182 - GEY - 13) / 1.06), depth = new Int32Array(W);
     for (i = 0; i < W; i++) depth[i] = 99999;
     // PRE-PASS (David 2026-07-16): depthB = rows until the NEXT land BELOW, mirroring `depth` (rows since the last land above).
@@ -6200,9 +6203,11 @@
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
       }
     }
-    // P7 — grass fill with edge-darkening (world-anchored texture)
-    var GS = BTB * 6, gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grass, 0, 0, GS, GS); gcx.filter = "none";
-    var gsd = gcx.getImageData(0, 0, GS, GS).data;
+    // P7 — grass fill with edge-darkening (world-anchored texture). The 1MP grass sampling buffer depends only on the source
+    // tile + BTB → compute once, cache in p.prep (this was the single biggest per-bake redundant cost). (David 2026-07-16 speed)
+    var GS = BTB * 6, gsd;
+    if (_prep.gsd && _prep.gsdGS === GS) { gsd = _prep.gsd; }
+    else { var gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grass, 0, 0, GS, GS); gcx.filter = "none"; gsd = gcx.getImageData(0, 0, GS, GS).data; _prep.gsd = gsd; _prep.gsdGS = GS; }
     var gdist = _dist(gmA, W, H, false);
     var gox = ((((minx - PAD) * BTB) % GS) + GS) % GS, goy = ((((miny - PAD) * BTB) % GS) + GS) % GS;
     for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = (((yr2 + goy) % GS) * GS + ((xr2 + gox) % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
@@ -6245,7 +6250,8 @@
   }
   var _holeTilesCache = null;
   function getHoleTiles() { if (_holeTilesCache && _holeTilesCache.stamp === ISLE._stamp) return _holeTilesCache.arr; var arr = computeHoleTiles(_tilesArr()); _holeTilesCache = { stamp: ISLE._stamp, arr: arr }; return arr; }
-  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
+  var _bakePrepMain = {}; // persistent image-prep cache for the MAIN-THREAD bake path (DEV + first-load); the worker keeps its own
+  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), prep: _bakePrepMain, BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
   function _wrapBake(r) { var PAD = 2, cv = _cv(r.W, r.H); cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(r.buf), r.W, r.H), 0, 0); return { cv: cv, ox: (r.minx - PAD) * TILE - TILE / 2, oy: (r.miny - PAD) * TILE - TILE / 2, w: r.W, h: r.H, key: ISLE.tiles.size, minx: r.minx, miny: r.miny, maxx: r.maxx, maxy: r.maxy, PAD: PAD, BTB: 172, GEY: 90, EXTRA: 150 }; }
   function bakeIsle(region) { var p = _bakeParams(region); if (!p) return null; var r; try { r = __coastBakeCore(p); } catch (e) { if (window.console) console.warn("bake core failed", e); return null; } return r ? _wrapBake(r) : null; } // SYNC driver (DEV + first-load)
   // ===== OFF-THREAD bake worker (expansion) — same __coastBakeCore, run in a Worker so the main thread stays at framerate =====
@@ -6258,7 +6264,7 @@
       if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; // images not ready yet — try again later
       // worker paints the RGBA buffer into an OffscreenCanvas + hands back a transferable ImageBitmap (a GPU texture) — the
       // main thread then only does a single drawImage, never a multi-MP putImageData (that CPU pixel-copy was the residual hitch).
-      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,northK:d.northK,holeTiles:d.holeTiles,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
+      var src = "var __core=" + __coastBakeCore.toString() + ";\nvar IMG={},PREP={};\nonmessage=function(e){var d=e.data;if(d.t==='img'){IMG.coast=d.coast;IMG.coastW=d.coastW;IMG.coastH=d.coastH;IMG.grass=d.grass;PREP={};return;}try{var r=__core({tiles:d.tiles,region:d.region,closeR:d.closeR,northK:d.northK,holeTiles:d.holeTiles,prep:PREP,BTB:d.BTB,PAD:d.PAD,GEY:d.GEY,EXTRA:d.EXTRA,coast:IMG.coast,coastW:IMG.coastW,coastH:IMG.coastH,grass:IMG.grass});var oc=new OffscreenCanvas(r.W,r.H);oc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.W,r.H),0,0);var bmp=oc.transferToImageBitmap();postMessage({id:d.id,ok:true,bmp:bmp,W:r.W,H:r.H,minx:r.minx,miny:r.miny,maxx:r.maxx,maxy:r.maxy},[bmp]);}catch(err){postMessage({id:d.id,ok:false});}};";
       var w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
       w.onmessage = function (e) { var cb = __bakeCbs[e.data.id]; if (cb) { delete __bakeCbs[e.data.id]; cb(e.data); } };
       w.onerror = function () { __bakeWorker = false; };
@@ -6291,7 +6297,7 @@
     if (window._incBake === false || !c || !c.cv || c.minx === undefined || !d) { if (!d) return; window._isleBakeCache = null; window._isleDirtyBox = null; return; }
     if (_bakeBusy && !sync) return; // a coast bake is already in flight → let the dirty box keep accumulating; we re-run on completion
     window._isleDirtyBox = null; var dd = { x0: d.x0, y0: d.y0, x1: d.x1, y1: d.y1 };
-    var CTX = 3, M = 2, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX }; // blit dirty±M (was ±1) re-covers the junction shoulders where a new peninsula meets the old edge; CTX>M keeps the blit interior fully-contexted. Off-thread, so the wider window is free.
+    var CTX = 2, M = 1, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX }; // SPEED (David 2026-07-16): back to CTX2/M1 (smaller bake window ≈ 1.4× faster). The junction-shoulder seams that once needed CTX3/M2 are now covered a better way — the dirty box already includes claim±1 + any hole-flips (claimTileAt), so blit dirty±1 == the old blit claim±2, at a smaller bake. CTX>M keeps the blit interior fully-contexted.
     function blit(b) { // composite the freshly-baked window onto the (possibly grown) live cache — read the cache FRESH (it may have grown while we baked)
       var c2 = window._isleBakeCache; if (!b || !c2 || !c2.cv || c2.minx === undefined) { if (!b) window._isleBakeCache = null; return; }
       var B = c2.BTB || 172, PAD = c2.PAD;
@@ -6718,15 +6724,30 @@
     }
     if (hasShippedToday() && !SANCTUARY) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     for (var di = dust.length - 1; di >= 0; di--) { var dp = dust[di]; dp.x += dp.vx; dp.y += dp.vy; dp.vy += 0.13; dp.life--; if (dp.life <= 0) { dust.splice(di, 1); continue; } ctx.globalAlpha = Math.max(0, dp.life / 16); ctx.fillStyle = "#cdbfa6"; ctx.beginPath(); ctx.arc(dp.x, dp.y, 2.6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
+    // Materializing indicator (David 2026-07-16: the old expanding circle was too big/generic). Now a marching-ants dashed
+    // SQUARE on the tile itself (same visual language as the claim glow → reads as "this exact tile is forming") + a few tiny
+    // Spark motes rising from it (gold→pink, on-brand: Spark is literally the currency being spent to grow the land). While it
+    // bakes: ants march + motes rise. When it blits in: one soft outward pop + fade, motes settle.
     for (var cfi = claimFlashes.length - 1; cfi >= 0; cfi--) { var cf = claimFlashes[cfi];
-      var rr, a;
-      if (cf.pend) { var ph = 0.5 + 0.5 * Math.sin(t * 4.5); rr = TILE * (0.42 + 0.18 * ph); a = 0.5 + 0.45 * ph; } // still baking → breathe in place, don't die
-      else { cf.life -= 0.05; if (cf.life <= 0) { claimFlashes.splice(cfi, 1); continue; } var e = 1 - cf.life; rr = TILE * (0.5 + e * 0.55); a = cf.life * cf.life; } // materialized → one expanding fade-out
-      ctx.save(); ctx.globalCompositeOperation = "lighter";
-      var fg = ctx.createRadialGradient(cf.x, cf.y, rr * 0.2, cf.x, cf.y, rr); fg.addColorStop(0, "rgba(150,240,190," + (0.10 * a) + ")"); fg.addColorStop(0.7, "rgba(120,225,170," + (0.30 * a) + ")"); fg.addColorStop(1, "rgba(120,225,170,0)");
-      ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.fill();
-      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(190,255,215," + (0.6 * a) + ")"; ctx.beginPath(); ctx.arc(cf.x, cf.y, rr, 0, 7); ctx.stroke(); ctx.restore();
-    } // materializing pulse per freshly-claimed tile: loops while its coast bakes off-thread, then a single fade once it blits in
+      var a;
+      if (cf.pend) { a = 0.62 + 0.38 * (0.5 + 0.5 * Math.sin(t * 4)); } // gentle breathing while the coast bakes off-thread
+      else { cf.life -= 0.06; if (cf.life <= 0) { claimFlashes.splice(cfi, 1); continue; } a = cf.life; }
+      var hs = TILE * 0.46, grow = cf.pend ? 0 : (1 - cf.life) * (TILE * 0.16); // small outward pop as it materializes
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,214,130," + (0.8 * a).toFixed(3) + ")"; ctx.lineWidth = 2.5; ctx.setLineDash([7, 6]); ctx.lineDashOffset = -t * 30; // marching ants
+      ctx.strokeRect(cf.x - hs - grow, cf.y - hs - grow, (hs + grow) * 2, (hs + grow) * 2);
+      ctx.setLineDash([]);
+      if (cf.pend) { ctx.globalCompositeOperation = "lighter";
+        for (var mk = 0; mk < 3; mk++) {
+          var mph = (t * 0.85 + mk * 0.37 + cf.x * 0.011) % 1; // 0→1 rising cycle, phase-varied per mote + per tile
+          var mx = cf.x + Math.sin(t * 2 + mk * 2.1) * TILE * 0.2, my = cf.y + TILE * 0.42 - mph * TILE; // rise from tile bottom to top
+          var ma = Math.sin(mph * Math.PI) * a, mr = 2.2 + 1.1 * Math.sin(t * 6 + mk); // fade in/out over the rise + twinkle
+          var mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 2.4); mg.addColorStop(0, "rgba(255,236,182," + (0.9 * ma).toFixed(3) + ")"); mg.addColorStop(0.5, "rgba(255,150,210," + (0.5 * ma).toFixed(3) + ")"); mg.addColorStop(1, "rgba(255,150,210,0)");
+          ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 2.4, 0, 7); ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
     ctx.restore();
     if (trickMsgT > 0) { trickMsgT--; ctx.save(); ctx.globalAlpha = Math.min(1, trickMsgT / 18); ctx.font = "800 30px 'Baloo 2',sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 5; ctx.strokeStyle = "#3a2540"; ctx.fillStyle = trickMsg === "BAIL!" ? "#ff6b6b" : "#ffd24a"; ctx.strokeText(trickMsg, W / 2, H * 0.3); ctx.fillText(trickMsg, W / 2, H * 0.3); ctx.restore(); }
     if (mood < 2) { ctx.fillStyle = "rgba(210,216,228," + ((2 - mood) * 0.1) + ")"; ctx.fillRect(0, 0, W, H); }
