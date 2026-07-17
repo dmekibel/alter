@@ -6030,13 +6030,23 @@
   function _saveIsleSoon() { if (_saveIsleTimer) clearTimeout(_saveIsleTimer); _saveIsleTimer = setTimeout(function () { _saveIsleTimer = null; saveIsle(); }, 600); } // persistence doesn't need a synchronous localStorage write per claimed tile — coalesce to one write 600ms after the last claim (kills the per-claim save() hitch)
   // Island EXPANSION (David 2026-07-15): walk the guardian to the coast, the water tile he FACES glows claimable, tap to spend Spark and grow the island there. Cost rises per tile claimed.
   function claimCost() { return ((S.game && S.game.claims) || 0) + 1; }
-  function sanctClaimTile() { // the single water tile directly ahead of the guardian, if it borders land (keeps the island connected)
-    if (!ISLE || !SANCT_TILES) return null;
-    var tx = Math.round((px + Math.cos(fhFace) * TILE * 0.85) / TILE), ty = Math.round((py + Math.sin(fhFace) * TILE * 0.85) / TILE);
-    if (isleHas(tx, ty)) return null;
-    if (!(isleHas(tx + 1, ty) || isleHas(tx - 1, ty) || isleHas(tx, ty + 1) || isleHas(tx, ty - 1))) return null;
-    return { tx: tx, ty: ty };
+  // The claimable frontier water tiles CLOSEST to the guardian (David 2026-07-18: selection is by PROXIMITY, not facing — you just
+  // walk near the tile you want). Returns up to n tiles sorted nearest-first (each is water that borders land, within ~2.3 tiles).
+  function sanctClaimTilesNear(n) {
+    if (!ISLE || !SANCT_TILES) return [];
+    var gx = px / TILE, gy = py / TILE, cgx = Math.round(gx), cgy = Math.round(gy), cand = [];
+    for (var dx = -2; dx <= 2; dx++) for (var dy = -2; dy <= 2; dy++) {
+      var tx = cgx + dx, ty = cgy + dy;
+      if (isleHas(tx, ty)) continue; // must be WATER (not solid land)
+      if (!(isleHas(tx + 1, ty) || isleHas(tx - 1, ty) || isleHas(tx, ty + 1) || isleHas(tx, ty - 1))) continue; // must border land (a real frontier)
+      var ex = tx - gx, ey = ty - gy, d = ex * ex + ey * ey;
+      if (d > 5) continue; // within ~2.2 tiles → only glows as he nears the coast
+      cand.push({ tx: tx, ty: ty, d: d });
+    }
+    cand.sort(function (a, b) { return a.d - b.d; });
+    return cand.slice(0, n || 1);
   }
+  function sanctClaimTile() { var a = sanctClaimTilesNear(1); return a.length ? { tx: a[0].tx, ty: a[0].ty } : null; } // the single CLOSEST claimable tile (drives the glow/hold/pre-bake)
   // Grow the island onto tile (tx,ty) if it borders land and the guardian can afford it. Returns true on success. WALK-driven (David 2026-07-15: he simply walks to expand, no tap) — no toast (would spam per tile), just a soft grow-burst.
   function claimTileAt(tx, ty) {
     if (!ISLE || isleHas(tx, ty)) return false;
@@ -6074,9 +6084,12 @@
   }
   var _claimHold = null, CLAIM_HOLD_MS = 820; // press-and-hold-to-claim state {tx,ty,t0,id} + hold duration (matches the commit-ring feel)
   function sanctClaimGlow(ctx, t) {
-    var c = sanctClaimTile(); if (!c) return;
+    var near = sanctClaimTilesNear(3); if (!near.length) return;
+    var c = near[0], hs0 = TILE * 0.5, pulse0 = 0.5 + 0.5 * Math.sin(t * 3);
+    // faint markers on the 2nd/3rd-closest frontier tiles (David 2026-07-18: "show the two or three closest") — subtle, no ring/cost
+    for (var _si = 1; _si < near.length; _si++) { var _s = near[_si], _sx = _s.tx * TILE, _sy = _s.ty * TILE; ctx.save(); ctx.strokeStyle = "rgba(120,210,170," + (0.14 + 0.06 * pulse0) + ")"; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.strokeRect(_sx - hs0 + 5, _sy - hs0 + 5, TILE - 10, TILE - 10); ctx.restore(); }
     var cost = claimCost(), afford = ((S.game && S.game.spark) || 0) >= cost;
-    var cx = c.tx * TILE, cy = c.ty * TILE, hs = TILE * 0.5, pulse = 0.5 + 0.5 * Math.sin(t * 3), col = afford ? "80,230,160" : "150,150,175";
+    var cx = c.tx * TILE, cy = c.ty * TILE, hs = TILE * 0.5, pulse = pulse0, col = afford ? "80,230,160" : "150,150,175";
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     var g = ctx.createRadialGradient(cx, cy, 2, cx, cy, hs * 1.7); g.addColorStop(0, "rgba(" + col + "," + (0.24 + 0.16 * pulse) + ")"); g.addColorStop(1, "rgba(" + col + ",0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, hs * 1.7, 0, 7); ctx.fill(); ctx.restore();
@@ -6932,11 +6945,22 @@
       var sX = (moveX2 !== 0 || moveY2 !== 0) ? moveX2 : moveX, sY = (moveX2 !== 0 || moveY2 !== 0) ? moveY2 : moveY;
       var m = Math.hypot(sX, sY); moving = false;
       if (m > 0.12) {
-        var tgt = Math.atan2(sY, sX), dd = tgt - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2;
-        fhFace += dd * 0.40;                                               // steer toward the stick — SHARP (a car turns ~0.08/frame; this whips ~0.4)
-        var align = Math.cos(dd), fwd = m * Math.max(0, align);           // translate ONLY along facing, scaled by how aligned we are → a hard turn PIVOTS (feet turn in place) instead of sliding sideways
-        if (fwd > 0.02) { var step = SPD * fwd; px += Math.cos(fhFace) * step; py += Math.sin(fhFace) * step; } // move along facing; the walk CYCLE + facing are re-derived from ACTUAL movement AFTER collision (below) so a wall can't foot-slide
-        moving = fwd > 0.03;                                               // intent (drives walk-to-expand + camera); the animation uses actual movement
+        // WALL-AWARE FACING (David 2026-07-18): face the way you can actually GO, not the raw stick. Probe a short step ahead on
+        // each axis (small lookahead so you can still walk right up to a coast edge); a BLOCKED axis drops that component, so the
+        // surviving vector is the wall-PARALLEL direction. Then PIVOT toward it with NO walking; walking only begins once rotated.
+        var tgt = Math.atan2(sY, sX), ix = Math.cos(tgt), iy = Math.sin(tgt);
+        var LA = 9, tx0 = Math.round(px / TILE), ty0 = Math.round(py / TILE);
+        var okX = !SANCT_TILES || isleSolid(Math.round((px + ix * LA) / TILE), ty0), okY = !SANCT_TILES || isleSolid(tx0, Math.round((py + iy * LA) / TILE)); // non-tile sanctuary = no tile walls (its own circular edge-clamp handles bounds)
+        var ax = okX ? ix : 0, ay = okY ? iy : 0, aMag = Math.hypot(ax, ay);
+        if (aMag > 0.4) {                                                  // a viable (open / wall-parallel) direction exists
+          var aDir = Math.atan2(ay, ax), dd = aDir - fhFace; while (dd > Math.PI) dd -= Math.PI * 2; while (dd < -Math.PI) dd += Math.PI * 2;
+          fhFace += dd * 0.40;                                            // rotate toward the go-direction (this is the pivot)
+          if (Math.abs(dd) < 0.55) {                                      // ~30°: rotated ENOUGH → walking begins (no movement while still pivoting)
+            var fwd = m * aMag * Math.cos(dd), step = SPD * fwd; px += Math.cos(fhFace) * step; py += Math.sin(fhFace) * step; moving = true;
+          }
+        } else {                                                          // pushing (roughly) straight into a wall → just FACE it, stand, no walk (the leeway)
+          var dw = tgt - fhFace; while (dw > Math.PI) dw -= Math.PI * 2; while (dw < -Math.PI) dw += Math.PI * 2; fhFace += dw * 0.40;
+        }
       }
       fhMoving = moving; // fallback; overridden by actual movement post-collision on the tile island
     } else if (skateOn && skateOk()) {
@@ -6998,10 +7022,12 @@
         var sbx = 0, sby = RG * 0.16, sbR = RG * 0.9, sdx = px - sbx, sdy = py - sby, sdd = Math.hypot(sdx, sdy); if (sdd > sbR) { px = sbx + sdx / sdd * sbR; py = sby + sdy / sdd * sbR; } // island edge: stay on the grass, off the water
       }
       for (var ci = 0; ci < COLLS.length; ci++) { var c = COLLS[ci], cdx = px - c[0], cdy = py - c[1]; if (Math.abs(cdx) < c[2] && Math.abs(cdy) < c[3]) { var ox = c[2] - Math.abs(cdx), oy = c[3] - Math.abs(cdy); if (ox < oy) px = c[0] + (cdx < 0 ? -c[2] : c[2]); else py = c[1] + (cdy < 0 ? -c[3] : c[3]); } } // solid objects: push the feet out of the base footprint (can't walk through walls)
-      // FEET TRUTH (David 2026-07-15): the walk cycle + facing come from how far he ACTUALLY moved (after wall/edge/object collision). Into a wall → adist≈0 → idle stand (no walk-in-place). Aim to the side of a wall → he slides along it AND rotates to face that slide (no glide with feet facing the wall).
+      // WALK CYCLE from ACTUAL movement (David 2026-07-15/18): the animation plays only when he actually travelled (into a wall →
+      // adist≈0 → idle stand, no walk-in-place). Facing is NO LONGER re-derived here — the wall-aware steering above already faces
+      // him along the go-direction and pivots (no walk) while rotating; re-rotating here would fight it and reintroduce the diagonal.
       var _adx = px - prevPx, _ady = py - prevPy, _adist = Math.hypot(_adx, _ady);
       fhMoving = _adist > 0.35;
-      if (fhMoving) { fhFrame += (_adist / FH_STRIDE) * FH_NF; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; var _aa = Math.atan2(_ady, _adx), _fd = _aa - fhFace; while (_fd > Math.PI) _fd -= Math.PI * 2; while (_fd < -Math.PI) _fd += Math.PI * 2; fhFace += _fd * 0.30; }
+      if (fhMoving) { fhFrame += (_adist / FH_STRIDE) * FH_NF; fhFrame = ((fhFrame % FH_NF) + FH_NF) % FH_NF; }
     }
     else { var bound = RS - 8, d = Math.sqrt(px * px + py * py); if (d > bound) { px = px / d * bound; py = py / d * bound; } }
     renderWorld(wctx, WGW, WGH, zoom, moving, t);
@@ -13816,6 +13842,24 @@
     return "touchstart @(" + sx.toFixed(0) + "," + sy.toFixed(0) + ") tile(" + c.tx + "," + c.ty + "); armed=" + !!_claimHold + " | SANCT_TILES=" + SANCT_TILES + " claimTile2=" + JSON.stringify(c2) + " mapped=(" + mtx + "," + mty + ") spark=" + ((S.game && S.game.spark) || 0) + " cost=" + claimCost() + " worldTapWired=" + worldTapWired;
   };
   window.DEV.simClaimResult = function () { return "isleSize " + (window.__simBefore) + "→" + ISLE.tiles.size + (ISLE.tiles.size > (window.__simBefore || 0) ? " ✓ CLAIMED via hold" : " ✗ no claim"); };
+  window.DEV.moveTest = function () { // DEV: regression check — place the guardian on a definitely-INTERIOR tile (all 8 neighbors land) and push EAST; confirm he walks +x.
+    if (!gameOn) return "open the Game tab first (gameOn=false)";
+    var interior = null; ISLE.tiles.forEach(function (k) { if (interior) return; var a = k.split(","), tx = +a[0], ty = +a[1], ok = true; for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) if (!isleHas(tx + dx, ty + dy)) ok = false; if (ok) interior = [tx, ty]; });
+    if (!interior) return "no interior tile (island too small/thin)";
+    px = interior[0] * TILE; py = interior[1] * TILE; camX = 0; camY = 0; fhFace = 0; window.__mtB = { x: px, y: py };
+    moveX = 1; moveY = 0; moveX2 = 0; moveY2 = 0; // push EAST (module vars, settable from in-module DEV)
+    setTimeout(function () { window.__mtA = { x: px, y: py }; moveX = 0; moveY = 0; }, 350);
+    return "at interior " + JSON.stringify(interior) + "; pushing EAST 350ms; DEV.moveResult() next";
+  };
+  window.DEV.moveResult = function () { var b = window.__mtB, a = window.__mtA; if (!a) return "not ready"; var dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy); return "moved " + d.toFixed(1) + "px Δ(" + dx.toFixed(0) + "," + dy.toFixed(0) + ") " + (d > 8 && dx > Math.abs(dy) ? "✓ walks EAST correctly" : d > 8 ? "⚠ moved but wrong dir" : "✗ FROZEN"); };
+  window.DEV.proxTest = function () { // DEV: verify tile selection is by PROXIMITY not facing — pose next to a water edge, face AWAY, confirm sanctClaimTile still returns the nearest water.
+    if (!ISLE) buildIsle();
+    var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); });
+    if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE;
+    fhFace = Math.atan2(-(water[1] - stand[1]), -(water[0] - stand[0])); // face the OPPOSITE way from the water
+    var got = sanctClaimTile(), near = sanctClaimTilesNear(3);
+    return "standing " + JSON.stringify(stand) + " water " + JSON.stringify(water) + " facing AWAY; sanctClaimTile=" + JSON.stringify(got) + (got && got.tx === water[0] && got.ty === water[1] ? " ✓ picked nearest (ignores facing)" : " ✗") + " | near3=" + JSON.stringify(near.map(function (x) { return [x.tx, x.ty]; }));
+  };
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
   window.DEV.specVerify = function () { // DEV: verify the PREDICTIVE path's CORRECTNESS synchronously (headless throttles the worker, so bypass it): build the speculation with a sync bake, install it, claim the tile, and confirm (a) it was a spec HIT (the coordinate/coverage logic accepted it) and (b) the spec-blitted coast is pixel-identical to a fresh full bake (the spec produced the RIGHT pixels at the RIGHT place). The worker *timing* remains device-only, but this proves the risky part — the blit math — is sound.
     if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 99999;
