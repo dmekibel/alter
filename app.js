@@ -6147,7 +6147,13 @@
     var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
     var curv = function (k) { var ka = Math.max(0, k - 9), kb = Math.min(eb.length - 1, k + 9); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
     var CELL = 46, wox = (minx - PAD) * BTB, woy = (miny - PAD) * BTB, best = {};
-    for (var ci2 = 0; ci2 < eb.length; ci2++) { var wxp = eb[ci2][1] + wox, wyp = eb[ci2][0] + woy, gx = Math.floor(wxp / CELL), gy = Math.floor(wyp / CELL), key = gx + "," + gy, ex2 = wxp - (gx * CELL + CELL / 2), ey2 = wyp - (gy * CELL + CELL / 2), d2 = ex2 * ex2 + ey2 * ey2; if (!best[key] || d2 < best[key].d2) best[key] = { k: ci2, d2: d2, gx: gx, gy: gy }; }
+    // Lobe anchor per world-cell chosen with a DETERMINISTIC WORLD-SPACE tiebreak (not eb trace order): among boundary pixels
+    // near-equidistant to the cell centre, the old "d2 < best.d2" kept whichever the contour trace hit FIRST, and the trace's
+    // start pixel + direction differ between a windowed bake and a full bake → a near-tie flipped the chosen pixel ~1px → the rim
+    // scallop shifted between bakes (part of the incremental-vs-full seam). Ties broken by (world x, world y) → same pixel wins in
+    // both. (EPS = px² width of the near-tie band.) (David 2026-07-17)
+    var EPS = 2.0;
+    for (var ci2 = 0; ci2 < eb.length; ci2++) { var wxp = eb[ci2][1] + wox, wyp = eb[ci2][0] + woy, gx = Math.floor(wxp / CELL), gy = Math.floor(wyp / CELL), key = gx + "," + gy, ex2 = wxp - (gx * CELL + CELL / 2), ey2 = wyp - (gy * CELL + CELL / 2), d2 = ex2 * ex2 + ey2 * ey2; var bk = best[key]; if (!bk || d2 < bk.d2 - EPS || (d2 < bk.d2 + EPS && (wxp < bk.wx || (wxp === bk.wx && wyp < bk.wy)))) best[key] = { k: ci2, d2: d2, gx: gx, gy: gy, wx: wxp, wy: wyp }; }
     Object.keys(best).forEach(function (key) { var b = best[key], k = b.k; if (curv(k) > 0.55) return;
       var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1), ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx;
       var h = ((b.gx * 73856093) ^ (b.gy * 19349663)) >>> 0, ry = 13 + (h % 4), rxl = 0.58 * (42 + ((h >>> 3) % 12));
