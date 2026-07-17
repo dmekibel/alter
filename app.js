@@ -10749,6 +10749,13 @@
     return Math.max(0, Math.min(1, base));
   }
   function _shuffled(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; } // Fisher-Yates; used so each extra pass through a line pool is a fresh order, never the identical loop
+  // GRATEFUL FLOW (Stutz-faithful, David 2026-07-15): the stack gratitude section is a STRUCTURED timed arc, not a looping prompt pool — name a few specific things, feel each in a silent pause, then the final beat: stop naming and feel the gratefulness itself build. Technique from Phil Stutz's Grateful Flow, phrased in ALTER's own plain words (copyright pivot). Both gates + adversarial judge passed.
+  var GRAT_FLOW = {
+    prompts: ["Bring one good thing from today to mind. Something small and specific.", "Now a person. Someone who made this stretch of life a little easier.", "Now something your body did for you today, quietly, without being asked.", "And one thing so ordinary you never think to thank it."],
+    subs: ["Eyes closed. Sit in the feeling of it a moment, don't just think it.", "Stay with this one until it turns warm, then we'll go on."],
+    build: "Now stop searching for things. Let the naming go, and just feel the gratefulness itself, building on its own.",
+    close: "Let that fullness stay with you as we go on."
+  };
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
     var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false, medRI = 0; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" in both relax AND meditation); medRI cycles the sparse re-anchor cues across sections
 
@@ -10779,6 +10786,12 @@
           }
         });
         acts[ai]._sections = secMeta; acts[ai]._isMed = secMeta.length > 1; // the act carries its sections; the player expands it when it becomes current
+      } else if (t.id === "gratitude") { // STUTZ GRATEFUL FLOW (David 2026-07-15): a structured arc, not a looping pool — N named items each held in a silent feel-pause, then the build beat + a short close. Item count + pause length scale to the slot; always lands on the build beat, never mid-loop.
+        var gd = sessionDepth(t.secs || 60), gPause = 15 + gd * 11, gBuild = 24 + gd * 16, gBud = t.secs || 60, gCost = 3.5 + gPause;
+        var gN = Math.max(2, Math.min(GRAT_FLOW.prompts.length, Math.round((gBud - (3.5 + gBuild) - 6) / gCost)));
+        for (var gi = 0; gi < gN; gi++) { var gp = GRAT_FLOW.prompts[gi]; usedTxt[_normLine(gp)] = 1; P({ text: gp, label: gp, sub: GRAT_FLOW.subs[gi % GRAT_FLOW.subs.length], gap: gPause }); }
+        P({ text: GRAT_FLOW.build, label: GRAT_FLOW.build, sub: "", gap: gBuild });
+        P({ text: GRAT_FLOW.close, label: GRAT_FLOW.close, sub: "", gap: 4 });
       } else if (C.breath) {
         var cyc = Math.max(2, Math.round(t.secs / 16));
         for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in"), breath: "in" }); P({ text: "Hold", label: "Hold", sub: "stay full", gap: pauseFor("hold"), breath: "hold" }); P({ text: "Breathe out", label: "Breathe out", sub: "slow and long", gap: pauseFor("out"), breath: "out" }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest"), breath: "rest" }); } // David 2026-07-15: voice text reverted to the bare recorded word (the coaching-line composite had no matching clip → the stack's breath act was totally silent); the sub caption still shows the fuller coaching line on screen. Temporary until a dedicated in/out/hold audio cue replaces spoken words.

@@ -83,6 +83,10 @@ m = re.search(r'var DAY1_LESSONS = \{(.*?)\n  \};', src, re.S)
 if m:
     for key in ('t','q','reply','line'):
         for s in re.findall(key + r':\s*' + STR, m.group(1)): add(un(s))
+# 12) GRATEFUL FLOW (Stutz, 2026-07-15): the stack gratitude arc — prompts + subs + build + close, spoken as segment text
+m = re.search(r'var GRAT_FLOW = \{(.*?)\n  \};', src, re.S)
+if m:
+    for s in re.findall(STR, m.group(1)): add(un(s))
 # de-dupe
 uniq=[]; seen=set()
 for l in lines:
