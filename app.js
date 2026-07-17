@@ -6186,18 +6186,22 @@
     // (land above water) is the mirror of the outer coast's SOUTH edge → cliff+sand; a hole's BOTTOM rim (land below water,
     // like the outer coast's north edge) → north=1, but unlike the outer coast a hole's north gets a thin water OUTLINE
     // (see the new hole+north clause in P9) instead of nothing, so a pond never reads as a flat unbordered void.
-    var north = new Uint8Array(W * H), NK = (p.northK == null ? 0.9 : p.northK), _np = _distP(landcliff, W, H, true), _nP = _np.P;
-    for (i = 0; i < W * H; i++) { if (landcliff[i] || _nP[i] < 0) continue; var _lp = _nP[i], _ldx = (_lp % W) - (i % W), _ldy = ((_lp / W) | 0) - ((i / W) | 0); if (_ldy > Math.abs(_ldx) * NK) north[i] = 1; }
+    // north = BINARY top-edge flag (kept for the hole-bottom water-outline clause). northF = CONTINUOUS 0..1 "how much sand
+    // belongs here" from the same nearest-land vector: 1 = full sand (side/south edge), 0 = bare top edge. Using a smooth factor
+    // instead of the binary gate makes sand THIN progressively toward a top corner and terminate INTO the grass (no sharp chop),
+    // and it's continuous across stacked steps so a 2-wide column no longer breaks the single-square look. (David 2026-07-16)
+    var north = new Uint8Array(W * H), northF = new Float32Array(W * H), NK = (p.northK == null ? 0.9 : p.northK), _np = _distP(landcliff, W, H, true), _nP = _np.P;
+    for (i = 0; i < W * H; i++) { if (landcliff[i] || _nP[i] < 0) { northF[i] = 1; continue; } var _lp = _nP[i], _ldx = (_lp % W) - (i % W), _ldy = ((_lp / W) | 0) - ((i / W) | 0); if (_ldy > Math.abs(_ldx) * NK) north[i] = 1; var _len = Math.hypot(_ldx, _ldy) || 1, _up = _ldy / _len, _t = Math.max(0, Math.min(1, (_up - 0.25) / 0.6)); northF[i] = 1 - _t * _t * (3 - 2 * _t); } // _up = how much the nearest land sits BELOW (top-edge-ness); smoothstep 0.25→0.85
     // P6 — sand ring (world-Y taper) + cliff shadow
     var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 };
     var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
     for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
       i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
-      if (landcliff[i] || north[i]) continue; // holes (David 2026-07-16) get sand too — on their top rim + sides, same as the outer coast; their bottom rim is already excluded via north
+      if (landcliff[i] || northF[i] < 0.02) continue; // northF→0 on a bare top edge / hole bottom → no sand (replaces the old binary north skip; the taper is now continuous)
       // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
-      // the sides — LOCAL, so it never drifts as the island grows (the old global world-Y taper re-normalised by the island's
-      // total height on every south claim → the sand/ink boundary shifted per tile → horizontal seam lines). Reuses _nP.
-      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = 42 + (52 - 42) * _south; // NEARLY UNIFORM ribbon (David 2026-07-16, measured off the BIGBLK_v1 ref art directly): the ref's side sand is nearly as wide as its south sand, not a strong taper — baseline 42px on every non-north edge, only slightly wider (→52) south-facing; all LOCAL so no seam
+      // the sides — LOCAL, so it never drifts. wy is then scaled by northF so the sand THINS toward a top corner and reaches 0
+      // INTO the grass (no sharp cutoff), continuous across stacked steps. Reuses _nP.
+      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = (42 + (52 - 42) * _south) * northF[i]; // NEARLY UNIFORM ribbon (measured off BIGBLK_v1) × the continuous top-edge taper
       if (distout[i] >= 1 && distout[i] <= wy) {
         sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
@@ -6215,11 +6219,15 @@
     var SO = { r: 40, g: 22, b: 26 };
     var lsil = new Uint8Array(W * H); for (i = 0; i < W * H; i++) lsil[i] = gmA[i] || cliff[i] ? 1 : 0;
     var island = new Uint8Array(W * H); for (i = 0; i < W * H; i++) island[i] = lsil[i] || sand[i] ? 1 : 0;
-    var idOut = _dist(island, W, H, true); for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 1 && idOut[i] <= 6) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; }
-    // P9 — black land-silhouette ink (on top of brown), then blue coastline
-    var lsilOut = _dist(lsil, W, H, true);
-    for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= 9) { out[i * 4] = 10; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
-    for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
+    var idOut = _dist(island, W, H, true); for (i = 0; i < W * H; i++) if (!island[i] && northF[i] > 0.12 && idOut[i] >= 1 && idOut[i] <= 6) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; } // brown follows the (now-tapered) sand: northF gate instead of the binary !north
+    // P9 — black ink, then blue coastline. TWO ink passes:
+    //  (1) lsil boundary (grass+cliff) → inks the cliff's BOTTOM edge (cliff→sand).
+    //  (2) GRASS boundary (gmA) → inks the grass's own edge, incl. the grass→cliff junction on a south edge, which is INTERIOR to
+    //      lsil and so was never inked → THAT was the "missing black outline on the bottom edge of the grass" (David 2026-07-16).
+    var lsilOut = _dist(lsil, W, H, true), gmaOut = _dist(gmA, W, H, true), INK = 10;
+    for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= 9) { out[i * 4] = INK; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
+    for (i = 0; i < W * H; i++) if (!gmA[i] && gmaOut[i] >= 1 && gmaOut[i] <= 7) { out[i * 4] = INK; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
+    for (i = 0; i < W * H; i++) if (!island[i] && northF[i] > 0.12 && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; } // blue keeps constant thickness but terminates via northF → into the grass at the corner, no sharp chop
     // David 2026-07-16: a hole's BOTTOM rim (north=1 inside the hole — land below water) is the one edge that should NOT just
     // stay flat unbordered water like the outer coast's north edge does — it gets a thin water OUTLINE instead, so a sealed
     // pond always reads as a pond (bordered) rather than a gap. Thinner + closer than the outer blue band (8-22px).
