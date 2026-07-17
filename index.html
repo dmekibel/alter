@@ -1216,6 +1216,27 @@
   .pd-ember-lbl{ color:#ff8a3a !important; }
   .bchip.pd-ember{ background:#2c1608 !important; color:#ffcf9a !important; border:1.5px solid #160510 !important; box-shadow:inset 0 0 0 1px rgba(255,138,58,.55), 0 3px 0 #160510; }
   .bento-card.bento-sheet .bchip.sel.pd-lit{ background-image:repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 5px, transparent 5px 11px); }
+  /* v1117 PLANNER LIST-AND-RESTYLE (David 2026-07-17): plan picks read as GAME PIECES — programBuilder language (ink border, hard shadow, pink-ring select) */
+  .bento-card.bento-plan .bchip{ border-width:2px; border-radius:12px; box-shadow:0 3px 0 #160510; font-weight:800; }
+  .bento-card.bento-plan .bchip:active{ transform:translateY(2px) scale(.97); box-shadow:0 1px 0 #160510; }
+  .bento-card.bento-plan .bchip.sel{ box-shadow:0 0 0 2.5px #ff5fa8, 0 0 14px rgba(255,95,168,.38), 0 3px 0 #160510 !important; }
+  /* readable chosen-list above the rail: every pick so far as a mini piece; earlier-beat picks ride dimmer (Back edits them) */
+  .pd-list{ display:flex; gap:7px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:1px 1px 8px; }
+  .pd-list::-webkit-scrollbar{ display:none; }
+  .pd-list:empty{ display:none; }
+  .pd-pick{ flex:none; display:inline-flex; align-items:center; gap:5px; border:2px solid #160510; border-radius:10px; box-shadow:0 2px 0 #160510; padding:6px 10px; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; line-height:1; white-space:nowrap; cursor:pointer; animation:pdLand .32s var(--ease-spring) both; }
+  .pd-pick .ti{ font-size:13px; }
+  .pd-pick.prev{ opacity:.6; cursor:default; }
+  /* ARRANGE step rows as game pieces: stripe fill (set inline per domain), ink text/controls */
+  .bento-orow.editrow.gp{ border:2.5px solid #160510; border-radius:15px; box-shadow:0 3px 0 #160510; }
+  .editrow.gp .bento-on{ color:#160510; font-weight:800; }
+  .editrow.gp .bento-ohandle{ color:#160510; opacity:.6; }
+  .editrow.gp .edit-ico{ flex:none; color:#160510; font-size:16px; display:flex; }
+  .editrow.gp .edit-pip{ background:rgba(22,5,16,.22); border-color:#160510; }
+  .editrow.gp .edit-pip.on{ background:#160510; }
+  .editrow.gp .edit-lchip{ background:rgba(22,5,16,.14); color:#160510; border-color:#160510; }
+  .editrow.gp .edit-lchip.on{ background:#160510; color:#fff; }
+  .bento-orow.editrow.gp.drag{ box-shadow:0 0 0 2.5px #ff5fa8, 0 12px 28px rgba(0,0,0,.5); }
   .big3-rline{ font-size:12.5px; font-weight:600; margin-top:3px; line-height:1.35; }
   /* ORDER STEP — drag-reorder the chosen activities (David 2026-06-28) */
   .bento-orderhint{ color:#e6cfe0; font-size:12.5px; line-height:1.4; padding:4px 2px 12px; }
@@ -2765,6 +2786,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1116"></script>
+  <script src="app.js?v=1117"></script>
 </body>
 </html>

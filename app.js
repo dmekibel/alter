@@ -9178,11 +9178,13 @@
       b.onclick = function () { if (!sel.length && !opts.allowEmptyGo) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
     }
     // PLAN-DAY LIVE MINI-TIMELINE STRIP («ДЕНЬ СОБИРАЕТСЯ», canon): a matte dry-run of distributePlan's gap-fill over the current picks + the day's committed blocks — the day visibly takes shape as you tap. Scoped plan sheets only; never lies (same slot logic).
+    // v1117 list-and-restyle (David 2026-07-17): + a READABLE chosen-list above the rail — every pick so far (this beat + earlier beats via opts.accPicks) as a mini game-piece chip; tap a current-beat chip to unpick, earlier beats ride dimmed (Back edits them). The abstract cells stay as the placement dry-run.
     var pdStripEl = null;
     function pdSyncStrip() {
       if (!(opts.domains && opts.domains.length)) return;
-      if (!pdStripEl) { pdStripEl = document.createElement("div"); pdStripEl.className = "pd-strip"; add(pdStripEl, "div", "pd-strip-lbl", tr("Day taking shape")); pdStripEl._rail = add(pdStripEl, "div", "pd-rail"); var ax = add(pdStripEl, "div", "pd-axis"); ["08", "12", "16", "20", "24"].forEach(function (h) { add(ax, "span", "", h); }); if (foot && foot.parentNode === card) card.insertBefore(pdStripEl, foot); else card.appendChild(pdStripEl); }
+      if (!pdStripEl) { pdStripEl = document.createElement("div"); pdStripEl.className = "pd-strip"; add(pdStripEl, "div", "pd-strip-lbl", tr("Day taking shape")); pdStripEl._list = add(pdStripEl, "div", "pd-list"); pdStripEl._rail = add(pdStripEl, "div", "pd-rail"); var ax = add(pdStripEl, "div", "pd-axis"); ["08", "12", "16", "20", "24"].forEach(function (h) { add(ax, "span", "", h); }); if (foot && foot.parentNode === card) card.insertBefore(pdStripEl, foot); else card.appendChild(pdStripEl); }
       var rail = pdStripEl._rail; rail.innerHTML = "";
+      var listEl = pdStripEl._list; while (listEl.firstChild) listEl.removeChild(listEl.firstChild); // targeted clear (ratchet: no new innerHTML wipe)
       var pk = opts.planK || todayK(), DAY0 = 8 * 60, DAY1 = 24 * 60, span = DAY1 - DAY0;
       function x(m) { return Math.max(0, Math.min(100, (m - DAY0) / span * 100)); }
       var occ = [];
@@ -9190,8 +9192,12 @@
       occ.sort(function (a, b) { return a.s - b.s; });
       var cursor = (pk === todayK()) ? Math.max(DAY0, logicalNowMin()) : DAY0;
       function slot(from, dur) { var t = from, g = 0; while (g++ < 200) { var ok = true; for (var i = 0; i < occ.length; i++) { if (t < occ[i].e && t + dur > occ[i].s) { t = occ[i].e; ok = false; break; } } if (ok) return t; } return t; }
-      sel.forEach(function (a) { var dom = domainOf(a), d = DOM[dom] || DOM.focus, mins = a.mins || 30; var st = Math.min(1410, slot(cursor, mins)); occ.push({ s: st, e: st + mins }); occ.sort(function (p, q) { return p.s - q.s; }); cursor = st + mins;
-        var c = add(rail, "div", "pd-cell land"); c.style.left = x(st) + "%"; c.style.width = Math.max(3.5, (mins / span * 100)) + "%"; c.style.background = mixHex(d.c, "#160510", 0.42); if (mins / span * 100 > 6) c.innerHTML = tiIcon(a); });
+      var picks = (opts.accPicks || []).map(function (a) { return { a: a, cur: false }; }).concat(sel.map(function (a) { return { a: a, cur: true }; })); // earlier-beat order first, then this beat = distributePlan's eventual acc order
+      picks.forEach(function (p) { var a = p.a, dom = domainOf(a), d = DOM[dom] || DOM.focus, mins = a.mins || 30; var st = Math.min(1410, slot(cursor, mins)); occ.push({ s: st, e: st + mins }); occ.sort(function (q, r) { return q.s - r.s; }); cursor = st + mins;
+        var c = add(rail, "div", "pd-cell" + (p.cur ? " land" : "")); c.style.left = x(st) + "%"; c.style.width = Math.max(3.5, (mins / span * 100)) + "%"; c.style.background = mixHex(d.c, "#160510", p.cur ? 0.42 : 0.62); if (mins / span * 100 > 6) c.innerHTML = tiIcon(a);
+        var pc = add(listEl, "span", "pd-pick" + (p.cur ? "" : " prev")); pc.style.background = (dom === "drift") ? "#5a2a3c" : d.c; pc.style.color = (dom === "drift") ? "#c98ca6" : (d.ink || "#160510"); pc.innerHTML = tiIcon(a) + " " + esc(a.title);
+        if (p.cur) pc.onclick = function () { commit(a); }; });
+      listEl.scrollLeft = listEl.scrollWidth; // newest pick stays in view
       if (pk === todayK()) { var nt = add(rail, "div", "pd-nowtick"); nt.style.left = x(logicalNowMin()) + "%"; }
     }
     // OVERVIEW (David v647): the ORIGINAL beautiful striped bento cards — but SPLIT INTO 4 TABS (Energy/Work/Love/Other) so you only ever see one category's cards at a time (not overwhelming, still the bento box we designed). Each card's chips SCROLL. Recent + search on top. (Plan beats still use renderScoped.)
@@ -9344,6 +9350,7 @@
       bentoPicker({
         title: beat.label,
         multi: true, planK: k, domains: beat.domains, headNode: big3HeadNode(beat, i), preselect: accTitlesFor(beat.domains),
+        accPicks: acc.filter(function (a) { return beat.domains.indexOf(domainOf(a)) < 0; }), // earlier beats' picks ride into the strip (readable + dry-run) so the shape never lies across beats
         // surface the "been meaning to…" items that belong to THIS beat's domains
         priority: avoided.filter(function (m) { return beat.domains.indexOf(domainOf(m)) >= 0; }),
         goLabel: (i < BIG3.length - 1 ? "Next: " + BIG3[i + 1].label : "Next: everything else"), goIcon: '<i class="ti ti-arrow-right"></i>',
@@ -9357,6 +9364,7 @@
       bentoPicker({
         title: "Everything else",
         multi: true, planK: k, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: big3HeadNode({ emoji: "ti-sparkles", virtue: "zest" }, 3),
+        accPicks: acc.filter(function (a) { return ELSE_DOMAINS.indexOf(domainOf(a)) < 0; }),
         priority: avoided.filter(function (m) { var d = domainOf(m); return BIG3.every(function (b) { return b.domains.indexOf(d) < 0; }); }),
         goLabel: "Arrange them", goIcon: '<i class="ti ti-adjustments-horizontal"></i>',
         allowEmptyGo: true,
@@ -9382,25 +9390,26 @@
     add(head, "div", "bento-q", "Arrange your day");
     var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
     var body = add(card, "div", "bento-body");
-    add(body, "div", "bento-orderhint", "Drag ⠿ to reorder · tap a length · set what matters most. They land back-to-back from your next free slot — fine-tune times on the timeline.");
+    add(body, "div", "bento-orderhint", "Drag ⠿ to reorder · tap a length · set what matters most. They land back-to-back from your next free slot. Fine-tune times on the timeline.");
     var list = add(body, "div", "bento-orderlist editor");
     function paint() {
       list.innerHTML = "";
       sel.forEach(function (a, i) {
         var dom = a.domain || domainOf(a), D = DOM[dom] || DOM.focus, accent = (dom === "drift") ? "#7a808c" : D.c;
-        var row = add(list, "div", "bento-orow editrow"); row.dataset.i = i;
+        var row = add(list, "div", "bento-orow editrow gp"); row.dataset.i = i; // v1117: rows read as GAME PIECES — canon 45° stripe + ink text (programBuilder language)
+        row.style.background = "repeating-linear-gradient(45deg," + accent + " 0 9px," + mixHex(accent, "#160510", 0.16) + " 9px 18px)";
         row.style.minHeight = Math.round(44 + (a.mins / 90) * 26) + "px"; // height hints at length
-        // top line: handle · color swatch · title · importance pips
+        // top line: handle · activity icon · title · importance pips
         var topL = add(row, "div", "edit-top");
         var hd = add(topL, "span", "bento-ohandle"); hd.innerHTML = '<i class="ti ti-grip-vertical"></i>';
-        var sw = add(topL, "span", "bento-osw"); sw.style.background = accent;
+        var ic = add(topL, "span", "edit-ico"); ic.innerHTML = tiIcon(a);
         add(topL, "span", "bento-on", a.title);
         // importance pips (low/med/high → prio 1/2/3) — tap to cycle; pips render filled up to prio
         var pips = add(topL, "span", "edit-pips"); pips.title = "importance";
         for (var p = 1; p <= 3; p++) { (function (pv) { var dt = add(pips, "i", "edit-pip" + (a.prio >= pv ? " on" : "")); dt.onclick = function (e) { e.stopPropagation(); a.prio = pv; paint(); }; })(p); }
         // bottom line: length chips
         var lenRow = add(row, "div", "edit-len");
-        LEN_CHIPS.forEach(function (m) { var c = add(lenRow, "span", "edit-lchip" + (a.mins === m ? " on" : "")); c.textContent = m + "m"; if (a.mins === m) { c.style.background = accent; c.style.color = D.ink || "#160510"; } c.onclick = function (e) { e.stopPropagation(); a.mins = m; paint(); }; });
+        LEN_CHIPS.forEach(function (m) { var c = add(lenRow, "span", "edit-lchip" + (a.mins === m ? " on" : "")); c.textContent = m + "m"; c.onclick = function (e) { e.stopPropagation(); a.mins = m; paint(); }; });
         hd.addEventListener("pointerdown", function (ev) { startDrag(ev, i, row); });
       });
     }
