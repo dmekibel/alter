@@ -6157,11 +6157,18 @@
     var sd = scx.getImageData(0, 0, coastW, coastH).data, sw = coastW, sh = coastH;
     var cliff = new Uint8Array(W * H), cmax = Math.round((182 - GEY - 13) / 1.06), depth = new Int32Array(W);
     for (i = 0; i < W; i++) depth[i] = 99999;
+    // PRE-PASS (David 2026-07-16): depthB = rows until the NEXT land BELOW, mirroring `depth` (rows since the last land above).
+    // Only used to cap cliff depth INSIDE small holes — depth+depthB-1 = the local vertical water-run length through a pixel's
+    // column, so a 1-tile pond doesn't get cliff-draped cmax(~75px) deep and fill solid, leaving no room to read as a pond.
+    var depthB = new Int32Array(W); for (i = 0; i < W; i++) depthB[i] = 99999;
+    for (var yyP = H - 1; yyP >= 0; yyP--) for (var xxP = 0; xxP < W; xxP++) { var iP = yyP * W + xxP; depthB[xxP] = baseA[iP] ? 0 : depthB[xxP] + 1; }
     var out = new Uint8ClampedArray(W * H * 4);
     for (i = 0; i < W * H; i++) { out[i * 4] = 5; out[i * 4 + 1] = 11; out[i * 4 + 2] = 44; out[i * 4 + 3] = 255; }
     for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) {
       i = yy * W + xx; depth[xx] = baseA[i] ? 0 : depth[xx] + 1; var dp = depth[xx];
-      if (dp >= 1 && dp <= cmax && !hole[i]) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; }
+      var _cap = cmax;
+      if (hole[i]) { var _localRun = dp + depthB[xx] - 1; _cap = Math.min(cmax, Math.max(1, Math.round(_localRun * 0.4))); } // small pond → shallower cliff (cap at 40% of the local water-run height) so a 1-tile pond keeps open water + room for its bottom water-outline, instead of the cliff filling it solid
+      if (dp >= 1 && dp <= _cap) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; } // holes drape cliff too: land-above-water is land-above-water whether it's the outer coast or a pond's top rim
     }
     var landcliff = new Uint8Array(W * H); for (i = 0; i < W * H; i++) landcliff[i] = baseA[i] || cliff[i] ? 1 : 0;
     // P5 — sand distance field + north mask
@@ -6172,14 +6179,18 @@
     // and a full bake agree pixel-for-pixel → kills the horizontal seam lines the old column-scan produced. It also cuts the
     // blue off cleanly along the SIDE as the edge curves toward the top (tapers into grass at the top corner, no hoop onto the
     // top), and lets a descending side-rim run all the way DOWN to meet the next patch's top outline. NK = corner cutoff angle.
+    // David 2026-07-16: holes get the SAME direction rule as the outer coast (no more "!ext[i]" exclusion) — a hole's TOP rim
+    // (land above water) is the mirror of the outer coast's SOUTH edge → cliff+sand; a hole's BOTTOM rim (land below water,
+    // like the outer coast's north edge) → north=1, but unlike the outer coast a hole's north gets a thin water OUTLINE
+    // (see the new hole+north clause in P9) instead of nothing, so a pond never reads as a flat unbordered void.
     var north = new Uint8Array(W * H), NK = (p.northK == null ? 0.9 : p.northK), _np = _distP(landcliff, W, H, true), _nP = _np.P;
-    for (i = 0; i < W * H; i++) { if (landcliff[i] || !ext[i] || _nP[i] < 0) continue; var _lp = _nP[i], _ldx = (_lp % W) - (i % W), _ldy = ((_lp / W) | 0) - ((i / W) | 0); if (_ldy > Math.abs(_ldx) * NK) north[i] = 1; }
+    for (i = 0; i < W * H; i++) { if (landcliff[i] || _nP[i] < 0) continue; var _lp = _nP[i], _ldx = (_lp % W) - (i % W), _ldy = ((_lp / W) | 0) - ((i / W) | 0); if (_ldy > Math.abs(_ldx) * NK) north[i] = 1; }
     // P6 — sand ring (world-Y taper) + cliff shadow
     var sand = new Uint8Array(W * H), SR = { r: 140, g: 88, b: 74 };
     var cbelow = new Int32Array(W); for (i = 0; i < W; i++) cbelow[i] = 99999;
     for (var yy2 = 0; yy2 < H; yy2++) for (var xx2 = 0; xx2 < W; xx2++) {
       i = yy2 * W + xx2; cbelow[xx2] = cliff[i] ? 0 : cbelow[xx2] + 1;
-      if (landcliff[i] || north[i] || hole[i]) continue;
+      if (landcliff[i] || north[i]) continue; // holes (David 2026-07-16) get sand too — on their top rim + sides, same as the outer coast; their bottom rim is already excluded via north
       // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
       // the sides — LOCAL, so it never drifts as the island grows (the old global world-Y taper re-normalised by the island's
       // total height on every south claim → the sand/ink boundary shifted per tile → horizontal seam lines). Reuses _nP.
@@ -6204,6 +6215,10 @@
     var lsilOut = _dist(lsil, W, H, true);
     for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= 9) { out[i * 4] = 10; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
     for (i = 0; i < W * H; i++) if (!island[i] && !north[i] && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
+    // David 2026-07-16: a hole's BOTTOM rim (north=1 inside the hole — land below water) is the one edge that should NOT just
+    // stay flat unbordered water like the outer coast's north edge does — it gets a thin water OUTLINE instead, so a sealed
+    // pond always reads as a pond (bordered) rather than a gap. Thinner + closer than the outer blue band (8-22px).
+    for (i = 0; i < W * H; i++) if (hole[i] && north[i] && !island[i] && idOut[i] >= 1 && idOut[i] <= 8) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
     return { buf: out.buffer, W: W, H: H, minx: minx, miny: miny, maxx: maxx, maxy: maxy };
   }
   function _tilesArr() { var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return a; }
@@ -13345,6 +13360,20 @@
     var tmp = document.createElement("canvas"); tmp.width = cw; tmp.height = ch; tmp.getContext("2d").putImageData(dimg, 0, 0);
     g.fillStyle = "#ff8080"; g.fillText("DIFF (red) diffPx=" + ndiff, vw * 2 / 3 + 4, 16); g.drawImage(tmp, 0, 0, cw, ch, vw * 2 / 3, 22, pw, ph); g.strokeStyle = "#444"; g.strokeRect(vw * 2 / 3, 22, pw, ph);
     return "incVsFull drawn, diffPx=" + ndiff + "; DEV.auditClose()";
+  };
+  window.DEV.holeProbe = function (tiles, holeX, holeY) { // DEV: bake `tiles` (a shape with a hole at holeX,holeY) and sample a vertical strip of pixel colors through the hole's center, to see exactly what renders there (cliff/sand/water/blue) without eyeballing a screenshot. Returns a string.
+    var set = new Set(); tiles.forEach(function (t) { set.add(tkey(t[0], t[1])); });
+    var saved = ISLE, sB = window._isleBakeCache;
+    ISLE = { tiles: set, house: [0, -1], objects: [], _stamp: 55003 };
+    window._isleBakeCache = null;
+    var b; try { b = bakeIsle(); } catch (e) { b = null; }
+    ISLE = saved; window._isleBakeCache = sB;
+    if (!b) return "bake failed";
+    var B = b.BTB, PAD = b.PAD;
+    var cx = (holeX - b.minx + PAD) * B + B / 2, cy = (holeY - b.miny + PAD) * B + B / 2;
+    var ctx = b.cv.getContext("2d"), col = [];
+    for (var dy = -100; dy <= 100; dy += 6) { var px = ctx.getImageData(cx, cy + dy, 1, 1).data; col.push(dy + ":(" + px[0] + "," + px[1] + "," + px[2] + ")"); }
+    return col.join(" ");
   };
   window.DEV.bakeCustom = function (tiles) { // DEV: bake an ARBITRARY tile array full-bleed (for ad-hoc repro shapes from the console, e.g. deep bays). tiles = [[x,y],...]. screenshot it; DEV.auditClose().
     var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
