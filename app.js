@@ -5976,6 +5976,14 @@
   var SANCT_COLL = [[6, -96, 96, 34]]; // house-wall footprint (verified). Per-object collision for well/statue/barrel comes with the object-sprite engine (derived from footprints, not hand-placed).
   // ===== EXPANDABLE TILE ISLAND (David's vision, 2026-07-14) — the island is a GRID of tiles that can GROW; seamless grass so no seams appear as it expands; square tiles give the blocky BIGBLK coastline for free. Sub-mode of SANCTUARY; flip SANCT_TILES=false for the flat image. =====
   var SANCT_TILES = true, TILE = 48, ISLE = null, gtilePat = null;
+  // COAST BAKE RESOLUTION (David 2026-07-17 SPEED): BTB = supersample px/tile for the coast bake canvas (drawn back down to
+  // TILE=48 world-units via _S=TILE/COAST_BTB in drawTileGround — NOT hardcoded 172 anymore, so this is the ONE place to tune).
+  // Was 172 (≈3.58x supersample); cut to 112 (≈2.33x, still smooth) for a ~(172/112)²≈2.35x per-bake speedup (fewer total
+  // pixels through every blur/distance-transform pass). All px-space constants INSIDE __coastBakeCore scale off SC=BTB/172
+  // (defined locally in the core) so the LOOK stays proportionally identical, just softer/lower-fidelity at the edges — cheaper
+  // than hand-retuning every constant. GEY stays UNSCALED (it's a row offset into the fixed SOURCE coast-strip texture asset,
+  // not a canvas-resolution measure); the cliff depth→texture-row coefficient is instead divided by SC to compensate.
+  var COAST_BTB = 112, COAST_PAD = 2, COAST_GEY = 90, COAST_EXTRA = Math.round(150 * COAST_BTB / 172);
   var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
   function tkey(tx, ty) { return tx + "," + ty; }
   function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
@@ -6095,6 +6103,12 @@
     var tiles = p.tiles, region = p.region, closeR = p.closeR;
     var BTB = p.BTB, PAD = p.PAD, GEY = p.GEY, EXTRA = p.EXTRA;
     var coast = p.coast, coastW = p.coastW, coastH = p.coastH, grass = p.grass;
+    // RESOLUTION SCALE (David 2026-07-17 SPEED): every px-space constant below was tuned at the reference BTB=172. SC scales
+    // them proportionally to whatever BTB actually is (now COAST_BTB=112) so the LOOK stays identical relative to tile size —
+    // only the absolute pixel budget (and thus bake cost) changes. GEY is the one exception: it's a row offset into the FIXED
+    // SOURCE coast-strip texture asset, not a canvas-resolution measure, so it stays unscaled (see the cmax/srow fix below).
+    var SC = BTB / 172;
+    closeR = closeR * SC;
     function _cv(w, h) { return (typeof OffscreenCanvas !== "undefined") ? new OffscreenCanvas(w, h) : (function () { var c = document.createElement("canvas"); c.width = w; c.height = h; return c; })(); }
     function _blurThr(shape, W, H, blurPx, thr) { var b = _cv(W, H), x = b.getContext("2d"); x.filter = "blur(" + blurPx + "px)"; x.drawImage(shape, 0, 0); x.filter = "none"; var d = x.getImageData(0, 0, W, H).data, m = new Uint8Array(W * H); for (var i = 0; i < m.length; i++) m[i] = d[i * 4] > thr ? 1 : 0; return m; }
     function _mask2cv(m, W, H) { var cv = _cv(W, H), cx = cv.getContext("2d"), im = cx.createImageData(W, H); for (var i = 0; i < W * H; i++) { var v = m[i] ? 255 : 0; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; } cx.putImageData(im, 0, 0); return cv; }
@@ -6111,7 +6125,7 @@
     var W = (maxx - minx + 1 + PAD * 2) * BTB, H = (maxy - miny + 1 + PAD * 2) * BTB + EXTRA;
     function bx(t) { return (t - minx + PAD) * BTB; } function by(t) { return (t - miny + PAD) * BTB; }
     var rc = _cv(W, H), rx = rc.getContext("2d"); rx.fillStyle = "#fff"; for (var n = 0; n < txs.length; n++) rx.fillRect(bx(txs[n]), by(tys[n]), BTB, BTB);
-    var baseA = _blurThr(rc, W, H, 14, 127);
+    var baseA = _blurThr(rc, W, H, 14 * SC, 127);
     if (closeR > 0) baseA = _close(baseA, W, H, closeR);
     // P1 — flood the EXTERIOR sea. Seeded from the canvas border AND from every pixel whose TILE is already known-exterior
     // by the GLOBAL tile-level classification (p.holeTiles, computed once over the WHOLE island — see computeHoleTiles).
@@ -6145,8 +6159,9 @@
     // P3 — cloud-lobe grass mask (boundary-trace order, world-deterministic lobes)
     var eb = _traceContour(baseA, W, H);
     var lc = _cv(W, H), lx = lc.getContext("2d"); lx.drawImage(rc, 0, 0); lx.fillStyle = "#fff";
-    var curv = function (k) { var ka = Math.max(0, k - 9), kb = Math.min(eb.length - 1, k + 9); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
-    var CELL = 46, wox = (minx - PAD) * BTB, woy = (miny - PAD) * BTB, best = {};
+    var CURVW = Math.max(2, Math.round(9 * SC));
+    var curv = function (k) { var ka = Math.max(0, k - CURVW), kb = Math.min(eb.length - 1, k + CURVW); var a1 = Math.atan2(eb[k][0] - eb[ka][0], eb[k][1] - eb[ka][1]), a2 = Math.atan2(eb[kb][0] - eb[k][0], eb[kb][1] - eb[k][1]); return Math.abs(((a2 - a1 + Math.PI) % (2 * Math.PI)) - Math.PI); };
+    var CELL = Math.max(20, Math.round(46 * SC)), wox = (minx - PAD) * BTB, woy = (miny - PAD) * BTB, best = {};
     // Lobe anchor per world-cell chosen with a DETERMINISTIC WORLD-SPACE tiebreak (not eb trace order): among boundary pixels
     // near-equidistant to the cell centre, the old "d2 < best.d2" kept whichever the contour trace hit FIRST, and the trace's
     // start pixel + direction differ between a windowed bake and a full bake → a near-tie flipped the chosen pixel ~1px → the rim
@@ -6156,16 +6171,20 @@
     for (var ci2 = 0; ci2 < eb.length; ci2++) { var wxp = eb[ci2][1] + wox, wyp = eb[ci2][0] + woy, gx = Math.floor(wxp / CELL), gy = Math.floor(wyp / CELL), key = gx + "," + gy, ex2 = wxp - (gx * CELL + CELL / 2), ey2 = wyp - (gy * CELL + CELL / 2), d2 = ex2 * ex2 + ey2 * ey2; var bk = best[key]; if (!bk || d2 < bk.d2 - EPS || (d2 < bk.d2 + EPS && (wxp < bk.wx || (wxp === bk.wx && wyp < bk.wy)))) best[key] = { k: ci2, d2: d2, gx: gx, gy: gy, wx: wxp, wy: wyp }; }
     Object.keys(best).forEach(function (key) { var b = best[key], k = b.k; if (curv(k) > 0.55) return;
       var cy = eb[k][0], cx = eb[k][1], k2 = Math.min(k + 6, eb.length - 1), ty2 = eb[k2][0] - cy, tx2 = eb[k2][1] - cx;
-      var h = ((b.gx * 73856093) ^ (b.gy * 19349663)) >>> 0, ry = 13 + (h % 4), rxl = 0.58 * (42 + ((h >>> 3) % 12));
+      var h = ((b.gx * 73856093) ^ (b.gy * 19349663)) >>> 0, ry = (13 + (h % 4)) * SC, rxl = 0.58 * (42 + ((h >>> 3) % 12)) * SC;
       lx.save(); lx.translate(cx, cy); lx.rotate(Math.atan2(ty2, tx2)); lx.beginPath(); lx.ellipse(0, 0, rxl, ry, 0, 0, 7); lx.fill(); lx.restore(); });
-    var gmA = _blurThr(lc, W, H, 4, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
+    var gmA = _blurThr(lc, W, H, 4 * SC, 132); for (i = 0; i < gmA.length; i++) if (baseA[i]) gmA[i] = 1;
     // P4 — cliff drape (south only) + water fill
     // The coast strip's pixels (with the brightness pass) depend ONLY on the source image → compute once and cache in
     // p.prep (the caller passes a persistent object; the worker keeps one across bakes). Saves a filter-draw + getImageData per bake. (David 2026-07-16 speed)
     var _prep = p.prep || {}, sd, sw, sh;
     if (_prep.sd) { sd = _prep.sd; sw = _prep.sw; sh = _prep.sh; }
     else { var sc = _cv(coastW, coastH), scx = sc.getContext("2d"); scx.filter = "brightness(1.05)"; scx.drawImage(coast, 0, 0); scx.filter = "none"; sd = scx.getImageData(0, 0, coastW, coastH).data; sw = coastW; sh = coastH; _prep.sd = sd; _prep.sw = sw; _prep.sh = sh; }
-    var cliff = new Uint8Array(W * H), cmax = Math.round((182 - GEY - 13) / 1.06), depth = new Int32Array(W);
+    // cmax = max cliff depth in OUTPUT canvas px → scale by SC (keeps the cliff the same FRACTION of tile height at any BTB).
+    // The 1.06 coefficient below converts an output-px depth into a row offset in the FIXED SOURCE texture (unrelated to BTB) —
+    // divide it by SC so the (now smaller) cmax range still spans the SAME source-texture row band as at the reference BTB=172.
+    var DEPTHCOEF = 1.06 / SC;
+    var cliff = new Uint8Array(W * H), cmax = Math.round(((182 - GEY - 13) / 1.06) * SC), depth = new Int32Array(W);
     for (i = 0; i < W; i++) depth[i] = 99999;
     // PRE-PASS (David 2026-07-16): depthB = rows until the NEXT land BELOW, mirroring `depth` (rows since the last land above).
     // Only used to cap cliff depth INSIDE small holes — depth+depthB-1 = the local vertical water-run length through a pixel's
@@ -6178,12 +6197,12 @@
       i = yy * W + xx; depth[xx] = baseA[i] ? 0 : depth[xx] + 1; var dp = depth[xx];
       var _cap = cmax;
       if (hole[i]) { var _localRun = dp + depthB[xx] - 1; _cap = Math.min(cmax, Math.max(1, Math.round(_localRun * 0.4))); } // small pond → shallower cliff (cap at 40% of the local water-run height) so a 1-tile pond keeps open water + room for its bottom water-outline, instead of the cliff filling it solid
-      if (dp >= 1 && dp <= _cap) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * 1.06), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; } // holes drape cliff too: land-above-water is land-above-water whether it's the outer coast or a pond's top rim
+      if (dp >= 1 && dp <= _cap) { cliff[i] = 1; var srow = Math.min(GEY + 13 + Math.round(dp * DEPTHCOEF), sh - 1), si = (srow * sw + (xx % sw)) * 4; out[i * 4] = sd[si]; out[i * 4 + 1] = sd[si + 1]; out[i * 4 + 2] = sd[si + 2]; } // holes drape cliff too: land-above-water is land-above-water whether it's the outer coast or a pond's top rim
     }
     var landcliff = new Uint8Array(W * H); for (i = 0; i < W * H; i++) landcliff[i] = baseA[i] || cliff[i] ? 1 : 0;
     // P5 — sand distance field + north mask
     var lcc = _cv(W, H), lccx = lcc.getContext("2d"); { var im2 = lccx.createImageData(W, H); for (i = 0; i < W * H; i++) { im2.data[i * 4] = im2.data[i * 4 + 1] = im2.data[i * 4 + 2] = landcliff[i] ? 255 : 0; im2.data[i * 4 + 3] = 255; } lccx.putImageData(im2, 0, 0); }
-    var lcS = _blurThr(lcc, W, H, 28, 120), distout = _dist(lcS, W, H, true);
+    var lcS = _blurThr(lcc, W, H, 28 * SC, 120), distout = _dist(lcS, W, H, true);
     // DIRECTION-AWARE north (David 2026-07-15): a water pixel gets NO beach/blue when its NEAREST land is predominantly
     // BELOW it (it sits on a TOP edge). This is fully LOCAL (nearest-land vector, within the coast ring) so a window bake
     // and a full bake agree pixel-for-pixel → kills the horizontal seam lines the old column-scan produced. It also cuts the
@@ -6208,9 +6227,9 @@
       // DIRECTION-based sand width (David 2026-07-15): wide where the nearest land is ABOVE (a south-facing beach), thin on
       // the sides — LOCAL, so it never drifts. wy is then scaled by northF so the sand THINS toward a top corner and reaches 0
       // INTO the grass (no sharp cutoff), continuous across stacked steps. Reuses _nP.
-      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = (42 + (52 - 42) * _south) * northF[i]; // NEARLY UNIFORM ribbon (measured off BIGBLK_v1) × the continuous top-edge taper
+      var _slp = _nP[i], _sly = _slp < 0 ? yy2 : (_slp / W | 0), _slx = _slp < 0 ? xx2 : (_slp % W), _south = Math.max(0, yy2 - _sly) / (Math.hypot(_slx - xx2, _sly - yy2) || 1), wy = (42 + (52 - 42) * _south) * SC * northF[i]; // NEARLY UNIFORM ribbon (measured off BIGBLK_v1) × the continuous top-edge taper
       if (distout[i] >= 1 && distout[i] <= wy) {
-        sand[i] = 1; var shf = 1; if (cbelow[xx2] <= 18) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / 18);
+        sand[i] = 1; var shf = 1, _cshTh = 18 * SC; if (cbelow[xx2] <= _cshTh) shf = 0.66 + (1 - 0.66) * (cbelow[xx2] / _cshTh);
         out[i * 4] = SR.r * shf; out[i * 4 + 1] = SR.g * shf; out[i * 4 + 2] = SR.b * shf;
       }
     }
@@ -6221,24 +6240,27 @@
     else { var gcv = _cv(GS, GS), gcx = gcv.getContext("2d"); gcx.filter = "brightness(0.9)"; gcx.drawImage(grass, 0, 0, GS, GS); gcx.filter = "none"; gsd = gcx.getImageData(0, 0, GS, GS).data; _prep.gsd = gsd; _prep.gsdGS = GS; }
     var gdist = _dist(gmA, W, H, false);
     var gox = ((((minx - PAD) * BTB) % GS) + GS) % GS, goy = ((((miny - PAD) * BTB) % GS) + GS) % GS;
-    for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = (((yr2 + goy) % GS) * GS + ((xr2 + gox) % GS)) * 4; var sh2 = gdist[i] <= 13 ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - 13) / 8); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
+    var GE_TH = 13 * SC, GE_RANGE = Math.max(1, 8 * SC);
+    for (i = 0; i < W * H; i++) if (gmA[i]) { var yr2 = (i / W) | 0, xr2 = i % W, gi = (((yr2 + goy) % GS) * GS + ((xr2 + gox) % GS)) * 4; var sh2 = gdist[i] <= GE_TH ? 0.72 : Math.min(1, 0.72 + (1 - 0.72) * (gdist[i] - GE_TH) / GE_RANGE); out[i * 4] = gsd[gi] * sh2; out[i * 4 + 1] = gsd[gi + 1] * sh2; out[i * 4 + 2] = gsd[gi + 2] * sh2; }
     // P8 — brown sand outline (island distance field). Paint order MUST stay brown -> black -> blue.
     var SO = { r: 40, g: 22, b: 26 };
     var lsil = new Uint8Array(W * H); for (i = 0; i < W * H; i++) lsil[i] = gmA[i] || cliff[i] ? 1 : 0;
     var island = new Uint8Array(W * H); for (i = 0; i < W * H; i++) island[i] = lsil[i] || sand[i] ? 1 : 0;
-    var idOut = _dist(island, W, H, true); for (i = 0; i < W * H; i++) if (!island[i] && northF[i] > 0.12 && idOut[i] >= 1 && idOut[i] <= 6) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; } // brown follows the (now-tapered) sand: northF gate instead of the binary !north
+    var idOut = _dist(island, W, H, true), BROWN_W = Math.max(1, Math.round(6 * SC)); for (i = 0; i < W * H; i++) if (!island[i] && northF[i] > 0.12 && idOut[i] >= 1 && idOut[i] <= BROWN_W) { out[i * 4] = SO.r; out[i * 4 + 1] = SO.g; out[i * 4 + 2] = SO.b; } // brown follows the (now-tapered) sand: northF gate instead of the binary !north
     // P9 — black ink, then blue coastline. TWO ink passes:
     //  (1) lsil boundary (grass+cliff) → inks the cliff's BOTTOM edge (cliff→sand).
     //  (2) GRASS boundary (gmA) → inks the grass's own edge, incl. the grass→cliff junction on a south edge, which is INTERIOR to
     //      lsil and so was never inked → THAT was the "missing black outline on the bottom edge of the grass" (David 2026-07-16).
     var lsilOut = _dist(lsil, W, H, true), gmaOut = _dist(gmA, W, H, true), INK = 10;
-    for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= 9) { out[i * 4] = INK; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
-    for (i = 0; i < W * H; i++) if (!gmA[i] && gmaOut[i] >= 1 && gmaOut[i] <= 7) { out[i * 4] = INK; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
-    for (i = 0; i < W * H; i++) if (!island[i] && northF[i] > 0.12 && idOut[i] >= 8 && idOut[i] <= 22) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; } // blue keeps constant thickness but terminates via northF → into the grass at the corner, no sharp chop
+    var INK1_W = Math.max(1, Math.round(9 * SC)), INK2_W = Math.max(1, Math.round(7 * SC)), BLUE_IN = Math.max(1, Math.round(8 * SC)), BLUE_OUT = Math.max(BLUE_IN + 1, Math.round(22 * SC));
+    for (i = 0; i < W * H; i++) if (!lsil[i] && lsilOut[i] >= 1 && lsilOut[i] <= INK1_W) { out[i * 4] = INK; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
+    for (i = 0; i < W * H; i++) if (!gmA[i] && gmaOut[i] >= 1 && gmaOut[i] <= INK2_W) { out[i * 4] = INK; out[i * 4 + 1] = 12; out[i * 4 + 2] = 12; }
+    for (i = 0; i < W * H; i++) if (!island[i] && northF[i] > 0.12 && idOut[i] >= BLUE_IN && idOut[i] <= BLUE_OUT) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; } // blue keeps constant thickness but terminates via northF → into the grass at the corner, no sharp chop
     // David 2026-07-16: a hole's BOTTOM rim (north=1 inside the hole — land below water) is the one edge that should NOT just
     // stay flat unbordered water like the outer coast's north edge does — it gets a thin water OUTLINE instead, so a sealed
     // pond always reads as a pond (bordered) rather than a gap. Thinner + closer than the outer blue band (8-22px).
-    for (i = 0; i < W * H; i++) if (hole[i] && north[i] && !island[i] && idOut[i] >= 1 && idOut[i] <= 8) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
+    var HOLE_OUT_W = Math.max(1, Math.round(8 * SC));
+    for (i = 0; i < W * H; i++) if (hole[i] && north[i] && !island[i] && idOut[i] >= 1 && idOut[i] <= HOLE_OUT_W) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
     return { buf: out.buffer, W: W, H: H, minx: minx, miny: miny, maxx: maxx, maxy: maxy };
   }
   function _tilesArr() { var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return a; }
@@ -6266,8 +6288,8 @@
   var _holeTilesCache = null;
   function getHoleTiles() { if (_holeTilesCache && _holeTilesCache.stamp === ISLE._stamp) return _holeTilesCache.arr; var arr = computeHoleTiles(_tilesArr()); _holeTilesCache = { stamp: ISLE._stamp, arr: arr }; return arr; }
   var _bakePrepMain = {}; // persistent image-prep cache for the MAIN-THREAD bake path (DEV + first-load); the worker keeps its own
-  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), prep: _bakePrepMain, BTB: 172, PAD: 2, GEY: 90, EXTRA: 150, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
-  function _wrapBake(r) { var PAD = 2, cv = _cv(r.W, r.H); cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(r.buf), r.W, r.H), 0, 0); return { cv: cv, ox: (r.minx - PAD) * TILE - TILE / 2, oy: (r.miny - PAD) * TILE - TILE / 2, w: r.W, h: r.H, key: ISLE.tiles.size, minx: r.minx, miny: r.miny, maxx: r.maxx, maxy: r.maxy, PAD: PAD, BTB: 172, GEY: 90, EXTRA: 150 }; }
+  function _bakeParams(region) { var strip = WORLD_IMG.coast, grassImg = WORLD_IMG.gtile; if (!strip || !strip.complete || !strip.naturalWidth || !grassImg || !grassImg.complete || !grassImg.naturalWidth) return null; return { tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), prep: _bakePrepMain, BTB: COAST_BTB, PAD: COAST_PAD, GEY: COAST_GEY, EXTRA: COAST_EXTRA, coast: strip, coastW: strip.naturalWidth, coastH: strip.naturalHeight, grass: grassImg }; }
+  function _wrapBake(r) { var PAD = COAST_PAD, cv = _cv(r.W, r.H); cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(r.buf), r.W, r.H), 0, 0); return { cv: cv, ox: (r.minx - PAD) * TILE - TILE / 2, oy: (r.miny - PAD) * TILE - TILE / 2, w: r.W, h: r.H, key: ISLE.tiles.size, minx: r.minx, miny: r.miny, maxx: r.maxx, maxy: r.maxy, PAD: PAD, BTB: COAST_BTB, GEY: COAST_GEY, EXTRA: COAST_EXTRA }; }
   function bakeIsle(region) { var p = _bakeParams(region); if (!p) return null; var r; try { r = __coastBakeCore(p); } catch (e) { if (window.console) console.warn("bake core failed", e); return null; } return r ? _wrapBake(r) : null; } // SYNC driver (DEV + first-load)
   // ===== OFF-THREAD bake worker (expansion) — same __coastBakeCore, run in a Worker so the main thread stays at framerate =====
   var __bakeWorker = null, __bakeImgsReady = false, __bakeReqId = 0, __bakeCbs = {};
@@ -6294,8 +6316,8 @@
     var w = _ensureBakeWorker();
     if (w === false) { done(null, "sync"); return; }
     if (!w || !__bakeImgsReady) { done(null, "retry"); return; }
-    var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? { cv: d.bmp, w: d.W, h: d.H, minx: d.minx, miny: d.miny, maxx: d.maxx, maxy: d.maxy, PAD: 2, BTB: 172, GEY: 90, EXTRA: 150 } : null); }; // ImageBitmap source — blitted straight onto the cache canvas, no main-thread putImageData
-    w.postMessage({ id: id, tiles: tilesArr || _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: holeArr || getHoleTiles(), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
+    var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? { cv: d.bmp, w: d.W, h: d.H, minx: d.minx, miny: d.miny, maxx: d.maxx, maxy: d.maxy, PAD: COAST_PAD, BTB: COAST_BTB, GEY: COAST_GEY, EXTRA: COAST_EXTRA } : null); }; // ImageBitmap source — blitted straight onto the cache canvas, no main-thread putImageData
+    w.postMessage({ id: id, tiles: tilesArr || _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: holeArr || getHoleTiles(), BTB: COAST_BTB, PAD: COAST_PAD, GEY: COAST_GEY, EXTRA: COAST_EXTRA });
   }
   // PREDICTIVE PRE-BAKE (David 2026-07-16 "predict which squares we're gonna build ... preloaded so it loads instantly"):
   // while the guardian walks toward the glowing claimable tile, the worker is idle — so speculatively bake the island AS IF
@@ -6343,7 +6365,7 @@
     var CTX = 2, M = 1, region = { x0: dd.x0 - CTX, y0: dd.y0 - CTX, x1: dd.x1 + CTX, y1: dd.y1 + CTX + 1 }; // SPEED (David 2026-07-16): CTX2/M1. SEAM FIX (David 2026-07-17): y1 gets +1 EXTRA tile — the blit copies one extra row BELOW the dirty box (sh has +1, to carry the cliff that hangs below a south coast), so without this the extra row sits AT the window's bottom edge with ZERO land-context below → the bake reads water-below → paints a FALSE south coast (cliff/sand/ink) over real grass = the full-width horizontal line one tile under a claim. +1 gives that row its 1-tile context so it bakes as interior grass. (smaller bake window ≈ 1.4× faster). The junction-shoulder seams that once needed CTX3/M2 are now covered a better way — the dirty box already includes claim±1 + any hole-flips (claimTileAt), so blit dirty±1 == the old blit claim±2, at a smaller bake. CTX>M keeps the blit interior fully-contexted.
     function blit(b) { // composite the freshly-baked window onto the (possibly grown) live cache — read the cache FRESH (it may have grown while we baked)
       var c2 = window._isleBakeCache; if (!b || !c2 || !c2.cv || c2.minx === undefined) { if (!b) window._isleBakeCache = null; return; }
-      var B = c2.BTB || 172, PAD = c2.PAD;
+      var B = c2.BTB || COAST_BTB, PAD = c2.PAD;
       var bx0 = dd.x0 - M, by0 = dd.y0 - M, bx1 = dd.x1 + M, by1 = dd.y1 + M;
       var sx = (bx0 - b.minx + PAD) * B, sy = (by0 - b.miny + PAD) * B, sw = (bx1 - bx0 + 1) * B, sh = (by1 - by0 + 1 + 1) * B;
       if (sx < 0) { sw += sx; sx = 0; } if (sy < 0) { sh += sy; sy = 0; } if (sx + sw > b.w) sw = b.w - sx; if (sy + sh > b.h) sh = b.h - sy;
@@ -6374,7 +6396,7 @@
   function _expandVisual(tx, ty) {
     var c = window._isleBakeCache;
     if (!c || !c.cv || c.minx === undefined) { window._isleBakeCache = null; return; } // no usable cache → let drawTileGround do a full bake once
-    var B = c.BTB || 172, PAD = c.PAD, EXTRA = c.EXTRA || 150, cx = (tx - c.minx + PAD) * B, cy = (ty - c.miny + PAD) * B;
+    var B = c.BTB || COAST_BTB, PAD = c.PAD, EXTRA = c.EXTRA || COAST_EXTRA, cx = (tx - c.minx + PAD) * B, cy = (ty - c.miny + PAD) * B;
     if (cx < PAD * B || cy < PAD * B || cx + (PAD + 1) * B > c.w || cy + (PAD + 1) * B > c.h) { // grow when the tile lands within PAD of the canvas edge — the coast around it needs that margin, or the incremental blit gets clipped (David 2026-07-15 bug)
       // GROW the provisional canvas to include the new tile — a canvas copy, NOT a bake, so the walk stays smooth
       var GM = 9, nminx = Math.min(c.minx, tx - GM), nmaxx = Math.max(c.maxx, tx + GM), nminy = Math.min(c.miny, ty - GM), nmaxy = Math.max(c.maxy, ty + GM); // grow with a GENEROUS margin so a grow (the whole-canvas copy) happens only once per ~9 frontier tiles, not near-every claim
@@ -6402,7 +6424,7 @@
     // cache the baked coast on window (survives across frames + closures) — rebuild only when the island changes
     var cache = window._isleBakeCache;
     if (!_isleBaking && (!cache || cache._stamp !== ISLE._stamp)) { _isleBaking = true; try { var b = bakeIsle(); if (b) { b._stamp = ISLE._stamp; window._isleBakeCache = b; cache = b; } } catch (e) { if (window.console) console.warn("bakeIsle failed", e); SANCT_TILES = false; } _isleBaking = false; }
-    if (cache) { var _S = TILE / 172, _cWW = cache.w * _S, _cHH = cache.h * _S; // draw ONLY the on-screen sub-rect of the (possibly huge) cache canvas — on a big island 90% is off-camera, and blitting the whole thing every frame is a real per-frame cost (David 2026-07-15 "still choppy")
+    if (cache) { var _S = TILE / (cache.BTB || COAST_BTB), _cWW = cache.w * _S, _cHH = cache.h * _S; // draw ONLY the on-screen sub-rect of the (possibly huge) cache canvas — on a big island 90% is off-camera, and blitting the whole thing every frame is a real per-frame cost (David 2026-07-15 "still choppy")
       var drew = false;
       try {
         var m = ctx.getTransform(), inv = m.inverseSelf ? m.inverse() : null, cw = ctx.canvas.width, ch = ctx.canvas.height;
@@ -13469,7 +13491,7 @@
     var inc = window._isleBakeCache; window._isleBakeCache = null; var full = bakeIsle();
     ISLE = saved; window._isleBakeCache = sB; window._incBake = sInc; _rebakeTimer = sT; window._expandSync = sES;
     if (!inc || !full) return "bake failed";
-    var B = 172, PAD = 2;
+    var B = COAST_BTB, PAD = COAST_PAD;
     var xs = {}, minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9; base.forEach(function (t) { if (t[0] < minx) minx = t[0]; if (t[0] > maxx) maxx = t[0]; if (t[1] < miny) miny = t[1]; if (t[1] > maxy) maxy = t[1]; });
     function px(c, X, Y) { if (X < 0 || Y < 0 || X >= c.w || Y >= c.h) return [-1, -1, -1]; var d = c.cv.getContext("2d").getImageData(X, Y, 1, 1).data; return [d[0], d[1], d[2]]; }
     var rows = [];
