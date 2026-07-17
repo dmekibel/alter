@@ -6009,6 +6009,7 @@
     var holesBefore = getHoleTiles(); // snapshot BEFORE the claim (cheap — cached on the pre-claim stamp, already warm from the last bake)
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
+    _lastClaimTx = tx; _lastClaimTy = ty; // for the predictive-hit match in _doRebake
     _pendingIsle[tkey(tx, ty)] = 1; // not walkable until its coast bake blits in (cleared in _release())
     window._sanctSceneCache = null; // re-resolve object placement (cheap)
     claimFlashes.push({ x: tx * TILE, y: ty * TILE, life: 1, pend: true }); if (claimFlashes.length > 8) claimFlashes.shift(); // materializing pulse: LOOPS while pend (coast still baking off-thread), then fades once the coast blits in — so the tile appears all-at-once, never grass-square-then-coast (David 2026-07-15)
@@ -6281,13 +6282,41 @@
       return w;
     } catch (e) { __bakeWorker = false; return false; }
   }
-  // done(result) on success; done(null,"sync") if the worker is permanently unavailable (bake synchronously); done(null,"retry") if it just isn't warm yet
-  function bakeIsleWorker(region, done) {
+  // done(result) on success; done(null,"sync") if the worker is permanently unavailable (bake synchronously); done(null,"retry") if it just isn't warm yet.
+  // tilesArr/holeArr optional: pass an EXPLICIT tile set for a SPECULATIVE bake (island-as-if-this-tile-were-claimed); omit to use the live ISLE.
+  function bakeIsleWorker(region, done, tilesArr, holeArr) {
     var w = _ensureBakeWorker();
     if (w === false) { done(null, "sync"); return; }
     if (!w || !__bakeImgsReady) { done(null, "retry"); return; }
     var id = ++__bakeReqId; __bakeCbs[id] = function (d) { done(d && d.ok ? { cv: d.bmp, w: d.W, h: d.H, minx: d.minx, miny: d.miny, maxx: d.maxx, maxy: d.maxy, PAD: 2, BTB: 172, GEY: 90, EXTRA: 150 } : null); }; // ImageBitmap source — blitted straight onto the cache canvas, no main-thread putImageData
-    w.postMessage({ id: id, tiles: _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: getHoleTiles(), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
+    w.postMessage({ id: id, tiles: tilesArr || _tilesArr(), region: region || null, closeR: (window._closeR == null ? 8 : window._closeR), northK: (window._northK == null ? 0.9 : window._northK), holeTiles: holeArr || getHoleTiles(), BTB: 172, PAD: 2, GEY: 90, EXTRA: 150 });
+  }
+  // PREDICTIVE PRE-BAKE (David 2026-07-16 "predict which squares we're gonna build ... preloaded so it loads instantly"):
+  // while the guardian walks toward the glowing claimable tile, the worker is idle — so speculatively bake the island AS IF
+  // that tile were already claimed and hold the resulting bitmap. On the real claim, if the speculation still matches, the
+  // coast blits INSTANTLY (no wait). Miss → normal path (no worse than before). Zero look risk: it's the identical bake, early.
+  var _specBake = null, _lastClaimTx = null, _lastClaimTy = null; // { tx, ty, stamp, region, done, wrap } + the most-recently-claimed tile (for the predictive-hit match)
+  function _kickSpecBake(tx, ty) {
+    if (_bakeBusy || window._incBake === false) return;
+    var specTiles = _tilesArr(); specTiles.push([tx, ty]);
+    var specHoles = computeHoleTiles(specTiles);
+    var CTX = 3, region = { x0: tx - CTX, y0: ty - CTX, x1: tx + CTX, y1: ty + CTX }, stamp = ISLE._stamp; // CTX3 (not the live claim's CTX2) so the claim's blit slice (claim±2) sits ≥1 tile inside this speculated window = fully contexted
+    _specBake = { tx: tx, ty: ty, stamp: stamp, region: region, done: false, wrap: null };
+    _bakeBusy = true;
+    bakeIsleWorker(region, function (b, mode) {
+      _bakeBusy = false;
+      if (!mode && b && _specBake && _specBake.stamp === stamp && _specBake.tx === tx && _specBake.ty === ty) { _specBake.wrap = b; _specBake.done = true; }
+      else if (mode) { _specBake = null; } // sync/retry (worker not usable) → drop the speculation
+      if (window._isleDirtyBox) _doRebake(); // a real claim arrived while we speculated → run it now (it may hit the fresh speculation)
+    }, specTiles, specHoles);
+  }
+  // does the current speculation exactly cover a just-claimed tile at (tx,ty)? (baked at the pre-claim stamp, and the claim's
+  // dirty box sits INSIDE the speculated window with a 1-tile margin so the blit is fully-contexted — i.e. no surprise hole-flip
+  // pushed the dirty region outside what we speculated).
+  function _specCovers(tx, ty) {
+    if (!_specBake || !_specBake.done || _specBake.tx !== tx || _specBake.ty !== ty || _specBake.stamp !== ISLE._stamp - 1) return false;
+    var d = window._isleDirtyBox, r = _specBake.region;
+    return !!(d && d.x0 >= r.x0 + 1 && d.x1 <= r.x1 - 1 && d.y0 >= r.y0 + 1 && d.y1 <= r.y1 - 1);
   }
   // Instant provisional grass patch for a freshly-claimed tile so the player walks on it immediately, then a TRUE debounce
   // fires the ONE full high-quality coast re-bake only after expansion actually STOPS. The expensive bake NEVER runs mid-
@@ -6320,6 +6349,14 @@
     function _restoreDirty() { var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: dd.x0, y0: dd.y0, x1: dd.x1, y1: dd.y1 }; else { if (dd.x0 < _d.x0) _d.x0 = dd.x0; if (dd.x1 > _d.x1) _d.x1 = dd.x1; if (dd.y0 < _d.y0) _d.y0 = dd.y0; if (dd.y1 > _d.y1) _d.y1 = dd.y1; } }
     function _release() { if (window._isleDirtyBox) { _doRebake(); return; } for (var f = 0; f < claimFlashes.length; f++) claimFlashes[f].pend = false; _pendingIsle = {}; } // queue drained → every claimed tile's coast has now blitted → let the pulses fade + open collision on the newly-solid ground
     if (sync) { var b; try { b = bakeIsle(region); } catch (e) { b = null; } blit(b); _release(); return; }
+    // PREDICTIVE HIT: did we already speculatively bake exactly this claimed tile, at the pre-claim state, covering this dirty
+    // box (with a 1-tile margin so no surprise hole-flip pushed it outside the speculated window)? If so, blit it INSTANTLY.
+    if (_specBake && _specBake.done && _specBake.tx === _lastClaimTx && _specBake.ty === _lastClaimTy && _specBake.stamp === ISLE._stamp - 1) {
+      var _sr = _specBake.region; // the blit slice is dd±M; require it ≥1 tile inside the speculated window (same context guarantee as a normal bake)
+      if (dd.x0 - M >= _sr.x0 + 1 && dd.x1 + M <= _sr.x1 - 1 && dd.y0 - M >= _sr.y0 + 1 && dd.y1 + M <= _sr.y1 - 1) { window.__specHit = (window.__specHit || 0) + 1; var _sw = _specBake.wrap; _specBake = null; blit(_sw); _release(); return; } // instant — the coast was already baked while he walked over
+    }
+    window.__specMiss = (window.__specMiss || 0) + 1;
+    _specBake = null; // any other claim invalidates a stale speculation
     _bakeBusy = true;
     bakeIsleWorker(region, function (b, mode) {
       _bakeBusy = false;
@@ -6732,26 +6769,31 @@
     }
     if (hasShippedToday() && !SANCTUARY) { var sb = ctx.createRadialGradient(px, py - 16, 8, px, py - 16, 76); sb.addColorStop(0, "rgba(70,226,164,0.16)"); sb.addColorStop(1, "rgba(70,226,164,0)"); ctx.fillStyle = sb; ctx.beginPath(); ctx.arc(px, py - 16, 76, 0, 7); ctx.fill(); }
     for (var di = dust.length - 1; di >= 0; di--) { var dp = dust[di]; dp.x += dp.vx; dp.y += dp.vy; dp.vy += 0.13; dp.life--; if (dp.life <= 0) { dust.splice(di, 1); continue; } ctx.globalAlpha = Math.max(0, dp.life / 16); ctx.fillStyle = "#cdbfa6"; ctx.beginPath(); ctx.arc(dp.x, dp.y, 2.6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
-    // Materializing indicator (David 2026-07-16: the old expanding circle was too big/generic). Now a marching-ants dashed
-    // SQUARE on the tile itself (same visual language as the claim glow → reads as "this exact tile is forming") + a few tiny
-    // Spark motes rising from it (gold→pink, on-brand: Spark is literally the currency being spent to grow the land). While it
-    // bakes: ants march + motes rise. When it blits in: one soft outward pop + fade, motes settle.
+    // Materializing indicator (David 2026-07-16: killed the dashed square + rising-motes — "looks weird"). Now the SPEND
+    // language: colorful Spark motes (the reward palette — pink/gold/blue/purple) STREAM DOWN from above INTO the forming
+    // tile, mirroring the loved earn animation (points flying into the Spark counter) but reversed, because building SPENDS
+    // Spark. While it bakes: a continuous convergent stream + a soft warm glow on the tile. When it blits in: a small burst.
+    var SPK_COLS = ["255,95,168", "255,210,74", "70,196,255", "176,122,255"];
     for (var cfi = claimFlashes.length - 1; cfi >= 0; cfi--) { var cf = claimFlashes[cfi];
-      var a;
-      if (cf.pend) { a = 0.62 + 0.38 * (0.5 + 0.5 * Math.sin(t * 4)); } // gentle breathing while the coast bakes off-thread
-      else { cf.life -= 0.06; if (cf.life <= 0) { claimFlashes.splice(cfi, 1); continue; } a = cf.life; }
-      var hs = TILE * 0.46, grow = cf.pend ? 0 : (1 - cf.life) * (TILE * 0.16); // small outward pop as it materializes
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,214,130," + (0.8 * a).toFixed(3) + ")"; ctx.lineWidth = 2.5; ctx.setLineDash([7, 6]); ctx.lineDashOffset = -t * 30; // marching ants
-      ctx.strokeRect(cf.x - hs - grow, cf.y - hs - grow, (hs + grow) * 2, (hs + grow) * 2);
-      ctx.setLineDash([]);
-      if (cf.pend) { ctx.globalCompositeOperation = "lighter";
-        for (var mk = 0; mk < 3; mk++) {
-          var mph = (t * 0.85 + mk * 0.37 + cf.x * 0.011) % 1; // 0→1 rising cycle, phase-varied per mote + per tile
-          var mx = cf.x + Math.sin(t * 2 + mk * 2.1) * TILE * 0.2, my = cf.y + TILE * 0.42 - mph * TILE; // rise from tile bottom to top
-          var ma = Math.sin(mph * Math.PI) * a, mr = 2.2 + 1.1 * Math.sin(t * 6 + mk); // fade in/out over the rise + twinkle
-          var mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 2.4); mg.addColorStop(0, "rgba(255,236,182," + (0.9 * ma).toFixed(3) + ")"); mg.addColorStop(0.5, "rgba(255,150,210," + (0.5 * ma).toFixed(3) + ")"); mg.addColorStop(1, "rgba(255,150,210,0)");
-          ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 2.4, 0, 7); ctx.fill();
+      var a, burst = 0;
+      if (cf.pend) { a = 1; } else { cf.life -= 0.05; if (cf.life <= 0) { claimFlashes.splice(cfi, 1); continue; } a = cf.life; burst = 1 - cf.life; }
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      // soft warm pool on the tile so it reads as "charging" even before the coast lands
+      var pg = ctx.createRadialGradient(cf.x, cf.y, 2, cf.x, cf.y, TILE * (0.5 + burst * 0.4)); pg.addColorStop(0, "rgba(255,220,170," + (0.16 * a) + ")"); pg.addColorStop(1, "rgba(255,150,210,0)"); ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cf.x, cf.y, TILE * (0.5 + burst * 0.4), 0, 7); ctx.fill();
+      var N = 5;
+      for (var mk = 0; mk < N; mk++) {
+        var col = SPK_COLS[mk % SPK_COLS.length];
+        if (cf.pend) {
+          var mph = (t * 1.05 + mk * (1 / N) + cf.x * 0.006) % 1; // 0 (up high, spread) → 1 (into the tile center) — a descending, converging stream
+          var spread = TILE * (0.75 * (1 - mph)) * (mk % 2 ? 1 : -1) * (0.6 + 0.4 * Math.sin(mk * 2.3));
+          var mx = cf.x + spread, my = cf.y - TILE * 1.55 + mph * TILE * 1.55; // from ~1.5 tiles above (toward the HUD) down into the tile
+          var ma = Math.sin(mph * Math.PI) * a, mr = 3 + 1.2 * Math.sin(t * 7 + mk);
+          var mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 2.6); mg.addColorStop(0, "rgba(255,255,255," + (0.85 * ma).toFixed(3) + ")"); mg.addColorStop(0.4, "rgba(" + col + "," + (0.7 * ma).toFixed(3) + ")"); mg.addColorStop(1, "rgba(" + col + ",0)");
+          ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 2.6, 0, 7); ctx.fill();
+        } else { // materialize burst: the motes that had gathered scatter outward once, then fade
+          var ang = mk / N * 6.283, br = burst * TILE * 0.9, bx = cf.x + Math.cos(ang) * br, by = cf.y + Math.sin(ang) * br, bmr = 3.4 * a;
+          var bg = ctx.createRadialGradient(bx, by, 0, bx, by, bmr * 2.6); bg.addColorStop(0, "rgba(255,255,255," + (0.8 * a) + ")"); bg.addColorStop(0.4, "rgba(" + col + "," + (0.6 * a) + ")"); bg.addColorStop(1, "rgba(" + col + ",0)");
+          ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(bx, by, bmr * 2.6, 0, 7); ctx.fill();
         }
       }
       ctx.restore();
@@ -6852,6 +6894,9 @@
         // WALK-TO-EXPAND (David 2026-07-15): pushing into the coast grows the island onto the tile ahead if you can afford it. The tile is claimed (counted, Spark spent) instantly, but stays a collision WALL (isleSolid=false while pending — David
         // 2026-07-16: "he should not be able to walk onto it until it appears") until its coast finishes baking, so the guardian can't outrun the bake and visibly stand on open water. isleHas (not isleSolid) triggers the claim itself.
         if (moving) { var _gx = Math.round(px / TILE), _gy = Math.round(py / TILE); if (!isleHas(_gx, _gy)) claimTileAt(_gx, _gy); }
+        // PREDICTIVE PRE-BAKE: while the worker is idle and nothing is pending, speculatively bake the tile he's FACING (the
+        // glowing claimable one) so that when he walks into it, the coast is already done → instant. Only if he can afford it.
+        if (!_bakeBusy && !window._isleDirtyBox && __bakeImgsReady) { var _pg = sanctClaimTile(); if (_pg && (!_specBake || _specBake.tx !== _pg.tx || _specBake.ty !== _pg.ty || _specBake.stamp !== ISLE._stamp) && ((S.game && S.game.spark) || 0) >= claimCost()) _kickSpecBake(_pg.tx, _pg.ty); }
         // tile-edge collision: feet must stay on SOLID (materialized) ground. Axis-separated so you slide along the coast instead of sticking.
         if (!isleSolid(Math.round(px / TILE), Math.round(prevPy / TILE))) px = prevPx;
         if (!isleSolid(Math.round(prevPx / TILE), Math.round(py / TILE))) py = prevPy;
@@ -13537,6 +13582,25 @@
   window.DEV.regTime = function (r2) { var R = r2 || 90, s = new Set(); for (var i = -10; i <= 10; i++) for (var j = -10; j <= 10; j++) if (i * i + j * j <= R) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 7001 }; var mx = 0; ISLE.tiles.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; }); var t0 = performance.now(); var full = bakeIsle(); var tf = performance.now() - t0; var t1 = performance.now(); var reg = bakeIsle({ x0: mx - 1, y0: -1, x1: mx + 2, y1: 2 }); var tr = performance.now() - t1; window._isleBakeCache = null; return ISLE.tiles.size + "t: FULL " + tf.toFixed(0) + "ms (" + full.w + "x" + full.h + ") vs INCREMENTAL window " + tr.toFixed(0) + "ms (" + reg.w + "x" + reg.h + ") = " + (tf / tr).toFixed(1) + "x faster"; }; // DEV: measure incremental window bake vs full bake
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
+  window.DEV.specVerify = function () { // DEV: verify the PREDICTIVE path's CORRECTNESS synchronously (headless throttles the worker, so bypass it): build the speculation with a sync bake, install it, claim the tile, and confirm (a) it was a spec HIT (the coordinate/coverage logic accepted it) and (b) the spec-blitted coast is pixel-identical to a fresh full bake (the spec produced the RIGHT pixels at the RIGHT place). The worker *timing* remains device-only, but this proves the risky part — the blit math — is sound.
+    if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 99999;
+    window._isleBakeCache = null; var c0 = bakeIsle(); if (!c0) return "no cache"; c0._stamp = ISLE._stamp; window._isleBakeCache = c0;
+    var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); });
+    if (!water) return "no edge";
+    var T = water, preStamp = ISLE._stamp, region = { x0: T[0] - 3, y0: T[1] - 3, x1: T[0] + 3, y1: T[1] + 3 };
+    ISLE.tiles.add(tkey(T[0], T[1])); var specWrap = bakeIsle(region); ISLE.tiles.delete(tkey(T[0], T[1])); ISLE._stamp = preStamp; // sync spec bake of island-as-if-claimed, then restore pre-claim state (as the worker's speculation would leave it)
+    if (!specWrap) return "spec bake failed";
+    _specBake = { tx: T[0], ty: T[1], stamp: preStamp, region: region, done: true, wrap: specWrap }; // install as if the worker completed
+    window.__specHit = 0; window.__specMiss = 0;
+    claimTileAt(T[0], T[1]); // real claim → _doRebake should take the spec-HIT path (sync blit, no worker)
+    var inc = window._isleBakeCache; window._isleBakeCache = null; var full = bakeIsle(); window._isleBakeCache = inc;
+    var B = full.BTB, PAD = full.PAD, wminx = Math.max(inc.minx, full.minx), wmaxx = Math.min(inc.maxx, full.maxx), wminy = Math.max(inc.miny, full.miny), wmaxy = Math.min(inc.maxy, full.maxy), W = (wmaxx - wminx + 1) * B, H = (wmaxy - wminy + 1) * B;
+    var it = _cv(W, H), ic = it.getContext("2d"); ic.drawImage(inc.cv, (wminx - inc.minx + PAD) * B, (wminy - inc.miny + PAD) * B, W, H, 0, 0, W, H); var id = ic.getImageData(0, 0, W, H).data;
+    var ft = _cv(W, H), fc = ft.getContext("2d"); fc.drawImage(full.cv, (wminx - full.minx + PAD) * B, (wminy - full.miny + PAD) * B, W, H, 0, 0, W, H); var fd = fc.getImageData(0, 0, W, H).data;
+    var ndiff = 0, dimg = new Uint8ClampedArray(id.length); for (var p = 0; p < id.length; p += 4) { if (Math.abs(id[p] - fd[p]) + Math.abs(id[p + 1] - fd[p + 1]) + Math.abs(id[p + 2] - fd[p + 2]) > 18) { ndiff++; dimg[p] = 255; dimg[p + 3] = 255; } else { dimg[p] = id[p] * 0.35; dimg[p + 1] = id[p + 1] * 0.35; dimg[p + 2] = id[p + 2] * 0.35; dimg[p + 3] = 255; } }
+    var vw = window.innerWidth, vh = window.innerHeight, ov = document.getElementById("auditOv"); if (ov) ov.remove(); ov = document.createElement("canvas"); ov.id = "auditOv"; ov.width = vw; ov.height = vh; ov.setAttribute("style", "position:fixed;left:0;top:0;z-index:999999;background:#0a0a12;"); document.body.appendChild(ov); var g = ov.getContext("2d"); g.fillStyle = "#0a0a12"; g.fillRect(0, 0, vw, vh); var pw = vw / 3 - 6, ph = pw * H / W; g.font = "12px sans-serif"; g.fillStyle = "#cfe8ff"; g.fillText("SPEC-HIT", 4, 12); g.drawImage(it, 0, 16, pw, ph); g.fillText("FULL", vw / 3 + 4, 12); g.drawImage(ft, vw / 3, 16, pw, ph); var dt = _cv(W, H); dt.getContext("2d").putImageData(new ImageData(dimg, W, H), 0, 0); g.fillStyle = "#ff8080"; g.fillText("DIFF", vw * 2 / 3 + 4, 12); g.drawImage(dt, vw * 2 / 3, 16, pw, ph);
+    return "specHit=" + window.__specHit + " specMiss=" + window.__specMiss + " | spec-vs-full diffPx=" + ndiff + " / " + (W * H) + " — DEV.auditClose()";
+  };
   window.DEV.pendCheck = function () { // DEV: claim a real edge tile and report isleHas/isleSolid immediately after (should be true/false → collision wall) then again after the bake settles (should be true/true → walkable). Verifies the "no walking on unmaterialized water" fix.
     if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 99999;
     var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); });
