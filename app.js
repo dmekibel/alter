@@ -6083,14 +6083,15 @@
     ctx.save(); ctx.strokeStyle = "rgba(" + col + "," + (0.55 + 0.4 * pulse) + ")"; ctx.lineWidth = 3; ctx.setLineDash([9, 7]); ctx.strokeRect(cx - hs + 2, cy - hs + 2, TILE - 4, TILE - 4); ctx.restore();
     ctx.save(); ctx.textAlign = "center"; ctx.font = "800 19px 'Baloo 2',sans-serif"; ctx.lineWidth = 4; ctx.strokeStyle = "#241019"; ctx.fillStyle = afford ? "#ffe27a" : "#c9c9d6";
     ctx.strokeText("+" + cost, cx, cy - hs - 6); ctx.fillText("+" + cost, cx, cy - hs - 6); ctx.restore();
-    // PRESS-AND-HOLD CHARGE RING (David 2026-07-17: same feel as the commit ring — a circle that fills clockwise while held, then claims).
+    // PRESS-AND-HOLD CHARGE RING (David 2026-07-17: same feel as the commit ring — fills clockwise while held). SUBTLE: idle = a
+    // thin faint ring (barely-there hint, gentle pulse); charging = a thin gold arc filling on a faint track. No chunky ring / dot.
     var charging = !!(_claimHold && _claimHold.tx === c.tx && _claimHold.ty === c.ty), prog = charging ? Math.min(1, (performance.now() - _claimHold.t0) / CLAIM_HOLD_MS) : 0;
-    var rr = hs * 0.6;
+    var rr = hs * 0.54;
     ctx.save(); ctx.lineCap = "round";
-    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(" + col + "," + (0.34 + 0.12 * pulse) + ")"; // faint background ring = the hold target
-    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke();
-    if (charging) { ctx.lineWidth = 6; ctx.strokeStyle = "rgba(255,226,122,0.98)"; ctx.beginPath(); ctx.arc(cx, cy, rr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog); ctx.stroke(); } // gold progress arc fills as you hold
-    else { ctx.fillStyle = "rgba(" + col + "," + (0.55 + 0.35 * pulse) + ")"; ctx.beginPath(); ctx.arc(cx, cy, hs * 0.13, 0, 7); ctx.fill(); } // idle: a soft centre dot = "press here"
+    if (charging) {
+      ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(" + col + ",0.25)"; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); // faint track
+      ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,226,122,0.92)"; ctx.beginPath(); ctx.arc(cx, cy, rr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog); ctx.stroke(); // gold fill
+    } else { ctx.lineWidth = 2; ctx.strokeStyle = "rgba(" + col + "," + (0.16 + 0.1 * pulse) + ")"; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); } // subtle idle ring
     ctx.restore();
   }
   function isleRects(ex) { var p = new Path2D(); ISLE.tiles.forEach(function (k) { var a = k.split(","), tx = +a[0], ty = +a[1]; p.rect(tx * TILE - TILE / 2 - ex, ty * TILE - TILE / 2 - ex, TILE + ex * 2, TILE + ex * 2); }); return p; }
@@ -6922,6 +6923,7 @@
   }
   function drawWorld() {
     if (!gameOn || !wctx) return;
+    try { wireWorldTap(); } catch (e) {} // ensure the world tap/hold handlers are wired — the pane-swipe/nav game-open path (panePrime) never called wireWorldTap, so the claim press did nothing (David 2026-07-18 "not clickable"). Self-guards via worldTapWired.
     var t = (performance.now() - GT0) / 1000;
     var SPD = 4.6 * (skateOk() ? 1.6 : 1), moving, prevPx = px, prevPy = py; // prev pos for tile-edge collision (David 2026-07-15: 4.3 too slow, 5.1 too fast → 4.6)
     if (moveX !== 0 || moveY !== 0) { camX *= 0.86; camY *= 0.86; if (Math.abs(camX) < 0.6) camX = 0; if (Math.abs(camY) < 0.6) camY = 0; } // walking eases the camera smoothly back to follow the guy (no hard snap) — David 2026-06-24
@@ -7082,25 +7084,32 @@
     // (translate(W/2,H*0.6)·scale(zoom)·translate(-(px+camX),-(py+camY)), see renderWorld) to a world tile; start the hold only if
     // it's within 1 tile of the highlight (generous target on a small phone). Completion is checked each frame in drawWorld.
     function _worldTileAt(sx, sy) { var wx = (sx - WGW / 2) / zoom + (px + camX), wy = (sy - WGH * 0.6) / zoom + (py + camY); return { tx: Math.round(wx / TILE), ty: Math.round(wy / TILE) }; }
-    function relHold(ev) { if (_claimHold && ev.pointerId === _claimHold.id) _claimHold = null; } // finger lifted before the ring filled → cancel
+    // Shared: start a claim-hold if (sx,sy) presses on/near the highlighted tile. Returns true if a hold started.
+    function _tryStartHold(sx, sy, id, src) {
+      if (!SANCT_TILES) return false; var c = null; try { c = sanctClaimTile(); } catch (e) {} if (!c) return false;
+      var tl = _worldTileAt(sx, sy); if (Math.abs(tl.tx - c.tx) > 1 || Math.abs(tl.ty - c.ty) > 1) return false;
+      if (((S.game && S.game.spark) || 0) >= claimCost()) { _claimHold = { tx: c.tx, ty: c.ty, t0: performance.now(), id: id, sx: sx, sy: sy, src: src }; return true; }
+      try { toast("Need " + claimCost() + " Spark to grow here"); } catch (e) {} return false;
+    }
+    // TOUCH-EVENT hold (David 2026-07-18: the pointer-event claim never fired on iOS — the joysticks/zoom that WORK use touch events,
+    // so the claim must too). Fires only for touches ON #world (center/canvas); joystick touches are on #joy, a sibling, so they
+    // never reach here. Pinch/pan self-cancels via the move threshold.
+    w.addEventListener("touchstart", function (e) { var tch = e.changedTouches[0]; if (tch) _tryStartHold(tch.clientX, tch.clientY, tch.identifier, "t"); }, { passive: true });
+    w.addEventListener("touchmove", function (e) { if (!_claimHold || _claimHold.src !== "t") return; for (var i = 0; i < e.changedTouches.length; i++) { var tch = e.changedTouches[i]; if (tch.identifier === _claimHold.id && Math.hypot(tch.clientX - _claimHold.sx, tch.clientY - _claimHold.sy) > 20) { _claimHold = null; return; } } }, { passive: true });
+    function _endTouchHold(e) { if (!_claimHold || _claimHold.src !== "t") return; for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === _claimHold.id) { _claimHold = null; return; } }
+    w.addEventListener("touchend", _endTouchHold); w.addEventListener("touchcancel", _endTouchHold);
+    function relHold(ev) { if (_claimHold && _claimHold.src === "p" && ev.pointerId === _claimHold.id) _claimHold = null; } // (mouse) lifted before the ring filled → cancel
     w.addEventListener("pointerup", relHold); w.addEventListener("pointercancel", relHold);
     w.addEventListener("pointerup", rel); w.addEventListener("pointercancel", rel); document.addEventListener("pointerup", rel); document.addEventListener("pointercancel", rel);
     w.addEventListener("pointerdown", function (ev) {
       if (ev.target !== w) return; // only the world surface itself — never a joystick/zoom/notebook button on top
       pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
       if (npts() >= 2) { _claimHold = null; if (!panning) { var m = mid(); if (m) { panning = true; lmx = m.x; lmy = m.y; } } return; } // second finger → pan; abandon any charge
-      if (SANCT_TILES) { var c = null; try { c = sanctClaimTile(); } catch (e) {} // single finger on/near the highlight → begin the charge
-        if (c) { var tl = _worldTileAt(ev.clientX, ev.clientY);
-          if (Math.abs(tl.tx - c.tx) <= 1 && Math.abs(tl.ty - c.ty) <= 1) {
-            if (((S.game && S.game.spark) || 0) >= claimCost()) { _claimHold = { tx: c.tx, ty: c.ty, t0: performance.now(), id: ev.pointerId, sx: ev.clientX, sy: ev.clientY }; }
-            else { try { toast("Need " + claimCost() + " Spark to grow here"); } catch (e) {} }
-          }
-        }
-      }
+      if (ev.pointerType !== "touch") _tryStartHold(ev.clientX, ev.clientY, ev.pointerId, "p"); // MOUSE/pen only — touch goes through the touch handler above (pointer events don't reach #world on iOS)
     });
     document.addEventListener("pointermove", function (e) {
       if (pts[e.pointerId]) { pts[e.pointerId].x = e.clientX; pts[e.pointerId].y = e.clientY; }
-      if (_claimHold && e.pointerId === _claimHold.id && Math.hypot(e.clientX - _claimHold.sx, e.clientY - _claimHold.sy) > 20) _claimHold = null; // dragged off → cancel (it was a pan/swipe, not a hold)
+      if (_claimHold && _claimHold.src === "p" && e.pointerId === _claimHold.id && Math.hypot(e.clientX - _claimHold.sx, e.clientY - _claimHold.sy) > 20) _claimHold = null; // (mouse) dragged off → cancel
       if (!panning || npts() < 2) return;
       var m = mid(); if (!m) return; var dx = m.x - lmx, dy = m.y - lmy; lmx = m.x; lmy = m.y;
       camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom));
@@ -13794,6 +13803,19 @@
   };
   window.DEV.regTime = function (r2) { var R = r2 || 90, s = new Set(); for (var i = -10; i <= 10; i++) for (var j = -10; j <= 10; j++) if (i * i + j * j <= R) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 7001 }; var mx = 0; ISLE.tiles.forEach(function (k) { var a = k.split(","); if (+a[0] > mx) mx = +a[0]; }); var t0 = performance.now(); var full = bakeIsle(); var tf = performance.now() - t0; var t1 = performance.now(); var reg = bakeIsle({ x0: mx - 1, y0: -1, x1: mx + 2, y1: 2 }); var tr = performance.now() - t1; window._isleBakeCache = null; return ISLE.tiles.size + "t: FULL " + tf.toFixed(0) + "ms (" + full.w + "x" + full.h + ") vs INCREMENTAL window " + tr.toFixed(0) + "ms (" + reg.w + "x" + reg.h + ") = " + (tf / tr).toFixed(1) + "x faster"; }; // DEV: measure incremental window bake vs full bake
   window.DEV.bakeTime = function () { var r = []; [6, 20, 45, 90].forEach(function (r2) { var s = new Set(); for (var i = -9; i <= 9; i++) for (var j = -9; j <= 9; j++) if (i * i + j * j <= r2) s.add(tkey(i, j)); ISLE = { tiles: s, house: [0, -1], objects: [], _stamp: 8000 + r2 }; window._isleBakeCache = null; var t0 = performance.now(); var b = bakeIsle(); var ms = performance.now() - t0; r.push(s.size + "t=" + ms.toFixed(0) + "ms(" + (b ? b.w + "x" + b.h : "null") + ")"); }); window._isleBakeCache = null; return r.join(" | "); }; // DEV: measure bake cost across island sizes
+  window.DEV.simClaimHold = function () { // DEV: verify the TOUCH-based press-and-hold claim end-to-end — pose at an edge, dispatch a synthetic touchstart on #world at the highlight, report whether the hold armed. Then DEV.simClaimResult() ~1s later shows if it claimed.
+    if (!gameOn) return "open the Game tab first (gameOn=false)";
+    DEV.glowTest(); S.game = S.game || { spark: 0 }; S.game.spark = Math.max(S.game.spark || 0, 999);
+    var c = sanctClaimTile(); if (!c) return "no claim tile";
+    var sx = (c.tx * TILE - (px + camX)) * zoom + WGW / 2, sy = (c.ty * TILE - (py + camY)) * zoom + WGH * 0.6, w = el("world");
+    try { var t = new Touch({ identifier: 99, target: w, clientX: sx, clientY: sy }); w.dispatchEvent(new TouchEvent("touchstart", { changedTouches: [t], touches: [t], bubbles: true })); }
+    catch (e) { return "TouchEvent dispatch failed: " + e.message; }
+    window.__simBefore = ISLE.tiles.size;
+    // diag: recompute what the handler would see
+    var c2 = sanctClaimTile(), wx = (sx - WGW / 2) / zoom + (px + camX), wy = (sy - WGH * 0.6) / zoom + (py + camY), mtx = Math.round(wx / TILE), mty = Math.round(wy / TILE);
+    return "touchstart @(" + sx.toFixed(0) + "," + sy.toFixed(0) + ") tile(" + c.tx + "," + c.ty + "); armed=" + !!_claimHold + " | SANCT_TILES=" + SANCT_TILES + " claimTile2=" + JSON.stringify(c2) + " mapped=(" + mtx + "," + mty + ") spark=" + ((S.game && S.game.spark) || 0) + " cost=" + claimCost() + " worldTapWired=" + worldTapWired;
+  };
+  window.DEV.simClaimResult = function () { return "isleSize " + (window.__simBefore) + "→" + ISLE.tiles.size + (ISLE.tiles.size > (window.__simBefore || 0) ? " ✓ CLAIMED via hold" : " ✗ no claim"); };
   window.DEV.glowTest = function () { if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 20; var stand = null, water = null; ISLE.tiles.forEach(function (k) { if (stand) return; var a = k.split(","), tx = +a[0], ty = +a[1]; [[0, 1], [1, 0], [-1, 0], [0, -1]].forEach(function (d) { if (stand) return; if (!isleHas(tx + d[0], ty + d[1])) { stand = [tx, ty]; water = [tx + d[0], ty + d[1]]; } }); }); if (!stand) return "no edge"; px = stand[0] * TILE; py = stand[1] * TILE; fhFace = Math.atan2(water[1] - stand[1], water[0] - stand[0]); camX = 0; camY = 0; return "guardian at edge " + stand + " facing " + water + "; claim tile=" + JSON.stringify(sanctClaimTile()); }; // DEV: pose at an edge so the claim glow shows (no claim)
   window.DEV.specVerify = function () { // DEV: verify the PREDICTIVE path's CORRECTNESS synchronously (headless throttles the worker, so bypass it): build the speculation with a sync bake, install it, claim the tile, and confirm (a) it was a spec HIT (the coordinate/coverage logic accepted it) and (b) the spec-blitted coast is pixel-identical to a fresh full bake (the spec produced the RIGHT pixels at the RIGHT place). The worker *timing* remains device-only, but this proves the risky part — the blit math — is sound.
     if (!ISLE) buildIsle(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] }; S.game.spark += 99999;
