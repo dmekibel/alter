@@ -5986,7 +5986,32 @@
   var COAST_BTB = 112, COAST_PAD = 2, COAST_GEY = 90, COAST_EXTRA = Math.round(150 * COAST_BTB / 172);
   var SANCT_COLL_T = [[0, -12, 72, 30]]; // house base footprint (house sits base-at-origin, dead-center of the island)
   function tkey(tx, ty) { return tx + "," + ty; }
-  function isleHas(tx, ty) { return !!(ISLE && ISLE.tiles.has(tkey(tx, ty))); }
+  // EFFECTIVE SOLID TILES (David 2026-07-17): a water tile hemmed in by land on ≥3 of its 4 orthogonal sides is a dead-end
+  // NOTCH — too narrow to render as a real cove, so the coast rings from its walls converge into an ugly V-slit with a raw-water
+  // tip (David's circled "unpredictable" coast errors). Treat such tiles as LAND: fill them (iteratively, so a 1-wide channel
+  // zips shut from its closed end) and use that filled set for BOTH the bake AND collision, so the notch renders as clean grass
+  // AND is walkable — no visual/collision mismatch. A legit strait (water with land on only 2 opposite sides, open both ends) has
+  // <3 neighbors → never fills. Derived (NOT persisted — re-computed from the real claimed set each stamp; free tiles aren't saved).
+  var _solidCache = null;
+  function getSolidTiles() {
+    if (!ISLE) return { set: new Set(), arr: [] };
+    if (_solidCache && _solidCache.stamp === ISLE._stamp) return _solidCache;
+    var set = new Set(ISLE.tiles);
+    var minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+    ISLE.tiles.forEach(function (k) { var a = k.split(","), x = +a[0], y = +a[1]; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; });
+    var changed = true, guard = 0;
+    while (changed && guard++ < 8) { changed = false;
+      for (var y = miny - 1; y <= maxy + 1; y++) for (var x = minx - 1; x <= maxx + 1; x++) {
+        if (set.has(tkey(x, y))) continue;
+        var n = (set.has(tkey(x + 1, y)) ? 1 : 0) + (set.has(tkey(x - 1, y)) ? 1 : 0) + (set.has(tkey(x, y + 1)) ? 1 : 0) + (set.has(tkey(x, y - 1)) ? 1 : 0);
+        if (n >= 3) { set.add(tkey(x, y)); changed = true; }
+      }
+    }
+    var arr = []; set.forEach(function (k) { var a = k.split(","); arr.push([+a[0], +a[1]]); });
+    _solidCache = { stamp: ISLE._stamp, set: set, arr: arr };
+    return _solidCache;
+  }
+  function isleHas(tx, ty) { return !!ISLE && getSolidTiles().set.has(tkey(tx, ty)); } // now includes filled dead-end notches → collision, claim-adjacency, hole-classification all treat them as land (consistent with the bake)
   var _pendingIsle = {}; // tile keys claimed (in ISLE.tiles, Spark spent, persisted) but whose coast hasn't finished baking/blitting yet
   function isleSolid(tx, ty) { return isleHas(tx, ty) && !_pendingIsle[tkey(tx, ty)]; } // for COLLISION only — a pending tile is still "there" (counted, cost-spent) but not yet walkable, so the guardian can't outrun the bake (David 2026-07-16: "he should not be able to walk onto it until it appears")
   function buildIsle() {
@@ -6015,6 +6040,7 @@
     var cost = claimCost(); S.game = S.game || { spark: 0, total: 0, ups: {}, garden: [] };
     if ((S.game.spark || 0) < cost) return false;
     var holesBefore = getHoleTiles(); // snapshot BEFORE the claim (cheap — cached on the pre-claim stamp, already warm from the last bake)
+    var solidBefore = getSolidTiles().set; // snapshot the pre-claim filled-notch set (this claim may fill NEW notches — those tiles need re-baking too)
     S.game.spark -= cost; S.game.claims = (S.game.claims || 0) + 1;
     ISLE.tiles.add(tkey(tx, ty)); ISLE._stamp = (ISLE._stamp || 1) + 1;
     _lastClaimTx = tx; _lastClaimTy = ty; // for the predictive-hit match in _doRebake
@@ -6032,6 +6058,7 @@
     var changed = [[tx - 1, ty], [tx + 1, ty], [tx, ty - 1], [tx, ty + 1]]; // neighbor margin for lobe/cliff continuity, belt-and-braces
     holesBefore.forEach(function (h) { if (!afterSet[h[0] + "," + h[1]]) changed.push(h); }); // was a hole, now open sea (rare — a hole tile can't itself be claimed, but keep symmetric)
     holesAfter.forEach(function (h) { if (!beforeSet[h[0] + "," + h[1]]) changed.push(h); }); // newly enclosed — the sealed pond's tiles
+    var solidAfter = getSolidTiles().set; solidAfter.forEach(function (k) { if (!solidBefore.has(k)) { var a = k.split(","); changed.push([+a[0], +a[1]]); } }); // tiles this claim turned from water into a filled notch → their coast (now grass) must re-bake
     changed.forEach(function (t) { var _d = window._isleDirtyBox; if (!_d) window._isleDirtyBox = { x0: t[0], y0: t[1], x1: t[0], y1: t[1] }; else { if (t[0] < _d.x0) _d.x0 = t[0]; if (t[0] > _d.x1) _d.x1 = t[0]; if (t[1] < _d.y0) _d.y0 = t[1]; if (t[1] > _d.y1) _d.y1 = t[1]; } });
     // Patch the grass + reconcile the cache stamp SYNCHRONOUSLY, right now — the coast then bakes OFF-THREAD (worker), so this
     // doesn't block. CRITICAL: it must NOT be deferred to a later rAF — ISLE._stamp was just bumped, and if drawTileGround runs
@@ -6263,7 +6290,7 @@
     for (i = 0; i < W * H; i++) if (hole[i] && north[i] && !island[i] && idOut[i] >= 1 && idOut[i] <= HOLE_OUT_W) { out[i * 4] = 12; out[i * 4 + 1] = 25; out[i * 4 + 2] = 86; }
     return { buf: out.buffer, W: W, H: H, minx: minx, miny: miny, maxx: maxx, maxy: maxy };
   }
-  function _tilesArr() { var a = []; ISLE.tiles.forEach(function (k) { var p = k.split(","); a.push([+p[0], +p[1]]); }); return a; }
+  function _tilesArr() { var s = getSolidTiles().arr, a = []; for (var i = 0; i < s.length; i++) a.push([s[i][0], s[i][1]]); return a; } // filled dead-end notches included → the coast bakes them as clean grass (no V-slit)
   // GLOBAL hole/bay classification (David 2026-07-16): a per-TILE BFS over the WHOLE island (not the bake window) that finds
   // which water tiles are genuinely enclosed holes vs open sea reachable from outside. Cheap (tile-grid, not pixel-grid) —
   // runs once per ISLE._stamp change, feeds the core's ext-flood seeding (see P1) so a windowed bake can never misjudge a
@@ -13500,6 +13527,15 @@
     // tile's BOTTOM edge, which a centre-only probe would miss — so scan the full tile height.
     for (var ty = miny; ty <= maxy; ty++) { var maxd = 0, worst = null; for (var tx = minx + 1; tx <= maxx - 1; tx++) { for (var oy = 8; oy < B; oy += 8) { var incX = Math.round((tx - inc.minx + PAD) * B + B / 2), incY = Math.round((ty - inc.miny + PAD) * B + oy), fX = Math.round((tx - full.minx + PAD) * B + B / 2), fY = Math.round((ty - full.miny + PAD) * B + oy); var i = px(inc, incX, incY), f = px(full, fX, fY); var dv = Math.abs(i[0] - f[0]) + Math.abs(i[1] - f[1]) + Math.abs(i[2] - f[2]); if (dv > maxd) { maxd = dv; worst = { tx: tx, oy: oy, inc: i, full: f }; } } } rows.push("y" + ty + " maxd=" + maxd + (maxd > 30 ? " INC" + JSON.stringify(worst.inc) + "!=FULL" + JSON.stringify(worst.full) + "@x" + worst.tx + ",oy" + worst.oy : "")); }
     return "lineProbe claim(" + claimX + "," + claimY + ") rows[below-claim first]: " + rows.join(" | ");
+  };
+  window.DEV.solidProbe = function (tiles) { // DEV: report what getSolidTiles() fills for a given raw tile array (bypasses the stamp cache)
+    var saved = ISLE, sc = _solidCache;
+    var set = new Set(); tiles.forEach(function (t) { set.add(tkey(t[0], t[1])); });
+    ISLE = { tiles: set, house: [0, -1], objects: [], _stamp: (saved && saved._stamp || 0) + 90001 }; _solidCache = null;
+    var r = getSolidTiles();
+    var filled = []; r.set.forEach(function (k) { if (!set.has(k)) filled.push(k); });
+    ISLE = saved; _solidCache = sc;
+    return "input=" + tiles.length + " solid=" + r.arr.length + " filled=" + JSON.stringify(filled);
   };
   window.DEV.bakeCustom = function (tiles) { // DEV: bake an ARBITRARY tile array full-bleed (for ad-hoc repro shapes from the console, e.g. deep bays). tiles = [[x,y],...]. screenshot it; DEV.auditClose().
     var saved = ISLE, sB = window._isleBakeCache, sS = window._sanctSceneCache;
