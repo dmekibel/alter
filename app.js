@@ -9414,89 +9414,23 @@
     }
     runBeat(0);
   }
-  // ORDER / LENGTH / IMPORTANCE EDITOR (David 2026-06-28): a minimalist mini-timeline of the chosen activities. Per row, three convenient controls —
-  //   • REORDER: drag the ⠿ handle (pointer-drag, touch + mouse).
-  //   • LENGTH: quick chips 15/30/45/60/90 (default 30); row height hints at length (mini-timeline feel).
-  //   • IMPORTANCE: 1–3 pips → block.prio 1/2/3 (default 2). reward-never-shame: warm amber pips, never red.
-  // Scrollable (max-height + overflow-y:auto + overscroll-behavior:contain). Commit → distributePlan honours order + mins + prio via the safe path (blocks push + reflow).
-  var LEN_CHIPS = [15, 30, 45, 60, 90];
+  // ARRANGE-YOUR-DAY = the stack-planner block editor (David 2026-07-17): chunky game-piece blocks — DRAG the bottom edge to resize, PRESS-HOLD to reorder, TAP to open (custom length + importance + delete). No grip dots, no length chips on the bubble. Reuses programBuilder in day-plan mode (unit:'min') so it IS the stack planner; commit = distributePlan via the safe path (order + mins + prio preserved).
   function orderStep(k, sel) {
     sel = (sel || []).filter(Boolean); if (!sel.length) return;
     sel.forEach(function (a) { if (a.mins == null) a.mins = 30; if (a.prio == null) a.prio = 2; }); // seed defaults on the chosen items
-    var ov = add(document.body, "div", "bento-ov");
-    var card = add(ov, "div", "bento-card");
-    var head = add(card, "div", "bento-head");
-    add(head, "div", "bento-q", "Arrange your day");
-    var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
-    var body = add(card, "div", "bento-body");
-    add(body, "div", "bento-orderhint", "Drag ⠿ to reorder · swipe a row away to remove it · tap a length · set what matters. They land back-to-back from your next free slot. Fine-tune times on the timeline.");
-    var list = add(body, "div", "bento-orderlist editor");
-    function paint() {
-      list.innerHTML = "";
-      sel.forEach(function (a, i) {
-        var dom = a.domain || domainOf(a), D = DOM[dom] || DOM.focus, accent = (dom === "drift") ? "#7a808c" : D.c;
-        var row = add(list, "div", "bento-orow editrow gp"); row.dataset.i = i; // v1117: rows read as GAME PIECES — canon 45° stripe + ink text (programBuilder language)
-        row.style.background = "repeating-linear-gradient(45deg," + accent + " 0 9px," + mixHex(accent, "#160510", 0.16) + " 9px 18px)";
-        row.style.minHeight = Math.round(44 + (a.mins / 90) * 26) + "px"; // height hints at length
-        // top line: handle · activity icon · title · importance pips
-        var topL = add(row, "div", "edit-top");
-        var hd = add(topL, "span", "bento-ohandle"); hd.innerHTML = '<i class="ti ti-grip-vertical"></i>';
-        var ic = add(topL, "span", "edit-ico"); ic.innerHTML = tiIcon(a);
-        add(topL, "span", "bento-on", a.title);
-        // importance pips (low/med/high → prio 1/2/3) — tap to cycle; pips render filled up to prio
-        var pips = add(topL, "span", "edit-pips"); pips.title = "importance";
-        for (var p = 1; p <= 3; p++) { (function (pv) { var dt = add(pips, "i", "edit-pip" + (a.prio >= pv ? " on" : "")); dt.onclick = function (e) { e.stopPropagation(); a.prio = pv; paint(); }; })(p); }
-        // bottom line: length chips
-        var lenRow = add(row, "div", "edit-len");
-        LEN_CHIPS.forEach(function (m) { var c = add(lenRow, "span", "edit-lchip" + (a.mins === m ? " on" : "")); c.textContent = m + "m"; c.onclick = function (e) { e.stopPropagation(); a.mins = m; paint(); }; });
-        hd.addEventListener("pointerdown", function (ev) { startDrag(ev, i, row); });
-        swipeDelete(row, i); // SWIPE-TO-DELETE (David 2026-07-17): drag a row sideways past 40% → remove it. Vertical reorder stays on the ⠿ handle; length/pip taps unaffected (touch-action:pan-y).
-      });
-    }
-    function syncGo() { if (typeof go !== "undefined" && go) go.innerHTML = '<i class="ti ti-check"></i> Add ' + sel.length + ' to ' + (k === todayK() ? "today" : relLabel(k).toLowerCase()); }
-    function swipeDelete(row, i) {
-      row.addEventListener("pointerdown", function (ev) {
-        if (dragging) return; if (ev.target.closest && ev.target.closest(".bento-ohandle,.edit-lchip,.edit-pips")) return; // reorder-handle + tap controls own their touches
-        var sx = ev.clientX, sy = ev.clientY, sw = false, w = row.getBoundingClientRect().width || 300;
-        function m(e) { var dx = e.clientX - sx, dy = e.clientY - sy;
-          if (!sw) { if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) { sw = true; row.style.transition = "none"; } else if (Math.abs(dy) > 10) { off(); return; } } // vertical → let the list scroll
-          if (sw) { e.preventDefault(); row.style.transform = "translateX(" + dx + "px)"; row.style.opacity = String(Math.max(0.2, 1 - Math.abs(dx) / w)); } }
-        function u(e) { off(); if (!sw) return; var dx = e.clientX - sx;
-          if (Math.abs(dx) > w * 0.4) { row.style.transition = "transform .18s ease, opacity .18s ease"; row.style.transform = "translateX(" + (dx < 0 ? -w : w) + "px)"; row.style.opacity = "0"; setTimeout(function () { var idx = +row.dataset.i; if (idx >= 0 && idx < sel.length) sel.splice(idx, 1); if (!sel.length) { ov.remove(); return; } paint(); syncGo(); }, 175); }
-          else { row.style.transition = "transform .2s var(--ease-spring), opacity .2s"; row.style.transform = ""; row.style.opacity = ""; } }
-        function off() { document.removeEventListener("pointermove", m); document.removeEventListener("pointerup", u); }
-        document.addEventListener("pointermove", m, { passive: false }); document.addEventListener("pointerup", u);
-      });
-    }
-    var dragging = null;
-    function startDrag(ev, idx, dragEl) {
-      ev.preventDefault(); dragging = true;
-      dragEl.classList.add("drag"); dragEl.style.zIndex = "6";
-      var grabOff = ev.clientY - dragEl.getBoundingClientRect().top; // pointer offset inside the row
-      function place(clientY) { dragEl.style.transition = "none"; dragEl.style.transform = ""; var nat = dragEl.getBoundingClientRect().top; dragEl.style.transform = "translateY(" + ((clientY - grabOff) - nat) + "px) scale(1.03)"; } // finger-follow (transform-independent natural top)
-      function flip(fn) { var sibs = Array.prototype.slice.call(list.children).filter(function (r) { return r !== dragEl; }), b = sibs.map(function (r) { return r.getBoundingClientRect().top; }); fn(); sibs.forEach(function (r, i) { var d = b[i] - r.getBoundingClientRect().top; if (d) { r.style.transition = "none"; r.style.transform = "translateY(" + d + "px)"; requestAnimationFrame(function () { r.style.transition = "transform .2s cubic-bezier(.2,.8,.3,1)"; r.style.transform = ""; }); } }); } // siblings slide smoothly into place
-      function move(e) {
-        e.preventDefault(); place(e.clientY);
-        var dmid = dragEl.getBoundingClientRect().top + dragEl.offsetHeight / 2, sibs = Array.prototype.slice.call(list.children).filter(function (r) { return r !== dragEl; });
-        for (var s = 0; s < sibs.length; s++) { var rc = sibs[s].getBoundingClientRect(), mid = rc.top + rc.height / 2, pos = dragEl.compareDocumentPosition(sibs[s]);
-          if (dmid > mid && (pos & 4)) { (function (n) { flip(function () { list.insertBefore(dragEl, n.nextSibling); }); })(sibs[s]); place(e.clientY); break; } // drag center dropped below a row that's after it → move past it
-          if (dmid < mid && (pos & 2)) { (function (n) { flip(function () { list.insertBefore(dragEl, n); }); })(sibs[s]); place(e.clientY); break; } // drag center rose above a row that's before it → move before it
-        }
-      }
-      function up() { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
-        var order = Array.prototype.slice.call(list.children).map(function (r) { return +r.dataset.i; }), ns = order.map(function (oi) { return sel[oi]; });
-        sel.length = 0; for (var z = 0; z < ns.length; z++) sel.push(ns[z]); // commit the new DOM order back to sel
-        dragging = null; dragEl.style.zIndex = ""; paint();
-      }
-      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
-    }
-    paint();
-    var foot = add(card, "div", "bento-foot");
-    var go = add(foot, "button", "bento-go");
-    syncGo(); // keep the "Add N to today" count honest after a swipe-delete shrinks sel
-    go.onclick = function () { ov.remove(); distributePlan(k, sel); };
-    xb.onclick = function () { ov.remove(); };
-    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    var rel = (k === todayK()) ? "today" : relLabel(k).toLowerCase();
+    // each block carries its own activity identity in .act; duration in .d = MINUTES (unit:'min')
+    var track = sel.map(function (a) { return { k: "a_" + uid(), d: a.mins, act: a, prio: a.prio }; });
+    function actLook(_k, it) { var a = (it && it.act) || {}, dom = a.domain || domainOf(a), D = DOM[dom] || DOM.focus, c = (dom === "drift") ? "#7a808c" : D.c; return { name: a.title, ti: tiClass(a), col: c, sc: c }; }
+    function actItem(x, keep) { var dom = x.domain || domainOf(x), D = DOM[dom] || DOM.focus; return { k: (keep && keep.k) || ("a_" + uid()), d: (keep && keep.d) || 30, prio: (keep && keep.prio) || 2, act: { title: x.title, domain: dom, color: x.color || D.c, catK: x.catK || null } }; }
+    programBuilder({
+      title: (k === todayK() ? "Arrange your day" : "Arrange " + rel),
+      track: track, unit: "min", lookup: actLook, pick: true,
+      playLabel: "Add {n} to " + rel, showPrio: true, customLength: true, addDur: 30,
+      onAdd: function (cb) { bentoPicker({ title: "Add to your day", onPick: function (x) { cb(actItem(x)); } }); },
+      onSwap: function (item, cb) { bentoPicker({ title: "Swap for…", onPick: function (x) { cb(actItem(x, item)); } }); },
+      onPick: function (items) { var out = (items || []).map(function (it) { var a = it.act || {}; a.mins = it.d; a.prio = it.prio || 2; return a; }); if (out.length) distributePlan(k, out); }
+    });
   }
   function suggestDay(k) {
     var T = [
@@ -10434,15 +10368,17 @@
   function programBuilder(cfg) {
     cfg = cfg || {};
     try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
-    var track = (cfg.track || []).map(function (t) { return { k: t.k, d: t.d, med: t.med }; });
+    var isMin = cfg.unit === "min"; // DAY-PLAN mode (David 2026-07-17): durations are MINUTES, blocks carry their own activity in .act + .prio; add/swap via bento; this makes the Arrange-your-day step literally the stack planner.
+    var track = (cfg.track || []).map(function (t) { return isMin ? { k: t.k, d: t.d, act: t.act, prio: t.prio } : { k: t.k, d: t.d, med: t.med }; });
     var isPick = !!cfg.pick; // pick mode (stack nesting): one "Use this" CTA, no save/play
     var sel = -1, PXMIN = 16, look = cfg.lookup || stackTool, POOL = cfg.pool || STACK_TOOLS.map(function (s) { return s.id; });
     // GROUP-BLOCK nesting (David 2026-07-15): in a STACK, the meditation block holds its own parts. By default any "meditate" block drills into the meditation editor (which is this same programBuilder, in pick mode) and stores the chosen sections on block.med. Meditation-editor instances (their own sections) and pick mode never nest.
     var canEP = cfg.canEditParts || function (b) { return !isPick && b.k === "meditate"; };
     var onEP = cfg.onEditParts || function (b, i, render) { medEditor({ pick: true, title: "What's in this meditation", track: b.med, onPick: function (mt) { b.med = (mt && mt.length) ? mt : null; if (cfg.onSave) cfg.onSave(track); render(); } }); };
-    function mins(d) { return Math.max(1, Math.round(d / 60)); }
+    function mins(d) { return isMin ? Math.max(1, Math.round(d)) : Math.max(1, Math.round(d / 60)); }
     function stripeOf(m) { var c = m.sc || m.col || "#9a7cff"; return "repeating-linear-gradient(45deg," + c + " 0 9px," + mixHex(c, "#160510", 0.16) + " 9px 18px)"; } // bright canon stripe (visible bands, per builder-LOCKED.html), not the low-contrast door mix
-    function blockH(d) { return Math.max(46, Math.round(d / 60 * PXMIN) + 16); } // chunky game-piece blocks; height still tracks duration
+    // DAY-PLAN min-thickness rule (David 2026-07-17): a block is never thinner than MIN_H (44px, always tappable); 15min maps to MIN_H, then +1.6px/min, capped 220px. Anything ≤15min (incl. a custom 5min) renders at the floor but stores its real length. Stack mode keeps the seconds scale.
+    function blockH(d) { if (isMin) { var mm = Math.max(1, Math.round(d)); return Math.round(Math.max(44, Math.min(220, 44 + Math.max(0, mm - 15) * 1.6))); } return Math.max(46, Math.round(d / 60 * PXMIN) + 16); } // chunky game-piece blocks; height tracks duration
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.style.justifyContent = "flex-start";
     ov.style.background = "radial-gradient(120% 70% at 50% 8%,#2e1850 0%,#1c0e30 46%,#120718 100%)";
     document.body.appendChild(ov);
@@ -10462,7 +10398,7 @@
         var hold = inHair ? null : setTimeout(function () { if (!mode) { mode = "reorder"; elm.style.transform = "scale(1.03)"; elm.style.boxShadow = "0 8px 22px rgba(0,0,0,.5)"; elm.style.zIndex = "6"; } }, 280);
         try { elm.setPointerCapture(e.pointerId); } catch (er) {}
         function mv(ev) { var dy = (ev.clientY != null ? ev.clientY : startY) - startY; if (Math.abs(dy) > 5) moved = true;
-          if (mode === "resize") { var nd = Math.max(30, Math.round((sd + dy / PXMIN * 60) / 15) * 15); track[i].d = nd; elm.style.height = blockH(nd) + "px"; totEl.textContent = mins(track.reduce(function (a, t) { return a + t.d; }, 0)) + " " + tr("min"); }
+          if (mode === "resize") { var nd = isMin ? Math.max(15, Math.round((sd + dy / 1.6) / 15) * 15) : Math.max(30, Math.round((sd + dy / PXMIN * 60) / 15) * 15); track[i].d = nd; elm.style.height = blockH(nd) + "px"; totEl.textContent = mins(track.reduce(function (a, t) { return a + t.d; }, 0)) + " " + tr("min"); }
           else if (mode === "reorder") { elm.style.transform = "translateY(" + dy + "px) scale(1.03)"; } }
         function up(ev) { if (hold) clearTimeout(hold); document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up);
           var dy = (ev.clientY != null ? ev.clientY : startY) - startY;
@@ -10478,7 +10414,7 @@
       totEl.textContent = mins(track.reduce(function (a, t) { return a + t.d; }, 0)) + " " + tr("min");
       add(tl, "div", null, "0").style.cssText = "position:absolute;left:0;top:2px;color:#7d6ea8;font-size:11px;font-weight:700;width:26px;text-align:right;";
       track.forEach(function (t, i) {
-        var m = look(t.k) || {}, stripe = stripeOf(m);
+        var m = look(t.k, t) || {}, stripe = stripeOf(m); // day-plan lookup reads t.act; stackTool ignores the 2nd arg
         if (i === sel) { // one card, two zones
           var card = add(tl, "div"); card.style.cssText = "position:relative;border:2.5px solid #160510;border-radius:16px;margin-bottom:9px;overflow:hidden;box-shadow:0 0 0 2px #ff5fa8,0 0 18px rgba(255,95,168,.42),0 3px 0 #160510;";
           var ch = add(card, "div"); ch.style.cssText = "position:relative;display:flex;align-items:center;padding:11px 13px;background:" + stripe + ";cursor:pointer;";
@@ -10487,6 +10423,20 @@
           var panel = add(card, "div"); panel.style.cssText = "background:#160b26;border-top:2.5px solid #160510;padding:11px 13px;";
           if (m.desc) add(panel, "div", null, esc(tr(m.desc))).style.cssText = "color:#efe6ff;font-size:12px;font-weight:600;line-height:1.42;";
           add(panel, "div", null, tr("drag the bottom edge to make it longer")).style.cssText = "color:#b9a6de;font-size:10.5px;font-weight:700;margin-top:6px;";
+          if (cfg.customLength) { // DAY-PLAN custom length — a ± stepper that can go SHORTER than the min visible thickness (block stays at the floor, stores the real minutes). David 2026-07-17
+            var lr = add(panel, "div"); lr.style.cssText = "display:flex;align-items:center;gap:10px;margin-top:11px;";
+            add(lr, "span", null, tr("Length")).style.cssText = "color:#b9a6de;font-size:12px;font-weight:800;flex:none;";
+            function _stp(sym) { var b = add(lr, "button"); b.setAttribute("style", "width:34px;height:34px;border-radius:10px;background:#2a1b48;border:2px solid #160510;color:#efe6ff;font-weight:800;font-size:18px;cursor:pointer;flex:none;font-family:inherit;"); b.textContent = sym; return b; }
+            var _mn = _stp("−"), _lv = add(lr, "span"); _lv.style.cssText = "color:#ffe3f1;font-weight:800;font-size:14px;min-width:52px;text-align:center;"; _lv.textContent = mins(t.d) + "m"; var _pl = _stp("+");
+            _mn.onclick = function () { t.d = Math.max(5, mins(t.d) - 5); sel = i; persist(); render(); };
+            _pl.onclick = function () { t.d = Math.min(480, mins(t.d) + 5); sel = i; persist(); render(); };
+          }
+          if (cfg.showPrio) { // DAY-PLAN importance — lives in the tap-open panel, OFF the collapsed bubble (David 2026-07-17)
+            var pr = add(panel, "div"); pr.style.cssText = "display:flex;align-items:center;gap:9px;margin-top:11px;";
+            add(pr, "span", null, tr("Importance")).style.cssText = "color:#b9a6de;font-size:12px;font-weight:800;flex:none;";
+            var pips = add(pr, "div"); pips.style.cssText = "display:flex;gap:6px;";
+            for (var pv = 1; pv <= 3; pv++) { (function (v) { var dt = add(pips, "i"); dt.style.cssText = "width:14px;height:14px;border-radius:50%;border:2px solid #160510;cursor:pointer;background:" + (((t.prio || 2) >= v) ? "#ff9a3a" : "#2a0d1c") + ";"; dt.onclick = function () { t.prio = v; sel = i; persist(); render(); }; })(pv); }
+          }
           if (canEP(t)) { var ep = add(panel, "button"); ep.setAttribute("style", "width:100%;margin-top:11px;text-align:center;padding:9px 0;border-radius:10px;font-weight:800;font-size:12.5px;background:#2a1b48;border:2px solid #160510;color:#c9a6ff;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font-family:inherit;"); ep.innerHTML = '<i class="ti ti-adjustments-horizontal"></i> ' + esc(tr(cfg.partsLabel || "Choose the parts")) + (t.med && t.med.length ? ' · ' + t.med.length : ' · default'); ep.onclick = function () { onEP(t, i, render); }; } // GROUP-BLOCK drill-in (David 2026-07-15): a block that holds parts (meditation) opens its own block editor here
           var acts = add(panel, "div"); acts.style.cssText = "display:flex;gap:8px;margin-top:11px;";
           var sw = add(acts, "button"); sw.setAttribute("style", "flex:1;text-align:center;padding:8px 0;border-radius:10px;font-weight:800;font-size:12px;background:#251640;border:2px solid #160510;color:#efe6ff;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit;"); sw.innerHTML = '<i class="ti ti-repeat"></i> ' + esc(tr("Swap")); sw.onclick = function () { openTray(i); };
@@ -10500,8 +10450,11 @@
       });
       var empty = add(tl, "div"); empty.style.cssText = "position:relative;border:2px dashed #ff5fa0;border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:center;gap:8px;color:#ff9dc6;font-weight:800;font-size:13.5px;background:repeating-linear-gradient(45deg,rgba(255,95,160,.15) 0 7px,rgba(255,95,160,.04) 7px 14px);cursor:pointer;";
       empty.innerHTML = '<i class="ti ti-plus"></i> ' + esc(tr(cfg.poolLabel || "Add a block")); empty.onclick = function () { openTray(-1); };
+      if (isPick && typeof use !== "undefined" && use && /\{n\}/.test(cfg.playLabel || "")) use.innerHTML = '<i class="ti ti-check"></i> ' + esc(tr(cfg.playLabel.replace("{n}", track.length))); // keep the "Add N to today" count live
     }
     function openTray(replaceIdx) { // pick a block: append (replaceIdx<0) or swap into replaceIdx
+      if (cfg.onAdd && replaceIdx < 0) { cfg.onAdd(function (item) { track.push(item); sel = track.length - 1; persist(); render(); }); return; } // DAY-PLAN: add via bentoPicker
+      if (cfg.onSwap && replaceIdx >= 0) { cfg.onSwap(track[replaceIdx], function (item) { track[replaceIdx] = item; sel = replaceIdx; persist(); render(); }); return; } // DAY-PLAN: swap via bentoPicker
       var t2 = add(document.body, "div"); t2.style.cssText = "position:fixed;inset:0;z-index:60;background:rgba(8,4,12,.66);display:flex;align-items:flex-end;";
       t2.onclick = function (e) { if (e.target === t2) t2.remove(); };
       var sheet = add(t2, "div"); sheet.style.cssText = "width:100%;max-height:74vh;overflow-y:auto;background:#1c0e30;border-top-left-radius:20px;border-top-right-radius:20px;border-top:2.5px solid #160510;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 16px);font-family:'Jost',var(--bub),sans-serif;";
@@ -10523,7 +10476,7 @@
       setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 60);
     }
     if (isPick) { // PICK MODE (stack nesting): the only CTA hands the chosen parts back and closes
-      var use = add(foot, "button"); use.setAttribute("style", "display:block;width:calc(100% - 28px);margin:8px 14px 0;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:14px;padding:12px;font-weight:800;font-size:14.5px;text-align:center;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:'Jost',var(--bub),sans-serif;"); use.innerHTML = '<i class="ti ti-check"></i> ' + esc(tr(cfg.playLabel || "Use this")); use.onclick = function () { if (!track.length) { toast("add a part first"); return; } persist(); if (ov.parentNode) ov.remove(); if (cfg.onPick) cfg.onPick(track.map(function (t) { return { k: t.k, d: t.d }; })); };
+      var use = add(foot, "button"); use.setAttribute("style", "display:block;width:calc(100% - 28px);margin:8px 14px 0;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:14px;padding:12px;font-weight:800;font-size:14.5px;text-align:center;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:'Jost',var(--bub),sans-serif;"); use.innerHTML = '<i class="ti ti-check"></i> ' + esc(tr((cfg.playLabel || "Use this").replace("{n}", track.length))); use.onclick = function () { if (!track.length) { toast(isMin ? "add an activity first" : "add a part first"); return; } persist(); if (ov.parentNode) ov.remove(); if (cfg.onPick) cfg.onPick(isMin ? track.slice() : track.map(function (t) { return { k: t.k, d: t.d }; })); }; // DAY-PLAN hands back the FULL items (.act/.prio/.d); stack mode strips to {k,d}
     } else {
       if (cfg.guidance) { // GUIDANCE PRESET (meditation): how spacious the sit runs — length sets the default, this overrides. Tap the active one again for auto-from-length.
         var gr = add(foot, "div"); gr.style.cssText = "display:flex;align-items:center;gap:6px;margin:10px 14px 0;";
