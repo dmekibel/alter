@@ -3,3 +3,13 @@
 node_modules/
 scratchpad/
 *.tmp
+
+# Investor decks — private financials, never commit to public repo
+_pitch/
+
+# local research shelf, never commit
+_books/
+
+# secrets — API keys, never commit
+_dev/.env
+*.env

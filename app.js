@@ -150,6 +150,12 @@
     var synth = window.speechSynthesis || null;
     var supported = !!synth && typeof window.SpeechSynthesisUtterance === "function";
     var voices = [], chosen = null, unlocked = false, curU = null, wd = null, polls = 0, vaudio = null, vset = null, vprimed = false, curSrc = null, bufCache = {}, playGen = 0;
+    // GENDER VOICE PICK (David 2026-07-19): two full ElevenLabs banks — dave/ + millie/ — each with its own manifest under assets/voice/<name>/. The picked bank layers OVER the root bank; anything a bank lacks (e.g. RU clips) still resolves from root, so nothing goes silent. Cache is namespaced by bank so switching gender never serves the wrong voice's buffer.
+    var VOICE_PICK = "dave", gvset = null, gdir = null;
+    function vdir() { return gdir; }
+    function vpath(key) { return (gdir && gvset && gvset[key]) ? ("assets/voice/" + gdir + "/" + key + ".mp3") : ("assets/voice/" + key + ".mp3"); }
+    function ckey(key) { return (gdir && gvset && gvset[key]) ? (gdir + ":" + key) : key; } // bufCache namespace
+    function hasKey(key) { return !!((gvset && gvset[key]) || (vset && vset[key])); }
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
     function loadVoices() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
@@ -159,6 +165,12 @@
     } } catch (e) {} return text; }
     function vhash(text) { var n = String(vline(text)).toLowerCase().replace(/[^a-z0-9а-яё]/g, ""), h = 5381, i; for (i = 0; i < n.length; i++) h = ((h * 33) ^ n.charCodeAt(i)) >>> 0; return h.toString(16); }
     function loadManifest() { try { var cb = ""; try { var sc = document.querySelector('script[src*="app.js"]'); var m = sc && (sc.getAttribute("src") || "").match(/v=(\d+)/); cb = m ? "?v=" + m[1] : "?t=" + (window.performance && performance.timeOrigin ? Math.floor(performance.timeOrigin) : ""); } catch (e) {} fetch("assets/voice/manifest.json" + cb, { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { vset = {}; a.forEach(function (k) { vset[k] = 1; }); } }).catch(function () {}); } catch (e) {} } // FRESH manifest every build (David 2026-07-01): force-cache served a STALE manifest missing newer lines → they showed as no-clip and went silent. Cache-bust by app version + no-cache revalidation; the hash-named mp3s stay force-cached (immutable).
+    function cacheBust() { try { var sc = document.querySelector('script[src*="app.js"]'); var m = sc && (sc.getAttribute("src") || "").match(/v=(\d+)/); return m ? "?v=" + m[1] : ""; } catch (e) { return ""; } }
+    function loadGenderBank(name) { // load assets/voice/<name>/manifest.json → gvset+gdir; on any failure, gdir stays null (root bank still serves)
+      if (!name) { gdir = null; gvset = null; return; }
+      try { fetch("assets/voice/" + name + "/manifest.json" + cacheBust(), { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { var s = {}; a.forEach(function (k) { s[k] = 1; }); gvset = s; gdir = name; } else { gdir = null; gvset = null; } }).catch(function () { gdir = null; gvset = null; }); } catch (e) { gdir = null; gvset = null; }
+    }
+    function setVoice(name) { name = (name === "millie") ? "millie" : "dave"; VOICE_PICK = name; loadGenderBank(name); } // switch banks; buffers re-decode lazily from the new folder (namespaced cache)
     function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
       if (chosen) return chosen;
@@ -171,6 +183,7 @@
     }
     function initVoices() {
       loadManifest();
+      try { var vp = (typeof S !== "undefined" && S && S.voicePick === "millie") ? "millie" : "dave"; VOICE_PICK = vp; loadGenderBank(vp); } catch (e) { loadGenderBank("dave"); }
       if (!supported) return; loadVoices();
       try { synth.addEventListener("voiceschanged", loadVoices); } catch (e) { synth.onvoiceschanged = loadVoices; }
       var p = setInterval(function () { loadVoices(); if (voices.length || ++polls > 12) clearInterval(p); }, 250); // ~3s
@@ -181,6 +194,16 @@
       try { var ctx = sharedAudioCtx(); if (ctx && !vprimed) { var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); vprimed = true; } } catch (e) {} // arm the channel inside the gesture. (No permanent keep-alive tone — bad practice: battery + hijacks the audio session. The composed player schedules all clips up front while the context is awake, so it needs no keep-alive.)
     }
     function clearWd() { if (wd) { clearTimeout(wd); wd = null; } }
+    // Short gain envelope so a clip never starts/ends on a hard sample edge (David 2026-07-19: "sharp cut-on instead of a fade"). Applies to every decoded-buffer play path, so it also smooths the old edge-tts clips. FA≈18ms in, ≈35ms out — inaudible as a fade, kills the click.
+    function fadeGain(ctx, g, startT, vol, durSec) {
+      var FA = 0.018, FO = 0.035;
+      try {
+        g.gain.cancelScheduledValues(startT);
+        g.gain.setValueAtTime(0.0001, startT);
+        g.gain.linearRampToValueAtTime(vol, startT + FA);
+        if (durSec && durSec > FA + FO) { g.gain.setValueAtTime(vol, startT + durSec - FO); g.gain.linearRampToValueAtTime(0.0001, startT + durSec); }
+      } catch (e) { g.gain.value = vol; }
+    }
     function chunk(text) {
       if (text.length <= 200) return [text];
       var parts = text.match(/[^.!?]+[.!?]*\s*/g) || [text], out = [], buf = "", k;
@@ -210,7 +233,7 @@
       if (!text) return; opts = opts || {}; stop();
       function fin() { if (opts.onend) try { opts.onend(); } catch (e) {} }
       if (!vset) { dbg("no-manifest"); fin(); return; }                              // manifest not loaded yet → silent
-      var key = vhash(text); if (!vset[key]) { dbg("no-clip:" + key); fin(); return; }  // no clip for this exact line → STAY SILENT, never the robotic browser TTS (David 2026-07-13: "I never want to fall back to TTS, it sounds horrible — record every line"). The real voice comes from generated neural clips (gen-voice), not speechSynthesis.
+      var key = vhash(text); if (!hasKey(key)) { dbg("no-clip:" + key); fin(); return; }  // no clip for this exact line → STAY SILENT, never the robotic browser TTS (David 2026-07-13: "I never want to fall back to TTS, it sounds horrible — record every line"). The real voice comes from generated neural clips (gen-voice), not speechSynthesis.
       var ctx = sharedAudioCtx(); if (!ctx) { dbg("no-audiocontext"); fin(); return; }
       var vol = opts.volume != null ? opts.volume : 1, myGen = ++playGen;
       function playBuf(buf) {
@@ -219,17 +242,18 @@
           if (myGen !== playGen) return;
           try {
             var src = ctx.createBufferSource(); src.buffer = buf;
-            var g = ctx.createGain(); g.gain.value = vol; src.connect(g); g.connect(voiceBus() || ctx.destination);
+            var g = ctx.createGain(); src.connect(g); g.connect(voiceBus() || ctx.destination);
+            var t0 = ctx.currentTime; fadeGain(ctx, g, t0, vol, buf.duration);
             src.onended = function () { if (src === curSrc) curSrc = null; fin(); };
             curSrc = src; src.start(0); dbg("PLAY ctx:" + ctx.state + " v:" + vol.toFixed(2));
           } catch (e) { dbg("start-EXC:" + (e && e.name)); fin(); }
         }
         if (ctx.state === "suspended") { dbg("resuming…"); var r; try { r = ctx.resume(); } catch (e) {} if (r && r.then) r.then(go, go); else go(); } else go(); // AWAIT resume before start — starting into a suspended context plays into silence (the other half of the meditation-silence bug)
       }
-      if (bufCache[key]) { playBuf(bufCache[key]); return; }
-      fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
+      if (bufCache[ckey(key)]) { playBuf(bufCache[ckey(key)]); return; }
+      fetch(vpath(key), { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
         .then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); })
-        .then(function (buf) { bufCache[key] = buf; playBuf(buf); })
+        .then(function (buf) { bufCache[ckey(key)] = buf; playBuf(buf); })
         .catch(function () { dbg("decode-FAIL:" + key); fin(); });
     }
     function stop() { playGen++; if (curSrc) { try { curSrc.onended = null; curSrc.stop(0); } catch (e) {} curSrc = null; } clearWd(); curU = null; if (supported) { try { synth.cancel(); } catch (e) {} } }
@@ -237,32 +261,32 @@
     function getBuffer(text) {
       return new Promise(function (resolve) {
         if (!text || !vset) { resolve(null); return; }
-        var key = vhash(text); if (!vset[key]) { resolve(null); return; }
-        if (bufCache[key]) { resolve(bufCache[key]); return; }
+        var key = vhash(text); if (!hasKey(key)) { resolve(null); return; }
+        if (bufCache[ckey(key)]) { resolve(bufCache[ckey(key)]); return; }
         var ctx = sharedAudioCtx(); if (!ctx) { resolve(null); return; }
-        fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
+        fetch(vpath(key), { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
           .then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); })
-          .then(function (buf) { bufCache[key] = buf; resolve(buf); })
+          .then(function (buf) { bufCache[ckey(key)] = buf; resolve(buf); })
           .catch(function () { resolve(null); });
       });
     }
-    function getBufferSync(text) { if (!text || !vset) return null; var key = vhash(text); return bufCache[key] || null; } // already-decoded buffer or null — lets the player START in the SAME gesture (no async .then) when clips were pre-warmed on the config screen
+    function getBufferSync(text) { if (!text || !vset) return null; var key = vhash(text); return bufCache[ckey(key)] || null; } // already-decoded buffer or null — lets the player START in the SAME gesture (no async .then) when clips were pre-warmed on the config screen
     function warm(texts) { try { (texts || []).forEach(function (t) { getBuffer(t); }); } catch (e) {} } // pre-decode a set of lines into the cache (call while the user is still choosing settings)
-    function decodeKey(key) { if (bufCache[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return; fetch("assets/voice/" + key + ".mp3", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (buf) { bufCache[key] = buf; }).catch(function () {}); }
-    function warmAll() { if (!vset) return; var keys = Object.keys(vset), i = 0; function batch() { var n = 0; while (i < keys.length && n < 8) { decodeKey(keys[i++]); n++; } if (i < keys.length) setTimeout(batch, 120); } batch(); } // pre-decode the WHOLE voice bank (batched, ~2s) so every tool launched from the toolbox has cached clips → its audio can start inside the launch tap (iOS gesture rule). David 2026-07-01: "fix all the audio."
-    function scheduleClip(text, atSec, vol) { try { var ctx = sharedAudioCtx(); var buf = getBufferSync(text); if (!ctx || !buf) return null; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } var src = ctx.createBufferSource(); src.buffer = buf; var g = ctx.createGain(); g.gain.value = vol != null ? vol : 1; src.connect(g); g.connect(voiceBus() || ctx.destination); src.start(ctx.currentTime + Math.max(0, atSec)); return src; } catch (e) { return null; } } // schedule a cached clip at a future time — called UP FRONT inside a start gesture so timer-paced tools (breath/tapping) speak reliably (no per-cue timer play)
+    function decodeKey(key) { if (bufCache[ckey(key)]) return; var ctx = sharedAudioCtx(); if (!ctx) return; fetch(vpath(key), { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (buf) { bufCache[ckey(key)] = buf; }).catch(function () {}); }
+    function warmAll() { if (!vset) return; var keys = Object.keys(gvset || vset), i = 0; function batch() { var n = 0; while (i < keys.length && n < 8) { decodeKey(keys[i++]); n++; } if (i < keys.length) setTimeout(batch, 120); } batch(); } // pre-decode the WHOLE voice bank (batched, ~2s) so every tool launched from the toolbox has cached clips → its audio can start inside the launch tap (iOS gesture rule). David 2026-07-01: "fix all the audio."
+    function scheduleClip(text, atSec, vol) { try { var ctx = sharedAudioCtx(); var buf = getBufferSync(text); if (!ctx || !buf) return null; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } var src = ctx.createBufferSource(); src.buffer = buf; var g = ctx.createGain(); src.connect(g); g.connect(voiceBus() || ctx.destination); var at = ctx.currentTime + Math.max(0, atSec); fadeGain(ctx, g, at, vol != null ? vol : 1, buf.duration); src.start(at); return src; } catch (e) { return null; } } // schedule a cached clip at a future time — called UP FRONT inside a start gesture so timer-paced tools (breath/tapping) speak reliably (no per-cue timer play)
     // COLD-CACHE FALLBACK (David 2026-07-02): scheduleClip needs an already-decoded buffer; if warmAll() hasn't reached this line yet (fresh open, fast tap-through), it silently returns null and the whole session goes voiceless. Fall back to the async decode and still land it near its scheduled offset.
     function scheduleClipAsync(text, atSec, vol, t0) {
       var src = scheduleClip(text, atSec, vol); if (src) return src;
       try {
         var ctx = sharedAudioCtx(); if (!ctx) return null; var start = t0 != null ? t0 : ctx.currentTime;
-        getBuffer(text).then(function (buf) { if (!buf) return; try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); g2.gain.value = vol != null ? vol : 1; s2.connect(g2); g2.connect(voiceBus() || ctx.destination); s2.start(ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime)); } catch (e) {} });
+        getBuffer(text).then(function (buf) { if (!buf) return; try { var s2 = ctx.createBufferSource(); s2.buffer = buf; var g2 = ctx.createGain(); s2.connect(g2); g2.connect(voiceBus() || ctx.destination); var at2 = ctx.currentTime + Math.max(0, start + atSec - ctx.currentTime); fadeGain(ctx, g2, at2, vol != null ? vol : 1, buf.duration); s2.start(at2); } catch (e) {} });
       } catch (e) {}
       return null;
     }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return !!(vset && vset[vhash(t)]); } };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasKey(vhash(t)); }, setVoice: setVoice, voicePick: function () { return VOICE_PICK; } };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -10106,6 +10130,17 @@
     function vxPaint() { vxRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("Guide's voice") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("the spoken guide during a session") + '</span></span><i class="ti ' + (vxOn() ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + (vxOn() ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
     vxPaint();
     vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
+    // GENDER VOICE PICK (David 2026-07-19): two full guardian banks — Dave + Millie. Tap to switch; a sample line plays so you hear it. Persists as S.voicePick.
+    add(card, "div", null, tr("Guide")).style.cssText = "font-size:13.5px;font-weight:700;margin:16px 0 6px;";
+    var gvRow = add(card, "div"); gvRow.style.cssText = "display:flex;gap:8px;";
+    var gvChips = [];
+    function gvPaint() { var cur = (S.voicePick === "millie") ? "millie" : "dave"; gvChips.forEach(function (c) { var on = c.dataset.v === cur; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; c.style.color = "#f0e6ef"; }); }
+    [["dave", tr("Dave")], ["millie", tr("Millie")]].forEach(function (o) {
+      var b = add(gvRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
+      gvChips.push(b);
+      b.onclick = function () { S.voicePick = o[0]; save(); try { TTS.setVoice(o[0]); TTS.unlock(); } catch (e) {} gvPaint(); try { setTimeout(function () { TTS.speak("Rest here a moment longer", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 260); } catch (e) {} };
+    });
+    gvPaint();
     slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
     // BACKGROUND BED — categorized so a sound is quick to pick (David 2026-07-10). Selecting one live-swaps the running player's bed via _activeBed.
     add(card, "div", null, tr("Background sound")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 4px;";
