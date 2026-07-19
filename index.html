@@ -29,6 +29,11 @@
   .casc-blk{ animation:cascBlk var(--dur-enter) var(--ease-spring) both; }
   @keyframes jpPop{ from{ opacity:0; transform:scale(.2); } to{ opacity:1; transform:none; } } /* journey STEPPING-STONES: each node bubble pops in, staggered (Duolingo path) */
   .jp-pop{ animation:jpPop .5s var(--ease-spring) both; }
+  /* HOLD-TO-COMMIT dopamine arc (BUILD 1, 2026-07-19): gold flash + particle burst at the moment a hold completes; paint-only, fixed layer, never touches scroll/gesture math */
+  .chg-flash{ position:fixed; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:radial-gradient(circle, rgba(255,231,160,.95) 0%, rgba(255,196,31,.6) 35%, rgba(255,196,31,0) 70%); pointer-events:none; z-index:9999; animation:chgFlash .62s ease-out forwards; }
+  @keyframes chgFlash{ from{ transform:scale(.4); opacity:1; } to{ transform:scale(9); opacity:0; } }
+  .chg-spark{ position:fixed; width:7px; height:7px; margin:-3.5px 0 0 -3.5px; border-radius:50%; background:#ffd24a; box-shadow:0 0 6px rgba(255,210,74,.9); pointer-events:none; z-index:9999; }
+  .chg-metal{ filter:drop-shadow(0 0 8px rgba(255,210,74,.9)) brightness(1.25) saturate(1.2); transition:filter .12s; }
   #journeyPath.jp-leaving{ animation:jpLeave .28s ease forwards; } /* crossfade the journey out to reveal the planner cleanly */
   @keyframes jpLeave{ from{ opacity:1; } to{ opacity:0; } }
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .sfc-reveal, .casc-item, .casc-blk{ animation:none !important; } }
@@ -2786,6 +2791,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1121"></script>
+  <script src="app.js?v=1122"></script>
 </body>
 </html>

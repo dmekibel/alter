@@ -2,6 +2,13 @@
 
 A guardian-angel life-sim PWA (pixel-art planner + tracker + game). Single user: David. iPhone, installed to home screen. Vision lives in `AUDIT.md`; current state in the **newest** `TRACKER-HANDOFF-*.md`. **This file is the rules. Read it first, every session — it exists so you don't re-derive them from 30KB of handoffs and re-break the same things.**
 
+## Writing copy (HARD RULE)
+Before writing ANY user-facing line (tool cards, pools, onboarding, journey, toasts, lessons), load `_specs/SCRIPT-ENGINE.md` and run its procedure. It is the capstone: it orchestrates `_specs/VOICE-BIBLE.md` (register + craft devices) and `_specs/WRITING-SYSTEM.md` (anti-AI gate), grounded in David's own `fieldguide/.../WRITING-CRAFT.md` + `balance/.../AI-TELL-DETECTOR.md`, and adds the thesis every line must carry, the teaching method, and the adaptive axes.
+
+**No line reaches David until it passes BOTH automatic gates (the author never self-approves, that is why the docs alone failed):**
+1. **Gate 1, deterministic:** `python3 _dev/copy-audit.py "the line"` (or `--file lines.txt`) must pass clean. Add any new slipped-through pattern to it.
+2. **Gate 2, adversarial judge:** spawn a FRESH cheap-model agent that FIRST reads `_specs/COPY-ANCHORS.md` (David's rated KILLED/EPIC lines) and scores each candidate BY COMPARISON to those anchors, then kills anything resembling a KILLED pattern (forced analogy, tease, flourish-ending, stiff cadence, meditation-madness, vague pronoun, generic-category beat, shallow, cheesy). An abstract rubric alone fails: the LLM judge shares the writer's biases. **Append every line David rejects to COPY-ANCHORS.md** as a KILLED anchor with its pattern. Prompt template in SCRIPT-ENGINE "THE AUDIT".
+
 ---
 
 ## Source of truth — edit ONLY these
@@ -47,7 +54,7 @@ If a change can't be device-confirmed this session, label it **DEVICE-UNTESTED**
 There are 16 planning docs and 3 rebuild cycles already. Don't add a 17th. Update the newest `TRACKER-HANDOFF-*.md` in place; the rest are archive. A new doc is justified only when David asks for one.
 
 ## Fable 5 usage (~2× Opus price — cheaper per SOLVED task, not per token)
-0. **I OWN THE MODEL-ROUTING CALL (David 2026-07-02).** At the start of any sizable task, if the session model is mismatched to the work, SAY SO before building: routine build/fix day → recommend `/model claude-opus-4-8`; regression-zone / multi-region refactor / deep design synthesis → Fable is worth it. Route subagent/workflow work to cheaper models via per-agent overrides regardless of session model. David should never discover the mismatch himself.
+0. **NO BUILDING ON FABLE (David 2026-07-18, supersedes the softer 2026-07-02 rule).** Fable sessions = thinking, planning, design synthesis, brainstorming ONLY. ALL building happens on Opus, including regression-zone work, unless David SPECIFICALLY says "build with Fable" in that session. If David asks for a build while on Fable: produce the spec here, tell him to run it on `/model claude-opus-4-8`. Same for chat visuals/widget mockups (David 2026-07-18): Fable never renders widgets (credit burn); Fable writes the design brief + beauty/cleverness bar, OPUS renders the widgets in chat and builds. I still own the routing call and say so before any sizable task; route subagent/workflow work to cheaper models via per-agent overrides regardless of session model.
 1. **Effort = the throttle.** Default LOW (bug fixes, CSS/palette, version bumps, ship-loop, handoffs, reformatting). HIGH only for: the timeline/gesture regression zone, multi-region refactors (menu unification, killing innerHTML wipes), REBUILD-PLAN.md work. Can't say WHY it needs high? It doesn't.
 2. **One-shot with a spec.** Non-trivial task → 10 lines first (what changes, which regions/functions, which regression-contract items, how verified), then execute ONCE. No blind edit-check-edit loops.
 3. **Batch, don't nibble.** Read an app.js region once; do ALL related edits in that pass. Group small fixes into one context (separate commits ok).

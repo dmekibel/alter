@@ -1083,17 +1083,14 @@
         add(sealZone, "div", "ob-sb", tr("One rule between us: I will never lie to you. Hold — and promise the same, for") + " " + days + " " + tr("days.")).style.cssText = "text-align:center;margin-top:16px;font-weight:700;color:#ffe3f1;";
         var pw = add(sealZone, "div", "ob-pwrap"); pw.style.touchAction = "none";
         pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffd24a" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-        var arc = pw.querySelector(".parc"), holdT = null, done = false;
-        function rel() { if (done) return; clearTimeout(holdT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT = setTimeout(function () { done = true;
+        var arc = pw.querySelector(".parc");
+        chargeHold(pw, arc, 1300, function () { // BUILD 1: the reusable dopamine hold (shake + rising ticks + gold flash + burst); keeps its own earn/celebrate so gems fly once
           S.profile = S.profile || {}; S.profile.pact = { ts: Date.now(), days: days };
           if (S.guide && S.guide.fd) S.guide.fd.sp = 1;
-          try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {}
-          try { earn(10, { label: "first-commit" }); celebrateGated("#ffd24a", 1); } catch (e) {}
+          try { earn(10, { label: "first-commit", srcEl: pw }); celebrateGated("#ffd24a", 1); } catch (e) {}
           save(); ov.remove();
           try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else { c.remove(); try { drawJourney(true); } catch (e) {} } } catch (e) { try { drawJourney(true); } catch (e2) {} } // Initiate AND Celebrate — the campfire card (SN-239) names why re-committing daily is the design
-        }, 1300); });
-        pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+        });
         add(sealZone, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
       }
       [[2, "Baby steps", "#48b8e0"], [5, "Strong start", "#46e2a4"], [7, "Serious", "#ffd24a"], [14, "Unstoppable", "#ff5fa8"]].forEach(function (o) {
@@ -7710,6 +7707,25 @@
   } catch (e) {} } // one instrument family, C pentatonic, length-capped per tier — everything in the same key so rewards always harmonize
   function hapt(tier) { try { if (navigator.vibrate) navigator.vibrate(tier === 1 ? 8 : tier === 2 ? [8, 24, 8] : tier === 3 ? 12 : tier === 4 ? [8, 40, 8, 40] : [10, 60, 10]); } catch (e) {} }
   function rewardTarget() { var j = el("jpSpark"); if (j && document.body.classList.contains("journey-open")) return j; var s = el("spark"); if (s && s.offsetParent) return s; return null; } // the visible coin counter this pane owns
+  // ===== HOLD-TO-COMMIT (BUILD 1, 2026-07-19): the reusable dopamine arc for every hold (seal/claim/charge/catch). pw = the .ob-pwrap element, arc = its filling .parc circle, ms = hold duration, onComplete = the caller's payload (keeps its OWN earn/celebrate so gems don't double-fly). No navigator.vibrate reliance (iOS PWA has none) — the rising ticks + shake ARE the haptic. Preview LIES about the press-hold gesture; feel is DEVICE-UNTESTED. =====
+  function chargeHold(pw, arc, ms, onComplete) { try {
+    ms = ms || 1300; var grip = pw.querySelector(".pfp") || pw, raf = null, held = false, t0 = 0, dashLen = 402;
+    try { var c = arc && arc.getTotalLength ? arc.getTotalLength() : 0; if (c) dashLen = c; } catch (e) {}
+    function ticks() { try { var ac = sharedAudioCtx(); if (!ac || ac.state !== "running") return; var n = 12, bus = (typeof bgBus === "function" && bgBus()) || ac.destination, base = 300;
+      for (var i = 0; i < n; i++) { (function (i) { var at = ac.currentTime + (ms / 1000) * Math.pow((i + 1) / n, 1.5); var o = ac.createOscillator(), g = ac.createGain(); o.type = "triangle"; o.frequency.value = base * Math.pow(1.075, i); o.connect(g); g.connect(bus); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.04 + i * 0.006, at + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.09); o.start(at); o.stop(at + 0.13); })(i); } } catch (e) {} }
+    function shake() { function step() { var p = Math.min(1, (Date.now() - t0) / ms), amp = p * p * 3.4; grip.style.transform = "translate(" + ((Math.random() * 2 - 1) * amp).toFixed(1) + "px," + ((Math.random() * 2 - 1) * amp).toFixed(1) + "px)"; if (!held && p < 1) raf = requestAnimationFrame(step); else grip.style.transform = ""; } raf = requestAnimationFrame(step); }
+    function pop() { try { var r = pw.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var fl = document.createElement("div"); fl.className = "chg-flash"; fl.style.left = cx + "px"; fl.style.top = cy + "px"; document.body.appendChild(fl); setTimeout(function () { try { fl.remove(); } catch (e) {} }, 640);
+      if (grip.classList) { grip.classList.add("chg-metal"); }
+      for (var i = 0; i < 12; i++) { (function (i) { var s = document.createElement("div"); s.className = "chg-spark"; s.style.left = cx + "px"; s.style.top = cy + "px"; document.body.appendChild(s); var a = (Math.PI * 2 / 12) * i, d = 42 + Math.random() * 28;
+        if (s.animate) { s.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: "translate(" + (Math.cos(a) * d).toFixed(0) + "px," + (Math.sin(a) * d).toFixed(0) + "px) scale(0)", opacity: 0 }], { duration: 620, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = function () { try { s.remove(); } catch (e) {} }; } else setTimeout(function () { try { s.remove(); } catch (e) {} }, 620); })(i); } } catch (e) {} }
+    function down(ev) { try { ev.preventDefault(); } catch (e) {} if (pw._chgDone) return; held = false; t0 = Date.now();
+      if (arc) { arc.style.transition = "stroke-dashoffset " + (ms / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); }
+      ticks(); shake();
+      pw._chgT = setTimeout(function () { pw._chgDone = true; pop(); try { onComplete(); } catch (e) {} }, ms); }
+    function rel() { if (pw._chgDone) return; clearTimeout(pw._chgT); if (raf) cancelAnimationFrame(raf); grip.style.transform = ""; if (grip.classList) grip.classList.remove("chg-metal"); if (arc) { arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = String(dashLen); } }
+    pw.addEventListener("pointerdown", down); pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+  } catch (e) {} }
   function flyPoints(x, y, n, color) { try {
     var f = document.createElement("div"); f.className = "fly-n"; f.textContent = "+" + n; if (color) f.style.color = color; f.style.left = x + "px"; f.style.top = y + "px"; document.body.appendChild(f);
     if (!f.animate) { setTimeout(function () { f.remove(); }, 700); return; }
