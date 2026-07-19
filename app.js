@@ -8058,6 +8058,55 @@
     calm478: { name: "4-7-8 breath", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
       ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] }
   };
+  // ===== BREATH SOUNDS (BUILD, 2026-07-19): ten selectable cue-sets (S.breathSound). "hit" = a soft sound at each phase turn; "sustain" = a continuous tone that glides with the breath. All kept VERY quiet — a background guide, never attention-grabbing. Holds mostly stay silent (silence IS the hold cue); "bells3" is the exception that marks every stage. Built on the shared AudioContext (never new AudioContext). =====
+  function _bsPluck(ctx, out, freq, t0, dur, vol, type) { try { var o = ctx.createOscillator(), g = ctx.createGain(); o.type = type || "sine"; o.frequency.value = freq; o.connect(g); g.connect(out); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.start(t0); o.stop(t0 + dur + 0.06); } catch (e) {} }
+  var BREATH_SOUNDS = {
+    silent: { name: "Silent", hit: function () {} },
+    bell:   { name: "Soft bell",   hit: function (k, ctx, out) { var t = ctx.currentTime, ns = (k === "in" || k === "in2") ? [523.25, 659.25] : (k === "out" ? [440, 329.63] : null); if (!ns) return; ns.forEach(function (f, i) { _bsPluck(ctx, out, f, t + i * 0.11, 1.3, 0.05, "sine"); }); } },
+    bells3: { name: "Three bells", hit: function (k, ctx, out) { var t = ctx.currentTime, f = (k === "in" || k === "in2") ? 659.25 : k === "hold" ? 523.25 : k === "out" ? 392 : k === "rest" ? 329.63 : 0; if (!f) return; _bsPluck(ctx, out, f, t, 1.4, 0.045, "sine"); _bsPluck(ctx, out, f * 2, t, 0.5, 0.012, "sine"); } },
+    bowl:   { name: "Singing bowl", hit: function (k, ctx, out) { if (k === "hold" || k === "rest") return; var t = ctx.currentTime, base = (k === "in" || k === "in2") ? 288 : 216; [1, 2.7, 4.2].forEach(function (m, i) { _bsPluck(ctx, out, base * m, t, 2.6 - i * 0.5, (i === 0 ? 0.05 : 0.014), "sine"); }); } },
+    chime:  { name: "Chime",       hit: function (k, ctx, out) { if (k === "hold" || k === "rest") return; var t = ctx.currentTime, up = (k === "in" || k === "in2"), seq = up ? [659.25, 783.99, 987.77] : [659.25, 523.25, 392]; seq.forEach(function (f, i) { _bsPluck(ctx, out, f, t + i * 0.08, 0.9, 0.03, "triangle"); }); } },
+    wood:   { name: "Wood tick",   hit: function (k, ctx, out) { if (k === "hold" || k === "rest") return; var t = ctx.currentTime; _bsPluck(ctx, out, (k === "in" || k === "in2") ? 320 : 200, t, 0.09, 0.06, "square"); } },
+    harp:   { name: "Harp",        hit: function (k, ctx, out) { if (k === "hold" || k === "rest") return; var t = ctx.currentTime, up = (k === "in" || k === "in2"), seq = up ? [392, 523.25, 659.25, 783.99] : [659.25, 523.25, 392, 293.66]; seq.forEach(function (f, i) { _bsPluck(ctx, out, f, t + i * 0.07, 0.5, 0.03, "triangle"); }); } },
+    flute:  { name: "Flute glide", sustain: "flute" },
+    chord:  { name: "Breathing chord", sustain: "chord" },
+    ocean:  { name: "Ocean", sustain: "ocean" }
+  };
+  var BREATH_SOUND_KEYS = ["chord", "flute", "bell", "bells3", "bowl", "chime", "harp", "wood", "ocean", "silent"];
+  // build a sustained breath sound; returns { setPhase(kind, durSec), stop() } or null
+  function makeBreathSustain(key, ctx) { try {
+    var out = bgBus() || ctx.destination, master = ctx.createGain(); master.gain.value = 0; master.connect(out);
+    if (key === "chord") {
+      var base = [130.81, 196.0, 261.63], oscs = []; master.gain.value = 1;
+      var pad = ctx.createGain(); pad.gain.value = 0.006; pad.connect(master);
+      [[130.81, "sine", 1], [196.0, "sine", 0.4], [261.63, "triangle", 0.14]].forEach(function (o) { var os = ctx.createOscillator(), g = ctx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g.gain.value = o[2]; os.connect(g); g.connect(pad); os.start(); oscs.push(os); });
+      return { setPhase: function (kind, t) { var now = ctx.currentTime; pad.gain.cancelScheduledValues(now); pad.gain.setValueAtTime(pad.gain.value, now);
+        if (kind === "in" || kind === "in2") pad.gain.linearRampToValueAtTime(kind === "in2" ? 0.07 : 0.06, now + t * 0.95); else if (kind === "out") pad.gain.linearRampToValueAtTime(0.018, now + t); else pad.gain.linearRampToValueAtTime(kind === "hold" ? 0.042 : 0.012, now + 0.5);
+        if (kind === "in" || kind === "in2" || kind === "out") { var mul = kind === "in" ? 1.05 : kind === "in2" ? 1.08 : 0.95; oscs.forEach(function (os, i) { try { os.frequency.cancelScheduledValues(now); os.frequency.setValueAtTime(os.frequency.value, now); os.frequency.linearRampToValueAtTime(base[i] * mul, now + t * 0.95); } catch (e) {} }); } },
+        stop: function () { try { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4); oscs.forEach(function (o) { try { o.stop(ctx.currentTime + 0.5); } catch (e) {} }); } catch (e) {} } };
+    }
+    if (key === "flute") { // one breathy voice that glides UP on the inhale and DOWN on the exhale — like the pitch of a human breath
+      master.gain.value = 1; var vg = ctx.createGain(); vg.gain.value = 0; vg.connect(master);
+      var o1 = ctx.createOscillator(), o2 = ctx.createGain(), air = ctx.createOscillator(), ag = ctx.createGain();
+      o1.type = "triangle"; o1.frequency.value = 330; o1.connect(vg); air.type = "sine"; air.frequency.value = 660; ag.gain.value = 0.18; air.connect(ag); ag.connect(vg); o1.start(); air.start();
+      return { setPhase: function (kind, t) { var now = ctx.currentTime; vg.gain.cancelScheduledValues(now); vg.gain.setValueAtTime(vg.gain.value, now); o1.frequency.cancelScheduledValues(now); o1.frequency.setValueAtTime(o1.frequency.value, now);
+        if (kind === "in" || kind === "in2") { vg.gain.linearRampToValueAtTime(0.05, now + t * 0.9); o1.frequency.linearRampToValueAtTime(kind === "in2" ? 466 : 415, now + t * 0.95); air.frequency.linearRampToValueAtTime((kind === "in2" ? 466 : 415) * 2, now + t * 0.95); }
+        else if (kind === "out") { vg.gain.linearRampToValueAtTime(0.03, now + t * 0.5); vg.gain.linearRampToValueAtTime(0.006, now + t); o1.frequency.linearRampToValueAtTime(294, now + t * 0.95); air.frequency.linearRampToValueAtTime(588, now + t * 0.95); }
+        else vg.gain.linearRampToValueAtTime(kind === "hold" ? 0.03 : 0.004, now + 0.5); },
+        stop: function () { try { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4); o1.stop(ctx.currentTime + 0.5); air.stop(ctx.currentTime + 0.5); } catch (e) {} } };
+    }
+    if (key === "ocean") { // filtered noise that swells in on the inhale and ebbs out on the exhale, like a wave on a shore
+      master.gain.value = 1; var ng = ctx.createGain(); ng.gain.value = 0; var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 500;
+      var buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = buf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      var src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(lp); lp.connect(ng); ng.connect(master); src.start();
+      return { setPhase: function (kind, t) { var now = ctx.currentTime; ng.gain.cancelScheduledValues(now); ng.gain.setValueAtTime(ng.gain.value, now); lp.frequency.cancelScheduledValues(now); lp.frequency.setValueAtTime(lp.frequency.value, now);
+        if (kind === "in" || kind === "in2") { ng.gain.linearRampToValueAtTime(0.06, now + t * 0.9); lp.frequency.linearRampToValueAtTime(900, now + t * 0.9); }
+        else if (kind === "out") { ng.gain.linearRampToValueAtTime(0.012, now + t); lp.frequency.linearRampToValueAtTime(400, now + t); }
+        else ng.gain.linearRampToValueAtTime(kind === "hold" ? 0.03 : 0.008, now + 0.6); },
+        stop: function () { try { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5); src.stop(ctx.currentTime + 0.6); } catch (e) {} } };
+    }
+    return null;
+  } catch (e) { return null; } }
   function breathPicker(onDone) { // the standalone breath tool: offer the real protocols by GOAL (tap, not type; the science is named on each chip). Quick internal calls to breathwork() skip this and run 'resonance' by default.
     TTS.unlock();
     var ov = document.createElement("div"); ov.id = "breathPick";
@@ -8073,13 +8122,25 @@
       ov.appendChild(b);
     });
     // SOUND picker (David 2026-07-12): choose the breathing sound — the chord that breathes, a soft bell at each turn, or silent. Sticks across sessions (S.breathSound) and applies to quick internal calls too.
-    var snd = document.createElement("div"); snd.style.cssText = "display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap;justify-content:center;";
-    var sndL = document.createElement("span"); sndL.style.cssText = "font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;"; sndL.textContent = tr("sound"); snd.appendChild(sndL);
-    var sBtns = [];
-    [["chord", "chord"], ["bell", "bell"], ["silent", "silent"]].forEach(function (s) {
+    // VIZ toggle (David 2026-07-19): orb (the breathing circle) or wave (a sine that rises on the inhale, falls gently on the exhale — clear stage, always smooth)
+    var viz = document.createElement("div"); viz.style.cssText = "display:flex;align-items:center;gap:7px;margin-top:12px;justify-content:center;";
+    var vizL = document.createElement("span"); vizL.style.cssText = "font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;"; vizL.textContent = tr("visual"); viz.appendChild(vizL);
+    var vBtns = [];
+    [["orb", "orb"], ["wave", "wave"]].forEach(function (s) {
       var b = document.createElement("button"); b.textContent = tr(s[0]);
-      function paint() { b.style.cssText = "border:2px solid #4a3670;border-radius:11px;padding:6px 13px;font-size:12px;font-weight:800;cursor:pointer;color:#efeaff;background:" + ((S.breathSound || "chord") === s[1] ? "#9a7cff" : "rgba(255,255,255,.05)") + ";"; }
-      paint(); b.onclick = function () { S.breathSound = s[1]; save(); sBtns.forEach(function (p) { p(); }); };
+      function paint() { b.style.cssText = "border:2px solid #4a3670;border-radius:11px;padding:6px 15px;font-size:12px;font-weight:800;cursor:pointer;color:#efeaff;background:" + ((S.breathViz || "orb") === s[1] ? "#9a7cff" : "rgba(255,255,255,.05)") + ";"; }
+      paint(); b.onclick = function () { S.breathViz = s[1]; save(); vBtns.forEach(function (p) { p(); }); };
+      vBtns.push(paint); viz.appendChild(b);
+    });
+    ov.appendChild(viz);
+    // SOUND picker — ten cue-sets (David 2026-07-19)
+    var snd = document.createElement("div"); snd.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap;justify-content:center;max-width:380px;";
+    var sndL = document.createElement("span"); sndL.style.cssText = "width:100%;text-align:center;font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;margin-bottom:1px;"; sndL.textContent = tr("sound"); snd.appendChild(sndL);
+    var sBtns = [];
+    BREATH_SOUND_KEYS.forEach(function (k) {
+      var b = document.createElement("button"); b.textContent = tr(BREATH_SOUNDS[k].name);
+      function paint() { b.style.cssText = "border:2px solid #4a3670;border-radius:11px;padding:6px 12px;font-size:11.5px;font-weight:800;cursor:pointer;color:#efeaff;background:" + ((S.breathSound || "chord") === k ? "#9a7cff" : "rgba(255,255,255,.05)") + ";"; }
+      paint(); b.onclick = function () { S.breathSound = k; save(); sBtns.forEach(function (p) { p(); }); };
       sBtns.push(paint); snd.appendChild(b);
     });
     ov.appendChild(snd);
@@ -8092,62 +8153,58 @@
     cycles = cycles || PAT.cyc || 4;
     TTS.unlock(); // gesture-bound (chip tap) — unlock the speech engine in the same synchronous tick
     var PH = PAT.ph;
-    var ov = document.createElement("div"); ov.id = "breatheOv";
-    ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-cap"><div class="bw-label">Get comfy…</div><div class="bw-sub">follow the orb</div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the orb (David 2026-07-12)
+    var vizMode = S.breathViz || "orb";
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "bw-" + vizMode;
+    var vizHTML = vizMode === "wave"
+      ? '<div class="bw-wave"><svg viewBox="0 0 300 180" preserveAspectRatio="none"><line class="bw-wmid" x1="0" y1="90" x2="300" y2="90"/><path class="bw-wpath" fill="none"/><circle class="bw-wdot" r="6.5" cx="290" cy="150"/></svg></div>'
+      : '<div class="bw-orb"></div>';
+    ov.innerHTML = '<button class="bw-x">skip</button>' + vizHTML + '<div class="bw-cap"><div class="bw-label">Get comfy…</div><div class="bw-sub">' + (vizMode === "wave" ? "follow the wave" : "follow the orb") + '</div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the viz (David 2026-07-12)
     document.body.appendChild(ov); addVoiceToggle(ov);
-    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
-    // BREATH SOUND (David 2026-07-12): three modes, chosen in the picker. "chord" = the soft low pad that swells louder on the in-breath AND glides up ~a semitone, settling back down on the out (the missing "breathing" feel). "bell" = a soft chime at each in/out turn, holds stay silent. "silent" = orb only. Plain UI pref (S.breathSound), no schema shape. The spoken cues stay on their own voice toggle, independent of this.
-    var bwSound = S.breathSound || "chord";
-    var AC = window.AudioContext || window.webkitAudioContext, actx = null, bwOscs = [], bwBase = [130.81, 196.0, 261.63], bwGain = null;
-    try {
-      if (AC && bwSound === "chord") { actx = sharedAudioCtx(); bwGain = actx.createGain(); bwGain.gain.value = 0.006; bwGain.connect(bgBus() || actx.destination);
-        [[130.81, "sine", 1], [196.0, "sine", 0.4], [261.63, "triangle", 0.14]].forEach(function (o) { var os = actx.createOscillator(), g = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g.gain.value = o[2]; os.connect(g); g.connect(bwGain); os.start(); bwOscs.push(os); });
-      } else if (AC && bwSound === "bell") { actx = sharedAudioCtx(); }
-    } catch (e) { actx = null; }
-    // a soft bell at the turn of the breath (bell mode only): a rising two-note on the in-breath, a falling one on the out; holds stay silent, which is itself the cue to hold
-    function breathBell(kind) {
-      if (!actx || bwSound !== "bell") return;
-      try {
-        var t = actx.currentTime, out = bgBus() || actx.destination;
-        var notes = (kind === "in" || kind === "in2") ? [523.25, 659.25] : [440.0, 329.63];
-        notes.forEach(function (f, i) { var o = actx.createOscillator(), g = actx.createGain(); o.type = "sine"; o.frequency.value = f; var st = t + i * 0.11; g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.05, st + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, st + 1.3); o.connect(g); g.connect(out); o.start(st); o.stop(st + 1.4); });
-      } catch (e) {}
-    }
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), wpath = ov.querySelector(".bw-wpath"), wdot = ov.querySelector(".bw-wdot");
+    // BREATH SOUND (BUILD 2026-07-19): ten modes via BREATH_SOUNDS — "hit" plays at each phase turn, "sustain" glides continuously with the breath. Plain UI pref (S.breathSound). Spoken cues stay on their own voice toggle.
+    var bwSound = S.breathSound || "chord", SND = BREATH_SOUNDS[bwSound] || BREATH_SOUNDS.chord;
+    var actx = null, sustain = null; try { actx = sharedAudioCtx(); if (actx && SND.sustain) sustain = makeBreathSustain(SND.sustain, actx); } catch (e) { actx = null; }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
     var schedSrcs = [];
     (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClipAsync(PH[pi][3] || PH[pi][0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
-    var done = false, tmr = null;
+    var done = false, raf = null;
     function finish(skip) {
-      if (done) return; done = true; if (tmr) clearTimeout(tmr); TTS.stop();
+      if (done) return; done = true; if (raf) cancelAnimationFrame(raf); TTS.stop();
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
-      if (actx && bwGain) { try { bwGain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4); bwOscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.5); } catch (e) {} }); } catch (e) {} }
+      if (sustain) sustain.stop();
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); tickTool("breathe"); save(); renderAll(); }
       if (onDone) onDone();
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
-    var cyc = 0, phi = 0;
-    setTimeout(step, 900);
-    function step() {
-      if (done) return;
-      if (cyc >= cycles) { lab.textContent = "Done ✓"; sub.textContent = "carry the calm with you"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; tmr = setTimeout(function () { finish(false); }, 1500); return; }
-      var p = PH[phi], dur = p[1], kind = p[2];
-      lab.textContent = p[0]; sub.textContent = PAT.name.toLowerCase() + " · " + (cyc + 1) + " / " + cycles;
-      // (voice cues are pre-scheduled up front — no timer-fired speak, which iOS silences)
-      orb.style.transition = "transform " + (dur / 1000) + "s cubic-bezier(.45,0,.4,1)";
-      if (kind === "in") orb.style.transform = "scale(1.32)"; else if (kind === "in2") orb.style.transform = "scale(1.44)"; else if (kind === "out") orb.style.transform = "scale(.5)";
-      if (actx && bwGain) { var now = actx.currentTime, t = dur / 1000;
-        bwGain.gain.cancelScheduledValues(now); bwGain.gain.setValueAtTime(bwGain.gain.value, now);
-        if (kind === "in" || kind === "in2") bwGain.gain.linearRampToValueAtTime(kind === "in2" ? 0.07 : 0.06, now + t * 0.95);         // soft swell, like an in-breath (louder — David 2026-07-01); in2 = the physiological-sigh top-up
-        else if (kind === "out") bwGain.gain.linearRampToValueAtTime(0.018, now + t);        // fade, like an out-breath
-        else bwGain.gain.linearRampToValueAtTime(kind === "hold" ? 0.042 : 0.012, now + 0.5); // hold sustains gently; rest near-silent
-        // PITCH glides with the breath (David 2026-07-12): rises ~a semitone on the in-breath, settles back down on the out — the missing "breathing" feel. Kept subtle (±~6%) so it stays a chord, never a slide. Holds leave the pitch where the breath left it.
-        if (kind === "in" || kind === "in2" || kind === "out") { var mul = kind === "in" ? 1.05 : kind === "in2" ? 1.08 : 0.95;
-          bwOscs.forEach(function (os, i) { try { os.frequency.cancelScheduledValues(now); os.frequency.setValueAtTime(os.frequency.value, now); os.frequency.linearRampToValueAtTime(bwBase[i] * mul, now + t * 0.95); } catch (e) {} }); }
-      } else if (actx && bwSound === "bell" && (kind === "in" || kind === "in2" || kind === "out")) { breathBell(kind); }
-      phi++; if (phi >= PH.length) { phi = 0; cyc++; }
-      tmr = setTimeout(step, dur);
+    // ===== ONE rAF CLOCK drives the whole breath (David 2026-07-19: the old setTimeout+CSS-transition orb drifted and "cut small then big"). Scale/level is computed EVERY FRAME from a single clock via easeInOutSine — perfectly smooth, phase-accurate. Longer exhale duration makes the down-slope naturally gentler. =====
+    var SLO = 0.5, SHI = 1.32, START_MS = 900;
+    var seq = []; for (var c2 = 0; c2 < cycles; c2++) { for (var pi2 = 0; pi2 < PH.length; pi2++) seq.push(PH[pi2]); }
+    var cum = [], acc = 0; for (var si = 0; si < seq.length; si++) { cum.push(acc); acc += seq[si][1]; } var totalMs = acc;
+    var startMs = 0, curIdx = -1, fromLevel = 0, curLevel = 0, wpts = [], lastPush = 0;
+    function targetLevel(kind, from) { return kind === "in" ? 1 : kind === "in2" ? 1.14 : kind === "out" ? 0 : from; } // hold/rest hold the level
+    function frame() {
+      if (done) return; raf = requestAnimationFrame(frame);
+      var now = Date.now(); if (startMs === 0) startMs = now;
+      var el = now - startMs - START_MS;
+      if (el < 0) { if (orb) orb.style.transform = "scale(" + SLO + ")"; return; } // brief settle before the first inhale
+      if (el >= totalMs) { done && 0; lab.textContent = tr("Done ✓"); sub.textContent = tr("carry the calm with you"); curLevel += (0 - curLevel) * 0.08; paintViz(); if (!ov._ending) { ov._ending = 1; setTimeout(function () { finish(false); }, 1400); } return; }
+      var idx = 0; while (idx < seq.length - 1 && el >= cum[idx + 1]) idx++;
+      var ph = seq[idx], pElapsed = el - cum[idx], pDur = ph[1], prog = Math.min(1, pElapsed / pDur), kind = ph[2];
+      if (idx !== curIdx) { curIdx = idx; fromLevel = curLevel; lab.textContent = ph[0]; sub.textContent = PAT.name.toLowerCase() + " · " + (Math.floor(idx / PH.length) + 1) + " / " + cycles;
+        try { if (actx && SND.hit) SND.hit(kind, actx, bgBus() || actx.destination, pDur / 1000); } catch (e) {}
+        if (sustain) sustain.setPhase(kind, pDur / 1000); }
+      var e2 = 0.5 - 0.5 * Math.cos(Math.PI * prog); // easeInOutSine
+      curLevel = fromLevel + (targetLevel(kind, fromLevel) - fromLevel) * e2;
+      paintViz();
     }
+    function paintViz() {
+      if (orb) { orb.style.transform = "scale(" + (SLO + curLevel * (SHI - SLO)).toFixed(3) + ")"; }
+      if (wpath) { var now = Date.now(); if (now - lastPush > 55) { lastPush = now; wpts.push(curLevel); if (wpts.length > 96) wpts.shift(); }
+        var n = wpts.length, d = ""; for (var i = 0; i < n; i++) { var x = (i / 95) * 300, y = 160 - wpts[i] * 132; d += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1) + " "; }
+        wpath.setAttribute("d", d); if (n && wdot) { wdot.setAttribute("cx", (((n - 1) / 95) * 300).toFixed(1)); wdot.setAttribute("cy", (160 - wpts[n - 1] * 132).toFixed(1)); } }
+    }
+    raf = requestAnimationFrame(frame);
   }
   // Psycho-Cybernetics ARRIVAL as a standalone: relax all muscles + a mindful moment (the universal opener of every stack module)
   function relaxMoment(onDone) {

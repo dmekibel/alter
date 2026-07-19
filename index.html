@@ -663,7 +663,13 @@
   .vol-ov,.dur-ov{animation:toolIn .24s ease both;}
   .bento-ov .bento-card{animation:sheetUp .3s cubic-bezier(.2,.9,.3,1.02) both;}
   @keyframes sheetUp{from{opacity:.4;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
-  #breatheOv .bw-orb{width:165px;height:165px;border-radius:50%;background:radial-gradient(circle,rgba(205,185,255,.92),rgba(150,120,255,.3) 58%,rgba(150,120,255,0) 74%);box-shadow:0 0 80px rgba(170,140,255,.55);transform:scale(.55);}
+  #breatheOv .bw-orb{width:165px;height:165px;border-radius:50%;background:radial-gradient(circle,rgba(205,185,255,.92),rgba(150,120,255,.3) 58%,rgba(150,120,255,0) 74%);box-shadow:0 0 80px rgba(170,140,255,.55);transform:scale(.55);will-change:transform;}
+  /* SINE-WAVE breath visual (David 2026-07-19): a live-drawn curve that rises on the inhale, holds flat at the top, glides gently down on the longer exhale — clear stage, always smooth (rAF-driven, no CSS transition to stutter) */
+  #breatheOv .bw-wave{width:min(86vw,360px);height:190px;position:relative;}
+  #breatheOv .bw-wave svg{width:100%;height:100%;overflow:visible;}
+  #breatheOv .bw-wmid{stroke:rgba(255,255,255,.12);stroke-width:1.5;stroke-dasharray:2 7;}
+  #breatheOv .bw-wpath{stroke:rgba(200,180,255,.9);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(170,140,255,.6));}
+  #breatheOv .bw-wdot{fill:#f4efff;filter:drop-shadow(0 0 9px rgba(200,175,255,.95));}
   #breatheOv .bw-label{font-family:var(--bub);font-size:28px;font-weight:800;color:#efeaff;margin-top:34px;letter-spacing:.5px;}
   #breatheOv .bw-sub{font-size:13px;color:#bcb0e8;font-weight:600;margin-top:4px;}
   /* THE ORB STAYS PERFECTLY STILL (David 2026-07-12): the cue text lives in .bw-cap, pulled OUT of the centered flex flow and hung from a fixed line below the orb, so cue lines of any length grow DOWNWARD and can never push the orb up or down. The orb is now the only centered flow child. */
@@ -2791,6 +2797,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1123"></script>
+  <script src="app.js?v=1124"></script>
 </body>
 </html>
