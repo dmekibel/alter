@@ -1608,6 +1608,12 @@
   /* S4 ENDING-SOON: quiet glow on the extend sheet + a highlighted +15 chip when an on-plan block is ≤5 min from ending. Pure paint. */
   #tfNextSheet.tns-ending{ box-shadow:0 0 0 2px rgba(255,95,168,.45), 0 0 22px rgba(255,95,168,.30); border-radius:16px; }
   .k-dur.hot{ background:#ff5fa8; color:#3a1126; border-color:#ff5fa8; box-shadow:0 3px 0 #7a2148; }
+  /* new-era H-C §6: compact regulation-tool row while tracking (breath/settle/stretch) — a micro-break that keeps the timer running */
+  #tfQuickTools{ display:none; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+  #tfQuickTools.on{ display:flex; }
+  .tf-qtool{ display:flex; align-items:center; gap:7px; background:rgba(255,255,255,.05); border:1.5px solid #3a1730; border-radius:12px; padding:9px 13px; color:#f0e6ef; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .tf-qtool i{ font-size:16px; }
+  .tf-qtool:active{ transform:translateY(1px); }
   #trackerFull.tf-nextsheet .tf-inner{ padding-bottom:150px; }
   #trackerFull.st-off.tf-nextsheet .tf-inner{ padding-bottom:210px; } /* off-plan docks a taller sheet (header+chips+switch) under a door+ghost-row — extra clearance so the row never tucks behind it */
   /* ===== RUN-1 1:1 IDLE COCKPIT (David 2026-07-03 — mocks 1 & 2): the sub-line becomes a mini timeline block; empty day = warm invite + yesterday echo; doors carry a block tag / a cost sub-line ===== */
@@ -2769,6 +2775,7 @@
       <div class="tf-switch" id="tfSwitch"></div>
     </div>
     <div class="tf-livemeta" id="tfLiveMeta"></div><!-- streak + Spark points, visible in the live cockpit (David device 2026-07-03: "you still see your points") -->
+    <div id="tfQuickTools"></div><!-- new-era H-C §6: compact regulation tools while TRACKING (breath/settle/stretch) — a micro-break without leaving the timer; shown only in onplan/off, hidden otherwise -->
     <div id="tfStageBody"></div><!-- cockpit STAGE: guided-flow workspace (CKPT-1) — empty + display:none unless #trackerFull.tf-staged -->
     <div id="tfStageChips"></div><!-- TRACK-mode stage chips (CKPT-5): calm entry doors (Journal …) — hidden once a stage is active -->
     <div class="tf-ctrls" id="tfCtrls"></div>
@@ -2805,6 +2812,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1135"></script>
+  <script src="app.js?v=1136"></script>
 </body>
 </html>

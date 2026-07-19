@@ -3668,6 +3668,7 @@
       var _elMin2 = _t ? (Date.now() - _t.start) / 60000 : 0, _p2 = _t ? Math.max(0, Math.min(1, _elMin2 / 60)) : 1;
       setRing(_p2, _t ? "#28cf86" : DOM.restore.c);
       renderStage(TF_MODE); renderTFControls(TF_MODE);
+      renderTrackTools(false); // hidden during a guided stage (the stage IS the workspace)
       return;
     }
     var _ck = el("tfClock"); if (_ck) _ck.textContent = fmt(nowMin()).toUpperCase(); // current wall-clock time
@@ -3676,6 +3677,7 @@
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; } // reset off-plan border + any prior tap wiring before a state re-paints the disc
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home");
+    renderTrackTools(false); // default hidden; only the onplan/off tracking branch turns it on
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
@@ -3751,6 +3753,7 @@
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
+    renderTrackTools(true); // TRACKING → the compact regulation-tool row (breath/settle/stretch)
     var _os = el("tfNextSheet"); // docked "{activity} — how much more?" sheet: off-plan = commit the live track into a plan forward; ON-PLAN = EXTEND the current block into the future (Batch 2 item 6 — on-plan finally has the same easy extend off-plan always had). Short chips added (item 5); switch-activity footer removed (redundant with the title-pill switch, item 3).
     if (_os) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
       var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "extend?" : "how much more?") + '</span>'; // David device 2026-07-03: on-plan "keep going" made no sense — you ARE going; the chips EXTEND the plan
@@ -4901,6 +4904,17 @@
     var story = homeStory();
     if (!story.length) { for (var g = 0; g < 5; g++) { var gc = add(bars, "div", "tf-hb ghost"); add(gc, "div", "tf-hb-bar"); add(gc, "i", "ti ti-circle"); } return; } // empty day = ghost placeholder bars so the top is never blank (David 2026-07-13)
     story.slice(0, 8).forEach(function (a) { var col = add(bars, "div", "tf-hb"); var bar = add(col, "div", "tf-hb-bar"); bar.style.background = mixHex(a.color, "#160510", 0.64); var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = (a.fill * 100) + "%"; fl.style.background = a.color; var ic = add(col, "i", "ti " + a.icon); ic.style.color = a.color; ic.style.opacity = a.fill > 0 ? "1" : "0.4"; });
+  }
+  function renderTrackTools(show) { // new-era H-C §6: while TRACKING, a compact row of short regulation tools (breath/settle/stretch) — a micro-break that doesn't derail the track (the timer keeps running in S underneath). Targeted rebuild, no innerHTML wipe.
+    var w = el("tfQuickTools"); if (!w) return;
+    while (w.firstChild) w.removeChild(w.firstChild);
+    if (!show) { w.className = ""; return; }
+    ["breathe", "relax", "stretch"].forEach(function (id) { // the two-mode gate (spec §6): tracking → these short calming tools only; the deeper/longer tools stay on the idle home + toolbox
+      var t = null; for (var i = 0; i < STACK_TOOLS.length; i++) { if (STACK_TOOLS[i].id === id) { t = STACK_TOOLS[i]; break; } } if (!t) return;
+      var b = add(w, "button", "tf-qtool"); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name));
+      b.onclick = (function (tool) { return function () { try { runStack([{ k: tool.id, d: tool.dur }], 0); } catch (e) {} }; })(t); // opens the guided player OVER the cockpit; tracking timer is unaffected
+    });
+    w.className = "on";
   }
   function renderHomeFace(nb) {
     renderHomeBars();
