@@ -1605,6 +1605,9 @@
   .tns-h i{ font-size:17px; }
   .tns-row{ display:flex; gap:7px; margin-top:10px; }
   .tns-foot{ color:#9a7090; font-size:12.5px; font-weight:600; margin-top:10px; text-align:center; }
+  /* S4 ENDING-SOON: quiet glow on the extend sheet + a highlighted +15 chip when an on-plan block is ≤5 min from ending. Pure paint. */
+  #tfNextSheet.tns-ending{ box-shadow:0 0 0 2px rgba(255,95,168,.45), 0 0 22px rgba(255,95,168,.30); border-radius:16px; }
+  .k-dur.hot{ background:#ff5fa8; color:#3a1126; border-color:#ff5fa8; box-shadow:0 3px 0 #7a2148; }
   #trackerFull.tf-nextsheet .tf-inner{ padding-bottom:150px; }
   #trackerFull.st-off.tf-nextsheet .tf-inner{ padding-bottom:210px; } /* off-plan docks a taller sheet (header+chips+switch) under a door+ghost-row — extra clearance so the row never tucks behind it */
   /* ===== RUN-1 1:1 IDLE COCKPIT (David 2026-07-03 — mocks 1 & 2): the sub-line becomes a mini timeline block; empty day = warm invite + yesterday echo; doors carry a block tag / a cost sub-line ===== */
@@ -2802,6 +2805,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1134"></script>
+  <script src="app.js?v=1135"></script>
 </body>
 </html>

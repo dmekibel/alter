@@ -3755,7 +3755,11 @@
     if (_os) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
       var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "extend?" : "how much more?") + '</span>'; // David device 2026-07-03: on-plan "keep going" made no sense — you ARE going; the chips EXTEND the plan
       var _or = add(_os, "div", "tns-row");
-      [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); }; })(mm); });
+      var _chips = [];
+      [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); _chips.push(ch); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); }; })(mm); });
+      // S4 ENDING-SOON (new-era home §4): when an on-plan block has ≤5 min left (or is over), quietly glow the extend sheet + highlight the +15 chip so the extend is noticed. PURE PAINT — no new copy (reuses "extend?"), no geometry, no state change. The extend PATH (tfExtendPlan) already existed.
+      _os.classList.remove("tns-ending");
+      if (onplan && S0.block) { var _eBe = hm(S0.block.time) + (S0.block.mins || 30), _eRem = _eBe - nowMin(); if (_eRem <= 5) { _os.classList.add("tns-ending"); if (_chips[1]) _chips[1].classList.add("hot"); } }
     }
   }
   function clearStaleCommit(k, from, to, keep) { // Batch 3 #2 (David device 2026-07-03): a new track-commit OWNS [from,to] → cancel any OTHER undone COMMIT block (pin:true = a previous "keep-going" that was abandoned) overlapping it, so nothing overlaps. A pin block that started before `from` keeps its past ghost (end cut to `from`); one fully inside the window is removed. DELIBERATE plans (non-pin, e.g. a 3pm meeting) are never touched — reflow shuffles those.
