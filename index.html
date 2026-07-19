@@ -1564,10 +1564,10 @@
   #trackerFull.tf-home.st-idle .tf-spark{ display:flex !important; }
   #trackerFull.tf-home.st-idle .tf-close{ display:flex !important; color:#c69fe0; }
   #trackerFull.tf-home.st-idle #tfGear{ display:flex !important; }
-  #trackerFull.tf-home.st-idle #tfTitle{ order:-1; margin-top:0; margin-bottom:2px; } /* greeting ABOVE the circle */
+  #trackerFull.tf-home.st-idle #tfTitle{ order:-1; margin-top:0; margin-bottom:3px; font-family:var(--bub); font-size:29px; font-weight:800; color:#fff2f9; letter-spacing:.2px; } /* H-A (new-era): bigger friendly greeting (Baloo) above the circle */
   #trackerFull.tf-home.st-idle #tfRing{ order:0; width:min(50vw,186px); margin:10px 0 0; background:transparent !important; border:2px dashed #3a2540; box-sizing:border-box; } /* the dim dashed cockpit ring */
   #trackerFull.tf-home.st-idle .tf-verdict{ order:1; }
-  #trackerFull.tf-home.st-idle .tf-tile{ width:min(38vw,146px); aspect-ratio:1; border-radius:50%; background:#ff5fa8 !important; color:#2a1730 !important; border:7px solid #2a1730; box-shadow:0 9px 0 rgba(10,3,10,.55), 0 14px 22px rgba(0,0,0,.45); font-size:52px; animation:tfBreathe 3s ease-in-out infinite; } /* the screenshot circle: pink fill, thick dark ring, DARK drop-shadow below (no pink glow), outline play triangle (ti-player-play is outline) */
+  #trackerFull.tf-home.st-idle .tf-tile{ width:min(38vw,146px); aspect-ratio:1; border-radius:50%; background:#ff5fa8 !important; color:#2a1730 !important; border:7px solid #2a1730; box-shadow:0 9px 0 rgba(10,3,10,.55), 0 14px 22px rgba(0,0,0,.45), 0 0 46px rgba(255,95,168,.22); font-size:52px; animation:tfBreathe 3s ease-in-out infinite; } /* H-A (new-era): flat pink fill, thick dark ring, DARK drop-shadow below + a faint pink bloom (matches the What-now screenshot); outline play triangle */
   #trackerFull.tf-home.st-idle .tf-tile i{ margin-left:5px; } /* optical-center the triangle */
   /* story bars on top — one thin domain-colored bar per block today (empty = ghost placeholder bars, never a blank top), icon under, filled where lived */
   #tfHomeBars{ display:none; }
@@ -1575,7 +1575,7 @@
   .tf-hb.ghost .tf-hb-bar{ background:#2a1626 !important; }
   .tf-hb.ghost i{ opacity:.3 !important; color:#6a4f66 !important; }
   .tf-hb{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:7px; }
-  .tf-hb-bar{ width:100%; height:8px; border-radius:5px; overflow:hidden; }
+  .tf-hb-bar{ width:100%; height:10px; border-radius:6px; overflow:hidden; }
   .tf-hb-fill{ height:100%; border-radius:5px; }
   .tf-hb i{ font-size:18px; line-height:1; }
   /* Plan-my-day ghost + the tools side-scroll panel (built into #tfCtrls in home mode) */
@@ -2797,6 +2797,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1127"></script>
+  <script src="app.js?v=1128"></script>
 </body>
 </html>
