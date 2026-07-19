@@ -8109,6 +8109,35 @@
     }
     return null;
   } catch (e) { return null; } }
+  // BREATH SOUND PREVIEW (BUILD 2026-07-19, David: "when you press on the sounds you can't hear them"): play a short in→out demo of a breath sound so you can choose it BEFORE the session. Reuses the same hit/sustain engines the live session uses (so what you preview is exactly what you get), routed through the bg bus (the Sound volume applies). Returns { stop }. Used by the picker chips AND the in-session settings cog.
+  function breathPreview(key) {
+    var SND = BREATH_SOUNDS[key] || BREATH_SOUNDS.chord, ctx = null;
+    try { ctx = sharedAudioCtx(); if (ctx && ctx.state === "suspended") ctx.resume(); } catch (e) {}
+    if (!ctx) return { stop: function () {} };
+    var out = bgBus() || ctx.destination, timers = [], sustain = null, stopped = false;
+    if (SND.sustain) {
+      try { sustain = makeBreathSustain(SND.sustain, ctx); } catch (e) {}
+      if (sustain) { sustain.setPhase("in", 2.0);
+        timers.push(setTimeout(function () { if (!stopped && sustain) sustain.setPhase("out", 2.2); }, 2000));
+        timers.push(setTimeout(function () { if (sustain) { try { sustain.stop(); } catch (e) {} sustain = null; } }, 4300));
+      }
+    } else if (SND.hit) {
+      try { SND.hit("in", ctx, out, 4); } catch (e) {}
+      timers.push(setTimeout(function () { if (!stopped) { try { SND.hit("out", ctx, out, 4); } catch (e) {} } }, 1500));
+    }
+    return { stop: function () { stopped = true; timers.forEach(clearTimeout); if (sustain) { try { sustain.stop(); } catch (e) {} sustain = null; } } };
+  }
+  // BREATH VOLUME SLIDERS (BUILD 2026-07-19, David: "there's no volume options"): the same two master buses as the player's Sound panel (Voice = spoken cues, Sound = the breath sound + bed), live. Rendered into any container — the picker AND the in-session cog share this exact control. Compact.
+  function breathVolRows(host) {
+    S.audio = S.audio || { voice: 1, bg: 1 };
+    [["Voice", "voice"], ["Sound", "bg"]].forEach(function (kv) {
+      var row = document.createElement("div"); row.style.cssText = "display:flex;align-items:center;gap:10px;margin-top:8px;width:100%;max-width:360px;";
+      var lab = document.createElement("span"); lab.textContent = tr(kv[0]); lab.style.cssText = "flex:0 0 52px;font-size:11.5px;font-weight:800;color:#9a86c0;letter-spacing:.3px;"; row.appendChild(lab);
+      var s = document.createElement("input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round((S.audio[kv[1]] != null ? S.audio[kv[1]] : 1) * 100); s.style.cssText = "flex:1;accent-color:#9a7cff;height:24px;";
+      s.oninput = function () { setAudioVol(kv[1], (+s.value) / 100); }; s.onchange = function () { save(); };
+      row.appendChild(s); host.appendChild(row);
+    });
+  }
   function breathPicker(onDone) { // the standalone breath tool: offer the real protocols by GOAL (tap, not type; the science is named on each chip). Quick internal calls to breathwork() skip this and run 'resonance' by default.
     TTS.unlock();
     var ov = document.createElement("div"); ov.id = "breathPick";
@@ -8116,18 +8145,19 @@
     var h = document.createElement("div"); h.style.cssText = "text-align:center;font-size:20px;font-weight:800;color:#f0e6ff;margin-bottom:2px;"; h.textContent = tr("How do you want to breathe?");
     var sb = document.createElement("div"); sb.style.cssText = "text-align:center;font-size:13px;font-weight:600;color:#b79ee0;margin-bottom:12px;max-width:320px;"; sb.textContent = tr("each is a real protocol, matched to what you need right now");
     ov.appendChild(h); ov.appendChild(sb);
+    var previewCtl = null; function stopPreview() { if (previewCtl) { try { previewCtl.stop(); } catch (e) {} previewCtl = null; } } // kill any sound preview when a session starts or the picker closes
     // THE LADDER chip (BUILD 2026-07-19): the beginner on-ramp, first + gold-accented so a first-timer starts here — runs the easy→hard guided ladder as one continuous session.
     (function () { var b = document.createElement("button");
       b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid #0e0618;border-radius:16px;background:linear-gradient(180deg,#4a3a1e,#3a2c16);box-shadow:0 4px 0 #0e0618;padding:13px 16px;color:#fff6e6;cursor:pointer;";
       b.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:16px;font-weight:800;">' + esc(tr("Learn the real ones")) + '</span><span style="font-size:11px;font-weight:700;color:#ffd9a0;">' + esc(tr("Guided, easy to deep")) + '</span></div><div style="font-size:12px;font-weight:500;color:#f0dcc0;line-height:1.4;margin-top:5px;">' + esc(tr("Each pattern pulls the vagal brake a little harder. You open with a gentle calming breath, and as your system settles, the longer holds deepen the same downshift.")) + '</div>';
-      b.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(0, onDone, "ladder"); };
+      b.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(0, onDone, "ladder"); };
       ov.appendChild(b);
     })();
     ["sigh", "box", "calm478", "resonance"].forEach(function (k) {
       var P = BREATH_PATTERNS[k], b = document.createElement("button");
       b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid #0e0618;border-radius:16px;background:linear-gradient(180deg,#3a2a5e,#2a1c46);box-shadow:0 4px 0 #0e0618;padding:13px 16px;color:#f2ecff;cursor:pointer;";
       b.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:16px;font-weight:800;">' + esc(tr(P.goal)) + '</span><span style="font-size:11px;font-weight:700;color:#c9b6f0;">' + esc(tr(P.name)) + '</span></div><div style="font-size:12px;font-weight:500;color:#c7b6e6;line-height:1.4;margin-top:5px;">' + esc(tr(P.why)) + '</div>';
-      b.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(P.cyc, onDone, k); };
+      b.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(P.cyc, onDone, k); };
       ov.appendChild(b);
     });
     // SOUND picker (David 2026-07-12): choose the breathing sound — the chord that breathes, a soft bell at each turn, or silent. Sticks across sessions (S.breathSound) and applies to quick internal calls too.
@@ -8144,16 +8174,20 @@
     ov.appendChild(viz);
     // SOUND picker — ten cue-sets (David 2026-07-19)
     var snd = document.createElement("div"); snd.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap;justify-content:center;max-width:380px;";
-    var sndL = document.createElement("span"); sndL.style.cssText = "width:100%;text-align:center;font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;margin-bottom:1px;"; sndL.textContent = tr("sound"); snd.appendChild(sndL);
+    var sndL = document.createElement("span"); sndL.style.cssText = "width:100%;text-align:center;font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;margin-bottom:1px;"; sndL.textContent = tr("sound · tap to hear"); snd.appendChild(sndL);
     var sBtns = [];
     BREATH_SOUND_KEYS.forEach(function (k) {
       var b = document.createElement("button"); b.textContent = tr(BREATH_SOUNDS[k].name);
       function paint() { b.style.cssText = "border:2px solid #4a3670;border-radius:11px;padding:6px 12px;font-size:11.5px;font-weight:800;cursor:pointer;color:#efeaff;background:" + ((S.breathSound || "chord") === k ? "#9a7cff" : "rgba(255,255,255,.05)") + ";"; }
-      paint(); b.onclick = function () { S.breathSound = k; save(); sBtns.forEach(function (p) { p(); }); };
+      paint(); b.onclick = function () { S.breathSound = k; save(); sBtns.forEach(function (p) { p(); }); stopPreview(); previewCtl = breathPreview(k); }; // pick AND hear it now
       sBtns.push(paint); snd.appendChild(b);
     });
     ov.appendChild(snd);
-    var x = document.createElement("button"); x.style.cssText = "margin-top:8px;background:none;border:none;color:#9a86c0;font-size:14px;font-weight:600;cursor:pointer;"; x.textContent = tr("not now"); x.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); if (onDone) onDone(); };
+    // VOLUME (BUILD 2026-07-19): set it before you start — the same Voice + Sound buses the session uses, live.
+    var vol = document.createElement("div"); vol.style.cssText = "display:flex;flex-direction:column;align-items:center;width:100%;max-width:360px;margin-top:12px;";
+    var volL = document.createElement("span"); volL.style.cssText = "width:100%;text-align:center;font-size:11px;font-weight:700;color:#9a86c0;letter-spacing:.4px;margin-bottom:2px;"; volL.textContent = tr("volume"); vol.appendChild(volL);
+    breathVolRows(vol); ov.appendChild(vol);
+    var x = document.createElement("button"); x.style.cssText = "margin-top:12px;background:none;border:none;color:#9a86c0;font-size:14px;font-weight:600;cursor:pointer;"; x.textContent = tr("not now"); x.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); if (onDone) onDone(); };
     ov.appendChild(x); document.body.appendChild(ov);
   }
   // guided breathwork: paced orb (inhale/hold/exhale) + synced tone + cues, then logs + rewards
@@ -8196,6 +8230,28 @@
     var SLO = 0.5, SHI = 1.32, START_MS = 900;
     var seq = flow.map(function (f) { return f.row; });
     var cum = [], acc = 0; for (var si3 = 0; si3 < seq.length; si3++) { cum.push(acc); acc += seq[si3][1]; } var totalMs = acc;
+    // PLAYER CHROME (BUILD 2026-07-19, David: "combine it altogether into one player"): the breath session now wears the same top story-bars + settings cog as the composed player. Bars = one per cycle (single pattern) or one per stage (the ladder), filling as you move through — the whole session's shape, like the stack's story-bars. The cog opens live Voice/Sound volume (the same buses, mid-session).
+    var barCol = "#9a7cff";
+    var bars = []; for (var bi = 0; bi < flow.length; bi++) { var bk = LADDER ? flow[bi].si : flow[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + seq[bi][1] }); else _lb.e = cum[bi] + seq[bi][1]; }
+    var barFills = [];
+    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:9px;z-index:6;pointer-events:none;";
+    bars.forEach(function () { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(barCol, "#160510", 0.62) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); barWrap.appendChild(colx); barFills.push(fl); });
+    ov.appendChild(barWrap);
+    // drop the ✕ / voice-toggle below the new bars, and add the settings cog beside the voice toggle
+    var _topOff = "calc(env(safe-area-inset-top,0px) + 40px)";
+    var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
+    var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff;
+    function breathSettingsPopover() {
+      var pov = document.createElement("div"); pov.style.cssText = "position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(10,4,14,.55);";
+      var card = document.createElement("div"); card.style.cssText = "width:80%;max-width:320px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;display:flex;flex-direction:column;";
+      var t = document.createElement("div"); t.textContent = tr("Volume"); t.style.cssText = "font-size:17px;font-weight:800;margin-bottom:1px;"; card.appendChild(t);
+      var s2 = document.createElement("div"); s2.textContent = tr("adjust anytime — even while it plays"); s2.style.cssText = "font-size:11.5px;color:#b39ab0;margin-bottom:4px;"; card.appendChild(s2);
+      breathVolRows(card);
+      var dn = document.createElement("button"); dn.className = "done2"; dn.textContent = tr("Done"); dn.style.cssText = "margin-top:16px;"; dn.onclick = function () { pov.remove(); }; card.appendChild(dn);
+      pov.appendChild(card); pov.addEventListener("click", function (e) { if (e.target === pov) pov.remove(); }); ov.appendChild(pov);
+    }
+    var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); breathSettingsPopover(); }; ov.appendChild(cog);
+    function paintBars(elMs) { for (var bi2 = 0; bi2 < bars.length; bi2++) { var b = bars[bi2], f = b.e > b.s ? (elMs - b.s) / (b.e - b.s) : (elMs >= b.s ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (barFills[bi2]) barFills[bi2].style.width = (f * 100) + "%"; } }
     var startMs = 0, curIdx = -1, fromLevel = 0, curLevel = 0, wpts = [], lastPush = 0;
     function targetLevel(kind, from) { return kind === "in" ? 1 : kind === "in2" ? 1.14 : kind === "out" ? 0 : from; } // hold/rest hold the level
     function frame() {
@@ -8203,7 +8259,7 @@
       var now = Date.now(); if (startMs === 0) startMs = now;
       var el = now - startMs - START_MS;
       if (el < 0) { if (orb) orb.style.transform = "scale(" + SLO + ")"; return; } // brief settle before the first inhale
-      if (el >= totalMs) { done && 0; lab.textContent = tr("Done ✓"); sub.textContent = tr("carry the calm with you"); curLevel += (0 - curLevel) * 0.08; paintViz(); if (!ov._ending) { ov._ending = 1; setTimeout(function () { finish(false); }, 1400); } return; }
+      if (el >= totalMs) { done && 0; lab.textContent = tr("Done ✓"); sub.textContent = tr("carry the calm with you"); curLevel += (0 - curLevel) * 0.08; paintBars(totalMs); paintViz(); if (!ov._ending) { ov._ending = 1; setTimeout(function () { finish(false); }, 1400); } return; }
       var idx = 0; while (idx < seq.length - 1 && el >= cum[idx + 1]) idx++;
       var ph = seq[idx], pElapsed = el - cum[idx], pDur = ph[1], prog = Math.min(1, pElapsed / pDur), kind = ph[2];
       if (idx !== curIdx) { curIdx = idx; fromLevel = curLevel; lab.textContent = ph[0]; var F = flow[idx]; sub.textContent = F.name.toLowerCase() + " · " + (LADDER ? (F.si + 1) + " / " + stages.length : (F.c + 1) + " / " + F.cyc);
@@ -8211,7 +8267,7 @@
         if (sustain) sustain.setPhase(kind, pDur / 1000); }
       var e2 = 0.5 - 0.5 * Math.cos(Math.PI * prog); // easeInOutSine
       curLevel = fromLevel + (targetLevel(kind, fromLevel) - fromLevel) * e2;
-      paintViz();
+      paintBars(el); paintViz();
     }
     function paintViz() {
       if (orb) { orb.style.transform = "scale(" + (SLO + curLevel * (SHI - SLO)).toFixed(3) + ")"; }
