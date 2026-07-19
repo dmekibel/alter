@@ -170,7 +170,7 @@
       if (!name) { gdir = null; gvset = null; return; }
       try { fetch("assets/voice/" + name + "/manifest.json" + cacheBust(), { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { var s = {}; a.forEach(function (k) { s[k] = 1; }); gvset = s; gdir = name; } else { gdir = null; gvset = null; } }).catch(function () { gdir = null; gvset = null; }); } catch (e) { gdir = null; gvset = null; }
     }
-    function setVoice(name) { name = (name === "millie") ? "millie" : "dave"; VOICE_PICK = name; loadGenderBank(name); } // switch banks; buffers re-decode lazily from the new folder (namespaced cache)
+    function setVoice(name) { name = (name === "millie") ? "millie" : "dave"; if (name === VOICE_PICK && gdir === name) return; VOICE_PICK = name; if (gvset) gdir = name; loadGenderBank(name); } // OPTIMISTIC switch (David 2026-07-19: "doesn't apply in the player"): flip gdir NOW so the next play uses the new bank — no waiting on the async manifest fetch. Safe because both banks share the exact key set; the fetch just refreshes gvset. buffers re-decode lazily from the new folder (namespaced cache).
     function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
       if (chosen) return chosen;
@@ -10138,7 +10138,7 @@
     [["dave", tr("Dave")], ["millie", tr("Millie")]].forEach(function (o) {
       var b = add(gvRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
       gvChips.push(b);
-      b.onclick = function () { S.voicePick = o[0]; save(); try { TTS.setVoice(o[0]); TTS.unlock(); } catch (e) {} gvPaint(); try { setTimeout(function () { TTS.speak("Rest here a moment longer", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 260); } catch (e) {} };
+      b.onclick = function () { S.voicePick = o[0]; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.warmAll(); } catch (e) {} gvPaint(); try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} }; // preview a REAL bank line (David 2026-07-19: old preview line had no clip → silent); warmAll pre-decodes the switched bank so the next session starts instantly
     });
     gvPaint();
     slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
