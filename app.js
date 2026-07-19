@@ -3230,7 +3230,7 @@
       if (pullZoom === "day") {
         // ROW 1 — LEFT: day/week/month scope (where "Today" used to sit); the WEEK button is also your "go back to the week" (David 2026-06-26)
         var segL = add(top, "div", "scope-seg");
-        [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(segL, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
+        [["day", "D"], ["week", "W"], ["month", "M"]].forEach(function (s) { var sb = add(segL, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.textContent = s[1]; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
         // ROW 1 — CENTER: which day you're on — Today / Yesterday / Tomorrow, else weekday + date (David 2026-06-27)
         var dl = add(top, "div", "pull-daylabel"); dl.id = "pullDayLabel"; dl.textContent = relLabel(pullFocusK || todayK()); dl.style.cssText = "flex:1;min-width:0;text-align:center;font-family:'Jost',sans-serif;font-weight:800;font-size:15px;color:#ffe3f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;letter-spacing:.3px;";
         // ROW 1 — RIGHT: Now pill + ONE ⋯ tools button (Plan day / enhance / clear / undo / test) → the bar stays at 2 rows, most of the screen is calendar (David 2026-06-26)
@@ -3242,7 +3242,7 @@
       } else {
         // SCOPE SWITCHER STAYS LEFT in EVERY view (day/week/month) — it used to live on the RIGHT in week/month, so it jumped sides vs day view (David flagged it 2026-06-27). Now it's the first child of `top`, same left position as day view.
         var seg = add(top, "div", "scope-seg");
-        [["day", "ti-list"], ["week", "ti-layout-columns"], ["month", "ti-layout-grid"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.innerHTML = '<i class="ti ' + s[1] + '"></i>'; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
+        [["day", "D"], ["week", "W"], ["month", "M"]].forEach(function (s) { var sb = add(seg, "button", "scope-b" + (pullZoom === s[0] ? " on" : "")); sb.textContent = s[1]; sb.onclick = function () { if (pullZoom === s[0]) return; var o = ["day", "week", "month"], dir = o.indexOf(s[0]) > o.indexOf(pullZoom) ? 1 : -1; pullZoom = s[0]; if (pullZoom === "day") pullK = todayK(); pendingScrollNow = true; zoomAnim(dir); }; });
         add(top, "div", "pull-date", pullZoom === "week" ? "Weeks" : "Months");
         var rt = add(top, "div", "pull-rt");
         var tdb = add(rt, "button", "pull-today"); tdb.innerHTML = '<i class="ti ti-current-location"></i> Today'; tdb.onclick = findToday; // "find yourself" → smooth-scroll back to the current week/month
