@@ -8058,6 +8058,8 @@
     calm478: { name: "4-7-8 breath", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
       ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] }
   };
+  // THE GUIDED LADDER (BUILD 2026-07-19): a beginner's on-ramp — three real patterns back to back, easing from the gentlest (a calming breath, no holds to speak of) up to the deepest (the long 4-7-8 holds). Runs as ONE continuous session via the flow engine below, so a first-timer learns the harder breaths only after the easy one has already settled them. Stages ordered easy → hard; cyc kept short so the whole ladder is ~2.5 min. (BREATH_PATTERNS keys.)
+  var BREATH_LADDER = [{ k: "resonance", cyc: 3 }, { k: "box", cyc: 3 }, { k: "calm478", cyc: 3 }];
   // ===== BREATH SOUNDS (BUILD, 2026-07-19): ten selectable cue-sets (S.breathSound). "hit" = a soft sound at each phase turn; "sustain" = a continuous tone that glides with the breath. All kept VERY quiet — a background guide, never attention-grabbing. Holds mostly stay silent (silence IS the hold cue); "bells3" is the exception that marks every stage. Built on the shared AudioContext (never new AudioContext). =====
   function _bsPluck(ctx, out, freq, t0, dur, vol, type) { try { var o = ctx.createOscillator(), g = ctx.createGain(); o.type = type || "sine"; o.frequency.value = freq; o.connect(g); g.connect(out); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.start(t0); o.stop(t0 + dur + 0.06); } catch (e) {} }
   var BREATH_SOUNDS = {
@@ -8114,6 +8116,13 @@
     var h = document.createElement("div"); h.style.cssText = "text-align:center;font-size:20px;font-weight:800;color:#f0e6ff;margin-bottom:2px;"; h.textContent = tr("How do you want to breathe?");
     var sb = document.createElement("div"); sb.style.cssText = "text-align:center;font-size:13px;font-weight:600;color:#b79ee0;margin-bottom:12px;max-width:320px;"; sb.textContent = tr("each is a real protocol, matched to what you need right now");
     ov.appendChild(h); ov.appendChild(sb);
+    // THE LADDER chip (BUILD 2026-07-19): the beginner on-ramp, first + gold-accented so a first-timer starts here — runs the easy→hard guided ladder as one continuous session.
+    (function () { var b = document.createElement("button");
+      b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid #0e0618;border-radius:16px;background:linear-gradient(180deg,#4a3a1e,#3a2c16);box-shadow:0 4px 0 #0e0618;padding:13px 16px;color:#fff6e6;cursor:pointer;";
+      b.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:16px;font-weight:800;">' + esc(tr("Learn the real ones")) + '</span><span style="font-size:11px;font-weight:700;color:#ffd9a0;">' + esc(tr("Guided, easy to deep")) + '</span></div><div style="font-size:12px;font-weight:500;color:#f0dcc0;line-height:1.4;margin-top:5px;">' + esc(tr("Each pattern pulls the vagal brake a little harder. You open with a gentle calming breath, and as your system settles, the longer holds deepen the same downshift.")) + '</div>';
+      b.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(0, onDone, "ladder"); };
+      ov.appendChild(b);
+    })();
     ["sigh", "box", "calm478", "resonance"].forEach(function (k) {
       var P = BREATH_PATTERNS[k], b = document.createElement("button");
       b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid #0e0618;border-radius:16px;background:linear-gradient(180deg,#3a2a5e,#2a1c46);box-shadow:0 4px 0 #0e0618;padding:13px 16px;color:#f2ecff;cursor:pointer;";
@@ -8149,10 +8158,16 @@
   }
   // guided breathwork: paced orb (inhale/hold/exhale) + synced tone + cues, then logs + rewards
   function breathwork(cycles, onDone, patKey) {
-    var PAT = BREATH_PATTERNS[patKey] || BREATH_PATTERNS.resonance;
-    cycles = cycles || PAT.cyc || 4;
+    var LADDER = patKey === "ladder";
+    var stages;
+    if (LADDER) { stages = BREATH_LADDER.map(function (s) { return { P: BREATH_PATTERNS[s.k] || BREATH_PATTERNS.resonance, cyc: s.cyc }; }); }
+    else { var PAT0 = BREATH_PATTERNS[patKey] || BREATH_PATTERNS.resonance; stages = [{ P: PAT0, cyc: cycles || PAT0.cyc || 4 }]; }
+    var PAT = stages[0].P; // headline pattern (single-pattern path keeps its old name/behavior exactly)
+    cycles = stages[0].cyc;
     TTS.unlock(); // gesture-bound (chip tap) — unlock the speech engine in the same synchronous tick
     var PH = PAT.ph;
+    // FLOW (BUILD 2026-07-19): the flat ordered list of phase rows across every stage — a single pattern = one stage (cyc repeats), the ladder = easy→hard stages concatenated. Each entry carries its stage's name + index so the sub-label + spoken cues + orb clock all iterate ONE list, pattern-agnostic. This is the whole "breathing stack" mechanism: zero new engine, the clock/scheduler below just read `flow`.
+    var flow = []; stages.forEach(function (st, si) { for (var fc = 0; fc < st.cyc; fc++) { st.P.ph.forEach(function (row) { flow.push({ row: row, name: st.P.name, si: si, cyc: st.cyc, c: fc }); }); } });
     var vizMode = S.breathViz || "orb";
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "bw-" + vizMode;
     var vizHTML = vizMode === "wave"
@@ -8166,7 +8181,7 @@
     var actx = null, sustain = null; try { actx = sharedAudioCtx(); if (actx && SND.sustain) sustain = makeBreathSustain(SND.sustain, actx); } catch (e) { actx = null; }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
     var schedSrcs = [];
-    (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var c = 0; c < cycles; c++) { for (var pi = 0; pi < PH.length; pi++) { if (PH[pi][2] !== "rest") { var s = TTS.scheduleClipAsync(PH[pi][3] || PH[pi][0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += PH[pi][1] / 1000; } } })();
+    (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var fi = 0; fi < flow.length; fi++) { var row = flow[fi].row; if (row[2] !== "rest") { var s = TTS.scheduleClipAsync(row[3] || row[0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += row[1] / 1000; } })();
     var done = false, raf = null;
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); TTS.stop();
@@ -8179,8 +8194,8 @@
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
     // ===== ONE rAF CLOCK drives the whole breath (David 2026-07-19: the old setTimeout+CSS-transition orb drifted and "cut small then big"). Scale/level is computed EVERY FRAME from a single clock via easeInOutSine — perfectly smooth, phase-accurate. Longer exhale duration makes the down-slope naturally gentler. =====
     var SLO = 0.5, SHI = 1.32, START_MS = 900;
-    var seq = []; for (var c2 = 0; c2 < cycles; c2++) { for (var pi2 = 0; pi2 < PH.length; pi2++) seq.push(PH[pi2]); }
-    var cum = [], acc = 0; for (var si = 0; si < seq.length; si++) { cum.push(acc); acc += seq[si][1]; } var totalMs = acc;
+    var seq = flow.map(function (f) { return f.row; });
+    var cum = [], acc = 0; for (var si3 = 0; si3 < seq.length; si3++) { cum.push(acc); acc += seq[si3][1]; } var totalMs = acc;
     var startMs = 0, curIdx = -1, fromLevel = 0, curLevel = 0, wpts = [], lastPush = 0;
     function targetLevel(kind, from) { return kind === "in" ? 1 : kind === "in2" ? 1.14 : kind === "out" ? 0 : from; } // hold/rest hold the level
     function frame() {
@@ -8191,7 +8206,7 @@
       if (el >= totalMs) { done && 0; lab.textContent = tr("Done ✓"); sub.textContent = tr("carry the calm with you"); curLevel += (0 - curLevel) * 0.08; paintViz(); if (!ov._ending) { ov._ending = 1; setTimeout(function () { finish(false); }, 1400); } return; }
       var idx = 0; while (idx < seq.length - 1 && el >= cum[idx + 1]) idx++;
       var ph = seq[idx], pElapsed = el - cum[idx], pDur = ph[1], prog = Math.min(1, pElapsed / pDur), kind = ph[2];
-      if (idx !== curIdx) { curIdx = idx; fromLevel = curLevel; lab.textContent = ph[0]; sub.textContent = PAT.name.toLowerCase() + " · " + (Math.floor(idx / PH.length) + 1) + " / " + cycles;
+      if (idx !== curIdx) { curIdx = idx; fromLevel = curLevel; lab.textContent = ph[0]; var F = flow[idx]; sub.textContent = F.name.toLowerCase() + " · " + (LADDER ? (F.si + 1) + " / " + stages.length : (F.c + 1) + " / " + F.cyc);
         try { if (actx && SND.hit) SND.hit(kind, actx, bgBus() || actx.destination, pDur / 1000); } catch (e) {}
         if (sustain) sustain.setPhase(kind, pDur / 1000); }
       var e2 = 0.5 - 0.5 * Math.cos(Math.PI * prog); // easeInOutSine
