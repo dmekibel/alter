@@ -1035,11 +1035,9 @@
         add(stage, "div", null, tr("one slow breath — say it as if it's already true. Hold to keep it.")).style.cssText = "font-family:var(--bub);text-align:center;font-size:14px;font-weight:700;color:#c8a6d8;";
         var pw = add(stage, "div", "ob-pwrap"); pw.style.touchAction = "none";
         pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-        var arc = pw.querySelector(".parc"), hT = null, held = false;
-        function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+        var arc = pw.querySelector(".parc");
         var _hMs = 1600; try { _hMs = (typeof b.holdMs === "function") ? b.holdMs(ctx) : (b.holdMs || 1600); } catch (e) {} // SCALING SEAL (§3): hold length = promise weight (2d=1.0s … 14d=3.0s)
-        pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} try { earn(2, { label: "lesson-seal" }); } catch (e) {} try { litState().seal = b.line; } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }, _hMs); }); // seal capture → S.lit.seal: today's sealed line, for the Close's install replay (rooms pass)
-        pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+        chargeHold(pw, arc, _hMs, function () { try { earn(2, { label: "lesson-seal", srcEl: pw }); } catch (e) {} try { litState().seal = b.line; } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }); // BUILD 1 dopamine hold. seal capture → S.lit.seal for the Close's install replay
         hint.textContent = tr("or tap here to carry it without the hold"); hint.style.pointerEvents = "auto";
         hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; try { litState().seal = b.line; } catch (er) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (er) {} } next(); };
         return; }
@@ -5324,10 +5322,8 @@
             add(sealZone, "div", "ob-sb", tr("One rule between us: I will never lie to you. Hold — and promise the same, for") + " " + d2.pactDays + " " + tr("days.")).style.cssText = "text-align:center;margin-top:18px;font-weight:700;color:#ffe3f1;";
             var pw2 = add(sealZone, "div", "ob-pwrap"); pw2.style.touchAction = "none"; // THUMB-SEAL (locked #1) — DEVICE-UNTESTED gesture
             pw2.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffd24a" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-            var arc = pw2.querySelector(".parc"), holdT2 = null, holdDone2 = false;
-            function rel2() { if (holdDone2) return; clearTimeout(holdT2); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-            pw2.addEventListener("pointerdown", function (ev) { ev.preventDefault(); arc.style.transition = "stroke-dashoffset 1.3s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); holdT2 = setTimeout(function () { holdDone2 = true; d2.pactAt = Date.now(); try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} obConfetti(pw2, 10); drawObV2(); }, 1300); });
-            pw2.addEventListener("pointerup", rel2); pw2.addEventListener("pointercancel", rel2); pw2.addEventListener("pointerleave", rel2);
+            var arc = pw2.querySelector(".parc");
+            chargeHold(pw2, arc, 1300, function () { d2.pactAt = Date.now(); obConfetti(pw2, 10); drawObV2(); }); // BUILD 1 dopamine hold
             add(sealZone, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
           }
           [[2, "Baby steps", "#48b8e0"], [5, "Strong start", "#46e2a4"], [7, "Serious", "#ffd24a"], [14, "Unstoppable", "#ff5fa8"]].forEach(function (o) {
@@ -7719,7 +7715,7 @@
       if (grip.classList) { grip.classList.add("chg-metal"); }
       for (var i = 0; i < 12; i++) { (function (i) { var s = document.createElement("div"); s.className = "chg-spark"; s.style.left = cx + "px"; s.style.top = cy + "px"; document.body.appendChild(s); var a = (Math.PI * 2 / 12) * i, d = 42 + Math.random() * 28;
         if (s.animate) { s.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: "translate(" + (Math.cos(a) * d).toFixed(0) + "px," + (Math.sin(a) * d).toFixed(0) + "px) scale(0)", opacity: 0 }], { duration: 620, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = function () { try { s.remove(); } catch (e) {} }; } else setTimeout(function () { try { s.remove(); } catch (e) {} }, 620); })(i); } } catch (e) {} }
-    function down(ev) { try { ev.preventDefault(); } catch (e) {} if (pw._chgDone) return; held = false; t0 = Date.now();
+    function down(ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} if (pw._chgDone) return; held = false; t0 = Date.now();
       if (arc) { arc.style.transition = "stroke-dashoffset " + (ms / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); }
       ticks(); shake();
       pw._chgT = setTimeout(function () { pw._chgDone = true; pop(); try { onComplete(); } catch (e) {} }, ms); }
@@ -11043,16 +11039,10 @@
       add(body, "div", "ob-sb", tr("Press and hold to lock it in.")).style.cssText = "text-align:center;margin-top:14px;font-weight:800;";
       var pw = add(body, "div", "ob-pwrap"); pw.style.touchAction = "none"; pw.style.marginTop = "6px";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="#ffc83d" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
-      var arc = pw.querySelector(".parc"), hT = null, held = false, _hMs = 1500;
-      function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
+      var arc = pw.querySelector(".parc");
       var RUNNM = { breath: "Breathe", relax: "Relax the muscles", medit: "Sit in stillness", mantra: "A line to carry", stretch: "Stretch", reprogram: "Self-hypnosis", gratitude: "Gratitude" };
       function buildRunList() { return activeKeys().map(function (k) { var t = CAT[k]; var o = { id: k, nm: RUNNM[k] || t.nm, ic: t.ic, c: t.c, secs: Math.max(t.min, commit[k]) }; if (t.med) o.med = t.med; return o; }); } // shared by the press-hold and the into-the-stack swipe
-      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset " + (_hMs / 1000) + "s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
-        var list = buildRunList();
-        if (!list.length) return;
-        beginStack(list);
-      }, _hMs); });
-      pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+      chargeHold(pw, arc, 1500, function () { var list = buildRunList(); if (!list.length) return; beginStack(list); }); // BUILD 1 dopamine hold
       reviewSwipeIn = function () { var list = buildRunList(); if (list.length) beginStack(list); }; // arm the single into-the-stack swipe for this screen (disarmed by the next clearBoth)
       navBack = function () { _goingBack = true; askMantra(); }; // TAP-LEFT goes back from the review too (David 2026-07-11: "the app doesnt let u go back with the tap")
       var sk = add(foot, "button", "ob-skip", tr("not now")); sk.onclick = function () { if (ov.parentNode) ov.remove(); try { drawJourney(true); } catch (e) {} };
@@ -11848,10 +11838,8 @@
       add(stage, "div", null, tr("hold the ring while you hold the mudra")).style.cssText = "font-size:13px;font-weight:700;color:#c8a6d8;";
       var pw = add(stage, "div", "ob-pwrap"); pw.style.touchAction = "none";
       pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + OPEN_C + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-hand-finger"></i></span>';
-      var arc = pw.querySelector(".parc"), hT = null, held = false;
-      function rel() { if (held) return; clearTimeout(hT); arc.style.transition = "stroke-dashoffset .3s ease"; arc.style.strokeDashoffset = "402"; }
-      pw.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); arc.style.transition = "stroke-dashoffset 2s linear"; requestAnimationFrame(function () { arc.style.strokeDashoffset = "0"; }); hT = setTimeout(function () { held = true; try { if (navigator.vibrate) navigator.vibrate(14); } catch (e) {} seedAnchor(); afterDial(); }, 2000); });
-      pw.addEventListener("pointerup", rel); pw.addEventListener("pointercancel", rel); pw.addEventListener("pointerleave", rel);
+      var arc = pw.querySelector(".parc");
+      chargeHold(pw, arc, 2000, function () { seedAnchor(); afterDial(); }); // BUILD 1 dopamine hold
       hint.textContent = tr("or tap here to carry it"); hint.style.pointerEvents = "auto";
       hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; seedAnchor(); afterDial(); };
     }
