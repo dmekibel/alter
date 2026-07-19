@@ -10029,6 +10029,12 @@
       var s = add(row, "input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round(S.audio[kind] * 100); s.style.cssText = "width:100%;accent-color:#9a7cff;height:26px;";
       s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
     }
+    // GUIDE'S VOICE on/off (BUILD 2026-07-19): a plain toggle for the spoken narration, separate from its volume — some sessions you want the bed and the orb without a voice talking. Reuses S.voice, which voiceOn()/say() already honor everywhere.
+    var vxRow = add(card, "button"); vxRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:11px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
+    function vxOn() { return typeof S === "undefined" || !S || S.voice !== false; }
+    function vxPaint() { vxRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("Guide's voice") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("the spoken guide during a session") + '</span></span><i class="ti ' + (vxOn() ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + (vxOn() ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
+    vxPaint();
+    vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
     slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
     // BACKGROUND BED — categorized so a sound is quick to pick (David 2026-07-10). Selecting one live-swaps the running player's bed via _activeBed.
     add(card, "div", null, tr("Background sound")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 4px;";
@@ -13294,7 +13300,7 @@
   Object.assign(I18N.ru, { "start": "начало", "length": "длина", "More": "Ещё", "Block": "Блок" }); // edge-inspector strings (B4; "delete" already in the dict)
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
-  Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь" });
+  Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь", "Guide's voice": "Голос гида", "the spoken guide during a session": "озвученный гид во время сессии" });
   Object.assign(I18N.ru, { // ONBOARDING V2 (B4) — survey, options, plan, beats
     "ABOUT YOU": "О ТЕБЕ", "ENERGY": "ЭНЕРГИЯ", "WHAT'S IN THE WAY": "ЧТО МЕШАЕТ", "PART": "ЧАСТЬ", "OF": "ИЗ",
     "Hi. I'm Alter.": "Привет. Я — Альтер.", "You know me now. What do I call you?": "Меня ты теперь знаешь. А как звать тебя?", "your name": "твоё имя", "friend": "друг",
