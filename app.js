@@ -4904,13 +4904,12 @@
     var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     var plan = add(c, "button", "tf-planday"); plan.innerHTML = '<i class="ti ti-map-2"></i> ' + esc(tr("Plan my day")); plan.onclick = function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} };
     var panel = add(c, "div", "tf-toolspanel");
-    var scroll = add(panel, "div", "tf-toolscroll"); scroll.id = "tfHomeTools";
+    // NEW-ERA HOME §6 (David 2026-07-19 What-now screenshot): the idle tools are a STATIC 2x4 grid, not a scroller — the 7 most-worn tiles + a "More" door into the full toolbox. Matches the target exactly (7 STACK_TOOLS + More = 8 = 2 rows x 4).
+    var grid = add(panel, "div", "tf-toolgrid"); grid.id = "tfHomeTools";
     var use = (S.tools && S.tools.use) || {};
-    var tools = STACK_TOOLS.slice().sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }); // most-worn floats to the front (F2 library law)
-    tools.forEach(function (t) { var b = add(scroll, "button", "tf-htool"); b.style.background = mixHex(t.col, "#160510", 0.80); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name)); b.onclick = function () { leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
-    var pages = Math.max(1, Math.ceil(tools.length / 4)), dots = add(panel, "div", "tf-tooldots");
-    for (var p = 0; p < pages; p++) { add(dots, "i", "dot" + (p === 0 ? " on" : "")); }
-    scroll.onscroll = function () { var per = scroll.scrollWidth / pages, idx = Math.max(0, Math.min(pages - 1, Math.round(scroll.scrollLeft / Math.max(1, per)))); var ds = dots.querySelectorAll(".dot"); for (var i = 0; i < ds.length; i++) ds[i].classList.toggle("on", i === idx); };
+    var tools = STACK_TOOLS.slice().sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }).slice(0, 7); // most-worn floats to the front (F2 library law); cap 7 so tile 8 is the More door
+    tools.forEach(function (t) { var b = add(grid, "button", "tf-htool"); b.style.background = mixHex(t.col, "#160510", 0.80); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name)); b.onclick = function () { leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
+    var more = add(grid, "button", "tf-htool more"); more.style.background = mixHex(DOM.restore.c, "#160510", 0.80); var mic = add(more, "i", "ti ti-dots"); mic.style.color = DOM.restore.light; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
@@ -10473,7 +10472,7 @@
     { name: "Full reset", min: 20, pp: "long enough that the mind stops hunting for problems", track: [{ k: "stretch", d: 90 }, { k: "relax", d: 90 }, { k: "breathe", d: 150 }, { k: "meditate", d: 600 }, { k: "reprogram", d: 150 }, { k: "mantra", d: 120 }] }
   ];
   Object.assign(I18N.ru, { // FRONT DOOR strings (F1, B4 law: EN source + RU dict, same commit — mom is a canonical persona). RU тире kept where native.
-    "Quick reset": "Быстрый сброс", "Go deeper": "Глубже", "Full reset": "Полный сброс",
+    "Quick reset": "Быстрый сброс", "Go deeper": "Глубже", "Full reset": "Полный сброс", "More": "Ещё",
     "drop the tension you've been carrying all day": "сбрось напряжение, что копилось весь день",
     "long enough for the mind to quiet down too": "достаточно, чтобы и ум затих",
     "long enough that the mind stops hunting for problems": "достаточно, чтобы ум перестал искать проблемы",
