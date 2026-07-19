@@ -10138,7 +10138,9 @@
     [["dave", tr("Dave")], ["millie", tr("Millie")]].forEach(function (o) {
       var b = add(gvRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
       gvChips.push(b);
-      b.onclick = function () { S.voicePick = o[0]; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.warmAll(); } catch (e) {} gvPaint(); try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} }; // preview a REAL bank line (David 2026-07-19: old preview line had no clip → silent); warmAll pre-decodes the switched bank so the next session starts instantly
+      b.onclick = function () { S.voicePick = o[0]; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.stop(); } catch (e) {} gvPaint(); // NO warmAll (David 2026-07-19: decoding 500 clips on every tap janked/broke the app) — optimistic gdir already applies the switch; cold clips decode lazily. TTS.stop() cuts any prior preview so taps don't stack.
+        var sessionLive = document.querySelector("#breatheOv, .gp-ov, #playerOv"); // don't preview OVER a running guided session (that was the "two voices at once") — the switch still applies to its next line
+        if (!sessionLive) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } };
     });
     gvPaint();
     slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
