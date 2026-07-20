@@ -4935,7 +4935,7 @@
     renderHomeBars();
     var lm = el("tfLiveMeta"); if (lm) lm.innerHTML = ""; // no live meta on the idle home
     var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
-    var plan = add(c, "button", "tf-planday"); plan.innerHTML = '<i class="ti ti-map-2"></i> ' + esc(tr("Plan my day")); plan.onclick = function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} };
+    // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
     var panel = add(c, "div", "tf-toolspanel");
     // NEW-ERA HOME §6 (David 2026-07-19 What-now screenshot): the idle tools are a STATIC 2x4 grid, not a scroller — the 7 most-worn tiles + a "More" door into the full toolbox. Matches the target exactly (7 STACK_TOOLS + More = 8 = 2 rows x 4).
     var grid = add(panel, "div", "tf-toolgrid"); grid.id = "tfHomeTools";
