@@ -1566,9 +1566,9 @@
   #trackerFull.tf-home.st-idle .tf-close{ display:flex !important; color:#c69fe0; }
   #trackerFull.tf-home.st-idle #tfGear{ display:flex !important; }
   #trackerFull.tf-home.st-idle #tfTitle{ order:-1; margin-top:0; margin-bottom:3px; font-family:var(--bub); font-size:29px; font-weight:800; color:#fff2f9; letter-spacing:.2px; } /* H-A (new-era): bigger friendly greeting (Baloo) above the circle */
-  #trackerFull.tf-home.st-idle #tfRing{ order:0; width:min(50vw,186px); margin:10px 0 0; background:transparent !important; border:2px dashed #3a2540; box-sizing:border-box; } /* the dim dashed cockpit ring */
+  #trackerFull.tf-home.st-idle #tfRing{ order:0; width:min(50vw,186px); margin:10px 0 0; background:#3a2540 !important; border:none; box-sizing:border-box; box-shadow:0 11px 24px rgba(0,0,0,.5), 0 0 46px rgba(255,95,168,.20), inset 0 2px 3px rgba(255,255,255,.06), inset 0 -5px 11px rgba(0,0,0,.34); } /* H-D1 (David 2026-07-20 two-clock law): the stopwatch DIAL at zero — a solid chunky bezel = the #3a2540 track the green arc fills over the moment you press play; soft drop + faint pink bloom. Replaces the dashed ring; home never shows the player's orb. */
   #trackerFull.tf-home.st-idle .tf-verdict{ order:1; }
-  #trackerFull.tf-home.st-idle .tf-tile{ width:min(38vw,146px); aspect-ratio:1; border-radius:50%; background:#ff5fa8 !important; color:#2a1730 !important; border:7px solid #2a1730; box-shadow:0 9px 0 rgba(10,3,10,.55), 0 14px 22px rgba(0,0,0,.45), 0 0 46px rgba(255,95,168,.22); font-size:52px; animation:tfBreathe 3s ease-in-out infinite; } /* H-A (new-era): flat pink fill, thick dark ring, DARK drop-shadow below + a faint pink bloom (matches the What-now screenshot); outline play triangle */
+  #trackerFull.tf-home.st-idle .tf-tile{ width:min(38vw,144px); aspect-ratio:1; border-radius:50%; background:#ff5fa8 !important; color:#2a1730 !important; border:none; box-shadow:0 5px 0 #160510, inset 0 2px 0 rgba(255,255,255,.14); font-size:52px; animation:tfBreathe 3s ease-in-out infinite; } /* H-D1: flat pink disc = the SAME game-piece as the tracking disc (0 6px 0 ink shadow), just pink; the bezel above is the empty dial, so idle→tracking is one continuous object filling clockwise. */
   #trackerFull.tf-home.st-idle .tf-tile i{ margin-left:5px; } /* optical-center the triangle */
   /* story bars on top — one thin domain-colored bar per block today (empty = ghost placeholder bars, never a blank top), icon under, filled where lived */
   #tfHomeBars{ display:none; }
@@ -2812,6 +2812,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1136"></script>
+  <script src="app.js?v=1137"></script>
 </body>
 </html>
