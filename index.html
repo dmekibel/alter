@@ -1890,7 +1890,7 @@
   .pws-day.sel .pws-l{ color:#7a1a3e; }
   .pws-day.sel .pws-n{ color:#4a1126; }
   .pws-day:active{ transform:translateY(1px); }
-  .pull-toolsbtn{ width:34px; height:34px; border-radius:10px; background:#48122f; border:2px solid #160510; color:#ffd0e6; font-size:19px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+  .pull-toolsbtn{ width:32px; height:32px; border-radius:10px; background:transparent; border:none; color:#7e6178; font-size:19px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; } /* receded — the mockup header is just Today + Now (David 2026-07-20) */
   .pull-toolsbtn:active{ transform:translateY(1px); }
   .pull-toolsmenu{ position:absolute; z-index:55; background:#2c081a; border:2px solid #160510; border-radius:14px; box-shadow:0 14px 34px rgba(0,0,0,.6); padding:6px; display:flex; flex-direction:column; gap:2px; min-width:178px; }
   .ptm-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:transparent; border:none; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; cursor:pointer; text-align:left; width:100%; }
@@ -1911,9 +1911,9 @@
   .pull-zoomctl{ display:flex; align-items:center; gap:3px; }
   .pull-zlevel{ color:#ffd0e6; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; text-transform:capitalize; min-width:42px; text-align:center; }
   /* day/week/month scope icons + hour-density zoom — David 2026-06-24 */
-  .scope-seg{ display:flex; gap:2px; background:#2a1230; border:2px solid #160510; border-radius:13px; padding:3px; }
-  .scope-b{ min-width:30px; height:30px; border:none; border-radius:9px; background:transparent; color:#a78aa0; display:flex; align-items:center; justify-content:center; font-family:var(--bub); font-weight:800; font-size:14px; letter-spacing:.5px; cursor:pointer; padding:0 8px; } /* P-B new-era: D/W/M lettered segmented pill (was scope icons) */
-  .scope-b.on{ background:#ff5fa0; color:#4a1126; }
+  .scope-seg{ display:flex; gap:2px; background:transparent; border:none; border-radius:13px; padding:2px; } /* quieted — no boxed pill, just letters (David 2026-07-20 minimalist header) */
+  .scope-b{ min-width:26px; height:28px; border:none; border-radius:8px; background:transparent; color:#7e6178; display:flex; align-items:center; justify-content:center; font-family:var(--bub); font-weight:800; font-size:14px; letter-spacing:.5px; cursor:pointer; padding:0 7px; } /* muted, recessive — the active one is a soft tint, not a loud pink block */
+  .scope-b.on{ background:rgba(255,95,160,.16); color:#ffb3d6; }
   .hour-zoom{ display:flex; gap:3px; }
   .pull-step.off{ opacity:.28; pointer-events:none; }
   .pull-today{ background:#ff5fa0; color:#4a1126; border:2px solid #160510; border-radius:9px; box-shadow:0 2px 0 #160510; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; padding:6px 10px; cursor:pointer; flex:none; display:inline-flex; align-items:center; gap:4px; }
@@ -2832,6 +2832,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1153"></script>
+  <script src="app.js?v=1154"></script>
 </body>
 </html>
