@@ -8982,7 +8982,7 @@
     });
     // BACKFILL — ANY untracked gap in the REAL lane is a tap-to-fill invitation (§7/§14, David 2026-06-23): you're placed WHERE you tap (tap-Y → that time), then you stretch it.
     if (showNow && k === todayK()) {
-      var ivs = acts.map(function (it) { return [it.s, it.e]; }).sort(function (a, b) { return a[0] - b[0]; });
+      var ivs = acts.map(function (it) { return [it.s, it.e]; }).concat(bls.map(function (b) { var s = hm(b.time); return [s, s + (b.mins || 30)]; })).sort(function (a, b) { return a[0] - b[0]; }); // SINGLE COLUMN (David 2026-07-20): backfill gaps must skip PLAN blocks too, not just real activity — else the full-width "+" slot overlaps plan/now cards and hides them
       var cur = startH * 60, gaps = [];
       ivs.forEach(function (g) { if (g[0] - cur >= 10) gaps.push([cur, g[0]]); cur = Math.max(cur, g[1]); });
       if (now - cur >= 10) gaps.push([cur, now]);
