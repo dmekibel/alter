@@ -4845,8 +4845,8 @@
                 { icon: "ti-plus", label: "+5 min", fn: function () { tfBreakPlus(5); } },
                 { icon: "ti-x", label: "End", fn: tfEndBreak }];
       case "onplan": // David device 2026-07-03, the logical matrix: ONE ending — «Стоп» (= done = shutoff; counts the win). «Перерыв» is the explicit pause-with-duration. Reschedule REMOVED (the title pill IS the switch). Extend lives in the docked chips («продлить?»).
-        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#28cf86", ink: "#07351f" },
-                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }];
+        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#1e8a5a", ink: "#eafff4" },
+                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }]; // Stop = a DEEP green (was neon #28cf86 which glared against the dark minimal tracking face — David 2026-07-20 "looks horrible"); still the clear primary, just not garish
       // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
@@ -4941,8 +4941,10 @@
     var grid = add(panel, "div", "tf-toolgrid"); grid.id = "tfHomeTools";
     var use = (S.tools && S.tools.use) || {};
     var tools = STACK_TOOLS.slice().sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }).slice(0, 7); // most-worn floats to the front (F2 library law); cap 7 so tile 8 is the More door
-    tools.forEach(function (t) { var b = add(grid, "button", "tf-htool"); b.style.background = mixHex(t.col, "#160510", 0.80); var ic = add(b, "i", "ti " + t.ti); ic.style.color = t.col; add(b, "span", null, tr(t.name)); b.onclick = function () { leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
-    var more = add(grid, "button", "tf-htool more"); more.style.background = mixHex(DOM.restore.c, "#160510", 0.80); var mic = add(more, "i", "ti ti-dots"); mic.style.color = DOM.restore.light; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
+    // TILES = LAUNCHERS per STYLE-NEW-ERA (David 2026-07-20 "implement the designs"): REAL color fill (bright, not dark-tinted), WHITE icon, soft Duolingo extrude (a darker shade of the SAME color at the bottom edge, never a hard ink offset). Was mixHex(...,0.80)=80%-black + colored icon + ink shadow → the dark "odd" look.
+    function skinTile(b, col) { b.style.background = mixHex(col, "#160510", 0.24); b.style.border = "none"; b.style.boxShadow = "0 5px 0 " + mixHex(col, "#160510", 0.58) + ", 0 9px 16px rgba(0,0,0,.32)"; }
+    tools.forEach(function (t) { var b = add(grid, "button", "tf-htool"); skinTile(b, t.col); var ic = add(b, "i", "ti " + t.ti); ic.style.color = "#fff"; add(b, "span", null, tr(t.name)); b.onclick = function () { leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; });
+    var more = add(grid, "button", "tf-htool more"); skinTile(more, DOM.restore.c); var mic = add(more, "i", "ti ti-dots"); mic.style.color = "#fff"; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
@@ -8719,7 +8721,7 @@
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = ((mm - startH * 60) / 60 * HP), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (mm === endH * 60) continue; // BOUNDARY HOUR (David 2026-06-28): the bottom tick == startH (e.g. 28:00 == 4am) repeats the SAME hour the NEXT stacked day-section draws at its top → drawing it here printed "4am" twice + doubled the hour-line. Skip it; tiling stays seamless because the next day-section provides that row. (also fixes the reported 2–4am background break.)
-      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + (_hh % 24)); _hl.style.top = (_t - 8) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -8; } // AUDIT: canon gutter = 24h (no am/pm ambiguity, no latin leak)
+      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 8) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -8; } // 12-hour gutter (12,1,2…) to match David's planner mockup 2026-07-20 (was 24h)
       else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }

@@ -1598,6 +1598,10 @@
   .tf-htool{ scroll-snap-align:start; flex:0 0 auto; width:22vw; max-width:88px; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; font-family:"Jost",sans-serif; padding:6px; }
   .tf-htool i{ font-size:27px; line-height:1; }
   .tf-htool span{ font-size:11px; font-weight:800; color:#f5e3ef; text-align:center; line-height:1.12; overflow:hidden; max-width:100%; }
+  /* HOME idle tiles = the mockup's bright ICON-ONLY launchers (David 2026-07-20 "implement the designs"): big white icon, no label, bright real-color fill (set in JS). Labels stay in the toolbox library. */
+  #trackerFull.tf-home.st-idle .tf-htool{ border-radius:18px !important; }
+  #trackerFull.tf-home.st-idle .tf-htool i{ font-size:34px; }
+  #trackerFull.tf-home.st-idle .tf-htool span{ display:none; }
   /* NEW-ERA HOME §6: static 2x4 tool grid (replaces the scroller for the idle home). */
   .tf-toolgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0 12px; } /* minmax(0,1fr) lets the 4 tiles shrink to fit the phone — was repeat(4,1fr) where long labels forced min-content width and spilled the 4th tile off-screen (David 2026-07-20) */
   .tf-toolgrid .tf-htool{ width:auto; max-width:none; flex:initial; }
@@ -2829,6 +2833,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1149"></script>
+  <script src="app.js?v=1150"></script>
 </body>
 </html>
