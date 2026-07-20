@@ -2904,18 +2904,20 @@
   // a time (min, 4am-window units) to a flowed Y via a monotonic piecewise-linear knot list; heights = flowSpan (the flowed
   // distance a duration covers), NOT durMin/60*HP. computeFlow is a PURE function of (blocks, dayWindow, HP) so render, tickCharge,
   // and the zoom relayout can each rebuild the IDENTICAL map at the live HP and never desync (the coupling the 3 rebuilds tripped on).
-  var MINFLOOR = 64; // min flowed card advance (px) — BIG friendly cards, matching the canon mockup's roomy blocks (David 2026-07-20)
+  var MINFLOOR = 64, BASEHP = 64; // min flowed card advance (px) at the default zoom — BIG friendly cards, matching the canon mockup's roomy blocks (David 2026-07-20)
+  // ZOOM-AWARE minimum (David 2026-07-20): the floor GROWS as you zoom out (HP < BASEHP) so more bubbles converge to a uniform friendly size, and eases DOWN when you zoom in (HP > BASEHP) so real durations can show — clamped [52,96] so a bubble is never too small to be friendly, never absurdly tall.
+  function minFloor(HP) { return Math.max(52, Math.min(96, MINFLOOR * BASEHP / Math.max(1, HP))); }
   function computeFlow(k, HP) {
-    var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60;
+    var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60, MF = minFloor(HP);
     var bl = blocks(k);
     var items = bl.map(function (b) { return { s: hm(b.time), d: Math.max(1, b.mins || 30) }; });
-    logs(k).forEach(function (L) { var s = hm(L.time), d = Math.max(1, L.mins || 15), e = s + d; var covered = bl.some(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); return s < be && e > bs; }); if (!covered) items.push({ s: s, d: d }); }); // DRIFT-IN-GAPS become their own column cards, floored to MINFLOOR (no more 5px thin bars); logs overlapping a plan fold into that plan card, so they're NOT in the column
+    logs(k).forEach(function (L) { var s = hm(L.time), d = Math.max(1, L.mins || 15), e = s + d; var covered = bl.some(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); return s < be && e > bs; }); if (!covered) items.push({ s: s, d: d }); }); // DRIFT-IN-GAPS become their own column cards, floored to MF (no more 5px thin bars); logs overlapping a plan fold into that plan card, so they're NOT in the column
     items.sort(function (a, b) { return a.s - b.s; });
     var knots = [[base, 0]], curT = base, curY = 0;
     for (var i = 0; i < items.length; i++) {
       var bs = Math.max(items[i].s, curT), dur = items[i].d, be = bs + dur;
       if (bs > curT) { curY += (bs - curT) / 60 * HP; knots.push([bs, curY]); curT = bs; } // empty gap = raw rate
-      curY += Math.max(MINFLOOR, dur / 60 * HP); curT = be; knots.push([be, curY]); // block flows at least MINFLOOR (the floor lives ONLY here)
+      curY += Math.max(MF, dur / 60 * HP); curT = be; knots.push([be, curY]); // block flows at least the zoom-aware floor (the floor lives ONLY here)
     }
     if (endM > curT) { curY += (endM - curT) / 60 * HP; knots.push([endM, curY]); }
     return knots;
