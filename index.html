@@ -52,10 +52,11 @@
   #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
   .ss-ver{ position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); left:0; right:0; text-align:center; font-family:"Jost",sans-serif; font-size:11px; letter-spacing:.5px; color:rgba(255,255,255,.28); pointer-events:none; }
   @keyframes ssLeave{ to{ opacity:0; transform:scale(1.08); } }
-  .ss-lang{ align-self:flex-end; background:rgba(255,255,255,.06); border:2px solid #3a1730; border-radius:12px; padding:7px; cursor:pointer; display:flex; align-items:center; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; }
-  .ss-lang:active{ transform:scale(.93); }
-  .ss-flag{ width:30px; height:22px; border-radius:4px; overflow:hidden; display:block; box-shadow:0 0 0 1px rgba(0,0,0,.3); }
+  .ss-lang{ align-self:flex-end; background:none; border:none; border-radius:14px; padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#ffe6f4; opacity:0; animation:ssFade var(--dur-enter) var(--ease-settle) .1s both; } /* David 2026-07-20: just the icon, large + accessible — no button-in-a-button chrome */
+  .ss-lang:active{ transform:scale(.9); }
+  .ss-flag{ width:auto; height:auto; border-radius:0; overflow:visible; display:flex; box-shadow:none; }
   .ss-flag svg{ display:block; width:100%; height:100%; }
+  .ss-flag i{ font-size:37px; line-height:1; }
   .ss-langmenu{ position:absolute; top:62px; right:18px; z-index:6; background:#2c081a; border:2px solid #160510; border-radius:16px; box-shadow:0 16px 44px rgba(0,0,0,.6); padding:6px; display:flex; flex-direction:column; gap:2px; min-width:178px; animation:popIn .26s var(--ease-spring) both; }
   .ss-langrow{ display:flex; align-items:center; gap:11px; background:none; border:none; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:15px; padding:10px 12px; border-radius:11px; cursor:pointer; text-align:left; }
   .ss-langrow.on{ background:rgba(255,95,160,.13); }
@@ -2817,6 +2818,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1140"></script>
+  <script src="app.js?v=1141"></script>
 </body>
 </html>
