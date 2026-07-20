@@ -8250,14 +8250,14 @@
       ? '<div class="bw-wave"><svg viewBox="0 0 300 180" preserveAspectRatio="none"><line class="bw-wmid" x1="0" y1="90" x2="300" y2="90"/><path class="bw-wpath" fill="none"/><circle class="bw-wdot" r="6.5" cx="290" cy="150"/></svg></div>'
       : '<div class="bw-orb"></div>';
     ov.innerHTML = '<button class="bw-x">skip</button>' + vizHTML + '<div class="bw-cap"><div class="bw-label">Get comfy…</div><div class="bw-sub">' + (vizMode === "wave" ? "follow the wave" : "follow the orb") + '</div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the viz (David 2026-07-12)
-    document.body.appendChild(ov); addVoiceToggle(ov);
+    document.body.appendChild(ov); var _bvBtn = addVoiceToggle(ov); var _bvPaint = function () { if (_bvBtn) _bvBtn.innerHTML = (S && S.breathVoice) ? '<i class="ti ti-volume"></i>' : '<i class="ti ti-volume-off"></i>'; }; _bvPaint(); if (_bvBtn) _bvBtn.onclick = function (e) { e.stopPropagation(); S.breathVoice = !(S && S.breathVoice); save(); _bvPaint(); if (!(S && S.breathVoice)) { try { TTS.stop(); } catch (_e) {} try { schedSrcs.forEach(function (s) { try { s.stop(); } catch (er) {} }); } catch (_e2) {} } }; // GUIDED BREATH = VOICELESS by default (David 2026-07-20): this toggle controls S.breathVoice (breath-only, default off), NOT global voice — breath never talks unless opted in; turning it off mid-session stops the scheduled clips.
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), wpath = ov.querySelector(".bw-wpath"), wdot = ov.querySelector(".bw-wdot");
     // BREATH SOUND (BUILD 2026-07-19): ten modes via BREATH_SOUNDS — "hit" plays at each phase turn, "sustain" glides continuously with the breath. Plain UI pref (S.breathSound). Spoken cues stay on their own voice toggle.
     var bwSound = S.breathSound || "chord", SND = BREATH_SOUNDS[bwSound] || BREATH_SOUNDS.chord;
     var actx = null, sustain = null; try { actx = sharedAudioCtx(); if (actx && SND.sustain) sustain = makeBreathSustain(SND.sustain, actx); } catch (e) { actx = null; }
     // schedule the SPOKEN cues UP FRONT (inside this launch tap) — timer-fired speak() is silenced by iOS. Clips were warmed when the toolbox opened.
     var schedSrcs = [];
-    (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var fi = 0; fi < flow.length; fi++) { var row = flow[fi].row; if (row[2] !== "rest") { var s = TTS.scheduleClipAsync(row[3] || row[0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += row[1] / 1000; } })();
+    if (S && S.breathVoice) (function () { var t0 = (sharedAudioCtx() || {}).currentTime || 0; var tSec = 0.9; for (var fi = 0; fi < flow.length; fi++) { var row = flow[fi].row; if (row[2] !== "rest") { var s = TTS.scheduleClipAsync(row[0], tSec, VPROF.breath.volume, t0); if (s) schedSrcs.push(s); } tSec += row[1] / 1000; } })(); // voiceless unless S.breathVoice opted in (David 2026-07-20); speak the SHOWN label row[0] so the voice matches the on-screen text (was row[3]||row[0], which said "Breathe in/out" over a different displayed cue = the mismatch)
     var done = false, raf = null;
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); TTS.stop();
