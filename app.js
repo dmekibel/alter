@@ -2904,7 +2904,7 @@
   // a time (min, 4am-window units) to a flowed Y via a monotonic piecewise-linear knot list; heights = flowSpan (the flowed
   // distance a duration covers), NOT durMin/60*HP. computeFlow is a PURE function of (blocks, dayWindow, HP) so render, tickCharge,
   // and the zoom relayout can each rebuild the IDENTICAL map at the live HP and never desync (the coupling the 3 rebuilds tripped on).
-  var MINFLOOR = 56; // min flowed card height (px) — every block stays a generous, tappable, friendly card (David 2026-07-20 minimalist air)
+  var MINFLOOR = 52; // min flowed card advance (px) — generous card + a real gap, tuned for the mockup's airy rhythm (David 2026-07-20)
   function computeFlow(k, HP) {
     var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60;
     var arr = blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
@@ -2920,7 +2920,7 @@
   function flowY(knots, m) { if (!knots || !knots.length) return 0; if (m <= knots[0][0]) return knots[0][1] + (m - knots[0][0]) / 60 * pullHourPx; for (var i = 1; i < knots.length; i++) { if (m <= knots[i][0]) { var a = knots[i - 1], b = knots[i]; return a[1] + (b[1] - a[1]) * ((m - a[0]) / ((b[0] - a[0]) || 1)); } } var L = knots[knots.length - 1]; return L[1] + (m - L[0]) / 60 * pullHourPx; }
   function flowInv(knots, y) { if (!knots || !knots.length) return dayWindow().startH * 60 + y / pullHourPx * 60; if (y <= knots[0][1]) return knots[0][0] + (y - knots[0][1]) / pullHourPx * 60; for (var i = 1; i < knots.length; i++) { if (y <= knots[i][1]) { var a = knots[i - 1], b = knots[i]; return a[0] + (b[0] - a[0]) * ((y - a[1]) / ((b[1] - a[1]) || 1)); } } var L = knots[knots.length - 1]; return L[0] + (y - L[1]) / pullHourPx * 60; }
   function flowSpan(knots, m, dur) { return Math.max(0, flowY(knots, m + dur) - flowY(knots, m)); }
-  function flowH(knots, m, dur) { return Math.max(MINBAR, flowSpan(knots, m, dur) - 8); } // drawn card height = flowed span minus an 8px inter-card GAP (generous air between cards, David 2026-07-20 minimalist)
+  function flowH(knots, m, dur) { return Math.max(MINBAR, flowSpan(knots, m, dur) - 14); } // drawn card height = flowed span minus a 14px inter-card GAP — generous air between cards, the mockup's rhythm (David 2026-07-20)
   function calFlow(cal) { if (!cal) return null; try { return JSON.parse(cal.dataset.flow || "null"); } catch (e) { return null; } } // read a rendered cal's stashed flow map (for cross-day drops / taps that don't have _knots in scope)
   // Density by bubble height (text → icon → sliver). Module-level so the LIVE pinch can re-grade every frame, not just the commit re-render (David 2026-06-26)
   function degradeCard(card) { var h = parseFloat(card.style.height); if (isNaN(h)) h = 26; /* C9a (David 2026-07-02): 0 is a REAL height — "0 || 26" graded a newborn live sliver as a 26px lbl-c card (full text + borders + shadow peeking below the now-line) */ card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; }

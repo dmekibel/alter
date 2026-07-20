@@ -944,9 +944,9 @@
   .lanehead{ display:none; } /* PLAN/REAL header removed — the minimalist mockup has no lane labels; plan-vs-real still works, it just isn't announced (David 2026-07-20) */
   .cal .calx{ display:none !important; } /* no always-on ✕ delete on blocks — the mockup blocks are clean icon+name; delete via tapping the block (editor) or dragging to the trash (David 2026-07-20) */
   .cal{ position:relative; margin:0; background:none; border:none; }
-  .calhour{ position:absolute; left:26px; right:4px; height:0; border-top:1px solid rgba(200,170,220,.10); } /* hairline hour rule — calm, barely there (David 2026-07-20 minimalist) */
-  .calhalf{ position:absolute; left:13px; width:10px; height:0; border-top:1.5px solid rgba(176,116,146,.32); } /* minimal gutter DASH (not a full-width rule) — = the half/quarter hour (David 2026-06-25) */
-  .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:14px; color:#a48cbe; } /* quiet lavender hour numerals — calm, not shouting (David 2026-07-20, was bright pink #dba9c2) */
+  .calhour{ position:absolute; left:26px; right:4px; height:0; border-top:1px solid rgba(200,170,220,.045); } /* barely-there hour rule — almost invisible, the mockup leans on the numerals not the lines (David 2026-07-20) */
+  .calhalf{ display:none; } /* no half/quarter-hour dashes — fewer lines, the mockup shows only whole hours (David 2026-07-20) */
+  .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:600; font-size:13px; color:#8f7aa8; } /* quiet lavender hour numerals — smaller + softer, recessive like the mockup (David 2026-07-20) */
   .calhalfl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:12px; color:#7a4a62; }
   .calsub{ position:absolute; left:0; width:34px; text-align:right; font-weight:700; font-size:12px; color:#9a6a82; } /* AUDIT P1: 12px floor */
   .calblk{ position:absolute; border:2px solid #160510; border-radius:18px; padding:8px 14px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
@@ -1018,11 +1018,11 @@
   .plan-empty{ position:absolute; left:34px; right:calc(50% + 4px); display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; border:2px dashed #ff5fa0; border-radius:12px; background:repeating-linear-gradient(45deg,rgba(255,95,160,.13),rgba(255,95,160,.13) 7px,rgba(255,95,160,.04) 7px,rgba(255,95,160,.04) 14px); color:#ff9dc6; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; z-index:3; text-transform:capitalize; }
   .plan-empty:active{ transform:scale(.97); }
   .backfill .ti{ font-size:13px; }
-  .nowline{ position:absolute; left:26px; right:4px; height:0; border-top:5px solid #ff5fa0; z-index:6; } /* a touch thicker — the brightest thing on the timeline (David 2026-06-27) */
+  .nowline{ position:absolute; left:26px; right:4px; height:0; border-top:3px solid #ff5fa0; z-index:6; box-shadow:0 0 8px rgba(255,95,160,.5); } /* slim clean pink line with a soft glow — the mockup's now-line (David 2026-07-20) */
   .nowline::before, .nowline::after{ content:""; position:absolute; top:-5px; width:7px; height:7px; border-radius:50%; background:#ff5fa0; box-shadow:0 0 8px #ff5fa8; display:block; } /* small balls capping each end of the now-line (David 2026-06-27) */
   .nowline::before{ left:-3px; } .nowline::after{ right:-3px; }
-  .nowscan{ position:absolute; left:0; right:0; bottom:0; height:42px; background:linear-gradient(0deg, rgba(255,95,168,.20), rgba(255,95,168,0)); pointer-events:none; z-index:-1; } /* P-A new-era: the scanner's soft upward bloom above the now-line — the day "printing" into lived time */
-  .nowcirc{ position:absolute; left:2px; width:16px; height:16px; border-radius:50%; border:2.5px solid #ff5fa8; display:flex; align-items:center; justify-content:center; font-size:8.5px; z-index:9; box-shadow:0 0 8px #ff5fa8; } /* sits just inside the left edge — fully visible, no longer clipped by the scroll container (was left:-3px = cut off + a stray border edge) — David 2026-06-27 */
+  .nowscan{ display:none; } /* minimal now-line (David 2026-07-20): the mockup line is a clean line, no glow bloom */
+  .nowcirc{ display:none; } /* minimal: no clock-circle on the line — the mockup now-line is JUST the line */
   /* PER-SECOND LIVE CHARGE glide: the now-anchored elements creep/grow/shrink smoothly between the per-minute rebuilds (tickCharge nudges top/height each second; the ~1s linear transition fills the gap → the battery reads as MOVING, not snapping). Suppressed while zooming so a pinch can't animate → no bounce. */
   .nowline, .nowcirc, .nowread, .nowtime, .calblk.live, .matchseg.chgseg, .committedfut{ transition: top .98s linear, height .98s linear; }
   .matchseg.chgseg.sliver{ border:none !important; border-radius:3px !important; box-shadow:none !important; } /* newborn charge (<10px) = a clean color line — no border-soup up close (David device 2026-07-03) */
@@ -1039,7 +1039,7 @@
   .calblk.convbar .convmatch{ position:absolute; left:0; right:0; z-index:2; overflow:hidden; } /* TRACKED stretch = connected matched stripes */
   .calblk.convbar .cn{ position:relative; z-index:3; }
   /* ===== RUN-1 slice 5 · thermograph HEAT bands + wayback (additive, pointer-events:none) ===== */
-  .cal .heatband{ position:absolute; left:0; right:0; z-index:0; pointer-events:none; background:linear-gradient(90deg,rgba(255,95,160,.16),rgba(255,95,160,.07) 60%,transparent); mix-blend-mode:screen; }
+  .cal .heatband{ display:none; } /* minimal: no rose "lived hours" tint band — the mockup ground is one flat calm dark (David 2026-07-20) */
   .cal .calblk.seamnew::before{ content:""; position:absolute; left:0; right:0; top:-1px; height:3px; z-index:5; pointer-events:none; border-radius:3px; background:linear-gradient(90deg,transparent,rgba(255,140,196,.9),rgba(255,255,255,.7),rgba(255,140,196,.9),transparent); background-size:220% 100%; animation:seamShimmer 2.6s linear infinite; }
   @keyframes seamShimmer{ 0%{ background-position:120% 0; } 100%{ background-position:-120% 0; } }
   .cal .calblk .wayback{ position:absolute; right:9px; bottom:6px; z-index:4; pointer-events:none; font-size:14px; line-height:1; color:rgba(255,240,249,.42); }
@@ -1064,13 +1064,13 @@
   .edgeinsp .ei-del .ei-fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:rgba(255,95,160,.22); z-index:0; } /* hold-to-fill drain */
   .edgeinsp .ei-del span,.edgeinsp .ei-del i{ position:relative; z-index:1; }
   .cal .calblk.ei-editing{ box-shadow:0 0 0 3px #ff5fa0,0 0 20px rgba(255,95,160,.55),0 4px 0 #160510 !important; z-index:7; } /* the edited block wears a PINK halo (never gold) and stays LIVE */
-  .nowread{ position:absolute; right:6px; z-index:8; font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:5px; background:rgba(28,5,18,.8); border:1.5px solid #160510; border-radius:9px; padding:2px 8px; max-width:64%; white-space:nowrap; overflow:hidden; }
+  .nowread{ display:none; } /* minimal now-line: no activity/elapsed pill on the line — the charging block itself carries the activity (David 2026-07-20) */
   #liveDock.idle .ld-el{ display:none; }
   #liveDock.idle .ld-el[data-brk]{ display:block; } /* but the break countdown stays visible on the idle-style break bar (David 2026-06-27) */
   .nowpill{ position:absolute; right:6px; background:#ff5fa0; color:#4a1126; font-size:11px; font-weight:700; border:2px solid #160510; border-radius:7px; padding:0 7px; z-index:7; animation:nowPulse 2.6s ease-in-out infinite; } /* gentle "you are here" heartbeat (David 2026-06-24 night) */
   @keyframes nowPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,95,160,.55); } 55%{ box-shadow:0 0 0 6px rgba(255,95,160,0); } }
   /* wake / noon / bed anchors — never lost in time (David 2026-06-24) */
-  .timemark{ position:absolute; left:34px; right:6px; height:0; border-top:1.5px dashed; z-index:2; pointer-events:none; }
+  .timemark{ display:none; } /* minimal: no midnight/wake/noon/bed anchor lines + chips — the mockup has no such horizontal structure (David 2026-07-20) */
   .timemark-lab{ position:absolute; left:0; top:-8px; background:#1c0512; font-family:"Jost",sans-serif; font-weight:700; font-size:9.5px; padding:1px 6px; border-radius:6px; display:flex; align-items:center; gap:3px; white-space:nowrap; }
   /* ============ BENTO picker (1:1 from mockup 019) ============ */
   .bento-ov{ position:fixed; inset:0; z-index:95; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; } /* above #trackerFull (z90) so pickers opened FROM the tracker are visible (David 2026-06-27) */
@@ -2674,7 +2674,7 @@
   .streakfill.legendary{ animation-duration:1.8s; }
   @keyframes streakFlow{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
   /* ============ v448 — NOW = the live card's bottom edge · time lives in the left gutter (David 2026-06-24) ============ */
-  .nowtime{ position:absolute; left:0; color:#ff7fb6; font-family:"Jost",sans-serif; font-weight:800; font-size:11px; z-index:7; background:#2c081a; padding:1px 4px; border-radius:5px; white-space:nowrap; line-height:1.4; } /* clearer NOW readout — brighter pink, a touch larger (David 2026-06-27) */
+  .nowtime{ display:none; } /* minimal now-line: no "NOW HH:MM" pill — the header already says Today/Now (David 2026-07-20) */
   /* ============ ROOMS v1 (SPEC-FIRST-RUN §6, P4): each room = a bg treatment + a 2s threshold crossing + the 3-note entry signature. Rays retire to seals only. ============ */
   @keyframes roomIn{ from{ opacity:0; } to{ opacity:1; } }                      /* the threshold crossing — every ceremony fades through dark */
   @keyframes wellRipple{ 0%{ transform:translate(-50%,-50%) scale(.25); opacity:.5; } 100%{ transform:translate(-50%,-50%) scale(1.9); opacity:0; } }
@@ -2832,6 +2832,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1154"></script>
+  <script src="app.js?v=1155"></script>
 </body>
 </html>
