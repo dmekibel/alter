@@ -3717,7 +3717,7 @@
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '<i class="ti ti-diamond-filled" style="color:#ffd24a"></i> <b>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</b>'; // H-D3 (David 2026-07-20): idle header right = the gem count with a diamond, matching the What-now mockup (was streak + tracked-mins)
-      if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb; the big play button now actually TRACKS (David device 2026-07-03)
+      if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb; FILLED triangle (David 2026-07-20 ref)
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips("");
       // §10f.7 HOME (David ✓ 2026-07-13): the idle cockpit IS the app's landing home — story bars on top, the pink Track CIRCLE, Plan-my-day above a tools side-scroll. Supersedes the old 3-door §12 frame + docked next-sheet.
