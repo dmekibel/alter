@@ -2907,10 +2907,13 @@
   var MINFLOOR = 52; // min flowed card advance (px) — generous card + a real gap, tuned for the mockup's airy rhythm (David 2026-07-20)
   function computeFlow(k, HP) {
     var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60;
-    var arr = blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    var bl = blocks(k);
+    var items = bl.map(function (b) { return { s: hm(b.time), d: Math.max(1, b.mins || 30) }; });
+    logs(k).forEach(function (L) { var s = hm(L.time), d = Math.max(1, L.mins || 15), e = s + d; var covered = bl.some(function (b) { var bs = hm(b.time), be = bs + (b.mins || 30); return s < be && e > bs; }); if (!covered) items.push({ s: s, d: d }); }); // DRIFT-IN-GAPS become their own column cards, floored to MINFLOOR (no more 5px thin bars); logs overlapping a plan fold into that plan card, so they're NOT in the column
+    items.sort(function (a, b) { return a.s - b.s; });
     var knots = [[base, 0]], curT = base, curY = 0;
-    for (var i = 0; i < arr.length; i++) {
-      var bs = Math.max(hm(arr[i].time), curT), dur = arr[i].mins || 30, be = bs + dur;
+    for (var i = 0; i < items.length; i++) {
+      var bs = Math.max(items[i].s, curT), dur = items[i].d, be = bs + dur;
       if (bs > curT) { curY += (bs - curT) / 60 * HP; knots.push([bs, curY]); curT = bs; } // empty gap = raw rate
       curY += Math.max(MINFLOOR, dur / 60 * HP); curT = be; knots.push([be, curY]); // block flows at least MINFLOOR (the floor lives ONLY here)
     }
@@ -2923,7 +2926,7 @@
   function flowH(knots, m, dur) { return Math.max(MINBAR, flowSpan(knots, m, dur) - 14); } // drawn card height = flowed span minus a 14px inter-card GAP — generous air between cards, the mockup's rhythm (David 2026-07-20)
   function calFlow(cal) { if (!cal) return null; try { return JSON.parse(cal.dataset.flow || "null"); } catch (e) { return null; } } // read a rendered cal's stashed flow map (for cross-day drops / taps that don't have _knots in scope)
   // Density by bubble height (text → icon → sliver). Module-level so the LIVE pinch can re-grade every frame, not just the commit re-render (David 2026-06-26)
-  function degradeCard(card) { var h = parseFloat(card.style.height); if (isNaN(h)) h = 26; /* C9a (David 2026-07-02): 0 is a REAL height — "0 || 26" graded a newborn live sliver as a 26px lbl-c card (full text + borders + shadow peeking below the now-line) */ card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; }
+  function degradeCard(card) { var h = parseFloat(card.style.height); if (isNaN(h)) h = 26; /* C9a (David 2026-07-02): 0 is a REAL height — "0 || 26" graded a newborn live sliver as a 26px lbl-c card (full text + borders + shadow peeking below the now-line) */ card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; card.style.borderRadius = Math.min(12, h * 0.34) + "px"; /* radius scales with height → a short/zoomed-out card stays a ROUNDED RECTANGLE, never a pill/circle (David 2026-07-20) */ }
   // LIVE content reflow during a pinch: re-grade every bubble by its new height (text hides/shows seamlessly) and rebuild the right symbol-rail (thin bars' icons appear/move LIVE, not snapping in on release). Reads only inline styles (no forced layout). Makes the commit a visual no-op = no bounce. (David 2026-06-26)
   function liveReflowCal(cal) {
     var nl = cal.querySelector(".nowline"), band = null; if (nl) { var nt = parseFloat(nl.style.top) || 0; band = [nt - 6, nt + 30]; }
@@ -8740,7 +8743,7 @@
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = topFor(mm), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (mm === endH * 60) continue; // BOUNDARY HOUR (David 2026-06-28): the bottom tick == startH (e.g. 28:00 == 4am) repeats the SAME hour the NEXT stacked day-section draws at its top → drawing it here printed "4am" twice + doubled the hour-line. Skip it; tiling stays seamless because the next day-section provides that row. (also fixes the reported 2–4am background break.)
-      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 8) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -8; } // 12-hour gutter (12,1,2…) to match David's planner mockup 2026-07-20 (was 24h)
+      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 13) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -13; } // -13 recenters the BIG numeral on the hour // 12-hour gutter (12,1,2…) to match David's planner mockup 2026-07-20 (was 24h)
       else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }
@@ -8810,7 +8813,7 @@
       }
       if (_straddle) { // STRADDLING NOW (David 2026-06-27): the GHOST half (not done) is a standalone fully-rounded bubble; the TRACKED half is CONTINUOUS with the future (no gap at the now-line — the line just shows printing + the battery: bright charged-past, dim future).
         var _trk = _liveT && domainOf(_liveT) === dom, _tsd = _trk ? new Date(_liveT.start) : null, _nowX = now + new Date().getSeconds() / 60, _tsm = _trk ? Math.max(bs, Math.min(_nowX, toWin(_tsd.getHours() * 60 + _tsd.getMinutes()) + _tsd.getSeconds() / 60)) : now; // _tsm = when tracking started, SUB-MINUTE exact (David device 2026-07-04: minute-truncated birth gave the newborn charge up to 59s of phantom height), in the SAME 4am-window units as bs/now (David 2026-06-28: was raw wall-clock minutes — across midnight that collapsed the ghost to bs, so pressing start wrongly filled the un-done PAST half solid. toWin keeps the pre-start past GHOSTED and lets only the now→ leading edge print, matching "matched grows into the past".) (= now if not tracking → whole past half is ghost)
-        var _matte = mixHex(D.c, "#160510", 0.78), _R = "18px"; // P-A: the not-yet-lived future half is FLAT matte (stripes = lived only); _R matches the new 18px card radius (David 2026-07-20 minimalist)
+        var _matte = mixHex(D.c, "#160510", 0.78), _R = "12px"; // matches the 12px card radius (rectangles, not pills, when short/zoomed out — David 2026-07-20)
         card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1";
         if (_trk) { // TRACKING → the GHOST separates from the active bubble (this is when it breaks off and gets its rounded bottom) — David 2026-06-27
           if (_tsm > bs + 0.5) { card.style.height = flowSpan(_knots, bs, _tsm - bs) + "px"; card.dataset.mn = bs; card.dataset.dur = (_tsm - bs); card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderRadius = _R + " " + _R + " 0 0"; card.style.borderBottom = "none"; card.style.boxShadow = "none"; degrade(card); } // GHOST = untracked past (bs → _tsm). EXACT height (no barH −4 margin) + square bottom: the ghost and the charge are ONE continuous story — the 4px bar-gap read as "a tiny space appears" (David device 2026-07-03). degrade() drops text on slivers.
