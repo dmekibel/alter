@@ -713,6 +713,8 @@
 
   /* ===== PLAYER 1:1 COMPOSITION (David ref 2026-07-03 09.47.00 — «ЗАРЯД ТИШИНЫ»): flat dark room · X left / cog right · BIG solid element orb · huge cue line · pink knob · −remaining · ink-grammar transport ===== */
   #breatheOv.gp-ov{background:#170a15;}
+  #breatheOv.gp-ov{animation:gpZoomIn .42s cubic-bezier(.33,0,.2,1) both;transform-origin:50% 44%;} /* ZOOM law (David 2026-07-20): the player BLOOMS up from the circle's spot on open = "zooming in"; the reverse plays on close (JS). Stronger than the shared toolIn so it reads as a camera zoom, not a fade. */
+  @keyframes gpZoomIn{from{opacity:0;transform:scale(.8);}to{opacity:1;transform:scale(1);}}
   #breatheOv.gp-ov .gp-waves{display:none;} /* the ref room is flat dark — no purple bands */
   #breatheOv.gp-ov .bw-x{left:12px;right:auto;background:none;border:none;font-size:20px;color:rgba(240,230,239,.55);padding:8px;}
   #breatheOv.gp-ov .gp-cog{left:auto;right:12px;background:none;border:none;color:rgba(240,230,239,.55);}
@@ -2815,6 +2817,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1139"></script>
+  <script src="app.js?v=1140"></script>
 </body>
 </html>

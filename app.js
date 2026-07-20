@@ -10447,7 +10447,7 @@
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: Math.max(1, Math.round(total / 60)), catK: opts.catK || "love", color: col }); earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id); try { celebrateGated(col, curStreak() || 1); } catch (e) {} save(); renderAll(); }
       if (opts.onFinish) opts.onFinish(skip);
     }
-    ov.querySelector(".bw-x").onclick = function () { finish(true); };
+    ov.querySelector(".bw-x").onclick = function () { if (done) return; ov.style.animation = "none"; ov.style.transition = "transform .3s cubic-bezier(.4,0,.2,1), opacity .28s ease"; ov.style.transformOrigin = "50% 44%"; ov.style.transform = "scale(.82)"; ov.style.opacity = "0"; setTimeout(function () { finish(true); }, 250); }; // ZOOM-OUT on close (David 2026-07-20 zoom law): the player shrinks back toward the circle's spot = "zooming out to home", the reverse of the open bloom. Full home-cockpit reveal on fold = Z-2 (deep unification).
   }
   // REVERSAL OF DESIRE — Stutz Tool 1 (master-guide L172-190), david-framework L4 / Force of Forward Motion. When-to-use (verbatim): right before something you've been avoiding (the Comfort Zone). The flagship trigger→tool tool: avoidance is the most common daily Part X mode. (TB-REVERSAL)
   function reversalOfDesire(avoidedBlock) {

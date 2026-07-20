@@ -46,5 +46,28 @@ Derived rules:
 2. **Peek scope:** whole day both directions, or just prev / current / next?
 3. **Commit copy:** does closing-the-current-block-early need any line at all, or silent + undo toast? (Lean: silent, less ceremony.)
 
+## PART 4 — NAVIGATION: A PLACE vs A MOMENT (Fable synthesis 2026-07-20, David verdict PENDING)
+David's confusion: home grew out of the fold-away cockpit (overlay era), but the new-era design gives home a bottom-nav button. Which is it?
+**The law that resolves it: home is a PLACE, the player is a MOMENT.** A place is somewhere you go: stable, on the map, holds the data glance (story bars), the dial, next-up, tools. A moment is something you enter and it ends: full-screen, chrome-free, hands you back where you were. They share the instrument face (PART 1) so they rhyme; rhyming is visual language, not navigation. 
+- **Option A (RECOMMENDED): home = page, period.** Bottom-nav middle button; NEVER folds away. The fold-down cockpit dies as a nav concept (it was the overlay era's trick). The ONLY full-screen overlay left = the player, because a session is modal in life. Live tracking: the dial is home's face; other pages show the live mini-puck (tap → home). Gesture grammar: nav = travel, scroll = within page, takeover = session only.
+- Option B: home stays a lid over the timeline (pull-down reveals the day). Cost: two routes to the planner (fold + nav button) = the messiness David already feels; home reads dismissable.
+- FLIP morphs (puck ↔ dial) survive either way; they are animation, not navigation.
+**VERDICT (David 2026-07-20): OPTION A CONFIRMED**, with the refinement below. Retire the fold/chevron affordance on the home face (the pull-down remains the PLANNER page's own internal mechanic if needed there). Build lands with the bottom-nav build (nav N2 rec, memory alter-home-screen-promotion).
+
+### 4b. THE ZOOM LAW (David's refinement v2, ruled 2026-07-20 — SUPERSEDES the fold-into-dial docking idea, same day)
+Home and the player are ONE instrument at TWO ZOOM LEVELS of one timeline — and it nests deeper: **day ⊃ session ⊃ section.** At every level the anatomy is identical: bars above = the CHILDREN of the current scope; circle = the current unit; below = that level's own controls. Only magnification changes:
+- **Home (out):** bars = the day's blocks · circle = current block's dial · below = tools/next/info.
+- **Player (in):** bars = this session's stages · circle = the orb · below = transport ONLY. The player stays fully simplified — home chrome NEVER visible in it (David explicit).
+- **Section (deeper in):** the existing meditation section-zoom (scrub scoping via `_secList`) inherits the SAME animation grammar (currently unanimated — David wants it animated).
+**THE TRANSITION = a camera zoom, not a UI swap.** Swipe DOWN on the player → zoom out: the orb shrinks into the dial's disc while the stage-bars COLLAPSE INTO ONE SEGMENT of the day's bar row, neighbor blocks sliding in from the edges (the acts-carousel side-peek made vertical) — mid-zoom you see before/after. The bars are the star: they persist but their MEANING re-maps (stages → day). Chrome crossfades LAST (home tools fade in only once the zoom lands). Reverse = the segment expands to fill the bar row + disc blooms into the orb.
+- **Zoom back in (OPEN — David picks):** (1) swipe UP on the circle = the symmetric grammar gesture (lean); (2) tap the disc while a session runs (it breathes with the session's presence) — big target; (3) tap the live bar segment — literal but small. Lean: 1+2 together.
+- **On planner / journey / game (unchanged from v1):** fold → slim MINI PLAYER BAR above the bottom nav (title, progress, pause, tap-to-expand); flush to the screen bottom when the nav folds left.
+- **GUARD LAW (unchanged): at most ONE live time-object per screen.** Home = the dial (w/ the session breathing in the disc when one runs). Other pages = mini bar (session) OR live puck (tracking only); the bar replaces the puck.
+- Build note: swipe-down/swipe-up on the player + home circle = NEW gesture surfaces → arbitration vs page scroll must be designed at build, DEVICE-TESTED, own session (regression-zone-grade care). Lands with/after the bottom-nav build.
+
+## PART 5 — TIMELINE: WHAT REMAINS (2026-07-20)
+1. **P-C (spec'd, safe):** week + month bodies under the D·W·M header, per planner-BUILD.md §5/§8. Paint-only Opus session.
+2. **DRAG-DROP BUG (new, STRUCTURE zone, own session):** repro (David device 2026-07-20): full day planned → grab a top FUTURE block → drag DOWN (later blocks cascade down live) → release: the held block stays where dropped, the OTHER blocks disappear. Suspect region: the drag drop handler / cascade preview vs commit re-render (`calendarView` drag section) — possibly the drop path re-rendering only the held block, or reflow racing a wipe. DO NOT diagnose blind: Opus, effort HIGH, regression contract open, device re-test after. This is regression-contract item 3 territory (drag moves/resizes) + item 2 (future must not cross the now-line on cascade).
+
 ## STATE NOTE
 2026-07-20 Fable session: two idle-circle CSS experiments (glossy bezel, then player-orb) were tried live and REVERTED (`git checkout index.html`); the tree is clean. H-D1 re-derives the bezel from David's reference, not from those.
