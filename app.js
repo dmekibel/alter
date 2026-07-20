@@ -3761,13 +3761,22 @@
     renderTrackTools(true); // TRACKING → the compact regulation-tool row (breath/settle/stretch)
     var _os = el("tfNextSheet"); // docked "{activity} — how much more?" sheet: off-plan = commit the live track into a plan forward; ON-PLAN = EXTEND the current block into the future (Batch 2 item 6 — on-plan finally has the same easy extend off-plan always had). Short chips added (item 5); switch-activity footer removed (redundant with the title-pill switch, item 3).
     if (_os) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
-      var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "extend?" : "how much more?") + '</span>'; // David device 2026-07-03: on-plan "keep going" made no sense — you ARE going; the chips EXTEND the plan
-      var _or = add(_os, "div", "tns-row");
-      var _chips = [];
-      [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); _chips.push(ch); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); }; })(mm); });
-      // S4 ENDING-SOON (new-era home §4): when an on-plan block has ≤5 min left (or is over), quietly glow the extend sheet + highlight the +15 chip so the extend is noticed. PURE PAINT — no new copy (reuses "extend?"), no geometry, no state change. The extend PATH (tfExtendPlan) already existed.
+      var _endingSoon = false;
+      if (onplan && S0.block) { var _eBe = hm(S0.block.time) + (S0.block.mins || 30), _eRem = _eBe - nowMin(); if (_eRem <= 5) _endingSoon = true; }
+      // NEW-ERA DECLUTTER (David 2026-07-20: "I don't like the extend and everything below"): the extend sheet is COLLAPSED to one quiet pill by default → tracking stays calm; tap the pill to reveal the chips. It auto-opens + glows only when the block is ending soon (≤5 min), i.e. exactly when extend matters. The extend PATH (tfExtendPlan/tfMoreMins) is unchanged.
+      var _collapsed = !_endingSoon && !_os._userOpen;
+      _os.classList.toggle("tns-collapsed", _collapsed);
       _os.classList.remove("tns-ending");
-      if (onplan && S0.block) { var _eBe = hm(S0.block.time) + (S0.block.mins || 30), _eRem = _eBe - nowMin(); if (_eRem <= 5) { _os.classList.add("tns-ending"); if (_chips[1]) _chips[1].classList.add("hot"); } }
+      if (_collapsed) {
+        var _pill = add(_os, "button", "tns-pill"); _pill.innerHTML = '<i class="ti ti-clock-plus"></i> ' + tr(onplan ? "extend" : "how much more?");
+        _pill.onclick = function () { _os._userOpen = true; renderTrackerFull(); };
+      } else {
+        var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "extend?" : "how much more?") + '</span>'; // David device 2026-07-03: on-plan "keep going" made no sense — you ARE going; the chips EXTEND the plan
+        var _or = add(_os, "div", "tns-row");
+        var _chips = [];
+        [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); _chips.push(ch); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); _os._userOpen = false; }; })(mm); });
+        if (_endingSoon) { _os.classList.add("tns-ending"); if (_chips[1]) _chips[1].classList.add("hot"); } // ending-soon: glow + highlight +15
+      }
     }
   }
   function clearStaleCommit(k, from, to, keep) { // Batch 3 #2 (David device 2026-07-03): a new track-commit OWNS [from,to] → cancel any OTHER undone COMMIT block (pin:true = a previous "keep-going" that was abandoned) overlapping it, so nothing overlaps. A pin block that started before `from` keeps its past ghost (end cut to `from`); one fully inside the window is removed. DELIBERATE plans (non-pin, e.g. a 3pm meeting) are never touched — reflow shuffles those.
