@@ -1661,6 +1661,9 @@
     if (tagEl) { if (has) { tagEl.classList.add("ss-ember"); tagEl.innerHTML = '<i class="ti ti-flame"></i> ' + tr("day") + ' <b>' + ssDaysTogether() + '</b> ' + tr("together"); } else { tagEl.classList.remove("ss-ember"); tagEl.textContent = "your guardian angel"; } }
     var vEl = el("ssVer"); if (vEl) vEl.textContent = appVer(); // show the live build number (auto-synced from the app.js?v= tag preship bumps) — David 2026-07-01
     ss.classList.add("on");
+    // DEV-TOOLS TOGGLE (David 2026-07-20): a quiet switch on the start screen, OFF by default. ON = the 🛠 dev button stays available inside the app after Start; OFF = it vanishes on Start (but is always here on the start screen). Reuses the alter_dev flag that devOn() gates.
+    (function () { var actions = ss.querySelector(".ss-actions"); if (actions && !el("ssDevToggle")) { var row = document.createElement("button"); row.id = "ssDevToggle"; row.type = "button"; row.setAttribute("style", "align-self:center;margin-top:14px;background:none;border:none;color:#8a6f9a;font-family:var(--bub);font-weight:700;font-size:12px;display:flex;align-items:center;gap:7px;cursor:pointer;opacity:.65;"); var _on = function () { try { return localStorage.getItem("alter_dev") === "1"; } catch (e) { return false; } }; var paint = function () { var v = _on(); row.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;background:' + (v ? "#46e2a4" : "#5a4a6a") + ';display:inline-block"></span> dev tools ' + (v ? "on" : "off"); }; row.onclick = function (e) { e.stopPropagation(); try { localStorage.setItem("alter_dev", _on() ? "0" : "1"); } catch (er) {} paint(); try { devBtnVisible(); } catch (er) {} }; paint(); actions.appendChild(row); } })();
+    try { devInit(); devBtnVisible(); } catch (e) {}
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
     if (curLang() !== "en") translateTree(ss); // translate the start screen into the chosen language
@@ -1716,7 +1719,7 @@
   function ssEnter(has) {
     var ss = el("startScreen");
     try { TTS.unlock(); } catch (e) {} // this Continue/Start tap is a gesture → unlock audio so the app music can begin
-    if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music
+    if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); try { devBtnVisible(); } catch (e) {} }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music; devBtnVisible hides the 🛠 button now that we've left the start screen unless the toggle kept it (David 2026-07-20)
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
     else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} } }, 470); } // returning → AFTER the start screen clears: the GAUGE reads state first (once/day — low mood routes to the relief door, F0 David 2026-07-02), then the ≥2wk Welcome-Back if due, then LAND ON THE HOME COCKPIT (§10f.7, David 2026-07-13 — the reliable landing seam; the boot-time instant-open behind the start screen was getting lost under this gauge flow)
   }
@@ -14053,7 +14056,18 @@
     }
     requestAnimationFrame(frame);
   }); };
-  function devInit() { if (el("devBtn")) return; try { localStorage.setItem("alter_dev", "1"); } catch (e) {} var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; b.setAttribute("style", "position:fixed;left:6px;top:calc(6px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;"); b.onclick = devMenu; document.body.appendChild(b); } // David 2026-07-14: dev tools ALWAYS available from the first screen (single-user build; re-gate with devOn() before public launch)
+  function devBtnVisible() { try { var b = el("devBtn"); if (!b) return; var onStart = !!(el("startScreen") && el("startScreen").classList.contains("on")); var keep = false; try { keep = localStorage.getItem("alter_dev") === "1"; } catch (e) {} b.style.display = (onStart || keep) ? "flex" : "none"; } catch (e) {} } // David 2026-07-20: the dev button shows on the START SCREEN always; after Start it stays ONLY if the start-screen toggle kept it on (alter_dev)
+  function devInit() { if (el("devBtn")) { devBtnVisible(); return; } var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; var _l = 6, _t = 6; try { var p = JSON.parse(localStorage.getItem("alter_devpos") || "{}"); if (p.l != null) _l = p.l; if (p.t != null) _t = p.t; } catch (e) {} b.setAttribute("style", "position:fixed;left:" + _l + "px;top:calc(" + _t + "px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;");
+    // DRAGGABLE (David 2026-07-20: so it never covers content) — a real drag suppresses the click + persists the position
+    var dg = false, mv = false, ox = 0, oy = 0;
+    b.addEventListener("pointerdown", function (e) { dg = true; mv = false; ox = e.clientX - b.offsetLeft; oy = e.clientY - b.offsetTop; try { b.setPointerCapture(e.pointerId); } catch (_e) {} });
+    b.addEventListener("pointermove", function (e) { if (!dg) return; var nl = Math.max(2, Math.min(window.innerWidth - 36, e.clientX - ox)), nt = Math.max(2, Math.min(window.innerHeight - 36, e.clientY - oy)); if (Math.abs(nl - b.offsetLeft) > 2 || Math.abs(nt - b.offsetTop) > 2) mv = true; b.style.left = nl + "px"; b.style.top = nt + "px"; });
+    function _end() { if (!dg) return; dg = false; if (mv) { try { localStorage.setItem("alter_devpos", JSON.stringify({ l: b.offsetLeft, t: b.offsetTop })); } catch (_e) {} } }
+    b.addEventListener("pointerup", function (e) { _end(); try { b.releasePointerCapture(e.pointerId); } catch (_e) {} });
+    b.addEventListener("pointercancel", _end);
+    b.onclick = function () { if (mv) { mv = false; return; } devMenu(); };
+    document.body.appendChild(b); devBtnVisible();
+  } // David 2026-07-20: dev button no longer force-sets alter_dev; it's draggable, always on the start screen, and after Start persists ONLY if the toggle is on (default off). Re-gate stays via devOn() for advanced menu rows.
   function soundMuted() { return !!(S.audio && S.audio.voice === 0 && S.audio.bg === 0); } // dev: fully silenced = both master buses at 0
   // David has NO console on his iPhone — this is the only way for him to hand me his REAL island's exact tile data when a
   // coast bug shows up (copy → paste to me → I feed it straight into DEV.claimSeq/bakeCustom for an exact repro, no guessing

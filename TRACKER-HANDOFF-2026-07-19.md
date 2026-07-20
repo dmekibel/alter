@@ -125,7 +125,11 @@ David ruled the two-clock law: player = elastic session time (scrub/skip, orb, b
 - **ONE move, Claude (next Opus session):** the DRAG-DROP BUG (data-loss-feeling bug outranks all reskins/animation) — diagnose in the drag/reflow path with the regression contract open. Then, per David's pick: Z-3 (animate the section zoom, cheap) / Z-2 (deep home-reveal unification) / P-C / tracking declutter.
 
 ## ★ BATCH FROM DAVID 2026-07-20 (start screen + voice + bottom nav) — triage
-**SHIPPED:** language selector = large icon-only globe (v1141, was a button-in-button-in-logo).
+**SHIPPED:** v1141 language selector = large icon-only globe · v1142 guided breath (standalone `breathwork`) VOICELESS by default (S.breathVoice opt-in; speaks shown label row[0] not the reused row[3]) · v1143 Millie switch fix (loadGenderBank was nulling gdir+gvset on a flaky manifest → fell back to root/Dave; now gdir kept + stand-in gvset). ALL voice = DEVICE-UNTESTED (audio is device-only) — David confirms on phone.
+**STILL OPEN from this batch:**
+- **STACK VOICE MUMBLE** (David confirmed it's the 5-MIN STACK, not the breath tool): "alright um breathe in … eyes … breathe out" = `timelinePlayer`/`composeStackSegs` stitching intro+breath+meditation clips with filler ("um"/"alright" sound baked into the generated clips). Needs its own pass: audit the stack cue sequence + likely REGENERATE the offending clips. Also the breath cues inside a stack should be voiceless like the standalone tool now is.
+- "make a quiet at 4 percent peaceful" = a very-low (~4%) peaceful ambient bed (clarify: new bed vs default breath bed to 4%).
+- Dev-tools toggle (start-screen only, off by default, movable) — `?dev`/`alter_dev` gated UI at @SEC:DEV; the preview wrench is the harness, not it.
 **START-SCREEN POLISH (contained, next quick session):**
 - Dev buttons: the visible wrench in Claude's PREVIEW is the harness (not on David's phone). David's real dev buttons = the `?dev` / `localStorage.alter_dev='1'` gated UI (harness at @SEC:DEV, ~13634; `window.DEV` is a console API). BUILD: a start-screen toggle (off by default, above Start or top-left) that sets `alter_dev`; the visible dev buttons show ONLY on the start screen unless the toggle is on; make the dev button movable/draggable so it never covers content.
 **VOICE BUGS (need investigation + DEVICE test — audio feel is device-only):**
