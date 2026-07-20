@@ -941,16 +941,16 @@
   #calPanel .cardhead h3{ color:#ffe3f1 !important; font-size:20px; font-weight:700; }
   #adhereChip{ background:#ffc83d !important; color:#5a3a00 !important; border:2px solid #160510 !important; border-radius:9px; font-weight:700; font-size:12px; padding:3px 9px; }
   #calPanel .add{ background:#3a1226 !important; color:#ffd0e6 !important; border:2px solid #160510 !important; box-shadow:0 3px 0 #160510 !important; }
-  .lanehead{ position:sticky; top:0; z-index:15; display:flex; padding:7px 0 6px 34px; margin:0 0 2px; background:#2c081a; box-shadow:0 5px 11px -4px rgba(0,0,0,.5); } /* PLAN/REAL stay pinned at top while scrolling (David 2026-06-24) */
-  .lanehead .lhx{ flex:1; text-align:center; font-weight:700; font-size:13px; letter-spacing:.5px; }
-  .lanehead .lhx.plan{ color:#d2aae8; } .lanehead .lhx.real{ color:#ffb8d6; }
+  .lanehead{ position:sticky; top:0; z-index:15; display:flex; padding:6px 0 5px 34px; margin:0 0 2px; background:rgba(22,10,20,.66); backdrop-filter:blur(2px); box-shadow:none; } /* PLAN/REAL stay pinned while scrolling — calmed to a quiet translucent strip, no heavy bar/shadow (David 2026-07-20) */
+  .lanehead .lhx{ flex:1; text-align:center; font-weight:700; font-size:11px; letter-spacing:1px; opacity:.72; } /* quieter, smaller, spaced — a whisper label not a header (David 2026-07-20) */
+  .lanehead .lhx.plan{ color:#b79ad0; } .lanehead .lhx.real{ color:#e39ec0; }
   .cal{ position:relative; margin:0; background:none; border:none; }
-  .calhour{ position:absolute; left:26px; right:4px; height:0; border-top:1px solid #44203a; }
-  .calhalf{ position:absolute; left:13px; width:10px; height:0; border-top:1.5px solid rgba(176,116,146,.5); } /* minimal gutter DASH (not a full-width rule) — = the half/quarter hour (David 2026-06-25) */
-  .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:800; font-size:14px; color:#dba9c2; } /* heavier, slightly larger + brighter hour numbers (David 2026-06-27) */
+  .calhour{ position:absolute; left:26px; right:4px; height:0; border-top:1px solid rgba(200,170,220,.10); } /* hairline hour rule — calm, barely there (David 2026-07-20 minimalist) */
+  .calhalf{ position:absolute; left:13px; width:10px; height:0; border-top:1.5px solid rgba(176,116,146,.32); } /* minimal gutter DASH (not a full-width rule) — = the half/quarter hour (David 2026-06-25) */
+  .calhrl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:14px; color:#a48cbe; } /* quiet lavender hour numerals — calm, not shouting (David 2026-07-20, was bright pink #dba9c2) */
   .calhalfl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:12px; color:#7a4a62; }
   .calsub{ position:absolute; left:0; width:34px; text-align:right; font-weight:700; font-size:12px; color:#9a6a82; } /* AUDIT P1: 12px floor */
-  .calblk{ position:absolute; border:2px solid #160510; border-radius:11px; padding:5px 9px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
+  .calblk{ position:absolute; border:2px solid #160510; border-radius:18px; padding:8px 14px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
     transition:transform .16s cubic-bezier(.2,.85,.3,1.3),box-shadow .14s,top .2s cubic-bezier(.2,.8,.25,1),height .16s,opacity .15s,background .6s,filter .6s,border-color .5s; }
   /* while zooming (slider drag OR pinch) the timeline is repositioned by JS every frame — kill the top/height transition so bubbles SNAP and never bounce (David 2026-06-25) */
   #pullBody.zooming .calblk, #pullBody.zooming .nowline, #pullBody.zooming .nowcirc, #pullBody.zooming .nowread, #pullBody.zooming .calhour, #pullBody.zooming .calhalf, #pullBody.zooming .calhrl, #pullBody.zooming .calsub, #pullBody.zooming .timemark{ transition:none !important; }
@@ -969,7 +969,7 @@
   @keyframes foilSweep{ from{ transform:skewX(-14deg) translateX(-180%); } to{ transform:skewX(-14deg) translateX(320%); } }
   .calblk .shine{ position:absolute; inset:0; pointer-events:none; z-index:1; background:linear-gradient(116deg,rgba(255,255,255,.42) 0%,transparent 22%,transparent 60%,rgba(255,255,255,.3) 80%,transparent 100%); } /* static metallic gloss for shining past success (David 2026-06-25) */
   /* PARTIAL MATCH: the matched span shines full-width over both lanes; below it the ghost-plan (left) + drift (right) show where you diverged (David 2026-06-25) */
-  .matchseg{ position:absolute; border:2px solid #160510; border-radius:11px; overflow:hidden; z-index:5; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; padding:0 8px; box-sizing:border-box; }
+  .matchseg{ position:absolute; border:2px solid #160510; border-radius:18px; overflow:hidden; z-index:5; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; padding:0 8px; box-sizing:border-box; }
   .matchseg > .ti, .matchseg > i{ position:relative; z-index:2; font-size:15px; }
   /* future plan = LIT (holographic sheen, §14) — a note coming toward the now-line */
   .calblk.sched .foil{ position:absolute; top:-25%; bottom:-25%; left:0; width:45%; pointer-events:none; z-index:1; background:linear-gradient(90deg,transparent,rgba(255,252,240,.26),transparent); transform:skewX(-14deg) translateX(-180%); animation:foilSweep 4.6s linear infinite; }
@@ -2833,6 +2833,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1151"></script>
+  <script src="app.js?v=1152"></script>
 </body>
 </html>

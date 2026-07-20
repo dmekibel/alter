@@ -2904,7 +2904,7 @@
   // a time (min, 4am-window units) to a flowed Y via a monotonic piecewise-linear knot list; heights = flowSpan (the flowed
   // distance a duration covers), NOT durMin/60*HP. computeFlow is a PURE function of (blocks, dayWindow, HP) so render, tickCharge,
   // and the zoom relayout can each rebuild the IDENTICAL map at the live HP and never desync (the coupling the 3 rebuilds tripped on).
-  var MINFLOOR = 50; // min flowed card height (px) — every block stays visible + tappable + draggable
+  var MINFLOOR = 56; // min flowed card height (px) — every block stays a generous, tappable, friendly card (David 2026-07-20 minimalist air)
   function computeFlow(k, HP) {
     var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60;
     var arr = blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); });
@@ -2920,7 +2920,7 @@
   function flowY(knots, m) { if (!knots || !knots.length) return 0; if (m <= knots[0][0]) return knots[0][1] + (m - knots[0][0]) / 60 * pullHourPx; for (var i = 1; i < knots.length; i++) { if (m <= knots[i][0]) { var a = knots[i - 1], b = knots[i]; return a[1] + (b[1] - a[1]) * ((m - a[0]) / ((b[0] - a[0]) || 1)); } } var L = knots[knots.length - 1]; return L[1] + (m - L[0]) / 60 * pullHourPx; }
   function flowInv(knots, y) { if (!knots || !knots.length) return dayWindow().startH * 60 + y / pullHourPx * 60; if (y <= knots[0][1]) return knots[0][0] + (y - knots[0][1]) / pullHourPx * 60; for (var i = 1; i < knots.length; i++) { if (y <= knots[i][1]) { var a = knots[i - 1], b = knots[i]; return a[0] + (b[0] - a[0]) * ((y - a[1]) / ((b[1] - a[1]) || 1)); } } var L = knots[knots.length - 1]; return L[0] + (y - L[1]) / pullHourPx * 60; }
   function flowSpan(knots, m, dur) { return Math.max(0, flowY(knots, m + dur) - flowY(knots, m)); }
-  function flowH(knots, m, dur) { return Math.max(MINBAR, flowSpan(knots, m, dur) - 4); } // drawn card height = flowed span minus the 4px inter-card margin (mirrors barH's margin, on the flowed axis)
+  function flowH(knots, m, dur) { return Math.max(MINBAR, flowSpan(knots, m, dur) - 8); } // drawn card height = flowed span minus an 8px inter-card GAP (generous air between cards, David 2026-07-20 minimalist)
   function calFlow(cal) { if (!cal) return null; try { return JSON.parse(cal.dataset.flow || "null"); } catch (e) { return null; } } // read a rendered cal's stashed flow map (for cross-day drops / taps that don't have _knots in scope)
   // Density by bubble height (text → icon → sliver). Module-level so the LIVE pinch can re-grade every frame, not just the commit re-render (David 2026-06-26)
   function degradeCard(card) { var h = parseFloat(card.style.height); if (isNaN(h)) h = 26; /* C9a (David 2026-07-02): 0 is a REAL height — "0 || 26" graded a newborn live sliver as a 26px lbl-c card (full text + borders + shadow peeking below the now-line) */ card.classList.remove("lbl-c", "lbl-i", "lbl-s", "nosub"); if (h < 9) card.classList.add("lbl-s"); else if (h < 22) card.classList.add("lbl-i"); else if (h < 42) card.classList.add("lbl-c"); card.dataset.gate = h < 16 ? "menu" : h < 48 ? "move" : "full"; }
@@ -3292,8 +3292,7 @@
         var rt = add(top, "div", "pull-rt");
         var tdb2 = add(rt, "button", "pull-today"); tdb2.id = "pullTodayBtn"; tdb2.onclick = function () { jumpToToday(); }; setTodayBtn(tdb2, (pullFocusK || todayK()) === todayK());
         var tools = add(rt, "button", "pull-toolsbtn"); tools.innerHTML = '<i class="ti ti-dots"></i>'; tools.setAttribute("aria-label", "day tools"); tools.onclick = function (e) { e.stopPropagation(); dayToolsMenu(tools); };
-        // ROW 2 — the mini week strip
-        weekStrip(add(head, "div", "pull-weekstrip"), pullFocusK || todayK());
+        // ROW 2 — week strip DROPPED (David 2026-07-20: the minimalist mockup omits it; the top day-label still tracks the centered day via setStripSel)
       } else {
         // SCOPE SWITCHER STAYS LEFT in EVERY view (day/week/month) — it used to live on the RIGHT in week/month, so it jumped sides vs day view (David flagged it 2026-06-27). Now it's the first child of `top`, same left position as day view.
         var seg = add(top, "div", "scope-seg");
@@ -8728,17 +8727,10 @@
     var now = logicalNowMin(), _dw = dayWindow(), startH = _dw.startH, endH = _dw.endH, HP = pullHourPx; // YOUR day = wake → bedtime (from onboarding); the SAME window for every day so the sections are uniform and stack into one continuous scroll-into-it timeline (David 2026-06-26)
     var _knots = computeFlow(k, HP); // THE flow map for this day at this zoom — one source of truth for every top/height below
     var cal = add(L, "div", "cal"); cal.style.height = (flowY(_knots, endH * 60) + 10) + "px"; cal.dataset.startH = startH; cal.dataset.endH = endH; cal.dataset.dk = k; cal.dataset.flow = JSON.stringify(_knots); // flow stashed so tickCharge (per-second) + the zoom relayout rebuild the IDENTICAL map
-    // DAY/NIGHT (David 2026-06-27, v5): tint PER-HOUR to match the actual clock — deep indigo night, rose dawn, cool calm day, red dusk — so midnight reads DARK and noon cool (not one ambient wash). A moon + stars live in the NIGHT-hour rows themselves (always, not "now"). Smooth keyframe-interpolated, %-based so it scales with zoom.
+    // CALM GROUND (David 2026-07-20): the minimalist mockup is one quiet deep-wine dark, not a busy per-hour day/night sky with stars + a moon. Replaced the keyframe sky with a single calm plum-wine gradient (a whisper darker at the foot) — no stars, no moon, no hourly tint swings. Pure paint, pointer-events:none, scales with zoom.
     (function () {
       var sky = add(cal, "div", "skybg"); sky.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;";
-      var KF = [[0, [22, 18, 44]], [5, [29, 24, 54]], [6.5, [37, 17, 40]], [8, [42, 12, 27]], [12, [48, 13, 30]], [16, [42, 12, 27]], [18, [40, 17, 38]], [20, [31, 25, 56]], [22, [27, 22, 50]], [24, [22, 18, 44]]]; // DAY = deep wine-RED, NIGHT = deep navy-BLUE — sampled from David's reference images, 2026-06-27 // DAY = deep wine-RED (#280b19-ish), NIGHT = deep navy-BLUE (#1f1939-ish) — sampled from David's two reference images, 2026-06-27; the sky runs blue(night) → red(day) → blue(night) // night deep-indigo (kept) · day = living cool blue (was a dull gray-indigo) · dawn softer rose · dusk a smooth magenta-purple BRIDGE not a muddy red — fixes the day-meh + bad-transition (David 2026-06-27)
-      function skyAt(c) { c = ((c % 24) + 24) % 24; for (var i = 0; i < KF.length - 1; i++) { if (c >= KF[i][0] && c <= KF[i + 1][0]) { var t = (c - KF[i][0]) / (KF[i + 1][0] - KF[i][0]), a = KF[i][1], b = KF[i + 1][1]; return "rgb(" + Math.round(a[0] + (b[0] - a[0]) * t) + "," + Math.round(a[1] + (b[1] - a[1]) * t) + "," + Math.round(a[2] + (b[2] - a[2]) * t) + ")"; } } return "rgb(16,14,38)"; }
-      var stops = []; for (var h = startH; h <= endH; h += 0.5) { stops.push(skyAt(h) + " " + ((h - startH) / (endH - startH) * 100).toFixed(1) + "%"); }
-      sky.style.background = "linear-gradient(180deg," + stops.join(",") + ")";
-      var moonAt = -1, span = endH - startH;
-      for (var hh = startH; hh < endH; hh++) { var cc = ((hh % 24) + 24) % 24; if (!(cc >= 20 || cc < 5)) continue; if (moonAt < 0 && cc >= 20) moonAt = hh; var yTop = (hh - startH) / span * 100; for (var si = 0; si < 2; si++) { var sx = [14, 44, 72, 30, 60, 86][(hh * 2 + si) % 6], sy = yTop + (si + 1) / 3 * (100 / span), sz = si % 2 ? 1.4 : 2.2; var str = add(sky, "div", "skystar"); str.style.cssText = "position:absolute;left:" + sx + "%;top:" + sy.toFixed(1) + "%;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:rgba(235,240,255,.66);box-shadow:0 0 3px rgba(190,205,255,.55);"; } }
-      if (moonAt < 0) for (var h2 = startH; h2 < endH; h2++) { var c2 = ((h2 % 24) + 24) % 24; if (c2 >= 20 || c2 < 5) { moonAt = h2; break; } }
-      if (moonAt >= 0) { var _mn = add(sky, "div", "skymoon"); _mn.style.cssText = "position:absolute;right:16px;top:calc(" + ((moonAt - startH) / span * 100).toFixed(1) + "% + 10px);width:18px;height:18px;border-radius:50%;background:transparent;box-shadow:inset -6px -2px 0 0 #e6ecff;"; }
+      sky.style.background = "linear-gradient(180deg,#241021 0%,#1d0c1a 55%,#160a14 100%)"; // calm deep-wine ground matching the timeline mockup ref
     })();
     // A-1 THERMOGRAPH HEAT (RUN-1 slice 5): hours you actually LIVED hold a rose heat band over the sky (pointer-events:none, never touches physics)
     (function () { if (!(showNow || k < todayK())) return; var s0h = startH * 60;
@@ -8818,7 +8810,7 @@
       }
       if (_straddle) { // STRADDLING NOW (David 2026-06-27): the GHOST half (not done) is a standalone fully-rounded bubble; the TRACKED half is CONTINUOUS with the future (no gap at the now-line — the line just shows printing + the battery: bright charged-past, dim future).
         var _trk = _liveT && domainOf(_liveT) === dom, _tsd = _trk ? new Date(_liveT.start) : null, _nowX = now + new Date().getSeconds() / 60, _tsm = _trk ? Math.max(bs, Math.min(_nowX, toWin(_tsd.getHours() * 60 + _tsd.getMinutes()) + _tsd.getSeconds() / 60)) : now; // _tsm = when tracking started, SUB-MINUTE exact (David device 2026-07-04: minute-truncated birth gave the newborn charge up to 59s of phantom height), in the SAME 4am-window units as bs/now (David 2026-06-28: was raw wall-clock minutes — across midnight that collapsed the ghost to bs, so pressing start wrongly filled the un-done PAST half solid. toWin keeps the pre-start past GHOSTED and lets only the now→ leading edge print, matching "matched grows into the past".) (= now if not tracking → whole past half is ghost)
-        var _matte = mixHex(D.c, "#160510", 0.78), _R = "13px"; // P-A: the not-yet-lived future half is FLAT matte (stripes = lived only), consistent with plain future blocks
+        var _matte = mixHex(D.c, "#160510", 0.78), _R = "18px"; // P-A: the not-yet-lived future half is FLAT matte (stripes = lived only); _R matches the new 18px card radius (David 2026-07-20 minimalist)
         card.classList.add("convbar"); card.style.filter = "none"; card.style.opacity = "1";
         if (_trk) { // TRACKING → the GHOST separates from the active bubble (this is when it breaks off and gets its rounded bottom) — David 2026-06-27
           if (_tsm > bs + 0.5) { card.style.height = flowSpan(_knots, bs, _tsm - bs) + "px"; card.dataset.mn = bs; card.dataset.dur = (_tsm - bs); card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.32); card.style.borderRadius = _R + " " + _R + " 0 0"; card.style.borderBottom = "none"; card.style.boxShadow = "none"; degrade(card); } // GHOST = untracked past (bs → _tsm). EXACT height (no barH −4 margin) + square bottom: the ghost and the charge are ONE continuous story — the 4px bar-gap read as "a tiny space appears" (David device 2026-07-03). degrade() drops text on slivers.
