@@ -2952,7 +2952,7 @@
         var _fk = computeFlow(cal.dataset.dk, nv); cal.dataset.flow = JSON.stringify(_fk); // rebuild the flow map at the NEW zoom (barH scales with HP, MINFLOOR doesn't → the map is the only correct scaler) and re-stash it for tickCharge
         cal.style.height = (Math.max(flowY(_fk, endH * 60), _fk.length ? _fk[_fk.length - 1][1] : 0) + 14) + "px";
         var list = cal.querySelectorAll("[data-mn]");
-        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = (flowY(_fk, mn) + off) + "px"; if (e.dataset.dur != null) e.style.height = flowH(_fk, mn, +e.dataset.dur) + "px"; } // flow map = SAME map the render laid down → live + commit match → no bounce on release
+        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = (flowY(_fk, mn) + off) + "px"; if (e.dataset.dur != null) { var _hh = flowH(_fk, mn, +e.dataset.dur); if (e.dataset.mf) _hh = Math.max(MINFLOOR - 14, _hh); e.style.height = _hh + "px"; } } // flow map = SAME map the render laid down; data-mf fragments (matched span / remainder) hold the min floor LIVE too → no thin-then-thick bounce on release (David 2026-07-21)
         liveReflowCal(cal); // re-grade bubbles + rebuild the symbol-rail live this frame → text/icons reflow seamlessly as you pinch, and the commit changes nothing (no bounce)
       }
     }
@@ -8796,7 +8796,7 @@
       if (status === "ok" && !partial) { card.style.right = "14px"; card.classList.add("fusedbar"); } // FULLY matched = the plan card itself, lived (single column — no separate real lane)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
-      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(MINFLOOR - 14, flowH(_knots, _uS, _uE - _uS)) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble — floored to the min symbol-box so it's never a sliver (David 2026-07-21) (the matched part is its own shining bubble) — David 2026-06-25
+      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(MINFLOOR - 14, flowH(_knots, _uS, _uE - _uS)) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); card.dataset.mf = "1"; } // the UNFULFILLED remainder breaks off into its OWN ghost bubble — floored to the min symbol-box so it's never a sliver (David 2026-07-21) (the matched part is its own shining bubble) — David 2026-06-25
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (bb) { return function () { editBlk(bb); }; })(b); } // small bubble → carries its open-fn so the swipe-select cluster gesture can open it (David 2026-06-28)
       if (status === "ok" && !partial) { // DONE = BRIGHT pastel diagonal STRIPES (V≈88, canon: Gym) + bright same-colour edge, NO black outline, NO gold
@@ -8830,7 +8830,7 @@
         var _mh = Math.max(MINFLOOR - 14, flowH(_knots, _pm.start, _pm.end - _pm.start)); // flowed span, floored to the min symbol-box so a matched sliver is never thinner than the orange/green minimum (David 2026-07-21)
         var seg = add(cal, "div", "matchseg" + voltClass(k)); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "32px"; seg.style.right = "14px"; /* BATTERY PHYSICS: matched charge keeps the voltage of the day it was lived */
         seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#ffffff", 0.06) + "," + mixHex(D.c, "#ffffff", 0.06) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 22px)"; seg.style.borderColor = mixHex(D.c, "#ffffff", 0.2); seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
-        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
+        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start); seg.dataset.mf = "1";
         var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 40 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : tiIcon(b) + ' ') + '<i class="ti ti-circle-check"></i>'; // short matched bar = just the icon + ✓ on the right (clean symbol-box, no cramped faint text) — David 2026-07-21
       }
       var ink = (status === "ok" && !partial) || _straddle ? "#ffffff" : D.light; // striped/done + NOW = WHITE bold label (Gym, Claude code); quiet/outlined = domain-colour label (Lunch, Read) — canon mockup
