@@ -2952,7 +2952,7 @@
         var _fk = computeFlow(cal.dataset.dk, nv); cal.dataset.flow = JSON.stringify(_fk); // rebuild the flow map at the NEW zoom (barH scales with HP, MINFLOOR doesn't → the map is the only correct scaler) and re-stash it for tickCharge
         cal.style.height = (Math.max(flowY(_fk, endH * 60), _fk.length ? _fk[_fk.length - 1][1] : 0) + 14) + "px";
         var list = cal.querySelectorAll("[data-mn]");
-        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = (flowY(_fk, mn) + off) + "px"; if (e.dataset.dur != null) { var _hh = flowH(_fk, mn, +e.dataset.dur); if (e.dataset.mf) _hh = Math.max(MINFLOOR - 14, _hh); e.style.height = _hh + "px"; } } // flow map = SAME map the render laid down; data-mf fragments (matched span / remainder) hold the min floor LIVE too → no thin-then-thick bounce on release (David 2026-07-21)
+        for (var i = 0; i < list.length; i++) { var e = list[i], mn = +e.dataset.mn, off = +(e.dataset.off || 0); e.style.top = (flowY(_fk, mn) + off) + "px"; if (e.dataset.dur != null) e.style.height = flowH(_fk, mn, +e.dataset.dur) + "px"; } // flow map = SAME map the render laid down → live + commit match, no bounce, and fragments respect layout spacing (no zoom-out overlap)
         liveReflowCal(cal); // re-grade bubbles + rebuild the symbol-rail live this frame → text/icons reflow seamlessly as you pinch, and the commit changes nothing (no bounce)
       }
     }
@@ -8728,7 +8728,7 @@
     // CALM GROUND (David 2026-07-20): the minimalist mockup is one quiet deep-wine dark, not a busy per-hour day/night sky with stars + a moon. Replaced the keyframe sky with a single calm plum-wine gradient (a whisper darker at the foot) — no stars, no moon, no hourly tint swings. Pure paint, pointer-events:none, scales with zoom.
     (function () {
       var sky = add(cal, "div", "skybg"); sky.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;";
-      sky.style.background = "linear-gradient(180deg,#201126 0%,#1d0e21 60%,#180b1c 100%)"; // deep plum ground, sampled from the canon mockup (#1d0e21)
+      sky.style.background = "linear-gradient(180deg,#2b1642 0%,#211031 45%,#160a1e 100%)"; // ONE smooth gradient: lighter purple up top → darker purple below (David 2026-07-21, matching the reference)
     })();
     // A-1 THERMOGRAPH HEAT (RUN-1 slice 5): hours you actually LIVED hold a rose heat band over the sky (pointer-events:none, never touches physics)
     (function () { if (!(showNow || k < todayK())) return; var s0h = startH * 60;
@@ -8796,13 +8796,13 @@
       if (status === "ok" && !partial) { card.style.right = "14px"; card.classList.add("fusedbar"); } // FULLY matched = the plan card itself, lived (single column — no separate real lane)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
-      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(MINFLOOR - 14, flowH(_knots, _uS, _uE - _uS)) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); card.dataset.mf = "1"; } // the UNFULFILLED remainder breaks off into its OWN ghost bubble — floored to the min symbol-box so it's never a sliver (David 2026-07-21) (the matched part is its own shining bubble) — David 2026-06-25
+      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = flowH(_knots, _uS, _uE - _uS) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble — floored to the min symbol-box so it's never a sliver (David 2026-07-21) (the matched part is its own shining bubble) — David 2026-06-25
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (bb) { return function () { editBlk(bb); }; })(b); } // small bubble → carries its open-fn so the swipe-select cluster gesture can open it (David 2026-06-28)
       if (status === "ok" && !partial) { // DONE = BRIGHT pastel diagonal STRIPES (V≈88, canon: Gym) + bright same-colour edge, NO black outline, NO gold
         card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#ffffff", 0.06) + "," + mixHex(D.c, "#ffffff", 0.06) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 22px)"; card.style.borderColor = mixHex(D.c, "#ffffff", 0.20); card.style.borderStyle = "solid"; card.style.boxShadow = "0 5px 15px rgba(0,0,0,.32)"; // stripes go toward WHITE (bright), edge is the bright domain colour
       } else if (dark) { // missed/skipped — quiet outlined, dashed + dimmer to read as "not kept"
-        card.style.background = mixHex(D.c, "#160510", 0.86); card.style.borderColor = mixHex(D.c, "#160510", 0.28); card.style.borderStyle = "dashed"; card.style.boxShadow = "none";
+        card.style.background = mixHex(D.c, "#160510", 0.84); card.style.borderColor = mixHex(D.c, "#160510", 0.2); card.style.borderStyle = "solid"; card.style.boxShadow = "none"; // incomplete = SOLID one-colour outline, NOT dashed (David 2026-07-21: kill the dotted look; done = stripes, incomplete = solid)
       } else { // PLANNED / quiet = BRIGHT domain outline + dark domain fill + domain-colour label (canon: Lunch, Read)
         card.style.background = mixHex(D.c, "#160510", 0.80); card.style.borderColor = mixHex(D.c, "#160510", 0.16); card.style.borderStyle = "solid"; card.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)"; card.style.opacity = "1"; // border mostly the domain colour = bright edge, NOT black
       }
@@ -8827,10 +8827,10 @@
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
-        var _mh = Math.max(MINFLOOR - 14, flowH(_knots, _pm.start, _pm.end - _pm.start)); // flowed span, floored to the min symbol-box so a matched sliver is never thinner than the orange/green minimum (David 2026-07-21)
+        var _mh = flowH(_knots, _pm.start, _pm.end - _pm.start); // flowed span (no artificial floor — that caused zoom-out overlap; the overlay respects the block's flowed extent)
         var seg = add(cal, "div", "matchseg" + voltClass(k)); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "32px"; seg.style.right = "14px"; /* BATTERY PHYSICS: matched charge keeps the voltage of the day it was lived */
         seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#ffffff", 0.06) + "," + mixHex(D.c, "#ffffff", 0.06) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 22px)"; seg.style.borderColor = mixHex(D.c, "#ffffff", 0.2); seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
-        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start); seg.dataset.mf = "1";
+        seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
         var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 40 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : tiIcon(b) + ' ') + '<i class="ti ti-circle-check"></i>'; // short matched bar = just the icon + ✓ on the right (clean symbol-box, no cramped faint text) — David 2026-07-21
       }
       var ink = (status === "ok" && !partial) || _straddle ? "#ffffff" : D.light; // striped/done + NOW = WHITE bold label (Gym, Claude code); quiet/outlined = domain-colour label (Lunch, Read) — canon mockup
