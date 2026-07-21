@@ -3741,7 +3741,7 @@
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; } // reset off-plan border + any prior tap wiring before a state re-paints the disc
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home");
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
-    renderTrackTools(false); // default hidden; only the onplan/off tracking branch turns it on
+    renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
@@ -3817,27 +3817,22 @@
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
-    renderTrackTools(true); // TRACKING → the compact regulation-tool row (breath/settle/stretch)
-    var _os = el("tfNextSheet"); // docked "{activity} — how much more?" sheet: off-plan = commit the live track into a plan forward; ON-PLAN = EXTEND the current block into the future (Batch 2 item 6 — on-plan finally has the same easy extend off-plan always had). Short chips added (item 5); switch-activity footer removed (redundant with the title-pill switch, item 3).
-    if (_os) { tf.classList.add("tf-nextsheet"); _os.style.display = "block"; _os.innerHTML = "";
-      var _endingSoon = false;
-      if (onplan && S0.block) { var _eBe = hm(S0.block.time) + (S0.block.mins || 30), _eRem = _eBe - nowMin(); if (_eRem <= 5) _endingSoon = true; }
-      // NEW-ERA DECLUTTER (David 2026-07-20: "I don't like the extend and everything below"): the extend sheet is COLLAPSED to one quiet pill by default → tracking stays calm; tap the pill to reveal the chips. It auto-opens + glows only when the block is ending soon (≤5 min), i.e. exactly when extend matters. The extend PATH (tfExtendPlan/tfMoreMins) is unchanged.
-      var _collapsed = !_endingSoon && !_os._userOpen;
-      _os.classList.toggle("tns-collapsed", _collapsed);
-      _os.classList.remove("tns-ending");
-      if (_collapsed) {
-        var _pill = add(_os, "button", "tns-pill"); _pill.innerHTML = '<i class="ti ti-clock-plus"></i> ' + tr(onplan ? "extend" : "how much more?");
-        _pill.onclick = function () { _os._userOpen = true; renderTrackerFull(); };
-      } else {
-        var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "extend?" : "how much more?") + '</span>'; // David device 2026-07-03: on-plan "keep going" made no sense — you ARE going; the chips EXTEND the plan
-        var _or = add(_os, "div", "tns-row");
-        var _chips = [];
-        [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); _chips.push(ch); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); _os._userOpen = false; }; })(mm); });
-        if (_endingSoon) { _os.classList.add("tns-ending"); if (_chips[1]) _chips[1].classList.add("hot"); } // ending-soon: glow + highlight +15
-      }
-    }
+    renderTrackTools(false); // DECLUTTER (David 2026-07-21): the regulation-tool row (Breathe/Settle/Wake) is GONE from the tracking faces — those tools live on the idle home + toolbox. The tracking face is two-clock minimal (dial IS the clock; below it stays calm).
+    // DECLUTTER (David 2026-07-21): the extend sheet is NO LONGER a docked default tier. It renders ONLY when (a) the block is ending soon (≤5 min — exactly when extend matters, it auto-opens + glows) or (b) the user tapped the quiet "extend" text-button (_os._userOpen, via tfRevealExtend). Otherwise the sheet is hidden and the face has just: title pill · meta line · next-up · Stop · [Break · extend]. The extend PATH (tfExtendPlan/tfMoreMins) is unchanged.
+    var _os = el("tfNextSheet");
+    var _endingSoon = false;
+    if (onplan && S0.block) { var _eBe = hm(S0.block.time) + (S0.block.mins || 30), _eRem = _eBe - nowMin(); if (_eRem <= 5) _endingSoon = true; }
+    if (_os && (_endingSoon || _os._userOpen)) { tf.classList.add("tf-nextsheet"); _os.style.display = "block";
+      while (_os.firstChild) _os.removeChild(_os.firstChild); // targeted clear, not an innerHTML wipe
+      _os.classList.remove("tns-collapsed", "tns-ending");
+      var _oh = add(_os, "div", "tns-h"); _oh.innerHTML = '<i class="ti ' + D.ti + '" style="color:' + D.c + '"></i><b>' + esc(t.title || "") + '</b><span> — </span><span>' + tr(onplan ? "extend?" : "how much more?") + '</span>'; // David device 2026-07-03: on-plan "keep going" made no sense — you ARE going; the chips EXTEND the plan
+      var _or = add(_os, "div", "tns-row");
+      var _chips = [];
+      [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); _chips.push(ch); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); _os._userOpen = false; }; })(mm); });
+      if (_endingSoon) { _os.classList.add("tns-ending"); if (_chips[1]) _chips[1].classList.add("hot"); } // ending-soon: glow + highlight +15
+    } else if (_os) { tf.classList.remove("tf-nextsheet"); _os.style.display = "none"; _os._userOpen = false; while (_os.firstChild) _os.removeChild(_os.firstChild); } // no docked tier when calm
   }
+  function tfRevealExtend() { var _os = el("tfNextSheet"); if (_os) { _os._userOpen = true; } renderTrackerFull(); } // the quiet "extend" text-button → opens the existing extend chip sheet on demand (no permanent docked tier)
   function clearStaleCommit(k, from, to, keep) { // Batch 3 #2 (David device 2026-07-03): a new track-commit OWNS [from,to] → cancel any OTHER undone COMMIT block (pin:true = a previous "keep-going" that was abandoned) overlapping it, so nothing overlaps. A pin block that started before `from` keeps its past ghost (end cut to `from`); one fully inside the window is removed. DELIBERATE plans (non-pin, e.g. a 3pm meeting) are never touched — reflow shuffles those.
     var arr = blocks(k); for (var i = arr.length - 1; i >= 0; i--) { var b = arr[i]; if (b === keep || b.done || !b.pin) continue; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < to && be > from) { if (bs < from) b.mins = Math.max(5, from - bs); else arr.splice(i, 1); } }
   }
@@ -4898,8 +4893,10 @@
                 { icon: "ti-plus", label: "+5 min", fn: function () { tfBreakPlus(5); } },
                 { icon: "ti-x", label: "End", fn: tfEndBreak }];
       case "onplan": // David device 2026-07-03, the logical matrix: ONE ending — «Стоп» (= done = shutoff; counts the win). «Перерыв» is the explicit pause-with-duration. Reschedule REMOVED (the title pill IS the switch). Extend lives in the docked chips («продлить?»).
+        // DECLUTTER (David 2026-07-21): tracking face = two-clock minimal. ONE big Stop + ONE quiet secondary row (Break · extend). Regulation chips + the always-docked extend sheet are gone; "extend" reveals the existing chip sheet on demand (tfExtendPlan path unchanged).
         return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
-                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }]; // FOUNDATION RESKIN F1 (2026-07-21): Stop = PINK, the app's commit color (pink = commit per the color law; Stop logs the finished block = a commit). Matches the home play-disc pink so the one big primary reads as the same instrument. Was deep green.
+                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }, // FOUNDATION RESKIN F1 (2026-07-21): Stop = PINK, the app's commit color (pink = commit per the color law; Stop logs the finished block = a commit). Matches the home play-disc pink so the one big primary reads as the same instrument. Was deep green.
+                { icon: "ti-clock-plus", label: "extend", fn: tfRevealExtend, half: true }];
       // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
@@ -4929,7 +4926,8 @@
                          { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true },
                          { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }];
         return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#6b5a78", ink: "#f2ecf7" },
-                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }]; // Batch 2 + David device 2026-07-03: "Pause" renamed to what it IS — «Перерыв» (break with a duration); Stop is the one ending everywhere.
+                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }, // Batch 2 + David device 2026-07-03: "Pause" renamed to what it IS — «Перерыв» (break with a duration); Stop is the one ending everywhere.
+                { icon: "ti-clock-plus", label: "extend", fn: tfRevealExtend, half: true }]; // DECLUTTER 2026-07-21: off-plan extend now a quiet text-button too (reveals the "how much more?" chip sheet on demand); the sheet is no longer a docked tier
       }
     }
   }
