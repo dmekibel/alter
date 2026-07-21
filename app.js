@@ -5081,8 +5081,8 @@
   }
   function renderHomeFace(nb) {
     renderHomeBars();
-    var lm = el("tfLiveMeta"); if (lm) { while (lm.firstChild) lm.removeChild(lm.firstChild); } // no live meta on the idle home (drain, not innerHTML="" — keeps the wipe ratchet flat)
-    var c = el("tfCtrls"); if (!c) return; while (c.firstChild) c.removeChild(c.firstChild); // drain (renderHomeGrid refills immediately) — no innerHTML="" wipe
+    var lm = el("tfLiveMeta"); if (lm) { while (lm.firstChild) lm.removeChild(lm.firstChild); } // no live meta on the idle home (node drain, keeps the wipe ratchet flat)
+    var c = el("tfCtrls"); if (!c) return; while (c.firstChild) c.removeChild(c.firstChild); // node drain (renderHomeGrid refills immediately)
     // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
     // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
     renderHomeGrid(c);
