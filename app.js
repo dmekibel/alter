@@ -1725,16 +1725,26 @@
     else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} } }, 470); } // returning → AFTER the start screen clears: the GAUGE reads state first (once/day — low mood routes to the relief door, F0 David 2026-07-02), then the ≥2wk Welcome-Back if due, then LAND ON THE HOME COCKPIT (§10f.7, David 2026-07-13 — the reliable landing seam; the boot-time instant-open behind the start screen was getting lost under this gauge flow)
   }
   function openJourney() {
-    var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving"); p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640)
+    var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving", "jp-sliding"); p.style.transform = ""; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640). jp-sliding/transform reset: never inherit a TRANS_V2 slide-out state on re-open.
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
     drawJourney(true); cascadeJourney(); // stepping-stones pop in on open (v659)
   }
-  function closeJourney() { // crossfade the journey OUT to reveal the planner (v659 — replaces the broken portal wipe), then cascade the planner's blocks
+  function closeJourneyInstant() { // TRANS_V2 helper: drop the journey with NO crossfade (used when another full-screen surface is about to open on top — never blend two live DOMs). No timeline cascade here; the incoming surface owns the frame.
+    var p = el("journeyPath"); document.body.classList.remove("journey-open");
+    document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
+    if (p) { p.classList.remove("on", "jp-leaving", "jp-sliding"); p.style.transform = ""; }
+  }
+  function closeJourney() { // reveal the planner underneath.
     var p = el("journeyPath"); document.body.classList.remove("journey-open");
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
     var gaming = document.body.classList.contains("gaming");
-    if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); }
+    if (TRANS_V2) { // A2 GHOST FIX: the journey stays FULLY OPAQUE and SLIDES down off-screen as one layer (the planner was always rendered underneath) → no two-live-DOM opacity crossfade. Removed only AFTER the slide finishes.
+      if (p && p.classList.contains("on")) { p.classList.remove("jp-leaving"); p.classList.add("jp-sliding"); p.style.transform = "translateY(100%)"; setTimeout(function () { p.classList.remove("on", "jp-sliding"); p.style.transform = ""; if (!gaming) revealTimeline(); }, 300); }
+      else if (!gaming) revealTimeline();
+      return;
+    }
+    if (p && p.classList.contains("on")) { p.classList.add("jp-leaving"); setTimeout(function () { p.classList.remove("on"); p.classList.remove("jp-leaving"); if (!gaming) revealTimeline(); }, 280); } // OLD (flag off): crossfade the journey OUT (v659) — the DESIGN-STUDIO A2 ghost, left intact when TRANS_V2 is false
     else if (!gaming) revealTimeline();
   }
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
@@ -1764,9 +1774,9 @@
     ["planner", "journey", "game"].forEach(clearGroup);
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
-    if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
+    if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
-    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
+    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
   }
   var _paneAnim = false;
   function initPaneCarousel() {
@@ -3531,6 +3541,7 @@
   function openHomeInstant() { var tf = el("trackerFull"); if (!tf || TF_OPEN || TF_ANIM) return; HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; TF_OPEN = true; _ringP = 0; tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); renderTrackerFull(); } // §10f.7 boot landing: show the home cockpit with NO morph (the start screen z-200 covers it until Continue; morphing from an unlaid-out dock at boot would misfire)
   // ===== LANDING CONTRACT (Parcel A, David 2026-07-21 "cockpit came back and looks horrible") — a flow launched FROM HOME must RE-OPEN home on close, not fall through to the panes below. leaveHomeForPlayer() tears the home cockpit down (Z-2 blocker, HOME-PLAYER-GRAMMAR PART 6); without this every tool/session close from home landed on journey/planner (or an old-era face resurfaced). Purely-additive module flags, no SCHEMA touch. =====
   var LAND_V2 = true;      // kill-switch: flip false on device if re-opening home on close misbehaves (falls back to the old pane-landing)
+  var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
   function landAfterFlow() { // call at the END of every flow-close path (after renderAll). If we launched from home, re-open the NEW home cockpit instead of leaving the panes exposed. Idempotent + guarded: a no-op unless _returnHome is armed.
@@ -3940,7 +3951,7 @@
     b.onclick = function () { try { node.act(); } catch (e) {} };
   }
   // ===== JOURNAL STAGE (CKPT-5, David 2026-06-28): the fusion proof — guidance IS tracking. One adaptive question + a textarea + an optional mood face, rendered into #tfStageBody while the Reflection ring tracks in the corner. Built ONCE (renderStage's dataset.mode guard skips rebuild), so the 1s live-tick never wipes what you're typing. =====
-  function openToolbox() { try { TTS.unlock(); TTS.warmAll(); } catch (e) {} enterStage("tool", { byTap: true }); } // WISDOM TOOLBOX (TB-SHEET): open the cockpit 'tool' stage. Warm the whole voice bank on open (this tap is a gesture → unlocks audio) so every tool launched from here has cached clips and can start its audio in the launch tap. // corner-poses the ring, fills #tfStageBody with the kit.
+  function openToolbox() { try { TTS.unlock(); TTS.warmAll(); } catch (e) {} if (TRANS_V2) closeJourneyInstant(); /* A2 ghost: the toolbox (trackerFull z90) was opening OVER a still-live journey (z75) → the two full-screens blended. Drop the journey cleanly first so only ONE surface is ever alive. */ enterStage("tool", { byTap: true }); } // WISDOM TOOLBOX (TB-SHEET): open the cockpit 'tool' stage. Warm the whole voice bank on open (this tap is a gesture → unlocks audio) so every tool launched from here has cached clips and can start its audio in the launch tap. // corner-poses the ring, fills #tfStageBody with the kit.
   function openJournal() { enterStage("journal", { trackTitle: "Reflection", byTap: true }); } // the Journal chip's door: lights the ring + slides it aside + fills the stage in one gesture
   function renderStageChips() { // the BASE (track-mode) entry doors into guided flows — visible + tappable (not gesture-only). Built fresh each track render (cheap, no inputs to preserve). (CKPT-5)
     var w = el("tfStageChips"); if (!w) return; w.innerHTML = "";

@@ -36,6 +36,7 @@
   .chg-metal{ filter:drop-shadow(0 0 8px rgba(255,210,74,.9)) brightness(1.25) saturate(1.2); transition:filter .12s; }
   #journeyPath.jp-leaving{ animation:jpLeave .28s ease forwards; } /* crossfade the journey out to reveal the planner cleanly */
   @keyframes jpLeave{ from{ opacity:1; } to{ opacity:0; } }
+  #journeyPath.jp-sliding{ opacity:1 !important; animation:none !important; transition:transform .3s cubic-bezier(.22,.9,.3,1); z-index:80; } /* TRANS_V2 (W2 slide-over-scrim grammar): the journey stays FULLY OPAQUE and slides down off-screen as one layer to reveal the planner underneath — never a two-live-DOM opacity crossfade (DESIGN-STUDIO A2). Applied ONLY when TRANS_V2 is on; the class is never added otherwise. */
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .sfc-reveal, .casc-item, .casc-blk{ animation:none !important; } }
   /* UNIVERSAL menu entrance (v650): EVERY overlay card springs in + its backdrop fades — one rule animates the whole app's menus on appear, not feature-by-feature */
   @keyframes popIn{ from{ opacity:0; transform:translateY(22px) scale(.8); } to{ opacity:1; transform:none; } }
