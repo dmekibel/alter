@@ -2643,7 +2643,7 @@
   /* ============ v446 — PAGED day view: one day per card, horizontal swipe pages between days (Apple-Photos slide) — David 2026-06-24 ============ */
   #pullBody.paged{ overflow:hidden !important; touch-action:none; padding:0 !important; }
   .day-pager{ display:flex; width:300%; height:100%; will-change:transform; }
-  .day-card{ flex:0 0 33.3333%; min-width:0; height:100%; display:flex; flex-direction:column; padding:0; } /* full-bleed: sky reaches the screen edges, no maroon #pullSheet rim around the timeline (David 2026-06-27) */
+  .day-card{ flex:0 0 33.3333%; min-width:0; height:100%; display:flex; flex-direction:column; padding:0; background:linear-gradient(180deg,#2b1642 0%,#211031 45%,#160a1e 100%); } /* ONE fixed gradient on the non-scrolling viewport: lighter-top → darker-bottom, NEVER resets as you scroll the day (David 2026-07-21) */
   .day-cardhead{ flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 2px 3px; }
   .day-cardlab{ color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:800; font-size:16px; }
   .day-card.today .day-cardlab{ color:#ff5fa0; }
@@ -2833,6 +2833,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1168"></script>
+  <script src="app.js?v=1169"></script>
 </body>
 </html>

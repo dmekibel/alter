@@ -2904,7 +2904,7 @@
   // a time (min, 4am-window units) to a flowed Y via a monotonic piecewise-linear knot list; heights = flowSpan (the flowed
   // distance a duration covers), NOT durMin/60*HP. computeFlow is a PURE function of (blocks, dayWindow, HP) so render, tickCharge,
   // and the zoom relayout can each rebuild the IDENTICAL map at the live HP and never desync (the coupling the 3 rebuilds tripped on).
-  var MINFLOOR = 34; // FIXED floor (px) — bubbles SHRINK with zoom-out down to a small SYMBOL-BOX (drawn ≈20px, just the icon) and stop there — never a skinny sliver, never frozen at a big size (David 2026-07-20). A CONSTANT so zoom stays smooth + monotonic. Longer blocks / zoomed-in show their real height + label; only the smallest degrade to the icon-box.
+  var MINFLOOR = 44; // FIXED floor (px) — bubbles SHRINK with zoom-out down to a SYMBOL-BOX (drawn ≈30px) and stop there — never a skinny sliver (David 2026-07-21: bumped 150%, 20→30 drawn). A CONSTANT so zoom stays smooth + monotonic. Longer blocks / zoomed-in show their real height + label; the smallest degrade to the icon-box.
   function computeFlow(k, HP) {
     var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60, MF = MINFLOOR;
     var bl = blocks(k);
@@ -3333,12 +3333,9 @@
         var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
         var lh = add(card, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL");
         var sc = add(card, "div", "day-cardscroll");
-        if (off === 0) { // CUR → a CONTINUOUS vertical stack (focus-R..focus+R): you scroll freely within a day AND see the neighbour as you reach the edge; scrolling into it makes it the day. attachInfinite recenters the buffer (David picked continuous-done-right, 2026-06-26)
-          for (var d = -R; d <= R; d++) { var sk = keyAdd(focus, d), skT = (sk === todayK());
-            var sep = add(sc, "div", "day-stacksep" + (skT ? " today-sep" : "")); add(sep, "span", "dss-lab", dayLabelFull(sk)); dayHeadInfo(sep, sk);
-            var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = sk; calendarView(ssec, sk, skT, true); }
-          attachInfinite(sc);
-        } else { var sep = add(sc, "div", "day-stacksep" + (isT ? " today-sep" : "")); add(sep, "span", "dss-lab", dayLabelFull(dk)); dayHeadInfo(sep, dk); var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); } // preview (off ±1) MATCHES the continuous-stack structure — stacksep INSIDE the scroll (not a fixed day-cardhead) — so when the slide lands and the day rebuilds into the stack, the day-section sits at the SAME Y = no bounce on arrival (David 2026-06-27)
+        if (off === 0) { // DAY-LOCK (David 2026-07-21): the CUR card is ONE day, full-screen — no vertical stack, no neighbour above/below, no infinite recenter. Vertical scroll + zoom stay on this day; day nav = horizontal swipe / week view. (Reverses the 2026-06-26 continuous-scroll model.)
+          var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = focus; calendarView(ssec, focus, focus === todayK(), true);
+        } else { var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); } // the ±1 side-cards are single days for the horizontal day-slide
       })
       ; // forEach
       pager.style.transform = "translateX(-33.3333%)"; // show the middle (current) card
@@ -8728,7 +8725,7 @@
     // CALM GROUND (David 2026-07-20): the minimalist mockup is one quiet deep-wine dark, not a busy per-hour day/night sky with stars + a moon. Replaced the keyframe sky with a single calm plum-wine gradient (a whisper darker at the foot) — no stars, no moon, no hourly tint swings. Pure paint, pointer-events:none, scales with zoom.
     (function () {
       var sky = add(cal, "div", "skybg"); sky.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;";
-      sky.style.background = "linear-gradient(180deg,#2b1642 0%,#211031 45%,#160a1e 100%)"; // ONE smooth gradient: lighter purple up top → darker purple below (David 2026-07-21, matching the reference)
+      sky.style.background = "transparent"; // the gradient now lives on the fixed viewport (#pullBody), not per-day, so it NEVER resets at a day boundary (David 2026-07-21)
     })();
     // A-1 THERMOGRAPH HEAT (RUN-1 slice 5): hours you actually LIVED hold a rose heat band over the sky (pointer-events:none, never touches physics)
     (function () { if (!(showNow || k < todayK())) return; var s0h = startH * 60;
