@@ -3726,7 +3726,7 @@
       var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
       var _S0 = trackerState(), _t = _S0.t; // keep the corner puck a LIVE mini-tracker: show WHAT + running mm:ss off the live timer
       var _tt2 = el("tfTitle"); if (_tt2) { _tt2.classList.remove("switchable"); _tt2.style.background = ""; _tt2.style.color = ""; _tt2.style.borderColor = ""; _tt2.onclick = null; _tt2.textContent = _t ? (_t.title || "Tracking") : (stageLabel(TF_MODE) || ""); }
-      var _ti2 = el("tfTile"); if (_ti2) { var _D2 = _t ? (DOM[domainOf(_t)] || DOM.restore) : DOM.restore; _ti2.style.background = tfStripe(_D2.c); _ti2.style.filter = ""; _ti2.innerHTML = _t ? tiIcon(_t) : '<i class="ti ' + (_D2.ti || "ti-moon") + '"></i>'; }
+      var _ti2 = el("tfTile"); if (_ti2) { var _D2 = _t ? (DOM[domainOf(_t)] || DOM.restore) : DOM.restore; _ti2.style.background = _D2.c; _ti2.style.border = "none"; _ti2.style.color = "#fff"; _ti2.style.filter = ""; _ti2.innerHTML = _t ? tiIcon(_t) : '<i class="ti ' + (_D2.ti || "ti-moon") + '"></i>'; } // FOUNDATION RESKIN F4: flat activity puck + white icon (was tfStripe → loud) so the corner mini-tracker matches the new-era flat dial
       var _tm2 = el("tfTime"); if (_tm2) { if (_t) { _tm2.setAttribute("data-tid", _t.id); _tm2.textContent = elapsedStr(_t); } else { _tm2.removeAttribute("data-tid"); _tm2.textContent = ""; } }
       var _elMin2 = _t ? (Date.now() - _t.start) / 60000 : 0, _p2 = _t ? Math.max(0, Math.min(1, _elMin2 / 60)) : 1;
       setRing(_p2, _t ? "#28cf86" : DOM.restore.c);
@@ -3745,18 +3745,18 @@
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
-      if (tile) { tile.style.background = tfStripe(CD.c); tile.style.filter = ""; tile.innerHTML = '<i class="ti ' + tiClass(CB) + '"></i>'; }
+      if (tile) { tile.style.background = CD.c; tile.style.border = "none"; tile.style.color = "#fff"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ' + tiClass(CB) + '"></i>'; } // FOUNDATION RESKIN F2: flat vivid activity disc + white icon (the home/on-plan dial language), was tfStripe → loud
       el("tfTitle").textContent = CB.title;
       el("tfVerdict").textContent = "welcome back";
       el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = dur(gap);
       el("tfElabel").textContent = "away";
       el("tfCtx").textContent = "gap " + fmt(S0.gapStartMin) + "–now";
       el("tfSpark").innerHTML = fireHTML(streak);
-      setRing(1, CD.c); renderSwitchChips(""); renderTFControls("claim");
+      setRing(0, "#2a1832", true); renderSwitchChips(""); renderTFControls("claim"); // FOUNDATION RESKIN F2: plum bezel (#2a1832) around the vivid disc — the same resting dial as home/off, not the old full domain-color annulus
       return;
     }
     if (S0.id === "night") { tf.classList.add("st-night");
-      if (tile) { tile.style.background = tfStripe("#5a4a86"); tile.style.filter = "saturate(.4) brightness(.7)"; tile.innerHTML = '<i class="ti ti-moon"></i>'; }
+      if (tile) { tile.style.background = "#2e2650"; tile.style.border = "none"; tile.style.color = "#b8a8e0"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-moon"></i>'; } // FOUNDATION RESKIN F2: calm solid deep-violet moon disc (no stripe, no harsh filter) inside the breathing violet nightlight ring
       el("tfTitle").textContent = "rest";
       el("tfVerdict").textContent = "no plan tonight";
       el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = "";
@@ -3785,7 +3785,7 @@
       return;
     }
     if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _open = !B.mins, _bend = B.start + (B.mins || 0) * 60000, _rem = _bend - Date.now(), _up = !_open && _rem <= 0, _elap = Date.now() - B.start;
-      if (tile) { tile.style.background = tfStripe("#e8b53a"); tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-pause"></i>'; }
+      if (tile) { tile.style.background = "#e8b53a"; tile.style.border = "none"; tile.style.color = "#4a3000"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-pause"></i>'; } // FOUNDATION RESKIN F3: flat gold pause disc (was tfStripe → loud) — sibling of the home/on-plan flat dial, dark ink icon on the warm gold
       el("tfTitle").textContent = _open ? "Paused" : (_up ? "Break's up" : "On a break");
       el("tfVerdict").textContent = _up ? "ready to come back" : "held · streak safe";
       el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = _open ? fmtCD(_elap) : fmtCD(Math.max(0, _rem)); // open pause counts UP (time held); a timed break counts down
@@ -3799,8 +3799,8 @@
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
     tf.classList.add(onplan ? "st-onplan" : "st-off");
     // RUN-1 mocks 3/4: on-plan disc = striped (winning); off-plan disc = MATTE (dark tint + colored border + colored icon, no stripe, no filter)
-    if (tile) { if (onplan) { tile.style.background = tfStripe(D.c); tile.style.border = ""; tile.style.color = ""; tile.style.filter = ""; } else { tile.style.background = mixHex(D.c, "#0a0308", 0.8); tile.style.border = "3px solid " + D.c; tile.style.color = D.light; tile.style.filter = "none"; } tile.innerHTML = tiIcon(t); }
-    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#0a0510", 0.8); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // canon 3/4: near-black domain-tinted pill (#0e2033 navy / #2b1408 brown) — was too light at 0.5
+    if (tile) { if (onplan) { tile.style.background = D.c; tile.style.border = "none"; tile.style.color = "#fff"; tile.style.filter = ""; } else { tile.style.background = mixHex(D.c, "#160510", 0.82); tile.style.border = "3px solid " + D.c; tile.style.color = D.light; tile.style.filter = "none"; } tile.innerHTML = tiIcon(t); } // FOUNDATION RESKIN F1: on-plan disc = FLAT vivid activity fill + white icon (the home dial's flat-disc language, was tfStripe → loud game-piece); off-plan stays the quiet OUTLINED disc (dark fill + colored border + colored icon, STYLE-NEW-ERA)
+    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#160510", 0.68); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // FOUNDATION RESKIN F1: a friendlier domain-tinted pill (68% toward ink, carries more of the activity color, like the menu-row cards) — was 80% near-black + too heavy against the new-era dial
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan"); // kept for a11y — hidden by CSS in the five-element live body
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
     var elMin = (Date.now() - t.start) / 60000;
@@ -3813,7 +3813,7 @@
     el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-clock"></i> <b>' + dur(tfDomMinsToday(S0.dom) + Math.round(elMin)) + '</b>'; // kept — hidden by CSS in live body
     var _lm = el("tfLiveMeta"); if (_lm) _lm.innerHTML = '<span>' + fireHTML(streak) + '</span><span class="tf-lm-spark"><i class="ti ti-bolt"></i>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</span>'; // streak left · Spark right (David device 2026-07-03)
     var _nu = el("tfNextUp"); if (_nu) { var _nb3 = null; try { var _nk = todayK(), _nowm = nowMin(); blocks(_nk).forEach(function (b) { if (!b.title || blockStatus(_nk, b) !== "plan") return; if (hm(b.time) <= _nowm) return; if (S0.block && b.id === S0.block.id) return; if (_nb3 === null || hm(b.time) < hm(_nb3.time)) _nb3 = b; }); } catch (e3) {} if (_nb3) { var _ns = hm(_nb3.time), _nD3 = DOM[domainOf(_nb3)] || DOM.focus; _nu.innerHTML = '<span class="tf-nu-lab">' + tr("next") + ': ' + tiIcon(_nb3) + ' ' + esc(_nb3.title) + ' · ' + pad(Math.floor(_ns / 60) % 24) + ':' + pad(_ns % 60) + '</span><button class="tf-nu-go" style="color:' + _nD3.light + '" aria-label="Start next now"><i class="ti ti-player-play-filled"></i></button>'; var _nug = _nu.querySelector(".tf-nu-go"); if (_nug) _nug.onclick = (function (b) { return function (ev) { if (ev) ev.stopPropagation(); tfCommitNext(b); }; })(_nb3); _nu.style.display = ""; } else _nu.style.display = "none"; } // the NEXT upcoming plan block (earliest starting after now, not the one you're tracking) + a play button = commit-next (H-D2): tap it to finish the current block honestly and start this one
-    if (onplan) setRing(p, "#28cf86"); else { var _r = el("tfRing"); if (_r) _r.style.background = "none"; } // off-plan: the empty (dashed) ring is the pitch — no progress arc
+    if (onplan) setRing(p, "#28cf86"); else { setRing(0, "#2a1832", true); } // FOUNDATION RESKIN F1: off-plan empty dial = the HOME idle bezel (solid dark plum #2a1832) — reads as the same instrument at rest, waiting for a plan (the pitch now lives in the ctx line + the outlined disc). Routed through setRing(0,…,instant) NOT a raw background set, so the pending on-plan fill rAF is CANCELLED (a raw set gets overpainted by the still-animating conic → a ghost green arc).
     setTFNext(S0.block ? (hm(S0.block.time) + (S0.block.mins || 30)) : nowMin());
     renderSwitchChips(t.title);
     renderTFControls(onplan ? "onplan" : "off");
@@ -4825,7 +4825,7 @@
     }
   }
   function setRing(p, col, instant) { var ring = el("tfRing"); if (!ring) return; var target = Math.max(0, Math.min(1, p)); col = col || "#28cf86";
-    function paint(f) { var cf = Math.max(0, Math.min(1, f)), pct = (cf * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, #3a2540 " + pct + "% 100%)"; // §12 frame: the unfilled track = the mock's muted plum, not faint white
+    function paint(f) { var cf = Math.max(0, Math.min(1, f)), pct = (cf * 100).toFixed(1); ring.style.background = "conic-gradient(" + col + " 0% " + pct + "%, #2a1832 " + pct + "% 100%)"; // FOUNDATION RESKIN F1 (2026-07-21): the unfilled track = the HOME dial's dark plum (#2a1832), so the tracking bezel matches the idle-home bezel exactly (was #3a2540, a lighter grayish plum)
       var dot = el("tfConvDot"); if (dot) { var th = 2 * Math.PI * cf; dot.style.left = (50 + 47.2 * Math.sin(th)) + "%"; dot.style.top = (50 - 47.2 * Math.cos(th)) + "%"; } } // the gold burning-dot rides the arc end ON the green band (47.2% = band midpoint: ring W, tile W-26 → band 13px at the rim; 43.5% put it on the tile's inner shadow — David device 2026-07-03)
     if (_ringRaf) { cancelAnimationFrame(_ringRaf); _ringRaf = 0; }
     if (instant || Math.abs(target - _ringP) < 0.01) { _ringP = target; paint(target); return; }
@@ -4898,8 +4898,8 @@
                 { icon: "ti-plus", label: "+5 min", fn: function () { tfBreakPlus(5); } },
                 { icon: "ti-x", label: "End", fn: tfEndBreak }];
       case "onplan": // David device 2026-07-03, the logical matrix: ONE ending — «Стоп» (= done = shutoff; counts the win). «Перерыв» is the explicit pause-with-duration. Reschedule REMOVED (the title pill IS the switch). Extend lives in the docked chips («продлить?»).
-        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#1e8a5a", ink: "#eafff4" },
-                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }]; // Stop = a DEEP green (was neon #28cf86 which glared against the dark minimal tracking face — David 2026-07-20 "looks horrible"); still the clear primary, just not garish
+        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
+                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }]; // FOUNDATION RESKIN F1 (2026-07-21): Stop = PINK, the app's commit color (pink = commit per the color law; Stop logs the finished block = a commit). Matches the home play-disc pink so the one big primary reads as the same instrument. Was deep green.
       // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
@@ -4925,7 +4925,7 @@
       default: { // OFF-PLAN while tracking (David 2026-07-02, C7+D2): the fusion tap LEADS — "Keep going N more minutes" turns the live track into a plan in one move. Pause is table-stakes (it only existed on-plan — that's why it was never seen). Replan/Create + Stop stay. Drift keeps Replan primary (planning-the-drift makes no sense — the way back leads).
         var _dr = false; try { _dr = !!trackerState().drift; } catch (e) {}
         var mk = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan } : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan };
-        if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true, finish: "striped", c: "#36b3f0", ink: "#08283c" },
+        if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true, finish: "solid", c: "#36b3f0", ink: "#08283c" }, // FOUNDATION RESKIN F1: the drift Replan primary = SOLID blue (was striped — stripes are an accent, not a wall; a loud striped door clashed with the new-era dial)
                          { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true },
                          { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }];
         return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#6b5a78", ink: "#f2ecf7" },
