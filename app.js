@@ -3553,6 +3553,7 @@
   var LAND_V2 = true;      // kill-switch: flip false on device if re-opening home on close misbehaves (falls back to the old pane-landing)
   var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
   var NAV_V2 = true;       // R3 COMPASS ROSE (David 2026-07-21 "kill the 4-button tab bar; home is the center of the world"). TRUE = the bottom #nav bar dies app-wide (body.navv2, CSS display:none), replaced by the GUARDIAN PUCK (bottom-left, tap = home) + the HOME FACE DOORS (story strip = planner door · top-left journey glyph · top-right garden glyph · gem-row avatar = settings). FALSE = no body.navv2 class → the old 4-button bar exactly as before (all its DOM + handlers left intact). Tap-based only this pass; swipe-axis travel comes device-tested later.
+  var ONEHOME = true;      // THE ONE-HOME LAW (David 2026-07-21 "home still looks like the old cockpit"): whenever #trackerFull is the full-screen surface (TF_OPEN, NOT tf-staged), it ALWAYS wears the home frame — status row (clock left · gems+avatar right), the story strip (#tfHomeBars) + its planner chevron, the journey/garden door glyphs, the circle stage, and (on CALM faces only: idle/night/claim/break) the tool grid. What VARIES per state = only the circle's contents, the line(s) under it, and one control row. Root cause fixed: the frame used to live only in the idle branch (renderHomeFace), so any other face (claim/night/tracking/break) landed on a bare ring+buttons = "the old cockpit". FALSE = exactly today's per-face behavior (renderHomeFrame is a no-op guard; the claim face keeps its stacked door column). The frame styles ride a shared .tf-onehome class on #trackerFull so the existing per-face st-* CSS keeps working.
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
   function landAfterFlow() { // call at the END of every flow-close path (after renderAll). If we launched from home, re-open the NEW home cockpit instead of leaving the panes exposed. Idempotent + guarded: a no-op unless _returnHome is armed.
@@ -3723,7 +3724,8 @@
     var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
     // COCKPIT PRE-BRANCH (CKPT-2): if a guided stage mode is active, corner-pose the ring (CSS .tf-staged) + delegate the freed area to #tfStageBody, then RETURN. With TF_MODE null (default) this is a no-op and the existing 6-state body below runs UNTOUCHED → zero behavior change. (David 2026-06-28)
     tf.classList.toggle("tf-staged", !!TF_MODE);
-    if (TF_MODE) {
+    if (TF_MODE) { tf.classList.remove("tf-onehome"); // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class so the guided-stage layout is byte-identical to today
+
       var _ck2 = el("tfClock"); if (_ck2) _ck2.textContent = fmt(nowMin()).toUpperCase();
       var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
       var _S0 = trackerState(), _t = _S0.t; // keep the corner puck a LIVE mini-tracker: show WHAT + running mm:ss off the live timer
@@ -3741,7 +3743,7 @@
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; } // reset off-plan border + any prior tap wiring before a state re-paints the disc
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home");
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home", "tf-onehome"); // ONE-HOME: clear the shared frame class too; each full-screen face re-adds it via renderHomeFrame()
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
     renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
@@ -3754,7 +3756,8 @@
       el("tfElabel").textContent = "away";
       el("tfCtx").textContent = "gap " + fmt(S0.gapStartMin) + "–now";
       el("tfSpark").innerHTML = fireHTML(streak);
-      setRing(0, "#2a1832", true); renderSwitchChips(""); renderTFControls("claim"); // FOUNDATION RESKIN F2: plum bezel (#2a1832) around the vivid disc — the same resting dial as home/off, not the old full domain-color annulus
+      setRing(0, "#2a1832", true); renderSwitchChips(""); renderTFControls("claim"); // FOUNDATION RESKIN F2: plum bezel (#2a1832) around the vivid disc — the same resting dial as home/off, not the old full domain-color annulus. ONE-HOME: renderTFControls rebuilds the claim column into one row + quiet row (Track now / Did it already · not mine) — see the claim branch there. The "welcome back" greeting stays in tfVerdict (shown, in normal flow above the controls — never a card over the buttons).
+      renderHomeFrame(true); // ONE-HOME: claim is a CALM face — full frame + tool grid
       return;
     }
     if (S0.id === "night") { tf.classList.add("st-night");
@@ -3766,6 +3769,7 @@
       el("tfCtx").textContent = "rest — I've got the morning";
       el("tfSpark").innerHTML = "";
       setRing(1, "#5a4a86"); renderSwitchChips(""); renderTFControls("night");
+      renderHomeFrame(true); // ONE-HOME: night is a CALM face — full frame + tool grid; the moon disc + calm line + one quiet wind-down control (Breathe with me) already render above
       return;
     }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
@@ -3784,6 +3788,7 @@
       HOME_MODE = true; tf.classList.add("tf-home"); document.body.classList.add("home-pane"); document.body.classList.remove("nav-collapsed"); try { document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navHome"); }); } catch (e) {} // home is a PLACE: the FULL bottom nav sits above the cockpit here + Home is the lit tab (David 2026-07-20)
       var _sh = el("tfNextSheet"); if (_sh) _sh.style.display = "none";
       renderHomeFace(nb);
+      if (ONEHOME) { var _tf0 = el("trackerFull"); if (_tf0) _tf0.classList.add("tf-onehome"); var _hg0 = el("tfHomeGrid"); if (_hg0) { _hg0.style.display = "none"; while (_hg0.firstChild) _hg0.removeChild(_hg0.firstChild); } } // ONE-HOME: idle keeps its APPROVED composition (grid in #tfCtrls via renderHomeFace) — only ADD the shared class so the frame CSS is uniform; keep the shared #tfHomeGrid host empty+hidden so the grid never doubles. tf-home ⊂ tf-onehome, look UNCHANGED (David approves idle).
       return;
     }
     if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _open = !B.mins, _bend = B.start + (B.mins || 0) * 60000, _rem = _bend - Date.now(), _up = !_open && _rem <= 0, _elap = Date.now() - B.start;
@@ -3796,6 +3801,7 @@
       el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-player-pause"></i>';
       setRing(_open ? 0 : (_up ? 1 : Math.max(0, Math.min(1, (Date.now() - B.start) / (B.mins * 60000)))), "#e8b53a");
       renderSwitchChips(B.title); renderTFControls(_up ? "breakup" : "break");
+      renderHomeFrame(true); // ONE-HOME: break/breakup is a CALM face — full frame + tool grid; pause disc + Paused/Break line + Resume-primary/quiet-row already render above
       return;
     }
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
@@ -3833,6 +3839,7 @@
       [5, 15, 30, 60, 120].forEach(function (mm) { var ch = add(_or, "button", "k-dur"); _chips.push(ch); ch.textContent = durLoc(mm); ch.onclick = (function (m) { return function () { if (onplan) tfExtendPlan(m); else tfMoreMins(t, m); _os._userOpen = false; }; })(mm); });
       if (_endingSoon) { _os.classList.add("tns-ending"); if (_chips[1]) _chips[1].classList.add("hot"); } // ending-soon: glow + highlight +15
     } else if (_os) { tf.classList.remove("tf-nextsheet"); _os.style.display = "none"; _os._userOpen = false; while (_os.firstChild) _os.removeChild(_os.firstChild); } // no docked tier when calm
+    renderHomeFrame(false); // ONE-HOME: the TRACKING face (onplan/off) wears the frame too — status row, story strip + chevron, doors — but the tool grid stays HIDDEN (focus). The dial (bezel + activity disc + arc), title pill, meta line, next-up, Stop + quiet Break/extend row are all above.
   }
   function tfRevealExtend() { var _os = el("tfNextSheet"); if (_os) { _os._userOpen = true; } renderTrackerFull(); } // the quiet "extend" text-button → opens the existing extend chip sheet on demand (no permanent docked tier)
   function clearStaleCommit(k, from, to, keep) { // Batch 3 #2 (David device 2026-07-03): a new track-commit OWNS [from,to] → cancel any OTHER undone COMMIT block (pin:true = a previous "keep-going" that was abandoned) overlapping it, so nothing overlaps. A pin block that started before `from` keeps its past ghost (end cut to `from`); one fully inside the window is removed. DELIBERATE plans (non-pin, e.g. a 3pm meeting) are never touched — reflow shuffles those.
@@ -4935,6 +4942,12 @@
   }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     var ctrls = trackerControls(state);
+    if (ONEHOME && state === "claim") { // ONE-HOME LAW (David 2026-07-21): rebuild the claim column into the unified composition — ONE primary row + ONE quiet row (Track now / Did it already · not mine), sized like the tracking face's Stop + Break/extend. Was a big stacked door column WITHOUT the frame; now it sits INSIDE the shared frame.
+      var _prim = ctrls[0], _rest = ctrls.slice(1); // [Track now] · [Did it already, not mine]
+      if (_prim) { var _pb = add(c, "button", "tf-b tf-done"); if (_prim.c) { _pb.style.background = _prim.c; _pb.style.color = _prim.ink || "#fff"; } _pb.innerHTML = '<i class="ti ' + _prim.icon + '"></i>' + _prim.label; _pb.onclick = _prim.fn; }
+      if (_rest.length) { var _row = add(c, "div", "tf-row"); _rest.forEach(function (x) { var bn = add(_row, "button", "tf-b"); bn.style.flex = "1"; bn.innerHTML = '<i class="ti ' + x.icon + '"></i>' + x.label; bn.onclick = x.fn; }); }
+      return;
+    }
     if (ctrls.some(function (x) { return x.finish; })) { // GRAND BUILD F: door mode — stacked full-width chunky buttons, finish = hierarchy (solid -> striped -> ghost). RUN-1: optional right-tag (names the block), optional cost sub-line, and a ghost half-row (x.half)
       var halves = [];
       ctrls.forEach(function (x) {
@@ -4984,12 +4997,11 @@
     });
     w.className = "on";
   }
-  function renderHomeFace(nb) {
-    renderHomeBars();
-    var lm = el("tfLiveMeta"); if (lm) lm.innerHTML = ""; // no live meta on the idle home
-    var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
-    // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
-    var panel = add(c, "div", "tf-toolspanel");
+  // ===== ONE-HOME LAW (David 2026-07-21): the tool grid, extracted so BOTH the idle home face AND the shared frame (renderHomeFrame, on calm non-idle faces) render the identical 2x4 launcher grid. `host` is the container it fills; it drains + rebuilds in place (no innerHTML wipe). =====
+  function renderHomeGrid(host) {
+    if (!host) return;
+    while (host.firstChild) host.removeChild(host.firstChild); // targeted drain, not an innerHTML wipe (ratchet convention)
+    var panel = add(host, "div", "tf-toolspanel");
     // NEW-ERA HOME §6 (David 2026-07-19 What-now screenshot): the idle tools are a STATIC 2x4 grid, not a scroller — the 7 most-worn tiles + a "More" door into the full toolbox. Matches the target exactly (7 STACK_TOOLS + More = 8 = 2 rows x 4).
     var grid = add(panel, "div", "tf-toolgrid"); grid.id = "tfHomeTools";
     var use = (S.tools && S.tools.use) || {};
@@ -4998,6 +5010,26 @@
     function skinTile(b, col) { b.style.background = mixHex(col, "#160510", 0.24); b.style.border = "none"; b.style.boxShadow = "0 5px 0 " + mixHex(col, "#160510", 0.58) + ", 0 9px 16px rgba(0,0,0,.32)"; }
     tools.forEach(function (t) { var b = add(grid, "button", "tf-htool"); skinTile(b, t.col); var ic = add(b, "i", "ti " + t.ti); ic.style.color = "#fff"; add(b, "span", null, tr(t.name)); b.onclick = function () { landFromHome(); leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; }); // landFromHome() arms the return so this flow's close re-opens home (Parcel A) instead of falling through to the panes
     var more = add(grid, "button", "tf-htool more"); skinTile(more, DOM.restore.c); var mic = add(more, "i", "ti ti-dots"); mic.style.color = "#fff"; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
+  }
+  // ===== ONE-HOME LAW (David 2026-07-21) — the SHARED FRAME. Called by renderTrackerFull for EVERY full-screen face (idle already builds its own via renderHomeFace; this brings claim / night / break / tracking up to it). Renders: story strip + planner chevron, journey/garden door glyphs, and (on CALM states only) the tool grid into the dedicated #tfHomeGrid host — kept SEPARATE from #tfCtrls so the face's own action row and the grid coexist. The status row (clock left · gems+avatar right) is DOM+CSS, re-shown by the .tf-onehome CSS. Idempotent; guarded by ONEHOME. `showGrid` = tracking-face hides it (focus), calm faces show it. =====
+  function renderHomeFrame(showGrid) {
+    if (!ONEHOME) return;
+    var tf = el("trackerFull"); if (!tf) return;
+    tf.classList.add("tf-onehome"); // the shared class the frame CSS keys off (works alongside the per-face st-* class)
+    renderHomeBars();               // story strip on top (planner door)
+    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
+    var host = el("tfHomeGrid"); if (!host) { host = document.createElement("div"); host.id = "tfHomeGrid"; inner.appendChild(host); } // dedicated grid host, AFTER #tfCtrls in the DOM (appended once, reused)
+    if (showGrid) { host.style.display = ""; renderHomeGrid(host); }
+    else { host.style.display = "none"; while (host.firstChild) host.removeChild(host.firstChild); } // tracking face: no grid (focus), drain it so nothing lingers
+    if (NAV_V2) wireHomeDoors();     // journey/garden door glyphs + the strip's planner tap (idempotent)
+  }
+  function renderHomeFace(nb) {
+    renderHomeBars();
+    var lm = el("tfLiveMeta"); if (lm) lm.innerHTML = ""; // no live meta on the idle home
+    var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
+    // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
+    // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
+    renderHomeGrid(c);
     if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
   }
   // R3 COMPASS ROSE (David 2026-07-21): the home face IS the nav. Three doors, each mirroring the retired #nav handler exactly:

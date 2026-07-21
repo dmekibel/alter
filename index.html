@@ -1613,6 +1613,29 @@
   .tf-tooldots{ display:flex; gap:6px; justify-content:center; margin-top:10px; }
   .tf-tooldots .dot{ width:6px; height:6px; border-radius:50%; background:#3d2740; transition:background .2s, width .2s; }
   .tf-tooldots .dot.on{ background:#c9a6ff; width:16px; border-radius:3px; }
+  /* ===== THE ONE-HOME LAW (David 2026-07-21 "home still looks like the old cockpit"): every full-screen tracker face wears the home FRAME. #trackerFull.tf-onehome carries the frame chrome on EVERY state (idle already has tf-home; claim/night/break/tracking now get tf-onehome). What varies per state = circle contents + line(s) + one control row; the frame (status row · story strip + chevron · door glyphs · circle · grid on calm faces) is constant. The .tf-onehome rules OVERRIDE the per-face st-* hides below. ===== */
+  /* status row — clock (left) · gems+avatar (right) — re-shown on every onehome face (the st-claim/st-night/st-off/st-onplan blocks hide these; .tf-onehome brings them back) */
+  #trackerFull.tf-onehome .tf-clock{ display:block !important; }
+  #trackerFull.tf-onehome .tf-spark{ display:flex !important; }
+  #trackerFull.tf-onehome #tfGear{ display:flex !important; }
+  #trackerFull.tf-onehome .tf-close, #trackerFull.tf-onehome .tf-grab{ display:none !important; } /* home is a PLACE — no pull-away/close chevron on any onehome face; you leave via the doors/nav */
+  #trackerFull.tf-onehome .tf-sf, #trackerFull.tf-onehome .tf-say, #trackerFull.tf-onehome #tfStageChips{ display:none !important; } /* keep the top clean — the story strip is the only thing above the circle */
+  #trackerFull.tf-onehome .tf-livemeta{ display:none !important; } /* the status row's gems (.tf-spark, top-right) is now the single point count on EVERY face — the tracking face's in-body livemeta would double it */
+  /* story strip on top — one thin bar per block, full row width (the door glyphs no longer flank it: collision fix, they sit in their own slots BELOW) */
+  #trackerFull.tf-onehome #tfHomeBars{ display:flex; gap:7px; width:100%; padding:0 2px; box-sizing:border-box; }
+  /* door glyphs — allowed on every onehome face (the :not(.st-idle) hide below is overridden here) */
+  body.navv2 #trackerFull.tf-onehome .tf-homedoor{ display:flex !important; }
+  body.navv2 #trackerFull.tf-onehome .tf-planchev{ display:inline-block !important; }
+  /* layout: the tracking/claim/night/break faces get the same balanced full-height composition as idle — strip at top, circle centered, controls + grid toward the bottom */
+  #trackerFull.tf-onehome:not(.st-idle) .tf-inner{ justify-content:space-between; padding-top:calc(env(safe-area-inset-top,0px) + 54px); padding-bottom:calc(78px + env(safe-area-inset-bottom,0px)); }
+  #trackerFull.tf-onehome:not(.st-idle) .tf-stage{ flex:0 0 auto; }
+  /* the shared tool-grid host (calm faces only; JS hides it while tracking + on idle where the grid lives in #tfCtrls) */
+  #tfHomeGrid{ width:100%; }
+  #trackerFull.tf-onehome #tfHomeGrid .tf-toolspanel{ margin-top:12px; }
+  /* avatar (gem-row) placement identical to idle: gems left of the avatar cap, the settings gear styled as the pink avatar puck — on EVERY onehome face */
+  body.navv2 #trackerFull.tf-onehome #tfGear{ top:calc(env(safe-area-inset-top,0px) + 11px) !important; left:auto !important; right:20px !important; width:30px !important; height:30px !important; border-radius:50%; background:#2a0f22; border:2px solid #ff5fa8; box-sizing:border-box; align-items:center; justify-content:center; font-size:15px !important; }
+  body.navv2 #trackerFull.tf-onehome #tfGear i{ color:#ff5fa8; }
+  body.navv2 #trackerFull.tf-onehome .tf-spark{ right:58px; }
   /* the frame's finish hierarchy: door voices descend — solid speaks, striped supports, ghost whispers */
   .tf-door-solid{ font-size:15px; }
   .tf-door-striped{ font-size:14px; min-height:52px; }
@@ -2728,7 +2751,8 @@
 
   /* 3) HOME FACE DOORS — the story strip = planner; corner glyphs = journey (left) / garden (right). */
   .tf-planchev{ margin-left:2px; align-self:center; font-size:19px; color:#c79bd8; flex:0 0 auto; opacity:.85; } /* the quiet chevron at the strip's end = "this strip is a door" */
-  .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:34px; height:34px; min-width:34px; min-height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* ≥44px hit area via the ::before pad below; sit just under the story strip */
+  .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:34px; height:34px; min-width:34px; min-height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* base position (ONEHOME=false legacy) */
+  #trackerFull.tf-onehome .tf-homedoor{ top:calc(env(safe-area-inset-top,0px) + 94px); } /* COLLISION FIX (David 2026-07-21): under the ONE-HOME frame the door glyphs sit in their own slots BELOW the story strip row (was top:48px = flanking/crowding the pills from above). The strip owns the full top row; the two glyphs drop under it (safe+94px clears the 54px inner padding + the ~35px strip). The circle stage sits between them. */
   .tf-homedoor::before{ content:""; position:absolute; inset:-6px; border-radius:50%; } /* invisible 46px tap pad */
   .tf-homedoor i{ font-size:19px; line-height:1; }
   .tf-homedoor:active{ transform:scale(.92); }
