@@ -2924,7 +2924,7 @@
   // a time (min, 4am-window units) to a flowed Y via a monotonic piecewise-linear knot list; heights = flowSpan (the flowed
   // distance a duration covers), NOT durMin/60*HP. computeFlow is a PURE function of (blocks, dayWindow, HP) so render, tickCharge,
   // and the zoom relayout can each rebuild the IDENTICAL map at the live HP and never desync (the coupling the 3 rebuilds tripped on).
-  var MINFLOOR = 44; // FIXED floor (px) — bubbles SHRINK with zoom-out down to a SYMBOL-BOX (drawn ≈30px) and stop there — never a skinny sliver (David 2026-07-21: bumped 150%, 20→30 drawn). A CONSTANT so zoom stays smooth + monotonic. Longer blocks / zoomed-in show their real height + label; the smallest degrade to the icon-box.
+  var MINFLOOR = 100; // FIXED floor (px) — bubbles SHRINK with zoom-out down to a SYMBOL-BOX and stop there — never a skinny sliver. A CONSTANT so zoom stays smooth + monotonic. Longer blocks / zoomed-in show their real height + label; the smallest degrade to the icon-box. THE tuning knob if planner-block feel is off on device — bump this one number, nothing else. David 2026-07-21: "make the minimum twice as big" (ours read small vs. his reference); prior value was 44, but honoring the requested 2x intent (he named 60/30 misremembering the earlier number) → set to 100.
   function computeFlow(k, HP) {
     var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60, MF = MINFLOOR;
     var bl = blocks(k);
