@@ -553,7 +553,8 @@
     ["game","ti-device-gamepad-2"],["movie","ti-movie"],["watch","ti-device-tv"],["puzzle","ti-puzzle"],["chess","ti-chess"],["podcast","ti-headphones"],["listen","ti-headphones"],["travel","ti-plane"],["explore","ti-map"],["read","ti-book"],
     ["meditat","ti-moon"],["breath","ti-wind"],["journal","ti-notebook"],["pray","ti-pray"],["nature","ti-tree"],["gratitude","ti-heart"],["reflect","ti-moon"],["therapy","ti-armchair"],["sauna","ti-flame"],["rest","ti-moon"],
     ["clean","ti-broom"],["tidy","ti-broom"],["laundry","ti-wash-machine"],["dish","ti-bowl"],["brush","ti-dental"],["teeth","ti-dental"],["groom","ti-razor"],["errand","ti-shopping-bag"],["doctor","ti-stethoscope"],["chore","ti-broom"],
-    ["scroll","ti-windmill"],["vibe","ti-windmill"],["instagram","ti-brand-instagram"],["tiktok","ti-brand-tiktok"],["weed","ti-plant"],["cigarette","ti-cigarette"],["smok","ti-cigarette"],["alcohol","ti-bottle"],["procrastinat","ti-windmill"],["break","ti-coffee"]
+    ["scroll","ti-windmill"],["vibe","ti-windmill"],["instagram","ti-brand-instagram"],["tiktok","ti-brand-tiktok"],["weed","ti-plant"],["cigarette","ti-cigarette"],["smok","ti-cigarette"],["alcohol","ti-bottle"],["procrastinat","ti-windmill"],["break","ti-coffee"],
+    ["hobby","ti-confetti"],["ship","ti-rocket"],["send","ti-rocket"]
   ];
   function tiClass(item) { var t = (item && item.title || "").toLowerCase(); for (var i = 0; i < TIMAP.length; i++) if (t.indexOf(TIMAP[i][0]) !== -1) return TIMAP[i][1]; return DOM[domainOf(item)].ti; }
   function tiIcon(item) { return '<i class="ti ' + tiClass(item) + '"></i>'; }
@@ -8647,10 +8648,10 @@
   }
   function fmtHour(h) { h = h % 24; var ap = h < 12 ? "am" : "pm"; var hh = h % 12; if (hh === 0) hh = 12; return hh + ap; }
   function blockEmoji(title) {
-    var m = TITLE2META[(title || "").toLowerCase()]; if (m && m.emoji) return m.emoji;
-    var t = (title || "").toLowerCase(), map = [["bed", "🛏️"], ["breakfast", "🍳"], ["lunch", "🥪"], ["dinner", "🍽️"], ["wind down", "🌙"], ["break", "☕"], ["hobby", "🎈"], ["ship", "✦"], ["send", "✦"], ["move", "🏃"], ["walk", "🚶"], ["gym", "🏋️"], ["run", "🏃"], ["deep", "🧠"], ["code", "💻"], ["vibe", "🎧"], ["work", "🧠"], ["read", "📖"], ["clean", "🧹"], ["tidy", "🧹"], ["laundry", "🧺"], ["shower", "🚿"], ["meditat", "🧘"], ["journal", "📓"], ["sleep", "😴"], ["eat", "🍽️"], ["weed", "🌿"], ["smoke", "🚬"], ["game", "🕹️"], ["music", "🎵"], ["call", "📞"], ["plan", "🗒️"]];
-    for (var i = 0; i < map.length; i++) if (t.indexOf(map[i][0]) !== -1) return map[i][1];
-    return "🗓️";
+    // Tabler-icon HTML string, not emoji (David: no emoji in UI, only ti icons). Routed through the
+    // shared TITLE2META/TIMAP path (tiClass/tiIcon, @SEC near line 546) instead of a private keyword+emoji map.
+    var m = TITLE2META[(title || "").toLowerCase()]; if (m) return tiIcon(m);
+    return tiIcon({ title: title });
   }
   function timeFromY(y, startH, HP, knots) { var mins = (knots && knots.length) ? flowInv(knots, y) : startH * 60 + y / HP * 60; mins = Math.max(0, Math.min(1800, Math.round(mins / 15) * 15)); return pad(Math.floor(mins / 60)) + ":" + pad(mins % 60); } // flow-aware inverse: tap-Y → the time flowed at that Y (falls back to raw when no map) — 6am-start day allows placing to 6am next day (1800)
   function radialMenu(opts, onPick, onCancel, multi) {

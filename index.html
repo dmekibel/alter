@@ -1112,6 +1112,8 @@
   /* INSIDE EACH CARD SCROLLS (David v647): restore the original 2-row horizontal-scroll chip strip (the candy theme had forced flex-wrap → tall cards). Scoped to the picker sheet so the card stays compact and you swipe the row to see the rest. */
   .bento-card.bento-sheet .bento-cat .bento-chips{ display:grid !important; grid-auto-flow:column !important; grid-template-rows:repeat(2,auto) !important; grid-auto-columns:max-content !important; overflow-x:auto !important; overflow-y:hidden !important; flex-wrap:nowrap !important; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
   .bento-card.bento-sheet .bento-cat .bento-chips::-webkit-scrollbar{ display:none; }
+  /* A11 — right-edge fade on the create-sheet chip rows (David 2026-07-21, Parcel C): these rows clip mid-word with no affordance that they scroll sideways. A soft mask on the row's own right edge reads as "more this way" without needing to match the card's background colour underneath the stripe overlay. */
+  .bento-card.bento-sheet .bento-cat .bento-chips{ -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent 100%); mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent 100%); }
   .bento-grid{ display:flex; flex-direction:column; gap:9px; }
   /* bento quick-pick: search + frequent row (David 2026-06-24 night) */
   .bento-search{ position:sticky; top:0; z-index:4; display:flex; align-items:center; gap:7px; background:#2c081a; padding:3px 0 8px; }
@@ -2441,6 +2443,9 @@
   body.nav-collapsed.tab-day #liveDock .ld-stop{ width:40px !important; height:40px !important; } /* the mini ring stays a clean 40px circle, vertically centred in the 62px row */
   body.nav-collapsed.tab-day:not(.gaming) #pullSheet{ bottom:0 !important; transition:bottom .26s cubic-bezier(.2,.85,.3,1); } /* timeline bleeds to the VERY bottom (bottom:0, behind the floating dock) — was stopping at the safe-area line leaving a ~34px gap on device (David 2026-06-30) */
   body.nav-collapsed.tab-day:not(.gaming) .day-cardscroll{ padding-bottom:88px !important; } /* …but the last content can still scroll clear of the dock */
+  /* A7 — ON-PLAN mini-dock clearance (David 2026-07-21, Parcel C): #liveDock sits above #pullSheet in the DOM, so its own .on class can reach forward via a sibling combinator. While the dock is up, the timeline's scrollable content must clear its ~86px footprint (bottom:74px + own height) so the last block never tucks behind it. */
+  #liveDock.on ~ #pullSheet #pullBody{ padding-bottom:96px; }
+  #liveDock.on ~ #pullSheet .day-cardscroll{ padding-bottom:96px; }
   #screen{ padding-bottom:98px !important; }
   /* header is replaced by the live-tracker strip + per-screen titles */
   body.tracker header{ display:none; }
