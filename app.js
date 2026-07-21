@@ -554,10 +554,19 @@
     ["meditat","ti-moon"],["breath","ti-wind"],["journal","ti-notebook"],["pray","ti-pray"],["nature","ti-tree"],["gratitude","ti-heart"],["reflect","ti-moon"],["therapy","ti-armchair"],["sauna","ti-flame"],["rest","ti-moon"],
     ["clean","ti-broom"],["tidy","ti-broom"],["laundry","ti-wash-machine"],["dish","ti-bowl"],["brush","ti-dental"],["teeth","ti-dental"],["groom","ti-razor"],["errand","ti-shopping-bag"],["doctor","ti-stethoscope"],["chore","ti-broom"],
     ["scroll","ti-windmill"],["vibe","ti-windmill"],["instagram","ti-brand-instagram"],["tiktok","ti-brand-tiktok"],["weed","ti-plant"],["cigarette","ti-cigarette"],["smok","ti-cigarette"],["alcohol","ti-bottle"],["procrastinat","ti-windmill"],["break","ti-coffee"],
-    ["hobby","ti-confetti"],["ship","ti-rocket"],["send","ti-rocket"]
+    ["hobby","ti-confetti"],["ship","ti-rocket"],["send","ti-rocket"],
+    // W2 emoji-sweep additions (David 2026-07-21): titles from CATS/OCCUPATIONS that fell through to the generic domain icon.
+    ["writing","ti-pencil"],["publish","ti-rocket"],["outreach","ti-users-group"],["sell","ti-coin"],["apply","ti-send"],["side hustle","ti-briefcase"],["hang out","ti-users"],["cafe","ti-coffee"],["affirmation","ti-message-2"],["quality time","ti-heart"],["compliment","ti-heart"],
+    ["craft","ti-scissors"],["relax","ti-armchair"],["language","ti-language"],["garden","ti-plant-2"],["porn","ti-eye-off"],["vape","ti-cigarette"],["caffeine","ti-coffee"],["sugar","ti-cookie"],["junk food","ti-burger"],["shopping","ti-shopping-bag"],["gambl","ti-cards"],
+    ["edit","ti-edit"],["experiment","ti-flask"],["message","ti-message"],["pitch","ti-presentation"],["debug","ti-bug"],["deploy","ti-rocket"],["test","ti-checkbox"],["demo","ti-presentation"],["close deal","ti-handshake"],["fundraise","ti-coin"],["newsletter","ti-mail"],["film","ti-video"],["record","ti-video"],["monetize","ti-coin"],
+    ["lecture","ti-school"],["practice","ti-repeat"],["assignment","ti-file-text"],["project","ti-clipboard-list"],["revise","ti-refresh"],["organize","ti-clipboard"],["office hours","ti-school"],["group work","ti-users"],["analysis","ti-chart-bar"]
   ];
   function tiClass(item) { var t = (item && item.title || "").toLowerCase(); for (var i = 0; i < TIMAP.length; i++) if (t.indexOf(TIMAP[i][0]) !== -1) return TIMAP[i][1]; return DOM[domainOf(item)].ti; }
   function tiIcon(item) { return '<i class="ti ' + tiClass(item) + '"></i>'; }
+  // W2 emoji-sweep (David 2026-07-21): S.habits[].e is a MIXED-shape persisted field — dev-persona seeds (@SEC:DEV) already
+  // store Tabler classes ("ti-run"), while habits created via habitSheet historically stored a raw emoji glyph. One HTML
+  // markup helper for every render site so neither shape ever leaks as literal text (h.e must go through innerHTML, never textContent).
+  function habIconHTML(h) { var e = h && h.e; if (e && e.indexOf("ti-") === 0) return '<i class="ti ' + e + '"></i>'; return esc(e || "") || tiIcon({ title: h && h.l }); }
   // ---- STREAK + escalating on-plan CELEBRATION (mockups 024/032) ----
   function comboTier(s) { return s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1; }
   function streakColor(s) { return mixHex("#ffe14a", "#ff2a12", Math.min(1, s / 8)); } // yellow→red as it heats
@@ -5663,6 +5672,10 @@
     { k: "gratitude", l: "Gratitude", e: "🙏", c: "#ff7ab0", grow: "note what you're grateful for" },
     { k: "hope", l: "Hope", e: "🌅", c: "#48d0e0", grow: "plan tomorrow" }
   ];
+  // W2 emoji-sweep (David 2026-07-21): Tabler icon per virtue/occupation — these labels are abstract nouns
+  // (Wisdom, Courage…) so TIMAP's keyword match on the title doesn't fit; explicit map instead (same pattern as HAB_ICON).
+  var VIRTUE_ICON = { zest: "ti-bolt", disc: "ti-sword", love: "ti-heart", courage: "ti-mountain", wisdom: "ti-feather", curiosity: "ti-telescope", gratitude: "ti-heart-handshake", hope: "ti-sunrise" };
+  var OCC_ICON = { artist: "ti-palette", dev: "ti-code", founder: "ti-rocket", writer: "ti-pencil", student: "ti-school", office: "ti-briefcase", other: "ti-sparkles" };
   var VCLASS = { zest: "The Vital", disc: "The Disciplined", love: "The Lover", courage: "The Brave", wisdom: "The Sage", curiosity: "The Explorer", gratitude: "The Grateful", hope: "The Hopeful" };
   function virtueOf(e) {
     var t = (e.title || "").toLowerCase(), c = e.catK || TITLE2CAT[t] || (e.habitId ? HABIT2CAT[e.habitId] : null);
@@ -5914,9 +5927,11 @@
   // ---- ui helpers --------------------------------------------------------
   function add(p, tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; p.appendChild(e); return e; }
   function dot(c) { var s = document.createElement("span"); s.style.cssText = "width:10px;height:10px;border-radius:50%;flex:none;background:" + c; return s; }
-  function bigCat(c) { var d = document.createElement("div"); d.className = "bigcat"; d.style.background = c.color; d.innerHTML = '<div class="bce">' + c.e + '</div><div class="bcl">' + c.label + "</div>"; return d; }
-  function subCard(c, gr) { var d = document.createElement("div"); d.className = "subcat"; d.style.borderColor = c.color; d.innerHTML = '<div class="bce">' + (gr.tasks[0].e || "•") + '</div><div class="scl">' + gr.g + "</div>"; return d; }
-  function taskTile(parent, meta, selected, onClick) { var x = add(parent, "div", "gtile" + (selected ? " on" : "")); x.style.borderColor = meta.color; if (selected) x.style.background = meta.color; add(x, "div", "ge", meta.emoji || "•"); add(x, "div", "gl", meta.title); x.onclick = onClick; return x; }
+  // W2 emoji-sweep (David 2026-07-21): these 3 render the CATS/OCCUPATIONS picker grid (bigCat=category, subCard=group, taskTile=task).
+  // All 3 already write via innerHTML, so swapping the emoji glyph for a Tabler <i> markup string is a safe like-for-like swap (no textContent leak risk).
+  function bigCat(c) { var d = document.createElement("div"); d.className = "bigcat"; d.style.background = c.color; d.innerHTML = '<div class="bce">' + tiIcon({ title: c.label, catK: c.k }) + '</div><div class="bcl">' + esc(c.label) + "</div>"; return d; }
+  function subCard(c, gr) { var d = document.createElement("div"); d.className = "subcat"; d.style.borderColor = c.color; var t0 = gr.tasks[0]; d.innerHTML = '<div class="bce">' + tiIcon({ title: t0 ? t0.l : gr.g, catK: c.k }) + '</div><div class="scl">' + esc(gr.g) + "</div>"; return d; }
+  function taskTile(parent, meta, selected, onClick) { var x = add(parent, "div", "gtile" + (selected ? " on" : "")); x.style.borderColor = meta.color; if (selected) x.style.background = meta.color; var ge = document.createElement("div"); ge.className = "ge"; ge.innerHTML = tiIcon(meta); x.appendChild(ge); add(x, "div", "gl", meta.title); x.onclick = onClick; return x; }
 
   // ---- virtue constellation (character tree) -----------------------------
   var tctx, TW = 300, TH = 250, TT0 = performance.now(), treeNodes = [];
@@ -9305,7 +9320,7 @@
     var L = el("statsList"); if (!L) return; L.innerHTML = "";
     var days = lastDays(14).reverse();
     S.habits.forEach(function (h) {
-      var r = add(L, "div", "hmrow"); var _hmn = add(r, "div", "hmn"); _hmn.innerHTML = (h.e && h.e.indexOf("ti-") === 0 ? '<i class="ti ' + h.e + '"></i> ' : (h.e || "")) + esc(h.l);
+      var r = add(L, "div", "hmrow"); var _hmn = add(r, "div", "hmn"); _hmn.innerHTML = habIconHTML(h) + " " + esc(h.l);
       var grid = add(r, "div", "hmdots");
       days.forEach(function (k) { var d = add(grid, "i"); if ((S.habitDone[k] || {})[h.id]) d.style.background = h.color; });
       var s = streak(h.id); if (s > 1) { var _hms = add(r, "div", "hms"); _hms.innerHTML = '<i class="ti ti-flame"></i>' + s; }
@@ -9553,13 +9568,13 @@
       titleEl = add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, drawPicker);
       if (view.cat == null) {
         var ph2 = phase(), ctx = (CONTEXT[ph2] || []).map(function (t) { return TITLE2META[t.toLowerCase()]; }).filter(Boolean);
-        if (ctx.length) { add(B, "div", "lbl", (ph2 === "morning" ? "🌅" : ph2 === "evening" ? "🌆" : ph2 === "night" ? "🌙" : "☀️") + " good right now"); var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { mkTile(xg, t); }); }
-        if (opts.priority && opts.priority.length) { add(B, "div", "lbl", "🕓 you've been meaning to…"); var pg2 = add(B, "div", "tilegrid"); opts.priority.forEach(function (t) { mkTile(pg2, t); }); } // the inferred procrastination list, surfaced first (David 2026-06-28)
-        if (opts.frequent) { var fr = frequent(6); if (fr.length) { add(B, "div", "lbl", "⭐ frequent"); var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { mkTile(fg, t); }); } }
+        if (ctx.length) { var xlbl = add(B, "div", "lbl"); xlbl.innerHTML = '<i class="ti ' + (ph2 === "morning" ? "ti-sunrise" : ph2 === "evening" ? "ti-sunset-2" : ph2 === "night" ? "ti-moon" : "ti-sun") + '"></i> good right now'; var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { mkTile(xg, t); }); }
+        if (opts.priority && opts.priority.length) { var plbl = add(B, "div", "lbl"); plbl.innerHTML = '<i class="ti ti-clock"></i> you\'ve been meaning to…'; var pg2 = add(B, "div", "tilegrid"); opts.priority.forEach(function (t) { mkTile(pg2, t); }); } // the inferred procrastination list, surfaced first (David 2026-06-28)
+        if (opts.frequent) { var fr = frequent(6); if (fr.length) { var flbl = add(B, "div", "lbl"); flbl.innerHTML = '<i class="ti ti-star"></i> frequent'; var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { mkTile(fg, t); }); } }
         add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; drawPicker(); }; cg.appendChild(card); });
         if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (!v) return; var m = { title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }; if (opts.multi) { picked[m.catK + "|" + m.title] = m; ct.value = ""; syncFoot(); } else if (opts.onTask) opts.onTask(m, picked, drawPicker); }; }
       } else if (view.group == null) {
-        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; drawPicker(); }; add(B, "div", "lbl", view.cat.e + " " + view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; drawPicker(); }; sg.appendChild(card); });
+        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; drawPicker(); }; var catlbl = add(B, "div", "lbl"); catlbl.innerHTML = tiIcon({ title: view.cat.label, catK: view.cat.k }) + " " + esc(view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; drawPicker(); }; sg.appendChild(card); });
       } else {
         var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; drawPicker(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { mkTile(tg, { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }); });
       }
@@ -9766,7 +9781,7 @@
       list.innerHTML = ""; var sg = suggestNext(k), start = nextFreeMin(k);
       if (!sg.length) { add(list, "div", "empty", "You're set for now — add anything you like below."); }
       sg.forEach(function (m) {
-        var d0 = m.habitId === "move" ? 45 : 30, r = add(list, "div", "sgrow"); add(r, "div", "sge", m.emoji || "•");
+        var d0 = m.habitId === "move" ? 45 : 30, r = add(list, "div", "sgrow"); var sge = document.createElement("div"); sge.className = "sge"; sge.innerHTML = tiIcon(m); r.appendChild(sge);
         var mid = add(r, "div"); mid.style.flex = "1"; add(mid, "div", "sgn", m.title); add(mid, "div", "sgt", fmt(start) + " · " + d0 + "m");
         r.onclick = function () { blocks(k).push({ id: uid(), time: pad(Math.floor(start / 60)) + ":" + pad(start % 60), mins: d0, title: m.title, prio: 2, color: m.color || "#8a5cf0", done: false }); save(); drawSuggest(); renderToday(); };
       });
@@ -12595,10 +12610,10 @@
         var ic = add(B, "div", "pchips"); ["Focused", "Disciplined", "Calm", "Bold", "Loving", "Creative", "Grateful", "Unstoppable"].forEach(function (t) { var x = add(ic, "div", "pchip" + (st.ident[t] ? " on" : ""), t); x.onclick = function () { if (st.ident[t]) delete st.ident[t]; else st.ident[t] = 1; x.classList.toggle("on"); }; });
       } else if (st.step === 1) {
         add(B, "div", "sttl", "🌟 Which virtues?"); add(B, "div", "lbl", "the virtues you'll embody today.");
-        var g = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = st.virt.indexOf(v.k) !== -1; var x = add(g, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var i = st.virt.indexOf(v.k); if (i !== -1) st.virt.splice(i, 1); else st.virt.push(v.k); drawRecommit(); }; });
+        var g = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = st.virt.indexOf(v.k) !== -1; var x = add(g, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; var vge = document.createElement("div"); vge.className = "ge"; vge.innerHTML = '<i class="ti ' + (VIRTUE_ICON[v.k] || "ti-sparkles") + '"></i>'; x.appendChild(vge); add(x, "div", "gl", v.l); x.onclick = function () { var i = st.virt.indexOf(v.k); if (i !== -1) st.virt.splice(i, 1); else st.virt.push(v.k); drawRecommit(); }; });
       } else if (st.step === 2) {
         add(B, "div", "sttl", "✅ Commit to today"); add(B, "div", "lbl", "which habits are you committing to? they'll land on your day.");
-        S.habits.forEach(function (h) { var on = !!st.hab[h.id]; var r = add(B, "div", "subi"); var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = h.color; add(r, "div", null, h.e + "  " + h.l).style.flex = "1"; r.onclick = function () { st.hab[h.id] = !st.hab[h.id]; drawRecommit(); }; });
+        S.habits.forEach(function (h) { var on = !!st.hab[h.id]; var r = add(B, "div", "subi"); var ck = add(r, "div", "ck" + (on ? " on" : ""), on ? "✓" : ""); ck.style.borderColor = h.color; var hlbl = document.createElement("div"); hlbl.style.flex = "1"; hlbl.innerHTML = habIconHTML(h) + "  " + esc(h.l); r.appendChild(hlbl); r.onclick = function () { st.hab[h.id] = !st.hab[h.id]; drawRecommit(); }; });
       } else {
         add(B, "div", "sttl", "🙏 Close with gratitude"); add(B, "div", "lbl", "the Stutz & Michels way — or a quick one.");
         add(B, "button", "done2", "Grateful Flow (full)").onclick = function () { gratefulFlow(finalize); };
@@ -12664,10 +12679,10 @@
         add(B, "div", "lbl", "🎯 what are you chasing? (optional)"); inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "get lean, ship the app, find peace…"; inputs.g.style.cssText = "width:100%;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
       } else if (step === 1) {
         add(B, "div", "sttl", "💼 What's your work?"); add(B, "div", "lbl", "so the app tailors your deep-work habits to you");
-        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = "#2a9fe0"; if (on) x.style.background = "#2a9fe0"; add(x, "div", "ge", o.e); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; drawCharSheet(); }; });
+        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = "#2a9fe0"; if (on) x.style.background = "#2a9fe0"; var oge = document.createElement("div"); oge.className = "ge"; oge.innerHTML = '<i class="ti ' + (OCC_ICON[o.k] || "ti-sparkles") + '"></i>'; x.appendChild(oge); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; drawCharSheet(); }; });
       } else {
         add(B, "div", "sttl", "🌟 Your path"); add(B, "div", "lbl", "which virtues call you most right now? pick up to 3 — you'll still grow them all");
-        var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; add(x, "div", "ge", v.e); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); drawCharSheet(); }; });
+        var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; var vge2 = document.createElement("div"); vge2.className = "ge"; vge2.innerHTML = '<i class="ti ' + (VIRTUE_ICON[v.k] || "ti-sparkles") + '"></i>'; x.appendChild(vge2); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); drawCharSheet(); }; });
       }
       var nav = add(B, "div", "frm"); nav.style.marginTop = "10px";
       if (step > 0) { add(nav, "button", "add", "← back").onclick = function () { step--; drawCharSheet(); }; }
@@ -12872,7 +12887,7 @@
     var yk = keyAdd(todayK(), -1), lg = logs(yk), dm = S.habitDone[yk] || {};
     var doneH = S.habits.filter(function (h) { return dm[h.id]; });
     if (!lg.length && !doneH.length) { add(B, "div", "empty", "Nothing logged yesterday — a fresh page today."); return; }
-    if (doneH.length) { add(B, "div", "lbl", "✅ habits kept"); doneH.forEach(function (h) { var r = add(B, "div", "hab"); add(r, "div", "he", h.e || "⭐"); add(r, "div", "hn", h.l); }); }
+    if (doneH.length) { add(B, "div", "lbl", "✅ habits kept"); doneH.forEach(function (h) { var r = add(B, "div", "hab"); var he = document.createElement("div"); he.className = "he"; he.innerHTML = habIconHTML(h); r.appendChild(he); add(r, "div", "hn", h.l); }); }
     if (lg.length) { var tot = 0; add(B, "div", "lbl", "⏱️ what you did"); lg.forEach(function (e) { tot += e.mins || 0; var r = add(B, "div", "logi"); add(r, "div", "lt", e.time || ""); add(r, "div", "ln", e.title || ""); add(r, "div", "lm", dur(e.mins || 0)); }); add(B, "div", "lbl", "total tracked: " + dur(tot)); }
   }
   function habitSheet() {
@@ -12896,7 +12911,7 @@
           Object.keys(picked).forEach(function (k) {
             var t = picked[k];
             if (S.habits.some(function (h) { return h.l === t.title; })) return;
-            S.habits.push({ id: uid(), e: t.emoji || "⭐", l: t.title, cat: t.catK, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" });
+            S.habits.push({ id: uid(), e: tiClass(t), l: t.title, cat: t.catK, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" }); // W2 emoji-sweep: store a ti-class (matches the @SEC:DEV persona seeds), never a raw emoji glyph — habIconHTML()/the h.e.indexOf("ti-") guards render both shapes, old saved habits keep working
           });
           save(); closeSheet(); renderHabits();
         };
