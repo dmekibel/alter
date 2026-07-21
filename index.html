@@ -2506,8 +2506,8 @@
   /* FULL-SCREEN CLEANUP (David 2026-06-27): kill the per-day pink outline boxes, the right symbol rail, and the day-separator bars so the timeline reads edge-to-edge and uncluttered */
   .railchip{ display:none !important; }
   /* day separators: NO MORE MAROON. The separator stays as a tiny INVISIBLE spacer (so the swipe-scroll math that anchors on it still works) but every visible part — the maroon "stacks"/"done" pills, the border, the label — is gone. The top header already tells you which day you're on. (David 2026-06-27) */
-  .day-stacksep{ background:#16122c !important; border:none !important; box-shadow:none !important; min-height:0 !important; max-width:none !important; width:auto !important; margin:0 !important; padding:9px 6px 8px 14px !important; display:flex !important; align-items:center !important; gap:9px !important; overflow:visible !important; } /* day-title track restored, clean (no maroon pill) on a night-navy band that blends the day boundary into a header, not a break (David 2026-06-27) */
-  .day-stacksep .dss-lab{ display:block !important; color:#9a8fb5 !important; font-family:"Jost",sans-serif !important; font-weight:800 !important; font-size:12px !important; letter-spacing:1.3px !important; text-transform:uppercase !important; }
+  .day-stacksep{ background:transparent !important; border:none !important; box-shadow:none !important; min-height:0 !important; max-width:none !important; width:auto !important; margin:16px 0 4px !important; padding:0 0 0 4px !important; display:flex !important; align-items:center !important; gap:8px !important; overflow:visible !important; opacity:.62 !important; } /* quiet date, no band/pill — the mockup has no day-separator clutter (David 2026-07-21) */
+  .day-stacksep .dss-lab{ display:block !important; color:#7a6e92 !important; font-family:"Jost",sans-serif !important; font-weight:800 !important; font-size:11px !important; letter-spacing:1.5px !important; text-transform:uppercase !important; }
   .day-stacksep.today-sep .dss-lab{ color:#ff8ac0 !important; }
   /* AUDIT TOP-5 (canon A-4): the day band's crown + 4-pip battery — «ЧТ · 2 июля 👑 ▮▮▮▮» */
   .day-stacksep .dss-crown{ color:#ffd24a; font-size:13px; margin:0 2px; }
@@ -2833,6 +2833,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1164"></script>
+  <script src="app.js?v=1165"></script>
 </body>
 </html>

@@ -3327,11 +3327,7 @@
       if (pendingScrollNow || !pullFocusK) pullFocusK = pullK || todayK();
       var focus = pullFocusK, R = 3; // ±3 days of buffer → you can scroll several days smoothly before any rebuild (no mid-day jitter) — David 2026-06-26
       var pager = add(pb, "div", "day-pager");
-      function dayHeadInfo(hd, dk) { if (dk > todayK()) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; } else if (blocks(dk).length) { // AUDIT TOP-5 (canon timeline A-4): the day band reads «ЧТ · 2 июля 👑 ▮▮▮▮» — crown for a fully-lived day + a 4-pip day battery (the old day-done chip was CSS-hidden dead code)
-        var _bl = blocks(dk), _dn = 0; _bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") _dn++; });
-        if (_dn >= _bl.length && _bl.length) add(hd, "i", "ti ti-crown dss-crown");
-        var _on2 = Math.round((_bl.length ? _dn / _bl.length : 0) * 4), _dbat = add(hd, "span", "dss-bat");
-        for (var _p2 = 0; _p2 < 4; _p2++) { var _pp = add(_dbat, "i"); if (_p2 < _on2) _pp.className = "on"; } } }
+      function dayHeadInfo(hd, dk) { if (dk > todayK()) { var apb = add(hd, "button", "day-sepauto"); apb.innerHTML = '<i class="ti ti-stack-2"></i> stacks'; apb.onclick = function () { presetsSheet(dk); }; } } // crown + battery pips removed (David 2026-07-21: the day band is just a quiet date now — less clutter, closer to the mockup)
       [-1, 0, 1].forEach(function (off) {
         var dk = keyAdd(focus, off), isT = (dk === todayK());
         var card = add(pager, "div", "day-card" + (isT ? " today" : "") + (off === 0 ? " cur" : "")); card.dataset.dk = dk;
@@ -8723,7 +8719,7 @@
   function calendarView(L, k, showNow, noHead) {
     L.innerHTML = ""; nowLineEl = null;
     var bls = blocks(k).slice(), lgs = logs(k).slice();
-    var _sk = curStreak(); if (_sk > 0 && k === todayK()) { var sb = add(L, "div", "streakbar"); sb.style.cssText = "display:flex;align-items:center;margin:2px 0 9px;"; var sl = add(sb, "span", "streaklbl"); sl.innerHTML = '<i class="ti ti-flame"></i> ' + _sk + ' in a row'; sl.style.cssText = "display:inline-flex;align-items:center;gap:5px;font-family:'Jost',sans-serif;font-weight:700;font-size:12px;letter-spacing:.3px;color:#ffb3d6;background:#3a1228;border:1.5px solid #5a1c3c;border-radius:999px;padding:3px 11px;"; } // minimal berry chip — no gradient/glow/tier-name (David 2026-06-25)
+    // streak chip removed from the timeline (David 2026-07-21: cleaner, the mockup has no day-separator clutter — streak lives elsewhere)
     if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
     var minS = 7 * 60, maxE = 22 * 60; bls.concat(lgs).forEach(function (b) { var s = hm(b.time); minS = Math.min(minS, s); maxE = Math.max(maxE, s + (b.mins || 30)); });
     var now = logicalNowMin(), _dw = dayWindow(), startH = _dw.startH, endH = _dw.endH, HP = pullHourPx; // YOUR day = wake → bedtime (from onboarding); the SAME window for every day so the sections are uniform and stack into one continuous scroll-into-it timeline (David 2026-06-26)
@@ -8740,9 +8736,10 @@
     })();
     var railItems = [], nowRightBand = null; // bars too thin to label inline → their symbol goes to the right-side rail, stacked in order; nowRightBand = the Y-band the NOW readout occupies on the right so rail chips dodge it (David 2026-06-25)
     var _SHOWHALF = HP >= 84, _NUMHALF = HP >= 150, _SHOWQTR = HP >= 210, _NUMQTR = HP >= 270; // minimal gutter: hours always numbered; :30 is a bare DASH until you zoom in (then it gains a number); :15/:45 dashes only appear deeper still (David 2026-06-25)
+    var _lastHrNumY = -999; // LESS CRAMMED (David 2026-07-21): skip an hour numeral if it's within ~64px of the last one drawn — in empty stretches the hours thin out (every 2nd/3rd), near blocks (flow-pushed apart) they stay
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = topFor(mm), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (mm === endH * 60) continue; // BOUNDARY HOUR (David 2026-06-28): the bottom tick == startH (e.g. 28:00 == 4am) repeats the SAME hour the NEXT stacked day-section draws at its top → drawing it here printed "4am" twice + doubled the hour-line. Skip it; tiling stays seamless because the next day-section provides that row. (also fixes the reported 2–4am background break.)
-      if (_mn === 0) { var _ln = add(cal, "div", "calhour"); _ln.style.top = _t + "px"; _ln.dataset.mn = mm; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 13) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -13; } // -13 recenters the BIG numeral on the hour // 12-hour gutter (12,1,2…) to match David's planner mockup 2026-07-20 (was 24h)
+      if (_mn === 0 && _t - _lastHrNumY >= 92) { _lastHrNumY = _t; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 13) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -13; } // -13 recenters the BIG numeral on the hour; the ≥64px gate thins crammed empty stretches (David 2026-07-21)
       else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
       else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
     }
@@ -8799,7 +8796,7 @@
       if (status === "ok" && !partial) { card.style.right = "14px"; card.classList.add("fusedbar"); } // FULLY matched = the plan card itself, lived (single column — no separate real lane)
       // (the live activity is NOT drawn as an extending block — the present is the now-line + its right-side readout; David 2026-06-25)
       // (no gap-cap — the floor-5/margin-4 height already leaves a gap to the next block; capping made live-zoom heights differ from the commit and caused the bounce — David 2026-06-25)
-      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = flowH(_knots, _uS, _uE - _uS) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble (the matched part is its own shining bubble) — David 2026-06-25
+      if (partial) { var _pre = _pm.start - bs, _post = be - _pm.end, _uS, _uE; if (_post >= _pre) { _uS = _pm.end; _uE = be; } else { _uS = bs; _uE = _pm.start; } card.style.top = topFor(_uS) + "px"; card.style.height = Math.max(MINFLOOR - 14, flowH(_knots, _uS, _uE - _uS)) + "px"; card.dataset.mn = _uS; card.dataset.dur = (_uE - _uS); } // the UNFULFILLED remainder breaks off into its OWN ghost bubble — floored to the min symbol-box so it's never a sliver (David 2026-07-21) (the matched part is its own shining bubble) — David 2026-06-25
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (bb) { return function () { editBlk(bb); }; })(b); } // small bubble → carries its open-fn so the swipe-select cluster gesture can open it (David 2026-06-28)
       if (status === "ok" && !partial) { // DONE = BRIGHT pastel diagonal STRIPES (V≈88, canon: Gym) + bright same-colour edge, NO black outline, NO gold
@@ -8821,19 +8818,20 @@
           if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = D.light; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:#fff2f9;"; }
           // (2b) Batch 3 #3 (David 2026-07-03, reverses the old "nothing below the line while tracking" rule — DAVID'S CALL): SHOW the committed future stretch (now → block end) as a faint dashed plan bar, continuous below the bright tracked segment. This is the "keep going N more" you committed — it should be visible ahead of you, not blank.
           if (be > now + 0.5) { var _fh2 = flowH(_knots, now, be - now), _cf = add(cal, "div", "calblk lane futurebar committedfut"); _cf.style.top = topFor(now) + "px"; _cf.style.height = _fh2 + "px"; _cf.style.left = "32px"; _cf.style.right = "14px"; _cf.dataset.mn = now; _cf.dataset.dur = (be - now); _cf.style.background = _matte; _cf.style.borderColor = "#160510"; _cf.style.borderStyle = "dashed"; _cf.style.borderTop = "none"; _cf.style.boxShadow = "none"; _cf.style.opacity = "0.72"; _cf.style.borderRadius = "0 0 " + _R + " " + _R; _cf.style.pointerEvents = "none"; if (_fh2 >= 16) { var _cfl = add(_cf, "div", "cn"); _cfl.style.color = D.light; _cfl.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>'; } } // borderTop:none — the now-line IS the seam; a dashed top edge under it read as a glitch up close
-        } else { // NOT tracking → ONE continuous bar in the plan lane: ghost-dark top + matte future-bottom, split ONLY by the now-line crossing it. It was correct this way before — the bubble separates only on Play (David 2026-06-27)
-          card.style.background = "none"; card.style.borderColor = "#160510"; card.style.boxShadow = "0 3px 0 #160510"; var _ch = Math.max(5, (be - bs) / 60 * HP - 4);
-          var _cg = add(card, "div", "convghost"); _cg.style.height = ((now - bs) / 60 * HP / _ch * 100) + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.86); _cg.style.boxShadow = "inset 0 0 0 2px " + mixHex(D.c, "#160510", 0.32);
-          var _fut = add(card, "div", "convfut"); _fut.style.top = ((now - bs) / 60 * HP / _ch * 100) + "%"; _fut.style.background = _matte;
+        } else { // NOT tracking → ONE continuous bar: dark-past top + matte-future bottom, split cleanly at the now-line. CLEAN, no embossed inset ring / dark drop-shadow (David 2026-07-21: the now block looked janky/embossed)
+          card.style.background = "none"; card.style.borderColor = mixHex(D.c, "#ffffff", 0.16); card.style.boxShadow = "none";
+          var _cardH = Math.max(1, flowH(_knots, bs, be - bs)), _splitPct = Math.max(0, Math.min(100, (topFor(now) - topFor(bs)) / _cardH * 100)); // split ALIGNED to the now-line on the flowed card (was a raw time-fraction that drifted off the line)
+          var _cg = add(card, "div", "convghost"); _cg.style.height = _splitPct + "%"; _cg.style.background = mixHex(D.c, "#160510", 0.8); _cg.style.boxShadow = "none";
+          var _fut = add(card, "div", "convfut"); _fut.style.top = _splitPct + "%"; _fut.style.background = _matte;
         }
         _convFused = true;
       }
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
-        var _mh = flowH(_knots, _pm.start, _pm.end - _pm.start); // flowed span → no bounce
+        var _mh = Math.max(MINFLOOR - 14, flowH(_knots, _pm.start, _pm.end - _pm.start)); // flowed span, floored to the min symbol-box so a matched sliver is never thinner than the orange/green minimum (David 2026-07-21)
         var seg = add(cal, "div", "matchseg" + voltClass(k)); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "32px"; seg.style.right = "14px"; /* BATTERY PHYSICS: matched charge keeps the voltage of the day it was lived */
         seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, "#ffffff", 0.06) + "," + mixHex(D.c, "#ffffff", 0.06) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 11px," + mixHex(D.c, "#ffffff", 0.28) + " 22px)"; seg.style.borderColor = mixHex(D.c, "#ffffff", 0.2); seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
-        var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 15 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : '') + '<i class="ti ti-circle-check"></i>'; // matched span: icon + name + ✓ (no shine — David disliked the internal reflections)
+        var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 40 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : tiIcon(b) + ' ') + '<i class="ti ti-circle-check"></i>'; // short matched bar = just the icon + ✓ on the right (clean symbol-box, no cramped faint text) — David 2026-07-21
       }
       var ink = (status === "ok" && !partial) || _straddle ? "#ffffff" : D.light; // striped/done + NOW = WHITE bold label (Gym, Claude code); quiet/outlined = domain-colour label (Lunch, Read) — canon mockup
       var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
