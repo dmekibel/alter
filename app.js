@@ -5103,10 +5103,10 @@
       bars.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab
     }
     // 2) LEFT door = PLANNER (was journey). Prominent labeled button.
-    var pd = el("tfDoorPlanner"); if (!pd) { pd = document.createElement("button"); pd.id = "tfDoorPlanner"; pd.className = "tf-homedoor tf-door-planner"; pd.setAttribute("aria-label", "Planner"); var pi = document.createElement("i"); pi.className = "ti ti-calendar"; pd.appendChild(pi); var pl = document.createElement("span"); pl.className = "tf-door-lbl"; pl.textContent = tr("Planner"); pd.appendChild(pl); inner.appendChild(pd); }
+    var pd = el("tfDoorPlanner"); if (!pd) { pd = document.createElement("button"); pd.id = "tfDoorPlanner"; pd.className = "tf-homedoor tf-door-planner"; pd.setAttribute("aria-label", "Planner"); var pi = document.createElement("i"); pi.className = "ti ti-calendar"; pd.appendChild(pi); inner.appendChild(pd); } // edge-tab: icon only, no label (David 2026-07-22)
     pd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab (data-tab="day")
     // 3) RIGHT door = GARDEN/game. Prominent labeled button.
-    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); var gl = document.createElement("span"); gl.className = "tf-door-lbl"; gl.textContent = tr("Garden"); gd.appendChild(gl); inner.appendChild(gd); }
+    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); inner.appendChild(gd); } // edge-tab: icon only, no label (David 2026-07-22)
     gd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("game"); } catch (e) {} }; // = the retired Game/You tab (data-tab="self")
     // journey door REMOVED (David 2026-07-21): if a stale #tfDoorJourney survives from an older build, drop it.
     var _jd = el("tfDoorJourney"); if (_jd && _jd.parentNode) _jd.parentNode.removeChild(_jd);

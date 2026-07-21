@@ -1613,6 +1613,7 @@
   #trackerFull.tf-home.st-idle .tf-toolspanel, #trackerFull.tf-onehome .tf-toolspanel{ background:transparent !important; border:none !important; padding:0 !important; }
   #trackerFull.tf-home.st-idle .tf-toolgrid, #trackerFull.tf-onehome .tf-toolgrid{ padding:0 26px; gap:12px; }
   #trackerFull.tf-home.st-idle .tf-htool i, #trackerFull.tf-onehome .tf-htool i{ font-size:28px; }
+  #trackerFull.tf-home.st-idle .tf-htool, #trackerFull.tf-onehome .tf-htool{ filter:saturate(1.15) brightness(0.94); } /* RICHER tiles (David 2026-07-22 "palette 4"): domain hues, saturation +15% then brightness −6% */
   .tf-htool.more span{ color:#d2aae8; }
   .tf-tooldots{ display:flex; gap:6px; justify-content:center; margin-top:10px; }
   .tf-tooldots .dot{ width:6px; height:6px; border-radius:50%; background:#3d2740; transition:background .2s, width .2s; }
@@ -2781,14 +2782,13 @@
   /* 3) HOME FACE DOORS (David 2026-07-21 FINAL): the story strip = planner; LEFT door = PLANNER, RIGHT door = GARDEN. Journey door REMOVED. These read as PROMINENT colorful tappable buttons — 54px rounded squares, white icon, Baloo label under it in the light hue. */
   .tf-planchev{ margin-left:2px; align-self:center; font-size:19px; color:#c79bd8; flex:0 0 auto; opacity:.85; } /* the quiet chevron at the strip's end = "this strip is a door" */
   .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:54px; min-width:54px; border-radius:17px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 4px 5px; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* base position (ONEHOME=false legacy) */
-  #trackerFull.tf-onehome .tf-homedoor{ top:calc(env(safe-area-inset-top,0px) + 96px); } /* COLLISION FIX (David 2026-07-21): under the ONE-HOME frame the doors sit in their own slots BELOW the story strip row (was 48px = crowding the pills from above). The strip owns the full top row; the two doors drop under it, clear of the pills. The circle stage sits between them. */
-  .tf-homedoor::before{ content:""; position:absolute; inset:-6px; border-radius:20px; } /* invisible tap pad */
-  .tf-homedoor i{ font-size:25px; line-height:1; color:#fff; }
-  .tf-homedoor .tf-door-lbl{ font-family:var(--bub); font-weight:700; font-size:11px; line-height:1; letter-spacing:.2px; }
+  /* EDGE-TAB DOORS (David 2026-07-22, "final palette 4"): the two doors become slim vertical tabs FLUSH to the screen edges — 18px wide, 80px tall, vertical centre ~132px, inner-rounded, deep plum/green, white icon, no label. */
+  #trackerFull.tf-onehome .tf-homedoor{ top:92px; width:18px; min-width:18px; height:80px; padding:0; gap:0; border-radius:0; }
+  .tf-homedoor::before{ content:""; position:absolute; inset:-10px; border-radius:14px; } /* invisible tap pad — widens the slim tab's hit area */
+  .tf-homedoor i{ font-size:13px; line-height:1; color:#fff; }
   .tf-homedoor:active{ transform:scale(.93); }
-  .tf-door-planner{ left:16px; background:#b07aff; box-shadow:0 5px 0 #6a44b0, 0 0 22px rgba(176,122,255,.5); }
-  .tf-door-planner .tf-door-lbl{ color:#c79bff; }
-  .tf-door-garden{ right:16px; background:#2ab8c4; box-shadow:0 5px 0 #186e76, 0 0 22px rgba(42,184,196,.5); }
+  .tf-door-planner{ left:0; background:#372254; box-shadow:0 4px 0 #1e1230; border-radius:0 15px 15px 0; }
+  .tf-door-garden{ right:0; background:#184630; box-shadow:0 4px 0 #0d271a; border-radius:15px 0 0 15px; }
   .tf-door-garden .tf-door-lbl{ color:#5ed6df; }
   /* doors only exist on the idle home face; hide anywhere else the cockpit shows (tracking/stage/etc.) */
   #trackerFull:not(.tf-home) .tf-homedoor, #trackerFull:not(.st-idle) .tf-homedoor, body:not(.navv2) .tf-homedoor, body:not(.navv2) .tf-planchev{ display:none !important; }
