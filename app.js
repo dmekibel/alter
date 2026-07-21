@@ -3335,6 +3335,7 @@
         var sc = add(card, "div", "day-cardscroll");
         if (off === 0) { // DAY-LOCK (David 2026-07-21): the CUR card is ONE day, full-screen — no vertical stack, no neighbour above/below, no infinite recenter. Vertical scroll + zoom stay on this day; day nav = horizontal swipe / week view. (Reverses the 2026-06-26 continuous-scroll model.)
           var ssec = add(sc, "div", "day-sec"); ssec.dataset.dk = focus; calendarView(ssec, focus, focus === todayK(), true);
+          if (!sc._nc) { sc._nc = 1; sc.addEventListener("scroll", function () { if (!_navLock && sc.scrollTop > 24 && document.body.classList.contains("tab-day") && !document.body.classList.contains("journey-open") && !document.body.classList.contains("gaming") && !document.body.classList.contains("home-pane")) document.body.classList.add("nav-collapsed"); else if (sc.scrollTop <= 4) document.body.classList.remove("nav-collapsed"); }); } // scroll hides the bottom bar (Apple-Music) + returns it at the top — the nav-collapse that lived in attachInfinite, minus the infinite recenter (David 2026-07-21)
         } else { var sec = add(sc, "div", "day-sec"); sec.dataset.dk = dk; calendarView(sec, dk, isT, true); } // the ±1 side-cards are single days for the horizontal day-slide
       })
       ; // forEach
@@ -3486,8 +3487,9 @@
     var seg = document.querySelector("#liveDock .ld-seg"); if (!seg) return;
     var st = trackerState().id, sec = trackerControls(st); // FULL per-state set, identical to the expanded tracker (folded == expanded; nothing dropped; play/stop circle is a bonus quick-action) — David 2026-06-28
     seg.innerHTML = "";
-    sec.forEach(function (x) { var bn = add(seg, "button", "ld-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; });
-    seg.style.display = sec.length ? "" : "none"; // nothing secondary for this state → no empty row (collapsed-corner rule still hides it via CSS)
+    var _folded = sec.filter(function (x) { return !x.primary; }); // FOLDED dock = SECONDARY controls only; the play/stop circle already IS the primary action, so don't duplicate it → one less button, a thinner minimized dock (David 2026-07-21)
+    _folded.forEach(function (x) { var bn = add(seg, "button", "ld-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; });
+    seg.style.display = _folded.length ? "" : "none"; // nothing secondary for this state → no empty row (collapsed-corner rule still hides it via CSS)
   }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); renderLiveDock(); if (!lt || !lb) return;
@@ -8737,8 +8739,8 @@
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = topFor(mm), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (mm === endH * 60) continue; // BOUNDARY HOUR (David 2026-06-28): the bottom tick == startH (e.g. 28:00 == 4am) repeats the SAME hour the NEXT stacked day-section draws at its top → drawing it here printed "4am" twice + doubled the hour-line. Skip it; tiling stays seamless because the next day-section provides that row. (also fixes the reported 2–4am background break.)
       if (_mn === 0 && _t - _lastHrNumY >= 92) { _lastHrNumY = _t; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 13) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -13; } // -13 recenters the BIG numeral on the hour; the ≥64px gate thins crammed empty stretches (David 2026-07-21)
-      else if (_mn === 30) { if (_NUMHALF) { var _s2 = add(cal, "div", "calsub", ((_hh % 12) || 12) + ":30"); _s2.style.top = (_t - 7) + "px"; _s2.dataset.mn = mm; _s2.dataset.off = -7; } else if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // a bare DASH until zoomed in, then it becomes a number (no dash) — never both
-      else { if (_NUMQTR) { var _s3 = add(cal, "div", "calsub", ":" + pad(_mn)); _s3.style.top = (_t - 7) + "px"; _s3.dataset.mn = mm; _s3.dataset.off = -7; } else if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } }
+      else if (_mn === 30) { if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf half30"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // :30 = a MEDIUM dash (never "7:30" text) — just signifies between the two hours (David 2026-07-21)
+      else { if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf half15"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } } // :15/:45 = a THINNER dash, deeper zoom only
     }
     if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = topFor(now); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : "#ff5fa8"; var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = "#ff5fa8"; nl.style.boxShadow = "0 0 13px #ff5fa8"; nl.dataset.mn = now; nowLineEl = nl; add(nl, "div", "nowscan"); /* P-A scanner glow: a soft upward bloom riding the line = the present "printing" the day; child of the line so it creeps with it, pointer-events:none */ nowRightBand = [_ny - 6, _ny + 30]; /* now-line stays the brightest thing on the timeline (David 2026-06-27) */ var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 8) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : "#4a1126"; nc.dataset.mn = now; nc.dataset.off = -8; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; { var np = add(cal, "div", "nowtime"); np.style.top = (_ny - 9) + "px"; np.dataset.mn = now; np.dataset.off = -9; np.style.left = "auto"; np.style.right = "10px"; np.innerHTML = "NOW"; } } // clean "NOW" pink pill centered on the now-line's right end — the canon mockup (David 2026-07-20; was the NOW HH:MM + tracking readout)
     if (showNow) { // Batch 3 #4: TAP THE NOW-LINE (or its circle) → zoom into the present. Toggles zoomed-in ⇄ default, anchored at the line, then recenters on now. Replaces the removed double-tap.
