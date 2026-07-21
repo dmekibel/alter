@@ -1759,7 +1759,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit";
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit,.tf-axis-peek,.tf-axis-proxy";
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -3609,6 +3609,7 @@
   var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
   var NAV_V2 = true;       // R3 COMPASS ROSE (David 2026-07-21 "kill the 4-button tab bar; home is the center of the world"). TRUE = the bottom #nav bar dies app-wide (body.navv2, CSS display:none), replaced by the GUARDIAN PUCK (bottom-left, tap = home) + the HOME FACE DOORS (story strip = planner door · top-left journey glyph · top-right garden glyph · gem-row avatar = settings). FALSE = no body.navv2 class → the old 4-button bar exactly as before (all its DOM + handlers left intact). Tap-based only this pass; swipe-axis travel comes device-tested later.
   var ONEHOME = true;      // THE ONE-HOME LAW (David 2026-07-21 "home still looks like the old cockpit"): whenever #trackerFull is the full-screen surface (TF_OPEN, NOT tf-staged), it ALWAYS wears the home frame — status row (clock left · gems+avatar right), the story strip (#tfHomeBars) + its planner chevron, the journey/garden door glyphs, the circle stage, and (on CALM faces only: idle/night/claim/break) the tool grid. What VARIES per state = only the circle's contents, the line(s) under it, and one control row. Root cause fixed: the frame used to live only in the idle branch (renderHomeFace), so any other face (claim/night/tracking/break) landed on a bare ring+buttons = "the old cockpit". FALSE = exactly today's per-face behavior (renderHomeFrame is a no-op guard; the claim face keeps its stacked door column). The frame styles ride a shared .tf-onehome class on #trackerFull so the existing per-face st-* CSS keeps working.
+  var AXIS_V1 = true;      // THE VERTICAL WORLD AXIS (David 2026-07-21 "home↔journey↔tools, a single continuous scroll"). TRUE = ONE pointer gesture handler on the home stage (#trackerFull.tf-onehome) owns VERTICAL drags while home is the active surface: drag DOWN → journey surface follows from the top, past ~80px/flick commits via the journey pane; drag UP → the tools shelf follows from the bottom, commit via openToolbox; below threshold rubber-bands back. Peeks (top journey hint + bottom tools hint) crest each edge as tappable backup doors. HAND-OFF model, NOT a second live scroll watcher — the horizontal pane-carousel is already DISARMED while #trackerFull.on (initPaneCarousel line ~1799 bails), so this handler can never fight it. FALSE = no gesture listeners attach; the peeks stay as plain tap-only affordances. DEVICE-UNTESTED by nature (synthetic touch lies about finger-follow/threshold); taps + puck remain the reliable doors regardless. See initHomeAxis / wireHomeAxis.
   var PUCK_V2 = true;      // R3b LIVING PUCK (David 2026-07-21 "the shape-shifter", DECISIONS.md): the guardPuck is a COMPACT bottom-left pill that WEARS THE COLOR OF WHAT MATTERS NOW — the running activity while tracking, the NEXT planned block when idle-with-something-coming, gold while paused, plain pink home disc only when nothing runs/upcoming. The colored DISC ACTS on the thing (start the upcoming block / pause the running one / resume from break); the TAIL is always "go home". FALSE = the v1183 static pink puck + the OLD full-width #liveDock bar, byte-for-byte. Gated on body.puckv2 (set at boot beside navv2). Re-renders on the same cadence as renderLiveDock (update-in-place, no wipe).
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
@@ -5110,6 +5111,111 @@
     gd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("game"); } catch (e) {} }; // = the retired Game/You tab (data-tab="self")
     // journey door REMOVED (David 2026-07-21): if a stale #tfDoorJourney survives from an older build, drop it.
     var _jd = el("tfDoorJourney"); if (_jd && _jd.parentNode) _jd.parentNode.removeChild(_jd);
+    wireHomeAxis(inner); // THE VERTICAL WORLD AXIS peeks (journey hint crests the top, tools hint crests the bottom) — both tappable backup doors; the drag-follow is initHomeAxis, wired once at boot.
+  }
+  // ===== THE VERTICAL WORLD AXIS (AXIS_V1, David 2026-07-21 "home↔journey↔tools, one continuous scroll") =====
+  // TWO parts: (1) wireHomeAxis paints the two PEEK affordances on the home frame — a faint upward hint at the top edge (= journey) and a lit sliver at the bottom edge (= tools). Both are TAPPABLE backup doors regardless of the gesture (the reliable navigation). (2) initHomeAxis (boot, once) attaches the single finger-follow gesture handler to #trackerFull. Idempotent: elements created once, reused (no innerHTML wipe). Guarded by AXIS_V1 — false → peeks are tap-only, no gesture listeners.
+  // PEEK v1 = chevron+label hints (a real journey-stone sliver would need drawJourney into an offscreen node every home render = costly + a second render surface; the chevron reads "there's a world up there" and is the honest, cheap v1). Stated in the report.
+  function wireHomeAxis(inner) {
+    if (!NAV_V2) return;
+    if (!inner) { inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return; }
+    // TOP peek = JOURNEY (scroll up reveals it). Upward chevron + label, cresting the top edge.
+    var tp = el("tfAxisTop");
+    if (!tp) {
+      tp = document.createElement("button"); tp.id = "tfAxisTop"; tp.className = "tf-axis-peek tf-axis-top"; tp.setAttribute("aria-label", "Journey");
+      var ti1 = document.createElement("i"); ti1.className = "ti ti-chevron-up"; tp.appendChild(ti1);
+      var tl1 = document.createElement("span"); tl1.className = "tf-axis-lbl"; tl1.textContent = tr("Journey"); tp.appendChild(tl1);
+      inner.appendChild(tp);
+    }
+    tp.onclick = function () { try { axisGoJourney(); } catch (e) {} }; // tap = the same commit the upward drag lands on (backup door)
+    // BOTTOM peek = TOOLS (scroll down reveals it). Upward-lit sliver + label, cresting the bottom edge.
+    var bp = el("tfAxisBot");
+    if (!bp) {
+      bp = document.createElement("button"); bp.id = "tfAxisBot"; bp.className = "tf-axis-peek tf-axis-bot"; bp.setAttribute("aria-label", "Tools");
+      var bl1 = document.createElement("span"); bl1.className = "tf-axis-lbl"; bl1.textContent = tr("Tools"); bp.appendChild(bl1);
+      var bi1 = document.createElement("i"); bi1.className = "ti ti-chevron-down"; bp.appendChild(bi1);
+      inner.appendChild(bp);
+    }
+    bp.onclick = function () { try { axisGoTools(); } catch (e) {} };
+  }
+  // The two commit destinations, shared by taps + drag-commit. Journey = leave home + rest on the journey pane (mirrors the retired journey nav tab). Tools = openToolbox (re-stages #trackerFull as the tool stage — stays on this surface, no second full-screen).
+  function axisGoJourney() { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("journey"); } catch (e) {} }
+  function axisGoTools() { try { openToolbox(); } catch (e) {} }
+  // ---- the single finger-follow gesture handler (wired ONCE at boot; guarded by AXIS_V1) ----
+  // SINGLE-OWNER LAW: attached to #trackerFull only, arms ONLY when home is the active full-screen face (tf-onehome + NOT tf-staged) and TF_OPEN. While #trackerFull.on, the horizontal pane-carousel's own pointerdown BAILS (initPaneCarousel: `el("trackerFull").classList.contains("on")` → armed=false), so the two handlers are never live at the same instant → no two-watchers bounce. On this surface there is NO native scroll (#trackerFull: touch-action:none; overscroll-behavior:none) and NO other pointer watcher, so nothing here competes for the vertical drag.
+  // A translucent proxy panel follows the finger (translateY-tracking a slide-in from the top for journey / from the bottom for tools). At commit it fires axisGoJourney/axisGoTools and the real surface takes over; below threshold it rubber-bands back. The proxy is a paint-only layer (no live journey/tools DOM under the finger) — the honest hand-off, never two live full-screens blended.
+  var _axDown = 0, _axSy = 0, _axSx = 0, _axLock = 0, _axDir = 0, _axProxy = null, _axStartT = 0;
+  function axisProxy() { if (_axProxy) return _axProxy; var p = document.createElement("div"); p.id = "tfAxisProxy"; p.className = "tf-axis-proxy"; document.body.appendChild(p); _axProxy = p; return p; }
+  function axisArmed(e) {
+    if (!AXIS_V1) return false;
+    var tf = el("trackerFull"); if (!tf || !TF_OPEN) return false;
+    if (!tf.classList.contains("tf-onehome") || tf.classList.contains("tf-staged")) return false; // only the calm home faces own the axis; a guided/staged cockpit does not
+    if (_paneAnim || (typeof _dragLock !== "undefined" && _dragLock)) return false; // never while a pane settle or a timeline block-drag owns the DOM
+    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov, #sheet.on")) return false; // an overlay above home owns touch
+    if (e.target && e.target.closest && e.target.closest(PANE_GUARD)) return false; // buttons/inputs/the circle/doors keep their own taps (the disc = playFirst, doors = their handlers)
+    return true;
+  }
+  function initHomeAxis() {
+    if (!AXIS_V1) return;
+    var tf = el("trackerFull"); if (!tf) return;
+    tf.addEventListener("pointerdown", function (e) {
+      if (!e.isPrimary || !axisArmed(e)) { _axDown = 0; return; }
+      _axDown = 1; _axSy = e.clientY; _axSx = e.clientX; _axLock = 0; _axDir = 0; _axStartT = Date.now();
+    });
+    tf.addEventListener("pointermove", function (e) {
+      if (!_axDown) return;
+      var dy = e.clientY - _axSy, dx = e.clientX - _axSx;
+      if (!_axLock) {
+        // AXIS ARBITRATION: lock on the dominant early delta. A clearly-horizontal intent releases the drag (armed off) so a sideways swipe is free — though the pane-carousel is disarmed on home, this keeps the door open for any future horizontal home affordance and matches the carousel's own 1.5x/1.2x bias.
+        if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.3) { _axDown = 0; return; }
+        if (Math.abs(dy) > 14 && Math.abs(dy) > Math.abs(dx) * 1.2) { _axLock = 1; _axDir = dy > 0 ? 1 : -1; axisBegin(_axDir); } // dir +1 = drag DOWN → journey from top; -1 = drag UP → tools from bottom
+        else return;
+      }
+      e.preventDefault();
+      axisFollow(e.clientY - _axSy);
+    }, { passive: false });
+    var end = function (e) {
+      if (!_axDown) return; _axDown = 0;
+      if (!_axLock) { _axLock = 0; return; }
+      var dy = e.clientY - _axSy, H = window.innerHeight || 800;
+      var dist = Math.abs(dy), dt = Math.max(1, Date.now() - _axStartT), vel = dist / dt; // px/ms
+      var commit = dist > 80 || vel > 0.6; // ~80px OR a fast flick
+      axisSettle(commit, _axDir);
+      _axLock = 0; _axDir = 0;
+    };
+    tf.addEventListener("pointerup", end);
+    tf.addEventListener("pointercancel", end);
+  }
+  function axisBegin(dir) {
+    var p = axisProxy(); p.classList.remove("tf-axis-anim");
+    p.className = "tf-axis-proxy " + (dir > 0 ? "tf-axis-from-top" : "tf-axis-from-bot");
+    // proxy content = a hint of the destination (a big soft glyph + label), so the follow reads as "the world above / the shelf below" arriving
+    var isJ = dir > 0;
+    p.innerHTML = '<div class="tf-axis-proxy-in"><i class="ti ' + (isJ ? "ti-map-2" : "ti-tool") + '"></i><span>' + tr(isJ ? "Journey" : "Tools") + '</span></div>';
+    p.style.display = "block";
+    // park it fully off in its start direction; the first follow frame moves it in
+    p.style.transform = "translateY(" + (dir > 0 ? "-100%" : "100%") + ")";
+    p.style.willChange = "transform";
+  }
+  function axisFollow(dy) {
+    if (!_axProxy) return;
+    var H = window.innerHeight || 800;
+    if (_axDir > 0) { var f = Math.max(0, Math.min(1, dy / H)); _axProxy.style.transform = "translateY(" + (-100 + f * 100) + "%)"; } // drag down: journey slides from -100% toward 0
+    else { var f2 = Math.max(0, Math.min(1, -dy / H)); _axProxy.style.transform = "translateY(" + (100 - f2 * 100) + "%)"; } // drag up: tools slides from 100% toward 0
+  }
+  function axisSettle(commit, dir) {
+    var p = _axProxy; if (!p) return;
+    p.classList.add("tf-axis-anim");
+    if (commit) {
+      p.style.transform = "translateY(0)"; // slide fully in, THEN hand off to the real surface
+      setTimeout(function () {
+        try { if (dir > 0) axisGoJourney(); else axisGoTools(); } catch (e) {}
+        p.style.display = "none"; p.classList.remove("tf-axis-anim"); p.style.willChange = ""; while (p.firstChild) p.removeChild(p.firstChild); // node-drain (removeChild loop, not a wipe — keeps the ratchet flat)
+      }, 220);
+    } else {
+      p.style.transform = "translateY(" + (dir > 0 ? "-100%" : "100%") + ")"; // rubber-band back off-screen
+      setTimeout(function () { p.style.display = "none"; p.classList.remove("tf-axis-anim"); p.style.willChange = ""; while (p.firstChild) p.removeChild(p.firstChild); }, 240);
+    }
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
@@ -14373,6 +14479,7 @@
       } else {
         var _gpk = el("guardPuck"); if (_gpk) _gpk.onclick = function () { try { openHome(); } catch (e) {} }; // v1183 static puck = go home from anywhere (on home it's a no-op-safe re-open, same as the old navHome button)
       }
+      try { initHomeAxis(); } catch (e) {} // THE VERTICAL WORLD AXIS: the single finger-follow gesture handler on #trackerFull (guarded by AXIS_V1; no-op when false). Wired once, here, beside the compass-rose nav — the peeks/taps are wired per-render in wireHomeAxis.
     }
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; revealTimeline(); // Today (the always-open rich timeline) is the home; body scroll locked by CSS (v640); portal-reveal it on cold launch (v648)
     renderAll();

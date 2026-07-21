@@ -2793,6 +2793,27 @@
   /* doors only exist on the idle home face; hide anywhere else the cockpit shows (tracking/stage/etc.) */
   #trackerFull:not(.tf-home) .tf-homedoor, #trackerFull:not(.st-idle) .tf-homedoor, body:not(.navv2) .tf-homedoor, body:not(.navv2) .tf-planchev{ display:none !important; }
 
+  /* ===== THE VERTICAL WORLD AXIS (AXIS_V1, David 2026-07-21): the two edge PEEKS (tap-doors + the "connected" feel) + the finger-follow PROXY. Peeks show only on the calm home frame (tf-onehome). ===== */
+  .tf-axis-peek{ position:absolute; left:50%; transform:translateX(-50%); display:none; flex-direction:column; align-items:center; gap:1px; background:transparent; border:none; padding:6px 14px; cursor:pointer; z-index:6; -webkit-tap-highlight-color:transparent; opacity:.5; transition:opacity .2s; pointer-events:auto; }
+  .tf-axis-peek:active{ opacity:.85; }
+  .tf-axis-peek i{ font-size:16px; line-height:1; color:#e6c6ff; }
+  .tf-axis-peek .tf-axis-lbl{ font-family:var(--bub); font-weight:700; font-size:9.5px; letter-spacing:1.4px; text-transform:uppercase; color:#b39ab0; }
+  .tf-axis-top{ top:calc(env(safe-area-inset-top,0px) + 2px); } /* crests the top edge = journey (scroll up) */
+  .tf-axis-top i{ color:#ffd24a; } /* the world above wears the gem/gold hint */
+  .tf-axis-bot{ bottom:calc(env(safe-area-inset-bottom,0px) + 6px); } /* crests the bottom edge = tools (scroll down) */
+  .tf-axis-bot i{ color:#5fb0ff; }
+  /* peeks only on the calm home frame, only under navv2, only when not staged */
+  #trackerFull.tf-onehome:not(.tf-staged) .tf-axis-peek{ display:flex; }
+  body:not(.navv2) .tf-axis-peek, #trackerFull.tf-staged .tf-axis-peek{ display:none !important; }
+
+  /* the finger-follow proxy: a full-screen paint-only layer that tracks the drag, then hands off to the real surface (journey pane / tools stage). NOT a live second full-screen — no journey/tools DOM lives here. */
+  .tf-axis-proxy{ position:fixed; inset:0; z-index:88; display:none; background:linear-gradient(180deg,#2a0d1c 0%,#1c0814 46%,#160510 100%); will-change:transform; }
+  .tf-axis-proxy.tf-axis-from-bot{ background:radial-gradient(120% 90% at 50% 90%, #241a3a 0%, #160b22 60%, #0e0618 100%); } /* the tools shelf reads cooler/deeper */
+  .tf-axis-proxy.tf-axis-anim{ transition:transform .22s cubic-bezier(.22,.9,.3,1); }
+  .tf-axis-proxy-in{ position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; align-items:center; gap:10px; color:#f0e6ef; }
+  .tf-axis-proxy-in i{ font-size:52px; color:#ffd7f0; opacity:.9; }
+  .tf-axis-proxy-in span{ font-family:var(--bub); font-weight:800; font-size:15px; letter-spacing:2px; text-transform:uppercase; color:#c79bd8; }
+
   /* 4) The settings gear restyles as the guardian-mark avatar, by the gem row (top-right). Same action. */
   body.navv2 #trackerFull.tf-home.st-idle #tfGear{ display:flex !important; top:calc(env(safe-area-inset-top,0px) + 11px) !important; left:auto !important; right:20px !important; width:30px !important; height:30px !important; border-radius:50%; background:#2a0f22; border:2px solid #ff5fa8; box-sizing:border-box; align-items:center; justify-content:center; font-size:15px !important; }
   body.navv2 #trackerFull.tf-home.st-idle #tfGear i{ color:#ff5fa8; }
