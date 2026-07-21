@@ -1579,9 +1579,9 @@
   body.home-pane #nav .nb[data-tab="day"]::after{ display:none !important; }
   #trackerFull.tf-home.st-idle .tf-inner{ padding-bottom:calc(78px + env(safe-area-inset-bottom,0px)); }
   #trackerFull.tf-home.st-idle #tfTitle{ order:1; margin-top:20px; margin-bottom:4px; font-family:var(--bub); font-size:30px; font-weight:800; color:#fff2f9; letter-spacing:.2px; } /* H-D3 (David 2026-07-20): "What now?" sits BELOW the circle, matching the What-now mockup composition (bars → circle → question → next → grid) */
-  #trackerFull.tf-home.st-idle #tfRing{ order:0; width:min(59vw,228px); margin:10px 0 0; background:#2a1832 !important; border:none; box-sizing:border-box; box-shadow:0 12px 28px rgba(0,0,0,.55), 0 0 52px rgba(255,95,168,.18); } /* H-D1 (David 2026-07-20): the dial at zero — a VISIBLE dark-plum ring (David likes the outline), darker + tighter than the old grayish #3a2540 fat gap, minimal like the ref. */
+  #trackerFull.tf-home.st-idle #tfRing{ order:0; width:min(64vw,256px); margin:10px 0 0; background:#2a1832 !important; border:none; box-sizing:border-box; box-shadow:0 12px 30px rgba(0,0,0,.5), 0 0 62px rgba(255,95,168,.24); } /* REFERENCE SIZE (David 2026-07-21 FINAL): the dial grows to the ref; VISIBLE dark-plum ring (the H-D1 ruling — the tracking arc lives here) stays but the disc fills to a THIN ~8px rim; brighter pink bloom. */
   #trackerFull.tf-home.st-idle .tf-verdict{ order:2; }
-  #trackerFull.tf-home.st-idle .tf-tile{ width:min(51vw,198px); aspect-ratio:1; border-radius:50%; background:#ff5fa8 !important; color:#2a1730 !important; border:none; box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.12); font-size:58px; animation:tfBreathe 3s ease-in-out infinite; } /* H-D1: pink disc leaves a ~15px dark ring (visible outline, tight), filled play triangle (JS). */
+  #trackerFull.tf-home.st-idle .tf-tile{ width:calc(100% - 16px); aspect-ratio:1; border-radius:50%; background:#ff5fa8 !important; color:#2a1730 !important; border:none; box-shadow:0 10px 30px rgba(255,95,168,.28), inset 0 2px 0 rgba(255,255,255,.12); font-size:58px; animation:tfBreathe 3s ease-in-out infinite; } /* FINAL: disc fills the ring leaving a thin ~8px plum rim (was min(51vw,198px) = a fat gap); soft pink glow replaces the hard ink extrude; filled play triangle (JS). */
   #trackerFull.tf-home.st-idle .tf-tile i{ margin-left:5px; } /* optical-center the triangle */
   /* story bars on top — one thin domain-colored bar per block today (empty = ghost placeholder bars, never a blank top), icon under, filled where lived */
   #tfHomeBars{ display:none; }
@@ -1609,6 +1609,10 @@
   /* NEW-ERA HOME §6: static 2x4 tool grid (replaces the scroller for the idle home). */
   .tf-toolgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0 12px; } /* minmax(0,1fr) lets the 4 tiles shrink to fit the phone — was repeat(4,1fr) where long labels forced min-content width and spilled the 4th tile off-screen (David 2026-07-20) */
   .tf-toolgrid .tf-htool{ width:auto; max-width:none; flex:initial; }
+  /* FLOATING TILES (David 2026-07-21 FINAL): kill the panel box on home — tiles float on the dark ground, no container bg/border/padding. Smaller tiles with more dark air (grid inset), so the circle stays the hero. */
+  #trackerFull.tf-home.st-idle .tf-toolspanel, #trackerFull.tf-onehome .tf-toolspanel{ background:transparent !important; border:none !important; padding:0 !important; }
+  #trackerFull.tf-home.st-idle .tf-toolgrid, #trackerFull.tf-onehome .tf-toolgrid{ padding:0 26px; gap:12px; }
+  #trackerFull.tf-home.st-idle .tf-htool i, #trackerFull.tf-onehome .tf-htool i{ font-size:28px; }
   .tf-htool.more span{ color:#d2aae8; }
   .tf-tooldots{ display:flex; gap:6px; justify-content:center; margin-top:10px; }
   .tf-tooldots .dot{ width:6px; height:6px; border-radius:50%; background:#3d2740; transition:background .2s, width .2s; }
@@ -1667,6 +1671,12 @@
   .tf-subblock .sb-t{ color:#fff2f9; font-weight:700; font-size:13px; }
   .tf-subblock .sb-dot{ color:#6f5a7e; font-size:13px; }
   .tf-subblock .sb-cd{ color:#ff5fa8; font-weight:800; font-size:13px; white-space:nowrap; }
+  /* NEXT LINE = PLAIN TEXT on the onehome faces (David 2026-07-21 FINAL): no pill — no bg, border, shadow or left-accent. Lilac Jost 600 ~14.5px, "next: <title> · <time>". Scoped to onehome so other surfaces keep the pill if they use it. */
+  #trackerFull.tf-onehome .tf-subblock{ background:none !important; border:none !important; box-shadow:none !important; border-radius:0 !important; padding:0 !important; gap:6px; font-weight:600; }
+  #trackerFull.tf-onehome .tf-subblock i{ color:#b39ab0 !important; font-size:15px; }
+  #trackerFull.tf-onehome .tf-subblock .sb-t{ color:#b39ab0 !important; font-weight:600; font-size:14.5px; }
+  #trackerFull.tf-onehome .tf-subblock .sb-dot{ color:#b39ab0 !important; font-size:14.5px; }
+  #trackerFull.tf-onehome .tf-subblock .sb-cd{ color:#b39ab0 !important; font-weight:600; font-size:14.5px; }
   .tf-invite{ display:inline-flex; align-items:center; gap:7px; color:#b39ab0; font-size:13.5px; margin-top:4px; }
   .tf-invite i{ font-size:15px; color:#ffb27a; }
   /* doors: optional right-tag (names the block) + optional second cost-line */
@@ -2768,24 +2778,28 @@
   /* The home cockpit is a FULL-SCREEN opaque surface at z90 that COVERS the puck (z88) → on home you don't see two homes; you leave home via the doors, and the puck is there the instant you're on a pane. */
   body.navv2 #trackerFull.on{ z-index:90; }
 
-  /* 3) HOME FACE DOORS — the story strip = planner; corner glyphs = journey (left) / garden (right). */
+  /* 3) HOME FACE DOORS (David 2026-07-21 FINAL): the story strip = planner; LEFT door = PLANNER, RIGHT door = GARDEN. Journey door REMOVED. These read as PROMINENT colorful tappable buttons — 54px rounded squares, white icon, Baloo label under it in the light hue. */
   .tf-planchev{ margin-left:2px; align-self:center; font-size:19px; color:#c79bd8; flex:0 0 auto; opacity:.85; } /* the quiet chevron at the strip's end = "this strip is a door" */
-  .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:34px; height:34px; min-width:34px; min-height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* base position (ONEHOME=false legacy) */
-  #trackerFull.tf-onehome .tf-homedoor{ top:calc(env(safe-area-inset-top,0px) + 94px); } /* COLLISION FIX (David 2026-07-21): under the ONE-HOME frame the door glyphs sit in their own slots BELOW the story strip row (was top:48px = flanking/crowding the pills from above). The strip owns the full top row; the two glyphs drop under it (safe+94px clears the 54px inner padding + the ~35px strip). The circle stage sits between them. */
-  .tf-homedoor::before{ content:""; position:absolute; inset:-6px; border-radius:50%; } /* invisible 46px tap pad */
-  .tf-homedoor i{ font-size:19px; line-height:1; }
-  .tf-homedoor:active{ transform:scale(.92); }
-  .tf-door-journey{ left:16px; background:#20142e; border:2px solid #b07aff; }
-  .tf-door-journey i{ color:#b07aff; }
-  .tf-door-garden{ right:16px; background:#0e2830; border:2px solid #2ab8c4; }
-  .tf-door-garden i{ color:#2ab8c4; }
+  .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:54px; min-width:54px; border-radius:17px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 4px 5px; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* base position (ONEHOME=false legacy) */
+  #trackerFull.tf-onehome .tf-homedoor{ top:calc(env(safe-area-inset-top,0px) + 96px); } /* COLLISION FIX (David 2026-07-21): under the ONE-HOME frame the doors sit in their own slots BELOW the story strip row (was 48px = crowding the pills from above). The strip owns the full top row; the two doors drop under it, clear of the pills. The circle stage sits between them. */
+  .tf-homedoor::before{ content:""; position:absolute; inset:-6px; border-radius:20px; } /* invisible tap pad */
+  .tf-homedoor i{ font-size:25px; line-height:1; color:#fff; }
+  .tf-homedoor .tf-door-lbl{ font-family:var(--bub); font-weight:700; font-size:11px; line-height:1; letter-spacing:.2px; }
+  .tf-homedoor:active{ transform:scale(.93); }
+  .tf-door-planner{ left:16px; background:#b07aff; box-shadow:0 5px 0 #6a44b0, 0 0 22px rgba(176,122,255,.5); }
+  .tf-door-planner .tf-door-lbl{ color:#c79bff; }
+  .tf-door-garden{ right:16px; background:#2ab8c4; box-shadow:0 5px 0 #186e76, 0 0 22px rgba(42,184,196,.5); }
+  .tf-door-garden .tf-door-lbl{ color:#5ed6df; }
   /* doors only exist on the idle home face; hide anywhere else the cockpit shows (tracking/stage/etc.) */
   #trackerFull:not(.tf-home) .tf-homedoor, #trackerFull:not(.st-idle) .tf-homedoor, body:not(.navv2) .tf-homedoor, body:not(.navv2) .tf-planchev{ display:none !important; }
 
   /* 4) The settings gear restyles as the guardian-mark avatar, by the gem row (top-right). Same action. */
   body.navv2 #trackerFull.tf-home.st-idle #tfGear{ display:flex !important; top:calc(env(safe-area-inset-top,0px) + 11px) !important; left:auto !important; right:20px !important; width:30px !important; height:30px !important; border-radius:50%; background:#2a0f22; border:2px solid #ff5fa8; box-sizing:border-box; align-items:center; justify-content:center; font-size:15px !important; }
   body.navv2 #trackerFull.tf-home.st-idle #tfGear i{ color:#ff5fa8; }
-  body.navv2 #trackerFull.tf-home.st-idle .tf-spark{ right:58px; } /* nudge the gem/streak row left of the avatar so they sit in one row, avatar as the right cap */
+  /* CLEAN GEMS (David 2026-07-21 FINAL): the settings sparkle avatar leaves the onehome top-right entirely — ONLY the gem count shows there. #tfGear DOM + handler stay intact (no home-screen settings entry for now; owed later). Placed AFTER every show-rule above so it wins on source order at equal specificity. */
+  body.navv2 #trackerFull.tf-onehome #tfGear, body.navv2 #trackerFull.tf-onehome.tf-home.st-idle #tfGear{ display:none !important; }
+  body.navv2 #trackerFull.tf-onehome .tf-spark{ right:20px; } /* with the avatar gone, the gems sit flush at the right edge */
+  body.navv2 #trackerFull.tf-home.st-idle .tf-spark{ right:20px; }
 </style>
 </head>
 <body>

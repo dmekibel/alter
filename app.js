@@ -5088,25 +5088,28 @@
     renderHomeGrid(c);
     if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
   }
-  // R3 COMPASS ROSE (David 2026-07-21): the home face IS the nav. Three doors, each mirroring the retired #nav handler exactly:
-  //   • story strip (#tfHomeBars) → PLANNER (mirrors the data-tab="day" carousel handler: leaveHomeForPlayer + setPaneRest("planner") + renderToday)
-  //   • top-LEFT glyph → JOURNEY (mirrors navJourney: leaveHomeForPlayer + openJourney)
-  //   • top-RIGHT glyph → GARDEN/game (mirrors data-tab="self" carousel handler: leaveHomeForPlayer + setPaneRest("game"))
-  // Idempotent: elements are created once and reused (no innerHTML wipe). Guarded by TF_OPEN like the day-tab handler so a door tap can't fire mid-morph. Corner glyphs are positioned by CSS relative to the fixed #trackerFull.
+  // R3 COMPASS ROSE (David 2026-07-21, FINAL composition): home carries its own nav — TWO prominent labeled doors + the tappable strip. Each mirrors a retired #nav handler exactly:
+  //   • story strip (#tfHomeBars) → PLANNER (mirrors the data-tab="day" handler: leaveHomeForPlayer + setPaneRest("planner") + renderToday — harmless redundancy with the LEFT door)
+  //   • LEFT door → PLANNER (ti-calendar; mirrors data-tab="day": leaveHomeForPlayer + setPaneRest("planner") + renderToday)
+  //   • RIGHT door → GARDEN/game (ti-plant-2; mirrors data-tab="self": leaveHomeForPlayer + setPaneRest("game"))
+  //   • journey door REMOVED — journey is reached by the upward scroll (H-AXIS), not a button.
+  // Idempotent: elements + their label spans are created once and reused (no innerHTML wipe). Guarded by TF_OPEN like the day-tab handler so a door tap can't fire mid-morph. Doors are positioned by CSS relative to the fixed #trackerFull.
   function wireHomeDoors() {
     var bars = el("tfHomeBars"); var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
-    // 1) STORY STRIP = the planner door. The whole strip is tappable; a quiet chevron-right at its end reads it as a door.
+    // 1) STORY STRIP = a planner door too (whole strip tappable; quiet chevron-right at its end).
     if (bars) {
       var chev = el("tfPlanChev"); if (!chev) { chev = document.createElement("i"); chev.id = "tfPlanChev"; chev.className = "ti ti-chevron-right tf-planchev"; bars.appendChild(chev); } else if (chev.parentNode !== bars) bars.appendChild(chev); // renderHomeBars rebuilds the bars' children each draw → re-append the chevron after
       bars.style.cursor = "pointer";
       bars.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab
     }
-    // 2) TOP-LEFT = the journey door glyph.
-    var jd = el("tfDoorJourney"); if (!jd) { jd = document.createElement("button"); jd.id = "tfDoorJourney"; jd.className = "tf-homedoor tf-door-journey"; jd.setAttribute("aria-label", "Journey"); var ji = document.createElement("i"); ji.className = "ti ti-route"; jd.appendChild(ji); inner.appendChild(jd); }
-    jd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { openJourney(); } catch (e) {} }; // = the retired Journey tab (navJourney)
-    // 3) TOP-RIGHT = the garden/game door glyph.
-    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); inner.appendChild(gd); }
+    // 2) LEFT door = PLANNER (was journey). Prominent labeled button.
+    var pd = el("tfDoorPlanner"); if (!pd) { pd = document.createElement("button"); pd.id = "tfDoorPlanner"; pd.className = "tf-homedoor tf-door-planner"; pd.setAttribute("aria-label", "Planner"); var pi = document.createElement("i"); pi.className = "ti ti-calendar"; pd.appendChild(pi); var pl = document.createElement("span"); pl.className = "tf-door-lbl"; pl.textContent = tr("Planner"); pd.appendChild(pl); inner.appendChild(pd); }
+    pd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab (data-tab="day")
+    // 3) RIGHT door = GARDEN/game. Prominent labeled button.
+    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); var gl = document.createElement("span"); gl.className = "tf-door-lbl"; gl.textContent = tr("Garden"); gd.appendChild(gl); inner.appendChild(gd); }
     gd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("game"); } catch (e) {} }; // = the retired Game/You tab (data-tab="self")
+    // journey door REMOVED (David 2026-07-21): if a stale #tfDoorJourney survives from an older build, drop it.
+    var _jd = el("tfDoorJourney"); if (_jd && _jd.parentNode) _jd.parentNode.removeChild(_jd);
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
