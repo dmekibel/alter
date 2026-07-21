@@ -3635,7 +3635,7 @@
     return best;
   }
   function trackerState() { // derive the matrix state from live data (on-plan / off / idle / break / breakup / claim / night)
-    if (S.brk) { var bend = S.brk.start + S.brk.mins * 60000; return { id: (Date.now() < bend ? "break" : "breakup"), brk: S.brk }; } // a declared break is running (or its time is up)
+    if (S.brk) { var bend = S.brk.start + (S.brk.mins || 0) * 60000; return { id: (!S.brk.mins || Date.now() < bend ? "break" : "breakup"), brk: S.brk }; } // a break is running (or its time is up); an OPEN-ENDED pause (mins:0 — one-tap pause, David 2026-07-21) never expires → always "break"
     var run = activeTimers(), t = run[run.length - 1];
     if (!t) { // nothing tracking → check for a claimable gap (welcome-back), then logical-night (off-hours), else idle
       if (!S._claimDismissed) { var cb = claimableBlock(); if (cb) return { id: "claim", block: cb.block, gapStartMin: cb.gapStartMin, gapEndMin: cb.gapEndMin }; }
@@ -3748,15 +3748,15 @@
       renderHomeFace(nb);
       return;
     }
-    if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _bend = B.start + B.mins * 60000, _rem = _bend - Date.now(), _up = _rem <= 0;
-      if (tile) { tile.style.background = tfStripe("#e8b53a"); tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-coffee"></i>'; }
-      el("tfTitle").textContent = _up ? "Break's up" : "On a break";
+    if (S0.id === "break" || S0.id === "breakup") { tf.classList.add("st-break"); var B = S0.brk, _open = !B.mins, _bend = B.start + (B.mins || 0) * 60000, _rem = _bend - Date.now(), _up = !_open && _rem <= 0, _elap = Date.now() - B.start;
+      if (tile) { tile.style.background = tfStripe("#e8b53a"); tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-pause"></i>'; }
+      el("tfTitle").textContent = _open ? "Paused" : (_up ? "Break's up" : "On a break");
       el("tfVerdict").textContent = _up ? "ready to come back" : "held · streak safe";
-      el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = fmtCD(Math.max(0, _rem));
-      el("tfElabel").textContent = _up ? "time's up" : "left";
+      el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = _open ? fmtCD(_elap) : fmtCD(Math.max(0, _rem)); // open pause counts UP (time held); a timed break counts down
+      el("tfElabel").textContent = _open ? "paused" : (_up ? "time's up" : "left");
       el("tfCtx").textContent = B.title ? ((_up ? "back to " : "resume ") + B.title) : (_up ? "break over" : "paused");
-      el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-coffee"></i>';
-      setRing(_up ? 1 : Math.max(0, Math.min(1, (Date.now() - B.start) / (B.mins * 60000))), "#e8b53a");
+      el("tfSpark").innerHTML = fireHTML(streak) + ' · <i class="ti ti-player-pause"></i>';
+      setRing(_open ? 0 : (_up ? 1 : Math.max(0, Math.min(1, (Date.now() - B.start) / (B.mins * 60000)))), "#e8b53a");
       renderSwitchChips(B.title); renderTFControls(_up ? "breakup" : "break");
       return;
     }
@@ -4798,12 +4798,7 @@
   }
   function tfDone() { var run = activeTimers(); closeTrackerFull(); if (run.length) stopTimer(run[run.length - 1].id); } // finish the activity → close, then log it + fire the on-plan reward (stopTimer)
   function fmtCD(ms) { var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); } // countdown m:ss (or h:mm:ss)
-  function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; durationSheet("Break", function (mins) { if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: mins };
-    // ALSO place the break as a real block at now→now+mins so it SHOWS in the timeline future (David device: picking 15m did nothing visible). Truncate any straddler so nothing overlaps.
-    var k = todayK(), now = logicalNowMin();
-    blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
-    blocks(k).push({ id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: tr("Break"), domain: "restore", color: DOM.restore.c, catK: null, done: false, pin: true, brk: true }); reflow(k);
-    save(); renderLiveTracker(); renderToday(); renderTrackerFull(); }); } // declared break: hold a timed pause with the goal waiting AND drop a rest block on the timeline
+  function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: 0 }; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); } // ONE-TAP PAUSE (David 2026-07-21): pausing must ask NOTHING — stop the timer, hold the goal open-ended (mins:0 = no countdown, never expires), resume when ready. No duration sheet, no future rest block dropped (an open pause has no known end). Timed breaks still live in Replan/planBreak; the +time chips (tfBreakPlus) can convert a pause into a timed break after the fact.
   function tfResumeBreak() { var B = S.brk; S.brk = null; save(); if (B && B.title) startTimer({ title: B.title, catK: B.catK, color: B.color }); renderLiveTracker(); renderToday(); renderTrackerFull(); } // come back → restart the paused goal
   function tfEndBreak() { S.brk = null; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); } // end the break without resuming → idle
   function tfBreakPlus(m) { if (S.brk) { S.brk.mins += m; save(); renderTrackerFull(); } }
