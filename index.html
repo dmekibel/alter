@@ -1318,7 +1318,7 @@
   @keyframes celeFire{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
   .cele-star{ position:absolute; left:50%; top:46%; font-size:18px; animation:celeFly 1.4s ease-out forwards; }
   @keyframes celeFly{ 0%{ transform:translate(0,0) scale(.3); opacity:0; } 30%{opacity:1;} 100%{ transform:translate(var(--dx),var(--dy)) scale(1.15); opacity:0; } }
-  .cele-pts{ position:absolute; top:36%; color:#ffd54a; font-family:"Jost",sans-serif; font-weight:700; font-size:27px; text-shadow:0 2px 8px rgba(0,0,0,.6); animation:celeRise 1.5s ease-out forwards; }
+  .cele-pts{ position:absolute; top:12%; color:#ffd54a; font-family:"Jost",sans-serif; font-weight:700; font-size:27px; text-shadow:0 2px 8px rgba(0,0,0,.6); animation:celeRise 1.5s ease-out forwards; } /* A4 (David 2026-07-21): the +N label owns a reserved slot in the upper band — never over the title pill/timer (was top:36%). Confetti (box + stars) still bursts from center. */
   /* floating +N Spark feedback on earn (David 2026-06-24 night) */
   .spark-float{ position:fixed; z-index:90; transform:translate(-50%,0); color:#ffd54a; font-family:"Jost",sans-serif; font-weight:800; font-size:15px; text-shadow:0 1px 4px rgba(0,0,0,.55); pointer-events:none; will-change:transform,opacity; animation:sparkFloat .95s cubic-bezier(.2,.8,.3,1) forwards; }
   @keyframes sparkFloat{ 0%{ opacity:0; transform:translate(-50%,5px) scale(.8); } 18%{ opacity:1; transform:translate(-50%,-2px) scale(1.12); } 100%{ opacity:0; transform:translate(-50%,-36px) scale(1); } }
@@ -1518,7 +1518,7 @@
   .qb-release-t{ font-family:"Jost",sans-serif; font-weight:800; font-size:15px; color:#c9a6c4; }
   .qb-release-s{ font-size:12px; color:#8a6ea0; font-weight:600; margin-top:2px; line-height:1.3; }
   @keyframes celeRise{ 0%{ transform:translateY(20px) scale(.6); opacity:0; } 25%{ transform:translateY(0) scale(1.1); opacity:1; } 80%{opacity:1;} 100%{ transform:translateY(-32px); opacity:0; } }
-  .cele-combo{ position:absolute; top:58%; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; text-shadow:0 1px 5px rgba(0,0,0,.7); }
+  .cele-combo{ position:absolute; top:19%; color:#ffe3f1; font-family:"Jost",sans-serif; font-weight:700; font-size:14px; text-shadow:0 1px 5px rgba(0,0,0,.7); } /* A4 (David 2026-07-21): the streak/combo line owns its OWN row directly under +N in the upper band — never prints over the "next: …" row (was top:58%). */
   /* ============ PLANNING suggestion bar (mockups 037/039/040) ============ */
   #suggestBar{ margin-top:11px; }
   .sughead{ color:#cd9bb6; font-family:"Jost",sans-serif; font-weight:700; font-size:12px; margin:2px 0 8px; }
@@ -1675,7 +1675,7 @@
   #trackerFull.tf-staged .tf-stage{ flex:none; flex-direction:row; align-items:center; justify-content:flex-start; gap:12px; }
   #trackerFull.tf-staged .tf-ring{ width:64px; flex:0 0 64px; transition:width .4s cubic-bezier(.2,.82,.3,1), flex-basis .4s cubic-bezier(.2,.82,.3,1); } /* flex:0 0 64px so the corner puck holds 64px in the staged flex-ROW (flex-basis:auto was letting it bloom back to its full base width) — CKPT-5 corner-pose fix */
   #trackerFull.tf-staged .tf-tile{ font-size:26px; }
-  #trackerFull.tf-staged .tf-title{ margin:0; font-size:14px; font-weight:700; text-align:left; max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #trackerFull.tf-staged .tf-title{ margin:0; font-size:13.5px; font-weight:700; text-align:left; max-width:70vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* A6 (David 2026-07-21): smaller name line + wider budget so "Focus …" isn't needlessly clipped in the corner-posed puck header (was 14px/60vw) */
   #trackerFull.tf-staged .tf-title.switchable{ margin:0; padding:5px 12px; font-size:13px; }
   #trackerFull.tf-staged .tf-time{ margin:0; font-size:15px; }
   #trackerFull.tf-staged .tf-verdict, #trackerFull.tf-staged .tf-elabel, #trackerFull.tf-staged .tf-ctx, #trackerFull.tf-staged .tf-switch, #trackerFull.tf-staged .tf-spark, #trackerFull.tf-staged .tf-say, #trackerFull.tf-staged .tf-clock{ display:none; } /* AUDIT P1: + tf-clock — the corner ring was colliding with the header clock on every staged flow (screenshot evidence) */
@@ -1860,7 +1860,7 @@
   .tf-nextup{ display:none; margin-top:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; color:#8a6f84; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:82vw; }
   .tf-nextup i{ font-size:12px; }
   #trackerFull.st-onplan .tf-nextup, #trackerFull.st-off .tf-nextup{ display:inline-flex; align-items:center; justify-content:center; gap:10px; }
-  .tf-nextup .tf-nu-lab{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60vw; }
+  .tf-nextup .tf-nu-lab{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:74vw; } /* A6 (David 2026-07-21): widened the "next: …" budget — it was needlessly ellipsizing "next: Make art · 17:31" while the row had room (was 60vw; the play button is only 30px, so 74vw fits comfortably) */
   .tf-nu-go{ flex:0 0 auto; width:30px; height:30px; border-radius:50%; border:none; background:rgba(255,255,255,.09); display:inline-flex; align-items:center; justify-content:center; font-size:15px; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* H-D2 commit-next: press play on the next block → finish current, start next */
   .tf-nu-go:active{ transform:scale(.88); }
   #trackerFull.tf-morphing .tf-nextup{ opacity:0; }
