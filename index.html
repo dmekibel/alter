@@ -2704,6 +2704,45 @@
   .hearth-glow{ position:absolute; left:50%; bottom:14%; width:340px; height:230px; transform:translateX(-50%); background:radial-gradient(50% 60% at 50% 100%, rgba(255,138,58,.34), rgba(255,95,40,.12) 55%, transparent 75%); animation:hearthFlick 2.8s ease-in-out infinite; pointer-events:none; }
   .mirror-sheen{ position:absolute; inset:0; background:linear-gradient(105deg, transparent 42%, rgba(200,180,230,.07) 49%, rgba(255,255,255,.10) 50%, rgba(200,180,230,.07) 51%, transparent 58%); pointer-events:none; }
   #trackerFull.room-dusk::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(58,28,66,.30), rgba(120,62,74,.26)); pointer-events:none; z-index:0; } /* Base Camp at dusk — a tint on the existing Close, not a new surface */
+
+  /* ============================================================
+     R3 COMPASS ROSE (David 2026-07-21) — the 4-button bottom bar dies; home is the center of the world.
+     Gated on body.navv2 (set at boot when NAV_V2 is true). NAV_V2=false → no body.navv2 → this whole
+     block is inert and the old #nav bar renders exactly as before. Palette = STYLE-NEW-ERA locked values.
+     ============================================================ */
+  /* 1) THE BAR DIES app-wide. Also neutralize every layout that positioned itself relative to the bar. */
+  body.navv2 #nav{ display:none !important; }
+  body.navv2.home-pane #nav{ display:none !important; } /* home-pane raised the bar to z95 — kill that too */
+  body.navv2 #liveDock.on, body.navv2.simple-mode.journey-open:not(.gaming) #liveDock.on{ left:80px !important; } /* the mini-dock's left cap = the puck (52px + 16px gap); it starts to the puck's right so they read as one control, never an overlap */
+  body.navv2 #liveDock.on ~ #pullSheet #pullBody, body.navv2 #liveDock.on ~ #pullSheet .day-cardscroll{ padding-bottom:96px; } /* dock clearance is unchanged; the bar is gone but the dock still sits bottom:74 */
+  body.navv2.nav-collapsed{}  /* nav-collapse styling targets #nav (now display:none) → moot; the corner-pill logic can't paint anything, so it's safely neutralized without touching the pane controls */
+
+  /* 2) THE GUARDIAN PUCK — one fixed object, bottom-left, the way home from every surface. */
+  #guardPuck{ display:none; }
+  body.navv2 #guardPuck{ display:flex; position:fixed; left:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px)); width:52px; height:52px; border-radius:50%; background:#2a0f22; border:2px solid #160510; box-shadow:0 5px 0 #160510; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:88; -webkit-tap-highlight-color:transparent; } /* z88: above the panes (journey 75 / game 60 / home cockpit 90 shows it too since home is idle) but below full-screen players + modals (sheet 95, dur/bento overlays 96) */
+  body.navv2 #guardPuck .gpk-disc{ width:40px; height:40px; border-radius:50%; background:#ff5fa8; display:flex; align-items:center; justify-content:center; }
+  body.navv2 #guardPuck .gpk-disc i{ font-size:20px; color:#fff; line-height:1; }
+  body.navv2 #guardPuck:active{ transform:translateY(2px); box-shadow:0 3px 0 #160510; }
+  /* The home cockpit is a FULL-SCREEN opaque surface at z90 that COVERS the puck (z88) → on home you don't see two homes; you leave home via the doors, and the puck is there the instant you're on a pane. */
+  body.navv2 #trackerFull.on{ z-index:90; }
+
+  /* 3) HOME FACE DOORS — the story strip = planner; corner glyphs = journey (left) / garden (right). */
+  .tf-planchev{ margin-left:2px; align-self:center; font-size:19px; color:#c79bd8; flex:0 0 auto; opacity:.85; } /* the quiet chevron at the strip's end = "this strip is a door" */
+  .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:34px; height:34px; min-width:34px; min-height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* ≥44px hit area via the ::before pad below; sit just under the story strip */
+  .tf-homedoor::before{ content:""; position:absolute; inset:-6px; border-radius:50%; } /* invisible 46px tap pad */
+  .tf-homedoor i{ font-size:19px; line-height:1; }
+  .tf-homedoor:active{ transform:scale(.92); }
+  .tf-door-journey{ left:16px; background:#20142e; border:2px solid #b07aff; }
+  .tf-door-journey i{ color:#b07aff; }
+  .tf-door-garden{ right:16px; background:#0e2830; border:2px solid #2ab8c4; }
+  .tf-door-garden i{ color:#2ab8c4; }
+  /* doors only exist on the idle home face; hide anywhere else the cockpit shows (tracking/stage/etc.) */
+  #trackerFull:not(.tf-home) .tf-homedoor, #trackerFull:not(.st-idle) .tf-homedoor, body:not(.navv2) .tf-homedoor, body:not(.navv2) .tf-planchev{ display:none !important; }
+
+  /* 4) The settings gear restyles as the guardian-mark avatar, by the gem row (top-right). Same action. */
+  body.navv2 #trackerFull.tf-home.st-idle #tfGear{ display:flex !important; top:calc(env(safe-area-inset-top,0px) + 11px) !important; left:auto !important; right:20px !important; width:30px !important; height:30px !important; border-radius:50%; background:#2a0f22; border:2px solid #ff5fa8; box-sizing:border-box; align-items:center; justify-content:center; font-size:15px !important; }
+  body.navv2 #trackerFull.tf-home.st-idle #tfGear i{ color:#ff5fa8; }
+  body.navv2 #trackerFull.tf-home.st-idle .tf-spark{ right:58px; } /* nudge the gem/streak row left of the avatar so they sit in one row, avatar as the right cap */
 </style>
 </head>
 <body>
@@ -2776,6 +2815,7 @@
     <button class="nb on" id="navJourney"><i class="ti ti-route ne"></i><span class="nl2">Journey</span></button>
     <button class="nb" data-tab="self"><i class="ti ti-device-gamepad-2 ne"></i><span class="nl2">Game</span></button>
   </nav>
+  <button id="guardPuck" aria-label="Home"><span class="gpk-disc"><i class="ti ti-home"></i></span></button><!-- R3 COMPASS ROSE (David 2026-07-21): the guardian puck — with the bottom bar dead (body.navv2) this is the way home from every surface. Hidden entirely when NAV_V2 is off (no body.navv2). -->
   <div id="gameMode">
     <canvas id="world"></canvas>
     <button id="gameExit" type="button"><i class="ti ti-arrow-left"></i> Exit world</button>

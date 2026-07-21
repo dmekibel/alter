@@ -3502,6 +3502,7 @@
       if (_grab) { _grab.style.touchAction = "none"; _grab.addEventListener("pointerdown", function (e) { tfDrag(e, true); }); } // tap or drag the dock handle UP → expand (morph)
       var _tx = el("tfClose"); if (_tx) _tx.onclick = function () { closeTrackerFull(); };
       var _tgr = el("tfGear"); if (_tgr) _tgr.onclick = function (e) { e.stopPropagation(); try { openVolumePanel(); } catch (e2) {} }; // D2: cockpit settings = the Sound panel (the one setting you want mid-track)
+      if (NAV_V2 && _tgr) { var _tgi = _tgr.querySelector("i"); if (_tgi) _tgi.className = "ti ti-sparkles"; } // R3: on the compass-rose home the gear restyles as the guardian-mark avatar (sparkles) by the gem row — same action, new face (look is set in body.navv2 #tfGear CSS)
       var _bd = el("tfBackdrop"); if (_bd) _bd.onclick = function () { closeTrackerFull(); }; // tap the calendar peek above the sheet → close
       var _tg = el("tfGrab"); if (_tg) { _tg.style.touchAction = "none"; _tg.addEventListener("pointerdown", function (e) { tfDrag(e, false); }); } // drag the tracker handle DOWN → close (finger-follow)
       var _stg = document.querySelector("#trackerFull .tf-stage"); if (_stg) { _stg.style.touchAction = "none"; _stg.addEventListener("pointerdown", function (e) { if (e.target.closest("button,.tf-chip,.tf-title.switchable,textarea,input,[contenteditable],#tfStageBody")) return; tfDrag(e, false); }); } // CKPT-3: also bail on stage inputs/scroll so a textarea tap or stage scroll isn't eaten by tfDrag(down) (the iOS-keyboard rule) // drag DOWN anywhere on the central ring/area → close (reachable, no need to reach the top handle); taps on buttons/chips/pill still work
@@ -3551,6 +3552,7 @@
   // ===== LANDING CONTRACT (Parcel A, David 2026-07-21 "cockpit came back and looks horrible") — a flow launched FROM HOME must RE-OPEN home on close, not fall through to the panes below. leaveHomeForPlayer() tears the home cockpit down (Z-2 blocker, HOME-PLAYER-GRAMMAR PART 6); without this every tool/session close from home landed on journey/planner (or an old-era face resurfaced). Purely-additive module flags, no SCHEMA touch. =====
   var LAND_V2 = true;      // kill-switch: flip false on device if re-opening home on close misbehaves (falls back to the old pane-landing)
   var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
+  var NAV_V2 = true;       // R3 COMPASS ROSE (David 2026-07-21 "kill the 4-button tab bar; home is the center of the world"). TRUE = the bottom #nav bar dies app-wide (body.navv2, CSS display:none), replaced by the GUARDIAN PUCK (bottom-left, tap = home) + the HOME FACE DOORS (story strip = planner door · top-left journey glyph · top-right garden glyph · gem-row avatar = settings). FALSE = no body.navv2 class → the old 4-button bar exactly as before (all its DOM + handlers left intact). Tap-based only this pass; swipe-axis travel comes device-tested later.
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
   function landAfterFlow() { // call at the END of every flow-close path (after renderAll). If we launched from home, re-open the NEW home cockpit instead of leaving the panes exposed. Idempotent + guarded: a no-op unless _returnHome is armed.
@@ -4996,6 +4998,27 @@
     function skinTile(b, col) { b.style.background = mixHex(col, "#160510", 0.24); b.style.border = "none"; b.style.boxShadow = "0 5px 0 " + mixHex(col, "#160510", 0.58) + ", 0 9px 16px rgba(0,0,0,.32)"; }
     tools.forEach(function (t) { var b = add(grid, "button", "tf-htool"); skinTile(b, t.col); var ic = add(b, "i", "ti " + t.ti); ic.style.color = "#fff"; add(b, "span", null, tr(t.name)); b.onclick = function () { landFromHome(); leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; }); // landFromHome() arms the return so this flow's close re-opens home (Parcel A) instead of falling through to the panes
     var more = add(grid, "button", "tf-htool more"); skinTile(more, DOM.restore.c); var mic = add(more, "i", "ti ti-dots"); mic.style.color = "#fff"; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
+    if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
+  }
+  // R3 COMPASS ROSE (David 2026-07-21): the home face IS the nav. Three doors, each mirroring the retired #nav handler exactly:
+  //   • story strip (#tfHomeBars) → PLANNER (mirrors the data-tab="day" carousel handler: leaveHomeForPlayer + setPaneRest("planner") + renderToday)
+  //   • top-LEFT glyph → JOURNEY (mirrors navJourney: leaveHomeForPlayer + openJourney)
+  //   • top-RIGHT glyph → GARDEN/game (mirrors data-tab="self" carousel handler: leaveHomeForPlayer + setPaneRest("game"))
+  // Idempotent: elements are created once and reused (no innerHTML wipe). Guarded by TF_OPEN like the day-tab handler so a door tap can't fire mid-morph. Corner glyphs are positioned by CSS relative to the fixed #trackerFull.
+  function wireHomeDoors() {
+    var bars = el("tfHomeBars"); var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
+    // 1) STORY STRIP = the planner door. The whole strip is tappable; a quiet chevron-right at its end reads it as a door.
+    if (bars) {
+      var chev = el("tfPlanChev"); if (!chev) { chev = document.createElement("i"); chev.id = "tfPlanChev"; chev.className = "ti ti-chevron-right tf-planchev"; bars.appendChild(chev); } else if (chev.parentNode !== bars) bars.appendChild(chev); // renderHomeBars rebuilds the bars' children each draw → re-append the chevron after
+      bars.style.cursor = "pointer";
+      bars.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab
+    }
+    // 2) TOP-LEFT = the journey door glyph.
+    var jd = el("tfDoorJourney"); if (!jd) { jd = document.createElement("button"); jd.id = "tfDoorJourney"; jd.className = "tf-homedoor tf-door-journey"; jd.setAttribute("aria-label", "Journey"); var ji = document.createElement("i"); ji.className = "ti ti-route"; jd.appendChild(ji); inner.appendChild(jd); }
+    jd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { openJourney(); } catch (e) {} }; // = the retired Journey tab (navJourney)
+    // 3) TOP-RIGHT = the garden/game door glyph.
+    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); inner.appendChild(gd); }
+    gd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("game"); } catch (e) {} }; // = the retired Game/You tab (data-tab="self")
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [
@@ -14250,6 +14273,11 @@
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest(".nowcirc,.nowread")) { try { openJourney(); } catch (err) {} } }); })(); // STEP 1 of the tracker merge (David 2026-06-29): tap the planner's now-line/readout → jump to the Journey at NOW (the one rich tracker). The planner shows what's live; the journey is where you run it.
     (function () { var _pb = el("pullBody"); if (_pb) _pb.addEventListener("pointerdown", function (e) { if (!document.querySelector(".cal .edgeinsp")) return; if (e.target.closest && (e.target.closest(".edgeinsp") || e.target.closest(".ei-editing"))) return; try { closeEdgeInspector(); } catch (err) {} }, true); })(); // EDGE INSPECTOR dismiss: any tap outside the panel (and not on the edited block) commits + closes it
     try { S.usage = S.usage || {}; S.usage[todayK()] = (S.usage[todayK()] || 0) + 1; var _uk = Object.keys(S.usage); if (_uk.length > 45) { _uk.sort(); _uk.slice(0, _uk.length - 40).forEach(function (dk) { delete S.usage[dk]; }); } save(); } catch (e) {} // opens/day ledger (Day 5 telemetry) — additive, capped like S.sf.actions
+    // ===== R3 COMPASS ROSE wiring (David 2026-07-21): the 4-button #nav bar dies under body.navv2; the GUARDIAN PUCK (bottom-left) becomes the way home from any surface. All the #nav DOM + handlers above stay intact so NAV_V2=false restores the old bar byte-for-byte. =====
+    if (NAV_V2) {
+      document.body.classList.add("navv2"); // CSS hides #nav app-wide + neutralizes its bottom-clearances (see index.html body.navv2 rules)
+      var _gpk = el("guardPuck"); if (_gpk) _gpk.onclick = function () { try { openHome(); } catch (e) {} }; // the puck = go home from anywhere (on home it's a no-op-safe re-open, same as the old navHome button)
+    }
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; revealTimeline(); // Today (the always-open rich timeline) is the home; body scroll locked by CSS (v640); portal-reveal it on cold launch (v648)
     renderAll();
     // 3-tab shell (v438): the original pull-down timeline IS the Today tab, always open; the strip + pull-gesture live only in the garden now.
