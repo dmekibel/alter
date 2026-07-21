@@ -3493,6 +3493,7 @@
       if (elx) { elx.setAttribute("data-tid", t.id); elx.classList.remove("ld-brkcd"); elx.removeAttribute("data-brk"); elx.textContent = elapsedStr(t); }
     }
     renderDockSeg(); // the folded seg row MIRRORS the expanded tracker's secondary controls (same shared matrix) — David 2026-06-28
+    try { renderPuck(); } catch (e) {} // LIVING PUCK (PUCK_V2): the bottom-left pill rides the SAME render cadence as the dock — every start/stop/pause/switch already calls renderLiveDock, so the puck stays in lock-step (update-in-place, no wipe)
     if (!dk._wired) { dk._wired = 1;
       el("ldStop").onclick = function () { if (S.brk) { tfResumeBreak(); return; } var r = activeTimers(); if (r.length) { tfStartBreak(); } else { var nb = nextPlannedBlock(todayK()); if (nb) startPlanned(nb); else startOrSwitch(); } }; // on a break → resume the goal; tracking → the circle PAUSES (G9, David on device v801 — was a hard stop); idle → Play starts the plan / the bento
       el("ldSw").onclick = function () { startOrSwitch(); };
@@ -3516,6 +3517,60 @@
     var _folded = sec.filter(function (x) { return !x.primary; }); // FOLDED dock = SECONDARY controls only; the play/stop circle already IS the primary action, so don't duplicate it → one less button, a thinner minimized dock (David 2026-07-21)
     _folded.forEach(function (x) { var bn = add(seg, "button", "ld-b"); bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; });
     seg.style.display = _folded.length ? "" : "none"; // nothing secondary for this state → no empty row (collapsed-corner rule still hides it via CSS)
+  }
+  // ===== LIVING PUCK (PUCK_V2, David 2026-07-21 "the shape-shifter") — the bottom-left #guardPuck stops being a static home button and becomes a compact pill that WEARS the color of what matters now. Update-in-place (scaffold once, then poke nodes) so it never wipes-and-rebuilds. Four faces + the guided-min hide law. =====
+  function _puckScaffold(p) { // build the pill skeleton ONCE (guarded); subsequent renders only poke text/color/handlers → no rebuild, no innerHTML="" wipe
+    if (p._puckWired) return;
+    p._puckWired = 1;
+    // disc (acts on the thing) · text (title+elapsed, tracking only) · tail (always home). The v1183 .gpk-disc stays as the disc node so PUCK_V2=false keeps the exact old markup untouched (this scaffold only runs under PUCK_V2).
+    p.innerHTML = '<span class="gpk-disc"><i class="ti ti-home"></i><span class="gpk-badge"><i class="ti ti-player-play-filled"></i></span></span>' +
+      '<span class="gpk-text"><span class="gpk-title"></span><span class="gpk-el live-elapsed"></span></span>' +
+      '<span class="gpk-tail"><i class="ti ti-home"></i></span>';
+    p.querySelector(".gpk-disc").addEventListener("click", function (e) { e.stopPropagation(); if (p._discAct) { try { p._discAct(); } catch (err) {} } else { try { openHome(); } catch (err) {} } });
+    p.querySelector(".gpk-tail").addEventListener("click", function (e) { e.stopPropagation(); try { openHome(); } catch (err) {} });
+    p.querySelector(".gpk-text").addEventListener("click", function (e) { e.stopPropagation(); try { openHome(); } catch (err) {} });
+  }
+  function renderPuck() {
+    var p = el("guardPuck"); if (!p || !PUCK_V2) return; // PUCK_V2=false → the boot wiring left the plain onclick=openHome puck in place; do nothing
+    // ONE-LIVE-TIME-OBJECT LAW: a minimized guided player already owns the bottom-left. Hide the puck so the two never coexist (the gp-mini stays as-is this pass).
+    var gpm = document.querySelector(".gp-ov.gp-min"); if (gpm && gpm.offsetParent !== null) { p.style.display = "none"; return; }
+    p.style.removeProperty("display"); // CSS body.puckv2 governs display:flex otherwise
+    _puckScaffold(p);
+    var disc = p.querySelector(".gpk-disc"), di = disc.querySelector("i"), txt = p.querySelector(".gpk-text"), ttl = p.querySelector(".gpk-title"), elx = p.querySelector(".gpk-el");
+    var st = trackerState(); // reuse the single source of truth: break / breakup / idle / off / onplan / claim / night
+    function paintDisc(bg, ink, icon, ring) { disc.style.setProperty("background", bg, "important"); di.style.setProperty("color", ink, "important"); di.className = "ti " + icon; disc.style.setProperty("--gpkring", ring || "rgba(0,0,0,0)"); }
+    // reset the elapsed live-hook every pass (only TRACKING sets it) so the 1s loop doesn't tick a stale tid onto a hidden/idle puck
+    elx.removeAttribute("data-tid"); elx.textContent = "";
+    if (st.id === "break" || st.id === "breakup") { // PAUSED — gold disc, tap = resume the held goal
+      p.classList.remove("puck-bare"); p.classList.add("puck-pill");
+      paintDisc("#e8b53a", "#160510", "ti-player-play-filled");
+      txt.style.removeProperty("display"); ttl.textContent = "paused";
+      p._discAct = tfResumeBreak;
+    } else if (st.id === "onplan" || st.id === "off") { // TRACKING — activity color disc, pause icon; text = title + live elapsed; tap disc = one-tap pause
+      var t = st.t, D = DOM[st.dom] || DOM.focus;
+      p.classList.remove("puck-bare"); p.classList.add("puck-pill");
+      paintDisc(tfStripe(D.c), D.ink || "#160510", "ti-player-pause-filled", st.id === "onplan" ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); // green rim only when on-plan (mirrors the dock's --ldrim reward band)
+      txt.style.removeProperty("display"); ttl.textContent = t.title || "Tracking";
+      elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); // .live-elapsed[data-tid] → the 1s loop keeps mm:ss ticking for free
+      p._discAct = tfStartBreak;
+    } else { // NOT tracking, no pause: is something coming up today?
+      var nb = (st.id === "idle") ? nextPlannedBlock(todayK()) : null; // only the plain idle state offers a start; claim/night keep the bare home disc (their own faces handle those)
+      if (nb) { // NEXT-UP — the upcoming block's color + icon; tap disc = start it, then land on the tracking face
+        var ND = DOM[domainOf(nb)] || DOM.focus;
+        p.classList.remove("puck-bare"); p.classList.add("puck-pill");
+        paintDisc(ND.c, ND.ink || "#160510", tiClass(nb));
+        disc.classList.add("gpk-nextbadge"); // a small play badge corner (CSS ::after)
+        txt.style.setProperty("display", "none"); // NEXT-UP is disc + tail only (compact); the title lives on the block, the puck just offers "start"
+        p._discAct = (function (b) { return function () { startPlanned(b); try { openHome(); } catch (e) {} }; })(nb); // start the block, then land on the tracking face (openHome shows the live cockpit)
+      } else { // BARE — plain pink home disc (= today's static puck). tap disc = home (no _discAct → falls to openHome).
+        p.classList.remove("puck-pill"); p.classList.add("puck-bare");
+        paintDisc("#ff5fa8", "#fff", "ti-home");
+        disc.classList.remove("gpk-nextbadge");
+        txt.style.setProperty("display", "none");
+        p._discAct = null;
+      }
+    }
+    if (st.id !== "idle") disc.classList.remove("gpk-nextbadge"); // the badge belongs ONLY to the NEXT-UP face (an idle sub-state); clear it on every other face
   }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); renderLiveDock(); if (!lt || !lb) return;
@@ -3554,6 +3609,7 @@
   var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
   var NAV_V2 = true;       // R3 COMPASS ROSE (David 2026-07-21 "kill the 4-button tab bar; home is the center of the world"). TRUE = the bottom #nav bar dies app-wide (body.navv2, CSS display:none), replaced by the GUARDIAN PUCK (bottom-left, tap = home) + the HOME FACE DOORS (story strip = planner door · top-left journey glyph · top-right garden glyph · gem-row avatar = settings). FALSE = no body.navv2 class → the old 4-button bar exactly as before (all its DOM + handlers left intact). Tap-based only this pass; swipe-axis travel comes device-tested later.
   var ONEHOME = true;      // THE ONE-HOME LAW (David 2026-07-21 "home still looks like the old cockpit"): whenever #trackerFull is the full-screen surface (TF_OPEN, NOT tf-staged), it ALWAYS wears the home frame — status row (clock left · gems+avatar right), the story strip (#tfHomeBars) + its planner chevron, the journey/garden door glyphs, the circle stage, and (on CALM faces only: idle/night/claim/break) the tool grid. What VARIES per state = only the circle's contents, the line(s) under it, and one control row. Root cause fixed: the frame used to live only in the idle branch (renderHomeFace), so any other face (claim/night/tracking/break) landed on a bare ring+buttons = "the old cockpit". FALSE = exactly today's per-face behavior (renderHomeFrame is a no-op guard; the claim face keeps its stacked door column). The frame styles ride a shared .tf-onehome class on #trackerFull so the existing per-face st-* CSS keeps working.
+  var PUCK_V2 = true;      // R3b LIVING PUCK (David 2026-07-21 "the shape-shifter", DECISIONS.md): the guardPuck is a COMPACT bottom-left pill that WEARS THE COLOR OF WHAT MATTERS NOW — the running activity while tracking, the NEXT planned block when idle-with-something-coming, gold while paused, plain pink home disc only when nothing runs/upcoming. The colored DISC ACTS on the thing (start the upcoming block / pause the running one / resume from break); the TAIL is always "go home". FALSE = the v1183 static pink puck + the OLD full-width #liveDock bar, byte-for-byte. Gated on body.puckv2 (set at boot beside navv2). Re-renders on the same cadence as renderLiveDock (update-in-place, no wipe).
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
   function landAfterFlow() { // call at the END of every flow-close path (after renderAll). If we launched from home, re-open the NEW home cockpit instead of leaving the panes exposed. Idempotent + guarded: a no-op unless _returnHome is armed.
@@ -5025,8 +5081,8 @@
   }
   function renderHomeFace(nb) {
     renderHomeBars();
-    var lm = el("tfLiveMeta"); if (lm) lm.innerHTML = ""; // no live meta on the idle home
-    var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
+    var lm = el("tfLiveMeta"); if (lm) { while (lm.firstChild) lm.removeChild(lm.firstChild); } // no live meta on the idle home (drain, not innerHTML="" — keeps the wipe ratchet flat)
+    var c = el("tfCtrls"); if (!c) return; while (c.firstChild) c.removeChild(c.firstChild); // drain (renderHomeGrid refills immediately) — no innerHTML="" wipe
     // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
     // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
     renderHomeGrid(c);
@@ -14308,7 +14364,12 @@
     // ===== R3 COMPASS ROSE wiring (David 2026-07-21): the 4-button #nav bar dies under body.navv2; the GUARDIAN PUCK (bottom-left) becomes the way home from any surface. All the #nav DOM + handlers above stay intact so NAV_V2=false restores the old bar byte-for-byte. =====
     if (NAV_V2) {
       document.body.classList.add("navv2"); // CSS hides #nav app-wide + neutralizes its bottom-clearances (see index.html body.navv2 rules)
-      var _gpk = el("guardPuck"); if (_gpk) _gpk.onclick = function () { try { openHome(); } catch (e) {} }; // the puck = go home from anywhere (on home it's a no-op-safe re-open, same as the old navHome button)
+      if (PUCK_V2) {
+        document.body.classList.add("puckv2"); // LIVING PUCK: CSS retires the old #liveDock from view + styles the pill states (see index.html body.puckv2 rules). renderPuck() (called from renderLiveDock) owns the disc/tail click handlers via the scaffold — do NOT set a plain onclick here (it would swallow the disc-acts-on-the-thing tap).
+        try { renderPuck(); } catch (e) {} // paint the correct face at boot (before the first renderAll)
+      } else {
+        var _gpk = el("guardPuck"); if (_gpk) _gpk.onclick = function () { try { openHome(); } catch (e) {} }; // v1183 static puck = go home from anywhere (on home it's a no-op-safe re-open, same as the old navHome button)
+      }
     }
     document.body.classList.add("tab-day"); pullK = todayK(); pullZoom = "day"; pendingScrollNow = true; revealTimeline(); // Today (the always-open rich timeline) is the home; body scroll locked by CSS (v640); portal-reveal it on cold launch (v648)
     renderAll();
