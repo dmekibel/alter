@@ -2904,7 +2904,7 @@
   // a time (min, 4am-window units) to a flowed Y via a monotonic piecewise-linear knot list; heights = flowSpan (the flowed
   // distance a duration covers), NOT durMin/60*HP. computeFlow is a PURE function of (blocks, dayWindow, HP) so render, tickCharge,
   // and the zoom relayout can each rebuild the IDENTICAL map at the live HP and never desync (the coupling the 3 rebuilds tripped on).
-  var MINFLOOR = 64; // FIXED min flowed card advance (px) — a plain floor: bubbles shrink with zoom-out and STOP here, never smaller (David 2026-07-20). Drawn ≈50px (~half inch) — the smallest that cleanly holds the icon + one line of the big 22px label. A CONSTANT so zoom-out stays smooth + monotonic (a zoom-dependent floor broke the mechanic: bubbles shrank then ballooned back and the anchor jammed).
+  var MINFLOOR = 34; // FIXED floor (px) — bubbles SHRINK with zoom-out down to a small SYMBOL-BOX (drawn ≈20px, just the icon) and stop there — never a skinny sliver, never frozen at a big size (David 2026-07-20). A CONSTANT so zoom stays smooth + monotonic. Longer blocks / zoomed-in show their real height + label; only the smallest degrade to the icon-box.
   function computeFlow(k, HP) {
     var _dw = dayWindow(), base = _dw.startH * 60, endM = _dw.endH * 60, MF = MINFLOOR;
     var bl = blocks(k);

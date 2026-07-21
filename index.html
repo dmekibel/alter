@@ -2570,7 +2570,7 @@
   /* ICON tier (~9–22px): too short for a label → show JUST the activity icon centred ON the bubble, so you can still tell what it is (David 2026-06-28: the far-right symbol rail was killed in the full-screen cleanup, leaving small bubbles blank — side-icon restored ON the bar itself, not as a separate right column). */
   .calblk.lbl-i{ padding:0 !important; overflow:visible !important; }
   .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
-  .calblk.lbl-i .cn{ display:flex !important; align-items:center; justify-content:center; height:100%; padding:0 !important; margin:0; line-height:1; pointer-events:none; }
+  .calblk.lbl-i .cn{ display:flex !important; align-items:center; justify-content:flex-end; height:100%; padding:0 12px 0 0 !important; margin:0; line-height:1; pointer-events:none; } /* symbol on the RIGHT (David 2026-07-20 "little box with the symbol on the very right") */
   .calblk.lbl-i .cn .ti{ font-size:12px; }
   /* the right SYMBOL RAIL: a stacked, non-overlapping column of activity icons, in chronological order */
   .railchip{ position:absolute; right:1px; width:23px; height:21px; border-radius:6px; display:flex; align-items:center; justify-content:center; z-index:8; border:1.5px solid #160510; box-shadow:0 1px 3px rgba(0,0,0,.55); pointer-events:none; } /* far-right rail, fully inside the track so it can't be clipped; bigger = easier to tap a tiny bar (David 2026-06-25) */
@@ -2580,7 +2580,7 @@
   .calblk.lbl-i .cn-t, .calblk.lbl-i .csub, .calblk.lbl-i .step-n, .calblk.lbl-i .ti-sparkles, .calblk.lbl-i .calx, .calblk.lbl-i .grip, .calblk.lbl-i .gript{ display:none !important; }
   /* SIDE (<9px): too thin for a label → its icon goes to the right rail. STYLE STAYS CONSISTENT with a normal bubble — same 2px ink border, same rounded corners, same inline 0 3px 0 drop-shadow — just smaller. (Was: border stripped to 0, radius 3px, a flat shadow → looked like a bare line, inconsistent with the bordered/shadowed bubbles above it — David 2026-06-27.) box-shadow/border-width are NOT overridden so the per-bubble inline shadow (the "0 3px 0 #160510" the render sets) shows through. overflow:visible lets the side .clr label sit outside. */
   .calblk.lbl-s{ padding:0 !important; border-radius:8px !important; overflow:visible !important; filter:none !important; opacity:1 !important; z-index:4; }
-  .calblk.lbl-s .cn{ display:flex !important; align-items:center; justify-content:center; height:100%; padding:0 !important; margin:0; line-height:1; pointer-events:none; } /* too thin for text → show JUST the icon, centred ON the bubble (David 2026-06-28 side-icon restore) */
+  .calblk.lbl-s .cn{ display:flex !important; align-items:center; justify-content:flex-end; height:100%; padding:0 11px 0 0 !important; margin:0; line-height:1; pointer-events:none; } /* too thin for text → JUST the icon, on the RIGHT (David 2026-07-20) */
   .calblk.lbl-s .cn .ti{ font-size:11px; }
   .calblk.lbl-s .cn-t{ display:none !important; } /* still no room for the name on the bar itself */
   .calblk.lbl-s.clr .cn{ position:static; transform:none; } /* the old left-side label is retired — the side-icon now lives ON the bubble */
@@ -2833,6 +2833,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1163"></script>
+  <script src="app.js?v=1164"></script>
 </body>
 </html>
