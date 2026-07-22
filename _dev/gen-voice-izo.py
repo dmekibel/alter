@@ -45,7 +45,7 @@ V2 = {
     "warm":   {"stability": 0.62, "similarity_boost": 0.85, "style": 0.18, "use_speaker_boost": True, "speed": 0.96},
     "plain":  {"stability": 0.55, "similarity_boost": 0.80, "style": 0.15, "use_speaker_boost": True},
 }
-V3TAG = {"calm": "[calmly, softly] ", "charge": "[determined, energetic] ", "warm": "[warm, gentle] ", "plain": ""}
+V3TAG = {"calm": "[calm, softly] ", "charge": "[determined] ", "warm": "[warm, gentle] ", "plain": ""} # tasteful for a meditation guardian — charge = firm conviction, NOT shouty (David can't audit audio 2026-07-22)
 FLAT = {"stability": 0.55, "similarity_boost": 0.80, "style": 0.15, "use_speaker_boost": True}
 
 def delivery_for(r):
@@ -61,6 +61,8 @@ def delivery_for(r):
 def settings_and_text(r, ru_text):
     prof = delivery_for(r)
     if MODE == "flat": return FLAT, ru_text, "eleven_multilingual_v2"
+    if MODE == "v3full":  # EVERY line on eleven_v3 with its per-emotion audio tag (Aida 2, David 2026-07-22)
+        return {"stability": 0.5, "similarity_boost": 0.75}, V3TAG[prof] + ru_text, "eleven_v3"
     if MODE == "v3" and prof == "charge":  # v3 tags ONLY on the hero/charge lines; rest ride tuned-v2
         return {"stability": 0.5, "similarity_boost": 0.75}, V3TAG[prof] + ru_text, "eleven_v3"
     return V2[prof], ru_text, "eleven_multilingual_v2"

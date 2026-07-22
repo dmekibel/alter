@@ -170,7 +170,7 @@
       return banks[b] ? !!banks[b][key] : !!(vset && vset[key]); // EN: bank manifest if loaded, else optimistic root (instant switch)
     }
     function vdir() { return curBank(); }
-    function vpath(key) { var b = curBank(); return bankUsable(b, key) ? ("assets/voice/" + b + "/" + key + ".mp3") : ("assets/voice/" + key + ".mp3"); }
+    function vpath(key) { var b = curBank(); return bankUsable(b, key) ? ("assets/voice/" + b + "/" + key + ".mp3" + (b === "aida" ? cacheBust() : "")) : ("assets/voice/" + key + ".mp3"); } // aida clips are version-busted: its voice/delivery is being iterated (Aida→Aida2), so a same-named clip whose CONTENT changed must refetch on a new build (other banks stay immutable/force-cached)
     function ckey(key) { var b = curBank(); return bankUsable(b, key) ? (b + ":" + key) : key; } // bufCache namespace (per bank)
     function hasKey(key) { return !!(bankUsable(curBank(), key) || (vset && vset[key])); }
     // TEXT-level playability — the ONLY gate the speak/getBuffer paths use. Under RU it refuses to leak an English clip:
