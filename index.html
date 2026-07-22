@@ -1702,6 +1702,8 @@
   #trackerFull.tf-morphing .tf-verdict, #trackerFull.tf-morphing .tf-elabel, #trackerFull.tf-morphing .tf-ctx, #trackerFull.tf-morphing .tf-switch, #trackerFull.tf-morphing .tf-clock, #trackerFull.tf-morphing .tf-spark, #trackerFull.tf-morphing .tf-grab, #trackerFull.tf-morphing .tf-close{ transition:opacity .26s linear; }
   #tfBackdrop{ position:fixed; top:0; left:0; right:0; height:200px; z-index:97; background:transparent; pointer-events:none; } /* covers ONLY the calendar peek above the open sheet (above the z95/96 header) → tap it to close; never covers the sheet itself (David 2026-06-28) */
   #tfBackdrop.on{ pointer-events:auto; }
+  /* DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): on the ONE-PAGE home the backdrop is meaningless (home is a PLACE with no calendar-peek to close) but openTrackerFull still flips it .on, and at z97 it covers the top 200px where the door tabs sit → swallows every door tap. Force it inert whenever the one-page home is the active surface. */
+  body.home-onepage #tfBackdrop{ pointer-events:none !important; }
   .tf-inner{ position:absolute; left:0; right:0; bottom:0; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); box-sizing:border-box; } /* full-height content, anchored to the bottom — the outer clip reveals it upward, no reflow, no distortion */
   /* ===== THE ONE-PAGE WORLD (ONEPAGE, David 2026-07-22 "continuous scroll up to journey and down to tools — ONE PAGE, NO CUTS"): #tfWorld is a single native vertical scroll container holding THREE stacked zones — SKY (the real journey trail, adopted) · HOME (the current face) · GROUND (the full tool shelf). Replaces the AXIS_V1 hand-off proxy. The fixed overlays (clock/spark/gear/doors/puck) stay OUTSIDE #tfWorld as absolute children of .tf-inner, so they float still while the column scrolls. Only active while #trackerFull.tf-onepage.tf-onehome (a calm full-screen home face); staged/guided/tracking cockpits never scroll. NO scroll-snap — David: no cuts. ===== */
   #tfWorld, #tfWorld > .tfw-sky, #tfWorld > .tfw-home, #tfWorld > .tfw-ground{ display:contents; } /* off by default: the container + all three zone wrappers are layout-transparent, so the flow children lay out in .tf-inner exactly as before (ONEPAGE=false, or a staged/guided face where .tf-onehome is dropped) */
@@ -1712,8 +1714,10 @@
   /* the three zones stack in normal document flow inside the scroller (no snap = continuous, no cuts) */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky{ width:100%; box-sizing:border-box; }
   /* the home zone carries the SAME balanced full-height composition the .tf-inner used to (space-between: story strip top · circle centered · controls+grid bottom); it always fills one viewport so the sky/ground peeks sit just off each edge. The fixed status row (clock/spark/gear) floats over its top via .tf-inner. */
-  #trackerFull.tf-onepage.tf-onehome .tfw-home{ width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 54px) 0 calc(env(safe-area-inset-bottom,0px) + 34px); }
+  #trackerFull.tf-onepage.tf-onehome .tfw-home{ position:relative; width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 54px) 0 calc(env(safe-area-inset-bottom,0px) + 34px); } /* position:relative so the in-home-zone doors (below) anchor to the HOME zone and scroll with it (David 2026-07-22) */
   #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-stage{ flex:0 0 auto; }
+  /* ONE-PAGE (David 2026-07-22): the story strip is a normal in-flow part of the HOME zone — it must SCROLL NATURALLY with the content, never animate. Kill any transition on it so a re-render/scroll layout shift can't make it "slide up and disappear". */
+  #trackerFull.tf-onepage.tf-onehome #tfHomeBars{ transition:none !important; }
   #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px); }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
@@ -2798,16 +2802,26 @@
   /* The home cockpit is a FULL-SCREEN opaque surface at z90 that COVERS the puck (z88) → on home you don't see two homes; you leave home via the doors, and the puck is there the instant you're on a pane. */
   body.navv2 #trackerFull.on{ z-index:90; }
 
+  /* ===== PUCK AS THE RETURN (David 2026-07-22 "whenever you're anywhere that's not home, the home button should appear; on home there's nothing to return from") ===== */
+  /* On the ONE-PAGE home surface the puck is a scroll-return: HIDDEN while parked at the home seam (z88 is under the z90 cockpit anyway, but fade it too so a momentary reflow never flashes it), and FADED IN + lifted ABOVE the cockpit the moment the scroll drifts off home (JS toggles .puck-away). Its tap smooth-scrolls the column back to home. Elsewhere (panes) the puck is untouched — always visible. */
+  body.home-onepage #guardPuck{ opacity:0; pointer-events:none; transition:opacity .25s ease; }
+  body.home-onepage #guardPuck.puck-away{ opacity:1; pointer-events:auto; z-index:92; } /* z92 > the z90 onepage cockpit → the return rides above the scrolled-away world */
+
   /* 3) HOME FACE DOORS (David 2026-07-21 FINAL): the story strip = planner; LEFT door = PLANNER, RIGHT door = GARDEN. Journey door REMOVED. These read as PROMINENT colorful tappable buttons — 54px rounded squares, white icon, Baloo label under it in the light hue. */
   .tf-planchev{ margin-left:2px; align-self:center; font-size:19px; color:#c79bd8; flex:0 0 auto; opacity:.85; } /* the quiet chevron at the strip's end = "this strip is a door" */
   .tf-homedoor{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 48px); width:54px; min-width:54px; border-radius:17px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 4px 5px; cursor:pointer; z-index:5; -webkit-tap-highlight-color:transparent; } /* base position (ONEHOME=false legacy) */
-  /* EDGE-TAB DOORS (David 2026-07-22, "final palette 4"): the two doors become slim vertical tabs FLUSH to the screen edges — 18px wide, 80px tall, vertical centre ~132px, inner-rounded, deep plum/green, white icon, no label. */
-  #trackerFull.tf-onehome .tf-homedoor{ top:92px; width:18px; min-width:18px; height:80px; padding:0; gap:0; border-radius:0; }
+  /* EDGE-TAB DOORS (David 2026-07-22, "final palette 4"): the two doors become slim vertical tabs FLUSH to the screen edges — 18px wide, 80px tall, vertical centre ~132px, inner-rounded, deep plum/green, white icon, no label. NOTE: no `border-radius` on this shared rule — the per-door tuned shape (.tf-door-planner / .tf-door-garden below) must win (David 2026-07-22: "you made them square"). Only size/position is set here. */
+  #trackerFull.tf-onehome .tf-homedoor{ top:92px; width:18px; min-width:18px; height:80px; padding:0; gap:0; }
   .tf-homedoor::before{ content:""; position:absolute; inset:-10px; border-radius:14px; } /* invisible tap pad — widens the slim tab's hit area */
   .tf-homedoor i{ font-size:13px; line-height:1; color:#fff; }
   .tf-homedoor:active{ transform:scale(.93); }
   .tf-door-planner{ left:0; background:#372254; box-shadow:0 4px 0 #1e1230; border-radius:0 15px 15px 0; }
   .tf-door-garden{ right:0; background:#184630; box-shadow:0 4px 0 #0d271a; border-radius:15px 0 0 15px; }
+  /* ONE-PAGE (David 2026-07-22): the doors live IN the HOME zone (#tfWorldHome), not the fixed frame — so they SCROLL AWAY with home instead of floating on the sides. Absolutely positioned within .tfw-home at the SAME visual spot (flush to edges, vertical centre ~132px from the home zone's top). .tfw-home is position:relative (set below) so `top` is measured from the home zone; z-index lifts them above the home flow content. */
+  /* the home zone sits inside #tfWorld's 20px side padding, so left/right:0 would leave a 20px gap — pull the tabs out by that 20px so they're FLUSH to the screen edge (David 2026-07-22: "stay in the exact spot we placed them"). */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home > .tf-homedoor{ position:absolute; top:92px; z-index:6; }
+  #trackerFull.tf-onepage.tf-onehome .tfw-home > .tf-door-planner{ left:-20px; }
+  #trackerFull.tf-onepage.tf-onehome .tfw-home > .tf-door-garden{ right:-20px; }
   .tf-door-garden .tf-door-lbl{ color:#5ed6df; }
   /* doors only exist on the idle home face; hide anywhere else the cockpit shows (tracking/stage/etc.) */
   #trackerFull:not(.tf-home) .tf-homedoor, #trackerFull:not(.st-idle) .tf-homedoor, body:not(.navv2) .tf-homedoor, body:not(.navv2) .tf-planchev{ display:none !important; }
@@ -2989,6 +3003,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1189"></script>
+  <script src="app.js?v=1192"></script>
 </body>
 </html>

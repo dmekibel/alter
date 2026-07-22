@@ -3528,10 +3528,12 @@
     p.innerHTML = '<span class="gpk-disc"><i class="ti ti-home"></i><span class="gpk-badge"><i class="ti ti-player-play-filled"></i></span></span>' +
       '<span class="gpk-text"><span class="gpk-title"></span><span class="gpk-el live-elapsed"></span></span>' +
       '<span class="gpk-tail"><i class="ti ti-home"></i></span>';
-    p.querySelector(".gpk-disc").addEventListener("click", function (e) { e.stopPropagation(); if (p._discAct) { try { p._discAct(); } catch (err) {} } else { try { openHome(); } catch (err) {} } });
-    p.querySelector(".gpk-tail").addEventListener("click", function (e) { e.stopPropagation(); try { openHome(); } catch (err) {} });
-    p.querySelector(".gpk-text").addEventListener("click", function (e) { e.stopPropagation(); try { openHome(); } catch (err) {} });
+    p.querySelector(".gpk-disc").addEventListener("click", function (e) { e.stopPropagation(); if (p._discAct) { try { p._discAct(); } catch (err) {} } else { try { puckGoHome(); } catch (err) {} } });
+    p.querySelector(".gpk-tail").addEventListener("click", function (e) { e.stopPropagation(); try { puckGoHome(); } catch (err) {} });
+    p.querySelector(".gpk-text").addEventListener("click", function (e) { e.stopPropagation(); try { puckGoHome(); } catch (err) {} });
   }
+  // the puck's "go home" tail (David 2026-07-22): while the ONE-PAGE world is open, home is a SCROLL POSITION, not a separate surface — smooth-scroll the column back to the home seam instead of tearing surfaces down. On any non-home surface (planner/game) worldScrollBackHome() returns false and we fall through to the existing openHome() (opens/returns the home cockpit).
+  function puckGoHome() { try { if (worldScrollBackHome()) return; } catch (e) {} try { openHome(); } catch (e) {} }
   function renderPuck() {
     var p = el("guardPuck"); if (!p || !PUCK_V2) return; // PUCK_V2=false → the boot wiring left the plain onclick=openHome puck in place; do nothing
     // ONE-LIVE-TIME-OBJECT LAW: a minimized guided player already owns the bottom-left. Hide the puck so the two never coexist (the gp-mini stays as-is this pass).
@@ -5109,6 +5111,9 @@
   // Idempotent: elements + their label spans are created once and reused (no innerHTML wipe). Guarded by TF_OPEN like the day-tab handler so a door tap can't fire mid-morph. Doors are positioned by CSS relative to the fixed #trackerFull.
   function wireHomeDoors() {
     var bars = el("tfHomeBars"); var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
+    // ONE-PAGE (David 2026-07-22 "the doors must stay in home's spot, not float"): the doors belong INSIDE the scrollable HOME zone, so they scroll away with home instead of floating on the fixed frame. Build the world first, then host the doors in #tfWorldHome (absolute, anchored to the home zone by the .tfw-home position:relative rule). Off ONEPAGE they stay on .tf-inner (fixed) exactly as before.
+    var doorHost = inner;
+    if (ONEPAGE) { try { ensureWorld(); } catch (e) {} var _hz = el("tfWorldHome"); if (_hz) doorHost = _hz; }
     // 1) STORY STRIP = a planner door too (whole strip tappable; quiet chevron-right at its end).
     if (bars) {
       var chev = el("tfPlanChev"); if (!chev) { chev = document.createElement("i"); chev.id = "tfPlanChev"; chev.className = "ti ti-chevron-right tf-planchev"; bars.appendChild(chev); } else if (chev.parentNode !== bars) bars.appendChild(chev); // renderHomeBars rebuilds the bars' children each draw → re-append the chevron after
@@ -5116,10 +5121,10 @@
       bars.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab
     }
     // 2) LEFT door = PLANNER (was journey). Prominent labeled button.
-    var pd = el("tfDoorPlanner"); if (!pd) { pd = document.createElement("button"); pd.id = "tfDoorPlanner"; pd.className = "tf-homedoor tf-door-planner"; pd.setAttribute("aria-label", "Planner"); var pi = document.createElement("i"); pi.className = "ti ti-calendar"; pd.appendChild(pi); inner.appendChild(pd); } // edge-tab: icon only, no label (David 2026-07-22)
+    var pd = el("tfDoorPlanner"); if (!pd) { pd = document.createElement("button"); pd.id = "tfDoorPlanner"; pd.className = "tf-homedoor tf-door-planner"; pd.setAttribute("aria-label", "Planner"); var pi = document.createElement("i"); pi.className = "ti ti-calendar"; pd.appendChild(pi); doorHost.appendChild(pd); } else if (pd.parentNode !== doorHost) doorHost.appendChild(pd); // edge-tab: icon only, no label (David 2026-07-22); re-home into the HOME zone under ONEPAGE so it scrolls with home
     pd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab (data-tab="day")
     // 3) RIGHT door = GARDEN/game. Prominent labeled button.
-    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); inner.appendChild(gd); } // edge-tab: icon only, no label (David 2026-07-22)
+    var gd = el("tfDoorGarden"); if (!gd) { gd = document.createElement("button"); gd.id = "tfDoorGarden"; gd.className = "tf-homedoor tf-door-garden"; gd.setAttribute("aria-label", "Garden"); var gi = document.createElement("i"); gi.className = "ti ti-plant-2"; gd.appendChild(gi); doorHost.appendChild(gd); } else if (gd.parentNode !== doorHost) doorHost.appendChild(gd); // edge-tab: icon only, no label (David 2026-07-22); re-home into the HOME zone under ONEPAGE
     gd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("game"); } catch (e) {} }; // = the retired Game/You tab (data-tab="self")
     // journey door REMOVED (David 2026-07-21): if a stale #tfDoorJourney survives from an older build, drop it.
     var _jd = el("tfDoorJourney"); if (_jd && _jd.parentNode) _jd.parentNode.removeChild(_jd);
@@ -5250,8 +5255,27 @@
       var flow = [el("tfHomeBars"), inner.querySelector(".tf-stage"), el("tfLiveMeta"), el("tfQuickTools"), el("tfStageBody"), el("tfStageChips"), el("tfCtrls"), el("tfNextSheet"), el("tfHomeGrid")];
       inner.appendChild(world); // insert the container, then relocate the flow blocks into HOME (each still reachable by id/className — CSS descendant selectors + el() lookups are nesting-agnostic)
       flow.forEach(function (n) { if (n && n.parentNode !== home) home.appendChild(n); });
+      // PUCK-AS-RETURN (David 2026-07-22 "whenever you're anywhere that's not home, the home button appears"): a single passive, cheap scroll listener on #tfWorld drives the puck's home-return visibility — faded OUT when parked at home (nothing to return from), faded IN the moment the scroll deviates from the home position by >40% of the viewport (i.e. you've drifted up into the journey sky or down into the tools ground). No rAF loop, no second watcher — one native scroll event, one class toggle. worldScrollHome() owns the landing; this only reads scrollTop.
+      world.addEventListener("scroll", function () { try { onWorldScroll(); } catch (e) {} }, { passive: true });
     }
     return world;
+  }
+  // the home-position reference for the puck-return check + the smooth-scroll-home tap. Mirrors worldScrollHome's target (home.offsetTop - peek) but tolerates the pre-adoption case.
+  function worldHomeTop() { var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return 0; return Math.max(0, home.offsetTop - 14); }
+  function onWorldScroll() {
+    var world = el("tfWorld"); if (!world) return;
+    var home = worldHomeTop();
+    var vh = world.clientHeight || window.innerHeight || 800;
+    var away = Math.abs(world.scrollTop - home) > vh * 0.4; // drifted >40% of a viewport off the home seam → show the return
+    var p = el("guardPuck"); if (!p) return;
+    p.classList.toggle("puck-away", away); // CSS fades the puck by this class ON the onepage home surface only (elsewhere it's always visible)
+  }
+  // smooth-scroll the world column back to the home seam (the puck's tap target while the world is open). Returns true if it handled the return here (so the puck's home tap doesn't also tear surfaces down).
+  function worldScrollBackHome() {
+    var tf = el("trackerFull"), world = el("tfWorld");
+    if (!ONEPAGE || !world || !tf || !tf.classList.contains("tf-onepage") || !tf.classList.contains("on")) return false;
+    try { world.scrollTo({ top: worldHomeTop(), behavior: "smooth" }); } catch (e) { world.scrollTop = worldHomeTop(); }
+    return true;
   }
   function skyZone() { var w = ensureWorld(); return w ? el("tfWorldSky") : null; }
   function groundZone() { var w = ensureWorld(); return w ? el("tfWorldGround") : null; }
@@ -5302,10 +5326,13 @@
       var target = Math.max(0, home.offsetTop - peek); // home.offsetTop = the sky's laid-out height inside the scroller
       var tf = el("trackerFull"), morphing = tf && tf.classList.contains("tf-morphing");
       var scrollable = world.scrollHeight - world.clientHeight > peek;
-      // NOT ready to land = no real sky yet (trail undrawn/hidden), still morphing, or the column can't scroll. Leave _worldPositioned FALSE so a later render/kick retries — never commit on an empty/hidden home (the boot-under-startscreen premature-commit trap).
-      if (target > peek && !morphing && scrollable) {
+      // BOOT-EMPTY-SKY FIX (David 2026-07-22 "scroll up = empty screen; only after scrolling to tools does up unlock"): the trail must ACTUALLY be adopted+drawn into the sky before we commit. Without this gate, home.offsetTop is just the ~34px sky-LABEL height (target≈20 > peek, column scrollable via the ground) → the retry committed _worldPositioned on an EMPTY sky, locking the scroll at a wrong spot with only a blank label above → scrolling up showed empty. A later re-render (e.g. after a down-scroll re-adopts) was the only thing that fixed it. Require jpTrail to sit in the sky with real children first.
+      var trail = el("jpTrail"), sky = el("tfWorldSky");
+      var skyReady = !!(trail && sky && trail.parentNode === sky && trail.children.length);
+      // NOT ready to land = sky not yet holding the drawn trail, still morphing, or the column can't scroll. Leave _worldPositioned FALSE so a later render/kick retries — never commit on an empty/hidden home (the boot-under-startscreen premature-commit trap).
+      if (skyReady && target > peek && !morphing && scrollable) {
         world.scrollTop = target;
-        if (Math.abs(world.scrollTop - target) < 4) { _worldPositioned = true; return; } // landed + held → commit (locks it; re-renders won't yank it)
+        if (Math.abs(world.scrollTop - target) < 4) { _worldPositioned = true; try { onWorldScroll(); } catch (e) {} return; } // landed + held → commit (locks it; re-renders won't yank it). Re-read the puck-return state now that we're parked AT home so it hides (the pre-land onWorldScroll saw scrollTop 0 = "away" and lit it).
       }
     } catch (e) {}
     if (tries < 60) _worldPosTo = setTimeout(function () { worldScrollHome(tries + 1); }, 16); // ~1s of retries, outliving the ~460ms open-morph
@@ -5316,16 +5343,22 @@
     if (!ONEPAGE) return;
     var tf = el("trackerFull"); if (!tf) return;
     tf.classList.add("tf-onepage");
+    // DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): #tfBackdrop is a fixed z97 pointer-catcher for the OLD sheet-mode calendar-peek-close. On the full-screen ONE-PAGE home it covers the top 200px — exactly where the door tabs sit (y≈92-172) — and swallows every door tap. The onepage home is a PLACE, not a peel-back sheet: it has no calendar peek to close. Neutralise the backdrop so door taps reach the doors (#tfWorld owns the scroll; you leave via the doors/nav, not by tapping a peek).
+    try { var _bd = el("tfBackdrop"); if (_bd) _bd.classList.remove("on"); } catch (e) {}
     ensureWorld();
     adoptTrailToSky();
     var ground = groundZone();
     if (showGround) { if (ground) ground.style.display = ""; renderGroundTools(); }
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
+    document.body.classList.add("home-onepage"); // puck-return CSS keys on this: at home the puck fades out (nothing to return from); .puck-away fades it back in once the scroll drifts off the home seam
+    try { onWorldScroll(); } catch (e) {} // set the initial away/home puck state for this render (landed = home = hidden)
     worldScrollHome(); // idempotent + self-guarding: no-ops once positioned
   }
   function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
     var tf = el("trackerFull"); if (tf) tf.classList.remove("tf-onepage");
     releaseTrailFromSky();
+    document.body.classList.remove("home-onepage"); // leaving the one-page home → the puck is a plain always-visible return again (panes keep it lit)
+    var _p = el("guardPuck"); if (_p) _p.classList.remove("puck-away");
     _worldPositioned = false;
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
