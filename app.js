@@ -14116,12 +14116,12 @@
     var tiles = [].slice.call(document.querySelectorAll("#trackerFull .tf-htool"));
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
-    chk("circle width %vw", Math.abs(rr.width / W - 0.64) <= 0.03, Math.round(rr.width / W * 100) + "%", "64%±3");
+    chk("circle width %vw", Math.abs(rr.width / W - 0.72) <= 0.03, Math.round(rr.width / W * 100) + "%", "72%±3"); // board updated 64→72 (David 2026-07-22 "bigger + more centered")
     chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= 0.12, Math.round((rr.top - br.bottom) / H * 100) + "%", "7-12%");
     if (tile) { var ir = tile.getBoundingClientRect(); chk("ring rim px/side", (rr.width - ir.width) / 2 >= 5 && (rr.width - ir.width) / 2 <= 11, Math.round((rr.width - ir.width) / 2), "5-11"); }
     var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
     chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px");
-    if (grid) { var gr = grid.getBoundingClientRect(); chk("grid width %vw", gr.width / W >= 0.62 && gr.width / W <= 0.86, Math.round(gr.width / W * 100) + "%", "62-86 (board 70 / max-w 360)"); }
+    if (grid) { var gr = grid.getBoundingClientRect(); chk("grid width %vw", gr.width / W >= 0.46 && gr.width / W <= 0.72, Math.round(gr.width / W * 100) + "%", "46-72 (board 56 — smaller tools under the hero circle)"); }
     if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); }
     if (gd) chk("door garden fill", rgb(gd) === "rgb(24, 70, 48)", rgb(gd), "rgb(24,70,48)");
     if (tiles.length >= 3) { chk("tile1 raw hex", rgb(tiles[0]) === "rgb(91, 143, 214)", rgb(tiles[0]), "rgb(91,143,214)"); chk("tile3 raw hex", rgb(tiles[2]) === "rgb(214, 106, 126)", rgb(tiles[2]), "rgb(214,106,126)"); }
@@ -14582,6 +14582,9 @@
   var TUNER_KEY = "alter_tuner";
   // each: [var-name, label, min, max, step, default, unit, formatter(v)->cssValue]. `apply` writes the derived CSS var(s). bloom is one strength slider driving BOTH alpha + blur.
   var TUNER_FIELDS = [
+    { k: "ringVw", lbl: "Circle size", min: 45, max: 90, step: 1, def: 72, unit: "vw", vars: function (v) { return { "--tun-ring-vw": v + "vw" }; } }, // THE HERO CIRCLE size (David 2026-07-22 "bigger + more centered") — drag on real pixels, then send me the value to lock
+    { k: "gridW", lbl: "Tools size", min: 38, max: 90, step: 1, def: 56, unit: "vw", vars: function (v) { return { "--tun-grid-w": v + "vw" }; } }, // the tool row width — narrower = smaller tiles (David "buttons below smaller")
+    { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 16, step: 1, def: 5, unit: "vh", vars: function (v) { return { "--tun-tools-gap": v + "vh" }; } }, // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
     { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
     { k: "doorH", lbl: "Door height", min: 56, max: 160, step: 2, def: 80, unit: "px", vars: function (v) { return { "--tun-door-h": v + "px" }; } },
     { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 23, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } },
