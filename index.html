@@ -2802,6 +2802,7 @@
   body.puckv2 #guardPuck .gpk-el{ color:#ff8ac0; font-weight:700; font-size:11px; }
   body.puckv2 #guardPuck .gpk-tail{ display:none !important; } /* mockup pill = dial + text only; the WHOLE puck taps home (no separate home tab). Kept in DOM (its listener is harmless) so PUCK_V2=false restores the old markup. */
   body.puckv2 #guardPuck.puck-pill{ background:#2a0f22; } /* the pill body is the dark plum ground; the DISC carries the domain color */
+  body.puckv2 #guardPuck.puck-wide{ width:var(--tun-puck-w, min(71vw, 330px)); } /* THE MINIMIZED TRACKER = a WIDE fixed pill like the mockup (David 2026-07-22 "too narrow, should be wider like our mockup"): 71vw ≈ the compass-rose 210/296. Fixed width (not content-hugging) so a short title never shrinks it. Overrides the auto width; the .4s width morph animates bare→wide. Tunable via --tun-puck-w. */
   body.puckv2 #guardPuck.puck-bare{ width:var(--puck); justify-content:center; } /* the plain home disc — centered, no text visible (the meta column stays opacity:0, clipped) */
   body.puckv2 #guardPuck.puck-bare .gpk-text{ opacity:0; }
 
@@ -3009,6 +3010,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1199"></script>
+  <script src="app.js?v=1200"></script>
 </body>
 </html>

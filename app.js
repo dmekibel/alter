@@ -3547,13 +3547,13 @@
     // reset the elapsed live-hook every pass (only TRACKING sets it) so the 1s loop doesn't tick a stale tid onto a hidden/idle puck
     elx.removeAttribute("data-tid"); elx.textContent = "";
     if (st.id === "break" || st.id === "breakup") { // PAUSED — gold disc, tap = resume the held goal
-      p.classList.remove("puck-bare"); p.classList.add("puck-pill");
+      p.classList.remove("puck-bare"); p.classList.add("puck-pill", "puck-wide"); // wide = the mockup minimized-player width (David 2026-07-22 "too narrow, should be wider like our mockup")
       paintDisc("#e8b53a", "#160510", "ti-player-play-filled");
       txt.style.removeProperty("display"); ttl.textContent = "paused";
       p._discAct = null; // whole puck taps home (resume lives on the paused player face)
     } else if (st.id === "onplan" || st.id === "off") { // TRACKING — activity color disc, pause icon; text = title + live elapsed; tap disc = one-tap pause
       var t = st.t, D = DOM[st.dom] || DOM.focus;
-      p.classList.remove("puck-bare"); p.classList.add("puck-pill");
+      p.classList.remove("puck-bare"); p.classList.add("puck-pill", "puck-wide"); // wide fixed pill = the mockup minimized tracker (not content-hugging → never too narrow)
       paintDisc(D.c, D.ink || "#160510", tiClass(t), st.id === "onplan" ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); // mockup fidelity (David 2026-07-22): SOLID domain-color dial (the compass-rose/screenshot pill is solid, not striped) wearing the ACTIVITY icon; green rim only when on-plan (mirrors the dock's --ldrim reward band)
       txt.style.removeProperty("display"); ttl.textContent = t.title || "Tracking";
       elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); // .live-elapsed[data-tid] → the 1s loop keeps mm:ss ticking for free
@@ -3562,13 +3562,13 @@
       var nb = (st.id === "idle") ? nextPlannedBlock(todayK()) : null; // only the plain idle state offers a start; claim/night keep the bare home disc (their own faces handle those)
       if (nb) { // NEXT-UP — the upcoming block's color + icon; tap disc = start it, then land on the tracking face
         var ND = DOM[domainOf(nb)] || DOM.focus;
-        p.classList.remove("puck-bare"); p.classList.add("puck-pill");
+        p.classList.remove("puck-bare", "puck-wide"); p.classList.add("puck-pill"); // NEXT-UP stays compact (a colored disc), not the wide player pill
         paintDisc(ND.c, ND.ink || "#160510", tiClass(nb));
         disc.classList.add("gpk-nextbadge"); // a small play badge corner (CSS ::after)
         txt.style.setProperty("display", "none"); // NEXT-UP is disc + tail only (compact); the title lives on the block, the puck just offers "start"
         p._discAct = (function (b) { return function () { startPlanned(b); try { openHome(); } catch (e) {} }; })(nb); // start the block, then land on the tracking face (openHome shows the live cockpit)
       } else { // BARE — plain pink home disc (= today's static puck). tap disc = home (no _discAct → falls to openHome).
-        p.classList.remove("puck-pill"); p.classList.add("puck-bare");
+        p.classList.remove("puck-pill", "puck-wide"); p.classList.add("puck-bare");
         paintDisc("#ff5fa8", "#fff", "ti-home");
         disc.classList.remove("gpk-nextbadge");
         txt.style.setProperty("display", "none");
@@ -5095,7 +5095,7 @@
     if (showGrid) { host.style.display = ""; renderHomeGrid(host); }
     else { host.style.display = "none"; while (host.firstChild) host.removeChild(host.firstChild); } // tracking face: no grid (focus), drain it so nothing lingers
     if (NAV_V2) wireHomeDoors();     // journey/garden door glyphs + the strip's planner tap (idempotent)
-    if (ONEPAGE) { try { renderOnePageWorld(showGrid); } catch (e) {} } // sky (journey) above + ground (tools) below, one native scroll — the shelf shows only on calm faces (showGrid mirrors it)
+    if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // sky (journey) above + ground (FULL tool shelf) below, one native scroll — ALWAYS show the ground so you can scroll DOWN to the tools even while tracking (David 2026-07-22 "when tracking you should still be able to scroll down and see the tools"). The inline #tfHomeGrid still hides on the tracking face (above, showGrid) to keep the circle+controls focused; the tools live one scroll below.
   }
   function renderHomeFace(nb) {
     if (ONEPAGE) { try { ensureWorld(); } catch (e) {} } // build the world FIRST so the idle flow (bars + #tfCtrls grid) lands in the HOME zone
