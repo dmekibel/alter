@@ -1728,12 +1728,14 @@
   }
   function ssEnter(has) {
     var ss = el("startScreen");
+    if (ONEPAGE) _worldPositioned = false; // ONE-PAGE: home is about to become real+visible under the leaving start screen — re-arm the land-on-HOME positioning (boot's attempt under the cover never committed)
     try { TTS.unlock(); } catch (e) {} // this Continue/Start tap is a gesture → unlock audio so the app music can begin
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); try { devBtnVisible(); } catch (e) {} }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music; devBtnVisible hides the 🛠 button now that we've left the start screen unless the toggle kept it (David 2026-07-20)
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
     else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} } }, 470); } // returning → AFTER the start screen clears: the GAUGE reads state first (once/day — low mood routes to the relief door, F0 David 2026-07-02), then the ≥2wk Welcome-Back if due, then LAND ON THE HOME COCKPIT (§10f.7, David 2026-07-13 — the reliable landing seam; the boot-time instant-open behind the start screen was getting lost under this gauge flow)
   }
   function openJourney() {
+    if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } // if home had adopted the trail into its sky, take it back before the standalone overlay draws into it (single journey DOM)
     var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving", "jp-sliding"); p.style.transform = ""; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640). jp-sliding/transform reset: never inherit a TRANS_V2 slide-out state on re-open.
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
@@ -1784,7 +1786,7 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
-    else if (n === "journey") { b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
+    else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
   }
   var _paneAnim = false;
@@ -3602,14 +3604,15 @@
   var TF_MODE = null, TF_MODE_USERSET = false, TF_BLOCKID = null;
   var HOME_MODE = false; // §10f.7 (David ✓ 2026-07-13): the cockpit is opened as the app's LANDING home — idle frame + story bars + circle + tools side-scroll. Cleared the moment anything is tracking/staged so the live cockpit is untouched.
   function openHome() { HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); } // land on / return to the home cockpit (animated — a user gesture)
-  function leaveHomeForPlayer() { var tf = el("trackerFull"); if (tf) { tf.classList.remove("on", "tf-bg", "tf-home"); tf.style.height = ""; tf.style.opacity = ""; } document.body.classList.remove("home-pane"); TF_OPEN = false; TF_ANIM = false; HOME_MODE = false; } // §10f.7 (David 2026-07-13): launching a tool/session from home hides the home cockpit INSTANTLY so it never lingers behind — or jarringly re-reveals after — the tool player (the cockpit and the player are one surface, you never see both). The player is opaque + full-screen; on its close renderAll lands on the panes below.
-  function openHomeInstant() { var tf = el("trackerFull"); if (!tf || TF_OPEN || TF_ANIM) return; HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; TF_OPEN = true; _ringP = 0; tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); renderTrackerFull(); } // §10f.7 boot landing: show the home cockpit with NO morph (the start screen z-200 covers it until Continue; morphing from an unlaid-out dock at boot would misfire)
+  function leaveHomeForPlayer() { if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } /* return the adopted journey trail to #journeyPath + drop the one-page scroll before any other surface opens (single-owner: the overlay/pane owns the trail again) */ var tf = el("trackerFull"); if (tf) { tf.classList.remove("on", "tf-bg", "tf-home"); tf.style.height = ""; tf.style.opacity = ""; } document.body.classList.remove("home-pane"); TF_OPEN = false; TF_ANIM = false; HOME_MODE = false; } // §10f.7 (David 2026-07-13): launching a tool/session from home hides the home cockpit INSTANTLY so it never lingers behind — or jarringly re-reveals after — the tool player (the cockpit and the player are one surface, you never see both). The player is opaque + full-screen; on its close renderAll lands on the panes below.
+  function openHomeInstant() { var tf = el("trackerFull"); if (!tf || TF_OPEN || TF_ANIM) return; if (ONEPAGE) _worldPositioned = false; HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; TF_OPEN = true; _ringP = 0; tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); renderTrackerFull(); } // §10f.7 boot landing: show the home cockpit with NO morph (the start screen z-200 covers it until Continue; morphing from an unlaid-out dock at boot would misfire)
   // ===== LANDING CONTRACT (Parcel A, David 2026-07-21 "cockpit came back and looks horrible") — a flow launched FROM HOME must RE-OPEN home on close, not fall through to the panes below. leaveHomeForPlayer() tears the home cockpit down (Z-2 blocker, HOME-PLAYER-GRAMMAR PART 6); without this every tool/session close from home landed on journey/planner (or an old-era face resurfaced). Purely-additive module flags, no SCHEMA touch. =====
   var LAND_V2 = true;      // kill-switch: flip false on device if re-opening home on close misbehaves (falls back to the old pane-landing)
   var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
   var NAV_V2 = true;       // R3 COMPASS ROSE (David 2026-07-21 "kill the 4-button tab bar; home is the center of the world"). TRUE = the bottom #nav bar dies app-wide (body.navv2, CSS display:none), replaced by the GUARDIAN PUCK (bottom-left, tap = home) + the HOME FACE DOORS (story strip = planner door · top-left journey glyph · top-right garden glyph · gem-row avatar = settings). FALSE = no body.navv2 class → the old 4-button bar exactly as before (all its DOM + handlers left intact). Tap-based only this pass; swipe-axis travel comes device-tested later.
   var ONEHOME = true;      // THE ONE-HOME LAW (David 2026-07-21 "home still looks like the old cockpit"): whenever #trackerFull is the full-screen surface (TF_OPEN, NOT tf-staged), it ALWAYS wears the home frame — status row (clock left · gems+avatar right), the story strip (#tfHomeBars) + its planner chevron, the journey/garden door glyphs, the circle stage, and (on CALM faces only: idle/night/claim/break) the tool grid. What VARIES per state = only the circle's contents, the line(s) under it, and one control row. Root cause fixed: the frame used to live only in the idle branch (renderHomeFace), so any other face (claim/night/tracking/break) landed on a bare ring+buttons = "the old cockpit". FALSE = exactly today's per-face behavior (renderHomeFrame is a no-op guard; the claim face keeps its stacked door column). The frame styles ride a shared .tf-onehome class on #trackerFull so the existing per-face st-* CSS keeps working.
-  var AXIS_V1 = true;      // THE VERTICAL WORLD AXIS (David 2026-07-21 "home↔journey↔tools, a single continuous scroll"). TRUE = ONE pointer gesture handler on the home stage (#trackerFull.tf-onehome) owns VERTICAL drags while home is the active surface: drag DOWN → journey surface follows from the top, past ~80px/flick commits via the journey pane; drag UP → the tools shelf follows from the bottom, commit via openToolbox; below threshold rubber-bands back. Peeks (top journey hint + bottom tools hint) crest each edge as tappable backup doors. HAND-OFF model, NOT a second live scroll watcher — the horizontal pane-carousel is already DISARMED while #trackerFull.on (initPaneCarousel line ~1799 bails), so this handler can never fight it. FALSE = no gesture listeners attach; the peeks stay as plain tap-only affordances. DEVICE-UNTESTED by nature (synthetic touch lies about finger-follow/threshold); taps + puck remain the reliable doors regardless. See initHomeAxis / wireHomeAxis.
+  var ONEPAGE = true;      // THE ONE-PAGE WORLD (David 2026-07-22, SUPERSEDES the AXIS_V1 hand-off after he rejected the v1187 slide-in proxy): "make continuous scroll up to journey and down to tools so it's ONE PAGE. NO CUTS." TRUE = the home content area becomes ONE native vertical scroll container (#tfWorld, built by ensureWorld) with THREE stacked zones — SKY (the REAL journey trail, adopted live from #jpTrail) · HOME (the current face) · GROUND (the full tool shelf). Scrolling up from home continues seamlessly into the whole journey; scrolling down flows into the full tool library. No scroll-snap, no surface switch — one page. Boot lands with HOME filling the viewport + a real sliver of sky above and ground below. AXIS_V1 (the gesture proxy + text peeks) is DISARMED under this flag — #tfWorld's native scroll is the SINGLE vertical owner (the horizontal pane-carousel is already disarmed while #trackerFull.on, so nothing fights it). FALSE = exactly today's v1187 behavior incl. the AXIS_V1 proxy/peeks. Adoption is idempotent + reversible: the trail returns to #journeyPath when home closes (leaveHomeForPlayer / setPaneRest("journey")), so the standalone journey overlay still owns it. See ensureWorld / adoptTrailToSky / releaseTrailFromSky / renderGroundTools. DEVICE-UNTESTED: scroll FEEL (momentum, rubber-band, top/bottom seam) is honest only on David's phone.
+  var AXIS_V1 = !ONEPAGE;   // RETIRED under ONEPAGE (David 2026-07-22): auto-FALSE while the one-page world is on (no gesture listeners, no proxy, no text peeks — wireHomeAxis + initHomeAxis bail). Setting ONEPAGE=false flips this back to TRUE → the v1187 AXIS hand-off behavior EXACTLY. THE VERTICAL WORLD AXIS (David 2026-07-21 "home↔journey↔tools"): TRUE = ONE pointer gesture handler on the home stage owns VERTICAL drags (HAND-OFF proxy model). David REJECTED the proxy hand-off — he wants the real content continuing above/below as ONE native scroll (see ONEPAGE). See initHomeAxis / wireHomeAxis.
   var PUCK_V2 = true;      // R3b LIVING PUCK (David 2026-07-21 "the shape-shifter", DECISIONS.md): the guardPuck is a COMPACT bottom-left pill that WEARS THE COLOR OF WHAT MATTERS NOW — the running activity while tracking, the NEXT planned block when idle-with-something-coming, gold while paused, plain pink home disc only when nothing runs/upcoming. The colored DISC ACTS on the thing (start the upcoming block / pause the running one / resume from break); the TAIL is always "go home". FALSE = the v1183 static pink puck + the OLD full-width #liveDock bar, byte-for-byte. Gated on body.puckv2 (set at boot beside navv2). Re-renders on the same cadence as renderLiveDock (update-in-place, no wipe).
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
@@ -3682,10 +3685,11 @@
   }
   function openTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
     if (TF_OPEN || TF_ANIM) return; // ONE clean expand per gesture — never re-open while open or mid-morph (David 2026-06-28)
+    if (ONEPAGE) _worldPositioned = false; // re-land on HOME (mid-column) each fresh open of the one-page world
     TF_OPEN = true; TF_ANIM = true; S._claimDismissed = false; _ringP = 0; renderTrackerFull();
     tf.style.height = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); if (bd) bd.classList.add("on");
     if (dk) dk.classList.add("ld-morphing"); // hide the mini dock elements during the morph (their big twins are flying)
-    tfMorph(true, function () { TF_ANIM = false; }); }
+    tfMorph(true, function () { TF_ANIM = false; if (ONEPAGE) { try { worldScrollHome(); } catch (e) {} } }); } // ONE-PAGE: land HOME mid-column AFTER the open-morph settles (setting scrollTop mid-morph doesn't hold)
   function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
     if (!TF_OPEN || TF_ANIM) return; TF_ANIM = true; if (bd) bd.classList.remove("on"); document.body.classList.remove("home-pane");
     // CRITICAL FLIP GUARD (CKPT-2): clear the stage mode + un-stage the ring BEFORE tfMorph(false), so the close FLIP never measures a corner-posed ring and flies to the wrong spot. (David 2026-06-28)
@@ -3781,7 +3785,7 @@
     var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
     // COCKPIT PRE-BRANCH (CKPT-2): if a guided stage mode is active, corner-pose the ring (CSS .tf-staged) + delegate the freed area to #tfStageBody, then RETURN. With TF_MODE null (default) this is a no-op and the existing 6-state body below runs UNTOUCHED → zero behavior change. (David 2026-06-28)
     tf.classList.toggle("tf-staged", !!TF_MODE);
-    if (TF_MODE) { tf.classList.remove("tf-onehome"); // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class so the guided-stage layout is byte-identical to today
+    if (TF_MODE) { tf.classList.remove("tf-onehome"); if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class + the one-page scroll so the guided-stage layout is byte-identical to today (#tfWorld falls back to display:contents, its flow children lay out in .tf-inner)
 
       var _ck2 = el("tfClock"); if (_ck2) _ck2.textContent = fmt(nowMin()).toUpperCase();
       var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
@@ -5034,8 +5038,12 @@
       return { color: D.c, icon: tiClass(b), fill: Math.max(0, Math.min(1, f)) };
     });
   }
+  function flowParent() { // ONE-PAGE: the HOME zone is the parent for the scrollable flow blocks; else the .tf-inner (v1187 layout). ensureWorld() no-ops when ONEPAGE is off.
+    if (ONEPAGE) { try { ensureWorld(); } catch (e) {} var hz = el("tfWorldHome"); if (hz) return hz; }
+    return document.querySelector("#trackerFull .tf-inner");
+  }
   function renderHomeBars() {
-    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
+    var inner = flowParent(); if (!inner) return;
     var bars = el("tfHomeBars"); if (!bars) { bars = document.createElement("div"); bars.id = "tfHomeBars"; inner.insertBefore(bars, inner.querySelector(".tf-stage")); }
     while (bars.firstChild) bars.removeChild(bars.firstChild); // targeted rebuild, not an innerHTML wipe (ratchet convention, cf. buildBars)
     bars.style.display = "flex";
@@ -5073,14 +5081,17 @@
     if (!ONEHOME) return;
     var tf = el("trackerFull"); if (!tf) return;
     tf.classList.add("tf-onehome"); // the shared class the frame CSS keys off (works alongside the per-face st-* class)
+    if (ONEPAGE) { try { ensureWorld(); } catch (e) {} } // build the world FIRST so bars/grid land in the HOME zone
     renderHomeBars();               // story strip on top (planner door)
-    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
-    var host = el("tfHomeGrid"); if (!host) { host = document.createElement("div"); host.id = "tfHomeGrid"; inner.appendChild(host); } // dedicated grid host, AFTER #tfCtrls in the DOM (appended once, reused)
+    var inner = flowParent(); if (!inner) return;
+    var host = el("tfHomeGrid"); if (!host) { host = document.createElement("div"); host.id = "tfHomeGrid"; inner.appendChild(host); } else if (ONEPAGE && host.parentNode !== inner) inner.appendChild(host); // dedicated grid host, in the HOME zone under one-page (else after #tfCtrls in .tf-inner)
     if (showGrid) { host.style.display = ""; renderHomeGrid(host); }
     else { host.style.display = "none"; while (host.firstChild) host.removeChild(host.firstChild); } // tracking face: no grid (focus), drain it so nothing lingers
     if (NAV_V2) wireHomeDoors();     // journey/garden door glyphs + the strip's planner tap (idempotent)
+    if (ONEPAGE) { try { renderOnePageWorld(showGrid); } catch (e) {} } // sky (journey) above + ground (tools) below, one native scroll — the shelf shows only on calm faces (showGrid mirrors it)
   }
   function renderHomeFace(nb) {
+    if (ONEPAGE) { try { ensureWorld(); } catch (e) {} } // build the world FIRST so the idle flow (bars + #tfCtrls grid) lands in the HOME zone
     renderHomeBars();
     var lm = el("tfLiveMeta"); if (lm) { while (lm.firstChild) lm.removeChild(lm.firstChild); } // no live meta on the idle home (node drain, keeps the wipe ratchet flat)
     var c = el("tfCtrls"); if (!c) return; while (c.firstChild) c.removeChild(c.firstChild); // node drain (renderHomeGrid refills immediately)
@@ -5088,6 +5099,7 @@
     // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
     renderHomeGrid(c);
     if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
+    if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // idle is a calm face: sky (journey) above + ground (full tool shelf) below, one native scroll
   }
   // R3 COMPASS ROSE (David 2026-07-21, FINAL composition): home carries its own nav — TWO prominent labeled doors + the tappable strip. Each mirrors a retired #nav handler exactly:
   //   • story strip (#tfHomeBars) → PLANNER (mirrors the data-tab="day" handler: leaveHomeForPlayer + setPaneRest("planner") + renderToday — harmless redundancy with the LEFT door)
@@ -5118,6 +5130,10 @@
   // PEEK v1 = chevron+label hints (a real journey-stone sliver would need drawJourney into an offscreen node every home render = costly + a second render surface; the chevron reads "there's a world up there" and is the honest, cheap v1). Stated in the report.
   function wireHomeAxis(inner) {
     if (!NAV_V2) return;
+    if (ONEPAGE) { // ONE-PAGE (David 2026-07-22): the text-label peeks are DEAD — the real journey/tools content is the peek now (#tfWorld). Remove any surviving proxy chrome so it can't double.
+      ["tfAxisTop", "tfAxisBot", "tfAxisProxy"].forEach(function (id) { var n = el(id); if (n && n.parentNode) n.parentNode.removeChild(n); });
+      return;
+    }
     if (!inner) { inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return; }
     // TOP peek = JOURNEY (scroll up reveals it). Upward chevron + label, cresting the top edge.
     var tp = el("tfAxisTop");
@@ -5216,6 +5232,101 @@
       p.style.transform = "translateY(" + (dir > 0 ? "-100%" : "100%") + ")"; // rubber-band back off-screen
       setTimeout(function () { p.style.display = "none"; p.classList.remove("tf-axis-anim"); p.style.willChange = ""; while (p.firstChild) p.removeChild(p.firstChild); }, 240);
     }
+  }
+  // ===== THE ONE-PAGE WORLD (ONEPAGE, David 2026-07-22 "continuous scroll up to journey and down to tools — ONE PAGE, NO CUTS") =====
+  // #tfWorld is ONE native vertical scroll container inside .tf-inner with THREE zones: SKY (the adopted journey trail) · HOME (the live face content) · GROUND (the full tool shelf). Built once + reused (idempotent, no innerHTML wipe). The fixed overlays (clock/spark/gear/doors/puck) stay OUTSIDE #tfWorld on .tf-inner so they float still. Guarded by ONEPAGE — false → this whole path no-ops and the layout is byte-identical to v1187.
+  var WORLD_HOME_IDS = ["tfHomeBars", "tfStageChips", "tfHomeGrid"]; // the id'd flow blocks that must live in the HOME zone (the .tf-stage / #tfCtrls / #tfLiveMeta / #tfQuickTools / #tfStageBody / #tfNextSheet move by className/id below too)
+  function ensureWorld() { // build #tfWorld + its three zones and MOVE the home-flow content into the HOME zone. Idempotent: runs once, then reuses.
+    if (!ONEPAGE) return null;
+    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return null;
+    var world = el("tfWorld");
+    if (!world) {
+      world = document.createElement("div"); world.id = "tfWorld";
+      var sky = document.createElement("div"); sky.id = "tfWorldSky"; sky.className = "tfw-sky";
+      var home = document.createElement("div"); home.id = "tfWorldHome"; home.className = "tfw-home";
+      var ground = document.createElement("div"); ground.id = "tfWorldGround"; ground.className = "tfw-ground";
+      world.appendChild(sky); world.appendChild(home); world.appendChild(ground);
+      // move the SCROLLABLE home-flow content into the HOME zone (the overlays — .tf-clock/.tf-spark/#tfGear/.tf-close/.tf-grab/.tf-sf/.tf-say/.tf-homedoor/tfAxis* — stay on .tf-inner, fixed). Order preserved.
+      var flow = [el("tfHomeBars"), inner.querySelector(".tf-stage"), el("tfLiveMeta"), el("tfQuickTools"), el("tfStageBody"), el("tfStageChips"), el("tfCtrls"), el("tfNextSheet"), el("tfHomeGrid")];
+      inner.appendChild(world); // insert the container, then relocate the flow blocks into HOME (each still reachable by id/className — CSS descendant selectors + el() lookups are nesting-agnostic)
+      flow.forEach(function (n) { if (n && n.parentNode !== home) home.appendChild(n); });
+    }
+    return world;
+  }
+  function skyZone() { var w = ensureWorld(); return w ? el("tfWorldSky") : null; }
+  function groundZone() { var w = ensureWorld(); return w ? el("tfWorldGround") : null; }
+  // ---- SKY: adopt the ONE live journey trail (#jpTrail) up from #journeyPath, so scrolling up from home IS the journey (same page, same DOM). Reversible: releaseTrailFromSky returns it. ----
+  function adoptTrailToSky() {
+    if (!ONEPAGE) return;
+    var sky = skyZone(); if (!sky) return;
+    var trail = el("jpTrail"); if (!trail) return;
+    // header label above the trail (created once)
+    if (!el("tfWorldSkyLabel")) { var sl = document.createElement("div"); sl.id = "tfWorldSkyLabel"; sl.className = "tfw-skylabel"; sl.textContent = tr("Your journey"); sky.insertBefore(sl, sky.firstChild); }
+    if (trail.parentNode !== sky) sky.appendChild(trail); // ADOPTION not copy — there is ONE journey DOM
+    // draw it if it's never been rendered (empty) so the sky isn't blank; drawJourney targets #jpTrail wherever it lives
+    try { if (!trail.children.length) drawJourney(false); } catch (e) {}
+  }
+  function releaseTrailFromSky() { // return #jpTrail to #jpScroll (the standalone journey overlay owns it again). Guard: only move if it currently sits in the sky.
+    var trail = el("jpTrail"), scroll = el("jpScroll"); if (!trail || !scroll) return;
+    if (trail.parentNode && trail.parentNode.id === "tfWorldSky") scroll.appendChild(trail);
+  }
+  // ---- GROUND: the full tool library as more .tf-htool tiles below the 2x4 grid (one page: scrolling down flows into the whole shelf). Same renderer/skin as the home grid. Targeted drain, no innerHTML wipe. ----
+  var LAYER2DOM = { "Steady the body": "restore", "Clear the mind": "focus", "Feel it through": "connect", "Become who you're being": "create", "Lift the lens": "play" };
+  function renderGroundTools() {
+    if (!ONEPAGE) return;
+    var ground = groundZone(); if (!ground) return;
+    while (ground.firstChild) ground.removeChild(ground.firstChild); // targeted drain (ratchet convention)
+    add(ground, "div", "tfw-glabel", tr("All tools"));
+    var grid = add(ground, "div", "tf-toolgrid"); // reuse the 2x4 grid + tile look
+    function skinTile(b, col) { b.style.background = mixHex(col, "#160510", 0.24); b.style.border = "none"; b.style.boxShadow = "0 5px 0 " + mixHex(col, "#160510", 0.58) + ", 0 9px 16px rgba(0,0,0,.32)"; }
+    (TOOLS || []).forEach(function (t) {
+      var D = DOM[LAYER2DOM[t.layer] || "focus"] || DOM.focus;
+      var b = add(grid, "button", "tf-htool"); skinTile(b, D.c);
+      var ic = add(b, "i", "ti " + t.ti); ic.style.color = "#fff";
+      add(b, "span", null, tr(t.name)); // span is hidden by the .tf-onehome CSS, present for a11y
+      b.setAttribute("aria-label", tr(t.name));
+      b.onclick = (function (tool) { return function () { landFromHome(); leaveHomeForPlayer(); try { runTool(tool); } catch (e) {} }; })(t);
+    });
+  }
+  // ---- position: land with HOME filling the viewport, a real sliver of sky above + ground below (the true content peek). No animation on boot. ----
+  // land with HOME filling the viewport (a real sliver of sky above + ground below) — the true content peek. The SKY (the whole journey trail) isn't laid out until after adoption AND the open-morph settles, and setting scrollTop mid-morph doesn't hold — so we retry (via setTimeout; rAF is throttled in this repo's headless preview, per the tfMorph void-reflow note) until the scroll actually LANDS near the target, only then committing _worldPositioned (so a per-second re-render never yanks the user's scroll back). One attempt runs synchronously (a forced reflow via offsetHeight makes the layout current) so it lands immediately when ready.
+  var _worldPosTo = 0;
+  function worldScrollHome(tries) {
+    if (!ONEPAGE || _worldPositioned) return;
+    tries = tries || 0;
+    if (_worldPosTo) { clearTimeout(_worldPosTo); _worldPosTo = 0; } // one loop at a time
+    try {
+      var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return;
+      void world.offsetHeight; // force layout current (rAF is throttled in the preview — this repo relies on reflow instead)
+      var peek = 14; // ~14px of real sky shows above HOME
+      var target = Math.max(0, home.offsetTop - peek); // home.offsetTop = the sky's laid-out height inside the scroller
+      var tf = el("trackerFull"), morphing = tf && tf.classList.contains("tf-morphing");
+      var scrollable = world.scrollHeight - world.clientHeight > peek;
+      // NOT ready to land = no real sky yet (trail undrawn/hidden), still morphing, or the column can't scroll. Leave _worldPositioned FALSE so a later render/kick retries — never commit on an empty/hidden home (the boot-under-startscreen premature-commit trap).
+      if (target > peek && !morphing && scrollable) {
+        world.scrollTop = target;
+        if (Math.abs(world.scrollTop - target) < 4) { _worldPositioned = true; return; } // landed + held → commit (locks it; re-renders won't yank it)
+      }
+    } catch (e) {}
+    if (tries < 60) _worldPosTo = setTimeout(function () { worldScrollHome(tries + 1); }, 16); // ~1s of retries, outliving the ~460ms open-morph
+  }
+  // ---- the orchestrator: called by renderTrackerFull on every calm full-screen home face. Builds/reuses the world, adopts the trail, renders the ground shelf, positions on first open. ----
+  var _worldPositioned = false;
+  function renderOnePageWorld(showGround) {
+    if (!ONEPAGE) return;
+    var tf = el("trackerFull"); if (!tf) return;
+    tf.classList.add("tf-onepage");
+    ensureWorld();
+    adoptTrailToSky();
+    var ground = groundZone();
+    if (showGround) { if (ground) ground.style.display = ""; renderGroundTools(); }
+    else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
+    worldScrollHome(); // idempotent + self-guarding: no-ops once positioned
+  }
+  function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
+    var tf = el("trackerFull"); if (tf) tf.classList.remove("tf-onepage");
+    releaseTrailFromSky();
+    _worldPositioned = false;
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
   var LIFESTAGES = [

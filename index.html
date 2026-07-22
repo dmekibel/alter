@@ -1602,10 +1602,10 @@
   .tf-htool{ scroll-snap-align:start; flex:0 0 auto; width:22vw; max-width:88px; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; font-family:"Jost",sans-serif; padding:6px; }
   .tf-htool i{ font-size:27px; line-height:1; }
   .tf-htool span{ font-size:11px; font-weight:800; color:#f5e3ef; text-align:center; line-height:1.12; overflow:hidden; max-width:100%; }
-  /* HOME idle tiles = the mockup's bright ICON-ONLY launchers (David 2026-07-20 "implement the designs"): big white icon, no label, bright real-color fill (set in JS). Labels stay in the toolbox library. */
-  #trackerFull.tf-home.st-idle .tf-htool{ border-radius:18px !important; }
-  #trackerFull.tf-home.st-idle .tf-htool i{ font-size:34px; }
-  #trackerFull.tf-home.st-idle .tf-htool span{ display:none; }
+  /* HOME tiles = the mockup's bright ICON-ONLY launchers (David 2026-07-20 "implement the designs"): big white icon, no label, bright real-color fill (set in JS). Labels stay in the toolbox library. ONE-PAGE FIX (David 2026-07-22): the established look (radius 18, icon 34, no label) applies on EVERY onehome face (night/claim/break/tracking), not idle only — the night/claim tiles were still wearing the OLD shape (labels visible, radius 15). Same 18px shape everywhere; the tile shape itself is unchanged. */
+  #trackerFull.tf-home.st-idle .tf-htool, #trackerFull.tf-onehome .tf-htool{ border-radius:18px !important; }
+  #trackerFull.tf-home.st-idle .tf-htool i, #trackerFull.tf-onehome .tf-htool i{ font-size:34px; }
+  #trackerFull.tf-home.st-idle .tf-htool span, #trackerFull.tf-onehome .tf-htool span{ display:none; }
   /* NEW-ERA HOME §6: static 2x4 tool grid (replaces the scroller for the idle home). */
   .tf-toolgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0 12px; } /* minmax(0,1fr) lets the 4 tiles shrink to fit the phone — was repeat(4,1fr) where long labels forced min-content width and spilled the 4th tile off-screen (David 2026-07-20) */
   .tf-toolgrid .tf-htool{ width:auto; max-width:none; flex:initial; }
@@ -1703,6 +1703,25 @@
   #tfBackdrop{ position:fixed; top:0; left:0; right:0; height:200px; z-index:97; background:transparent; pointer-events:none; } /* covers ONLY the calendar peek above the open sheet (above the z95/96 header) → tap it to close; never covers the sheet itself (David 2026-06-28) */
   #tfBackdrop.on{ pointer-events:auto; }
   .tf-inner{ position:absolute; left:0; right:0; bottom:0; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; background:linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%); font-family:"Jost",sans-serif; color:#ffe3f1; padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 22px); box-sizing:border-box; } /* full-height content, anchored to the bottom — the outer clip reveals it upward, no reflow, no distortion */
+  /* ===== THE ONE-PAGE WORLD (ONEPAGE, David 2026-07-22 "continuous scroll up to journey and down to tools — ONE PAGE, NO CUTS"): #tfWorld is a single native vertical scroll container holding THREE stacked zones — SKY (the real journey trail, adopted) · HOME (the current face) · GROUND (the full tool shelf). Replaces the AXIS_V1 hand-off proxy. The fixed overlays (clock/spark/gear/doors/puck) stay OUTSIDE #tfWorld as absolute children of .tf-inner, so they float still while the column scrolls. Only active while #trackerFull.tf-onepage.tf-onehome (a calm full-screen home face); staged/guided/tracking cockpits never scroll. NO scroll-snap — David: no cuts. ===== */
+  #tfWorld, #tfWorld > .tfw-sky, #tfWorld > .tfw-home, #tfWorld > .tfw-ground{ display:contents; } /* off by default: the container + all three zone wrappers are layout-transparent, so the flow children lay out in .tf-inner exactly as before (ONEPAGE=false, or a staged/guided face where .tf-onehome is dropped) */
+  #trackerFull.tf-onepage.tf-onehome #tfWorld > .tfw-sky{ display:block; } /* re-materialize the zones only when the one-page world is active */
+  #trackerFull.tf-onepage.tf-onehome #tfWorld > .tfw-ground{ display:block; }
+  #trackerFull.tf-onepage.tf-onehome #tfWorld{ display:block; position:absolute; left:0; right:0; top:0; bottom:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:none; touch-action:pan-y; scrollbar-width:none; box-sizing:border-box; padding:0 20px; }
+  #trackerFull.tf-onepage.tf-onehome #tfWorld::-webkit-scrollbar{ display:none; }
+  /* the three zones stack in normal document flow inside the scroller (no snap = continuous, no cuts) */
+  #trackerFull.tf-onepage.tf-onehome .tfw-sky{ width:100%; box-sizing:border-box; }
+  /* the home zone carries the SAME balanced full-height composition the .tf-inner used to (space-between: story strip top · circle centered · controls+grid bottom); it always fills one viewport so the sky/ground peeks sit just off each edge. The fixed status row (clock/spark/gear) floats over its top via .tf-inner. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home{ width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 54px) 0 calc(env(safe-area-inset-bottom,0px) + 34px); }
+  #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-stage{ flex:0 0 auto; }
+  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px); }
+  /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
+  #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
+  /* GROUND section header + the extra tool rows (rendered by renderGroundTools with the same .tf-htool tiles) */
+  .tfw-glabel{ width:100%; text-align:center; font-family:var(--bub); font-weight:800; font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:#b39ab0; margin:6px 0 12px; }
+  .tfw-skylabel{ width:100%; text-align:center; font-family:var(--bub); font-weight:800; font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:#b39ab0; margin:14px 0 4px; }
+  /* while the one-page world is on, the inner column is just the fixed frame for the overlays — #tfWorld owns the scroll flow */
+  #trackerFull.tf-onepage.tf-onehome .tf-inner{ overflow:hidden; }
   #trackerFull .tf-grab{ position:absolute; top:0; left:0; right:0; height:40px; background:transparent; cursor:grab; touch-action:none; z-index:3; } /* full-width tall touch zone — drag DOWN to close (visual bar is ::before) */
   #trackerFull .tf-grab::before{ content:""; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:#5a4a64; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:4; } /* above the tf-grab drag zone so the chevron tap still closes */
@@ -2970,6 +2989,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1187"></script>
+  <script src="app.js?v=1188"></script>
 </body>
 </html>
