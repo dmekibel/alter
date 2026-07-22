@@ -66,18 +66,24 @@ def settings_and_text(r, ru_text):
 
 def synth(text, model, vs, path):
     body = json.dumps({"text": text, "model_id": model, "voice_settings": vs}).encode("utf-8")
-    req = urllib.request.Request("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID,
-        data=body, method="POST",
-        headers={"xi-api-key": KEY, "Content-Type": "application/json", "Accept": "audio/mpeg"})
-    with urllib.request.urlopen(req, timeout=90) as rsp: data = rsp.read()
-    open(path, "wb").write(data); return len(data)
+    for attempt in range(6):  # retry transient 429 / system_busy with backoff instead of aborting the whole run
+        req = urllib.request.Request("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID,
+            data=body, method="POST",
+            headers={"xi-api-key": KEY, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        try:
+            with urllib.request.urlopen(req, timeout=90) as rsp: data = rsp.read()
+            open(path, "wb").write(data); return len(data)
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 5: time.sleep(5 + attempt * 5); continue
+            raise
 
 # ---- build the (ru_text, line) work list: USER lines contribute BOTH forms ----
 rows = json.load(open(LINES, encoding="utf-8"))
+GEN_FEMALE = os.environ.get("IZO_FEMALE", "0") == "1"  # female variants only matter once the gender resolver ships; skip by default to save credits
 work = []  # (ru_text, row)
 for r in rows:
     work.append((r["ru"], r))
-    if r.get("gender") == "USER" and r.get("ru_f"): work.append((r["ru_f"], r))
+    if GEN_FEMALE and r.get("gender") == "USER" and r.get("ru_f"): work.append((r["ru_f"], r))
 manifest = sorted(set(h32(t) for t, _ in work))
 
 mode  = sys.argv[1] if len(sys.argv) > 1 else "all"
@@ -102,9 +108,9 @@ for ru_text, r in targets:
         print(f"  ok {key} {delivery_for(r):6} {model.split('_')[-1]:4} {n:>6}b  {ru_text[:44]}")
         time.sleep(0.30)
     except urllib.error.HTTPError as e:
-        print("  FAIL", key, e.code, ru_text[:40], e.read()[:140]); break
+        print("  FAIL", key, e.code, ru_text[:40], e.read()[:120]); continue  # skip this line, keep going (don't abort the whole bank)
     except Exception as e:
-        print("  FAIL", key, ru_text[:40], e); break
+        print("  FAIL", key, ru_text[:40], e); continue
 
 if mode != "sample":
     json.dump(manifest, open(f"{OUTDIR}/manifest.json", "w"))
