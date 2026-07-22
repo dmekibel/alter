@@ -1612,7 +1612,7 @@
   .tf-toolgrid .tf-htool{ width:auto; max-width:none; flex:initial; }
   /* FLOATING TILES (David 2026-07-21 FINAL): kill the panel box on home — tiles float on the dark ground, no container bg/border/padding. Smaller tiles with more dark air (grid inset), so the circle stays the hero. */
   #trackerFull.tf-home.st-idle .tf-toolspanel, #trackerFull.tf-onehome .tf-toolspanel{ background:transparent !important; border:none !important; padding:0 !important; }
-  #trackerFull.tf-home.st-idle .tf-toolgrid, #trackerFull.tf-onehome .tf-toolgrid{ padding:0 26px; gap:12px; }
+  #trackerFull.tf-home.st-idle .tf-toolgrid, #trackerFull.tf-onehome .tf-toolgrid{ width:var(--tun-grid-w, 70vw); max-width:360px; margin:0 auto; padding:0; gap:12px; } /* SELF-AUDIT PASS (David 2026-07-22 "buttons below too big"): the board's grid spans ~70% of the viewport — the 0-26px padding left it at ~88% = fat tiles. Tuner-var driven (--tun-grid-w). */
   #trackerFull.tf-home.st-idle .tf-htool i, #trackerFull.tf-onehome .tf-htool i{ font-size:28px; }
   #trackerFull.tf-home.st-idle .tf-htool, #trackerFull.tf-onehome .tf-htool{ filter:saturate(var(--tun-tile-sat, 1)) brightness(var(--tun-tile-bright, 1)); } /* FIDELITY FIX (David 2026-07-22 approved board): REMOVED the saturate(1.15)/brightness(.94) hack — the tiles now carry the APPROVED COOLER PALETTE directly (set in renderHomeGrid). Filter defaults to neutral (1/1); tuner can nudge it live. */
   .tf-htool.more span{ color:#d2aae8; }
@@ -3006,6 +3006,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1196"></script>
+  <script src="app.js?v=1197"></script>
 </body>
 </html>
