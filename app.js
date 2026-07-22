@@ -10424,8 +10424,10 @@
         add(pb, "div", "tbpl-go").innerHTML = '<i class="ti ti-player-play"></i> ' + esc(tr(_fit.name));
         pb.onclick = function () { var tr2 = _fit.track.map(function (t) { return { k: t.k, d: t.d }; }); try { runStack(tr2, 0); } catch (e) { try { stackTimeline(tr2); } catch (e2) {} } };
       }
-      add(sb, "div", "tb-fdsec", tr("HOW MUCH TIME DO YOU HAVE"));
-      STACK_PACKS.forEach(function (p) { fdDoor(sb, p, false); });
+      // STACK-FIRST hero (David 2026-07-22): ONE primary entry replaces the 3 fixed pack doors — tap → pick 5/10/15/20 → auto-filled editable stack → Begin.
+      var sh = add(sb, "button"); sh.style.cssText = "margin-top:12px;width:100%;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#2a1730,#3a1e42);border:2px solid #160510;border-radius:18px;box-shadow:0 4px 0 #160510;padding:18px;cursor:pointer;font-family:var(--bub);color:#f6ecff;text-align:left;";
+      sh.innerHTML = '<div style="width:52px;height:52px;border-radius:14px;background:#63d3c9;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 0 #160510;"><i class="ti ti-stack-2" style="font-size:28px;color:#0e2b28"></i></div><div style="flex:1;"><div style="font-size:19px;font-weight:800;">' + esc(tr("Build a stack")) + '</div><div style="font-size:12.5px;color:#c7a9d6;margin-top:2px;">' + esc(tr("Pick your time. I'll build it.")) + '</div></div><i class="ti ti-chevron-right" style="color:#c7a9d6;font-size:20px;"></i>';
+      sh.onclick = function () { try { stackTimePicker(); } catch (e) {} };
     }
     // YOUR DAILY — the frame's 54px circle shelf. Reward inversion: DONE = green ring + glow + vivid (never dimmed); pending = quiet berry (the invitation)
     var _daily = dailyTools();
@@ -10981,7 +10983,10 @@
     "Low on energy? Here's the short one. I'll do the guiding.": "Мало сил? Вот короткая. Я поведу.",
     "Show all sessions": "Показать все сессии",
     "HOW MUCH TIME DO YOU HAVE": "СКОЛЬКО У ТЕБЯ ЕСТЬ",
-    "min free": "мин свободно", "before": "до"
+    "min free": "мин свободно", "before": "до",
+    "Build a stack": "Собери стек", "Pick your time. I'll build it.": "Выбери время. Остальное соберу я.",
+    "How long do you have? I'll fill it.": "Сколько у тебя есть? Я заполню.",
+    "a quick reset": "быстрый сброс", "settle the mind too": "чтобы и ум затих", "room to go deep": "простор уйти глубже", "a full reset": "полный сброс"
   });
   Object.assign(I18N.ru, { // F4 BUILDER chrome (B4 law). Block descriptions stay EN (spoken-register teaching lines; RU dict for chrome only, per david-prefers-english).
     "Make it yours": "Собери своё", "Add a block": "Добавить блок", "Save as my session": "Сохранить как сессию", "Play now": "Играть сейчас",
@@ -11175,6 +11180,29 @@
     }
     render();
     return { close: function () { if (ov.parentNode) ov.remove(); } };
+  }
+  // STACK-FIRST (David 2026-07-22): the toolbox's ONE primary entry. Tap Stack → pick 5/10/15/20 min → an
+  // auto-filled stack for that length opens in the editable composer (swap/remove, then "Begin session →").
+  function autoStackTrack(mins) {
+    var pack = STACK_PACKS.filter(function (p) { return p.min === mins; })[0];
+    if (pack) return pack.track.map(function (t) { return { k: t.k, d: t.d }; }); // 5/10/20 reuse the proven packs
+    var total = mins * 60; // 15 (or any custom): body → settle → breathe → long meditate → rewire; meditation soaks up the remainder
+    var t = [{ k: "stretch", d: 90 }, { k: "relax", d: 75 }, { k: "breathe", d: 135 }, { k: "meditate", d: 0 }, { k: "reprogram", d: 150 }, { k: "mantra", d: 90 }];
+    var fixed = 0; t.forEach(function (x) { fixed += x.d; }); t[3].d = Math.max(120, total - fixed);
+    return t;
+  }
+  function stackTimePicker() {
+    var ov = document.createElement("div"); ov.id = "breatheOv"; ov.innerHTML = '<button class="bw-x">close</button>';
+    document.body.appendChild(ov);
+    var box = add(ov, "div"); box.style.cssText = "text-align:center;color:#f0e6ef;font-family:var(--bub);width:88%;max-width:400px;";
+    box.innerHTML = '<div style="font-size:24px;font-weight:800;margin-bottom:4px;"><i class="ti ti-stack-2" style="color:#63d3c9"></i> ' + esc(tr("Build a stack")) + '</div><div style="font-size:13px;color:#b39ab0;margin-bottom:20px;">' + esc(tr("How long do you have? I'll fill it.")) + '</div>';
+    var grid = add(box, "div"); grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:12px;";
+    [[5, tr("a quick reset")], [10, tr("settle the mind too")], [15, tr("room to go deep")], [20, tr("a full reset")]].forEach(function (o) {
+      var b = add(grid, "button"); b.style.cssText = "background:#241328;border:2px solid #160510;border-radius:16px;box-shadow:0 3px 0 #160510;padding:18px 12px;cursor:pointer;font-family:var(--bub);color:#f0e6ef;display:flex;flex-direction:column;align-items:center;gap:3px;";
+      b.innerHTML = '<div style="font-size:30px;font-weight:800;line-height:1;color:#ffd24a;">' + o[0] + '<span style="font-size:13px;color:#b39ab0;font-weight:700;"> ' + tr("min") + '</span></div><div style="font-size:11.5px;color:#b39ab0;">' + esc(o[1]) + '</div>';
+      b.onclick = function () { if (ov.parentNode) ov.remove(); try { TTS.unlock(); } catch (e) {} stackTimeline(autoStackTrack(o[0])); };
+    });
+    ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); };
   }
   // the horizontal CapCut-style timeline — the universal session composer (David 2026-07-01)
   function stackTimeline(track) {
