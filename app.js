@@ -186,7 +186,9 @@
     function loadVoices() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
     // RU VOICE (David 2026-07-02): vhash is the ONE choke point every speak/warm/getBuffer/scheduleClip path converges on. Under Russian, the EN line maps through the display dict FIRST (so call sites stay EN literals), then hashes with a Cyrillic-keeping charset — the RU clip bank (gen-voice-ru.py, ru-RU-DmitryNeural) is keyed by the hash of the RUSSIAN text. English hashes are untouched (EN lines contain no Cyrillic, so the widened charset changes nothing). No RU clip → honest silence, never a sudden English line mid-eyes-closed.
-    function vline(text) { try { if (typeof curLang === "function" && curLang() === "ru" && typeof I18N !== "undefined" && I18N.ru) { var d = I18N.ru, t = String(text).trim(); if (d[t]) return d[t];
+    function vline(text) { try { if (typeof curLang === "function" && curLang() === "ru" && typeof I18N !== "undefined" && I18N.ru) { var d = I18N.ru, t = String(text).trim();
+      if (typeof S !== "undefined" && S && S.profile && S.profile.gender === "f" && I18N.ru_f && I18N.ru_f[t]) return I18N.ru_f[t]; // FEMALE-USER RU variant (the 70 gendered lines: «ты пришла», «я сама»…); everything else falls to the shared male/neutral dict
+      if (d[t]) return d[t];
       var seps = [", ", ". "]; for (var i = 0; i < seps.length; i++) { var ix = t.indexOf(seps[i]); if (ix > 0) { var a = t.slice(0, ix), b = t.slice(ix + seps[i].length); if (d[a] && d[b]) return d[a] + seps[i] + d[b]; } } // B3 (David 2026-07-02): runtime composites ("Settle in…, let your eyes soften" / "lab. sub") resolve BY HALVES — exactly mirroring gen-voice-ru.py resolve(), which synthesized the RU clips from the same halves. Without this, vline missed → the EN clip played → "meditation audio still in English".
     } } catch (e) {} return text; }
     function vhash(text) { var n = String(vline(text)).toLowerCase().replace(/[^a-z0-9а-яё]/g, ""), h = 5381, i; for (i = 0; i < n.length; i++) h = ((h * 33) ^ n.charCodeAt(i)) >>> 0; return h.toString(16); }
@@ -10991,6 +10993,78 @@
   Object.assign(I18N.ru, { // F4 BUILDER chrome (B4 law). Block descriptions stay EN (spoken-register teaching lines; RU dict for chrome only, per david-prefers-english).
     "Make it yours": "Собери своё", "Add a block": "Добавить блок", "Save as my session": "Сохранить как сессию", "Play now": "Играть сейчас",
     "drag the bottom edge to make it longer": "потяни за нижний край, чтобы удлинить", "Swap": "Заменить", "Delete": "Удалить"
+  });
+  I18N.ru_f = Object.assign(I18N.ru_f || {}, { // FEMALE-USER RU variants (David 2026-07-22): the 70 gendered spoken lines in their female form («ты пришла» / «я сама»). vline() returns these when S.profile.gender==='f'; everything else uses the shared I18N.ru. Source: _specs/ru-voice-izo-lines.json ru_f.
+    "Your posture. take the shape of it — stand as the one who has it": "Твоя осанка. прими её форму — встань как та, у кого это уже есть",
+    "\"Bring it on!\". move toward the cloud — say it, mean it": "«Давай, я готова!». иди в облако — скажи это и вложись по-настоящему",
+    "You see through it now. You're not someone giving up the scroll. You're someone who sees what it is. The pull has less to hold.": "Теперь ты видишь насквозь. Ты не та, кто бросает ленту. Ты та, кто видит, что она такое. Тяге больше не за что зацепиться.",
+    "Last person on earth?. if no one would ever see it — would you still want to do it? If yes, it's yours.": "Ты последняя на земле?. если никто никогда не увидит — ты всё равно хотела бы это делать? Если да — оно твоё.",
+    "It fights hardest near the end. when it gets brutal right before done, that's not breakdown — you're almost through. Keep going.": "Оно бьётся сильнее всего у самого конца. когда становится жестоко прямо перед завершением — это не срыв, ты почти прошла. Продолжай.",
+    "Project your Shadow. see the version of yourself you're most ashamed of — weak, imperfect, broken — a vivid image standing right in front of you": "Спроецируй свою Тень. увидь ту версию себя, которой ты больше всего стыдишься — слабую, несовершенную, сломанную — ярким образом прямо перед собой",
+    "It fills you from inside. the void fills from within, not from the screen or the snack — you're full": "Оно наполняет тебя изнутри. пустота заполняется изнутри, а не экраном или едой — ты полна",
+    "I have absolute trust in myself.": "Я полностью доверяю себе.",
+    "I love myself unconditionally.": "Я люблю себя безусловно.",
+    "and continue to love who I am.": "и продолжаю любить себя такой, какая есть.",
+    "I will do whatever it takes to become a greater man.": "Я сделаю всё, чтобы стать сильнее как человек.",
+    "I am athletic, intelligent, loving, and ambitious —": "Я спортивная, умная, любящая и амбициозная —",
+    "yet I savor life and cherish this beautiful planet.": "и при этом смакую жизнь и берегу эту прекрасную планету.",
+    "I deserve the very best.": "Я достойна самого лучшего.",
+    "I am the master of my life,": "Я хозяйка своей жизни",
+    "What would I do if I wasn't afraid?": "Что бы я сделала, если бы не боялась?",
+    "Even though I'm carrying some stress about the day ahead — I see it, and I choose to soften.": "Даже если я несу напряжение из-за дня впереди — я вижу это и выбираю смягчиться.",
+    "Even though I don't have all the answers yet — I release the pressure, and stay open.": "Даже если у меня ещё нет всех ответов — я отпускаю давление и остаюсь открытой.",
+    "Even though not everything went to plan — I'm open to the idea that today can still be used well.": "Даже если не всё пошло по плану — я открыта тому, что сегодняшний день всё равно можно использовать хорошо.",
+    "Even though I may wish I'd done more — I choose to close the day kindly.": "Даже если я жалею, что не сделала больше — я выбираю закрыть день по-доброму.",
+    "Every day, in every way, I'm getting better and better.": "С каждым днём, во всём, я становлюсь лучше и лучше.",
+    "I'm getting steadier — and I can feel it.": "Я становлюсь устойчивее — и я это чувствую.",
+    "My day is behind me now — and I get to say what it meant.": "Мой день позади — и я сама решаю, что он значил.",
+    "What could you feel proud of today — if you let yourself?": "Чем ты могла бы гордиться сегодня — если бы позволила себе?",
+    "Who are you grateful for today? Picture them for a moment.": "За кого ты благодарна сегодня? Представь их на мгновение.",
+    "Noticing you drifted IS the practice.": "Заметить, что ты отвлеклась, — это и есть практика.",
+    "Even though I feel stressed, I deeply and completely accept myself.": "Несмотря на то, что я чувствую стресс, я глубоко и полностью принимаю себя.",
+    "Even though I feel anxious, I deeply and completely accept myself.": "Несмотря на то, что я чувствую тревогу, я глубоко и полностью принимаю себя.",
+    "Even though I feel stuck, I deeply and completely accept myself.": "Несмотря на то, что я чувствую, что застряла, я глубоко и полностью принимаю себя.",
+    "“this stuckness”": "«это чувство, что я застряла»",
+    "Even though I feel frustrated, I deeply and completely accept myself.": "Несмотря на то, что я чувствую раздражение, я глубоко и полностью принимаю себя.",
+    "Even though I feel sad, I deeply and completely accept myself.": "Несмотря на то, что я чувствую грусть, я глубоко и полностью принимаю себя.",
+    "Even though I feel tired, I deeply and completely accept myself.": "Несмотря на то, что я чувствую усталость, я глубоко и полностью принимаю себя.",
+    "Even though I feel restless, I deeply and completely accept myself.": "Несмотря на то, что я чувствую беспокойство, я глубоко и полностью принимаю себя.",
+    "Even though I feel down, I deeply and completely accept myself.": "Несмотря на то, что я чувствую тяжесть, я глубоко и полностью принимаю себя.",
+    "Virtues aren't traits you have. They're stats you train — and you just picked your build.": "Добродетели — не черты, что у тебя есть. Это характеристики, что ты качаешь — и ты только что выбрала свой билд.",
+    "Every real act is a vote for the person you're becoming. Enough votes — and the thermostat resets itself.": "Каждое настоящее действие — голос за ту, кем ты становишься. Достаточно голосов — и термостат сам сбрасывается.",
+    "And which would the younger you be proudest of?": "А каким больше всего гордился бы твой прежний я?",
+    "How many days in a row will you come — to start?": "Сколько дней подряд ты придёшь — для начала?",
+    "Then we stack evidence that FINISHES. Small votes, counted.": "Тогда мы копим доказательства, что ты ДОВОДИШЬ ДО КОНЦА. Малые голоса, засчитанные.",
+    "Then the gap is where your temper loses the driver's seat.": "Тогда зазор — то место, где твой гнев теряет руль.",
+    "Then the gap is where your real yes lives.": "Тогда зазор — то место, где живёт твоё настоящее «да».",
+    "I move first. The feeling follows.": "Я двигаюсь первой. Чувство идёт следом.",
+    "Pinch the shoulder blades. pull them back and together, like holding something between them": "Сведи лопатки. назад и вместе, будто держишь что-то между ними",
+    "Brace your stomach. pull it in hard, like bracing for a punch": "Напряги живот. втяни сильно, будто готовишься к удару",
+    "Notice the difference. how wired you felt when we started, against how you feel right now": "Замечай разницу. какой взвинченной ты была в начале, и какой ты чувствуешь себя сейчас",
+    "How did this happen. someone's choice, a bit of luck, or something you did on purpose": "Как это случилось. чей-то выбор, немного удачи, или то, что ты сделала нарочно",
+    "Notice your own hand in it. you showed up, you asked, you stayed. that counts": "Заметь в этом свою руку. ты пришла, ты спросила, ты осталась. это считается",
+    "Most days are quietly full like this. you didn't need a big day. you needed to notice this one": "Большинство дней тихо полны вот так. тебе не нужен был большой день. тебе нужно было заметить этот",
+    "Say it as now. one present-tense line, like “I am the person who does the thing anyway.” Say it slow, and mean it.": "Скажи это в настоящем времени. одна фраза в настоящем, например «Я та, кто всё равно делает то, что нужно». Скажи медленно, и вложи в это смысл.",
+    "“I deserve to check out.”. You deserve rest, and this isn't it. You get up more tired and more scattered than you sat down.": "«Я заслужила отключиться». Ты заслужила отдых, а это не он. Ты встанешь более уставшей и более рассеянной, чем села.",
+    "Find something real. one true thing you appreciate right now, even small. re-feel it, don't just think it": "Найди что-то настоящее. одну реальную вещь, за которую ты благодарна прямо сейчас, пусть даже маленькую. проживи это чувство заново, не просто подумай о нём",
+    "Five. halfway now, deeply at ease": "Пять. уже на середине пути, глубоко расслаблена",
+    "Two. almost there, completely relaxed": "Два. почти на месте, полностью расслаблена",
+    "One. all the way down. still, safe, and open": "Один. до самого дна. неподвижна, в безопасности, открыта",
+    "Four. clear and awake, carrying the calm": "Четыре. ясная и бодрая, несёшь это спокойствие с собой",
+    "Five, eyes bright. fully back, calm and clear. it stays with you": "Пять, взгляд ясный. ты полностью здесь, спокойна и ясна. это остаётся с тобой",
+    "I embrace my mistakes, and keep loving who I am.": "Я принимаю свои ошибки, и продолжаю любить ту, кто я есть.",
+    "I am the master of my life.": "Я хозяйка своей жизни.",
+    "The moment you notice you have drifted, you are back": "В тот момент, когда ты замечаешь, что уплыла, ты уже вернулась",
+    "No need to be hard on yourself for drifting. Come back to the breath.": "Не нужно себя корить за то, что уплыла. Вернись к дыханию.",
+    "Nothing to reach for. Just this quiet contentment, and you, resting in it.": "Не за чем тянуться. Просто это тихое довольство, и ты, отдыхающая в нём.",
+    "You didn't choose it or build it. It simply showed up, and now it's gone.": "Ты её не выбирала и не строила. Она просто появилась, и вот её уже нет.",
+    "You have heard me clearly on your best days. Then the noise comes back, and I get hard to hear.": "В свои лучшие дни ты слышала меня ясно. Потом возвращается шум, и меня трудно расслышать.",
+    "“You got so calm — nothing shakes you now.”": "«Ты стала такой спокойной — тебя теперь ничем не пошатнуть».",
+    "“You actually built the thing.”": "«Ты правда это построила».",
+    "“You just kept showing up. Every day.”": "«Ты просто продолжала приходить. Каждый день».",
+    "“You look… free.”": "«Ты выглядишь… свободной».",
+    "“You got strong.”": "«Ты стала сильной».",
+    "“You stayed kind through all of it.”": "«Ты оставалась доброй через всё это».",
   });
   Object.assign(I18N.ru, { // IZO RU VOICE LINES (David 2026-07-22): every spoken line -> its Russian text so vhash(en) under RU == the izo clip key.
     // 25 audited fixes + 260 previously-missing translations + 216 confirmed; male forms (gender resolver is a follow-up). Source: _specs/ru-voice-izo-lines.json.
