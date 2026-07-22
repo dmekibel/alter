@@ -1715,7 +1715,7 @@
   /* the three zones stack in normal document flow inside the scroller (no snap = continuous, no cuts) */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky{ width:100%; box-sizing:border-box; }
   /* the home zone carries the SAME balanced full-height composition the .tf-inner used to (space-between: story strip top · circle centered · controls+grid bottom); it always fills one viewport so the sky/ground peeks sit just off each edge. The fixed status row (clock/spark/gear) floats over its top via .tf-inner. */
-  #trackerFull.tf-onepage.tf-onehome .tfw-home{ position:relative; width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:calc(env(safe-area-inset-top,0px) + 54px) 0 calc(env(safe-area-inset-bottom,0px) + 34px); } /* NUMERIC PASS (David 2026-07-22): space-between WAS the dead band — flex distributed the spare viewport as giant gaps between strip/circle/grid. flex-start + explicit rhythm below. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home{ position:relative; width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:calc(env(safe-area-inset-top,0px) + var(--tun-sky-gap, 54px)) 0 calc(env(safe-area-inset-bottom,0px) + 34px); } /* NUMERIC PASS (David 2026-07-22): space-between WAS the dead band — flex distributed the spare viewport as giant gaps between strip/circle/grid. flex-start + explicit rhythm below. --tun-sky-gap = the space above the strip = also the trail→circle gap when scrolled up (David 2026-07-22 video "the timeline should be closer to the circle, feel connected"): default 54 unchanged, tune DOWN on device to hug the journey to the circle. */
   #trackerFull.tf-onepage.tf-onehome .tfw-home #tfHomeBars{ margin-bottom:var(--tun-gap, 8vh); } /* pills→circle ≈10% viewport incl. the ring's own 10px margin */
   #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-ctrls{ margin-top:auto; } /* the tool grid anchors to the zone bottom (the board's composition) */ /* position:relative so the in-home-zone doors (below) anchor to the HOME zone and scroll with it (David 2026-07-22) */
   #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-stage{ flex:0 0 auto; }
@@ -2779,28 +2779,30 @@
 
   /* 2) THE GUARDIAN PUCK — one fixed object, bottom-left, the way home from every surface. */
   #guardPuck{ display:none; }
-  body.navv2 #guardPuck{ display:flex; position:fixed; left:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px)); width:52px; height:52px; border-radius:50%; background:#2a0f22; border:2px solid #160510; box-shadow:0 5px 0 #160510; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:88; -webkit-tap-highlight-color:transparent; } /* z88: above the panes (journey 75 / game 60 / home cockpit 90 shows it too since home is idle) but below full-screen players + modals (sheet 95, dur/bento overlays 96) */
-  body.navv2 #guardPuck .gpk-disc{ width:40px; height:40px; border-radius:50%; background:#ff5fa8; display:flex; align-items:center; justify-content:center; }
-  body.navv2 #guardPuck .gpk-disc i{ font-size:20px; color:#fff; line-height:1; }
+  body.navv2 #guardPuck{ --puck:var(--tun-puck, clamp(56px, 17.5vw, 78px)); display:flex; position:fixed; left:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px)); width:var(--puck); height:var(--puck); border-radius:calc(var(--puck) / 2); background:#2a0f22; border:2px solid #160510; box-shadow:0 5px 0 #160510; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:88; box-sizing:border-box; -webkit-tap-highlight-color:transparent; } /* PROPORTION (David 2026-07-22 video "look at its proportion to the rest of the screen"): the mockup puck = 17.6% of screen width; 52px absolute rendered ~13% on device → too small. --puck = 17.5vw (tuner-overridable), disc + icon scale off it; border-radius = half height so bare = circle, pill = stadium. z88: above panes, below full-screen players/modals. */
+  body.navv2 #guardPuck .gpk-disc{ width:calc(var(--puck) * .76); height:calc(var(--puck) * .76); border-radius:50%; background:#ff5fa8; display:flex; align-items:center; justify-content:center; flex:none; }
+  body.navv2 #guardPuck .gpk-disc i{ font-size:calc(var(--puck) * .34); color:#fff; line-height:1; }
   body.navv2 #guardPuck:active{ transform:translateY(2px); box-shadow:0 3px 0 #160510; }
 
   /* 2b) THE LIVING PUCK (PUCK_V2 → body.puckv2, David 2026-07-21 "the shape-shifter"): the puck becomes a compact pill that WEARS the color of what matters now. BARE = the 52px home disc (identical to above). PILL = disc grows a text/tail zone sideways only. renderPuck() toggles .puck-bare / .puck-pill and paints the disc via --gpkring + inline bg. */
-  body.puckv2 #liveDock{ display:none !important; } /* retire the OLD full-width dock from view — its LOGIC stays (PUCK_V2=false brings it back); the FLIP morph (ldStop↔tfRing) is bypassed while hidden → home opens via openHome() with no morph (acceptable v1). */
-  body.puckv2 #guardPuck{ width:auto; min-width:52px; justify-content:flex-start; gap:0; padding:0; overflow:hidden; transition:width .3s cubic-bezier(.2,.85,.3,1), background .25s, box-shadow .12s; } /* pill grows SIDEWAYS as needed; never fills the bottom */
+  body.puckv2 #liveDock,
+  body.puckv2.tab-day:not(.gaming):not(.journey-open) #liveDock.on,
+  body.puckv2.simple-mode.journey-open:not(.gaming) #liveDock.on,
+  body.puckv2.nav-collapsed.tab-day #liveDock.on{ display:none !important; } /* retire the OLD full-width dock EVERYWHERE — the per-pane show rules (~2565/2545/2502) are !important AND higher-specificity, so the plain hide LOST on the planner: the puck + a wandering "matches your plan" bar both showed (David 2026-07-22 video). These co-specific selectors outrank them so PUCK_V2 truly leaves ONE minimized surface — the puck. Its LOGIC stays (PUCK_V2=false brings it back); the FLIP morph (ldStop↔tfRing) is bypassed while hidden → home opens via openHome() with a clean bg fade. */
+  body.puckv2 #guardPuck{ width:auto; min-width:var(--puck); justify-content:flex-start; gap:0; padding:0; overflow:hidden; transition:width .4s cubic-bezier(.4,.85,.3,1), padding .4s cubic-bezier(.4,.85,.3,1), background .25s, box-shadow .12s; } /* THE MORPH (David 2026-07-22 "recreate the mockup animation"): the exact compass-rose.html easing — width+padding on .4s cubic-bezier(.4,.85,.3,1); the text opacity-fades in behind it (.3s). One element, morphs in place, never rebuilt. */
   body.puckv2 #guardPuck .gpk-disc{ position:relative; flex:none; box-shadow:none; }
   body.puckv2 #guardPuck .gpk-disc::before{ content:""; position:absolute; inset:-3px; border-radius:50%; border:2px solid var(--gpkring,rgba(0,0,0,0)); pointer-events:none; transition:border-color .3s; } /* reward-band rim: green when on-plan (mirrors the dock's --ldrim) */
   body.puckv2 #guardPuck .gpk-badge{ display:none; position:absolute; right:-2px; bottom:-2px; width:16px; height:16px; border-radius:50%; background:#2a0f22; border:1.5px solid #160510; align-items:center; justify-content:center; } /* a small "start" badge on the NEXT-UP disc corner (real ti node → version-proof) */
   body.puckv2 #guardPuck .gpk-badge i{ font-size:9px; color:#fff; line-height:1; }
   body.puckv2 #guardPuck .gpk-disc.gpk-nextbadge .gpk-badge{ display:flex; }
-  body.puckv2 #guardPuck .gpk-text{ display:flex; flex-direction:column; justify-content:center; min-width:0; max-width:110px; padding:0 10px 0 9px; line-height:1.1; text-align:left; }
-  body.puckv2 #guardPuck .gpk-title{ color:#fff2f9; font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+  body.puckv2 #guardPuck .gpk-text{ display:flex; flex-direction:column; justify-content:center; min-width:0; max-width:136px; padding:0 13px 0 10px; line-height:1.12; text-align:left; opacity:0; transition:opacity .3s ease .06s; } /* the meta column: always present so it can FADE (mockup .cr-puckmeta), clipped by the puck's overflow:hidden while bare */
+  body.puckv2 #guardPuck.puck-pill .gpk-text{ opacity:1; }
+  body.puckv2 #guardPuck .gpk-title{ color:#fff2f9; font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:124px; }
   body.puckv2 #guardPuck .gpk-el{ color:#ff8ac0; font-weight:700; font-size:11px; }
-  body.puckv2 #guardPuck .gpk-tail{ display:none; flex:none; width:28px; height:52px; align-items:center; justify-content:center; border-left:2px solid #160510; background:rgba(0,0,0,.18); }
-  body.puckv2 #guardPuck .gpk-tail i{ font-size:15px; color:#c9a6bf; }
+  body.puckv2 #guardPuck .gpk-tail{ display:none !important; } /* mockup pill = dial + text only; the WHOLE puck taps home (no separate home tab). Kept in DOM (its listener is harmless) so PUCK_V2=false restores the old markup. */
   body.puckv2 #guardPuck.puck-pill{ background:#2a0f22; } /* the pill body is the dark plum ground; the DISC carries the domain color */
-  body.puckv2 #guardPuck.puck-pill .gpk-tail{ display:flex; } /* tail (home) only appears once the pill has extended */
-  body.puckv2 #guardPuck.puck-bare{ width:52px; } /* the plain home disc — no text, no tail, exactly like the static puck */
-  body.puckv2 #guardPuck.puck-bare .gpk-text, body.puckv2 #guardPuck.puck-bare .gpk-tail{ display:none; }
+  body.puckv2 #guardPuck.puck-bare{ width:var(--puck); justify-content:center; } /* the plain home disc — centered, no text visible (the meta column stays opacity:0, clipped) */
+  body.puckv2 #guardPuck.puck-bare .gpk-text{ opacity:0; }
 
   /* The home cockpit is a FULL-SCREEN opaque surface at z90 that COVERS the puck (z88) → on home you don't see two homes; you leave home via the doors, and the puck is there the instant you're on a pane. */
   body.navv2 #trackerFull.on{ z-index:90; }
@@ -3006,6 +3008,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1197"></script>
+  <script src="app.js?v=1198"></script>
 </body>
 </html>

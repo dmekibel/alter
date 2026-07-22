@@ -3,6 +3,101 @@
 
 ---
 
+## STATUS UPDATE (2026-07-22 (6), Fable): DAVID'S VIDEO VERDICT ON v1197 → MOTION-WAVE SPEC READY (Opus builds next)
+David filed a video review (IMG_3566.MP4, 3:10, frame-audited via the video-audit rig) + the two approved-mockup screenshots: the world is functionally live but JANKY — minimized player is a cluttered two-piece bar that pops instead of morphing, puck in Planner opens the old cockpit instead of returning home, journey trail floats disconnected above the circle, strip doesn't fade on reveal, dead thumb zones on home scroll, empty journey shell still reachable (drag path), and every sheet pops with zero animation. All symptoms ROOT-CAUSED in code this session (scout report): `puckGoHome()`→`openHome()` fallback pops `#trackerFull`; `.gp-mini` + `#guardPuck` are two competing mini-players; `onWorldScroll` never touches the strip; `adoptTrailToSky` MOVES `#jpTrail` and the carousel-drag path never reclaims it; `initHomeAxis`/`tfDrag` relic listeners still armed under ONEPAGE.
+**THE SPEC: `_specs/_newera-build/WORLD-HOME-2026-07-22.md` §5 "THE MOTION WAVE"** — M1 puck=one shape-shifter at exact `compass-rose.html` mockup numbers (17.6vw circle → 71vw pill, `.4s cubic-bezier(.4,.85,.3,1)`, one tap = go home, "Not tracking" line dies); M2 animated return (planner exits left, home enters from the right); M3 door exits same camera grammar; M4 sky glue (trail ≤14dvh from circle + line into the rim, strip fades with reveal, `ensureTrailIn` single owner); M5 `DEV.scrollAudit()` + dead-zone kill; M6 one `animateOpen` grammar for every sheet + puck-anchored player morph. Two ship points, designAudit stays 12/12, no SCHEMA, no new copy.
+- **DAVID's ONE move:** open a FRESH Opus session and say "go motion wave" (spec §5). After ship: device-test the morph + returns, tune puck size / sky gap in the Design tuner, send values.
+- **CLAUDE's ONE move (Opus, effort HIGH):** execute §5 in one session, two ships, honesty labels on feel. (Popups build stays queued right behind; census + tier grammar already done in §2.)
+
+---
+
+## STATUS UPDATE (2026-07-22 (5)): v1197 — TILES TO BOARD WIDTH + THE SELF-AUDIT GATE IS LAW
+David caught the tiles too big (grid rendered 88% viewport; the 70% target had been silently dropped) and demanded a self-auditing system. Shipped v1197 (65f556c): grid = `var(--tun-grid-w, 70vw)` max 360 centered (tiles slim to the board), and **`DEV.designAudit()`** = 12 mechanical checks of the live idle-home vs the locked board numbers (circle 64vw · gap 7-12% · rim 5-11px · bloom ≤.14/32px · grid 62-86% · doors 18x80/0-border/exact fills · raw tile hexes · plain text lines). Ran pre-ship: **ALL PASS 12/12.** The gate is now IN CLAUDE.md (Verification truth): home-surface paint changes must pass designAudit before shipping, forever; David can run it on-device in dev mode. Tuner gained --tun-grid-w + --tun-ring-vw + --tun-gap.
+- **DAVID's ONE move:** fresh.html → final eye-pass vs his board; tuner for taste; then "go popups" in a FRESH Opus session.
+- **CLAUDE's ONE move:** popups build (census-scoped, whisper-default) next; extend designAudit with each new locked number.
+
+---
+
+## STATUS UPDATE (2026-07-22 (4)): MEASURED BOARD MATCH SHIPPED v1196 (hands-on, all misses root-caused)
+David rejected v1195 too ("white outline... colors off"). Claude fixed DIRECTLY (surgical CSS, measured at 430x932, no agent relay): (1) door white rim = default `<button>` UA border → reset added; (2) circle capped at 256px (~54% width on his phone) → cap 320, renders TRUE 64vw; (3) **THE DEAD BAND root-caused: `justify-content:space-between` on `.tfw-home` was distributing the spare viewport as giant gaps** → flex-start + explicit rhythm (strip→circle gap measures 9%, grid bottom-anchored 98%); (4) **tiles were ink-mixed 24% darker by skinTile before painting** → approved hexes now render RAW (rgb-verified); (5) bloom 28px/.12 + white inset rim deleted; (6) both home text lines plain (no leading icons). All measured before ship. Tuner vars kept as overrides (--tun-ring-vw and --tun-gap added).
+- **DAVID's ONE move:** fresh.html → judge v1196 against his board; fine-tune anything with the dev Design tuner → "copy values" → paste.
+- **CLAUDE's ONE move:** hardcode tuner values if sent; then "go popups" (census-scoped) — FRESH session, Opus.
+
+---
+
+## STATUS UPDATE (2026-07-22 (3)): FIDELITY SNAP + THE DESIGN TUNER SHIPPED v1195
+David posted expectation-vs-reality (his approved mockup vs device v1193): badly off — doors huge, circle neon, tiles hot. ROOT CAUSE: the tuning widgets used their own base values; the builds applied his factors to different real values (THIRD widget-fidelity failure, memorialized in `chat-widget-style-law` memory with THE FINAL LAW: chat widgets = STRUCTURE decisions only; PIXEL TUNING happens only in-app). Shipped v1195 (e6fc382):
+- **Fidelity snap to the approved board:** tiles = the exact cooler palette (#5b8fd6 #8b6fd6 #d66a7e #6aa76f #c9a23f #6f8fd6 #4f9d95 #9b7fd6) as REAL colors via skinTile (filter hack removed); circle = flat disc + 7px visible plum rim + bloom tamed (40px/.18, white rim .06); doors verified 18x80 at 23dvh center; empty-day strip no longer renders circle-outline placeholders; home rhythm fixed (space-between dead band removed).
+- **THE DESIGN TUNER (dev-only):** dev menu → "Design tuner" → 7 live sliders on CSS vars (door w/h/centerY, ring thickness, bloom, tile brightness/saturation), defaults = the approved values, "copy values" → JSON to clipboard, persists in localStorage dev-key only, invisible+inert for normal users. **The new pixel-tuning loop: David drags on REAL pixels on his phone → copies values → Claude hardcodes.**
+- **DAVID's ONE move:** fresh.html → check home vs his mockup; if anything's still off, dev tools on → Design tuner → drag till right → "copy values" → paste in chat.
+- **CLAUDE's ONE move:** hardcode David's tuner values when they arrive; then "go popups" (census-scoped) on Opus in a FRESH session.
+
+---
+
+## STATUS UPDATE (2026-07-22 (2), agents done): FIX WAVE SHIPPED v1193 + POPUP CENSUS COMPLETE
+Both agents landed. **v1193 live (beb21ac):** doors restored to the tuned inner-rounded shape (specificity bug), anchored IN the home zone (scroll with it), taps fixed (root cause: the OLD `#tfBackdrop` relic at z97 was swallowing door touches — disabled under onepage), boot scroll-up now shows the trail immediately (sky-ready gate before the scroll commit), puck fades in whenever >40% away from home + smooth-scrolls back on tap, strip transition removed. Feel DEVICE-UNTESTED as always.
+**Popup census (21 surfaces, full report in the 2026-07-22 chat / summarized in WORLD-HOME spec):** the villain is the BOOT CHAIN — up to 4 full-screen questions gate every open (gauge → relief → space-check → welcome-back). Half the app already uses the correct bottom-card whisper pattern (`mlCard`, the "bounce" card). Redesign scope: demote the 4 boot interrupters + the random 30% post-tool reflection card to whisper, calm the 2 loud celebrations, delete 2 dead popups (`tooBigSheet`, `recommitSheet`), keep modals only for user-opened pickers/player/onboarding/error. **Awaiting David's "go popups" on Opus.**
+
+---
+
+## STATUS UPDATE (2026-07-22, Fable+agents): ONE-PAGE WORLD SHIPPED (v1189) + DEVICE BUGS → FIX WAVE + POPUP RETHINK
+Overnight ships: **v1187** (edge-tab doors 18x80 tuned by David via slider widgets, palette-4 tiles) → **v1188/89 THE ONE-PAGE WORLD** (real #jpTrail adopted into a SKY zone above home, full 21-tool GROUND shelf below, ONE native scroll, no cuts — the AXIS_V1 hint-panel model David rejected auto-disables; flag ONEPAGE). David device-tested and filed 6 bugs + 2 designs; all captured in **`_specs/_newera-build/WORLD-HOME-2026-07-22.md`**:
+- **FIX WAVE running (Opus agent):** doors rendered SQUARE (confirmed CSS specificity bug — the tuned inner-rounded shape lost to the onehome rule), doors must anchor IN the home zone not viewport-fixed, door taps dead, boot→scroll-up shows EMPTY sky until a later render, puck must appear whenever away from home (tap = smooth-scroll back), strip scrolls naturally (no exit animation).
+- **POPUP RETHINK:** census agent (sonnet) inventorying every popup; tier grammar written (WHISPER default = quiet tap-when-ready guardian line under the status row; MODAL only for irreversible/blocking; SILENT for ambient). David leaning demote-everything-first.
+- **CIRCLE = FIRST STONE law (David's ruling):** home circle IS the journey's NOW stone; scroll-up reveals the next stone, NO zoom transition; first-run = Intro as the stone above + What-now offers it; Phase B (journey restructures from the day plan) needs its own engine spec before build.
+- **DAVID's ONE move:** when the fix wave ships, re-test the 6 on the phone; answer the whisper-default + placement questions (spec §4).
+- **CLAUDE's ONE move:** integrate fix wave + ship; then the popup-family redesign build (census-driven, whisper tier) on Opus.
+
+---
+
+## STATUS UPDATE (2026-07-21, Opus): HOME COMPOSITION FINAL SHIPPED v1186 (screenshot-verified)
+After a mockup loop (Opus-rendered boards, David's nuance notes), the home was BUILT to his locked pick and screenshot-verified against his reference, shipped v1186 (f78339e):
+- **VIVID LABELED DOORS (the fix he pushed for — "important buttons, shouldn't feel invisible"):** Planner (purple `#b07aff`, `ti-calendar`, "Planner" label, glow+lift) top-LEFT → planner pane; Garden (teal `#2ab8c4`, `ti-plant-2`, "Garden" label) top-RIGHT → game/garden. **Journey door REMOVED** (journey = scroll, later). 54px rounded-squares, white icons, labels.
+- **CIRCLE:** reference size (`#tfRing` min(64vw,256px)), thin ~8px plum ring kept (H-D1 ruling, the arc's home), play triangle, soft pink bloom. Circle IS the track button.
+- **GEMS clean** (sparkle avatar `#tfGear` hidden on onehome — OWED: settings has no home entry now, relocate later). **NEXT line** = plain lilac text, not a pill. **TILES** float free (container killed) + smaller.
+- Ratchet flat (147), zero console errors, gated on NAV_V2. Tile HUES still the domain set (not the cooler reference pastel) — minor, deferred.
+- **DAVID's ONE move:** hard-refresh `/alter/fresh.html`, look at home — doors should now grab the eye; confirm the composition + circle size on device.
+- **CLAUDE's ONE move:** on David's ok → the remaining §7.9 boards (popup family, stack-first shelf) + settings-entry relocation; then H-AXIS (scroll-up-to-journey).
+
+---
+
+## STATUS UPDATE (2026-07-21, Fable, reconciled): REFERENCE-FIDELITY SHEET ADDED TO THE §7.9 QUEUE
+David re-posted his home reference mockup with nuance notes (circle size/ring, gems row, plain next-line, tile hues/no panel, planner-door-LEFT correction, the single vertical axis). Transcribed as **`_specs/_newera-build/HOME-COMPOSITION-2026-07-21.md`** and SUBORDINATED to DESIGN-STUDIO §7.9 (the newer round-2 verdicts): it is the fidelity sheet for render boards (a) home-fixed and (b) door/gem chrome, plus the H-AXIS hand-off mechanics (single-owner gesture handoff, not one scroller) for the §7.7-REVISED entry motion. Circle law reaffirmed: reference SIZE + soft bloom, H-D1 visible tight plum ring (the dial identity), circle IS the button.
+- **DAVID's ONE move:** `/model claude-opus-4-8` → "run the render queue" (§7.9 a-d, effort MEDIUM, anchored on live screenshots + the fidelity sheet). Picks come back to you as boards.
+- **CLAUDE's ONE move (Opus):** render (a)-(d), David picks, then build the picked home fix + chrome to fidelity.
+
+---
+
+## STATUS UPDATE (2026-07-21 late night, Fable): SIX HOME/NAV GRIEVANCES → WORLD-MAP BRIEF (no code touched)
+David's first-hours verdicts on v1185, all designed-through and written as **`DESIGN-STUDIO-2026-07-21.md` §7** (the brief for the next Opus render session): (1) journey glyph must LEAVE top-left, left = planner (his original concept; v1183 deviated) → doors move ONTO their axes as edge slivers with content peeks; (2) gems invisible → the GEM CAIRN (chunky pile by the journey door, arcs on gain, tap = rank banner); (3) home buttons illegible → three pieces only (YOUR STACK hero + Breathe + plan chip), BLOOM grammar (tap = expand-and-show, never launch blind), his drag-scrub idea = device-tested layer 2; (4) toolkit column fully designed (time-doors viewport → All-tools grid absorbing the home 2x4 → builder/science, ~7-visible ceiling); (5) plan CTA becomes a daypart state machine (10 PM blank day = "Plan tomorrow", never "Plan your day"; founder N=1 evidence tonight); (6) journey-past reconciled: recommended THE GARDEN IS YOUR PAST + a 2-3 stone wake under NOW (vs Duolingo-literal Option B). Six render boards specified in §7.8, including the owed bento/day-composer redesign.
+- **ROUND 2 (same night):** David verdicted live against the first boards: home stays EXACTLY as built (no reskin, no moved circle), the circle IS the track button (kill the Track-now bar, secondary actions to the ground bumper), journey visual stays as built (only the scroll-up entry motion is new), STACK-FIRST law added (stacks > tools; 1-minute minis + the one-minute stack), popup system flagged as old-build relics (one-family redesign owed), corner doors + gem counter flagged janky vs mockup. All in **DESIGN-STUDIO §7.9** with the corrected Opus render queue (a-d). Process fix: widgets were wrongly rendered on Fable; rule re-affirmed, renders = Opus only.
+- **DAVID's ONE move:** switch to `/model claude-opus-4-8`, effort MEDIUM, say "render the §7.9 queue" (4 boards: fixed home, chrome options, popup family, stack-first shelf), then pick.
+- **CLAUDE's ONE move (Opus):** screenshot the live home FIRST, render the 4 boards anchored to it per §7.9 + STYLE-NEW-ERA, collect picks, cut build deltas. (v1185 device checklist below still stands; puck color-shift remains David's #1 device check.)
+
+---
+
+## STATUS UPDATE (2026-07-21 LATEST, Opus swarm): ONE-HOME + LIVING PUCK LIVE — v1185
+The root of David's 3x "home still looks like the old cockpit": #trackerFull had 6 faces and only idle carried the home frame. FIXED via 2 parallel Opus parcels, integrated (1 flag-conflict + 1 wipe-comment resolved), SCREENSHOT-VERIFIED, shipped v1185 (7971851).
+- **ONE-HOME LAW (`ONEHOME=true`):** `renderHomeFrame()` runs on EVERY full-screen face → status row · story strip+chevron · journey/garden doors · avatar · circle stage always present; tool grid on calm faces, hidden while tracking. **Screenshot-proven: idle, tracking (st-onplan), and claim all render as siblings of the approved home face.** Claim controls rebuilt to Track-now + [Did it already · Not mine] quiet row → kills the welcome-back-over-CTA overlap. Doors moved BELOW the strip (own slots) so pills get full width.
+- **LIVING PUCK (`PUCK_V2=true`):** guardPuck = compact shape-shifter pill; disc wears the color of NOW (activity while tracking / next block when idle / gold paused / pink home when nothing), disc-tap acts (start next / pause / resume), tail = home; old wide #liveDock retired. Agent-verified end-to-end in its worktree.
+- **HONEST GAP:** the puck's live color-shift could NOT be re-confirmed in my integration harness — out-of-band state injection doesn't trigger renderPuck (it rides renderLiveDock, which is event-driven), and the real UI path kept landing on the seeded claim state. Worst case = a plain pink home puck (no wide dock, no regression); best case (agent's verification) = full color-shift. **This is David's #1 device-check.** If stale on device, the fix is ensuring navigation/tick calls renderPuck.
+- Both behind kill-switches (ONEHOME / PUCK_V2 → false reverts each). Ratchet paid down to 147.
+- **DAVID's ONE move:** hard-refresh `/alter/fresh.html`; open the app at different states (idle, mid-block, a gap) → home should ALWAYS look like home now. Then watch the bottom-left puck while starting/pausing a block: does the disc take the activity's color? Report.
+- **CLAUDE's ONE move:** on David's puck verdict → confirm/fix the color-shift trigger; then bento redesign (mockups-first) + swipe-axis nav pass.
+
+---
+
+## STATUS UPDATE (2026-07-21 LATEST, Fable-orchestrated swarm): THE REDESIGN IS LIVE — v1183
+David was right that v1182 under-delivered (paint, not furniture; nav untouched). Fixed with a 3-parcel swarm (2 Opus + 1 sonnet, worktrees), integrated + SCREENSHOT-VERIFIED state by state, shipped v1183 (e71e6ec):
+- **COMPASS ROSE v1 LIVE (`NAV_V2=true`, flip false = old bar back):** the 4-tab bar is GONE app-wide. Guardian puck bottom-left (52px, pink home disc) = home from anywhere (verified tap). Home doors: story strip = the planner door (+chevron, verified tap→planner), journey glyph top-left, garden glyph top-right, gear → guardian-mark avatar by the gems. Dock gets left clearance so the puck reads as its cap. Swipe-axis travel = next pass (tap version live).
+- **TRACKING FACE DECLUTTERED (the "thousand buttons" fix):** now bars · dial · title pill · one meta line · next-up · big pink Stop · one quiet Break+extend row = 5 interactive elements, 2 tiers. Regulation chips + the docked extend sheet are OFF this face (sheet auto-surfaces only when the block ends ≤5 min). Screenshot: reads as a sibling of the home face.
+- **PLANNER BLOCKS 2x (`MINFLOOR` 44→100):** blocks now read like David's reference (agent caught the real prior value was 44, not 50/30; honored the 2x intent). THE knob if device feel is off.
+- **Known collisions logged for the next pass:** welcome-back card overlaps the claim CTA; home door glyphs crowd the story pills; the bento picker confirmed ugly/intimidating on camera (redesign owed, mockups-first); two-lane double label still open (D3).
+- **DAVID's ONE move:** hard-refresh `/alter/fresh.html` → look at home (no bar, doors), start a block (the clean tracking face), open the planner (big blocks), tap the puck. Report feel; NAV_V2=false is the instant revert if navigation misbehaves on device.
+- **CLAUDE's ONE move:** on David's verdict → fix the two logged collisions + bento mockups; then the swipe-axis pass.
+
+---
+
 ## STATUS UPDATE (2026-07-21 latest, Opus): FOUNDATION RESKIN F1–F4 SHIPPED (v1182) — home is a sibling in every face
 Ran the foundation reskin. Every `#trackerFull` face now speaks the approved idle-home dial language, **screenshot-verified state-by-state in preview** (LOOK is preview-provable; the spec's F1–F4 are pure skin so they ship live). Shipped v1182:
 - **F1 tracking (st-onplan/st-off):** loud striped disc → **flat vivid activity disc + white icon**; solid dark-plum **floating bezel** + the green stopwatch arc; friendly **Baloo switch-pill**; **Stop → pink** (commit color per the color law, was green — *flag for David's device verdict: pink has meant "play/go" elsewhere*); off-plan empty dial = **solid plum bezel** (was a dashed ring); drift Replan → solid (was striped). Also killed a latent race (off-plan resets the ring via `setRing(0,instant)` so the on-plan fill rAF can't repaint a ghost green arc).
@@ -262,3 +357,10 @@ David's Gym/Lunch/Claude-code/Read mockup IS the planner design and is NOT built
 
 ## 5. MEMORY TO LOAD NEXT SESSION
 `[[alter-mom-investor-pitch]]` (deck state + raster pipeline + gotchas), `[[alter-book-mining-canon]]` (the mining machine + both canons), `[[alter-business-masterplan]]` (the active business plan), `[[alter-mom-investor-pitch]]` open questions. The MEMORY.md index loads automatically.
+
+---
+
+## 2026-07-22 — IZO Russian voice bank: audit DONE, generation ready
+Full RU copy audit ran this session (Fable + 18 cheap-agent blind-back-translation gates): 501 spoken lines → 25 bad existing translations fixed, 260 MISSING translations (whole PMR/gratitude/hypnosis/day-1 content was silent in RU) drafted + gated. izo voice live in ElevenLabs (`anctA7r7S5Wnb0Ztqlos`, ru). Everything in **`_specs/RU-VOICE-IZO-2026-07-22.md`** + master lines in `_specs/ru-voice-izo-lines.json`.
+- **ONE move — David:** skim the 37 fixed lines in the master file (native-ear verdict) + call the gender question (bank currently speaks to a male user; mom persona needs a call).
+- **ONE move — Claude (OPUS session):** run the build plan in RU-VOICE-IZO spec — dict update → gen-voice-izo.py (RU norm charset! see landmine) → hash-parity check → sample-10 for David → full 501-clip run → wire izo bank.

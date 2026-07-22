@@ -3549,14 +3549,14 @@
       p.classList.remove("puck-bare"); p.classList.add("puck-pill");
       paintDisc("#e8b53a", "#160510", "ti-player-play-filled");
       txt.style.removeProperty("display"); ttl.textContent = "paused";
-      p._discAct = tfResumeBreak;
+      p._discAct = null; // whole puck taps home (resume lives on the paused player face)
     } else if (st.id === "onplan" || st.id === "off") { // TRACKING — activity color disc, pause icon; text = title + live elapsed; tap disc = one-tap pause
       var t = st.t, D = DOM[st.dom] || DOM.focus;
       p.classList.remove("puck-bare"); p.classList.add("puck-pill");
-      paintDisc(tfStripe(D.c), D.ink || "#160510", "ti-player-pause-filled", st.id === "onplan" ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); // green rim only when on-plan (mirrors the dock's --ldrim reward band)
+      paintDisc(tfStripe(D.c), D.ink || "#160510", tiClass(t), st.id === "onplan" ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); // mockup fidelity (David 2026-07-22): the dial wears the ACTIVITY icon, not a pause glyph; green rim only when on-plan (mirrors the dock's --ldrim reward band)
       txt.style.removeProperty("display"); ttl.textContent = t.title || "Tracking";
       elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); // .live-elapsed[data-tid] → the 1s loop keeps mm:ss ticking for free
-      p._discAct = tfStartBreak;
+      p._discAct = null; // mockup grammar: the WHOLE puck taps home — pause/stop/break live in the player (front-and-center at home, two-clock law)
     } else { // NOT tracking, no pause: is something coming up today?
       var nb = (st.id === "idle") ? nextPlannedBlock(todayK()) : null; // only the plain idle state offers a start; claim/night keep the bare home disc (their own faces handle those)
       if (nb) { // NEXT-UP — the upcoming block's color + icon; tap disc = start it, then land on the tracking face
@@ -5268,9 +5268,16 @@
     var world = el("tfWorld"); if (!world) return;
     var home = worldHomeTop();
     var vh = world.clientHeight || window.innerHeight || 800;
+    var dev = home - world.scrollTop; // >0 when scrolled UP off the home seam into the sky (the journey)
     var away = Math.abs(world.scrollTop - home) > vh * 0.4; // drifted >40% of a viewport off the home seam → show the return
-    var p = el("guardPuck"); if (!p) return;
-    p.classList.toggle("puck-away", away); // CSS fades the puck by this class ON the onepage home surface only (elsewhere it's always visible)
+    var p = el("guardPuck"); if (p) p.classList.toggle("puck-away", away); // CSS fades the puck by this class ON the onepage home surface only (elsewhere it's always visible)
+    // STRIP FADE (David 2026-07-22 video "the journey appears, the instagram carousel fades away"): the story strip sits between the circle and the sky — as you scroll UP toward the journey, fade + lift it out of the way so the trail takes over cleanly. Scroll-linked (no CSS transition — the strip's transition is disabled under onepage), reset to 1 the instant you're back at/ below home. transform/opacity only → no reflow, cheap on the passive listener.
+    var bars = el("tfHomeBars");
+    if (bars) {
+      var fp = Math.max(0, Math.min(1, dev / (vh * 0.34))); // 0 at home, fully faded ~1/3 viewport up
+      bars.style.opacity = fp > 0 ? String(1 - fp) : "";
+      bars.style.transform = fp > 0 ? ("translateY(" + (-10 * fp).toFixed(1) + "px)") : "";
+    }
   }
   // smooth-scroll the world column back to the home seam (the puck's tap target while the world is open). Returns true if it handled the return here (so the puck's home tap doesn't also tear surfaces down).
   function worldScrollBackHome() {
@@ -5361,6 +5368,7 @@
     releaseTrailFromSky();
     document.body.classList.remove("home-onepage"); // leaving the one-page home → the puck is a plain always-visible return again (panes keep it lit)
     var _p = el("guardPuck"); if (_p) _p.classList.remove("puck-away");
+    var _b = el("tfHomeBars"); if (_b) { _b.style.opacity = ""; _b.style.transform = ""; } // clear the scroll-linked strip fade so it never sticks dimmed on the next open
     _worldPositioned = false;
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
