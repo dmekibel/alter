@@ -3,6 +3,20 @@
 
 ---
 
+## STATUS UPDATE (2026-07-22 (8), Opus): JANK FIXES SHIPPED v1199 (David device-tested v1198, 5 bugs, all root-caused)
+David tested v1198 on device and hit 5 issues; all root-caused in code + preview and fixed in v1199 (5e4c111):
+1. **"Hard to scroll... thumb in certain places"** = ROOT CAUSE: `.tf-stage` (the circle, dead-center) carried inline `touch-action:none` for its drag-to-close → a big dead scroll zone. A preview scroll-path audit found it was the ONLY blocker in the `#tfWorld` column. Fixed: CSS forces `touch-action:pan-y` on `.tf-stage` under the one-page home + `tfDrag` bails there before `preventDefault`. Verified: zero remaining blockers, stage computes pan-y.
+2. **"Planner shows no home button"** = the `home-onepage` body class fades the puck to opacity:0 (nothing to return from AT home); only the door path cleared it (teardownWorld), so any other pane-entry left it set → puck invisible. Fixed: `setPaneRest` clears `home-onepage` on every pane rest. Verified: puck lit + on-top on planner.
+3. **"Exit world takes you to planner"** = `closeGame` only stripped game classes, falling through to the planner underneath. Fixed: the exit-world button (`#gameExit`) now goes HOME. Verified: lands `st-idle` home, not planner.
+4. **"Minimized tracker looks off vs the mockup"** = the tracking dial rendered STRIPED; the mockup (compass-rose / David's screenshots) is a SOLID domain-color dial. Fixed (`D.c` not `tfStripe(D.c)`).
+5. **designAudit** — finally got a clean idle-home run (persona reached `st-idle`): **ALL PASS 12/12** with tuner fully cleared (bloom default 0.12/28px). The gate is green.
+**DEVICE-UNTESTED (honest):** scroll FEEL/momentum + the pill morph (preview lies about gestures); pill SIZE tunable via `--tun-puck`. David re-tests on phone.
+**STILL OPEN (unchanged from below):** M2/M3 = the adaptive home-player RETURN (his ruling: ONE home that becomes the player, sheds buttons — captured in spec §5 M2); M5 = the empty-screen-on-scroll-up (the `adoptTrailToSky` MOVE + carousel-drag reclaim gap — the dead-ZONE half is now fixed); M6 = one `animateOpen` grammar for sheets + puck-anchored player morph.
+- **DAVID's ONE move:** fresh.html → re-test the 4 fixes on device (scroll the circle, planner home button, exit-world, the tracker pill); if the pill size is off, tuner → `--tun-puck` → send the number.
+- **CLAUDE's ONE move (fresh Opus session):** M2/M3 adaptive-home-player return + M5 empty-sky, per the spec.
+
+---
+
 ## STATUS UPDATE (2026-07-22 (7), Opus): MOTION WAVE I SHIPPED v1198 (M1 puck + M4 strip fade) — M2/M3/M5/M6 remain
 Built + shipped the first half of the motion wave (spec `_specs/_newera-build/WORLD-HOME-2026-07-22.md` §5), verified in preview.
 **M1 — the ONE shape-shifter (fixes "minimized home super janky" + "recreate the mockup animation" + "proportion"):** ROOT CAUSE found — the minimized tracker was TWO elements, the puck AND the `#liveDock` "matches your plan" bar, because the per-pane liveDock show rule (index.html ~2565, specificity 1,4,1 + !important) OUT-SPECIFIED the puckv2 hide (1,1,1) → on the planner both rendered, the dock wandering as body-classes moved its fixed position. Fixed with co-specific hides (proven in preview: liveDock computes `display:none` on the planner, was `flex`). Puck rebuilt to `compass-rose.html`: proportion `17.5vw` (~66px, was fixed 52px ≈13%), morph `width/padding .4s cubic-bezier(.4,.85,.3,1)`, `.gpk-text` opacity-fades `.3s`, the dial wears the ACTIVITY icon (not a pause glyph), the home tail is gone, and the WHOLE puck taps home (pause/stop/break live in the player, front-and-center at home). `--tun-puck` tuner var added.
