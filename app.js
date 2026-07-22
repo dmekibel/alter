@@ -156,16 +156,32 @@
     // audio can never diverge — that was the "Millie selected but plays Dave" bug: initVoices() ran before
     // load() populated S, so the bank booted to dave and the saved pick never re-applied.
     var VOICE_PICK = "dave", banks = {};   // banks[name] = manifest-set, lazily fetched
+    function curLangRu() { try { return typeof curLang === "function" && curLang() === "ru"; } catch (e) { return false; } }
     function curBank() {
-      try { if (typeof curLang === "function" && curLang() === "ru") return "izo"; } catch (e) {}
+      if (curLangRu()) return "izo";  // RU has exactly one voice
       try { if (typeof S !== "undefined" && S && S.voicePick === "millie") return "millie"; } catch (e) {}
       return "dave";
     }
-    function bankHas(b, key) { return !!(banks[b] && banks[b][key]); }
+    // EN banks (dave/millie) MIRROR the root EN keyset, so the folder is usable the instant the pick flips — no wait
+    // on that bank's manifest (David 2026-07-22: waiting on it made Millie change only after a settings close/reopen).
+    // izo (RU) is keyed independently → usable only for keys its own manifest confirms; anything else falls to root-RU.
+    function bankUsable(b, key) {
+      if (b === "izo") return !!(banks.izo && banks.izo[key]);
+      return banks[b] ? !!banks[b][key] : !!(vset && vset[key]); // EN: bank manifest if loaded, else optimistic root (instant switch)
+    }
     function vdir() { return curBank(); }
-    function vpath(key) { var b = curBank(); return bankHas(b, key) ? ("assets/voice/" + b + "/" + key + ".mp3") : ("assets/voice/" + key + ".mp3"); }
-    function ckey(key) { var b = curBank(); return bankHas(b, key) ? (b + ":" + key) : key; } // bufCache namespace (per bank)
-    function hasKey(key) { return !!(bankHas(curBank(), key) || (vset && vset[key])); }
+    function vpath(key) { var b = curBank(); return bankUsable(b, key) ? ("assets/voice/" + b + "/" + key + ".mp3") : ("assets/voice/" + key + ".mp3"); }
+    function ckey(key) { var b = curBank(); return bankUsable(b, key) ? (b + ":" + key) : key; } // bufCache namespace (per bank)
+    function hasKey(key) { return !!(bankUsable(curBank(), key) || (vset && vset[key])); }
+    // TEXT-level playability — the ONLY gate the speak/getBuffer paths use. Under RU it refuses to leak an English clip:
+    // a line plays only if izo has a real RU recording OR a RU translation was actually applied (root Dmitry clip). No
+    // translation + no izo clip → honest SILENCE, never the English voice (David 2026-07-22: "izo in RU = British voice").
+    function hasClipFor(text) {
+      var key = vhash(text);
+      if (!curLangRu()) return hasKey(key);
+      if (banks.izo && banks.izo[key]) return true;                 // izo has this RU line
+      return (vline(text) !== String(text)) && !!(vset && vset[key]); // else only a genuine RU (Dmitry) clip counts
+    }
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
     function loadVoices() { if (!supported) return; var l = synth.getVoices(); if (l && l.length) { voices = l; chosen = null; } }
     // TTS #2 (David 2026-07-01): pre-recorded calm British-male neural audio (edge-tts / en-GB-RyanNeural, Headspace-style) for the FIXED tool scripts. vhash matches the Python generator; a manifest of available line-hashes; Web-Speech is the fallback for anything not pre-recorded (custom lines, dynamic counts).
@@ -180,7 +196,7 @@
       if (!name || banks[name]) return;
       try { fetch("assets/voice/" + name + "/manifest.json" + cacheBust(), { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { var s = {}; a.forEach(function (k) { s[k] = 1; }); banks[name] = s; } }).catch(function () {}); } catch (e) {}
     }
-    function applyVoice() { loadBank(curBank()); } // ensure the CURRENT bank's manifest is loaded — call at boot AND after load() (S ready) AND when language changes
+    function applyVoice() { loadBank("dave"); loadBank("millie"); if (curLangRu()) loadBank("izo"); } // preload BOTH EN banks so a Millie tap is instant (its manifest is already in hand); izo only matters in RU
     function setVoice(name) { // EN pick from the settings chips; in RU the bank is always izo so this is a no-op on choice
       name = (name === "millie") ? "millie" : "dave"; VOICE_PICK = name;
       try { if (typeof S !== "undefined" && S) S.voicePick = name; } catch (e) {}
@@ -249,7 +265,7 @@
       if (!text) return; opts = opts || {}; stop();
       function fin() { if (opts.onend) try { opts.onend(); } catch (e) {} }
       if (!vset) { dbg("no-manifest"); fin(); return; }                              // manifest not loaded yet → silent
-      var key = vhash(text); if (!hasKey(key)) { dbg("no-clip:" + key); fin(); return; }  // no clip for this exact line → STAY SILENT, never the robotic browser TTS (David 2026-07-13: "I never want to fall back to TTS, it sounds horrible — record every line"). The real voice comes from generated neural clips (gen-voice), not speechSynthesis.
+      var key = vhash(text); if (!hasClipFor(text)) { dbg("no-clip:" + key); fin(); return; }  // no clip for this exact line → STAY SILENT, never the robotic browser TTS (David 2026-07-13: "I never want to fall back to TTS, it sounds horrible — record every line"). Under RU, hasClipFor also refuses to leak an English clip. The real voice comes from generated neural clips (gen-voice), not speechSynthesis.
       var ctx = sharedAudioCtx(); if (!ctx) { dbg("no-audiocontext"); fin(); return; }
       var vol = opts.volume != null ? opts.volume : 1, myGen = ++playGen;
       function playBuf(buf) {
@@ -277,7 +293,7 @@
     function getBuffer(text) {
       return new Promise(function (resolve) {
         if (!text || !vset) { resolve(null); return; }
-        var key = vhash(text); if (!hasKey(key)) { resolve(null); return; }
+        var key = vhash(text); if (!hasClipFor(text)) { resolve(null); return; }
         if (bufCache[ckey(key)]) { resolve(bufCache[ckey(key)]); return; }
         var ctx = sharedAudioCtx(); if (!ctx) { resolve(null); return; }
         fetch(vpath(key), { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); })
@@ -302,7 +318,7 @@
     }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasKey(vhash(t)); }, setVoice: setVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; } };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; } };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -11458,8 +11474,11 @@
       var C = STACK_CONTENT[t.id]; if (!C && !(t.rawSegs && t.rawSegs.length)) return;
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
       function P(s) { s._act = ai; segs.push(s); }
-      var introTxt = t.intro || (C && C.intro) || ("Now, " + String(t.nm || "this").toLowerCase() + ".");
-      P({ text: introTxt, label: tr(t.nm), sub: "", gap: pauseFor("transition") }); // TRANSITION card — announces the act
+      // TRANSITION card REMOVED (David 2026-07-22): the spoken intro ("Now, the breath." / "Now, relax the muscles.")
+      // was (a) an "okay/now let's" filler he wants gone, (b) spoken from `text` while the screen showed only `label`
+      // (the tool name) = voice≠text, and (c) a separate un-tracked gap that paused before the act's own time began.
+      // Each act now starts directly on its FIRST REAL cue (tracked immediately); the act name still shows via the
+      // act page / story bars (acts[] metadata), so the boundary is announced visually without a floating voice line.
       if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")) }); }); } // a tool that supplies its own cue segments (charge, love & embodiment)
       else if (t.id === "stretch") { stretchMoveSegs(t.secs || 60, ai).forEach(function (s) { segs.push(s); }); } // STRETCH (David 2026-07-13): real held moves that fill the tool's time, never looped — same pool as the solo tool, sane holds instead of 3 cues stretched over 2 min
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
