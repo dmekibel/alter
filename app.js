@@ -1784,6 +1784,7 @@
   function setPaneRest(n) { // commit the canonical rest-state for pane n, NO entrance animation; clear all drag transforms
     ["planner", "journey", "game"].forEach(clearGroup);
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
+    document.body.classList.remove("home-onepage"); // PUCK FIX (David 2026-07-22 "planner shows no home button"): the home-onepage class fades the puck to opacity:0 (nothing to return from AT home). Only the door path cleared it via teardownWorld — a pane reached any other way left it set, hiding the home button. Clearing it on EVERY pane rest guarantees the puck is lit on planner/journey/game.
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
@@ -3553,7 +3554,7 @@
     } else if (st.id === "onplan" || st.id === "off") { // TRACKING — activity color disc, pause icon; text = title + live elapsed; tap disc = one-tap pause
       var t = st.t, D = DOM[st.dom] || DOM.focus;
       p.classList.remove("puck-bare"); p.classList.add("puck-pill");
-      paintDisc(tfStripe(D.c), D.ink || "#160510", tiClass(t), st.id === "onplan" ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); // mockup fidelity (David 2026-07-22): the dial wears the ACTIVITY icon, not a pause glyph; green rim only when on-plan (mirrors the dock's --ldrim reward band)
+      paintDisc(D.c, D.ink || "#160510", tiClass(t), st.id === "onplan" ? "rgba(40,207,134,.95)" : "rgba(0,0,0,0)"); // mockup fidelity (David 2026-07-22): SOLID domain-color dial (the compass-rose/screenshot pill is solid, not striped) wearing the ACTIVITY icon; green rim only when on-plan (mirrors the dock's --ldrim reward band)
       txt.style.removeProperty("display"); ttl.textContent = t.title || "Tracking";
       elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); // .live-elapsed[data-tid] → the 1s loop keeps mm:ss ticking for free
       p._discAct = null; // mockup grammar: the WHOLE puck taps home — pause/stop/break live in the player (front-and-center at home, two-clock law)
@@ -3698,7 +3699,9 @@
     TF_MODE = null; TF_MODE_USERSET = false; tf.classList.remove("tf-staged");
     tfMorph(false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); }
   function tfDrag(ev, opening) { // folded: drag UP on the dock → expand (FINGER-FOLLOWED morph). open: drag DOWN on the sheet → close (morph). A real drag past threshold commits; otherwise it snaps back. A plain tap plays the full animated morph. (David 2026-06-28)
-    ev.preventDefault(); var tf = el("trackerFull"); if (!tf) return; var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
+    var tf = el("trackerFull"); if (!tf) return;
+    if (!opening && tf.classList.contains("tf-onepage") && tf.classList.contains("tf-onehome")) return; // SCROLL FIX (David 2026-07-22 "hard to scroll... thumb in certain places"): on the ONE-PAGE home the whole column scrolls — the stage's drag-to-close must NOT preventDefault the vertical pan. Bail BEFORE preventDefault so the circle area scrolls like everything else. (CSS also forces touch-action:pan-y on .tf-stage there.)
+    ev.preventDefault(); var sy = ev.clientY, H = window.innerHeight || 800, moved = false;
     if (opening && (TF_OPEN || TF_ANIM)) return; if (!opening && (!TF_OPEN || TF_ANIM)) return;
     var TARGET = H * 0.42, dk = el("liveDock"), bd = el("tfBackdrop"), pairs = null, dragging = false; // TARGET = drag distance that = fully open (f=1)
     function begin() { // arm the drag-morph: lay the sheet out full-size (so the big rects are real), measure pairs, snap everything to f=0 under the finger — NO transition yet
@@ -14655,7 +14658,7 @@
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
     var ew = el("enterWorld"); if (ew) ew.onclick = openGame;
     var gcv = el("guardian"); if (gcv) gcv.addEventListener("click", function () { characterCard(); }); // tap the mirror → your character card (David 2026-06-27)
-    var gx = el("gameExit"); if (gx) gx.onclick = closeGame;
+    var gx = el("gameExit"); if (gx) gx.onclick = function () { closeGame(); try { openHome(); } catch (e) {} }; // EXIT WORLD = go HOME, not fall through to the planner underneath (David 2026-07-22 "exit world takes you to planner"). Home is the hub you return to from any surface.
     var fc = el("featClose"); if (fc) fc.onclick = closeFeature;
     var fb = el("featBackdrop"); if (fb) fb.onclick = closeFeature;
     var jb = el("jumpBtn"); if (jb) { jb.onclick = doJump; jb.addEventListener("touchstart", function (e) { e.preventDefault(); doJump(); }, { passive: false }); }

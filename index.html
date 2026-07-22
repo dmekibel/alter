@@ -1721,6 +1721,7 @@
   #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-stage{ flex:0 0 auto; }
   /* ONE-PAGE (David 2026-07-22): the story strip is a normal in-flow part of the HOME zone — it must SCROLL NATURALLY with the content, never animate. Kill any transition on it so a re-render/scroll layout shift can't make it "slide up and disappear". */
   #trackerFull.tf-onepage.tf-onehome #tfHomeBars{ transition:none !important; }
+  #trackerFull.tf-onepage.tf-onehome .tf-stage{ touch-action:pan-y !important; } /* SCROLL FIX (David 2026-07-22): the stage carries an inline touch-action:none for drag-to-close — a dead scroll zone dead-center on the one-page home. Force pan-y so the circle area scrolls the column like everything else (tfDrag also bails here). */
   #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px); }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
@@ -3008,6 +3009,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1198"></script>
+  <script src="app.js?v=1199"></script>
 </body>
 </html>
