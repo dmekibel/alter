@@ -5050,7 +5050,7 @@
     while (bars.firstChild) bars.removeChild(bars.firstChild); // targeted rebuild, not an innerHTML wipe (ratchet convention, cf. buildBars)
     bars.style.display = "flex";
     var story = homeStory();
-    if (!story.length) { for (var g = 0; g < 5; g++) { var gc = add(bars, "div", "tf-hb ghost"); add(gc, "div", "tf-hb-bar"); add(gc, "i", "ti ti-circle"); } return; } // empty day = ghost placeholder bars so the top is never blank (David 2026-07-13)
+    if (!story.length) { for (var g = 0; g < 5; g++) { var gc = add(bars, "div", "tf-hb ghost"); add(gc, "div", "tf-hb-bar"); } return; } // empty day = quiet ghost PILLS only, NO circle-outline row under them (David 2026-07-22 approved board: the ring placeholders read ugly). The pills alone say "no plan yet".
     story.slice(0, 8).forEach(function (a) { var col = add(bars, "div", "tf-hb"); var bar = add(col, "div", "tf-hb-bar"); bar.style.background = mixHex(a.color, "#160510", 0.64); var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = (a.fill * 100) + "%"; fl.style.background = a.color; var ic = add(col, "i", "ti " + a.icon); ic.style.color = a.color; ic.style.opacity = a.fill > 0 ? "1" : "0.4"; });
   }
   function renderTrackTools(show) { // new-era H-C §6: while TRACKING, a compact row of short regulation tools (breath/settle/stretch) — a micro-break that doesn't derail the track (the timer keeps running in S underneath). Targeted rebuild, no innerHTML wipe.
@@ -5073,10 +5073,12 @@
     var grid = add(panel, "div", "tf-toolgrid"); grid.id = "tfHomeTools";
     var use = (S.tools && S.tools.use) || {};
     var tools = STACK_TOOLS.slice().sort(function (a, b) { return (use[b.id] || 0) - (use[a.id] || 0); }).slice(0, 7); // most-worn floats to the front (F2 library law); cap 7 so tile 8 is the More door
-    // TILES = LAUNCHERS per STYLE-NEW-ERA (David 2026-07-20 "implement the designs"): REAL color fill (bright, not dark-tinted), WHITE icon, soft Duolingo extrude (a darker shade of the SAME color at the bottom edge, never a hard ink offset). Was mixHex(...,0.80)=80%-black + colored icon + ink shadow → the dark "odd" look.
-    function skinTile(b, col) { b.style.background = mixHex(col, "#160510", 0.24); b.style.border = "none"; b.style.boxShadow = "0 5px 0 " + mixHex(col, "#160510", 0.58) + ", 0 9px 16px rgba(0,0,0,.32)"; }
-    tools.forEach(function (t) { var b = add(grid, "button", "tf-htool"); skinTile(b, t.col); var ic = add(b, "i", "ti " + t.ti); ic.style.color = "#fff"; add(b, "span", null, tr(t.name)); b.onclick = function () { landFromHome(); leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; }); // landFromHome() arms the return so this flow's close re-opens home (Parcel A) instead of falling through to the panes
-    var more = add(grid, "button", "tf-htool more"); skinTile(more, DOM.restore.c); var mic = add(more, "i", "ti ti-dots"); mic.style.color = "#fff"; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
+    // TILES = LAUNCHERS per STYLE-NEW-ERA (David 2026-07-20 "implement the designs"): REAL color fill (bright, not dark-tinted), WHITE icon, soft Duolingo extrude (a darker shade of the SAME color at the bottom edge, never a hard ink offset).
+    // FIDELITY FIX (David 2026-07-22 approved board): the home grid wears the APPROVED COOLER PALETTE in grid order, NOT the app's hot domain hues (the tools keep their domain colors everywhere else). The soft extrude = the same approved hue darkened ~40% (like skinTile). Cycles if >8 tiles.
+    var HOME_TILE_PALETTE = ["#5b8fd6", "#8b6fd6", "#d66a7e", "#6aa76f", "#c9a23f", "#6f8fd6", "#4f9d95", "#9b7fd6"];
+    function skinTile(b, col) { b.style.background = mixHex(col, "#160510", 0.24); b.style.border = "none"; b.style.boxShadow = "0 5px 0 " + mixHex(col, "#160510", 0.40) + ", 0 9px 16px rgba(0,0,0,.32)"; } // extrude = the SAME hue darkened ~40% (approved board), soft not ink
+    tools.forEach(function (t, i) { var b = add(grid, "button", "tf-htool"); skinTile(b, HOME_TILE_PALETTE[i % HOME_TILE_PALETTE.length]); var ic = add(b, "i", "ti " + t.ti); ic.style.color = "#fff"; add(b, "span", null, tr(t.name)); b.onclick = function () { landFromHome(); leaveHomeForPlayer(); try { runStack([{ k: t.id, d: t.dur }], 0); } catch (e) {} }; }); // landFromHome() arms the return so this flow's close re-opens home (Parcel A) instead of falling through to the panes
+    var more = add(grid, "button", "tf-htool more"); skinTile(more, HOME_TILE_PALETTE[tools.length % HOME_TILE_PALETTE.length]); var mic = add(more, "i", "ti ti-dots"); mic.style.color = "#fff"; add(more, "span", null, tr("More")); more.onclick = function () { try { openToolbox(); } catch (e) {} };
   }
   // ===== ONE-HOME LAW (David 2026-07-21) — the SHARED FRAME. Called by renderTrackerFull for EVERY full-screen face (idle already builds its own via renderHomeFace; this brings claim / night / break / tracking up to it). Renders: story strip + planner chevron, journey/garden door glyphs, and (on CALM states only) the tool grid into the dedicated #tfHomeGrid host — kept SEPARATE from #tfCtrls so the face's own action row and the grid coexist. The status row (clock left · gems+avatar right) is DOM+CSS, re-shown by the .tf-onehome CSS. Idempotent; guarded by ONEHOME. `showGrid` = tracking-face hides it (focus), calm faces show it. =====
   function renderHomeFrame(showGrid) {
@@ -14486,7 +14488,8 @@
     requestAnimationFrame(frame);
   }); };
   function devBtnVisible() { try { var b = el("devBtn"); if (!b) return; var onStart = !!(el("startScreen") && el("startScreen").classList.contains("on")); var keep = false; try { keep = localStorage.getItem("alter_dev") === "1"; } catch (e) {} b.style.display = (onStart || keep) ? "flex" : "none"; } catch (e) {} } // David 2026-07-20: the dev button shows on the START SCREEN always; after Start it stays ONLY if the start-screen toggle kept it on (alter_dev)
-  function devInit() { if (el("devBtn")) { devBtnVisible(); return; } var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; var _l = 6, _t = 6; try { var p = JSON.parse(localStorage.getItem("alter_devpos") || "{}"); if (p.l != null) _l = p.l; if (p.t != null) _t = p.t; } catch (e) {} b.setAttribute("style", "position:fixed;left:" + _l + "px;top:calc(" + _t + "px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;");
+  function devInit() { try { if (devOn()) tunerApply(); } catch (e) {} // DESIGN TUNER: reapply saved tuning ONLY when dev is on (normal users never load the vars → CSS falls back to the approved defaults)
+    if (el("devBtn")) { devBtnVisible(); return; } var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; var _l = 6, _t = 6; try { var p = JSON.parse(localStorage.getItem("alter_devpos") || "{}"); if (p.l != null) _l = p.l; if (p.t != null) _t = p.t; } catch (e) {} b.setAttribute("style", "position:fixed;left:" + _l + "px;top:calc(" + _t + "px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;");
     // DRAGGABLE (David 2026-07-20: so it never covers content) — a real drag suppresses the click + persists the position
     var dg = false, mv = false, ox = 0, oy = 0;
     b.addEventListener("pointerdown", function (e) { dg = true; mv = false; ox = e.clientX - b.offsetLeft; oy = e.clientY - b.offsetTop; try { b.setPointerCapture(e.pointerId); } catch (_e) {} });
@@ -14529,6 +14532,8 @@
       ["🧭 Journey", _dj(function () { setPaneRest("journey"); })],
       ["🎛 Cockpit (tracker)", _dj(function () { setPaneRest("planner"); TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); })],
       ["🧰 Toolbox", _dj(function () { setPaneRest("planner"); openToolbox(); })],
+      ["🎚 Design tuner", function () { try { devTuner(); } catch (e) {} }], // tune the home composition on real pixels (David 2026-07-22) — writes CSS vars live, copy-values → JSON
+
       ["🧘 Full stack (10m)", _dj(function () { runFullStack(10, true); })],
       ["🌬 Breathe tool", _dj(function () { DEV.tool("breathe"); })],
       ["👁 Meditate tool", _dj(function () { DEV.tool("meditate"); })],
@@ -14539,6 +14544,53 @@
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], ["— persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], ["— persona: early (day 3)", function () { devLoadPersona("early"); }], ["— persona: building (week 2)", function () { devLoadPersona("building"); }], ["— persona: established (month 1)", function () { devLoadPersona("established"); }], ["— persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
+    document.body.appendChild(s);
+  }
+  // ===== THE DESIGN TUNER (David 2026-07-22) — dev-only. Tune the home composition on REAL pixels so the built result can't diverge from an approved mockup again. Sliders write CSS vars on document.documentElement live; the Part-1 approved values ARE the defaults (the wired CSS reads var(--tun-*, <approved>)). Persists under a DEV localStorage key (NOT S — no SCHEMA); reapplied on boot ONLY when dev is on. Normal users never see or load any of it. =====
+  var TUNER_KEY = "alter_tuner";
+  // each: [var-name, label, min, max, step, default, unit, formatter(v)->cssValue]. `apply` writes the derived CSS var(s). bloom is one strength slider driving BOTH alpha + blur.
+  var TUNER_FIELDS = [
+    { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
+    { k: "doorH", lbl: "Door height", min: 56, max: 160, step: 2, def: 80, unit: "px", vars: function (v) { return { "--tun-door-h": v + "px" }; } },
+    { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 23, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } },
+    { k: "ringTh", lbl: "Ring thickness", min: 4, max: 20, step: 1, def: 16, unit: "px", vars: function (v) { return { "--tun-ring-th": v + "px" }; } }, // the disc inset = full rim; visible rim ≈ v/2 per side
+    { k: "bloom", lbl: "Bloom strength", min: 0, max: 100, step: 1, def: 60, unit: "%", vars: function (v) { var f = v / 100; return { "--tun-bloom-a": (f * 0.30).toFixed(3), "--tun-bloom-blur": Math.round(f * 66) + "px" }; } }, // 60% ≈ the approved .18 alpha / 40px blur
+    { k: "tileBright", lbl: "Tile brightness", min: 55, max: 130, step: 1, def: 100, unit: "%", vars: function (v) { return { "--tun-tile-bright": (v / 100).toFixed(2) }; } },
+    { k: "tileSat", lbl: "Tile saturation", min: 0, max: 180, step: 1, def: 100, unit: "%", vars: function (v) { return { "--tun-tile-sat": (v / 100).toFixed(2) }; } }
+  ];
+  function tunerLoad() { try { return JSON.parse(localStorage.getItem(TUNER_KEY) || "{}") || {}; } catch (e) { return {}; } }
+  function tunerVal(f, saved) { var v = (saved && saved[f.k] != null) ? +saved[f.k] : f.def; if (isNaN(v)) v = f.def; return v; }
+  function tunerApply(saved) { // write every field's CSS var(s) onto :root. Only called when dev is on (boot) or the panel is open.
+    saved = saved || tunerLoad(); var root = document.documentElement;
+    TUNER_FIELDS.forEach(function (f) { var pairs = f.vars(tunerVal(f, saved)); for (var k in pairs) root.style.setProperty(k, pairs[k]); });
+  }
+  function tunerClear() { var root = document.documentElement; TUNER_FIELDS.forEach(function (f) { var pairs = f.vars(f.def); for (var k in pairs) root.style.removeProperty(k); }); }
+  function devTuner() {
+    var ex = el("devTuner"); if (ex) { ex.remove(); return; }
+    var saved = tunerLoad();
+    var s = document.createElement("div"); s.id = "devTuner"; s.setAttribute("style", "position:fixed;left:0;right:0;bottom:0;z-index:100000;max-height:42vh;overflow:auto;background:rgba(24,10,30,.98);border-top:2px solid #b07aff;border-radius:16px 16px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.5);font-family:'Jost',sans-serif;");
+    var hd = document.createElement("div"); hd.setAttribute("style", "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"); hd.innerHTML = '<span style="color:#e8d4f2;font-weight:800;font-size:14px;">Design tuner</span>'; s.appendChild(hd);
+    TUNER_FIELDS.forEach(function (f) {
+      var row = document.createElement("div"); row.setAttribute("style", "margin:9px 0;");
+      var lab = document.createElement("div"); lab.setAttribute("style", "display:flex;justify-content:space-between;color:#c9aee0;font-size:12px;font-weight:700;margin-bottom:3px;");
+      var v0 = tunerVal(f, saved);
+      var nameSp = document.createElement("span"); nameSp.textContent = f.lbl; var valSp = document.createElement("span"); valSp.textContent = v0 + f.unit; valSp.style.color = "#8fe3d0";
+      lab.appendChild(nameSp); lab.appendChild(valSp); row.appendChild(lab);
+      var sl = document.createElement("input"); sl.type = "range"; sl.min = f.min; sl.max = f.max; sl.step = f.step; sl.value = v0; sl.setAttribute("style", "width:100%;accent-color:#b07aff;");
+      sl.oninput = function () { var v = +sl.value; saved[f.k] = v; valSp.textContent = v + f.unit; var pairs = f.vars(v); for (var k in pairs) document.documentElement.style.setProperty(k, pairs[k]); try { localStorage.setItem(TUNER_KEY, JSON.stringify(saved)); } catch (e) {} };
+      row.appendChild(sl); s.appendChild(row);
+    });
+    var btnRow = document.createElement("div"); btnRow.setAttribute("style", "display:flex;gap:8px;margin-top:12px;");
+    function mkBtn(txt, bg, fn) { var b = document.createElement("button"); b.textContent = txt; b.setAttribute("style", "flex:1;background:" + bg + ";color:#fff;border:none;border-radius:9px;padding:11px;font-size:13px;font-weight:800;font-family:'Jost',sans-serif;"); b.onclick = fn; return b; }
+    btnRow.appendChild(mkBtn("Copy values", "#5b8fd6", function () {
+      var out = {}; TUNER_FIELDS.forEach(function (f) { out[f.k] = tunerVal(f, saved); });
+      var json = JSON.stringify(out);
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(json).then(function () { try { toast("tuner values copied"); } catch (e) {} }).catch(function () { try { prompt("tuner values:", json); } catch (e) {} }); }
+      else { try { prompt("tuner values:", json); } catch (e) {} }
+    }));
+    btnRow.appendChild(mkBtn("Reset", "#3a2147", function () { saved = {}; try { localStorage.removeItem(TUNER_KEY); } catch (e) {} tunerClear(); s.remove(); devTuner(); }));
+    btnRow.appendChild(mkBtn("Close", "#160510", function () { s.remove(); }));
+    s.appendChild(btnRow);
     document.body.appendChild(s);
   }
   // @SEC:BOOT — init(): boot ORDER is a contract (load → world → master tick → nav wiring → renderAll → openJourney → start screen → i18n observe). Appending is safe; reordering is not.
