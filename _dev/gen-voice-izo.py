@@ -18,8 +18,9 @@
 #         python3 _dev/gen-voice-izo.py all --force # re-synth everything (burns credits)
 import json, os, sys, time, re, urllib.request, urllib.error
 
-VOICE_ID = os.environ.get("VOICE_ID", "anctA7r7S5Wnb0Ztqlos")  # izo (ru)
-OUTDIR   = "assets/voice/izo"
+VOICE_NAME = os.environ.get("VOICE_NAME", "izo")               # RU voice folder: izo (default) | aida | ...
+VOICE_ID   = os.environ.get("VOICE_ID", "anctA7r7S5Wnb0Ztqlos") # izo (ru) default
+OUTDIR     = "assets/voice/" + VOICE_NAME
 LINES    = "_specs/ru-voice-izo-lines.json"
 # DELIVERY MODE (David's pick): "flat" | "v2" (per-profile settings) | "v3" (v3 + audio tags on CHARGE/hero lines)
 MODE     = os.environ.get("IZO_MODE", "v2")

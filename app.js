@@ -158,7 +158,7 @@
     var VOICE_PICK = "dave", banks = {};   // banks[name] = manifest-set, lazily fetched
     function curLangRu() { try { return typeof curLang === "function" && curLang() === "ru"; } catch (e) { return false; } }
     function curBank() {
-      if (curLangRu()) return "izo";  // RU has exactly one voice
+      if (curLangRu()) { try { if (typeof S !== "undefined" && S && S.ruVoice === "aida") return "aida"; } catch (e) {} return "izo"; } // RU voices: izo (default) | aida
       try { if (typeof S !== "undefined" && S && S.voicePick === "millie") return "millie"; } catch (e) {}
       return "dave";
     }
@@ -166,7 +166,7 @@
     // on that bank's manifest (David 2026-07-22: waiting on it made Millie change only after a settings close/reopen).
     // izo (RU) is keyed independently → usable only for keys its own manifest confirms; anything else falls to root-RU.
     function bankUsable(b, key) {
-      if (b === "izo") return !!(banks.izo && banks.izo[key]);
+      if (b === "izo" || b === "aida") return !!(banks[b] && banks[b][key]); // RU voices are keyed independently → only for keys their own manifest confirms
       return banks[b] ? !!banks[b][key] : !!(vset && vset[key]); // EN: bank manifest if loaded, else optimistic root (instant switch)
     }
     function vdir() { return curBank(); }
@@ -179,7 +179,8 @@
     function hasClipFor(text) {
       var key = vhash(text);
       if (!curLangRu()) return hasKey(key);
-      if (banks.izo && banks.izo[key]) return true;                 // izo has this RU line
+      var b = curBank(); // the picked RU voice (izo | aida)
+      if (banks[b] && banks[b][key]) return true;                    // that voice has this RU line
       return (vline(text) !== String(text)) && !!(vset && vset[key]); // else only a genuine RU (Dmitry) clip counts
     }
     var PREF = ["Samantha", "Ava", "Allison", "Serena", "Karen", "Moira", "Fiona", "Tessa", "Google UK English Female", "Google US English", "Microsoft Aria Online (Natural)", "Microsoft Jenny"];
@@ -198,8 +199,9 @@
       if (!name || banks[name]) return;
       try { fetch("assets/voice/" + name + "/manifest.json" + cacheBust(), { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { var s = {}; a.forEach(function (k) { s[k] = 1; }); banks[name] = s; } }).catch(function () {}); } catch (e) {}
     }
-    function applyVoice() { loadBank("dave"); loadBank("millie"); if (curLangRu()) loadBank("izo"); } // preload BOTH EN banks so a Millie tap is instant (its manifest is already in hand); izo only matters in RU
-    function setVoice(name) { // EN pick from the settings chips; in RU the bank is always izo so this is a no-op on choice
+    function applyVoice() { loadBank("dave"); loadBank("millie"); if (curLangRu()) { loadBank("izo"); loadBank("aida"); } } // preload BOTH EN banks (instant Millie tap) + BOTH RU banks in RU (instant izo↔aida)
+    function setRuVoice(name) { name = (name === "aida") ? "aida" : "izo"; try { if (typeof S !== "undefined" && S) S.ruVoice = name; } catch (e) {} loadBank(name); } // RU pick (izo | aida) from the settings chips
+    function setVoice(name) { // EN pick from the settings chips (dave | millie); RU uses setRuVoice
       name = (name === "millie") ? "millie" : "dave"; VOICE_PICK = name;
       try { if (typeof S !== "undefined" && S) S.voicePick = name; } catch (e) {}
       loadBank(curBank());
@@ -320,7 +322,7 @@
     }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; } };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, setRuVoice: setRuVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; } };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -10631,10 +10633,18 @@
     vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
     // GUARDIAN VOICE PICK — language-gated (David 2026-07-22): RU → izo (the only RU voice, no toggle); EN → Dave | Millie. Tap plays a sample. Persists as S.voicePick (EN only). The bank resolves live from curBank() so the chip and the audio always agree.
     add(card, "div", null, tr("Guide")).style.cssText = "font-size:13.5px;font-weight:700;margin:16px 0 6px;";
-    if (curLang() === "ru") {
-      var izoRow = add(card, "div"); izoRow.style.cssText = "display:flex;gap:8px;";
-      var ib = add(izoRow, "button", null, "izo"); ib.style.cssText = "flex:1;border:2px solid #c8a8ff;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;color:#f0e6ef;background:#9a7cff;cursor:pointer;";
-      ib.onclick = function () { try { TTS.unlock(); TTS.stop(); } catch (e) {} var sessionLive = document.querySelector("#breatheOv, .gp-ov, #playerOv"); if (!sessionLive) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } };
+    if (curLang() === "ru") { // TWO RU voices (David 2026-07-22): izo | Aida — tap to switch, a sample plays. Persists as S.ruVoice.
+      var ruRow = add(card, "div"); ruRow.style.cssText = "display:flex;gap:8px;";
+      var ruChips = [];
+      var ruPaint = function () { var cur = (S.ruVoice === "aida") ? "aida" : "izo"; ruChips.forEach(function (c) { var on = c.dataset.v === cur; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; c.style.color = "#f0e6ef"; }); };
+      [["izo", "izo"], ["aida", "Aida"]].forEach(function (o) {
+        var b = add(ruRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
+        ruChips.push(b);
+        b.onclick = function () { S.ruVoice = o[0]; save(); try { TTS.unlock(); TTS.setRuVoice(o[0]); TTS.stop(); } catch (e) {} ruPaint();
+          var sessionLive = document.querySelector("#breatheOv, .gp-ov, #playerOv"); // don't preview over a running session — the switch still applies to its next line
+          if (!sessionLive) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } };
+      });
+      ruPaint();
     } else {
       var gvRow = add(card, "div"); gvRow.style.cssText = "display:flex;gap:8px;";
       var gvChips = [];
