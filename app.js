@@ -17,6 +17,7 @@
      SEC:JOURNEY-TRAIL   drawJourney + the visible trail UI
      SEC:TIMELINE        tickCharge / pager / recenter / buildPull — THE REGRESSION ZONE — DANGER
      SEC:COCKPIT         expanded tracker ring + stage modes + bookends
+     SEC:TOOLBOX2        the home-scroll Toolbox (frame 20a/20c: Plan + grids + heroes + bento + dose card)
      SEC:ONBOARD         onboarding V2 survey
      SEC:STATE           S / fresh() / load() migrations / save() / export-import — DANGER
      SEC:GAME            the game world (openGame …)
@@ -5127,8 +5128,8 @@
     renderHomeBars();               // story strip on top (planner door)
     var inner = flowParent(); if (!inner) return;
     var host = el("tfHomeGrid"); if (!host) { host = document.createElement("div"); host.id = "tfHomeGrid"; inner.appendChild(host); } else if (ONEPAGE && host.parentNode !== inner) inner.appendChild(host); // dedicated grid host, in the HOME zone under one-page (else after #tfCtrls in .tf-inner)
-    if (showGrid) { host.style.display = ""; renderHomeGrid(host); }
-    else { host.style.display = "none"; while (host.firstChild) host.removeChild(host.firstChild); } // tracking face: no grid (focus), drain it so nothing lingers
+    if (showGrid && !TBX2) { host.style.display = ""; renderHomeGrid(host); } // TBX2: the 2x4 grid is REPLACED by the scroll-continuation Toolbox (renderToolbox2 in the ground zone) — keep #tfHomeGrid empty on every face
+    else { host.style.display = "none"; while (host.firstChild) host.removeChild(host.firstChild); } // tracking face (or TBX2 always): no grid (focus), drain it so nothing lingers
     if (NAV_V2) wireHomeDoors();     // journey/garden door glyphs + the strip's planner tap (idempotent)
     if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // sky (journey) above + ground (FULL tool shelf) below, one native scroll — ALWAYS show the ground so you can scroll DOWN to the tools even while tracking (David 2026-07-22 "when tracking you should still be able to scroll down and see the tools"). The inline #tfHomeGrid still hides on the tracking face (above, showGrid) to keep the circle+controls focused; the tools live one scroll below.
   }
@@ -5139,7 +5140,7 @@
     var c = el("tfCtrls"); if (!c) return; while (c.firstChild) c.removeChild(c.firstChild); // node drain (renderHomeGrid refills immediately)
     // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
     // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
-    renderHomeGrid(c);
+    if (!TBX2) renderHomeGrid(c); // TBX2 (2026-07-23): the idle 2x4 grid is REPLACED by the Toolbox one scroll below (renderToolbox2 in the ground zone) — #tfCtrls stays drained/empty so the board = strip · circle · next-line, then the Toolbox on scroll-down. Board circle/strip/next-line unchanged (only the removed grid).
     if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
     if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // idle is a calm face: sky (journey) above + ground (full tool shelf) below, one native scroll
   }
@@ -5395,7 +5396,7 @@
     ensureWorld();
     adoptTrailToSky();
     var ground = groundZone();
-    if (showGround) { if (ground) ground.style.display = ""; renderGroundTools(); }
+    if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
     document.body.classList.add("home-onepage"); // puck-return CSS keys on this: at home the puck fades out (nothing to return from); .puck-away fades it back in once the scroll drifts off the home seam
     try { onWorldScroll(); } catch (e) {} // set the initial away/home puck state for this render (landed = home = hidden)
@@ -5461,6 +5462,191 @@
     w.innerHTML = '<svg class="ss-mark" viewBox="0 0 120 120" aria-hidden="true"><ellipse class="ss-halo" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#ffd24a" stroke-width="7" stroke-linecap="round"/><ellipse class="ss-glint" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#fff3c0" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="9 91"/><path class="ss-spark" fill="#ff5fa0" d="M60 22 L66 54 L98 60 L66 66 L60 98 L54 66 L22 60 L54 54 Z"/><path class="ss-spk2" fill="#ffd24a" d="M88 27 L91 33 L97 36 L91 39 L88 45 L85 39 L79 36 L85 33 Z"/><path class="ss-spk3" fill="#36b3f0" d="M30 82 L33 88 L39 91 L33 94 L30 100 L27 94 L21 91 L27 88 Z"/></svg>';
     return w;
   }
+  // @SEC:TOOLBOX2 — the home-scroll TOOLBOX (Fable-planned frame 20a + 20c, Opus-built 2026-07-23). REPLACES the 2x4 renderHomeGrid tiles + the renderGroundTools shelf: renders Plan-my-day → top-eight grid → second grid → 2 hero rows → bento intro → 6 collapsible category squares (all into the GROUND zone #tfWorldGround of the one-page world), one continuous native scroll, NO new scroll container / listener / snap. Data-driven (TBX_ITEMS + TBX_CATS). Single-open dose card (openStack) + category panel (openCat), inserted in-flow with grid-column:1/-1 / full-width, --ease-settle ~.3s (M6). Guarded by TBX2 (false = old renderHomeGrid + renderGroundTools byte-identical). Child-drain only — ZERO new innerHTML wipes (ratchet law). Every string via tr() + RU dict in the same commit. See DESIGN-EXTRACT frame 20a/20c.
+  var TBX2 = true;             // kill-switch: false restores the old 2x4 home grid + full-tool ground shelf exactly.
+  var TBX_HEX = { move: "#ff8a3a", nourish: "#34d39a", focus: "#36b3f0", create: "#b07aff", connect: "#ff5fa0", play: "#ffc83d", restore: "#2ab8c4", upkeep: "#7f9bc4" }; // toolbox domain hexes (mirrored as CSS vars on .tbx). NOTE: --play #ffc83d intentionally DIVERGES from DOM.play.c #d99f30 on this surface (pixel-fidelity mandate, DESIGN-EXTRACT §0) — flagged in the handoff.
+  var TBX_BOLT = "#ff4fa0", TBX_SEALBG = "#241328", TBX_SEALINK = "#ffc41f", TBX_PINK = "#ff5fa8", TBX_INK = "#160510"; // literal hexes from DESIGN-EXTRACT (the raise-stakes bolt step + the log-step seal are NOT domain vars).
+  function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + ")"); } // domain token → CSS var (resolves inside .tbx); literal hex passes through
+  function tbxLip(colExpr) { return "0 4px 0 color-mix(in srgb, " + colExpr + " 45%, #000)"; } // the universal hard-offset lip idiom (DESIGN-EXTRACT §0); color-mix already ships in this app (index.html .obv-gate)
+  // Registry: every named item from DESIGN-EXTRACT §3 (16 stacks + 12 plain tools). peek = the deduped coin colors verbatim from §3 (the dedup rule — drop steps whose color equals the face or an earlier coin, max 2 — was applied at design time; "Can't Sleep" legitimately renders ONE coin). track = best-effort map onto STACK_TOOLS ids so Start actually runs; step durations scale to the chosen dose. kicker = the dose-card context line. steps (Caught Scrolling only) = the design's plain-word script; every other stack derives its steps from the track's real tools (reuses already-gated tool copy). def = default dose (minutes).
+  var TBX_ITEMS = {
+    firstLight:      { name: "First Light",      dom: "move",    ti: "ti-sunrise",         peek: ["restore", TBX_BOLT], kicker: "START THE DAY",                        def: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "mantra", d: 120 }] },
+    beforeDeepWork:  { name: "Before Deep Work", dom: "focus",   ti: "ti-target",          peek: ["move", "restore"],   kicker: "BEFORE YOU FOCUS",                     def: 5, track: [{ k: "breathe", d: 120 }, { k: "mantra", d: 120 }] },
+    caughtScrolling: { name: "Caught Scrolling", dom: "connect", ti: "ti-hand-stop",       peek: ["restore", TBX_BOLT], kicker: "WHEN YOU DRIFT · THE CATCH IS THE WIN", def: 2, track: [{ k: "breathe", d: 120 }, { k: "mantra", d: 120 }],
+                       steps: [ { c: "connect", ic: "ti-hand-stop", t: "name where you went" }, { c: "restore", ic: "ti-lungs", t: "three slow breaths" }, { c: TBX_BOLT, ic: "ti-bolt", t: "feel why it matters" }, { c: "create", ic: "ti-bulb", t: "choose on purpose, staying counts" }, { c: TBX_SEALBG, ic: "ti-check", t: "log the catch", ink: TBX_SEALINK } ] },
+    urgeWave:        { name: "Urge Wave",        dom: "focus",   ti: "ti-ripple",          peek: ["restore", TBX_BOLT], kicker: "RIDE THE URGE",                        def: 2, track: [{ k: "breathe", d: 120 }, { k: "meditate", d: 180 }] },
+    spunUp:          { name: "Spun Up",          dom: "restore", ti: "ti-wind",            peek: ["move", TBX_BOLT],    kicker: "COME BACK DOWN",                       def: 5, track: [{ k: "breathe", d: 120 }, { k: "relax", d: 60 }] },
+    iMessedUp:       { name: "I Messed Up",      dom: "connect", ti: "ti-heart-handshake", peek: ["restore", TBX_BOLT], kicker: "AFTER A SLIP",                         def: 5, track: [{ k: "breathe", d: 90 }, { k: "gratitude", d: 45 }] },
+    emptyTank:       { name: "Empty Tank",       dom: "nourish", ti: "ti-battery-2",       peek: ["move", TBX_BOLT],    kicker: "REFILL",                               def: 5, track: [{ k: "relax", d: 60 }, { k: "gratitude", d: 45 }] },
+    shutdown:        { name: "Shutdown",         dom: "focus",   ti: "ti-moon-stars",      peek: ["restore", TBX_BOLT], kicker: "END THE DAY",                          def: 5, track: [{ k: "relax", d: 60 }, { k: "breathe", d: 120 }] },
+    cantSleep:       { name: "Can't Sleep",      dom: "restore", ti: "ti-zzz",             peek: [TBX_BOLT],            kicker: "WHEN SLEEP WON'T COME",                def: 5, track: [{ k: "relax", d: 90 }, { k: "breathe", d: 150 }] },
+    lockTheWin:      { name: "Lock the Win",     dom: "create",  ti: "ti-trophy",          peek: ["connect", TBX_BOLT], kicker: "SEAL THE WIN",                         def: 2, track: [{ k: "gratitude", d: 45 }, { k: "reprogram", d: 150 }] },
+    feelBetter:      { name: "Feel Better",      dom: "restore", ti: "ti-mood-smile",      peek: ["move", TBX_BOLT],    kicker: "LIFT THE MOOD",                        def: 5, track: [{ k: "breathe", d: 120 }, { k: "gratitude", d: 45 }] },
+    body:            { name: "Body",             dom: "upkeep",  ti: "ti-body-scan",       peek: ["move", "restore"],   kicker: "IN YOUR BODY",                         def: 5, track: [{ k: "stretch", d: 75 }, { k: "relax", d: 60 }] },
+    heart:           { name: "Heart",            dom: "connect", ti: "ti-heart",           peek: ["move", "restore"],   kicker: "OPEN THE HEART",                       def: 5, track: [{ k: "gratitude", d: 45 }, { k: "mantra", d: 120 }] },
+    mind:            { name: "Mind",             dom: "focus",   ti: "ti-moon",            peek: ["move", "restore"],   kicker: "QUIET THE MIND",                       def: 5, track: [{ k: "breathe", d: 120 }, { k: "meditate", d: 180 }] },
+    vision:          { name: "Vision",           dom: "create",  ti: "ti-eye",             peek: ["move", "restore"],   kicker: "SEE IT CLEAR",                         def: 5, track: [{ k: "reprogram", d: 150 }, { k: "mantra", d: 120 }] },
+    fullStack:       { name: "Full Stack",       dom: "play",    ti: "ti-stack-2",         peek: ["move", "restore"],   kicker: "THE FULL RESET",                       def: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 120 }, { k: "meditate", d: 240 }, { k: "gratitude", d: 45 }] },
+    // plain tools (category members only; no peek coins)
+    t_breathe:  { name: "Breathe",   dom: "restore", ti: "ti-lungs",         peek: [], kicker: "BREATHE",        def: 5, track: [{ k: "breathe", d: 120 }] },
+    t_shakeOff: { name: "Shake off", dom: "move",    ti: "ti-run",           peek: [], kicker: "SHAKE IT OFF",   def: 2, track: [{ k: "stretch", d: 75 }] },
+    t_journal:  { name: "Journal",   dom: "focus",   ti: "ti-book",          peek: [], kicker: "ON THE PAGE",    def: 5, track: [{ k: "gratitude", d: 60 }] },
+    t_climb:    { name: "Climb",     dom: "move",    ti: "ti-stairs-up",     peek: [], kicker: "GET MOVING",     def: 2, track: [{ k: "stretch", d: 75 }] },
+    t_mantra:   { name: "Mantra",    dom: "create",  ti: "ti-bulb",          peek: [], kicker: "ONE LINE",       def: 2, track: [{ k: "mantra", d: 120 }] },
+    t_stretch:  { name: "Stretch",   dom: "move",    ti: "ti-stretching",    peek: [], kicker: "LOOSEN UP",      def: 5, track: [{ k: "stretch", d: 75 }] },
+    t_tapping:  { name: "Tapping",   dom: "connect", ti: "ti-hand-love-you", peek: [], kicker: "TAP IT OUT",     def: 5, track: [{ k: "relax", d: 60 }] },
+    t_bodyScan: { name: "Body scan", dom: "restore", ti: "ti-body-scan",     peek: [], kicker: "HEAD TO TOE",    def: 5, track: [{ k: "relax", d: 90 }] },
+    t_evening:  { name: "Evening",   dom: "create",  ti: "ti-moon-stars",    peek: [], kicker: "EASE INTO NIGHT", def: 5, track: [{ k: "relax", d: 60 }] },
+    t_relax:    { name: "Relax",     dom: "restore", ti: "ti-flower",        peek: [], kicker: "LET GO",         def: 5, track: [{ k: "relax", d: 60 }] },
+    t_meditate: { name: "Meditate",  dom: "focus",   ti: "ti-moon",          peek: [], kicker: "SIT WITH IT",    def: 5, track: [{ k: "meditate", d: 240 }] },
+    t_patience: { name: "Patience",  dom: "create",  ti: "ti-hourglass",     peek: [], kicker: "SLOW DOWN",      def: 5, track: [{ k: "meditate", d: 180 }] }
+  };
+  var TBX_TOP = ["firstLight", "beforeDeepWork", "caughtScrolling", "urgeWave", "spunUp", "iMessedUp", "emptyTank", "shutdown"]; // top-eight grid, design order (day-1 order; usage reorders over time)
+  var TBX_SECOND = ["cantSleep", "lockTheWin", "feelBetter", "body", "heart", "mind", "vision", "fullStack"];                    // second grid, design order
+  var TBX_CATS = [ // 6 category squares (approved composition). Deepen (create) + Become (move) exist in the design but are EXCLUDED from render.
+    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "urgeWave", "t_breathe", "t_shakeOff"] },
+    { id: "catch",   name: "Catch",   dom: "nourish", ti: "ti-hand-stop",       items: ["caughtScrolling", "emptyTank", "t_journal", "t_climb"] },
+    { id: "begin",   name: "Begin",   dom: "focus",   ti: "ti-flag",            items: ["firstLight", "beforeDeepWork", "t_mantra", "t_stretch"] },
+    { id: "recover", name: "Recover", dom: "connect", ti: "ti-heart-handshake", items: ["iMessedUp", "lockTheWin", "t_tapping", "t_bodyScan"] },
+    { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["shutdown", "cantSleep", "t_evening", "t_relax"] },
+    { id: "settle",  name: "Settle",  dom: "play",    ti: "ti-mood-smile",      items: ["feelBetter", "body", "t_meditate", "t_patience"] }
+  ];
+  var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
+  function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet)
+    var use = (S.tools && S.tools.use) || {};
+    return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
+  }
+  function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; return (d === 2 || d === 5) ? d : ((TBX_ITEMS[id] && TBX_ITEMS[id].def) || 5); } catch (e) { return 5; } } // guarded read; NO SCHEMA bump (additive S.tools precedent)
+  function tbxSetDose(id, m) { try { S.tools = S.tools || {}; S.tools.tbxDose = S.tools.tbxDose || {}; S.tools.tbxDose[id] = m; save(); } catch (e) {} }
+  function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(function (s) { return { k: s.k, d: s.d }; }); var f = target / base; return track.map(function (s) { return { k: s.k, d: Math.max(20, Math.round((s.d || 0) * f)) }; }); } // scale step durations proportionally to the chosen dose (2/5 min); floor 20s/step
+  function tbxLaunch(id, mins) { // THE LAUNCH CONTRACT (decision 5): identical to the old tiles + logs the tbx id for most-used ordering (decision 6)
+    var it = TBX_ITEMS[id]; if (!it) return;
+    var track = tbxScaleTrack(it.track, mins || tbxDose(id));
+    landFromHome(); leaveHomeForPlayer();
+    try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
+  }
+  function tbxPlanDay() { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} } // Plan-my-day = the same path the planner edge-door uses (consolidation, not new nav)
+  function tbxWhisper() { try { toast(tr("Editing steps and timing comes with Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
+  function tbxDerivedSteps(it) { return (it.track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (m.col || "#63d3c9"), ic: (m.ti || "ti-circle"), t: (m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines)
+  function tbxTile(host, id) { // one grid cell = squircle face + up-to-2 peek coins + domain-hued label; tap → dose card in place
+    var it = TBX_ITEMS[id]; if (!it) return null;
+    var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name));
+    var wrap = add(cell, "div", "tbx-face-wrap");
+    (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = tbxLip(tbxVar(it.dom)); add(face, "i", "ti " + it.ti);
+    var lbl = add(cell, "span", "tbx-label", tr(it.name)); lbl.style.color = tbxVar(it.dom);
+    cell.onclick = function () { try { tbxOpenDose(id, cell); } catch (e) {} };
+    return cell;
+  }
+  function tbxHeroes() { // CONTEXTUAL hero picker with the reason ALWAYS in the kicker, using only signals that exist today (decision 7). Phase B plan→journey feeding is OFF-limits.
+    var now = new Date(), h = now.getHours(), nowMin = h * 60 + now.getMinutes();
+    var morning = { stackId: "firstLight", name: "Morning stack", kicker: tr("FOR YOU NOW · MORNING"), kcol: "#ff8fc0", playBg: TBX_PINK, playInk: "#2a1730", coins: [{ c: "restore", ic: "ti-lungs" }, { c: "create", ic: "ti-bulb" }, { c: "move", ic: "ti-run" }] };
+    var deep = { stackId: "beforeDeepWork", name: "Before Deep Work", kicker: tr("NEXT BLOCK · DEEP WORK"), kcol: "#8fc6f0", playBg: TBX_HEX.focus, playInk: "#12283a", coins: [{ c: "create", ic: "ti-notes" }, { c: "restore", ic: "ti-lungs" }, { c: "focus", ic: "ti-target" }] };
+    var night = { stackId: "cantSleep", name: "Can't Sleep", kicker: tr("FOR YOU NOW · LATE NIGHT"), kcol: "#8fc6f0", playBg: TBX_HEX.restore, playInk: "#06343a", coins: [{ c: "restore", ic: "ti-flower" }, { c: "restore", ic: "ti-lungs" }, { c: TBX_BOLT, ic: "ti-bolt" }] };
+    var shut = { stackId: "shutdown", name: "Shutdown", kicker: tr("FOR YOU NOW · WINDING DOWN"), kcol: "#c9a6ff", playBg: TBX_HEX.focus, playInk: "#12283a", coins: [{ c: "restore", ic: "ti-flower" }, { c: "focus", ic: "ti-moon-stars" }, { c: "restore", ic: "ti-lungs" }] };
+    var out = [];
+    if (h >= 1 && h < 5) out.push(night); else if (h >= 20) out.push(shut); else out.push(morning); // slot 1 = the moment (1-5am / evening / else morning-default)
+    var nb = null; try { nb = nextUpBlock(nowMin); } catch (e) {} // slot 2 = a planned block within 90 min → Before Deep Work variant with the block name + time in the kicker
+    if (nb && (hm(nb.time) - nowMin) >= 0 && (hm(nb.time) - nowMin) <= 90) { var d2 = { stackId: deep.stackId, name: deep.name, kcol: deep.kcol, playBg: deep.playBg, playInk: deep.playInk, coins: deep.coins, kicker: tr("NEXT BLOCK") + " · " + String(nb.title || "").toUpperCase() + " " + nb.time }; out.push(d2); }
+    else out.push(out[0] === morning ? deep : morning);
+    if (out[1] === out[0]) out[1] = (out[0] === morning ? deep : morning);
+    return out;
+  }
+  function tbxHeroRow(host, hero) {
+    var row = add(host, "div", "tbx-hero");
+    var coins = add(row, "div", "tbx-hero-coins");
+    (hero.coins || []).slice(0, 3).forEach(function (cc) { var coin = add(coins, "div", "tbx-hcoin"); coin.style.background = tbxVar(cc.c); coin.style.boxShadow = tbxLip(tbxVar(cc.c)); add(coin, "i", "ti " + cc.ic); });
+    var mid = add(row, "div", "tbx-hero-mid");
+    var kick = add(mid, "div", "tbx-hkicker"); kick.textContent = hero.kicker; kick.style.color = hero.kcol;
+    add(mid, "div", "tbx-hname", tr(hero.name));
+    var play = add(row, "button", "tbx-hplay"); play.setAttribute("aria-label", tr("Start")); play.style.background = hero.playBg; play.style.boxShadow = tbxLip(hero.playBg);
+    var pg = add(play, "i", "ti ti-player-play-filled"); pg.style.color = hero.playInk;
+    play.onclick = function () { try { tbxLaunch(hero.stackId, tbxDose(hero.stackId)); } catch (e) {} }; // heroes run the default dose directly, NO dose card (decision 5)
+    return row;
+  }
+  function tbxSquare(host, cat) { // a collapsible mini-bento: 2x2 preview of the category's item coins + the name; NO abstract category icon on the face (the contents preview IS the signifier)
+    var sq = add(host, "button", "tbx-square"); sq.setAttribute("aria-label", tr(cat.name)); sq.setAttribute("data-tbxcat", cat.id);
+    sq.style.background = "color-mix(in srgb, " + tbxVar(cat.dom) + " 16%, #14060e)"; sq.style.boxShadow = "0 4px 0 color-mix(in srgb, " + tbxVar(cat.dom) + " 20%, #000)";
+    var prev = add(sq, "div", "tbx-sq-prev");
+    cat.items.slice(0, 4).forEach(function (iid) { var it = TBX_ITEMS[iid]; if (!it) return; var mc = add(prev, "div", "tbx-sq-mini"); mc.style.background = tbxVar(it.dom); mc.style.boxShadow = tbxLip(tbxVar(it.dom)); add(mc, "i", "ti " + it.ti); });
+    var nm = add(sq, "span", "tbx-sq-name", tr(cat.name)); nm.style.color = tbxVar(cat.dom);
+    sq.onclick = function () { try { tbxOpenCat(cat.id, host); } catch (e) {} };
+    return sq;
+  }
+  function tbxBuildPanel(cat) { // the expanded category panel: category-hue wash card, header (tap to close) + full-tile 4-up item grid. Inserted as a grid child right after the tapped square (grid-column:1/-1).
+    var d = tbxVar(cat.dom);
+    var panel = document.createElement("div"); panel.className = "tbx-panel tbx-open";
+    panel.style.background = "color-mix(in srgb, " + d + " 14%, #14060e)"; panel.style.boxShadow = "0 4px 0 color-mix(in srgb, " + d + " 18%, #000)";
+    var head = add(panel, "button", "tbx-panel-head"); var hi = add(head, "i", "ti " + cat.ti); hi.style.color = d; var hn = add(head, "span", "tbx-panel-name", tr(cat.name)); hn.style.color = d;
+    add(head, "span", "tbx-panel-count", cat.items.length + " " + tr("inside")); add(head, "i", "ti ti-chevron-up tbx-panel-chev");
+    head.onclick = function () { var bento = head.closest ? head.closest(".tbx-bento") : panel.parentNode; try { tbxOpenCat(cat.id, bento); } catch (e) {} }; // tap header = close
+    var ig = add(panel, "div", "tbx-grid tbx-panel-grid"); cat.items.forEach(function (iid) { tbxTile(ig, iid); });
+    return panel;
+  }
+  function tbxOpenCat(catId, bento) { // SINGLE-OPEN category. Toggle on tap. Opening removes any existing panel first; a dose card inside a closing panel goes with it (resync openStack).
+    if (!bento) return;
+    var wasOpen = _tbxOpenCat === catId;
+    var existing = bento.querySelector(".tbx-panel"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    _tbxOpenCat = null;
+    var root = bento.closest ? bento.closest(".tbx") : null; if (root && !root.querySelector(".tbx-dose")) _tbxOpenStack = null; // the open dose card may have lived inside the panel we just dropped
+    if (wasOpen) return;
+    var cat = null; TBX_CATS.forEach(function (c) { if (c.id === catId) cat = c; }); if (!cat) return;
+    var sq = bento.querySelector('[data-tbxcat="' + catId + '"]'); if (!sq) return;
+    var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
+  }
+  function tbxBuildDose(id) { // frame 20c: face + hue kicker + name, plain-word steps, 2/5 dose chips + pink Start, PLUS gate row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
+    var it = TBX_ITEMS[id]; var d = tbxVar(it.dom);
+    var card = document.createElement("div"); card.className = "tbx-dose tbx-open";
+    var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = tbxLip(d); add(fc, "i", "ti " + it.ti);
+    var htx = add(head, "div", "tbx-dose-htx"); var k = add(htx, "div", "tbx-dose-kicker", tr(it.kicker)); k.style.color = d; add(htx, "div", "tbx-dose-name", tr(it.name));
+    var steps = it.steps || tbxDerivedSteps(it); var sc = add(card, "div", "tbx-dose-steps");
+    steps.forEach(function (st) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); });
+    var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips"); var cur = tbxDose(id);
+    [2, 5].forEach(function (m) {
+      var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + " " + tr("min"));
+      if (m === cur) { chip.style.background = d; chip.style.boxShadow = tbxLip(d); }
+      chip.onclick = function () { tbxSetDose(id, m); chips.querySelectorAll(".tbx-chip").forEach(function (ch) { ch.classList.remove("on"); ch.style.background = ""; ch.style.boxShadow = ""; }); chip.classList.add("on"); chip.style.background = d; chip.style.boxShadow = tbxLip(d); }; // re-skin in place, card stays open
+    });
+    var start = add(foot, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start"));
+    start.onclick = function () { try { tbxLaunch(id, tbxDose(id)); } catch (e) {} };
+    var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti ti-lock"); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); add(gate, "span", "tbx-gate-badge", tr("PLUS"));
+    gate.onclick = function () { tbxWhisper(); };
+    return card;
+  }
+  function tbxOpenDose(id, cell) { // SINGLE-OPEN dose card, inserted right after the tapped tile's grid (full width in the flow). Toggle on re-tap.
+    var root = cell.closest ? cell.closest(".tbx") : null; if (!root) return;
+    var wasOpen = _tbxOpenStack === id;
+    var existing = root.querySelector(".tbx-dose"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    _tbxOpenStack = null;
+    if (wasOpen) return;
+    var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
+    var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
+  }
+  function renderToolbox2() { // the main renderer: drains the GROUND zone and builds the toolbox column. Child-drain only (ratchet convention). Called from renderOnePageWorld in place of renderGroundTools when TBX2.
+    if (!TBX2) return;
+    var ground = groundZone(); if (!ground) return;
+    while (ground.firstChild) ground.removeChild(ground.firstChild);
+    _tbxOpenStack = null; _tbxOpenCat = null;
+    var root = add(ground, "div", "tbx");
+    var planWrap = add(root, "div", "tbx-planwrap"); var plan = add(planWrap, "button", "tbx-plan"); add(plan, "i", "ti ti-calendar"); add(plan, "span", null, tr("Plan my day")); plan.onclick = function () { try { tbxPlanDay(); } catch (e) {} };
+    var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop"; tbxOrder(TBX_TOP).forEach(function (id) { tbxTile(top, id); });
+    var second = add(root, "div", "tbx-grid tbx-grid-main"); tbxOrder(TBX_SECOND).forEach(function (id) { tbxTile(second, id); });
+    tbxHeroes().forEach(function (hero) { tbxHeroRow(root, hero); });
+    add(root, "div", "tbx-intro", tr("For when you need something specific: one box to settle, one to go deeper."));
+    var bento = add(root, "div", "tbx-bento"); TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
+  }
+  Object.assign(I18N.ru, { // TOOLBOX strings (B4 law: EN source + RU dict in the same commit). RU тире kept where native. Keys duplicated with the low I18N-DICT block keep their canonical value (this assign runs earlier → the later block wins on conflict).
+    "Plan my day": "План на день", "First Light": "Первый свет", "Before Deep Work": "Перед фокусом", "Caught Scrolling": "Залип в ленте", "Urge Wave": "Волна тяги", "Spun Up": "На взводе", "I Messed Up": "Я оступился", "Empty Tank": "Пустой бак", "Shutdown": "Отбой",
+    "Can't Sleep": "Не спится", "Lock the Win": "Закрепи победу", "Feel Better": "Полегчает", "Body": "Тело", "Heart": "Сердце", "Mind": "Ум", "Vision": "Образ", "Full Stack": "Полный сброс",
+    "Breathe": "Дыхание", "Shake off": "Стряхни", "Journal": "Дневник", "Climb": "Подъём", "Mantra": "Мантра", "Stretch": "Разминка", "Tapping": "Таппинг", "Body scan": "Скан тела", "Evening": "Вечер", "Relax": "Расслабься", "Meditate": "Медитация", "Patience": "Терпение",
+    "Reset": "Сброс", "Catch": "Поймай", "Begin": "Начни", "Recover": "Восстановись", "Night": "Ночь", "Settle": "Осядь",
+    "START THE DAY": "НАЧНИ ДЕНЬ", "BEFORE YOU FOCUS": "ПЕРЕД ФОКУСОМ", "WHEN YOU DRIFT · THE CATCH IS THE WIN": "КОГДА ОТВЛЁКСЯ · ПОЙМАТЬ — УЖЕ ПОБЕДА", "RIDE THE URGE": "ОСЕДЛАЙ ТЯГУ", "COME BACK DOWN": "ВЕРНИСЬ ВНИЗ", "AFTER A SLIP": "ПОСЛЕ СРЫВА", "REFILL": "ЗАПРАВЬСЯ", "END THE DAY": "ЗАКРОЙ ДЕНЬ", "WHEN SLEEP WON'T COME": "КОГДА СОН НЕ ИДЁТ", "SEAL THE WIN": "ЗАКРЕПИ ПОБЕДУ", "LIFT THE MOOD": "ПОДНИМИ НАСТРОЕНИЕ", "IN YOUR BODY": "В ТЕЛЕ", "OPEN THE HEART": "ОТКРОЙ СЕРДЦЕ", "QUIET THE MIND": "УСПОКОЙ УМ", "SEE IT CLEAR": "УВИДЬ ЯСНО", "THE FULL RESET": "ПОЛНЫЙ СБРОС",
+    "BREATHE": "ДЫШИ", "SHAKE IT OFF": "СТРЯХНИ", "ON THE PAGE": "НА БУМАГЕ", "GET MOVING": "РАЗОМНИСЬ", "ONE LINE": "ОДНА СТРОКА", "LOOSEN UP": "РАССЛАБЬ ТЕЛО", "TAP IT OUT": "ПРОСТУЧИ", "HEAD TO TOE": "С ГОЛОВЫ ДО НОГ", "EASE INTO NIGHT": "ПЛАВНО В НОЧЬ", "LET GO": "ОТПУСТИ", "SIT WITH IT": "ПОБУДЬ С ЭТИМ", "SLOW DOWN": "СБАВЬ ТЕМП",
+    "FOR YOU NOW · MORNING": "СЕЙЧАС ДЛЯ ТЕБЯ · УТРО", "NEXT BLOCK · DEEP WORK": "СЛЕДУЮЩИЙ БЛОК · ФОКУС", "FOR YOU NOW · LATE NIGHT": "СЕЙЧАС ДЛЯ ТЕБЯ · ПОЗДНЯЯ НОЧЬ", "FOR YOU NOW · WINDING DOWN": "СЕЙЧАС ДЛЯ ТЕБЯ · ЗАВЕРШЕНИЕ", "NEXT BLOCK": "СЛЕДУЮЩИЙ БЛОК", "Morning stack": "Утренний стек",
+    "name where you went": "назови, куда ушёл", "three slow breaths": "три медленных вдоха", "feel why it matters": "почувствуй, почему это важно", "choose on purpose, staying counts": "выбери осознанно, остаться — это тоже победа", "log the catch": "отметь, что поймал",
+    "min": "мин", "Start": "Начать", "inside": "внутри", "Adjust steps & timing": "Настрой шаги и время", "PLUS": "PLUS",
+    "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "Editing steps and timing comes with Plus.": "Редактирование шагов и времени — в Plus."
+  });
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
@@ -14768,8 +14954,9 @@
     function chk(name, pass, got, want) { ok = ok && !!pass; out.push((pass ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); }
     function rgb(el, p) { return el ? getComputedStyle(el)[p || "backgroundColor"] : "?"; }
     var ring = el("tfRing"), bars = el("tfHomeBars"), tile = document.querySelector("#trackerFull .tf-tile");
-    var pd = el("tfDoorPlanner"), gd = el("tfDoorGarden"), grid = document.querySelector("#trackerFull .tf-toolgrid");
-    var tiles = [].slice.call(document.querySelectorAll("#trackerFull .tf-htool"));
+    var pd = el("tfDoorPlanner"), gd = el("tfDoorGarden");
+    var plan = document.querySelector("#trackerFull .tbx-plan"), topGrid = el("tbxGridTop"), square = document.querySelector("#trackerFull .tbx-square"); // TOOLBOX2 (2026-07-23): the board's tools moved to the scroll-continuation Toolbox — the old 2x4 grid checks are repointed to the top-eight grid below
+    var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the top-eight tile faces (First Light … Shutdown)
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
     chk("circle width %vw", Math.abs(rr.width / W - 0.72) <= 0.03, Math.round(rr.width / W * 100) + "%", "72%±3"); // board updated 64→72 (David 2026-07-22 "bigger + more centered")
@@ -14777,10 +14964,12 @@
     if (tile) { var ir = tile.getBoundingClientRect(); chk("ring rim px/side", (rr.width - ir.width) / 2 >= 5 && (rr.width - ir.width) / 2 <= 11, Math.round((rr.width - ir.width) / 2), "5-11"); }
     var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
     chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px");
-    if (grid) { var gr = grid.getBoundingClientRect(); chk("grid width %vw", gr.width / W >= 0.46 && gr.width / W <= 0.72, Math.round(gr.width / W * 100) + "%", "46-72 (board 56 — smaller tools under the hero circle)"); }
+    if (plan) { var ps = getComputedStyle(plan).boxShadow; chk("plan button lip 0 4px 0 #160510", ps.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), "rgb(22,5,16) 0px 4px 0px"); } // TOOLBOX2 (frame 20a): the Plan-my-day sticker shadow present
+    if (topGrid) { var gc = getComputedStyle(topGrid).gridTemplateColumns; chk("top-eight grid 4×54px tracks", gc === "54px 54px 54px 54px", gc, "54px 54px 54px 54px"); }
     if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); }
     if (gd) chk("door garden fill", rgb(gd) === "rgb(24, 70, 48)", rgb(gd), "rgb(24,70,48)");
-    if (tiles.length >= 3) { chk("tile1 raw hex", rgb(tiles[0]) === "rgb(91, 143, 214)", rgb(tiles[0]), "rgb(91,143,214)"); chk("tile3 raw hex", rgb(tiles[2]) === "rgb(214, 106, 126)", rgb(tiles[2]), "rgb(214,106,126)"); }
+    if (tfaces.length >= 3) { chk("tile1 face hex (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58)"); chk("tile3 face hex (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160)"); var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 46px", Math.round(fr0.width) === 46 && Math.round(fr0.height) === 46, Math.round(fr0.width) + "x" + Math.round(fr0.height), "46x46"); chk("tile radius 16px", getComputedStyle(tfaces[0]).borderTopLeftRadius === "16px", getComputedStyle(tfaces[0]).borderTopLeftRadius, "16px"); }
+    if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
   };
