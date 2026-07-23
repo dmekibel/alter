@@ -5141,6 +5141,7 @@
     // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
     // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
     if (!TBX2) renderHomeGrid(c); // TBX2 (2026-07-23): the idle 2x4 grid is REPLACED by the Toolbox one scroll below (renderToolbox2 in the ground zone) — #tfCtrls stays drained/empty so the board = strip · circle · next-line, then the Toolbox on scroll-down. Board circle/strip/next-line unchanged (only the removed grid).
+    else tbxPlanButton(c); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker sits in #tfCtrls, directly below the circle + What-now + next-line block, visible at rest without scrolling. It was removed from the toolbox scroll section so it exists once. Gap under the circle = --tun-tools-gap (5vh, already tunable).
     if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
     if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // idle is a calm face: sky (journey) above + ground (full tool shelf) below, one native scroll
   }
@@ -5526,6 +5527,11 @@
     try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
   }
   function tbxPlanDay() { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} } // Plan-my-day = the same path the planner edge-door uses (consolidation, not new nav)
+  function tbxPlanButton(host) { // the Plan-my-day sticker. HOME-FACE PLACEMENT (David 2026-07-23 device "belongs on the home face"): rendered into #tfCtrls directly below the circle + What-now + next-line block, visible at rest — NOT in the toolbox scroll section (it existed there before; now it lives here once). Exact approved styling via .tbx-plan (#8F55DE / radius 14 / 2.5px #160510 / 0 4px 0 lip / Baloo 2 800 13px #e8ddff / ti-calendar). Same tbxPlanDay handler.
+    if (!host) return null;
+    var planWrap = add(host, "div", "tbx-planwrap"); var plan = add(planWrap, "button", "tbx-plan"); add(plan, "i", "ti ti-calendar"); add(plan, "span", null, tr("Plan my day")); plan.onclick = function () { try { tbxPlanDay(); } catch (e) {} };
+    return plan;
+  }
   function tbxWhisper() { try { toast(tr("You can edit steps and timing in Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
   function tbxDerivedSteps(it) { return (it.track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (m.col || "#63d3c9"), ic: (m.ti || "ti-circle"), t: (m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines)
   function tbxTile(host, id) { // one grid cell = squircle face + up-to-2 peek coins + domain-hued label; tap → dose card in place
@@ -5628,7 +5634,7 @@
     while (ground.firstChild) ground.removeChild(ground.firstChild);
     _tbxOpenStack = null; _tbxOpenCat = null;
     var root = add(ground, "div", "tbx");
-    var planWrap = add(root, "div", "tbx-planwrap"); var plan = add(planWrap, "button", "tbx-plan"); add(plan, "i", "ti ti-calendar"); add(plan, "span", null, tr("Plan my day")); plan.onclick = function () { try { tbxPlanDay(); } catch (e) {} };
+    // PLAN BUTTON MOVED (David 2026-07-23 device): the Plan-my-day sticker now lives on the HOME FACE (renderHomeFace → #tfCtrls, tbxPlanButton), directly under the circle block, visible at rest. It is NO LONGER the first toolbox-scroll section — the top-eight grid is now the first scroll-in content (verdict #4). It exists ONCE.
     var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop"; tbxOrder(TBX_TOP).forEach(function (id) { tbxTile(top, id); });
     var second = add(root, "div", "tbx-grid tbx-grid-main"); tbxOrder(TBX_SECOND).forEach(function (id) { tbxTile(second, id); });
     tbxHeroes().forEach(function (hero) { tbxHeroRow(root, hero); });
@@ -14961,14 +14967,15 @@
     var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the top-eight tile faces (First Light … Shutdown)
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
-    chk("circle width %vw", Math.abs(rr.width / W - 0.72) <= 0.03, Math.round(rr.width / W * 100) + "%", "72%±3"); // board updated 64→72 (David 2026-07-22 "bigger + more centered")
+    chk("circle width %vw", Math.abs(rr.width / W - 0.64) <= 0.03, Math.round(rr.width / W * 100) + "%", "64%±3"); // CIRCLE-DOWN (David 2026-07-23 device "circle too big"): reverted 72→64 (the prior locked number); default --tun-ring-vw is 64vw
     chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= 0.12, Math.round((rr.top - br.bottom) / H * 100) + "%", "7-12%");
     if (tile) { var ir = tile.getBoundingClientRect(); chk("ring rim px/side", (rr.width - ir.width) / 2 >= 5 && (rr.width - ir.width) / 2 <= 11, Math.round((rr.width - ir.width) / 2), "5-11"); }
     var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
     chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px");
-    if (plan) { var ps = getComputedStyle(plan).boxShadow; chk("plan button lip 0 4px 0 #160510", ps.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), "rgb(22,5,16) 0px 4px 0px"); } // TOOLBOX2 (frame 20a): the Plan-my-day sticker shadow present
+    chk("plan button present on home face", !!plan, plan ? "present" : "missing", "present"); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker moved to the home face (#tfCtrls, below the circle block); it must exist once
+    if (plan) { var ps = getComputedStyle(plan).boxShadow; chk("plan button lip 0 4px 0 #160510", ps.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), "rgb(22,5,16) 0px 4px 0px"); } // the Plan-my-day sticker lip present (0 4px 0 #160510)
     if (topGrid) { var gc = getComputedStyle(topGrid).gridTemplateColumns; chk("top-eight grid 4×54px tracks", gc === "54px 54px 54px 54px", gc, "54px 54px 54px 54px"); }
-    if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); }
+    if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); chk("door top below strip bottom", pr.top >= br.bottom, "door top " + Math.round(pr.top) + " · strip bottom " + Math.round(br.bottom), "door top ≥ strip bottom"); } // DOORS-DOWN (David 2026-07-23 device): the edge-tab top must clear the story strip's bottom edge
     if (gd) chk("door garden fill", rgb(gd) === "rgb(24, 70, 48)", rgb(gd), "rgb(24,70,48)");
     if (tfaces.length >= 3) { chk("tile1 face hex (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58)"); chk("tile3 face hex (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160)"); var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 46px", Math.round(fr0.width) === 46 && Math.round(fr0.height) === 46, Math.round(fr0.width) + "x" + Math.round(fr0.height), "46x46"); chk("tile radius 16px", getComputedStyle(tfaces[0]).borderTopLeftRadius === "16px", getComputedStyle(tfaces[0]).borderTopLeftRadius, "16px"); }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
