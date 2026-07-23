@@ -3,6 +3,26 @@
 
 ---
 
+## STATUS UPDATE (2026-07-23 (3), Opus): WELCOME-BACK POPUP REMOVED + IDLE CIRCLE 64→52vw v1214 (two David device orders, one commit)
+Two direct orders folded into one ship. Regression zone (timeline/day-nav) UNTOUCHED. No new user-facing copy. Ratchet held (wipes 147 unchanged — the popup removal DELETED a call site, added zero innerHTML wipes).
+
+1. **"WELCOME BACK" popup removed from the home surface.** The card was `comebackLadder()` (app.js `@SEC` ORGAN D moment-listener, ~L12820) — a calm bottom `mlCard` (kicker "welcome back", headline "You came back. That bounce — not the streak — is the skill.", "One small thing on purpose today?", "I'm in ▶" / "not today"). **Trigger:** `checkMoments()` (the passive one-nudge/day scan) fired it as its FIRST branch when `profile().bouncedBack` (roughY && goodT) was true; `checkMoments("open")` runs ~1200ms after the daily gauge completes (`gaugeOpen` → `maybeWelcomeBack` → `openHome`), so on a bounced-back day it landed the card over home. **Removed:** the `if (pf.bouncedBack) { markNudge(); comebackLadder(); return true; }` branch inside `checkMoments` (replaced with a comment). The `comebackLadder()`/`mlCard` machinery is LEFT INTACT — it's shared by the drift off-ramp + pre-sleep moments and by `DEV.moment("comeback")` (dev testing). **State check:** `bouncedBack` is a DERIVED property recomputed each open; `comebackLadder`'s "I'm in ▶" wrote NO persistent flag anything waited on (only the local `S.profile.muteNudgeUntilK = todayK+2` on its own "not today" no-scold path). Removing the trigger leaves ZERO stuck state — nothing waits for an acknowledgment that can no longer happen.
+2. **Idle-home circle 64vw → 52vw** ("the big pink circle is way too giant even at 64"). `index.html #trackerFull.tf-home.st-idle #tfRing` default `--tun-ring-vw` **64vw → 52vw** (still the tuner knob, David fine-tunes on device). Also synced the stale tuner slider default `ringVw def 72 → 52` (app.js `@SEC` design-tuner — it had drifted from the CSS fallback). **designAudit circle check 64%±3 → 52%±3.**
+
+**Consequences handled (per the order):**
+- **strip→circle gap check (7-12vh):** re-measured at 52vw = **9%**, still in band — NO drift, NO band-widening needed.
+- **door-top-below-strip check:** re-measured HONESTLY (all inline `--tun-*` cleared, the audit's precondition) = door top 254 ≥ strip bottom 234 → **PASS** with 20px clearance (baseline 64vw was 254 ≥ 211). The smaller circle drops the strip ~23px via the centered flex stack but stays clear of the fixed-`--tun-door-cy` (32dvh) door tab — NO layout adjustment required.
+- **tiles-peek:** first tile row still peeks at the fold on the idle home; no dead stretch opened above the tiles.
+
+**designAudit updated numbers — preview run (idle home, `alter_tuner` + inline `--tun-*` cleared, mobile 375×812): `ALL PASS (18)`.** Circle 52% (want 52%±3), gap 9%, all door/tile/grid/bloom/plan-button/next-line checks unchanged-PASS.
+
+**Verified in preview (boot/layout/taps only — mobile 375×812, dark, tuner cleared):** boots clean; **ZERO console errors**; the demoProfile+seedDay repro no longer surfaces the WELCOME BACK card over home (`checkMoments()` returns false, deals no comeback card; behavioral test confirmed); idle home renders balanced — smaller centered circle, "What now?", "open afternoon — pick a thread", "Plan my day", story strip, edge tabs below the strip, toolbox tiles peeking at the fold. Baseline (4907a6e stashed) cross-checked: audit was ALL PASS(18) at 64vw with tuner cleared, confirming the earlier one-off door FAIL was a self-inflicted incomplete-tuner-clear, not the circle change. preship: parses · ratchet anchors 20/20 · **wipes 147 (unchanged)** · SCHEMA 5 · 26 logic invariants PASS · **v1213 → v1214** · server.js regenerated.
+**DEVICE-UNTESTED (honest):** final pixel judgment on the 52vw circle size belongs to David's tuner (`--tun-ring-vw`); scroll/press FEEL preview-unprovable as always. The 6 device-only regression invariants unchanged by this pass (regression zone untouched).
+- **DAVID's ONE move:** on `/fresh.html` → confirm the WELCOME BACK popup is gone and the circle size reads right; if the circle's off, tuner → `--tun-ring-vw` → send the number.
+- **CLAUDE's ONE move:** none pending on this pass — it's shipped; the v1209 Toolbox copy Gate-2 from the section below still governs that earlier commit.
+
+---
+
 ## STATUS UPDATE (2026-07-23 (2), Opus): TOOLBOX LAYOUT-CORRECTION PASS v1213 (David's four device verdicts — committed local)
 David tested the v1209/v1210 Toolbox on device and issued four direct layout verdicts. Implemented all four as tuner-var-driven defaults (David fine-tunes the final pixels in the in-app Design tuner). No new user-facing copy (the Plan-my-day label already passed the gates). Regression zone (timeline/day-nav) UNTOUCHED.
 

@@ -12878,7 +12878,7 @@
     try {
       if (!canNudge()) return false;
       var k = todayK(), pf = {}; try { pf = profile(); } catch (e) {}
-      if (pf.bouncedBack) { markNudge(); comebackLadder(); return true; }
+      // COMEBACK-CARD REMOVED from the home surface (David 2026-07-23 "remove the WELCOME BACK popup card that covers the Home Screen"). The bouncedBack trigger no longer deals comebackLadder() over home. bouncedBack is a DERIVED property (roughY && goodT, recomputed each open) and comebackLadder wrote no persistent flag anything waited on (only the local muteNudgeUntilK on its own "not today"), so removing the trigger leaves no stuck state. comebackLadder()/mlCard machinery is shared by the drift + pre-sleep moments below and by DEV.moment — left intact.
       var driftNow = (logs(k) || []).some(function (l) { return domainOf(l) === "drift"; }) || activeTimers().some(function (t) { return domainOf(t) === "drift"; });
       if (driftNow) { markNudge(); offRamp(); return true; }
       if (preSleepWindow()) { markNudge(); tranquilityOffer(); return true; }
@@ -14967,7 +14967,7 @@
     var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the top-eight tile faces (First Light … Shutdown)
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
-    chk("circle width %vw", Math.abs(rr.width / W - 0.64) <= 0.03, Math.round(rr.width / W * 100) + "%", "64%±3"); // CIRCLE-DOWN (David 2026-07-23 device "circle too big"): reverted 72→64 (the prior locked number); default --tun-ring-vw is 64vw
+    chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
     chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= 0.12, Math.round((rr.top - br.bottom) / H * 100) + "%", "7-12%");
     if (tile) { var ir = tile.getBoundingClientRect(); chk("ring rim px/side", (rr.width - ir.width) / 2 >= 5 && (rr.width - ir.width) / 2 <= 11, Math.round((rr.width - ir.width) / 2), "5-11"); }
     var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
@@ -15436,7 +15436,7 @@
   var TUNER_KEY = "alter_tuner";
   // each: [var-name, label, min, max, step, default, unit, formatter(v)->cssValue]. `apply` writes the derived CSS var(s). bloom is one strength slider driving BOTH alpha + blur.
   var TUNER_FIELDS = [
-    { k: "ringVw", lbl: "Circle size", min: 45, max: 90, step: 1, def: 72, unit: "vw", vars: function (v) { return { "--tun-ring-vw": v + "vw" }; } }, // THE HERO CIRCLE size (David 2026-07-22 "bigger + more centered") — drag on real pixels, then send me the value to lock
+    { k: "ringVw", lbl: "Circle size", min: 45, max: 90, step: 1, def: 52, unit: "vw", vars: function (v) { return { "--tun-ring-vw": v + "vw" }; } }, // THE HERO CIRCLE size — tuner starts at the current default (52vw; David 2026-07-23 "circle way too giant even at 64"). Drag on real pixels, then send me the value to lock.
     { k: "gridW", lbl: "Tools size", min: 38, max: 90, step: 1, def: 56, unit: "vw", vars: function (v) { return { "--tun-grid-w": v + "vw" }; } }, // the tool row width — narrower = smaller tiles (David "buttons below smaller")
     { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 16, step: 1, def: 5, unit: "vh", vars: function (v) { return { "--tun-tools-gap": v + "vh" }; } }, // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
     { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
