@@ -6302,6 +6302,8 @@
     S.habitDone = S.habitDone || {};
     S.blocks = S.blocks || {};
     S.log = S.log || {};
+    /* P0 GUARD (2026-07-23): a null/garbage entry inside any day's block or log array (from a truncated save, an interrupted write, or a bad merge) crashes EVERY iterator that reads it — sfNow, trackerState, claimableBlock, nextUpBlock, renderHomeBars all do `.filter(b => b.time...)` and throw "reading 'time' of null" on the FIRST home render. That uncaught throw fires the global error handler's "tap to refresh" toast → location.reload() → the welcome/claim screen (partial-state bounce). Compact the holes ONCE here, before any render, covering every reader (accessor and direct S.blocks[k] reads alike). Read-guarded: removes only null/undefined, never writes defaults, leaves clean arrays untouched. */
+    [S.blocks, S.log].forEach(function (m) { Object.keys(m || {}).forEach(function (dk) { var a = m[dk]; if (Array.isArray(a) && (a.indexOf(null) >= 0 || a.indexOf(undefined) >= 0)) { m[dk] = a.filter(function (x) { return x != null; }); } }); });
     S.timers = S.timers || [];
     S.habits = S.habits.filter(function (h) { return h.id !== "send"; });
     S.habits.forEach(function (h) { if (!h.type) h.type = "build"; if (h.per == null) h.per = 0; if (!h.color) h.color = "#8a5cf0"; });
