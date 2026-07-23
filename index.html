@@ -1800,6 +1800,8 @@
   .tbx-gate i{ font-size:13px; color:#c9a6ff; }
   .tbx-gate-tx{ font-size:11px; font-weight:800; color:#c9a6ff; }
   .tbx-gate-badge{ margin-left:auto; padding:2px 8px; border-radius:8px; background:var(--create); color:#22103a; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:9.5px; }
+  .tbx-reset{ display:block; width:100%; margin-top:7px; padding:4px 10px; background:none; border:none; text-align:center; color:#9a6a86; font-family:"Jost",sans-serif; font-weight:700; font-size:10.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* subtle reset-to-default row, shown only when a per-stack edit exists */
+  .tbx-reset:active{ opacity:.6; }
   .tbx-open{ animation:tbxSettle .3s var(--ease-settle); } /* M6: one open-animation grammar, --ease-settle ~.3s */
   @keyframes tbxSettle{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
   #trackerFull .tf-grab{ position:absolute; top:0; left:0; right:0; height:40px; background:transparent; cursor:grab; touch-action:none; z-index:3; } /* full-width tall touch zone — drag DOWN to close (visual bar is ::before) */
@@ -3082,6 +3084,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1216"></script>
+  <script src="app.js?v=1217"></script>
 </body>
 </html>

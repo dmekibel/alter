@@ -5465,6 +5465,8 @@
   }
   // @SEC:TOOLBOX2 — the home-scroll TOOLBOX (Fable-planned frame 20a + 20c, Opus-built 2026-07-23). REPLACES the 2x4 renderHomeGrid tiles + the renderGroundTools shelf: renders (Plan-my-day now lives on the home face) top-eight grid → 2 hero rows → bento intro → 6 collapsible category squares (all into the GROUND zone #tfWorldGround of the one-page world). ONE grid of 8 (David 2026-07-23 device — the second grid was removed), one continuous native scroll, NO new scroll container / listener / snap. Data-driven (TBX_ITEMS + TBX_CATS). Single-open dose card (openStack) + category panel (openCat), inserted in-flow with grid-column:1/-1 / full-width, --ease-settle ~.3s (M6). Guarded by TBX2 (false = old renderHomeGrid + renderGroundTools byte-identical). Child-drain only — ZERO new innerHTML wipes (ratchet law). Every string via tr() + RU dict in the same commit. See DESIGN-EXTRACT frame 20a/20c.
   var TBX2 = true;             // kill-switch: false restores the old 2x4 home grid + full-tool ground shelf exactly.
+  var TBX_PLUS = true;         // BETA: assume the user pays — full access, incl. custom-editing the tools (David 2026-07-23). ONE flag, consulted at every Plus gate (currently the dose-card "Adjust steps & timing" row). true → the row is FUNCTIONAL (opens the composer); the PLUS badge stays visible (it signals the future paywall). Flip to false when shipping to non-payers → the row falls back to the whisper toast.
+  var TBX_TOOLDOM = { stretch: "move", relax: "restore", breathe: "restore", meditate: "focus", reprogram: "create", mantra: "create", gratitude: "connect" }; // STACK_TOOLS id → toolbox domain hue (for custom-stack tile face + peek coins; STACK_TOOLS carry no domain token)
   var TBX_HEX = { move: "#ff8a3a", nourish: "#34d39a", focus: "#36b3f0", create: "#b07aff", connect: "#ff5fa0", play: "#ffc83d", restore: "#2ab8c4", upkeep: "#7f9bc4" }; // toolbox domain hexes (mirrored as CSS vars on .tbx). NOTE: --play #ffc83d intentionally DIVERGES from DOM.play.c #d99f30 on this surface (pixel-fidelity mandate, DESIGN-EXTRACT §0) — flagged in the handoff.
   var TBX_BOLT = "#ff4fa0", TBX_SEALBG = "#241328", TBX_SEALINK = "#ffc41f", TBX_PINK = "#ff5fa8", TBX_INK = "#160510"; // literal hexes from DESIGN-EXTRACT (the raise-stakes bolt step + the log-step seal are NOT domain vars).
   function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + ")"); } // domain token → CSS var (resolves inside .tbx); literal hex passes through
@@ -5517,12 +5519,27 @@
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
   }
-  function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; return (d === 2 || d === 5) ? d : ((TBX_ITEMS[id] && TBX_ITEMS[id].def) || 5); } catch (e) { return 5; } } // guarded read; NO SCHEMA bump (additive S.tools precedent)
+  function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; if (d === 2 || d === 5) return d; var it = tbxItem(id); return (it && it.def) || 5; } catch (e) { return 5; } } // guarded read; NO SCHEMA bump (additive S.tools precedent)
   function tbxSetDose(id, m) { try { S.tools = S.tools || {}; S.tools.tbxDose = S.tools.tbxDose || {}; S.tools.tbxDose[id] = m; save(); } catch (e) {} }
+  function tbxCustoms() { try { return (S.tools && S.tools.tbxCustom) || []; } catch (e) { return []; } } // user-built stacks (additive list on S.tools; dedicated store so no existing consumer of S.tools.custom/stack breaks — David 2026-07-23 fallback clause)
+  function tbxTrackDoms(track) { var seen = []; (track || []).forEach(function (s) { var d = TBX_TOOLDOM[s.k]; if (d && seen.indexOf(d) < 0) seen.push(d); }); return seen; } // domains present in a track (for custom tile hue + peek coins)
+  function tbxItem(id) { // RESOLVER: a registry stack OR a synthesized item-like object for a user-built custom stack (so every tbx fn treats customs as first-class). Returns null if unknown.
+    if (TBX_ITEMS[id]) return TBX_ITEMS[id];
+    var c = null; tbxCustoms().forEach(function (x) { if (x.id === id) c = x; }); if (!c) return null;
+    var doms = tbxTrackDoms(c.track), dom = c.dom || doms[0] || "create";
+    return { name: c.name, dom: dom, ti: c.ti || "ti-stack-2", peek: doms.filter(function (d) { return d !== dom; }).slice(0, 2), kicker: "YOUR STACK", def: 5, track: c.track, custom: true };
+  }
+  function tbxHasEdit(id) { try { return !!(S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id] && S.tools.tbxEdit[id].length); } catch (e) { return false; } }
+  function tbxTrack(id) { // the LIVE track for a stack: the user's per-stack edit if one exists, else the item's default track. All consumers (dose card steps, Start, hero launches) read through here so an edit takes effect everywhere. Dose scaling still applies at launch.
+    try { var e = S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id]; if (e && e.length) return e.map(function (s) { return { k: s.k, d: s.d, med: s.med }; }); } catch (er) {}
+    var it = tbxItem(id); return (it && it.track) ? it.track.map(function (s) { return { k: s.k, d: s.d, med: s.med }; }) : [];
+  }
+  function tbxSetEdit(id, t) { try { S.tools = S.tools || {}; S.tools.tbxEdit = S.tools.tbxEdit || {}; S.tools.tbxEdit[id] = (t || []).map(function (s) { return { k: s.k, d: s.d, med: s.med }; }); save(); } catch (e) {} } // additive; NO SCHEMA bump
+  function tbxResetEdit(id) { try { if (S.tools && S.tools.tbxEdit) { delete S.tools.tbxEdit[id]; save(); } } catch (e) {} }
   function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(function (s) { return { k: s.k, d: s.d }; }); var f = target / base; return track.map(function (s) { return { k: s.k, d: Math.max(20, Math.round((s.d || 0) * f)) }; }); } // scale step durations proportionally to the chosen dose (2/5 min); floor 20s/step
   function tbxLaunch(id, mins) { // THE LAUNCH CONTRACT (decision 5): identical to the old tiles + logs the tbx id for most-used ordering (decision 6)
-    var it = TBX_ITEMS[id]; if (!it) return;
-    var track = tbxScaleTrack(it.track, mins || tbxDose(id));
+    var it = tbxItem(id); if (!it) return;
+    var track = tbxScaleTrack(tbxTrack(id), mins || tbxDose(id));
     landFromHome(); leaveHomeForPlayer();
     try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
   }
@@ -5533,9 +5550,9 @@
     return plan;
   }
   function tbxWhisper() { try { toast(tr("You can edit steps and timing in Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
-  function tbxDerivedSteps(it) { return (it.track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (m.col || "#63d3c9"), ic: (m.ti || "ti-circle"), t: (m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines)
+  function tbxDerivedSteps(track) { return (track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (m.col || "#63d3c9"), ic: (m.ti || "ti-circle"), t: (m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks (and edited/custom stacks) show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines)
   function tbxTile(host, id) { // one grid cell = squircle face + up-to-2 peek coins + domain-hued label; tap → dose card in place
-    var it = TBX_ITEMS[id]; if (!it) return null;
+    var it = tbxItem(id); if (!it) return null;
     var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name));
     var wrap = add(cell, "div", "tbx-face-wrap");
     (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
@@ -5601,11 +5618,11 @@
     var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
   }
   function tbxBuildDose(id) { // frame 20c: face + hue kicker + name, plain-word steps, 2/5 dose chips + pink Start, PLUS gate row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
-    var it = TBX_ITEMS[id]; var d = tbxVar(it.dom);
-    var card = document.createElement("div"); card.className = "tbx-dose tbx-open";
+    var it = tbxItem(id); if (!it) return document.createElement("div"); var d = tbxVar(it.dom);
+    var card = document.createElement("div"); card.className = "tbx-dose tbx-open"; card.setAttribute("data-tbxdose", id);
     var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = tbxLip(d); add(fc, "i", "ti " + it.ti);
     var htx = add(head, "div", "tbx-dose-htx"); var k = add(htx, "div", "tbx-dose-kicker", tr(it.kicker)); k.style.color = d; add(htx, "div", "tbx-dose-name", tr(it.name));
-    var steps = it.steps || tbxDerivedSteps(it); var sc = add(card, "div", "tbx-dose-steps");
+    var steps = (!tbxHasEdit(id) && it.steps) ? it.steps : tbxDerivedSteps(tbxTrack(id)); var sc = add(card, "div", "tbx-dose-steps"); // a hand-authored step script (Caught Scrolling) shows verbatim UNTIL the user edits the stack; then steps re-derive from the live track
     steps.forEach(function (st) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); });
     var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips"); var cur = tbxDose(id);
     [2, 5].forEach(function (m) {
@@ -5615,9 +5632,24 @@
     });
     var start = add(foot, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start"));
     start.onclick = function () { try { tbxLaunch(id, tbxDose(id)); } catch (e) {} };
-    var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti ti-lock"); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); add(gate, "span", "tbx-gate-badge", tr("PLUS"));
-    gate.onclick = function () { tbxWhisper(); };
+    var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti ti-lock"); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); add(gate, "span", "tbx-gate-badge", tr("PLUS")); // the PLUS badge stays visible even when TBX_PLUS grants access (it signals the future paywall)
+    gate.onclick = function () { if (TBX_PLUS) tbxEditSteps(id); else tbxWhisper(); }; // THE ONE FLAG: paid → functional (opens the composer); non-paid → whisper toast
+    if (tbxHasEdit(id)) { var rst = add(card, "button", "tbx-reset"); add(rst, "span", null, tr("Back to default")); rst.onclick = function () { tbxResetEdit(id); tbxRepaintDose(id); }; } // subtle reset row, only when an edit exists — reverts to the stack's default steps (a registry stack) or its saved track (a custom)
     return card;
+  }
+  function tbxEditSteps(id) { // per-stack step/timing edit: opens the EXISTING CapCut session composer (openSessionComposer, via the stackTimeline grammar) seeded with the stack's live track. onSave persists additively to S.tools.tbxEdit[id] and repaints the open dose card live; Begin runs the edited track. NO new editor, no third menu (constitution).
+    var it = tbxItem(id); if (!it) return;
+    openSessionComposer({
+      title: tr(it.name), track: tbxTrack(id), lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Begin session →"),
+      onSave: function (t) { tbxSetEdit(id, t); tbxRepaintDose(id); }, // fires on every edit → persist + reflect in the dose card behind the composer
+      onPlay: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Begin → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
+    });
+  }
+  function tbxRepaintDose(id) { // swap the open dose card for a freshly-built one so an edit/reset shows immediately (single-open; the card carries data-tbxdose)
+    if (_tbxOpenStack !== id) return;
+    var card = document.querySelector('.tbx .tbx-dose[data-tbxdose="' + id + '"]'); if (!card || !card.parentNode) return;
+    var fresh = tbxBuildDose(id); fresh.classList.remove("tbx-open"); // no re-animate on an in-place refresh
+    card.parentNode.replaceChild(fresh, card);
   }
   function tbxOpenDose(id, cell) { // SINGLE-OPEN dose card, inserted right after the tapped tile's grid (full width in the flow). Toggle on re-tap.
     var root = cell.closest ? cell.closest(".tbx") : null; if (!root) return;
@@ -5628,6 +5660,41 @@
     var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
     var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
   }
+  function tbxBuilderTile(host) { // the PINNED 8th tile: same tile mark (54px face / radius 19 / lip) in create-purple with ti-plus + label "Build", no peek coins. Tap → build-a-custom-stack flow.
+    var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
+    var wrap = add(cell, "div", "tbx-face-wrap");
+    var face = add(wrap, "div", "tbx-face"); face.style.background = "var(--create)"; face.style.boxShadow = tbxLip("var(--create)"); add(face, "i", "ti ti-plus");
+    var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = "var(--create)";
+    cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
+    return cell;
+  }
+  function tbxBuildCustom() { // BUILD flow: the SAME CapCut composer, seeded default, assemble steps/durations → Save → name → persist. Reuses openSessionComposer (no new editor / third menu).
+    openSessionComposer({
+      title: tr("Build a stack"), track: [{ k: "breathe", d: 120 }], lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Save this stack"),
+      onSave: function () {}, // custom isn't persisted until it's named (Save)
+      onPlay: function (t) { if (!t || !t.length) return; tbxSaveCustom(t); }
+    });
+  }
+  function tbxSaveCustom(track) { // name → push to S.tools.tbxCustom (additive, no SCHEMA bump) → re-render so the new tile appears in the top-8 usage pool, launchable immediately
+    tbxNameDialog(function (nm) {
+      var doms = tbxTrackDoms(track);
+      S.tools = S.tools || {}; S.tools.tbxCustom = S.tools.tbxCustom || [];
+      S.tools.tbxCustom.push({ id: "tbxc_" + uid(), name: nm, track: track.map(function (x) { return { k: x.k, d: x.d }; }), dom: doms[0] || "create", ti: "ti-stack-2", created: todayK() });
+      save();
+      try { renderToolbox2(); } catch (e) {}
+      try { toast(tr("Stack saved.")); } catch (e) {}
+    });
+  }
+  function tbxNameDialog(cb) { // minimal name dialog in the existing builder grammar (mirrors programBuilder's saveFlow card)
+    var ov = add(document.body, "div"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(8,4,12,.72);display:flex;align-items:center;justify-content:center;padding:22px;";
+    ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+    var card = add(ov, "div"); card.style.cssText = "width:100%;max-width:320px;background:#1c0e30;border:2.5px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:16px;font-family:'Jost',var(--bub),sans-serif;";
+    add(card, "div", null, esc(tr("Name your stack"))).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:10px;";
+    var inp = add(card, "input"); inp.type = "text"; inp.value = tr("My stack"); inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#120718;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:inherit;font-size:15px;font-weight:700;padding:11px 12px;outline:none;");
+    var go = add(card, "button"); go.setAttribute("style", "width:100%;margin-top:12px;background:#ff5fa8;color:#3a0e22;border:2.5px solid #160510;border-radius:12px;padding:11px;font-weight:800;font-size:14.5px;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:inherit;"); go.innerHTML = '<i class="ti ti-device-floppy"></i> ' + esc(tr("Save"));
+    go.onclick = function () { var nm = (inp.value || tr("My stack")).trim() || tr("My stack"); ov.remove(); cb(nm); };
+    setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 60);
+  }
   function renderToolbox2() { // the main renderer: drains the GROUND zone and builds the toolbox column. Child-drain only (ratchet convention). Called from renderOnePageWorld in place of renderGroundTools when TBX2.
     if (!TBX2) return;
     var ground = groundZone(); if (!ground) return;
@@ -5635,7 +5702,11 @@
     _tbxOpenStack = null; _tbxOpenCat = null;
     var root = add(ground, "div", "tbx");
     // PLAN BUTTON MOVED (David 2026-07-23 device): the Plan-my-day sticker now lives on the HOME FACE (renderHomeFace → #tfCtrls, tbxPlanButton), directly under the circle block, visible at rest. It is NO LONGER the first toolbox-scroll section — the top-eight grid is now the first scroll-in content (verdict #4). It exists ONCE.
-    var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop"; tbxOrder(TBX_TOP).forEach(function (id) { tbxTile(top, id); });
+    // TOP-8 = 7 usage-ordered stacks + a PINNED 8th "Build" tile (David 2026-07-23). The 7 are drawn from TBX_TOP + user-built customs, ranked by S.tools.use; day-1/no-usage keeps the design order (First Light … Empty Tank), so shutdown now lives in the Night category + evening hero instead of the grid — flagged in the handoff. Customs join the same usage pool and can rise into the 7.
+    var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop";
+    var pool = tbxCustoms().map(function (c) { return c.id; }).concat(TBX_TOP); // customs FIRST so a freshly-built stack (0 usage) wins the 0-usage tiebreak and surfaces immediately (launchable right after save); usage is the primary sort, so a default that has earned use still keeps its spot over an unused custom.
+    tbxOrder(pool).slice(0, 7).forEach(function (id) { tbxTile(top, id); });
+    tbxBuilderTile(top); // the builder tile is ALWAYS position 8 (pinned last)
     // ONE GRID OF 8 (David 2026-07-23 device): the SECOND grid is removed. Flow = top-eight grid → hero rows → intro → bento. TBX_SECOND stays in the data (documents heart/mind/vision/fullStack), and cantSleep/lockTheWin/feelBetter/body remain reachable via the category bento; heart/mind/vision/fullStack are now data-only (no UI surface) — flagged in the handoff.
     tbxHeroes().forEach(function (hero) { tbxHeroRow(root, hero); });
     add(root, "div", "tbx-intro", tr("For when you need something specific: one box to settle, one to go deeper."));
@@ -5651,6 +5722,7 @@
     "FOR YOU NOW · MORNING": "СЕЙЧАС ДЛЯ ТЕБЯ · УТРО", "NEXT BLOCK · DEEP WORK": "СЛЕДУЮЩИЙ БЛОК · ФОКУС", "FOR YOU NOW · LATE NIGHT": "СЕЙЧАС ДЛЯ ТЕБЯ · ПОЗДНЯЯ НОЧЬ", "FOR YOU NOW · WINDING DOWN": "СЕЙЧАС ДЛЯ ТЕБЯ · ЗАВЕРШЕНИЕ", "NEXT BLOCK": "СЛЕДУЮЩИЙ БЛОК", "Morning stack": "Утренний стек",
     "name where you went": "назови, куда ушёл", "three slow breaths": "три медленных вдоха", "feel why it matters": "почувствуй, почему это важно", "choose on purpose, staying counts": "выбери осознанно, остаться — это тоже победа", "log the catch": "отметь, что поймал",
     "min": "мин", "Start": "Начать", "inside": "внутри", "Adjust steps & timing": "Настрой шаги и время", "PLUS": "PLUS",
+    "Build": "Собрать", "YOUR STACK": "ТВОЙ СТЕК", "Save this stack": "Сохранить стек", "Stack saved.": "Стек сохранён.", "Name your stack": "Назови стек", "My stack": "Мой стек", "Save": "Сохранить", "Back to default": "Вернуть по умолчанию",
     "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "You can edit steps and timing in Plus.": "Редактировать шаги и время можно в Plus."
   });
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
@@ -14975,6 +15047,7 @@
     chk("plan button present on home face", !!plan, plan ? "present" : "missing", "present"); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker moved to the home face (#tfCtrls, below the circle block); it must exist once
     if (plan) { var ps = getComputedStyle(plan).boxShadow; chk("plan button lip 0 4px 0 #160510", ps.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), "rgb(22,5,16) 0px 4px 0px"); } // the Plan-my-day sticker lip present (0 4px 0 #160510)
     if (topGrid) { var gc = getComputedStyle(topGrid).gridTemplateColumns; chk("top-eight grid 4×64px tracks", gc === "64px 64px 64px 64px", gc, "64px 64px 64px 64px"); } // TILE-BIGGER (David 2026-07-23): track 54→64 (face 46→54, ×--tun-tbx-tile default 1)
+    chk("builder tile present (pinned 8th)", !!document.querySelector("#tbxGridTop .tbx-cell-build"), document.querySelector("#tbxGridTop .tbx-cell-build") ? "present" : "missing", "present"); // BUILD-CUSTOM (David 2026-07-23): the create-purple "Build" tile is always the last top-8 cell
     if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); chk("door top below strip bottom", pr.top >= br.bottom, "door top " + Math.round(pr.top) + " · strip bottom " + Math.round(br.bottom), "door top ≥ strip bottom"); } // DOORS-DOWN (David 2026-07-23 device): the edge-tab top must clear the story strip's bottom edge
     if (gd) chk("door garden fill", rgb(gd) === "rgb(24, 70, 48)", rgb(gd), "rgb(24,70,48)");
     if (tfaces.length >= 3) { chk("tile1 face hex (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58)"); chk("tile3 face hex (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160)"); var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", getComputedStyle(tfaces[0]).borderTopLeftRadius === "19px", getComputedStyle(tfaces[0]).borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +getComputedStyle(tfaces[0]).zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
