@@ -5668,12 +5668,18 @@
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
   }
-  function tbxBuildCustom() { // BUILD flow: the SAME CapCut composer, seeded default, assemble steps/durations → Save → name → persist. Reuses openSessionComposer (no new editor / third menu).
+  function tbxBuildCustom() { // BUILD flow: the SAME CapCut composer, seeded default, assemble steps/durations → then PLAY it now OR Save it (David 2026-07-23: the Build tile pushed only Save; now it offers both — play-now primary, save secondary). Reuses openSessionComposer (no new editor / third menu).
     openSessionComposer({
-      title: tr("Build a stack"), track: [{ k: "breathe", d: 120 }], lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Save this stack"),
-      onSave: function () {}, // custom isn't persisted until it's named (Save)
-      onPlay: function (t) { if (!t || !t.length) return; tbxSaveCustom(t); }
+      title: tr("Build a stack"), track: [{ k: "breathe", d: 120 }], lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Begin session →"),
+      onSave: function () {}, // custom isn't persisted here — play-now persists nothing; Save persists via the named-save path
+      onPlay: function (t) { if (!t || !t.length) return; tbxPlayNow(t); }, // PRIMARY: play the composed track now through the Landing Contract, save nothing
+      secondaryLabel: tr("Save this stack"), onSecondary: function (t) { if (!t || !t.length) return; tbxSaveCustom(t); } // SECONDARY: the unchanged name → tbxCustom persist path
     });
+  }
+  function tbxPlayNow(track) { // play a freshly composed (UNSAVED) stack immediately via the Landing Contract — same landFromHome/leaveHomeForPlayer + runStack path as tbxLaunch, but no id, no tickTool, no persistence (David 2026-07-23 Build play-now)
+    var t = (track || []).map(function (s) { return { k: s.k, d: s.d, med: s.med }; }); if (!t.length) return;
+    landFromHome(); leaveHomeForPlayer();
+    try { runStack(t, 0, function (n) { stackComplete(n); }); } catch (e) {}
   }
   function tbxSaveCustom(track) { // name → push to S.tools.tbxCustom (additive, no SCHEMA bump) → re-render so the new tile appears in the top-8 usage pool, launchable immediately
     tbxNameDialog(function (nm) {
@@ -13248,6 +13254,7 @@
       paintG();
     })();
     var play = add(foot, "button", "done2", cfg.playLabel || "Play ▶"); play.style.cssText = "margin:12px auto 0;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; persist(); if (ov.parentNode) ov.remove(); cfg.onPlay(track); };
+    if (cfg.secondaryLabel && cfg.onSecondary) { var sec = add(foot, "button", null, cfg.secondaryLabel); sec.style.cssText = "margin:8px auto 0;display:block;max-width:280px;width:100%;background:rgba(255,255,255,.05);color:#f0e6ef;border:1.5px solid #6a4a6a;border-radius:14px;padding:11px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;"; sec.onclick = function () { if (!track.length) return; persist(); if (ov.parentNode) ov.remove(); cfg.onSecondary(track); }; } // optional SECONDARY action (David 2026-07-23): the Build flow shows play-now (primary, done2) + this outlined save; no secondaryLabel = unchanged single-button composer (edit/quick paths byte-identical)
     renderComposer();
     return { close: function () { if (ov.parentNode) ov.remove(); } };
   }

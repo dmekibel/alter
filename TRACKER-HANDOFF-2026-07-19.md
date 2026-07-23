@@ -3,6 +3,30 @@
 
 ---
 
+## STATUS UPDATE (2026-07-23 (8), Opus): BUILD-TILE COMPOSER now offers PLAY-NOW + SAVE (was save-only) v1221
+David's order: "when he builds a stack via the Build tile, the composer pushes him to SAVE. It should offer BOTH: save it, or just PLAY it now without saving."
+
+**What the Build path's button state ACTUALLY was:** `openSessionComposer` renders exactly ONE bottom button, whose label + action are per-caller config (`playLabel`/`onPlay`). In the Build flow (`tbxBuildCustom`) that single button was `Save this stack` → `tbxSaveCustom`. There was NO play-now button at all — not suppressed, the composer was single-button by architecture. (For contrast, the Adjust-steps edit flow `tbxEditSteps` wires the same lone button to `Begin session →` → `tbxLaunch`.)
+
+**Change (2 edits, app.js @SEC:TOOLBOX2 + `openSessionComposer`):**
+- `openSessionComposer` gained an OPTIONAL secondary button: when `cfg.secondaryLabel` + `cfg.onSecondary` are passed, an outlined (non-`done2`) button renders under the pink primary and fires `persist(); onSecondary(track)`. No secondaryLabel = byte-identical single-button composer, so the edit flow + stackTimeline flow are UNCHANGED.
+- `tbxBuildCustom` now sets PRIMARY (pink, prominent) = `Begin session →` → new `tbxPlayNow(t)`, and SECONDARY (outline) = `Save this stack` → the unchanged `tbxSaveCustom(t)`. `tbxPlayNow` runs the composed track through the Landing Contract (`landFromHome(); leaveHomeForPlayer(); runStack(t,0,…stackComplete)`) with NO id, NO tickTool, NO persistence — same launch path as `tbxLaunch` minus the save.
+
+**COPY: ZERO new lines.** Reused the two existing gated+RU-dicted labels `Begin session →` (RU "Начать сессию →") and `Save this stack` (RU "Сохранить стек"). No copy-audit / Gate-2 needed.
+
+**VERIFIED (preview, demoProfile+seedDay; state read from localStorage `alter_plan2` since `S` is closure-private):**
+- Build tile → composer shows BOTH buttons (Begin session → primary, Save this stack secondary). Composed a 2-step stack.
+- (a) PLAY-NOW: `Begin session →` launched the carousel runner (multi-segment progress = the stack), landed home on Done. tbxCustom count unchanged (stayed at the 1 pre-seeded "Old junk"); grid stayed 8 tiles, NO new tile. Nothing persisted.
+- (b) SAVE: rebuild → `Save this stack` → name dialog → "Test Save Stack" persisted as exactly ONE new tbxCustom `[breathe:120, meditate:60]`, appeared as a grid tile, opened its dose card, and launched via tbxLaunch (rose in usage order after running — tickTool path intact).
+- Adjust-steps (`tbxEditSteps`) UNREGRESSED: opens seeded with the live track, single `Begin session →` button only (no secondary); adding a Grateful step persisted to `S.tools.tbxEdit["tbxc_…"] = [breathe:120, meditate:60, gratitude:60]`.
+- Zero console errors across all flows.
+
+**GUARDS:** `node --check` OK · ratchet PASS (anchors 20/20, wipes **147 ≤ 147 — zero new innerHTML wipes**, SCHEMA 5, no bump — additive) · preship green (26/26 logic invariants) · **v1220 → v1221**, server.js regenerated. **designAudit:** FAILURES PRESENT but all pre-existing seeded/non-idle-home artifacts (circle 44 vs 52, calm bloom, plan-button-missing, door-position, the known-obsolete tile1/tile3 hex checks — grid also re-ordered by usage) — my change touches NO home-surface paint/layout (composer overlay + Build wiring only), so it adds ZERO new fails.
+**DEVICE-UNTESTED:** the play-now Begin tap + runner FEEL on David's phone; secondary-button placement/legibility on real pixels; audio. Logic + persistence are deterministic and proven in preview.
+**ONE move — David:** open /fresh.html (v1221), Build tile → add 2 tools → tap `Begin session →`, confirm it just plays (no save, no new tile); then rebuild → `Save this stack`, confirm the tile appears. **ONE move — Claude:** none pending.
+
+---
+
 ## STATUS UPDATE (2026-07-23 (7), Opus): v1218 BOOT-CRASH ROOT-CAUSED + FIXED + RE-LANDED as v1220
 David's device (real, lived-in save) crashed v1218 at boot: the global error net's "something glitched — tap to refresh" toast, refresh loops, and the legacy bottom-bar menu showing (the static index.html shell). Reverted to v1219 (= v1217 behavior). This session re-landed v1218 with the crash fixed.
 
