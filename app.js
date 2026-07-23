@@ -5522,7 +5522,7 @@
   function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; if (d === 2 || d === 5) return d; var it = tbxItem(id); return (it && it.def) || 5; } catch (e) { return 5; } } // guarded read; NO SCHEMA bump (additive S.tools precedent)
   function tbxSetDose(id, m) { try { S.tools = S.tools || {}; S.tools.tbxDose = S.tools.tbxDose || {}; S.tools.tbxDose[id] = m; save(); } catch (e) {} }
   function tbxCustoms() { try { return (S.tools && S.tools.tbxCustom) || []; } catch (e) { return []; } } // user-built stacks (additive list on S.tools; dedicated store so no existing consumer of S.tools.custom/stack breaks — David 2026-07-23 fallback clause)
-  function tbxTrackDoms(track) { var seen = []; (track || []).forEach(function (s) { var d = TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom); if (d && seen.indexOf(d) < 0) seen.push(d); }); return seen; } // domains present in a track (for custom tile hue + peek coins); variants carry their own dom (David 2026-07-23)
+  function tbxTrackDoms(track) { var seen = []; (track || []).forEach(function (s) { var d = TBX_TOOLDOM[s.k]; if (d && seen.indexOf(d) < 0) seen.push(d); }); return seen; } // domains present in a track (for custom tile hue + peek coins)
   function tbxItem(id) { // RESOLVER: a registry stack OR a synthesized item-like object for a user-built custom stack (so every tbx fn treats customs as first-class). Returns null if unknown.
     if (TBX_ITEMS[id]) return TBX_ITEMS[id];
     var c = null; tbxCustoms().forEach(function (x) { if (x.id === id) c = x; }); if (!c) return null;
@@ -5640,7 +5640,7 @@
   function tbxEditSteps(id) { // per-stack step/timing edit: opens the EXISTING CapCut session composer (openSessionComposer, via the stackTimeline grammar) seeded with the stack's live track. onSave persists additively to S.tools.tbxEdit[id] and repaints the open dose card live; Begin runs the edited track. NO new editor, no third menu (constitution).
     var it = tbxItem(id); if (!it) return;
     openSessionComposer({
-      title: tr(it.name), track: tbxTrack(id), lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Begin session →"),
+      title: tr(it.name), track: tbxTrack(id), lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Begin session →"),
       onSave: function (t) { tbxSetEdit(id, t); tbxRepaintDose(id); }, // fires on every edit → persist + reflect in the dose card behind the composer
       onPlay: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Begin → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
     });
@@ -5670,7 +5670,7 @@
   }
   function tbxBuildCustom() { // BUILD flow: the SAME CapCut composer, seeded default, assemble steps/durations → Save → name → persist. Reuses openSessionComposer (no new editor / third menu).
     openSessionComposer({
-      title: tr("Build a stack"), track: [{ k: "breathe", d: 120 }], lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Save this stack"),
+      title: tr("Build a stack"), track: [{ k: "breathe", d: 120 }], lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Save this stack"),
       onSave: function () {}, // custom isn't persisted until it's named (Save)
       onPlay: function (t) { if (!t || !t.length) return; tbxSaveCustom(t); }
     });
@@ -8849,22 +8849,7 @@
     box: { name: "Box breath", goal: "Need to focus", thinker: "Tactical breathing", why: "Four counts each, all equal. Steadies the nervous system without dulling your alertness. Used under real pressure.", cyc: 5,
       ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 4000, "out"], ["Hold empty", 4000, "rest"]] },
     calm478: { name: "4-7-8 breath", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
-      ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] },
-    // VARIANT LIBRARY (David 2026-07-23): more real breathing types, each driving the SAME per-phase pacing engine (ph rows = [label, ms, kind, spokenKey?]). Every cue reuses an existing recorded word (Breathe in / Hold / Breathe out) so ZERO new audio is needed; breath is voiceless-by-default anyway (the ph timings pace the orb).
-    coherent: { name: "Coherent breath", goal: "Even out the heart", thinker: "Heart-rate coherence", why: "Five and a half in, five and a half out, no holds. The even rhythm tunes the heart and the breath to one steady wave.", cyc: 6,
-      ph: [["Breathe in", 5500, "in"], ["Breathe out", 5500, "out"]] },
-    exhale48: { name: "Extended exhale", goal: "Slow a racing system", thinker: "Vagal brake", why: "In for four, out for eight. The exhale runs twice the in-breath, and the longer it is, the harder it pulls the brake.", cyc: 5,
-      ph: [["Breathe in", 4000, "in"], ["Breathe out", 8000, "out"]] },
-    nostril: { name: "Alternate nostril", goal: "Balance and steady", thinker: "Nadi shodhana", why: "In one side, out the other, then swap. A slow, even paced round that steadies the mind. Use a finger to close each nostril.", cyc: 5,
-      ph: [["Breathe in, left", 4000, "in", "Breathe in"], ["Breathe out, right", 4000, "out", "Breathe out"], ["Breathe in, right", 4000, "in", "Breathe in"], ["Breathe out, left", 4000, "out", "Breathe out"]] },
-    // Wim Hof helper stages (internal — reached only via BREATH_FLOWS.wimhof, never shown in the picker directly)
-    wimPower: { name: "Power breaths", cyc: 20, ph: [["Breathe in", 1700, "in"], ["Let it go", 1700, "out", "Breathe out"]] },
-    wimHold:  { name: "Retention", cyc: 1, ph: [["Breathe out, hold empty", 30000, "hold", "Breathe out"], ["Big breath in, hold", 4000, "in", "Breathe in"], ["Hold", 15000, "hold"]] }
-  };
-  // BREATH FLOWS (David 2026-07-23): multi-stage breathing built on the SAME stage engine the guided ladder uses (breathwork's `stages` array). A flow is a list of {k (a BREATH_PATTERNS key), cyc}; the engine concatenates them into one continuous `flow` exactly like the ladder. Wim Hof = rounds of fast power breaths, each closed by a long retention hold.
-  var BREATH_FLOWS = {
-    wimhof: { name: "Wim Hof rounds", goal: "Charge the body up", why: "Rounds of fast, full breaths, each closed by a long hold on empty lungs. It fires the body up and sharpens you. Sit or lie down, and keep it away from water.",
-      stages: [{ k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }, { k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }, { k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }] }
+      ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] }
   };
   // THE GUIDED LADDER (BUILD 2026-07-19): a beginner's on-ramp — three real patterns back to back, easing from the gentlest (a calming breath, no holds to speak of) up to the deepest (the long 4-7-8 holds). Runs as ONE continuous session via the flow engine below, so a first-timer learns the harder breaths only after the easy one has already settled them. Stages ordered easy → hard; cyc kept short so the whole ladder is ~2.5 min. (BREATH_PATTERNS keys.)
   var BREATH_LADDER = [{ k: "resonance", cyc: 3 }, { k: "box", cyc: 3 }, { k: "calm478", cyc: 3 }];
@@ -8961,11 +8946,11 @@
       b.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(0, onDone, "ladder"); };
       ov.appendChild(b);
     })();
-    ["sigh", "box", "calm478", "resonance", "coherent", "exhale48", "nostril", "wimhof"].forEach(function (k) {
-      var flow = BREATH_FLOWS[k], P = flow || BREATH_PATTERNS[k], b = document.createElement("button"); // flow (Wim Hof) and single-pattern chips share one row shape
+    ["sigh", "box", "calm478", "resonance"].forEach(function (k) {
+      var P = BREATH_PATTERNS[k], b = document.createElement("button");
       b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid #0e0618;border-radius:16px;background:linear-gradient(180deg,#3a2a5e,#2a1c46);box-shadow:0 4px 0 #0e0618;padding:13px 16px;color:#f2ecff;cursor:pointer;";
       b.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:16px;font-weight:800;">' + esc(tr(P.goal)) + '</span><span style="font-size:11px;font-weight:700;color:#c9b6f0;">' + esc(tr(P.name)) + '</span></div><div style="font-size:12px;font-weight:500;color:#c7b6e6;line-height:1.4;margin-top:5px;">' + esc(tr(P.why)) + '</div>';
-      b.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(flow ? 0 : P.cyc, onDone, k); };
+      b.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(P.cyc, onDone, k); };
       ov.appendChild(b);
     });
     // SOUND picker (David 2026-07-12): choose the breathing sound — the chord that breathes, a soft bell at each turn, or silent. Sticks across sessions (S.breathSound) and applies to quick internal calls too.
@@ -9000,10 +8985,9 @@
   }
   // guided breathwork: paced orb (inhale/hold/exhale) + synced tone + cues, then logs + rewards
   function breathwork(cycles, onDone, patKey) {
-    var FLOW = BREATH_FLOWS[patKey] || (patKey === "ladder" ? { stages: BREATH_LADDER } : null); // ladder + Wim Hof + any future multi-stage flow ride the SAME stage engine
-    var LADDER = !!FLOW; // multi-stage: the top story-bars split per stage (was ladder-only)
+    var LADDER = patKey === "ladder";
     var stages;
-    if (FLOW) { stages = FLOW.stages.map(function (s) { return { P: BREATH_PATTERNS[s.k] || BREATH_PATTERNS.resonance, cyc: s.cyc }; }); }
+    if (LADDER) { stages = BREATH_LADDER.map(function (s) { return { P: BREATH_PATTERNS[s.k] || BREATH_PATTERNS.resonance, cyc: s.cyc }; }); }
     else { var PAT0 = BREATH_PATTERNS[patKey] || BREATH_PATTERNS.resonance; stages = [{ P: PAT0, cyc: cycles || PAT0.cyc || 4 }]; }
     var PAT = stages[0].P; // headline pattern (single-pattern path keeps its old name/behavior exactly)
     cycles = stages[0].cyc;
@@ -11282,10 +11266,6 @@
     "How long do you have? I'll fill it.": "Сколько у тебя есть? Я заполню.",
     "a quick reset": "быстрый сброс", "settle the mind too": "чтобы и ум затих", "room to go deep": "простор уйти глубже", "a full reset": "полный сброс"
   });
-  Object.assign(I18N.ru, { // VARIANT LIBRARY palette names (David 2026-07-23, B4 law — composer-chrome labels; the breath-pattern goal/why lines stay EN like every other guided-register string). "Body scan" / "Visualisation" already carry RU above.
-    "Box breathing": "Дыхание по квадрату", "4-7-8 breathing": "Дыхание 4-7-8", "Coherent breathing": "Когерентное дыхание", "Extended exhale": "Удлинённый выдох", "Wim Hof rounds": "Раунды Вима Хофа", "Alternate nostril": "Попеременное дыхание ноздрями",
-    "Open awareness": "Открытое осознавание", "Noting": "Отмечание", "Loving-kindness": "Любящая доброта", "Mantra repetition": "Повторение мантры"
-  });
   Object.assign(I18N.ru, { // F4 BUILDER chrome (B4 law). Block descriptions stay EN (spoken-register teaching lines; RU dict for chrome only, per david-prefers-english).
     "Make it yours": "Собери своё", "Add a block": "Добавить блок", "Save as my session": "Сохранить как сессию", "Play now": "Играть сейчас",
     "drag the bottom edge to make it longer": "потяни за нижний край, чтобы удлинить", "Swap": "Заменить", "Delete": "Удалить"
@@ -11878,46 +11858,7 @@
     return best;
   }
   function fitPackFor(gapMin) { var base = null; STACK_PACKS.forEach(function (p) { if (p.min <= gapMin - 2 && (!base || p.min > base.min)) base = p; }); return base; } // the largest ready pack that fits the pocket, leaving a 2-min buffer so you're not late
-  // ===== VARIANT LIBRARY (David 2026-07-23: "all the nuances of different types of breathing and meditation ... build the functionality now so I can make custom longer advanced stacks"). Design skin comes later — these are plain functional palette entries. =====
-  // Each variant is a PARAMETERISED PRESET over an EXISTING runnable tool (breathe/meditate/mantra/reprogram), so it inherits the whole pacing/voice/transport engine and needs no new player:
-  //   base "breathe" + pat  -> drives the breath pacing engine with that pattern's per-phase timings (BREATH_PATTERNS / BREATH_FLOWS key)
-  //   base "meditate" + med -> runs as guided timed sections reusing the EXISTING gated MED_SEC line pools (body scan / noting / open / loving-kindness); entry + pool are already copy-gated content
-  //   base "mantra" / "reprogram" -> the existing tool as-is
-  // A variant in a track is stored as { k:<variantId>, d } and EXPANDED to its base step at launch (tbxExpandTrack). tbxDose/tbxScaleTrack keep the variant id; expansion happens once, at run.
-  var TBX_VARIANTS = {
-    // breathing (pat = a BREATH_PATTERNS or BREATH_FLOWS key)
-    v_box:      { name: "Box breathing",      dom: "focus",   ti: "ti-square",       def: 5, base: "breathe", pat: "box" },
-    v_478:      { name: "4-7-8 breathing",    dom: "restore", ti: "ti-zzz",          def: 5, base: "breathe", pat: "calm478" },
-    v_coherent: { name: "Coherent breathing", dom: "restore", ti: "ti-wave-sine",    def: 6, base: "breathe", pat: "coherent" },
-    v_exhale:   { name: "Extended exhale",    dom: "restore", ti: "ti-arrow-down",   def: 5, base: "breathe", pat: "exhale48" },
-    v_wimhof:   { name: "Wim Hof rounds",     dom: "move",    ti: "ti-flame",        def: 6, base: "breathe", pat: "wimhof",  adv: true },
-    v_nostril:  { name: "Alternate nostril",  dom: "focus",   ti: "ti-arrows-left-right", def: 5, base: "breathe", pat: "nostril" },
-    // meditation (med = a list of MED_SEC section keys; reuses existing gated pools)
-    v_bodyscan: { name: "Body scan",          dom: "restore", ti: "ti-scan",         def: 8, base: "meditate", med: [{ k: "settle" }, { k: "body" }, { k: "rest" }] },
-    v_open:     { name: "Open awareness",     dom: "focus",   ti: "ti-windmill",     def: 8, base: "meditate", med: [{ k: "settle" }, { k: "rest" }], adv: true },
-    v_noting:   { name: "Noting",             dom: "focus",   ti: "ti-focus-2",      def: 8, base: "meditate", med: [{ k: "settle" }, { k: "aware" }] },
-    v_metta:    { name: "Loving-kindness",    dom: "connect", ti: "ti-heart",        def: 8, base: "meditate", med: [{ k: "settle" }, { k: "heart" }] },
-    v_visual:   { name: "Visualisation",      dom: "create",  ti: "ti-rotate-2",     def: 3, base: "reprogram" },
-    v_mantra:   { name: "Mantra repetition",  dom: "create",  ti: "ti-quote",        def: 3, base: "mantra" }
-  };
-  var TBX_VARIANT_COL = { move: "#ff8a1e", restore: "#63d3c9", focus: "#79ccff", connect: "#ff5fa0", create: "#ffd24a", play: "#d99f30" }; // palette-face for a variant palette chip / composer block (domain hue; skin comes later)
-  function variantTool(id) { // resolve a variant id into a composer-lookup shape { id, name, ti, col, dur, adv } — mirrors a STACK_TOOLS entry so the composer/dose-card render it with no special-casing
-    var v = TBX_VARIANTS[id]; if (!v) return null;
-    return { id: id, name: tr(v.name), ti: v.ti, col: TBX_VARIANT_COL[v.dom] || "#9a7cff", dur: (v.def || 5) * 60, adv: !!v.adv };
-  }
-  var _stackToolBase = stackTool;
-  stackTool = function (id) { return _stackToolBase(id) || variantTool(id); }; // every consumer (composer lookup, dose steps, most-used ordering) now resolves variant ids too
-  function tbxExpandTrack(track) { // variant steps -> their base tool step (carrying pat/med), keeping duration. Run-time only; the SAVED track keeps variant ids so the palette label stays right.
-    return (track || []).map(function (s) {
-      var id = (s.k && s.k.id) || s.k, v = TBX_VARIANTS[id];
-      if (!v) return s;
-      var out = { k: v.base, d: s.d, _variant: id };
-      if (v.pat) out.pat = v.pat;
-      if (v.med) out.med = (s.med && s.med.length) ? s.med : v.med.map(function (m) { return { k: m.k }; });
-      return out;
-    });
-  }
-  var STACK_POOL_IDS = STACK_TOOLS.map(function (s) { return s.id; }).concat(Object.keys(TBX_VARIANTS)); // the full composer palette: the 7 base tools + every variant (David 2026-07-23)
+  function stackTool(id) { for (var i = 0; i < STACK_TOOLS.length; i++) if (STACK_TOOLS[i].id === id) return STACK_TOOLS[i]; return null; }
   // packs + custom chooser
   function stackBuilder() {
     try { TTS.unlock(); TTS.warmAll(); } catch (e) {}
@@ -12120,7 +12061,7 @@
   // the horizontal CapCut-style timeline — the universal session composer (David 2026-07-01)
   function stackTimeline(track) {
     openSessionComposer({
-      title: "Your session", track: track, lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: "Add a tool", playLabel: "Begin session →",
+      title: "Your session", track: track, lookup: function (k) { return stackTool(k); }, pool: STACK_TOOLS.map(function (s) { return s.id; }), addDur: 60, poolLabel: "Add a tool", playLabel: "Begin session →",
       onSave: function (t) { S.tools = S.tools || {}; S.tools.stack = t.map(function (x) { return { k: x.k, d: x.d, med: x.med }; }); save(); },
       onPlay: function (t) { runStack(t, 0); },
       // PLANNING-STAGE nesting (David 2026-07-01): tap a Meditate block to choose what goes inside it BEFORE the session runs.
@@ -12140,15 +12081,13 @@
   function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id] || !!(t.rawSegs && t.rawSegs.length); }); } // every tool has guided cue content OR pre-built segments -> can run as the unified carousel
   var _lastStackTrack = null; // remembers the just-run program so the session-complete screen can offer "Make it yours" (F4 remix-only entry law)
   function runStackCarousel(track, onAll) { // route ANY stack through the SAME carousel player as the day-one stack (David 2026-07-08: "should function the same way in the rest of the app")
-    track = tbxExpandTrack(track); // idempotent on base steps; makes a direct caller (not via runStack) variant-safe too (David 2026-07-23)
     try { _lastStackTrack = track.map(function (t) { var id = (t.k && t.k.id) || t.k; return (typeof id === "string" && stackTool(id)) ? { k: id, d: t.d } : null; }).filter(Boolean); } catch (e) { _lastStackTrack = null; } // only remix registry-backed programs (not inline run-fn steps)
-    var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || "#9a7cff", secs: t.d || m.dur || 60, med: t.med, pat: t.pat, rawSegs: t.rawSegs, intro: t.intro }; }); // med = meditation editor sections (for section-ticks); pat = a breathing-variant pattern key (David 2026-07-23); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages)
+    var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || "#9a7cff", secs: t.d || m.dur || 60, med: t.med, rawSegs: t.rawSegs, intro: t.intro }; }); // med = meditation editor sections (for section-ticks); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages)
     var built = composeStackSegs(list);
     try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
     timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || "#9a7cff", spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, autostart: true, onFinish: function () { if (onAll) onAll(track.length); else stackComplete(track.length); } });
   }
   function runStack(track, i, onAll) { // onAll (R0, David 2026-07-02): optional completion override so a wrapper (the relief-door ritual) can add its own close — e.g. the post 0-10 gauge — without forking the runner
-    if (i === 0) track = tbxExpandTrack(track); // variant ids -> base tool steps (pat/med) ONCE, before the carousel/chained split (David 2026-07-23)
     if (i === 0 && stackCarouselable(track)) { runStackCarousel(track, onAll); return; } // NEW (v948): supported stacks run as the unified carousel; unsupported (inline charge/deep, custom run fns) fall back to the chained cards below
     if (i >= track.length) { if (onAll) { onAll(track.length); } else { stackComplete(track.length); } return; }
     var t = track[i], m = (t.k && t.k.run) ? t.k : stackTool(t.k); if (!m) { runStack(track, i + 1, onAll); return; } // t.k may be an inline {name, ti, run} step (the Full Stack uses these) instead of a registry id
@@ -12410,16 +12349,6 @@
     build: "Now stop searching for things. Let the naming go, and just feel the gratefulness itself, building on its own.",
     close: "Let that fullness stay with you as we go on."
   };
-  // BREATH ROWS for a stack's breath act (David 2026-07-23): expand a breathing-variant pattern into flat phase rows [{label, kind, ms}] the composer feeds as voiceless orb-pacing segments. A single pattern (Box / 4-7-8 / Coherent / Extended exhale / Alternate nostril) is repeated to fill the act's time; a multi-stage flow (Wim Hof) plays its fixed round structure. Reuses the SAME BREATH_PATTERNS timings as the standalone breath tool — one pacing engine.
-  function breathFlowRows(patKey, secs) {
-    var flow = BREATH_FLOWS[patKey], rows = [], push = function (P) { P.ph.forEach(function (ph) { rows.push({ label: ph[0], kind: ph[2], ms: ph[1] }); }); };
-    if (flow) { flow.stages.forEach(function (st) { var P = BREATH_PATTERNS[st.k]; if (P) for (var c = 0; c < st.cyc; c++) push(P); }); return rows; } // fixed structure, not time-scaled (Wim Hof rounds are what they are)
-    var P0 = (patKey && BREATH_PATTERNS[patKey]) || BREATH_PATTERNS.resonance;
-    var cycMs = P0.ph.reduce(function (a, ph) { return a + ph[1]; }, 0) || 16000;
-    var cyc = Math.max(2, Math.round((secs || 120) * 1000 / cycMs)); // fill the tool's time with whole cycles
-    for (var c = 0; c < cyc; c++) push(P0);
-    return rows;
-  }
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
     var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false, medRI = 0; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" in both relax AND meditation); medRI cycles the sparse re-anchor cues across sections
 
@@ -12460,8 +12389,8 @@
         P({ text: GRAT_FLOW.build, label: GRAT_FLOW.build, sub: "", gap: gBuild });
         P({ text: GRAT_FLOW.close, label: GRAT_FLOW.close, sub: "", gap: 4 });
       } else if (C.breath) {
-        // VOICELESS in a stack (David 2026-07-23: guided breath talks only if opted in, exactly like the standalone tool — this kills the "ok/um/breathe in" spoken-clip artifacts inside a session). The `breath` tag still paces the orb; the label shows the phase on screen. `t.pat` = a breathing-variant pattern (Box / 4-7-8 / Coherent / Extended exhale / Wim Hof / Alternate nostril); default = the calming resonance breath.
-        breathFlowRows(t.pat, t.secs).forEach(function (r) { P({ text: "", label: r.label, sub: "", gap: r.ms / 1000, breath: r.kind }); });
+        var cyc = Math.max(2, Math.round(t.secs / 16));
+        for (var i = 0; i < cyc; i++) { P({ text: "Breathe in", label: "Breathe in", sub: "fill up slowly", gap: pauseFor("in"), breath: "in" }); P({ text: "Hold", label: "Hold", sub: "stay full", gap: pauseFor("hold"), breath: "hold" }); P({ text: "Breathe out", label: "Breathe out", sub: "slow and long", gap: pauseFor("out"), breath: "out" }); P({ text: "", label: "Rest", sub: "", gap: pauseFor("rest"), breath: "rest" }); } // David 2026-07-15: voice text reverted to the bare recorded word (the coaching-line composite had no matching clip → the stack's breath act was totally silent); the sub caption still shows the fuller coaching line on screen. Temporary until a dedicated in/out/hold audio cue replaces spoken words.
       } else if (C.cues) {
         var per = Math.max(3.5, t.secs / C.cues.length); // body cues fill the tool's own time (the pose IS the pause), so time-driven not attention-driven
         C.cues.forEach(function (q) { P({ text: q[1] ? (q[0] + ", " + q[1]) : q[0], label: q[0], sub: q[1] || "", gap: per }); }); // SPEAK the whole cue (label + sub), not just the top line — matches the already-recorded relaxMoment clips by hash (David 2026-07-15: "voice only reads the top line")
@@ -13237,7 +13166,7 @@
     }
     add(foot, "div", null, cfg.poolLabel || "Add").style.cssText = "font-size:12px;color:#b39ab0;font-weight:700;margin:2px 0 6px;";
     var pool = add(foot, "div"); pool.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
-    cfg.pool.forEach(function (k) { var m = cfg.lookup(k); var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + m.ti + '"></i> ' + m.name + (m.adv ? ' <span style="font-size:9px;opacity:.6;">adv</span>' : ''); b.style.cssText = "border:2px solid " + m.col + ";border-radius:11px;padding:6px 10px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: (TBX_VARIANTS[k] ? (m.dur || 300) : (cfg.addDur || 60)) }); persist(); renderComposer(); scroller.scrollTop = scroller.scrollHeight; }; }); // variants add at their own default length (David 2026-07-23); base tools keep addDur
+    cfg.pool.forEach(function (k) { var m = cfg.lookup(k); var b = add(pool, "button"); b.innerHTML = '<i class="ti ' + m.ti + '"></i> ' + m.name; b.style.cssText = "border:2px solid " + m.col + ";border-radius:11px;padding:6px 10px;font-family:var(--bub);font-weight:700;font-size:12px;color:#f0e6ef;background:rgba(255,255,255,.05);cursor:pointer;"; b.onclick = function () { track.push({ k: k, d: cfg.addDur || 60 }); persist(); renderComposer(); scroller.scrollTop = scroller.scrollHeight; }; });
     // GUIDANCE PRESET (David 2026-07-11): how spacious the session runs — length sets the default, this overrides. Tap the active one again to return to auto-from-length. Not shown in the intro.
     (function () {
       var gr = add(foot, "div"); gr.style.cssText = "display:flex;align-items:center;gap:6px;margin:11px 0 0;";
