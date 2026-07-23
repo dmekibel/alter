@@ -1738,16 +1738,17 @@
   .tbx-plan i{ font-size:16px; color:#e8ddff; }
   .tbx-plan span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; color:#e8ddff; white-space:nowrap; }
   .tbx-plan:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .tbx-grid{ display:grid; grid-template-columns:repeat(4,54px); justify-content:center; gap:14px 12px; }
+  /* TILE MARK — bigger + fidelity fix (David 2026-07-23 device "the stack peek looks broken; make them a bit bigger"). Rendered-vs-rendered diff of the canvas (frame 20a) vs the app found: geometry (offsets/sizes/radius) was pixel-identical, but the COIN Z-ORDER was reversed. Canvas telescopes big-coin-in-FRONT (coin1 z3 > coin2 z2, both behind face) → tight nested slivers; the app had both coins z-index:1 so DOM order painted the SMALLER coin2 in front of the bigger coin1 → the two coins splayed apart = the "messy fan". FIX: face z3 > coin1 z2 > coin2 z1 (mirror the canvas). SCALE: base numbers = canvas geometry × (54/46 ≈ 1.174) → face 54, track 64, coins 46/38, radius 19, icon 23, label 11, offsets scaled to preserve the exact visible-overhang proportion. `--tun-tbx-tile` (default 1) multiplies every number so David tunes the whole mark from one var (set on :root via the tuner; cleared → 1 = these locked numbers). */
+  .tbx-grid{ display:grid; grid-template-columns:repeat(4, calc(64px * var(--tun-tbx-tile, 1))); justify-content:center; gap:calc(16px * var(--tun-tbx-tile, 1)) calc(14px * var(--tun-tbx-tile, 1)); }
   .tbx-grid-main{ padding:6px 0; }
-  .tbx-cell{ display:flex; flex-direction:column; align-items:center; gap:6px; width:54px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .tbx-face-wrap{ position:relative; width:46px; height:46px; }
-  .tbx-face{ position:absolute; inset:0; z-index:2; border-radius:16px; display:flex; align-items:center; justify-content:center; }
-  .tbx-face i{ font-size:20px; color:#fff2f9; }
-  .tbx-coin{ position:absolute; z-index:1; border-radius:16px; }
-  .tbx-coin1{ width:39px; height:39px; top:-2px; left:-4px; }
-  .tbx-coin2{ width:32px; height:32px; top:-3px; left:-7px; }
-  .tbx-label{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:9.5px; text-align:center; line-height:1.05; }
+  .tbx-cell{ display:flex; flex-direction:column; align-items:center; gap:calc(7px * var(--tun-tbx-tile, 1)); width:calc(64px * var(--tun-tbx-tile, 1)); background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tbx-face-wrap{ position:relative; width:calc(54px * var(--tun-tbx-tile, 1)); height:calc(54px * var(--tun-tbx-tile, 1)); }
+  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */
+  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#fff2f9; }
+  .tbx-coin{ position:absolute; border-radius:calc(19px * var(--tun-tbx-tile, 1)); }
+  .tbx-coin1{ width:calc(46px * var(--tun-tbx-tile, 1)); height:calc(46px * var(--tun-tbx-tile, 1)); top:calc(-2px * var(--tun-tbx-tile, 1)); left:calc(-5px * var(--tun-tbx-tile, 1)); z-index:2; } /* the BIGGER peek coin — z2, paints in FRONT of coin2 (canvas telescope) */
+  .tbx-coin2{ width:calc(38px * var(--tun-tbx-tile, 1)); height:calc(38px * var(--tun-tbx-tile, 1)); top:calc(-3px * var(--tun-tbx-tile, 1)); left:calc(-8px * var(--tun-tbx-tile, 1)); z-index:1; } /* the smaller/outer coin — z1, behind coin1 */
+  .tbx-label{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:calc(11px * var(--tun-tbx-tile, 1)); text-align:center; line-height:1.05; }
   .tbx-cell:active .tbx-face{ transform:translateY(2px); }
   .tbx-hero{ background:#241019; border-radius:18px; padding:12px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); display:flex; align-items:center; gap:12px; }
   .tbx-hero-coins{ display:flex; gap:6px; flex:0 0 auto; }
@@ -1774,7 +1775,7 @@
   .tbx-panel-count{ margin-left:auto; font-size:10px; font-weight:700; color:#9a6a86; }
   .tbx-panel-chev{ font-size:13px; color:#9a6a86; }
   .tbx-panel-grid{ margin-top:12px; }
-  .tbx-panel-grid .tbx-label{ font-size:9px; }
+  .tbx-panel-grid .tbx-label{ font-size:calc(9.5px * var(--tun-tbx-tile, 1)); }
   .tbx-dose{ background:#241019; border-radius:18px; padding:13px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
   .tbx-dose-head{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
   .tbx-dose-face{ width:44px; height:44px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
@@ -3081,6 +3082,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1214"></script>
+  <script src="app.js?v=1216"></script>
 </body>
 </html>
