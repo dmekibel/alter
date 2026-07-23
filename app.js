@@ -5526,7 +5526,7 @@
     try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
   }
   function tbxPlanDay() { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} } // Plan-my-day = the same path the planner edge-door uses (consolidation, not new nav)
-  function tbxWhisper() { try { toast(tr("Editing steps and timing comes with Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
+  function tbxWhisper() { try { toast(tr("You can edit steps and timing in Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
   function tbxDerivedSteps(it) { return (it.track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (m.col || "#63d3c9"), ic: (m.ti || "ti-circle"), t: (m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines)
   function tbxTile(host, id) { // one grid cell = squircle face + up-to-2 peek coins + domain-hued label; tap → dose card in place
     var it = TBX_ITEMS[id]; if (!it) return null;
@@ -5645,7 +5645,7 @@
     "FOR YOU NOW · MORNING": "СЕЙЧАС ДЛЯ ТЕБЯ · УТРО", "NEXT BLOCK · DEEP WORK": "СЛЕДУЮЩИЙ БЛОК · ФОКУС", "FOR YOU NOW · LATE NIGHT": "СЕЙЧАС ДЛЯ ТЕБЯ · ПОЗДНЯЯ НОЧЬ", "FOR YOU NOW · WINDING DOWN": "СЕЙЧАС ДЛЯ ТЕБЯ · ЗАВЕРШЕНИЕ", "NEXT BLOCK": "СЛЕДУЮЩИЙ БЛОК", "Morning stack": "Утренний стек",
     "name where you went": "назови, куда ушёл", "three slow breaths": "три медленных вдоха", "feel why it matters": "почувствуй, почему это важно", "choose on purpose, staying counts": "выбери осознанно, остаться — это тоже победа", "log the catch": "отметь, что поймал",
     "min": "мин", "Start": "Начать", "inside": "внутри", "Adjust steps & timing": "Настрой шаги и время", "PLUS": "PLUS",
-    "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "Editing steps and timing comes with Plus.": "Редактирование шагов и времени — в Plus."
+    "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "You can edit steps and timing in Plus.": "Редактировать шаги и время можно в Plus."
   });
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
