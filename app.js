@@ -19,6 +19,7 @@
      SEC:COCKPIT         expanded tracker ring + stage modes + bookends
      SEC:TOOLBOX2        the home-scroll Toolbox (frame 20a/20c/21e: Plan + grids + heroes + bento + dose card w/ per-step times + minute grid)
      SEC:EDITOR          the full-screen Session Editor overlay (design 2b/4a) — blocks + settings + tool tray; the ONE composer for stacks
+     SEC:PICKER          the Activity Picker + Arranger overlay (design 18a) — folders wall → folder sheet → tune panel → arrange → land on the day
      SEC:ONBOARD         onboarding V2 survey
      SEC:STATE           S / fresh() / load() migrations / save() / export-import — DANGER
      SEC:GAME            the game world (openGame …)
@@ -5945,6 +5946,369 @@
     "Twenty feet out, past the screen. The eyes lead, the head follows.": "Метров на шесть вдаль, мимо экрана. Глаза ведут, голова следом.",
     "A single line about where you are now. Tap when it's down.": "Одна строка о том, где ты сейчас. Коснись, когда записал."
   });
+  // @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (Claude-Design "Activity Picker" frame 18a, Opus-built 2026-07-27). Replaces bentoPicker at the timeline tap-empty-slot entry ONLY (every other bentoPicker caller is a track/relabel/step flow the arranger's semantics don't fit — left on the old bento, flagged in the handoff). Flow: folders wall → folder sheet → tune panel → Arranger → the blocks land on the day. Design px/hex live in .pk-* (index.html); hues come from the app's own DOM registry so a picked block reads the same color it will wear on the timeline. Two overlay layers only (wall + sheet) — no third menu system. Child-drain everywhere (ratchet). ZERO timeline listeners added or changed: this is an overlay, the regression contract is untouched.
+  // @CONTRACT: the wall footer and the sheet footer are ONE painter (pkFoot) — opening a folder must not shift the bottom by a pixel (David 2026-07-27).
+  var PK_LENS = [10, 15, 20, 30, 45, 60, 90, 120, 180];                                   // the length rail (minutes); a chain's rail scales ALL its steps proportionally
+  var PK_PRIS = [{ v: 3, l: "Must" }, { v: 2, l: "Should" }, { v: 1, l: "Whenever" }];     // priority shows its VALUE once set; the word "Priority" only when unset (David 2026-07-27)
+  var PK_TOPN = 11; // activities shown in a folder before the dashed "More" tile opens the grouped view
+  var _pk = null;   // the live picker (null = closed). Nothing here is state until Start.
+  function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
+  function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
+  function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
+  function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
+  function pkDeep(dom) { return mixHex(pkHue(dom), "#160510", 0.45); }
+  function pkLip(dom) { return "0 4px 0 " + pkDeep(dom) + ", 0 0 0 2px #160510"; }
+  function pkChains() { try { return (S.tools && S.tools.pkChains) || []; } catch (e) { return []; } } // additive store, guarded read — NO SCHEMA bump
+  function pkTotal() { var t = 0; (_pk ? _pk.queue : []).forEach(function (p) { t += p.mins || 0; }); return t; }
+  function pkStacks() { return tbxCustoms().map(function (c) { return c.id; }).concat(TBX_TOP); } // the shelf's stacks + everything the user has built, same pool the top-8 grid draws from
+  function pkStackPick(id) { // a TBX stack → a first-class chain pick (gold ti-stack-2 identity, steps scaled by the rail)
+    var it = tbxItem(id); if (!it) return null;
+    var track = tbxTrack(id), mins = it.def || 5, sc = tbxScaleTrack(track, mins), steps = tbxDerivedSteps(track);
+    return { uid: uid(), kind: "chain", title: tr(it.name), dom: it.dom, ti: it.ti || "ti-stack-2", mins: mins, prio: 0, catK: null, subs: [],
+      st0: steps.map(function (s, i) { return { t: tr(s.t), i: s.ic, c: s.c, m: Math.max(0.5, (sc[i] ? sc[i].d : 60) / 60) }; }), bm: mins };
+  }
+  function pkChainPick(c) { var tot = 0; (c.steps || []).forEach(function (s) { tot += s.mins || 0; });
+    return { uid: uid(), kind: "chain", title: c.name, dom: c.dom || "create", ti: "ti-stack-2", mins: Math.max(1, Math.round(tot)) || 30, prio: 0, catK: null, subs: [],
+      st0: (c.steps || []).map(function (s) { return { t: s.t, i: s.i || "ti-circle", c: s.c || pkHue(s.dom || c.dom), m: s.mins || 5 }; }), bm: Math.max(1, tot) }; }
+  function pkActPick(a) { var dom = a.domain || domainOf(a); return { uid: uid(), kind: "act", title: a.title, dom: dom, ti: tiClass(a), mins: 30, prio: 0, catK: a.catK || null, subs: [] }; }
+  function pkSteps(p) { if (p.kind !== "chain") return []; var f = (p.mins || 1) / (p.bm || 1); return (p.st0 || []).map(function (s) { return { t: s.t, i: s.i, c: s.c, m: Math.max(0.5, s.m * f) }; }); } // ONE scaling rule: the rail sets the chain's total, every step rides the same factor
+  function pkQCount(title) { var n = 0; (_pk ? _pk.queue : []).forEach(function (p) { if (p.title === title) n++; }); return n; }
+  function pkClose() { if (_pk && _pk.ov && _pk.ov.parentNode) _pk.ov.parentNode.removeChild(_pk.ov); _pk = null; }
+  function pkOpen(cfg) { // THE ENTRY. cfg = { k, at } — the day key + the tapped minute. Nothing is written until Start (so a back-out leaves zero litter, no stub to clean up).
+    cfg = cfg || {}; pkClose();
+    var k = cfg.k || todayK(), at = Math.max(0, Math.min(1410, cfg.at || 0)), end = 1440, prev = null;
+    blocks(k).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), be = bs + (b.mins || 30);
+      if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
+      if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
+    });
+    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, stepFor: null, aOpen: null, aPri: false, aSteps: false };
+    var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
+    pkPaintShell();
+  }
+  function pkPaintShell() { // (re)build the top-level surface: the wall OR the arranger. Called only on a view switch, so neither surface re-animates on an in-place repaint.
+    if (!_pk) return; pkDrain(_pk.ov); _pk.sh = null;
+    if (_pk.view === "arr") { pkBuildArr(); return; }
+    var wall = add(_pk.ov, "div", "pk-wall");
+    var head = add(wall, "div", "pk-head");
+    var bk = add(head, "button", "pk-back"); add(bk, "i", "ti ti-chevron-left"); bk.setAttribute("aria-label", tr("Back")); bk.onclick = function () { pkClose(); }; // nothing was written, so backing out is literally free — zero litter by construction
+    var htx = add(head, "span", "pk-headtx");
+    var gap = _pk.gapEnd - _pk.gapStart;
+    if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
+    add(htx, "span", "pk-title", tr("What next?"));
+    _pk.wbody = add(wall, "div", "pk-body");
+    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;";
+    pkPaint();
+  }
+  function pkPaint() { // in-place repaint of everything that can change: the wall body, the shared footer, and (when open) the sheet's head + body
+    if (!_pk || _pk.view !== "pick") return;
+    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot, "#130609");
+    if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17"); }
+  }
+  function pkFolder(host, dash) { var b = add(host, "button", "pk-folder" + (dash ? " dash" : "")); return b; }
+  function pkPaintWall(host) {
+    pkDrain(host);
+    var by = bentoByDomain(), grid = add(host, "div", "pk-fgrid");
+    DOM_ORDER.forEach(function (d) {
+      var acts = by[d] || []; if (!acts.length) return; var D = DOM[d], hue = D.c;
+      var b = pkFolder(grid); b.style.boxShadow = "0 4px 0 " + mixHex(hue, "#160510", 0.62); b.style.border = "2px solid " + mixHex(hue, "#160510", 0.5);
+      var mini = add(b, "div", "pk-mini");
+      acts.slice(0, 6).forEach(function (a) { var c = add(mini, "span", "pk-minic"); c.style.background = mixHex(hue, "#160510", 0.4); var i = add(c, "i", "ti " + tiClass(a)); i.style.color = D.light; });
+      var row = add(b, "div", "pk-frow"); var fi = add(row, "i", "ti " + D.ti); fi.style.color = hue;
+      add(row, "span", "pk-fl", tr(D.l)); var n = add(row, "span", "pk-fn", String(acts.length)); n.style.color = mixHex(hue, "#160510", 0.3);
+      b.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+    });
+    var sec = add(host, "div", "pk-sec"); add(sec, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
+    var sg = add(sec, "div", "pk-fgrid");
+    [{ kind: "chains", l: "Chains", s: "your arrangements", ti: "ti-link", c: "#ffc41f", items: pkChains().map(pkChainPick) },
+     { kind: "stacks", l: "Stacks", s: "on your shelf", ti: "ti-stack-2", c: "#ffc41f", items: pkStacks().map(pkStackPick).filter(Boolean) }].forEach(function (F) {
+      var b = pkFolder(sg, true); b.style.borderColor = mixHex(F.c, "#160510", 0.42);
+      var dr = add(b, "div", "pk-deckrow");
+      F.items.slice(0, 3).forEach(function (p) { var w = add(dr, "span", "pk-deck"); var hue = pkHue(p.dom);
+        var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
+        var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var i = add(fc, "i", "ti " + p.ti); i.style.color = "#160510"; });
+      if (!F.items.length) { var e = add(dr, "span", "pk-deck"); e.style.flex = "0 0 calc((100% - 16px) / 3)"; var ef = add(e, "span", "pk-face"); ef.style.border = "2px dashed " + mixHex(F.c, "#160510", 0.42); var ei = add(ef, "i", "ti ti-plus"); ei.style.color = "#8a5f76"; } // one lone placeholder tile, not a full-width box
+      var row = add(b, "div", "pk-frow"); var fi = add(row, "i", "ti " + F.ti); fi.style.color = F.c;
+      var tx = add(row, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", F.items.length ? (F.items.length + " " + tr("saved")) : tr(F.s)); s.style.color = F.c;
+      b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+    });
+  }
+  // ===== THE SHARED FOOTER — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
+  function pkFoot(host, bg) {
+    pkDrain(host);
+    var q = _pk.queue, n = q.length;
+    if (n) { var tab = add(host, "button", "pk-tab"); var ti = add(tab, "i", "ti ti-chevron-up"); ti.style.transform = _pk.wallMin ? "none" : "rotate(180deg)"; tab.setAttribute("aria-label", tr("Show picks")); tab.onclick = function () { _pk.wallMin = !_pk.wallMin; pkPaint(); }; } // "minimizes" default: up when minimized, down when expanded
+    if (n && !_pk.wallMin) pkPanel(add(host, "div", "pk-panel"), bg || "#130609");
+    var bar = add(host, "div", "pk-bar"), tx = add(bar, "span", "pk-bartx");
+    var kick = add(tx, "span", "pk-bark"), lab = add(tx, "span", "pk-barl");
+    if (!n) { kick.style.display = "none"; lab.textContent = tr("Tap what you feel like"); }
+    else if (n === 1) { kick.textContent = tr("ONE THING"); kick.style.color = "#96637e"; lab.textContent = q[0].title; }
+    else { kick.textContent = tr("ON YOUR PLATE"); kick.style.color = "#ff8fc0"; lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); } // never a name → name → name list (David 2026-07-27)
+    var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n > 1 ? "ti-layout-list" : "ti-plus")); add(go, "span", null, n > 1 ? tr("Arrange") : tr("Add to today"));
+    if (!n) { go.style.opacity = ".45"; go.onclick = function () {}; }
+    else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
+  }
+  function pkPanel(host, bg) { // queue strip + (when a pick is focused) the tune panel
+    var qrow = add(host, "div", "pk-queue");
+    _pk.queue.forEach(function (p, i) {
+      var b = add(qrow, "button", "pk-q"), w = add(b, "span", "pk-qc"), hue = pkHue(p.dom), on = _pk.focus === i;
+      if (p.kind === "chain") { var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28); } // chains render as deck bubbles — 2 peeking cards behind
+      var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = on ? ("0 4px 0 " + pkDeep(p.dom) + ", 0 0 0 3px #ff4fa0") : pkLip(p.dom);
+      var fi = add(fc, "i", "ti " + p.ti); fi.style.color = "#160510";
+      var x = add(w, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
+      var l = add(b, "span", "pk-ql", p.title); l.style.color = on ? "#fff2f9" : "#96637e"; // the NAME under the icon, never the time
+      b.onclick = function () { _pk.focus = on ? null : i; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); };
+    });
+    var f = (_pk.focus != null) ? _pk.queue[_pk.focus] : null; if (!f) return;
+    var tune = add(host, "div", "pk-tune"), hue = pkHue(f.dom), isChain = f.kind === "chain";
+    var fh = add(tune, "div", "pk-fh"), ftx = add(fh, "span", "pk-bartx"); // header = name + hint + big time; NO icon coin (the ringed queue icon is the identifier)
+    add(ftx, "span", "pk-fht", f.title); add(ftx, "span", "pk-fhs", isChain ? tr("for how long? scales every step") : tr("for how long?"));
+    add(fh, "span", "pk-fhm", pkLong(f.mins));
+    pkRail(tune, f.mins, hue, function (v) { f.mins = v; pkPaint(); }, bg);
+    var btns = add(tune, "div", "pk-btns");
+    var pb = add(btns, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (f.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, f.prio ? tr(pkPriLab(f.prio)) : tr("Priority"));
+    pkSkin(pb, pbi, hue, !!f.prio); pb.onclick = function () { _pk.priOpen = !_pk.priOpen; _pk.stepsOpen = false; pkPaint(); };
+    var sb = add(btns, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
+    pkSkin(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); };
+    add(btns, "span", "pk-spacer");
+    var tr2 = add(btns, "button", "pk-trash"); add(tr2, "i", "ti ti-trash"); tr2.setAttribute("aria-label", tr("Remove")); tr2.onclick = function () { _pk.queue.splice(_pk.focus, 1); _pk.focus = _pk.queue.length ? 0 : null; pkPaint(); };
+    if (_pk.priOpen) pkPriRow(tune, f, hue);
+    if (_pk.stepsOpen) { if (isChain) pkStepList(add(tune, "div", "pk-steps"), pkSteps(f)); else pkActSteps(tune, f); }
+  }
+  function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
+  function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
+  function pkRail(host, cur, hue, onPick, bg) { // bg = the surface the rail sits on, so the right fade dissolves into it exactly (wall #130609 · sheet #1c0a17 · arranger body #2b1220)
+    var w = add(host, "div", "pk-railw"), box = add(w, "div", "pk-railb"), rail = add(box, "div", "pk-rail");
+    var lens = PK_LENS.slice(); if (lens.indexOf(cur) < 0) { lens.push(cur); lens.sort(function (a, b) { return a - b; }); } // a stack's own default (e.g. 5 min) joins the ladder so the rail always shows what's actually set
+    lens.forEach(function (v) { var c = add(rail, "button", "pk-lchip", pkShort(v)); pkSkin(c, null, hue, v === cur); if (v === cur) c.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; c.onclick = function () { onPick(v); }; });
+    bg = bg || "#130609"; var fade = add(box, "div", "pk-fade"); fade.style.background = "linear-gradient(90deg, " + hexA(bg, 0) + ", " + bg + " 88%)";
+    var fwd = add(w, "button", "pk-fwd"); add(fwd, "i", "ti ti-chevron-right"); fwd.setAttribute("aria-label", tr("More lengths")); fwd.onclick = function () { try { rail.scrollBy({ left: 150, behavior: "smooth" }); } catch (e) { rail.scrollLeft += 150; } };
+  }
+  function pkPriRow(host, p, hue) { var row = add(host, "div", "pk-pris");
+    PK_PRIS.forEach(function (P) { var b = add(row, "button", "pk-pri", tr(P.l)); pkSkin(b, null, hue, p.prio === P.v); b.onclick = function () { p.prio = (p.prio === P.v) ? 0 : P.v; _pk.priOpen = false; pkPaint(); }; }); }
+  function pkStepList(host, steps) { steps.forEach(function (s) { var r = add(host, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = s.c; c.style.boxShadow = "0 2px 0 " + mixHex(s.c, "#160510", 0.45) + ", 0 0 0 2px #160510"; add(c, "i", "ti " + s.i); add(r, "span", "pk-stept", s.t); add(r, "span", "pk-stepm", pkShort(s.m)); }); } // read-only scaled readout — a chain's steps are set in the Session Editor, not here
+  function pkActSteps(host, p) { // an activity's steps ARE the block's own sub-steps (the existing b.subs model) — tap to add one from the same folder sheet, never a keyboard
+    var box = add(host, "div", "pk-steps");
+    (p.subs || []).forEach(function (s, i) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(pkHue(p.dom), "#160510", 0.35); add(c, "i", "ti ti-point"); add(r, "span", "pk-stept", s.t);
+      var x = add(r, "button", "pk-qx"); x.style.position = "static"; add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function () { p.subs.splice(i, 1); pkPaint(); }; });
+    var b = add(box, "button", "pk-addstep"); add(b, "i", "ti ti-plus"); add(b, "span", null, tr("Add a step"));
+    b.onclick = function () { _pk.stepFor = p.uid; _pk.sheet = { kind: "dom", dom: p.dom, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+  }
+  // ===== THE FOLDER SHEET =====
+  function pkBuildSheet() {
+    if (!_pk) return; if (_pk.sh && _pk.sh.parentNode) _pk.sh.parentNode.removeChild(_pk.sh);
+    var shov = add(_pk.ov, "div", "pk-sh-ov"); _pk.sh = shov;
+    var scrim = add(shov, "button", "pk-scrim"); scrim.setAttribute("aria-label", tr("Close")); scrim.onclick = pkCloseSheet;
+    var sheet = add(shov, "div", "pk-sheet");
+    var grab = add(sheet, "div", "pk-grab"); add(grab, "span");
+    _pk.shhead = add(sheet, "div", "pk-shheadwrap"); _pk.shhead.style.cssText = "flex:none;display:flex;flex-direction:column;";
+    _pk.shbody = add(sheet, "div", "pk-shbody");
+    _pk.shfoot = add(sheet, "div", "pk-footwrap"); _pk.shfoot.style.cssText = "flex:none;display:flex;flex-direction:column;";
+    pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17");
+  }
+  function pkCloseSheet() { if (_pk.sh && _pk.sh.parentNode) _pk.sh.parentNode.removeChild(_pk.sh); _pk.sh = null; _pk.sheet = null; _pk.stepFor = null; pkPaint(); }
+  function pkSheetMeta() { var s = _pk.sheet;
+    if (s.kind === "chains") return { c: "#ffc41f", ti: "ti-link", l: tr("Chains"), sub: tr("saved arrangements") };
+    if (s.kind === "stacks") return { c: "#ffc41f", ti: "ti-stack-2", l: tr("Stacks"), sub: tr("on your shelf") };
+    var D = DOM[s.dom] || DOM.focus; return { c: D.c, ti: D.ti, l: tr(D.l), sub: _pk.stepFor ? tr("pick a step") : ((bentoByDomain()[s.dom] || []).length + " " + tr("things")) };
+  }
+  function pkPaintSheetHead() {
+    var host = _pk.shhead; pkDrain(host); var s = _pk.sheet, M = pkSheetMeta();
+    var head = add(host, "div", "pk-shhead");
+    if (s.more) { var bk = add(head, "button", "pk-circ"); add(bk, "i", "ti ti-arrow-left"); bk.setAttribute("aria-label", tr("Back")); bk.onclick = function () { s.more = false; s.naming = false; pkPaintSheetHead(); pkPaintSheetBody(); }; }
+    var coin = add(head, "span", "pk-shcoin"); coin.style.background = M.c; coin.style.boxShadow = "0 4px 0 " + mixHex(M.c, "#160510", 0.45) + ", 0 0 0 2.5px #160510"; var ci = add(coin, "i", "ti " + M.ti); ci.style.color = "#160510";
+    var tx = add(head, "span", "pk-shtx"); add(tx, "span", "pk-shl", M.l); add(tx, "span", "pk-shs", M.sub);
+    var x = add(head, "button", "pk-circ"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Close")); x.onclick = pkCloseSheet;
+    if (!s.naming) return;
+    var nm = add(host, "div", "pk-name"); nm.style.borderColor = M.c; nm.style.background = mixHex(M.c, "#1c0a17", 0.86);
+    var ni = add(nm, "i", "ti ti-sparkles"); ni.style.color = M.c;
+    var inp = document.createElement("input"); inp.className = "pk-nameinp"; inp.type = "text"; inp.placeholder = tr("name it"); inp.value = s.draft || ""; nm.appendChild(inp);
+    inp.oninput = function () { s.draft = inp.value; };
+    var cx = add(nm, "button", "pk-namex"); add(cx, "i", "ti ti-x"); cx.setAttribute("aria-label", tr("Close")); cx.onclick = function () { s.naming = false; s.draft = ""; pkPaintSheetHead(); };
+    var ok = add(nm, "button", "pk-nameok", tr("Add")); ok.style.background = M.c; ok.style.boxShadow = "0 3px 0 " + mixHex(M.c, "#160510", 0.45);
+    ok.onclick = function () { var v = (s.draft || "").trim(); if (!v) { try { inp.focus(); } catch (e) {} return; }
+      S.acts = S.acts || []; if (!S.acts.filter(function (x) { return (x.title || "").toLowerCase() === v.toLowerCase(); })[0]) S.acts.push({ title: v, catK: null, domain: s.dom }); save();
+      s.naming = false; s.draft = ""; pkTake({ title: v, catK: null, domain: s.dom }); };
+    setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
+  }
+  function pkTake(a) { // one door for every pick: in step-mode it becomes a sub-step of the focused block, otherwise it joins the queue and takes focus
+    if (_pk.stepFor) { var f = null; _pk.queue.forEach(function (p) { if (p.uid === _pk.stepFor) f = p; }); if (f) { f.subs = f.subs || []; f.subs.push({ t: a.title }); } _pk.stepFor = null; pkCloseSheet(); return; }
+    _pk.queue.push(pkActPick(a)); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint();
+  }
+  function pkTakePick(p) { _pk.queue.push(p); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); }
+  function pkCell(host, o) { // one squircle cell: face + glyph + optional already-picked badge
+    var b = add(host, "button", "pk-cell"), f = add(b, "span", "pk-cellf");
+    f.style.background = o.hue; f.style.boxShadow = pkLip(o.dom); var i = add(f, "i", "ti " + o.ti); i.style.color = "#160510";
+    if (o.n) add(f, "span", "pk-cbadge", "×" + o.n);
+    var l = add(b, "span", "pk-cellt", o.t); l.style.color = o.labC || "#f0dceb";
+    b.onclick = o.onTap; return b;
+  }
+  function pkDashCell(host, ti, label) { var b = add(host, "button", "pk-cell"), f = add(b, "span", "pk-cellf dash"); add(f, "i", "ti " + ti); var l = add(b, "span", "pk-cellt", label); l.style.color = "#c9a3b8"; return b; }
+  function pkPaintSheetBody() {
+    var host = _pk.shbody; pkDrain(host); var s = _pk.sheet;
+    if (s.kind === "chains" || s.kind === "stacks") {
+      var items = s.kind === "chains" ? pkChains().map(pkChainPick) : pkStacks().map(pkStackPick).filter(Boolean);
+      if (!items.length) { var e = add(host, "div", "pk-seclbl", tr(s.kind === "chains" ? "Arrange two things and Save keeps it here." : "Nothing here yet.")); e.style.padding = "18px 4px"; return; }
+      var g = add(host, "div", "pk-bgrid");
+      items.forEach(function (p) { var b = add(g, "button", "pk-bundle"), w = add(b, "span", "pk-bwrap"), hue = pkHue(p.dom);
+        var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
+        var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var fi = add(fc, "i", "ti " + p.ti); fi.style.color = "#160510";
+        var n = pkQCount(p.title); if (n) add(fc, "span", "pk-badge", "×" + n);
+        var lab = add(b, "span", "pk-blab"); var lt = add(lab, "span", "pk-blt", p.title); lt.style.color = "#fff2f9"; add(lab, "span", "pk-bls", (p.st0 || []).length + " " + tr("steps") + " · " + pkShort(p.mins));
+        b.onclick = function () { pkTakePick(s.kind === "chains" ? pkChainPick(pkChains()[items.indexOf(p)]) : p); };
+      });
+      return;
+    }
+    var D = DOM[s.dom] || DOM.focus, acts = (bentoByDomain()[s.dom] || []).slice();
+    acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
+    if (!s.more) {
+      var g2 = add(host, "div", "pk-cgrid");
+      acts.slice(0, PK_TOPN).forEach(function (a) { pkCell(g2, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, n: pkQCount(a.title), onTap: function () { pkTake(a); } }); });
+      if (acts.length > PK_TOPN) pkDashCell(g2, "ti-dots", tr("More")).onclick = function () { s.more = true; pkPaintSheetHead(); pkPaintSheetBody(); };
+      return;
+    }
+    var groups = {}, order = []; acts.forEach(function (a) { var gn = a.group || tr("More"); if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); });
+    var wrap = add(host, "div", "pk-groups");
+    order.forEach(function (gn) { var G = add(wrap, "div", "pk-group"); add(G, "span", "pk-seclbl", String(gn).toUpperCase());
+      var gg = add(G, "div", "pk-ggrid");
+      groups[gn].forEach(function (a) { pkCell(gg, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, labC: D.light, n: pkQCount(a.title), onTap: function () { pkTake(a); } }); });
+    });
+    var own = add(wrap, "div", "pk-group"); add(own, "span", "pk-seclbl", tr("YOUR OWN"));
+    var og = add(own, "div", "pk-ggrid");
+    pkDashCell(og, "ti-plus", tr("New")).onclick = function () { s.naming = true; pkPaintSheetHead(); };
+  }
+  // ===== THE ARRANGER (18a isArr) =====
+  function pkArrTimes() { var t = _pk.gapStart, out = []; _pk.queue.forEach(function (p) { out.push(t); t = Math.min(1439, t + (p.mins || 30)); }); return out; } // blocks lay end-to-end from the gap start — no overlaps, sequential recompute on every reorder
+  function pkBuildArr() {
+    var arr = add(_pk.ov, "div", "pk-arr");
+    var head = add(arr, "div", "pk-arrhead");
+    var bk = add(head, "button", "pk-arrback"); add(bk, "i", "ti ti-chevron-left"); bk.setAttribute("aria-label", tr("Back")); bk.onclick = function () { _pk.view = "pick"; pkPaintShell(); };
+    add(head, "span", "pk-arrt", tr("Arrange")); _pk.aTot = add(head, "span", "pk-arrtot");
+    _pk.alist = add(arr, "div", "pk-arrlist");
+    var foot = add(arr, "div", "pk-arrfoot");
+    var sv = add(foot, "button", "pk-arrsave"); add(sv, "i", "ti ti-device-floppy"); sv.setAttribute("aria-label", tr("Save")); sv.onclick = pkSaveChain;
+    var go = add(foot, "button", "pk-arrgo"); add(go, "i", "ti ti-player-play-filled"); add(go, "span", null, tr("Start")); go.onclick = function () { pkLand(true); };
+    pkPaintArr();
+  }
+  function pkPaintArr() {
+    if (!_pk || _pk.view !== "arr") return;
+    var host = _pk.alist; pkDrain(host); _pk.aTot.textContent = pkShort(pkTotal());
+    var times = pkArrTimes(), prevH = -1;
+    _pk.queue.forEach(function (p, i) {
+      var row = add(host, "div", "pk-arow"); row.dataset.i = String(i);
+      var h = Math.floor(times[i] / 60), same = h === prevH; prevH = h;
+      var gut = add(row, "div", "pk-gut");
+      add(gut, "span", "pk-guth", same ? "" : String(h)); var d = add(gut, "span", "pk-gutd"); d.style.width = same ? "18px" : "14px"; // big hour numeral; a dash alone when the hour repeats
+      var col = add(row, "div", "pk-acol"), hue = pkHue(p.dom), open = _pk.aOpen === i, isChain = p.kind === "chain";
+      if (isChain) { var k2 = add(col, "span", "pk-apk2"); k2.style.background = mixHex(hue, "#160510", 0.55); k2.style.opacity = open ? "0" : "1";
+                     var k1 = add(col, "span", "pk-apk1"); k1.style.background = mixHex(hue, "#160510", 0.3); k1.style.opacity = open ? "0" : "1"; }
+      var bub = add(col, "div", "pk-abub" + (open ? " open" : ""));
+      var hd = add(bub, "button", "pk-ahead"); hd.style.background = tbxCandy(hue);
+      add(hd, "i", "ti " + p.ti);
+      var tx = add(hd, "span", "pk-atx"); add(tx, "span", "pk-at", p.title);
+      add(tx, "span", "pk-as", (isChain ? ((p.st0 || []).length + " " + tr("steps")) : tr((DOM[p.dom] || DOM.focus).l)).toUpperCase());
+      if (p.prio >= 2) add(hd, "i", "ti ti-flag-filled pk-am");
+      add(hd, "span", "pk-am", pkShort(p.mins));
+      var ch = add(hd, "i", "ti ti-chevron-down pk-achev"); ch.style.transform = open ? "none" : "rotate(180deg)"; // collapsed = up, expanded = down (David 2026-07-27)
+      pkDragWire(hd, row, i);
+      var fold = add(bub, "div", "pk-afold" + (open ? " open" : "")), inner = add(fold, "div", "pk-afoldi");
+      if (open) pkArrBody(add(inner, "div", "pk-abody"), p, i, hue, isChain);
+    });
+    var addrow = add(host, "div", "pk-arradd"); add(addrow, "span");
+    var ab = add(addrow, "button", "pk-arraddb"); add(ab, "i", "ti ti-plus"); add(ab, "span", null, tr("Add a block"));
+    ab.onclick = function () { _pk.view = "pick"; _pk.wallMin = false; pkPaintShell(); };
+  }
+  function pkArrBody(host, p, i, hue, isChain) {
+    if (isChain) pkStepList(add(host, "div", "pk-steps"), pkSteps(p));
+    pkRail(host, p.mins, hue, function (v) { p.mins = v; pkPaintArr(); }, "#2b1220");
+    if (isChain) {
+      var row = add(host, "div", "pk-btns");
+      var aj = add(row, "button", "pk-adjust"); add(aj, "i", "ti ti-adjustments"); add(aj, "span", null, tr("Adjust steps & timing")); add(aj, "i", "ti ti-chevron-right");
+      aj.onclick = function () { pkEditChain(p); }; // the ONE step editor (@SEC:EDITOR) — no second one
+      var t1 = add(row, "button", "pk-trash"); add(t1, "i", "ti ti-trash"); t1.setAttribute("aria-label", tr("Remove")); t1.onclick = function () { pkDrop(i); };
+      return;
+    }
+    var row2 = add(host, "div", "pk-btns");
+    var pb = add(row2, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (p.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, p.prio ? tr(pkPriLab(p.prio)) : tr("Priority"));
+    pkSkin(pb, pbi, hue, !!p.prio); pb.onclick = function () { _pk.aPri = !_pk.aPri; _pk.aSteps = false; pkPaintArr(); };
+    var sb = add(row2, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
+    pkSkin(sb, sbi, hue, _pk.aSteps); sb.onclick = function () { _pk.aSteps = !_pk.aSteps; _pk.aPri = false; pkPaintArr(); };
+    var t2 = add(row2, "button", "pk-trash"); add(t2, "i", "ti ti-trash"); t2.setAttribute("aria-label", tr("Remove")); t2.onclick = function () { pkDrop(i); };
+    if (_pk.aPri) { var pr = add(host, "div", "pk-pris"); PK_PRIS.forEach(function (P) { var b = add(pr, "button", "pk-pri", tr(P.l)); pkSkin(b, null, hue, p.prio === P.v); b.onclick = function () { p.prio = (p.prio === P.v) ? 0 : P.v; _pk.aPri = false; pkPaintArr(); }; }); }
+    if (_pk.aSteps) { var box = add(host, "div", "pk-steps");
+      (p.subs || []).forEach(function (s, si) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(hue, "#160510", 0.35); add(c, "i", "ti ti-point"); add(r, "span", "pk-stept", s.t);
+        var x = add(r, "button", "pk-qx"); x.style.position = "static"; add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function () { p.subs.splice(si, 1); pkPaintArr(); }; });
+      var ad = add(box, "button", "pk-addstep"); add(ad, "i", "ti ti-plus"); add(ad, "span", null, tr("Add a step"));
+      ad.onclick = function () { _pk.stepFor = p.uid; _pk.view = "pick"; _pk.sheet = { kind: "dom", dom: p.dom, more: false, naming: false, draft: "" }; pkPaintShell(); pkBuildSheet(); };
+    }
+  }
+  function pkDrop(i) { _pk.queue.splice(i, 1); _pk.aOpen = null; if (!_pk.queue.length) { _pk.view = "pick"; pkPaintShell(); return; } pkPaintArr(); }
+  function pkEditChain(p) { sedOpen({ title: p.title, rows: sedRowsFromTrack((p.st0 || []).map(function (s) { return { k: "relax", d: Math.round(s.m * 60), t: s.t, i: s.i, dom: p.dom }; })),
+    onSave: function (t) { var tot = 0; t.forEach(function (x) { tot += (x.d || 0) / 60; });
+      p.st0 = t.map(function (x) { return { t: x.t, i: x.i, c: pkHue(x.dom || p.dom), m: (x.d || 60) / 60 }; }); p.bm = Math.max(1, tot); p.mins = Math.max(1, Math.round(tot)); pkPaintArr(); },
+    onStart: function () { pkPaintArr(); } }); }
+  function pkDragWire(hd, row, i) { // WHOLE bubble = the drag handle (David 2026-07-27): press + pull >6px reorders, a clean tap toggles the unfold, tapping B while A is open closes A and opens B in ONE tap. No grip line.
+    var y0 = 0, moved = false, mids = null, target = i, host = null;
+    hd.addEventListener("pointerdown", function (e) {
+      if (e.button != null && e.button !== 0) return;
+      y0 = e.clientY; moved = false; target = i; host = _pk.alist;
+      mids = [].slice.call(host.querySelectorAll(".pk-arow")).map(function (r) { return r.offsetTop + r.offsetHeight / 2; });
+      try { hd.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    hd.addEventListener("pointermove", function (e) {
+      if (!mids) return; var dy = e.clientY - y0;
+      if (!moved && Math.abs(dy) > 6) { moved = true; row.classList.add("drag"); row.style.transition = "none"; }
+      if (!moved) return;
+      row.style.transform = "translateY(" + dy + "px)";
+      var c = mids[i] + dy, best = 0, bd = 1e9;
+      mids.forEach(function (m, j) { var d2 = Math.abs(m - c); if (d2 < bd) { bd = d2; best = j; } });
+      if (best !== target) { target = best;
+        [].slice.call(host.querySelectorAll(".pk-arow")).forEach(function (r, j) { r.style.outline = (j === target && j !== i) ? "2.5px dashed #ff4fa0" : ""; r.style.outlineOffset = "4px"; });
+      }
+    });
+    function end() {
+      if (!mids) return; mids = null;
+      row.style.transform = ""; row.style.transition = ""; row.classList.remove("drag");
+      [].slice.call(_pk.alist.querySelectorAll(".pk-arow")).forEach(function (r) { r.style.outline = ""; });
+      if (!moved) { _pk.aOpen = (_pk.aOpen === i) ? null : i; _pk.aPri = false; _pk.aSteps = false; pkPaintArr(); return; }
+      if (target !== i) { var q = _pk.queue; q.splice(target, 0, q.splice(i, 1)[0]); _pk.aOpen = null; }
+      pkPaintArr();
+    }
+    hd.addEventListener("pointerup", end); hd.addEventListener("pointercancel", end);
+  }
+  function pkSaveChain() { // Save = save-as-chain (no chain/day fork — whole days live elsewhere). Additive store, guarded reads, NO SCHEMA bump.
+    if (!_pk.queue.length) return;
+    var snap = _pk.queue.map(function (p) { return { t: p.title, mins: p.mins, dom: p.dom, i: p.ti, c: pkHue(p.dom), prio: p.prio || 0, catK: p.catK || null }; }), dom = _pk.queue[0].dom;
+    tbxNameDialog(function (nm) {
+      S.tools = S.tools || {}; S.tools.pkChains = S.tools.pkChains || [];
+      S.tools.pkChains.push({ id: "pkc_" + uid(), name: nm, dom: dom, steps: snap, created: todayK() });
+      save(); try { toast(tr("Saved as a chain.")); } catch (e) {}
+    });
+  }
+  function pkLand(fromArr) { // Start / Add to today: write EVERY pick into blocks(k) at the arranged times, then the app's existing behavior for a block that starts now
+    if (!_pk || !_pk.queue.length) return;
+    var k = _pk.k, times = pkArrTimes(), made = [];
+    _pk.queue.forEach(function (p, i) {
+      var t = times[i], nb = markFutureBlock({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: Math.max(5, p.mins || 30), title: p.title, prio: p.prio || 2, color: pkHue(p.dom), catK: p.catK || null, domain: p.dom, done: false }, k);
+      if (p.subs && p.subs.length) nb.subs = p.subs.map(function (s) { return { t: s.t, done: false }; });
+      blocks(k).push(nb); made.push(nb);
+    });
+    reflow(k); save(); pkClose();
+    try { renderToday(); } catch (e) {}
+    try { renderTrackerFull(); } catch (e) {}
+    var first = made[0];
+    if (fromArr && first && k === todayK() && Math.abs(hm(first.time) - logicalNowMin()) <= 5) { try { startPlanned(first); } catch (e) {} } // a block that starts NOW starts tracking, exactly as everywhere else
+    else { try { toast((made.length > 1 ? (made.length + " " + tr("things")) : made[0].title) + " · " + fmt(times[0])); } catch (e) {} }
+  }
+  Object.assign(I18N.ru, { // ACTIVITY PICKER strings (B4 law: EN source + RU dict, same commit).
+    "What next?": "Что дальше?", "open": "свободно", "after": "после", "SAVED & READY-MADE": "СОХРАНЁННОЕ И ГОТОВОЕ",
+    "Chains": "Цепочки", "Stacks": "Стеки", "your arrangements": "твои связки", "on your shelf": "на твоей полке", "saved arrangements": "сохранённые связки", "saved": "сохранено",
+    "Tap what you feel like": "Коснись того, чего хочется", "ONE THING": "ОДНО ДЕЛО", "ON YOUR PLATE": "НА СЕГОДНЯ", "things": "дела", "steps": "шага",
+    "Add to today": "Добавить в день", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
+    "for how long?": "на сколько?", "for how long? scales every step": "на сколько? подстроятся все шаги", "Priority": "Важность", "Must": "Обязательно", "Should": "Желательно", "Whenever": "Когда угодно",
+    "Steps": "Шаги", "Add a step": "Добавить шаг", "pick a step": "выбери шаг", "More": "Ещё", "New": "Новое", "YOUR OWN": "СВОИ", "name it": "назови",
+    "Arrange two things and Save keeps it here.": "Разложи два дела — и Сохранить оставит их здесь.", "Nothing here yet.": "Пока пусто.",
+    "Adjust steps & timing": "Настрой шаги и время", "Saved as a chain.": "Сохранено как цепочка."
+  });
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
@@ -9954,7 +10318,7 @@
       var rightTrack = !isFuture && showNow && lx0 > rect0.width * 0.5; // present/past REAL lane → tap-to-track, not create
       var planSide = isFuture || lx0 <= rect0.width * 0.5;
       var moved = false, done = false, holdT = null;
-      function makeBlock() { var snap = Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)); var id = uid(); blocks(k).push({ id: id, time: pad(Math.floor(snap / 60)) + ":" + pad(snap % 60), mins: 60, title: "", prio: 2, color: "#8a5cf0", done: false }); reflow(k); save(); renderToday(); bentoPicker({ title: "What's the plan?", onPick: function (x) { var nb = blocks(k).filter(function (b) { return b.id === id; })[0]; if (!nb) return; nb.title = x.title; nb.color = x.color || (DOM[x.domain] || DOM.focus).c; nb.catK = x.catK || null; nb.domain = x.domain || domainOf(x); reflow(k); save(); renderToday(); }, onCancel: function () { var a = blocks(k), i = a.map(function (b) { return b.id; }).indexOf(id); if (i >= 0) { a.splice(i, 1); reflow(k); save(); renderToday(); } } }); } // tap an empty slot → a 30-min bubble lands AT the tapped time, then the bento opens immediately (single-tap to pick) and the activity appears in place; tap the placed bubble AGAIN to open the full editor. Dismiss the bento with no pick → the empty stub is removed (no litter). (David 2026-06-27 — was: created the stub then jumped straight into the full editor)
+      function makeBlock() { pkOpen({ k: k, at: Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)) }); } // tap an empty slot → the ACTIVITY PICKER (@SEC:PICKER, design 18a): pick one thing → "Add to today" lands it at the tapped minute; pick several → Arrange orders them end-to-end from the gap and Start lands the set. Replaced the bento + empty-stub dance 2026-07-27: NOTHING is written until the picker commits, so backing out leaves zero litter by construction (the old onCancel stub-removal contract is now structural).
       function fireCreate() { if (rightTrack) bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); else makeBlock(); }
       // ADD an activity = a deliberate LONG-PRESS now (a quick tap is reserved for DOUBLE-TAP-to-zoom) — David 2026-07-02
       holdT = setTimeout(function () { if (moved || _pinching) return; holdT = null; done = true; try { if (navigator.vibrate) navigator.vibrate(11); } catch (e) {} fireCreate(); }, 360);

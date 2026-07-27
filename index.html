@@ -1930,6 +1930,198 @@
   .sed-fstart i{ font-size:19px; }
   .sed-fsave:active,.sed-fgear:active{ transform:translateY(3px); }
   .sed-fstart:active{ transform:translateY(3px); box-shadow:0 3px 10px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); }
+  /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-panel/.pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
+  .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; }
+  .pk-ov *{ box-sizing:border-box; }
+  .pk-ov ::-webkit-scrollbar{ width:0; height:0; }
+  .pk-wall{ position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); animation:ovFade var(--dur-micro) var(--ease-settle) both; }
+  .pk-head{ flex:none; padding:max(56px, calc(env(safe-area-inset-top,0px) + 14px)) 22px 12px; display:flex; align-items:center; gap:12px; }
+  .pk-headtx{ flex:1; min-width:0; }
+  .pk-back{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; } /* the wall's way OUT — 18a has no close on the wall, but this picker replaces a dismissible overlay, so backing out must exist (and leaves zero litter: nothing is written until Start) */
+  .pk-back i{ font-size:19px; }
+  .pk-back:active{ transform:translateY(2px); }
+  .pk-kick{ display:block; font-size:11px; font-weight:800; letter-spacing:1.5px; color:#ff8fc0; }
+  .pk-title{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:30px; color:#fff2f9; line-height:1.05; }
+  .pk-body{ flex:1; min-height:0; overflow-y:auto; padding:0 22px 12px; display:flex; flex-direction:column; gap:16px; }
+  .pk-fgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+  .pk-folder{ display:flex; flex-direction:column; gap:9px; padding:11px 11px 12px; border-radius:20px; background:#1e0b18; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
+  .pk-folder:active{ transform:translateY(2px); }
+  .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+  .pk-minic{ aspect-ratio:1; border-radius:28%; display:flex; align-items:center; justify-content:center; }
+  .pk-minic i{ font-size:14px; }
+  .pk-frow{ display:flex; align-items:center; gap:6px; }
+  .pk-frow > i{ font-size:15px; flex:none; }
+  .pk-fl{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1; }
+  .pk-fn{ flex:none; font-size:11.5px; font-weight:800; }
+  .pk-seclbl{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#96637e; }
+  .pk-sec{ display:flex; flex-direction:column; gap:11px; }
+  .pk-folder.dash{ border:2.5px dashed #6b4258; }
+  .pk-deckrow{ display:flex; gap:8px; padding:7px 0 0 7px; }
+  .pk-deck{ flex:1; aspect-ratio:1; position:relative; }
+  .pk-deck .pk-pk2{ position:absolute; left:-6px; top:-6px; right:6px; bottom:6px; border-radius:26%; }
+  .pk-deck .pk-pk1{ position:absolute; left:-3px; top:-3px; right:3px; bottom:3px; border-radius:26%; }
+  .pk-deck .pk-face{ position:absolute; inset:0; border-radius:26%; display:flex; align-items:center; justify-content:center; }
+  .pk-deck .pk-face i{ font-size:14px; }
+  .pk-ftx{ flex:1; min-width:0; }
+  .pk-ftl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; line-height:1.05; }
+  .pk-fts{ display:block; font-size:10.5px; font-weight:800; }
+  /* ---- the shared footer (wall + sheet render these IDENTICALLY) ---- */
+  .pk-tab{ flex:none; align-self:center; width:64px; height:24px; margin-bottom:-6px; border:none; background:none; color:#96637e; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-tab i{ font-size:17px; transition:transform .25s ease; }
+  .pk-panel{ flex:none; padding:11px 22px 0; border-top:2px solid #24101c; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; }
+  .pk-queue{ display:flex; gap:16px; padding:6px 4px 2px 8px; overflow-x:auto; touch-action:pan-x; }
+  .pk-q{ display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
+  .pk-q:active{ transform:translateY(2px); }
+  .pk-qc{ width:40px; height:40px; position:relative; }
+  .pk-qc .pk-pk2{ position:absolute; left:-6px; top:-6px; right:6px; bottom:6px; border-radius:13px; }
+  .pk-qc .pk-pk1{ position:absolute; left:-3px; top:-3px; right:3px; bottom:3px; border-radius:13px; }
+  .pk-qc .pk-face{ position:absolute; inset:0; border-radius:13px; display:flex; align-items:center; justify-content:center; }
+  .pk-qc .pk-face i{ font-size:18px; }
+  .pk-qx{ position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; }
+  .pk-qx i{ font-size:9px; }
+  .pk-ql{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; max-width:58px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pk-tune{ display:flex; flex-direction:column; gap:10px; }
+  .pk-fh{ display:flex; align-items:center; gap:9px; }
+  .pk-fht{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.05; }
+  .pk-fhs{ display:block; font-size:11px; font-weight:700; color:#8a5f76; }
+  .pk-fhm{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:22px; color:#fff2f9; }
+  .pk-railw{ display:flex; gap:4px; align-items:stretch; }
+  .pk-railb{ position:relative; flex:1; min-width:0; }
+  .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; }
+  .pk-lchip{ flex:none; min-width:63px; min-height:44px; padding:9px 10px; border-radius:11px; border:1.5px solid transparent; background:#241019; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-lchip:active{ transform:translateY(2px); }
+  .pk-fade{ position:absolute; top:0; right:0; bottom:0; width:30px; pointer-events:none; }
+  .pk-fwd{ flex:none; width:34px; border:none; background:none; color:#ff8fc0; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-fwd i{ font-size:19px; }
+  .pk-btns{ display:flex; gap:8px; align-items:center; }
+  .pk-tbtn{ flex:none; display:flex; align-items:center; gap:7px; min-height:44px; padding:10px 14px; border-radius:12px; border:1.5px solid transparent; background:#241019; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-tbtn i{ font-size:16px; }
+  .pk-tbtn:active{ transform:translateY(2px); }
+  .pk-spacer{ flex:1; }
+  .pk-trash{ flex:none; width:44px; height:44px; border-radius:13px; border:2px solid #6b2438; background:rgba(255,79,120,.1); color:#ff7d9c; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-trash i{ font-size:16px; }
+  .pk-trash:active{ transform:translateY(2px); }
+  .pk-pris{ display:flex; gap:7px; animation:edPop .14s ease both; }
+  .pk-pri{ flex:1; min-height:44px; padding:10px 0; border-radius:12px; border:1.5px solid transparent; background:#241019; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-pri:active{ transform:translateY(2px); }
+  .pk-steps{ display:flex; flex-direction:column; gap:8px; animation:edPop .14s ease both; }
+  .pk-step{ display:flex; align-items:center; gap:9px; }
+  .pk-stepc{ width:26px; height:26px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .pk-stepc i{ color:#fff2f9; font-size:13px; }
+  .pk-stept{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:700; font-size:13.5px; color:#e0bdd2; }
+  .pk-stepm{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; color:#96637e; }
+  .pk-addstep{ width:100%; min-height:44px; border-radius:13px; border:2px dashed #4b2a44; background:rgba(255,242,249,.03); color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; animation:edPop .14s ease both; -webkit-tap-highlight-color:transparent; }
+  .pk-addstep i{ font-size:15px; }
+  .pk-bar{ flex:none; padding:10px 22px calc(env(safe-area-inset-bottom,0px) + 28px); display:flex; align-items:center; gap:9px; }
+  .pk-bartx{ flex:1; min-width:0; }
+  .pk-bark{ display:block; font-size:10px; font-weight:800; letter-spacing:1.4px; }
+  .pk-barl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 16px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #4a0e2c; color:#160510; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-go i{ font-size:18px; }
+  .pk-go:active{ transform:translateY(3px); box-shadow:0 1px 0 #4a0e2c; }
+  /* ---- the folder sheet ---- */
+  .pk-sh-ov{ position:absolute; inset:0; }
+  .pk-scrim{ position:absolute; inset:0; border:none; background:rgba(7,3,8,.6); cursor:pointer; padding:0; }
+  .pk-sheet{ position:absolute; left:0; right:0; bottom:0; max-height:88%; display:flex; flex-direction:column; background:#1c0a17; border-top:3px solid #160510; border-radius:28px 28px 0 0; box-shadow:0 -14px 34px rgba(0,0,0,.6); animation:edUp .22s cubic-bezier(.22,.9,.3,1) both; }
+  @keyframes edUp{ from{ transform:translateY(24px); opacity:0; } to{ transform:none; opacity:1; } }
+  .pk-grab{ flex:none; display:flex; justify-content:center; padding:9px 0 2px; }
+  .pk-grab span{ width:44px; height:5px; border-radius:3px; background:#4b2a44; }
+  .pk-shhead{ flex:none; padding:8px 20px 14px; display:flex; align-items:center; gap:12px; }
+  .pk-circ{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-circ i{ font-size:19px; }
+  .pk-circ:active{ transform:translateY(2px); }
+  .pk-shcoin{ width:44px; height:44px; border-radius:15px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .pk-shcoin i{ font-size:22px; }
+  .pk-shtx{ flex:1; min-width:0; }
+  .pk-shl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; color:#fff2f9; line-height:1.05; }
+  .pk-shs{ display:block; font-size:11.5px; font-weight:700; color:#8a5f76; }
+  .pk-name{ flex:none; margin:0 20px 12px; padding:11px 12px; border-radius:18px; border:2.5px dashed #b07aff; background:rgba(176,122,255,.12); display:flex; align-items:center; gap:9px; animation:edPop .16s ease both; }
+  .pk-name > i{ font-size:19px; flex:none; }
+  .pk-ov input.pk-nameinp{ flex:1; min-width:0; padding:0; border-radius:0; background:transparent !important; border:none !important; border-color:transparent !important; outline:none; box-shadow:none !important; -webkit-appearance:none; appearance:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9 !important; } /* beats the global input[type=text] candy skin (which is !important) — the dashed row IS the frame here */
+  .pk-ov input.pk-nameinp::placeholder{ color:#8a5f76 !important; }
+  .pk-namex{ flex:none; width:44px; height:44px; border-radius:13px; border:2px solid #4b2a44; background:none; color:#c98ca6; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  .pk-namex i{ font-size:17px; }
+  .pk-nameok{ flex:none; height:44px; padding:0 16px; border-radius:13px; border:2.5px solid #160510; color:#160510; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; cursor:pointer; }
+  .pk-nameok:active{ transform:translateY(2px); }
+  .pk-shbody{ flex:0 1 auto; min-height:0; overflow-y:auto; padding:0 20px 14px; }
+  .pk-bgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px 18px; padding:8px 6px 4px; }
+  .pk-bundle{ display:flex; flex-direction:column; align-items:center; gap:10px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-bundle:active{ transform:translateY(3px); }
+  .pk-bwrap{ width:74%; aspect-ratio:1; position:relative; }
+  .pk-bwrap .pk-pk2{ position:absolute; left:-11px; top:-11px; right:11px; bottom:11px; border-radius:26%; }
+  .pk-bwrap .pk-pk1{ position:absolute; left:-5.5px; top:-5.5px; right:5.5px; bottom:5.5px; border-radius:26%; }
+  .pk-bwrap .pk-face{ position:absolute; inset:0; border-radius:26%; display:flex; align-items:center; justify-content:center; }
+  .pk-bwrap .pk-face i{ font-size:34px; filter:drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
+  .pk-badge{ position:absolute; top:-8px; right:-8px; min-width:28px; height:24px; padding:0 6px; border-radius:12px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11.5px; color:#ff8fc0; }
+  .pk-blab{ display:block; text-align:center; }
+  .pk-blt{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15.5px; line-height:1.1; }
+  .pk-bls{ display:block; font-size:10.5px; font-weight:800; letter-spacing:.5px; color:#96637e; margin-top:2px; }
+  .pk-cgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px 9px; }
+  .pk-cell{ display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-cell:active{ transform:translateY(3px); }
+  .pk-cellf{ width:100%; aspect-ratio:1; border-radius:28%; display:flex; align-items:center; justify-content:center; position:relative; }
+  .pk-cellf i{ font-size:23px; filter:drop-shadow(0 2px 0 rgba(0,0,0,.2)); }
+  .pk-cellf.dash{ border:2.5px dashed #8a5f76; background:rgba(255,242,249,.04); }
+  .pk-cellf.dash i{ color:#c9a3b8; font-size:22px; filter:none; }
+  .pk-cellt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; line-height:1.1; text-align:center; }
+  .pk-cbadge{ position:absolute; top:-6px; right:-6px; min-width:26px; height:22px; padding:0 5px; border-radius:11px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#ff8fc0; }
+  .pk-groups{ display:flex; flex-direction:column; gap:16px; animation:edPop .16s ease both; }
+  .pk-group{ display:flex; flex-direction:column; gap:10px; }
+  .pk-ggrid{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:11px 8px; }
+  .pk-ggrid .pk-cellf i{ font-size:18px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.2)); }
+  .pk-ggrid .pk-cellt{ font-size:10px; }
+  /* ---- the arranger ---- */
+  .pk-arr{ position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(115% 65% at 50% 0%, #44193a 0%, #2c1224 55%, #210e1a 100%); animation:edPop .2s ease both; }
+  .pk-arrhead{ flex:none; padding:max(56px, calc(env(safe-area-inset-top,0px) + 14px)) 22px 14px; display:flex; align-items:center; gap:11px; }
+  .pk-arrback{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #5a3350; background:rgba(255,242,249,.06); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-arrback i{ font-size:19px; }
+  .pk-arrt{ flex:1; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:25px; color:#fff2f9; }
+  .pk-arrtot{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#ffc41f; }
+  .pk-arrlist{ flex:1; min-height:0; overflow-y:auto; padding:0 22px 12px; display:flex; flex-direction:column; gap:10px; }
+  .pk-arow{ display:flex; gap:15px; align-items:flex-start; position:relative; }
+  .pk-arow.drag{ z-index:5; }
+  .pk-gut{ flex:none; width:38px; padding-top:10px; display:flex; flex-direction:column; align-items:flex-end; }
+  .pk-guth{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; line-height:24px; color:#efd7e6; }
+  .pk-gutd{ display:block; height:4px; border-radius:2px; background:#6b4a5e; margin-top:6px; }
+  .pk-acol{ flex:1; min-width:0; position:relative; }
+  .pk-apk2{ position:absolute; left:-8px; top:-8px; right:16px; height:54px; border-radius:15px; border:2px solid #160510; }
+  .pk-apk1{ position:absolute; left:-4px; top:-4px; right:8px; height:58px; border-radius:16px; border:2.5px solid #160510; }
+  .pk-abub{ position:relative; border-radius:19px; border:3px solid #160510; overflow:hidden; box-shadow:0 5px 0 #160510; transition:border-color .3s ease; }
+  .pk-abub.open{ border-color:#ff4fa0; }
+  .pk-ahead{ width:100%; position:relative; display:flex; align-items:center; gap:11px; padding:12px 15px; border:none; cursor:pointer; touch-action:none; -webkit-tap-highlight-color:transparent; } /* WHOLE bubble is the drag handle (David 2026-07-27): press + pull >6px reorders, a clean tap toggles the unfold. No grip line. */
+  .pk-ahead > i{ color:#160510; font-size:18px; flex:none; }
+  .pk-atx{ flex:1; min-width:0; text-align:left; }
+  .pk-at{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#160510; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pk-as{ display:block; font-size:9.5px; font-weight:800; letter-spacing:1px; color:rgba(22,5,16,.65); }
+  .pk-am{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#160510; }
+  .pk-achev{ color:#160510; font-size:16px; flex:none; transition:transform .3s ease; }
+  .pk-afold{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .34s cubic-bezier(.22,.9,.3,1); }
+  .pk-afold.open{ grid-template-rows:1fr; }
+  .pk-afoldi{ min-height:0; overflow:hidden; }
+  .pk-abody{ background:#2b1220; padding:13px; display:flex; flex-direction:column; gap:11px; }
+  .pk-abody .pk-stepc{ width:32px; height:32px; border-radius:11px; }
+  .pk-abody .pk-stepc i{ font-size:15px; }
+  .pk-abody .pk-stept{ font-weight:800; font-size:15.5px; color:#fff2f9; }
+  .pk-abody .pk-stepm{ font-size:14px; color:#b98aa8; }
+  .pk-abody .pk-lchip{ background:#301526; }
+  .pk-abody .pk-tbtn{ flex:1; min-width:0; justify-content:center; gap:6px; padding:10px 6px; font-size:13px; background:#301526; }
+  .pk-abody .pk-tbtn i{ font-size:15px; }
+  .pk-adjust{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; min-height:44px; padding:10px 12px; border-radius:13px; border:2px solid #3a1d31; background:rgba(255,242,249,.04); color:#c9a3b8; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; line-height:1.15; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-adjust i{ font-size:15px; flex:none; }
+  .pk-adjust span{ flex:1; min-width:0; text-align:left; }
+  .pk-adjust:active{ transform:translateY(2px); }
+  .pk-arradd{ display:flex; gap:9px; }
+  .pk-arradd > span{ flex:none; width:44px; }
+  .pk-arraddb{ flex:1; min-height:54px; border-radius:18px; border:2.5px dashed #ff4fa0; background:rgba(255,79,160,.07); color:#ff8fc0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent; }
+  .pk-arraddb i{ font-size:18px; }
+  .pk-arraddb:active{ transform:translateY(2px); }
+  .pk-arrfoot{ flex:none; padding:12px 22px calc(env(safe-area-inset-bottom,0px) + 28px); display:flex; align-items:center; gap:10px; }
+  .pk-arrsave{ flex:none; width:52px; height:52px; border-radius:16px; border:2.5px solid #5a3350; background:rgba(255,242,249,.06); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-arrsave i{ font-size:21px; }
+  .pk-arrsave:active{ transform:translateY(2px); }
+  .pk-arrgo{ flex:1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:52px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #4a0e2c; color:#160510; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-arrgo i{ font-size:18px; }
+  .pk-arrgo:active{ transform:translateY(3px); box-shadow:0 1px 0 #4a0e2c; }
   #trackerFull .tf-grab{ position:absolute; top:0; left:0; right:0; height:40px; background:transparent; cursor:grab; touch-action:none; z-index:3; } /* full-width tall touch zone — drag DOWN to close (visual bar is ::before) */
   #trackerFull .tf-grab::before{ content:""; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:#5a4a64; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:4; } /* above the tf-grab drag zone so the chevron tap still closes */
@@ -3210,6 +3402,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1222"></script>
+  <script src="app.js?v=1223"></script>
 </body>
 </html>
