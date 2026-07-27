@@ -16170,9 +16170,9 @@
     { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 16, step: 1, def: 5, unit: "vh", vars: function (v) { return { "--tun-tools-gap": v + "vh" }; } }, // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
     { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
     { k: "doorH", lbl: "Door height", min: 56, max: 160, step: 2, def: 80, unit: "px", vars: function (v) { return { "--tun-door-h": v + "px" }; } },
-    { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 23, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } },
+    { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 32, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } }, // DOORS-DOWN (David 2026-07-23): CSS default moved 23→32dvh — the def must track the CSS fallback or tunerApply un-fixes it for dev users
     { k: "ringTh", lbl: "Ring thickness", min: 4, max: 20, step: 1, def: 16, unit: "px", vars: function (v) { return { "--tun-ring-th": v + "px" }; } }, // the disc inset = full rim; visible rim ≈ v/2 per side
-    { k: "bloom", lbl: "Bloom strength", min: 0, max: 100, step: 1, def: 60, unit: "%", vars: function (v) { var f = v / 100; return { "--tun-bloom-a": (f * 0.30).toFixed(3), "--tun-bloom-blur": Math.round(f * 66) + "px" }; } }, // 60% ≈ the approved .18 alpha / 40px blur
+    { k: "bloom", lbl: "Bloom strength", min: 0, max: 100, step: 1, def: 60, unit: "%", vars: function (v) { var f = v / 100; return { "--tun-bloom-a": (f * 0.20).toFixed(3), "--tun-bloom-blur": Math.round(f * 47) + "px" }; } }, // 60% = EXACTLY the approved .12 alpha / 28px blur (the CSS #tfRing defaults; re-scaled 2026-07-27 when the .18/40 scale went stale) — designAudit's "bloom calm" gate is ≤.14/≤32px, so the def must land under it
     { k: "tileBright", lbl: "Tile brightness", min: 55, max: 130, step: 1, def: 100, unit: "%", vars: function (v) { return { "--tun-tile-bright": (v / 100).toFixed(2) }; } },
     { k: "tileSat", lbl: "Tile saturation", min: 0, max: 180, step: 1, def: 100, unit: "%", vars: function (v) { return { "--tun-tile-sat": (v / 100).toFixed(2) }; } }
   ];
