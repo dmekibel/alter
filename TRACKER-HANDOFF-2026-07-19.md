@@ -3,6 +3,26 @@
 
 ---
 
+## STATUS UPDATE (2026-07-27, Fable-specced + Opus-built via Alfred session): TOOLS TRILOGY SHIPPED — Session Editor + 21e toolbox preview + Activity Picker/Arranger (v1222–v1224)
+Claude-Design import ("Tools menu redesign directions" project) implemented per David's DESIGN-HANDOFF-NOTES (verbatim copy + full design mirror at `_design-sync/tools-menu-2026-07-27/`; spec + addendum at `_specs/BUILD-SPEC-tools-trilogy-2026-07-27.md`).
+
+**What shipped (3 commits):**
+- `e4d39f2` (v1222) **@SEC:EDITOR** — the Session Editor (design 4a/2b): one full-screen shell, BLOCKS mode (candy rows, tap-to-expand, duration strip — never a stepper) + SETTINGS mode (tinted cards, only runner-honored controls), 6-category tool tray, BUILD mode = same editor empty with tray pinned. Replaces `openSessionComposer` for stacks (`tbxEditSteps`, `tbxBuildCustom`) — one editor, not two. Plus **21e toolbox preview**: per-step times, More → 21a minute grid, choice-row-v3 chip selection via `tbxCandy()`. Turn-22 fan-out NOT built (David discarded it; deck-with-shards stays).
+- `1e1e802` (v1223) **@SEC:PICKER** — the 18a flow replaces bentoPicker at timeline tap-empty-slot: domain-folders wall → folder sheet → tune-panel footer (byte-identical wall/sheet, queue coins with NAME labels + ✕, priority-shows-value, chains first-class with scale-all rail) → **Arranger** (hour gutter w/ same-hour dash, uniform candy bubbles, whole-bubble drag >6px, chevron up/down law, Save-as-chain + Start lands blocks at the gap). NO Whole-days folder (per David — days live in Plan-my-day/week/evening later). Other bentoPicker callers untouched.
+- v1224 (this commit) **judge-gate copy fixes**: 4 KILLED tool-desc lines rewritten plain (box breath / step outside / name the pull / look far away), "seal it"→"check it off", "more"→"More" (button casing), duplicate "Make it yours" RU key removed. Gate 2 verdict: 125/130 passed clean.
+
+**Guards:** node --check OK · ratchet PASS (anchors 22/22, wipes 147 ≤ 147, SCHEMA 5 — all new state additive on S.tools) · copy-audit clean (124 lines) + adversarial judge run (sonnet, COPY-ANCHORS-calibrated) · designAudit ALL PASS (20) on clean idle home · regression contract 1–4 explicitly verified (blocks land at tapped minute end-to-end; past/started untouched; tap-bubble→editorSheet intact; zero timeline listener changes) · boot clean, zero console errors.
+
+**DEVICE-UNTESTED (the honest list — confirm on phone):** arranger bubble drag-to-reorder feel (>6px threshold, finger-follow); tool-tray fold + folder-sheet open/close; footer minimize chevron; the 21e preview spring; horizontal rail/queue scrolling inside overlays (pan-x arbitration). Two builder interpretation calls for David's eye: editor tray sits under a dashed "Add a block" row (design anchors it to the sheet edge); tray tool coins render solid-bright (design render had them muted-dark).
+
+**Known open threads:** design-tuner stored defaults stale vs CSS (2/20 audit fails with tuner storage present — chip queued); editor rows still show the 32×4 grip bar but whole-row drag is not wired there (↑/↓/Swap do it) — wire or remove; the 18a "onAddCat" clock tile + the design's own minute ladder were unrecoverable past the 256KB import cut (flagged in code comments). Next design work per David's notes: per-step editor, the player, the whole-day layer.
+
+**Session-hygiene note:** this build ran from the claudeCode meta-repo session (Alfred), constitution loaded manually. Next session: open in `alter/` proper.
+
+**ONE move — David:** open /fresh.html (v1224) on the phone; tap an empty timeline slot → pick 2–3 things → Arrange → drag a bubble, then Start; then toolbox tile → preview → More grid → Adjust steps & timing. Gesture feel verdicts on the DEVICE-UNTESTED list above. **ONE move — Claude:** wire-or-remove the editor grip bar per David's drag verdict.
+
+---
+
 ## STATUS UPDATE (2026-07-23 (8), Opus): BUILD-TILE COMPOSER now offers PLAY-NOW + SAVE (was save-only) v1221
 David's order: "when he builds a stack via the Build tile, the composer pushes him to SAVE. It should offer BOTH: save it, or just PLAY it now without saving."
 

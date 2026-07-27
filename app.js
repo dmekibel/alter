@@ -5642,7 +5642,7 @@
       if (m === cur) { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); } else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
       chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
     });
-    var more = add(foot, "button", "tbx-more"); add(more, "i", "ti ti-adjustments-horizontal"); add(more, "span", null, tr("more"));
+    var more = add(foot, "button", "tbx-more"); add(more, "i", "ti ti-adjustments-horizontal"); add(more, "span", null, tr("More"));
     if (_tbxMore) { more.style.background = tbxCandy(d); more.style.color = "#160510"; }
     else if (cur !== 2 && cur !== 5) { more.style.background = "color-mix(in srgb, " + d + " 34%, #180a14)"; more.style.color = "#fff2f9"; } // a grid-chosen dose keeps the row honest when the grid is folded
     more.onclick = function () { _tbxMore = !_tbxMore; tbxRepaintDose(id); };
@@ -5749,7 +5749,7 @@
     "FOR YOU NOW · MORNING": "СЕЙЧАС ДЛЯ ТЕБЯ · УТРО", "NEXT BLOCK · DEEP WORK": "СЛЕДУЮЩИЙ БЛОК · ФОКУС", "FOR YOU NOW · LATE NIGHT": "СЕЙЧАС ДЛЯ ТЕБЯ · ПОЗДНЯЯ НОЧЬ", "FOR YOU NOW · WINDING DOWN": "СЕЙЧАС ДЛЯ ТЕБЯ · ЗАВЕРШЕНИЕ", "NEXT BLOCK": "СЛЕДУЮЩИЙ БЛОК", "Morning stack": "Утренний стек",
     "name where you went": "назови, куда ушёл", "three slow breaths": "три медленных вдоха", "feel why it matters": "почувствуй, почему это важно", "choose on purpose, staying counts": "выбери осознанно, остаться — это тоже победа", "log the catch": "отметь, что поймал",
     "min": "мин", "Start": "Начать", "inside": "внутри", "Adjust steps & timing": "Настрой шаги и время", "PLUS": "PLUS",
-    "more": "ещё", "m": "м", "Close": "Закрыть", "YOUR MINUTES · THE STEPS RESIZE ABOVE": "ТВОИ МИНУТЫ · ШАГИ ПОДСТРОЯТСЯ ВЫШЕ",
+    "m": "м", "Close": "Закрыть", "YOUR MINUTES · THE STEPS RESIZE ABOVE": "ТВОИ МИНУТЫ · ШАГИ ПОДСТРОЯТСЯ ВЫШЕ",
     "Build": "Собрать", "YOUR STACK": "ТВОЙ СТЕК", "Save this stack": "Сохранить стек", "Stack saved.": "Стек сохранён.", "Name your stack": "Назови стек", "My stack": "Мой стек", "Save": "Сохранить", "Back to default": "Вернуть по умолчанию",
     "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "You can edit steps and timing in Plus.": "Редактировать шаги и время можно в Plus."
   });
@@ -5757,18 +5757,18 @@
   var SED_DURS = [0.5, 1, 1.5, 2, 3, 5, 8, 10, 15]; // the design's DURS rail (minutes)
   var SED_CATS = [ // the design's 6-category tool tray. sk = the STACK_TOOLS / TBX_VARIANTS id that actually RUNS (design label stays the row title); desc = the design's own line where it wrote one.
     { k: "breath", lab: "Breath", i: "ti-lungs", d: "restore", tools: [
-      { i: "ti-lungs", t: "box breath", m: 2, sk: "v_box", desc: "In four, hold four, out four. I'll count the first round with you." }, { i: "ti-wind", t: "long sigh", m: 1, sk: "v_exhale" },
+      { i: "ti-lungs", t: "box breath", m: 2, sk: "v_box", desc: "In four, hold four, out four." }, { i: "ti-wind", t: "long sigh", m: 1, sk: "v_exhale" },
       { i: "ti-arrows-vertical", t: "4-7-8", m: 2, sk: "v_478" }, { i: "ti-hash", t: "count ten", m: 1.5, sk: "breathe" },
       { i: "ti-nose", t: "one nostril", m: 2, sk: "v_nostril" }, { i: "ti-wave-sine", t: "match the wave", m: 3, sk: "v_coherent" },
       { i: "ti-player-pause", t: "hold at the top", m: 1, sk: "v_box" }, { i: "ti-activity-heartbeat", t: "slow to six", m: 3, sk: "v_coherent" } ] },
     { k: "body", lab: "Body", i: "ti-run", d: "move", tools: [
-      { i: "ti-stretching", t: "shoulder roll", m: 1, sk: "stretch" }, { i: "ti-walk", t: "step outside", m: 3, sk: "stretch", desc: "Door, air, a few steps. No phone comes with you." },
+      { i: "ti-stretching", t: "shoulder roll", m: 1, sk: "stretch" }, { i: "ti-walk", t: "step outside", m: 3, sk: "stretch", desc: "Step outside for a minute. Leave your phone behind." },
       { i: "ti-snowflake", t: "cold splash", m: 0.5, sk: "stretch" }, { i: "ti-stairs-up", t: "one flight", m: 2, sk: "stretch" },
       { i: "ti-yoga", t: "forward fold", m: 1.5, sk: "stretch" }, { i: "ti-hand-stop", t: "shake it out", m: 1, sk: "stretch" },
       { i: "ti-scan-eye", t: "body scan", m: 5, sk: "v_bodyscan" }, { i: "ti-glass-full", t: "glass of water", m: 0.5, sk: "relax" } ] },
     { k: "mind", lab: "Mind", i: "ti-bulb", d: "focus", tools: [
-      { i: "ti-pencil", t: "name the pull", m: 1.5, sk: "mantra", desc: "One word for what you were reaching for. Naming it loosens it." }, { i: "ti-target-arrow", t: "the next move", m: 1, sk: "mantra" },
-      { i: "ti-eye", t: "look far away", m: 1, sk: "relax", desc: "Twenty feet out, past the screen. The eyes lead, the head follows." }, { i: "ti-list-check", t: "brain dump", m: 3, sk: "mantra" },
+      { i: "ti-pencil", t: "name the pull", m: 1.5, sk: "mantra", desc: "Say one word for what you were reaching for." }, { i: "ti-target-arrow", t: "the next move", m: 1, sk: "mantra" },
+      { i: "ti-eye", t: "look far away", m: 1, sk: "relax", desc: "Look about twenty feet past the screen and let your eyes rest there." }, { i: "ti-list-check", t: "brain dump", m: 3, sk: "mantra" },
       { i: "ti-question-mark", t: "ask why once", m: 1, sk: "mantra" }, { i: "ti-clock-hour-3", t: "five-minute start", m: 5, sk: "v_noting" },
       { i: "ti-eye-off", t: "close the tabs", m: 0.5, sk: "relax" }, { i: "ti-map-pin", t: "where am I", m: 1, sk: "v_open" } ] },
     { k: "feel", lab: "Feel", i: "ti-heart", d: "connect", tools: [
@@ -5782,7 +5782,7 @@
     { k: "log", lab: "Log", i: "ti-notebook", d: "create", tools: [
       { i: "ti-notebook", t: "one line down", m: 1, sk: "gratitude", desc: "A single line about where you are now. Tap when it's down." }, { i: "ti-camera", t: "photo of now", m: 0.5, sk: "gratitude" },
       { i: "ti-mood-heart", t: "rate the mood", m: 0.5, sk: "gratitude" }, { i: "ti-flag", t: "mark the win", m: 0.5, sk: "gratitude" },
-      { i: "ti-microphone", t: "voice memo", m: 1.5, sk: "gratitude" }, { i: "ti-checkbox", t: "seal it", m: 0.5, sk: "gratitude" } ] }
+      { i: "ti-microphone", t: "voice memo", m: 1.5, sk: "gratitude" }, { i: "ti-checkbox", t: "check it off", m: 0.5, sk: "gratitude" } ] }
   ];
   var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: "Calm pad", i: "ti-wave-saw-tool" }, { k: "music", n: "Music", i: "ti-music" }, { k: "forest", n: "Forest", i: "ti-trees" }, { k: "birds", n: "Birds", i: "ti-feather" }, { k: "floating", n: "Floating", i: "ti-cloud" }]; // the REAL bed keys (bedMode/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
   var SED_VOLLAB = ["off", "faint", "quiet", "there", "up", "loud"];
@@ -5926,7 +5926,7 @@
     });
   }
   Object.assign(I18N.ru, { // SESSION EDITOR strings (B4 law: EN source + RU dict, same commit).
-    "Make it yours": "Настрой под себя", "Build a stack": "Собери стек", "Nothing in it yet": "Пока пусто", "Swap": "Заменить", "Delete": "Удалить", "Move up": "Выше", "Move down": "Ниже", "Settings": "Настройки", "Back": "Назад",
+    "Build a stack": "Собери стек", "Nothing in it yet": "Пока пусто", "Swap": "Заменить", "Delete": "Удалить", "Move up": "Выше", "Move down": "Ниже", "Settings": "Настройки", "Back": "Назад",
     "Add a block": "Добавить блок", "Add in its place": "Заменить этот", "Saved.": "Сохранено.",
     "Voice cue": "Голосовая подсказка", "Hold till I tap": "Держать до касания", "Eyes closed": "Глаза закрыты",
     "Voice": "Голос", "Sound": "Звук", "Advanced": "Дополнительно", "No voice": "Без голоса", "sound only": "только звук", "warm, low": "тёплый, низкий", "bright, close": "яркий, близкий",
@@ -5939,11 +5939,11 @@
     "name the pull": "назови тягу", "the next move": "следующий шаг", "look far away": "посмотри вдаль", "brain dump": "выгрузи мысли", "ask why once": "спроси почему", "five-minute start": "старт на пять минут", "close the tabs": "закрой вкладки", "where am I": "где я",
     "say thanks": "скажи спасибо", "hand on chest": "ладонь на грудь", "text one person": "напиши одному", "kind sentence": "добрая фраза", "one good thing": "одно хорошее", "picture a friend": "представь друга",
     "sit in silence": "посиди в тишине", "one song": "одна песня", "stand in light": "постой на свету", "slow drink": "медленный глоток", "watch nothing": "смотри в никуда", "lie flat": "ляг ровно",
-    "one line down": "одна строка", "photo of now": "фото сейчас", "rate the mood": "оцени настроение", "mark the win": "отметь победу", "voice memo": "голосовая заметка", "seal it": "закрепи",
-    "In four, hold four, out four. I'll count the first round with you.": "На четыре, держи четыре, выдох на четыре. Первый круг посчитаю с тобой.",
-    "Door, air, a few steps. No phone comes with you.": "Дверь, воздух, пара шагов. Телефон остаётся.",
-    "One word for what you were reaching for. Naming it loosens it.": "Одно слово о том, к чему ты тянулся. Назвал — отпустило.",
-    "Twenty feet out, past the screen. The eyes lead, the head follows.": "Метров на шесть вдаль, мимо экрана. Глаза ведут, голова следом.",
+    "one line down": "одна строка", "photo of now": "фото сейчас", "rate the mood": "оцени настроение", "mark the win": "отметь победу", "voice memo": "голосовая заметка", "check it off": "поставь галочку",
+    "In four, hold four, out four.": "На четыре, держи четыре, выдох на четыре.",
+    "Step outside for a minute. Leave your phone behind.": "Выйди на минуту на улицу. Телефон оставь.",
+    "Say one word for what you were reaching for.": "Скажи одно слово о том, к чему ты тянулся.",
+    "Look about twenty feet past the screen and let your eyes rest there.": "Посмотри метров на шесть вдаль, мимо экрана, и дай глазам отдохнуть.",
     "A single line about where you are now. Tap when it's down.": "Одна строка о том, где ты сейчас. Коснись, когда записал."
   });
   // @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (Claude-Design "Activity Picker" frame 18a, Opus-built 2026-07-27). Replaces bentoPicker at the timeline tap-empty-slot entry ONLY (every other bentoPicker caller is a track/relabel/step flow the arranger's semantics don't fit — left on the old bento, flagged in the handoff). Flow: folders wall → folder sheet → tune panel → Arranger → the blocks land on the day. Design px/hex live in .pk-* (index.html); hues come from the app's own DOM registry so a picked block reads the same color it will wear on the timeline. Two overlay layers only (wall + sheet) — no third menu system. Child-drain everywhere (ratchet). ZERO timeline listeners added or changed: this is an overlay, the regression contract is untouched.
