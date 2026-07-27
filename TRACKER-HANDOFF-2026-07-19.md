@@ -3,6 +3,21 @@
 
 ---
 
+## STATUS UPDATE (2026-07-27 (2), Fable-orchestrated + Opus-agent-built): FIX PASS SHIPPED — 9 design-drift corrections on the trilogy, v1226
+David's design session reviewed the v1222–24 build shots and appended a 9-item **FIX PASS** to the design handoff notes (the repo copy was stale — now synced at `_design-sync/tools-menu-2026-07-27/DESIGN-HANDOFF-NOTES-2026-07-27.md`). This Fable session verified all 9 items against the code + the live DS project. All real; three root causes worth knowing:
+- Several "violations" are FAITHFUL PORTS of the turn markup — the bloomed Start, striped empty slab, count badges and 3-col flat minis are in the `.dc.html` itself. The FIX PASS knowingly supersedes the turn (and the stale `DomainBento` component). Law order is written into the spec so the builder doesn't "restore fidelity" backwards.
+- The "desaturated maroon" primary = `.pk-go` at `opacity:.45` when the queue is empty. ActionBar law (pulled live): disabled = `#2a0d1c` fill + `#9a6a86` text + ink sticker at 70%, never washed pink.
+- The blank "one nostril" coin = the design specced `ti-nose`, which does not exist in tabler-icons-webfont@3.31.0 (verified against the CDN). Fix = `ti-arrows-left-right` (the registry's own v_nostril glyph).
+
+**Spec: [`_specs/BUILD-SPEC-fixpass-trilogy-2026-07-27.md`](_specs/BUILD-SPEC-fixpass-trilogy-2026-07-27.md)** — 9 fixes with verbatim values + edit sites, scope guards (choice-row v3 hue outlines stay; block-face stripes stay; arranger untouched), press-ladder sweep. **Built the same session by an Opus subagent** (new mechanism per David's 2026-07-27 order — CLAUDE.md rule 0 amended, memory `fable-runs-opus-agents-inline`): agent executed one-shot, preship clean (ratchet: anchors 22/22, wipes 147 ≤ 147, SCHEMA 5; version double-bumped 1224→1226 by a benign second preship read-back run). It also closes the two "builder interpretation calls" from the trilogy block below (single dashed row = validated; bright tray coins = validated).
+
+**Fable's adversarial preview audit (item-by-item vs the FIX PASS): ALL 9 PASS.** Wall: 2×2 fanned mini-sheets w/ #fff2f9 glyphs, ink chrome, 12% wash fills, names under in hue, zero counts, "What's next?", caps kicker, slate disabled primary → pink when picked (ONE THING state verified live). Editor: single flat dashed slab (stripes + "Nothing in it yet" slab gone), ghost Save/gear (#4b2a44 on faint), bloomless sticker Start, one-nostril glyph renders, row = 3px ink + `0 5px 0 #160510, 0 7px 18px, 0 0 28px hue@46%` (computed-style verified; color-mix on var() renders). Boot clean, zero console errors through the whole drive (picker open/close, sheet, pick+tune, editor add-block). **Visuals preview-verified; gesture feel unchanged by this pass — the v1224 DEVICE-UNTESTED list still stands.**
+
+**ONE move — David:** open `/fresh.html` (v1226) on the phone — one pass covers the fix-pass visuals AND the standing v1224 gesture verdicts (drag-reorder feel, tray fold, footer chevron, grip-bar wire-or-remove).
+**ONE move — Claude:** act on David's phone verdicts (visual nits + the grip-bar call); then next design work per the notes (save-as-chain moment) — and pull `Player.dc.html` into `_design-sync/` before any Player 2a build.
+
+---
+
 ## STATUS UPDATE (2026-07-27, Fable-specced + Opus-built via Alfred session): TOOLS TRILOGY SHIPPED — Session Editor + 21e toolbox preview + Activity Picker/Arranger (v1222–v1224)
 Claude-Design import ("Tools menu redesign directions" project) implemented per David's DESIGN-HANDOFF-NOTES (verbatim copy + full design mirror at `_design-sync/tools-menu-2026-07-27/`; spec + addendum at `_specs/BUILD-SPEC-tools-trilogy-2026-07-27.md`).
 

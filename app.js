@@ -5759,7 +5759,7 @@
     { k: "breath", lab: "Breath", i: "ti-lungs", d: "restore", tools: [
       { i: "ti-lungs", t: "box breath", m: 2, sk: "v_box", desc: "In four, hold four, out four." }, { i: "ti-wind", t: "long sigh", m: 1, sk: "v_exhale" },
       { i: "ti-arrows-vertical", t: "4-7-8", m: 2, sk: "v_478" }, { i: "ti-hash", t: "count ten", m: 1.5, sk: "breathe" },
-      { i: "ti-nose", t: "one nostril", m: 2, sk: "v_nostril" }, { i: "ti-wave-sine", t: "match the wave", m: 3, sk: "v_coherent" },
+      { i: "ti-arrows-left-right", t: "one nostril", m: 2, sk: "v_nostril" }, { i: "ti-wave-sine", t: "match the wave", m: 3, sk: "v_coherent" }, // ti-nose does not exist in tabler-icons 3.31.0 (empty coin); the v_nostril registry entry already uses this glyph
       { i: "ti-player-pause", t: "hold at the top", m: 1, sk: "v_box" }, { i: "ti-activity-heartbeat", t: "slow to six", m: 3, sk: "v_coherent" } ] },
     { k: "body", lab: "Body", i: "ti-run", d: "move", tools: [
       { i: "ti-stretching", t: "shoulder roll", m: 1, sk: "stretch" }, { i: "ti-walk", t: "step outside", m: 3, sk: "stretch", desc: "Step outside for a minute. Leave your phone behind." },
@@ -5833,8 +5833,7 @@
   function sedPaintBlocks(host) {
     var list = add(host, "div", "sed-list");
     _sed.rows.forEach(function (r, i) { sedRow(list, r, i); });
-    if (!_sed.rows.length) { var e = add(list, "div", "sed-empty"); add(e, "i", "ti ti-stack-2"); add(e, "span", null, tr("Nothing in it yet")); }
-    var open = _sed.tray || _sed.pinTray;
+    var open = _sed.tray || _sed.pinTray; // an empty list needs no slab of its own: the dashed add-row below IS the empty state (2b/4a = ONE dashed row)
     var addb = add(list, "button", "sed-add"); add(addb, "i", "ti " + (open ? "ti-chevron-down" : "ti-plus")); add(addb, "span", null, tr(_sed.swap != null ? "Add in its place" : "Add a block")); // chevron law (David 2026-07-27, stated twice in the handoff): collapsed = up, expanded = down. The design markup had trayOpen → chevron-up; the law wins so every chevron in the build reads the same way.
     addb.onclick = function () { _sed.tray = !open; _sed.swap = null; if (!_sed.tray) _sed.pinTray = false; sedPaint(); };
     if (open) sedPaintTray(list);
@@ -5842,7 +5841,7 @@
   function sedRow(host, r, i) {
     var hue = sedHue(r.d), sel = _sed.pick === i;
     var wrap = add(host, "div", "sed-row" + (sel ? " sel" : ""));
-    if (!sel) wrap.style.boxShadow = "0 7px 18px rgba(0,0,0,.45), 0 0 28px color-mix(in srgb, " + hue + " 46%, transparent)";
+    if (!sel) wrap.style.boxShadow = "0 5px 0 #160510, 0 7px 18px rgba(0,0,0,.45), 0 0 28px color-mix(in srgb, " + hue + " 46%, transparent)"; // "glow + sticker": the hue glow is legal ONLY on a big color slab, and only on top of the ink edge + ink bar
     var face = add(wrap, "button", "sed-face"); face.style.background = "linear-gradient(100deg, color-mix(in srgb, " + hue + " 84%, #fff), " + hue + ")";
     add(face, "span", "sed-stripe");
     var fx = add(face, "span", "sed-fx"); add(fx, "i", "ti " + r.i); add(fx, "span", "sed-rt", sedCap(tr(r.t))); add(fx, "span", "sed-rm", sedFmt(r.m));
@@ -5994,7 +5993,7 @@
     var htx = add(head, "span", "pk-headtx");
     var gap = _pk.gapEnd - _pk.gapStart;
     if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
-    add(htx, "span", "pk-title", tr("What next?"));
+    add(htx, "span", "pk-title", tr("What's next?"));
     _pk.wbody = add(wall, "div", "pk-body");
     _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;";
     pkPaint();
@@ -6010,11 +6009,14 @@
     var by = bentoByDomain(), grid = add(host, "div", "pk-fgrid");
     DOM_ORDER.forEach(function (d) {
       var acts = by[d] || []; if (!acts.length) return; var D = DOM[d], hue = D.c;
-      var b = pkFolder(grid); b.style.boxShadow = "0 4px 0 " + mixHex(hue, "#160510", 0.62); b.style.border = "2px solid " + mixHex(hue, "#160510", 0.5);
-      var mini = add(b, "div", "pk-mini");
-      acts.slice(0, 6).forEach(function (a) { var c = add(mini, "span", "pk-minic"); c.style.background = mixHex(hue, "#160510", 0.4); var i = add(c, "i", "ti " + tiClass(a)); i.style.color = D.light; });
-      var row = add(b, "div", "pk-frow"); var fi = add(row, "i", "ti " + D.ti); fi.style.color = hue;
-      add(row, "span", "pk-fl", tr(D.l)); var n = add(row, "span", "pk-fn", String(acts.length)); n.style.color = mixHex(hue, "#160510", 0.3);
+      var b = add(grid, "button", "pk-fcell");
+      var tile = add(b, "span", "pk-ftile"); tile.style.background = mixHex(hue, "#1e0b18", 0.88); // the ONLY hue on the card chrome: a 12% wash on --tile-night. Border + sticker are ink (CSS).
+      var mini = add(tile, "span", "pk-mini");
+      acts.slice(0, 4).forEach(function (a) { var w = add(mini, "span", "pk-mstack"); // 2x2 fanned mini-sheets — each one a real activity, shards peeking up-left
+        var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55);
+        var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
+        var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = "0 2.5px 0 " + mixHex(hue, "#000000", 0.55); add(fc, "i", "ti " + tiClass(a)); });
+      var nm = add(b, "span", "pk-fname", tr(D.l)); nm.style.color = hue; // the domain name centered UNDER the tile, in its hue. No icon, no count anywhere.
       b.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
     var sec = add(host, "div", "pk-sec"); add(sec, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
@@ -6028,7 +6030,7 @@
         var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var i = add(fc, "i", "ti " + p.ti); i.style.color = "#160510"; });
       if (!F.items.length) { var e = add(dr, "span", "pk-deck"); e.style.flex = "0 0 calc((100% - 16px) / 3)"; var ef = add(e, "span", "pk-face"); ef.style.border = "2px dashed " + mixHex(F.c, "#160510", 0.42); var ei = add(ef, "i", "ti ti-plus"); ei.style.color = "#8a5f76"; } // one lone placeholder tile, not a full-width box
       var row = add(b, "div", "pk-frow"); var fi = add(row, "i", "ti " + F.ti); fi.style.color = F.c;
-      var tx = add(row, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", F.items.length ? (F.items.length + " " + tr("saved")) : tr(F.s)); s.style.color = F.c;
+      var tx = add(row, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", tr(F.s)); s.style.color = F.c; // always the designed phrase — counts are data slop, they're nowhere on this wall
       b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
   }
@@ -6040,11 +6042,11 @@
     if (n && !_pk.wallMin) pkPanel(add(host, "div", "pk-panel"), bg || "#130609");
     var bar = add(host, "div", "pk-bar"), tx = add(bar, "span", "pk-bartx");
     var kick = add(tx, "span", "pk-bark"), lab = add(tx, "span", "pk-barl");
-    if (!n) { kick.style.display = "none"; lab.textContent = tr("Tap what you feel like"); }
+    if (!n) { kick.textContent = tr("Tap what you feel like"); kick.style.color = "#96637e"; lab.style.display = "none"; } // empty = the tiny tracked kicker alone, never a giant white sentence
     else if (n === 1) { kick.textContent = tr("ONE THING"); kick.style.color = "#96637e"; lab.textContent = q[0].title; }
     else { kick.textContent = tr("ON YOUR PLATE"); kick.style.color = "#ff8fc0"; lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); } // never a name → name → name list (David 2026-07-27)
     var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n > 1 ? "ti-layout-list" : "ti-plus")); add(go, "span", null, n > 1 ? tr("Arrange") : tr("Add to today"));
-    if (!n) { go.style.opacity = ".45"; go.onclick = function () {}; }
+    if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
     else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
   }
   function pkPanel(host, bg) { // queue strip + (when a pick is focused) the tune panel
@@ -6300,7 +6302,7 @@
     else { try { toast((made.length > 1 ? (made.length + " " + tr("things")) : made[0].title) + " · " + fmt(times[0])); } catch (e) {} }
   }
   Object.assign(I18N.ru, { // ACTIVITY PICKER strings (B4 law: EN source + RU dict, same commit).
-    "What next?": "Что дальше?", "open": "свободно", "after": "после", "SAVED & READY-MADE": "СОХРАНЁННОЕ И ГОТОВОЕ",
+    "What's next?": "Что дальше?", "open": "свободно", "after": "после", "SAVED & READY-MADE": "СОХРАНЁННОЕ И ГОТОВОЕ",
     "Chains": "Цепочки", "Stacks": "Стеки", "your arrangements": "твои связки", "on your shelf": "на твоей полке", "saved arrangements": "сохранённые связки", "saved": "сохранено",
     "Tap what you feel like": "Коснись того, чего хочется", "ONE THING": "ОДНО ДЕЛО", "ON YOUR PLATE": "НА СЕГОДНЯ", "things": "дела", "steps": "шага",
     "Add to today": "Добавить в день", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
