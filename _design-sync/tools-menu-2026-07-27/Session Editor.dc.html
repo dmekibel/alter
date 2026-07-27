@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/alter-design-system-202b0364-d17d-4d34-949f-a5799dc3b3c6/styles.css">
+  <script src="_ds/alter-design-system-202b0364-d17d-4d34-949f-a5799dc3b3c6/_ds_bundle.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+  <style>
+    body{ background:radial-gradient(120% 90% at 50% 0%, #3a0f24 0%, #1e0a16 70%); margin:0; min-height:100vh; }
+    a{ color:#ff4fa0; text-decoration:none; } a:hover{ color:#ff8fc0; }
+    @keyframes edPop{ 0%{ opacity:0; transform:translateY(-6px); } 100%{ opacity:1; transform:none; } }
+    div::-webkit-scrollbar{ width:0; height:0; }
+    div{ scrollbar-width:none; }
+  </style>
+</helmet>
+
+<section style="padding:34px 30px 70px; font-family:'Jost',sans-serif; display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#ff8fc0;">TURN 4 · BUILD A STACK</div>
+    <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px; color:#fff2f9; line-height:1;">The same editor, starting from nothing</div>
+    <div style="font-size:12.5px; font-weight:600; color:#9a6a86; max-width:820px; text-wrap:pretty;">Building a custom stack is the editor with an empty list — so the only real difference is that the tool tray is pinned open and there is an empty state to explain the first tap.</div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start;">
+    <div id="4a" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#4a" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">4a</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">Build a custom stack</span></div>
+      <div style="display:inline-block; padding:11px; border-radius:59px; background:#0a0409; box-shadow:0 10px 0 #000, inset 0 0 0 2px #2a1523; line-height:0;">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{dark}}" hint-size="402px,874px">
+      <div style="height:100%; display:flex; flex-direction:column; background:radial-gradient(120% 72% at 50% 0%, #2c1442 0%, #1c0d26 58%, #150a1a 100%);" data-screen-label="4a Build a stack">
+
+        <div style="flex:none; padding:60px 38px 14px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <button style="width:40px; height:40px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#f0dceb; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-chevron-left" style="font-size:19px;"></i></button>
+            <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:27px; color:#fff2f9; line-height:1;">Build a stack</span>
+            <span style="flex:none; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:#ffc41f;">{{h.totalNum}} min</span>
+          </div>
+          
+        </div>
+
+        <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;">
+          <sc-if value="{{h.onBlocks}}" hint-placeholder-val="{{true}}">
+            <div style="padding:8px 38px 18px; display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{h.rows}}" as="r" hint-placeholder-count="5">
+                <div style="border-radius:22px; border:{{r.ring}}; box-shadow:{{r.ringShadow}}; overflow:hidden; background:#1b0b16;">
+                  <button onClick="{{r.onSelect}}" style="display:block; width:100%; border:none; padding:0; margin:0; cursor:pointer; background:{{r.faceBg}}; position:relative; text-align:left;" style-active="transform:translateY(1px);">
+                    <span style="position:absolute; inset:0; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px);"></span>
+                    <span style="position:relative; display:flex; align-items:center; gap:14px; padding:17px 18px 19px;">
+                      <i class="ti {{r.i}}" style="color:{{r.ink}}; font-size:24px; flex:none; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.18));"></i>
+                      <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:{{r.ink}}; line-height:1;">{{r.tCap}}</span>
+                      <span style="flex:none; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:{{r.inkSoft}}; font-variant-numeric:tabular-nums;">{{r.tm}}</span>
+                    </span>
+                    <span style="position:absolute; bottom:6px; left:50%; width:32px; height:4px; margin-left:-16px; border-radius:2px; background:{{r.grip}};"></span>
+                  </button>
+                  <sc-if value="{{r.sel}}" hint-placeholder-val="{{false}}">
+                    <div style="padding:15px 16px 16px; display:flex; flex-direction:column; gap:13px; animation:edPop .2s ease both;">
+                      <div style="font-family:'Baloo 2',sans-serif; font-size:15.5px; font-weight:700; color:#fff2f9; line-height:1.3; text-wrap:pretty;">{{r.desc}}</div>
+                      <div style="position:relative; margin-right:-16px; padding-right:28px;">
+                        <div style="display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px;">
+                          <sc-for list="{{r.durs}}" as="d" hint-placeholder-count="8"><button onClick="{{d.onPick}}" style="flex:none; min-width:54px; padding:10px 12px; border-radius:13px; border:none; background:{{d.bg}}; box-shadow:{{d.sh}}; color:{{d.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{d.lab}}</button></sc-for>
+                        </div>
+                        <div style="position:absolute; top:0; right:0; bottom:3px; width:74px; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; background:linear-gradient(90deg, rgba(27,11,22,0) 0%, rgba(27,11,22,.42) 40%, rgba(27,11,22,.9) 66%, #1b0b16 74%, #1b0b16 100%);"><i class="ti ti-chevron-right" style="color:rgba(255,143,192,.82); font-size:17px; -webkit-text-stroke:0.9px currentColor;"></i></div>
+                      </div>
+                      <sc-if value="{{h.extras}}" hint-placeholder-val="{{true}}">
+                        <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                          <sc-for list="{{r.flags}}" as="f" hint-placeholder-count="3"><button onClick="{{f.onTap}}" style="display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; border:{{f.bd}}; background:{{f.bg}}; color:{{f.fg}}; font-weight:800; font-size:12px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{f.i}}" style="font-size:14px;"></i>{{f.lab}}</button></sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="display:flex; gap:8px;">
+                        <button onClick="{{r.onUp}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#e0bdd2; opacity:{{r.upDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-arrow-up" style="font-size:18px;"></i></button>
+                        <button onClick="{{r.onDown}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#e0bdd2; opacity:{{r.downDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-arrow-down" style="font-size:18px;"></i></button>
+                        <button onClick="{{r.onSwap}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#fff2f9; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti ti-repeat" style="font-size:17px;"></i>Swap</button>
+                        <button onClick="{{r.onDel}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,79,160,.16); color:#ff7fb4; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-trash" style="font-size:18px;"></i></button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <sc-if value="{{h.isEmpty}}" hint-placeholder-val="{{true}}">
+                <div style="border-radius:22px; border:4.5px dashed #ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45); background:rgba(255,95,168,.06); background-image:repeating-linear-gradient(115deg, rgba(255,95,168,.1) 0 13px, rgba(255,255,255,0) 13px 28px); display:flex; align-items:center; justify-content:center; gap:11px; padding:17px 18px 19px;">
+                  <i class="ti ti-stack-2" style="color:#ff8fc0; font-size:24px;"></i>
+                  <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:#ff8fc0; line-height:1;">Nothing in it yet</span>
+                </div>
+              </sc-if>
+              
+            </div>
+          </sc-if>
+
+          <sc-if value="{{h.onSet}}" hint-placeholder-val="{{false}}">
+            <div style="padding:8px 38px 20px; display:flex; flex-direction:column; gap:12px;">
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{h.sVoice.bg}};">
+                <button onClick="{{h.sVoice.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{h.sVoice.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-microphone" style="color:{{h.sVoice.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Voice</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{h.voiceSub}}</span>
+                  </span>
+                  <i class="ti {{h.sVoice.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{h.sVoice.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:flex; gap:7px;">
+                      <sc-for list="{{h.voices}}" as="v" hint-placeholder-count="3">
+                        <button onClick="{{v.onPick}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);">
+                          <i class="ti {{v.i}}" style="color:{{v.icc}}; font-size:15px;"></i>
+                          <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{v.fg}}; line-height:1;">{{v.n}}</span>
+                          <span style="font-size:9px; font-weight:700; color:{{v.sub}};">{{v.s}}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; gap:4px; background:#150710; border-radius:11px; padding:4px;">
+                      <sc-for list="{{h.talks}}" as="t" hint-placeholder-count="3"><button onClick="{{t.onPick}}" style="flex:1; padding:7px 0; border-radius:8px; border:none; background:{{t.bg}}; color:{{t.fg}}; font-weight:800; font-size:11px; cursor:pointer;">{{t.lab}}</button></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{h.sSound.bg}};">
+                <button onClick="{{h.sSound.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{h.sSound.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-volume" style="color:{{h.sSound.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Sound</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{h.soundSub}}</span>
+                  </span>
+                  <i class="ti {{h.sSound.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{h.sSound.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
+                      <sc-for list="{{h.sounds}}" as="v" hint-placeholder-count="6">
+                        <button onClick="{{v.onPick}}" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti {{v.i}}" style="color:{{v.fg}}; font-size:14px;"></i><span style="font-size:10px; font-weight:800; color:{{v.fg}}; line-height:1;">{{v.n}}</span></button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:#241019; border-radius:13px; padding:9px 12px;">
+                      <i class="ti ti-volume" style="color:#9a6a86; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; display:flex; align-items:flex-end; gap:5px; height:22px;">
+                        <sc-for list="{{h.bars}}" as="x" hint-placeholder-count="5"><button onClick="{{x.onPick}}" style="flex:1; height:{{x.h}}; border-radius:5px; border:none; background:{{x.bg}}; cursor:pointer; padding:0;"></button></sc-for>
+                      </span>
+                      <span style="font-size:10px; font-weight:800; color:#c98ca6; min-width:34px; text-align:right; flex:none;">{{h.volLab}}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{h.sGuide.bg}};">
+                <button onClick="{{h.sGuide.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{h.sGuide.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-compass" style="color:{{h.sGuide.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Guidance</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{h.guideSub}}</span>
+                  </span>
+                  <i class="ti {{h.sGuide.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{h.sGuide.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <sc-for list="{{h.guides}}" as="g" hint-placeholder-count="3">
+                      <button onClick="{{h.onPick}}" style="display:flex; align-items:center; gap:10px; width:100%; border:{{h.bd}}; border-radius:13px; padding:9px 11px; background:{{h.bg}}; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{h.i}}" style="color:{{h.icc}}; font-size:15px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:12px; font-weight:800; color:{{h.fg}};">{{h.n}}</span>
+                          <span style="display:block; font-size:9.5px; font-weight:700; color:{{h.sub}};">{{h.s}}</span>
+                        </span>
+                        <i class="ti {{h.check}}" style="color:{{h.icc}}; font-size:15px; flex:none;"></i>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{h.sRun.bg}};">
+                <button onClick="{{h.sRun.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{h.sRun.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-player-play" style="color:{{h.sRun.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">While it runs</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{h.runSub}}</span>
+                  </span>
+                  <i class="ti {{h.sRun.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{h.sRun.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:10px 11px 12px; display:flex; flex-direction:column; gap:6px; animation:edPop .2s ease both;">
+                    <sc-for list="{{h.toggles}}" as="t" hint-placeholder-count="5">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2px dashed #6b4258; overflow:hidden; background:#1e0d18;">
+                <button onClick="{{h.sSave.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:38px; height:38px; border-radius:13px; background:#2a1424; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-flask" style="color:#c9a6ff; font-size:17px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:#e6cfe0; line-height:1.1;">Advanced</span>
+                    <span style="display:block; font-size:10.5px; font-weight:700; color:#8a5f76;">{{h.saveSub}}</span>
+                  </span>
+                  <i class="ti {{h.sSave.chev}}" style="color:#8a5f76; font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{h.sSave.open}}" hint-placeholder-val="{{false}}">
+                  <div style="padding:0 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <button onClick="{{h.onNew}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                      <i class="ti ti-copy" style="color:#ff8fc0; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">Keep it as a new stack</span>
+                        <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">leaves the original on your shelf</span>
+                      </span>
+                      <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{h.newTrack}}; flex:none;"><span style="position:absolute; top:2px; left:{{h.newKnob}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                    </button>
+                    <sc-if value="{{h.isNew}}" hint-placeholder-val="{{false}}">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <sc-for list="{{h.names}}" as="k" hint-placeholder-count="3"><button onClick="{{k.onPick}}" style="padding:8px 12px; border-radius:11px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-weight:800; font-size:11.5px; cursor:pointer;" style-active="transform:translateY(2px);">{{k.n}}</button></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-for list="{{h.advToggles}}" as="t" hint-placeholder-count="2">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="flex:none; padding:10px 22px 32px;">
+          <div style="background:rgba(0,0,0,.34); border-top:2.5px solid #160510; border-radius:24px 24px 0 0; margin:0 -22px; padding:0 18px 14px;">
+            <button onClick="{{h.onTrayCollapse}}" style="display:flex; align-items:center; justify-content:center; width:100%; background:none; border:none; padding:10px 0 6px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{h.collapseIcon}}" style="color:#ff8fc0; font-size:20px; -webkit-text-stroke:0.7px currentColor;"></i></button>
+            <sc-if value="{{h.trayShown}}" hint-placeholder-val="{{true}}">
+              <div style="display:flex; flex-direction:column; gap:13px; animation:edPop .2s ease both;">
+                <div style="display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px;">
+            <sc-for list="{{h.cats}}" as="k" hint-placeholder-count="6"><button onClick="{{k.onPick}}" style="flex:none; display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:13px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; white-space:nowrap;" style-active="transform:translateY(2px);"><i class="ti {{k.i}}" style="font-size:15px;"></i>{{k.lab}}</button></sc-for>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px 9px;">
+                  <sc-for list="{{h.tools}}" as="t" hint-placeholder-count="8">
+                    <button onClick="{{t.onAdd}}" style="display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;" style-active="transform:translateY(2px);">
+                      <span style="width:52px; height:52px; border-radius:18px; background:{{t.coin}}; box-shadow:0 4px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="color:#fff2f9; font-size:22px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                      <span style="font-size:10.5px; font-weight:800; color:#f0dceb; text-align:center; line-height:1.15;">{{t.t}}</span>
+                      <span style="font-size:9.5px; font-weight:800; color:#96637e;">{{t.lab}}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:flex; gap:9px; align-items:stretch;">
+            <button title="Save" style="order:{{fOrdSave}}; flex:none; width:56px; display:flex; align-items:center; justify-content:center; border-radius:19px; border:2.5px solid #160510; background:rgba(255,242,249,.1); box-shadow:0 7px 18px rgba(0,0,0,.45); color:#fff2f9; cursor:pointer; padding:0;" style-active="transform:translateY(3px);"><i class="ti ti-device-floppy" style="font-size:23px;"></i></button>
+            <button style="order:{{fOrdStart}}; flex:{{fStart}}; display:flex; align-items:center; justify-content:center; gap:8px; padding:17px 0; border-radius:19px; border:2.5px solid #160510; background:#ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); color:#2a0d1c; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; cursor:pointer;" style-active="transform:translateY(3px); box-shadow:0 3px 10px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45);"><i class="ti ti-player-play-filled" style="font-size:19px;"></i>Start</button>
+            <button onClick="{{h.onToggleSet}}" style="order:{{fOrdGear}}; flex:none; width:56px; border-radius:19px; border:2.5px solid #160510; background:{{h.setBg}}; box-shadow:0 7px 18px rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;" style-active="transform:translateY(3px);"><i class="ti {{h.setIcon}}" style="color:{{h.setIc}}; font-size:23px;"></i></button>
+          </div>
+        </div>
+      </div>
+      </x-import>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; width:390px; text-wrap:pretty;">Same shell as <a href="#2b">2b</a>, one change that matters: a new stack starts empty, so the <b style="color:#ffc41f;">tool tray is open from the first frame</b> and stays open — you tap five things in a row without reopening anything. Blocks pile up above it, each tappable for length; the gear and Start sit where they always do. A small grab handle on the sheet edge folds the tray away when the stack gets long.</div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:34px 30px 70px; font-family:'Jost',sans-serif; display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#ff8fc0;">TURN 3 · THE TOTAL TIME</div>
+    <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px; color:#fff2f9; line-height:1;">Three ways to set the whole length</div>
+    <div style="font-size:12.5px; font-weight:600; color:#9a6a86; max-width:820px; text-wrap:pretty;">Same footer slot as <a href="#2a">2a</a>, three different controls — all of them stretch every block proportionally, all live. Pick one and I'll wire it into 2a.</div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:26px; align-items:flex-start;">
+
+    <div id="3a" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#3a" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">3a</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">One gold slider</span></div>
+      <div style="border-radius:30px; border:3px solid #160510; background:radial-gradient(120% 140% at 50% 100%, #2c1442 0%, #1a0c24 70%); padding:20px 38px 26px; display:flex; flex-direction:column; gap:14px;" data-screen-label="3a Slider footer">
+        <div style="display:flex; align-items:baseline; gap:9px;">
+          <span style="font-size:10px; font-weight:800; letter-spacing:1.4px; color:#96637e;">FIT IT IN</span>
+          <span style="flex:1;"></span>
+          <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:24px; color:#ffc41f;">{{d.totalLab}}</span>
+        </div>
+        <div style="position:relative; height:26px;">
+          <div style="position:absolute; top:8px; left:0; right:0; height:10px; border-radius:6px; background:rgba(0,0,0,.45); border:2px solid #160510;"></div>
+          <div style="position:absolute; top:8px; left:0; width:{{d.pct45}}; height:10px; border-radius:6px; background:repeating-linear-gradient(45deg, #ffd45c 0 8px, #ffc41f 8px 16px); box-shadow:0 0 18px rgba(255,196,31,.5);"></div>
+          <div style="position:absolute; top:0; left:{{d.knob45}}; width:26px; height:26px; border-radius:50%; background:#ffc41f; border:3px solid #160510; box-shadow:0 0 20px rgba(255,196,31,.55);"></div>
+        </div>
+        <div style="display:flex; gap:7px;">
+          <sc-for list="{{d.presets}}" as="k" hint-placeholder-count="6"><button onClick="{{k.onPick}}" style="flex:1; min-width:0; padding:9px 0; border-radius:12px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{k.lab}}</button></sc-for>
+        </div>
+        <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:17px 0; border-radius:20px; border:4.5px solid #160510; background:#ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); color:#2a0d1c; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; cursor:pointer;" style-active="transform:translateY(3px);"><i class="ti ti-device-floppy" style="font-size:20px;"></i>{{d.saveLab}}</button>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; text-wrap:pretty;">The gold bar is the sit itself — drag it longer. Chips underneath snap to the usual lengths.</div>
+    </div>
+
+    <div id="3b" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#3b" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">3b</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">Tap the total, pick a mood</span></div>
+      <div style="border-radius:30px; border:3px solid #160510; background:radial-gradient(120% 140% at 50% 100%, #2c1442 0%, #1a0c24 70%); padding:20px 38px 26px; display:flex; flex-direction:column; gap:14px;" data-screen-label="3b Sheet footer">
+        <button onClick="{{e.onSheet}}" style="display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; border-radius:20px; border:3px solid #ffc41f; background:rgba(255,196,31,.1); cursor:pointer; text-align:left;" style-active="transform:translateY(2px);">
+          <i class="ti ti-clock-hour-4" style="color:#ffc41f; font-size:22px; flex:none;"></i>
+          <span style="flex:1; min-width:0;">
+            <span style="display:block; font-size:10px; font-weight:800; letter-spacing:1.3px; color:#b98a25;">HOW LONG IN ALL</span>
+            <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:22px; color:#ffc41f; line-height:1.1;">{{e.totalLab}}</span>
+          </span>
+          <i class="ti {{e.openLab}}" style="color:#ffc41f; font-size:20px; flex:none;"></i>
+        </button>
+        <sc-if value="{{e.openSheet}}" hint-placeholder-val="{{true}}">
+          <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; animation:edPop .2s ease both;">
+            <sc-for list="{{e.tiles}}" as="t" hint-placeholder-count="4">
+              <button onClick="{{t.onPick}}" style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:14px 14px 15px; border-radius:20px; border:{{t.bd}}; background:{{t.bg}}; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.4); text-align:left;" style-active="transform:translateY(2px);">
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; color:{{t.fg}}; line-height:1;">{{t.lab}}</span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:{{t.fg}}; line-height:1.2;">{{t.n}}</span>
+                <span style="font-size:11px; font-weight:700; color:{{t.sub}};">{{t.s}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:17px 0; border-radius:20px; border:4.5px solid #160510; background:#ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); color:#2a0d1c; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; cursor:pointer;" style-active="transform:translateY(3px);"><i class="ti ti-device-floppy" style="font-size:20px;"></i>{{e.saveLab}}</button>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; text-wrap:pretty;">The total is one big tappable thing; opening it offers four named lengths instead of bare numbers. Closed, the footer is just the total and Save.</div>
+    </div>
+
+    <div id="3c" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#3c" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">3c</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">A ruler you scrub</span></div>
+      <div style="border-radius:30px; border:3px solid #160510; background:radial-gradient(120% 140% at 50% 100%, #2c1442 0%, #1a0c24 70%); padding:20px 38px 26px; display:flex; flex-direction:column; gap:14px;" data-screen-label="3c Ruler footer">
+        <div style="display:flex; align-items:baseline; gap:9px;">
+          <span style="font-size:10px; font-weight:800; letter-spacing:1.4px; color:#96637e;">SCRUB THE LENGTH</span>
+          <span style="flex:1;"></span>
+          <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:24px; color:#ffc41f;">{{f.totalLab}}</span>
+        </div>
+        <div style="border-radius:18px; border:3px solid #160510; background:rgba(0,0,0,.4); padding:11px 12px 9px;">
+          <div style="display:flex; align-items:flex-end; gap:0; overflow-x:auto;">
+            <sc-for list="{{f.ticks}}" as="t" hint-placeholder-count="30">
+              <button onClick="{{t.onPick}}" style="flex:none; width:14px; display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; padding:0; cursor:pointer;">
+                <span style="width:3px; height:{{t.h}}; border-radius:2px; background:{{t.bg}};"></span>
+                <span style="font-size:9px; font-weight:800; color:{{t.fg}}; height:11px;">{{t.lab}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:17px 0; border-radius:20px; border:4.5px solid #160510; background:#ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); color:#2a0d1c; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; cursor:pointer;" style-active="transform:translateY(3px);"><i class="ti ti-device-floppy" style="font-size:20px;"></i>{{f.saveLab}}</button>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; text-wrap:pretty;">Minute-by-minute ruler in its own ink-edged well, so it reads as an instrument and never looks cut off — the lit ticks are your current length.</div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:34px 30px 70px; font-family:'Jost',sans-serif; display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#ff8fc0;">TURN 2 · THE MERGE</div>
+    <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px; color:#fff2f9; line-height:1;">21f's blocks, the new settings</div>
+    <div style="font-size:12.5px; font-weight:600; color:#9a6a86; max-width:820px; text-wrap:pretty;">The steps list goes back to the candy-striped bars from <a href="#21f">21f</a> — each block wears its own domain colour, the open one ignites and shows what it asks of you — and keeps the length strip instead of the +/− stepper. <b style="color:#ffc41f;">How it feels</b> is the tinted drawer set from <a href="#1a">1a</a>, untouched.</div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start;">
+    <div id="2b" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#2b" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">2b</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">No tabs — settings by the save</span></div>
+      <div style="display:inline-block; padding:11px; border-radius:59px; background:#0a0409; box-shadow:0 10px 0 #000, inset 0 0 0 2px #2a1523; line-height:0;">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{dark}}" hint-size="402px,874px">
+      <div style="height:100%; display:flex; flex-direction:column; background:radial-gradient(120% 72% at 50% 0%, #2c1442 0%, #1c0d26 58%, #150a1a 100%);" data-screen-label="2b Editor, settings by save">
+
+        <div style="flex:none; padding:60px 38px 14px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <button style="width:40px; height:40px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#f0dceb; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-chevron-left" style="font-size:19px;"></i></button>
+            <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:27px; color:#fff2f9; line-height:1;">Make it yours</span>
+            <span style="flex:none; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:#ffc41f;">{{g.totalNum}} min</span>
+          </div>
+          
+        </div>
+
+        <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;">
+          <sc-if value="{{g.onBlocks}}" hint-placeholder-val="{{true}}">
+            <div style="padding:8px 38px 18px; display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="5">
+                <div style="border-radius:22px; border:{{r.ring}}; box-shadow:{{r.ringShadow}}; overflow:hidden; background:#1b0b16;">
+                  <button onClick="{{r.onSelect}}" style="display:block; width:100%; border:none; padding:0; margin:0; cursor:pointer; background:{{r.faceBg}}; position:relative; text-align:left;" style-active="transform:translateY(1px);">
+                    <span style="position:absolute; inset:0; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px);"></span>
+                    <span style="position:relative; display:flex; align-items:center; gap:14px; padding:17px 18px 19px;">
+                      <i class="ti {{r.i}}" style="color:{{r.ink}}; font-size:24px; flex:none; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.18));"></i>
+                      <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:{{r.ink}}; line-height:1;">{{r.tCap}}</span>
+                      <span style="flex:none; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:{{r.inkSoft}}; font-variant-numeric:tabular-nums;">{{r.tm}}</span>
+                    </span>
+                    <span style="position:absolute; bottom:6px; left:50%; width:32px; height:4px; margin-left:-16px; border-radius:2px; background:{{r.grip}};"></span>
+                  </button>
+                  <sc-if value="{{r.sel}}" hint-placeholder-val="{{false}}">
+                    <div style="padding:15px 16px 16px; display:flex; flex-direction:column; gap:13px; animation:edPop .2s ease both;">
+                      <div style="font-family:'Baloo 2',sans-serif; font-size:15.5px; font-weight:700; color:#fff2f9; line-height:1.3; text-wrap:pretty;">{{r.desc}}</div>
+                      <div style="position:relative; margin-right:-16px; padding-right:28px;">
+                        <div style="display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px;">
+                          <sc-for list="{{r.durs}}" as="d" hint-placeholder-count="8"><button onClick="{{d.onPick}}" style="flex:none; min-width:54px; padding:10px 12px; border-radius:13px; border:none; background:{{d.bg}}; box-shadow:{{d.sh}}; color:{{d.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{d.lab}}</button></sc-for>
+                        </div>
+                        <div style="position:absolute; top:0; right:0; bottom:3px; width:74px; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; background:linear-gradient(90deg, rgba(27,11,22,0) 0%, rgba(27,11,22,.42) 40%, rgba(27,11,22,.9) 66%, #1b0b16 74%, #1b0b16 100%);"><i class="ti ti-chevron-right" style="color:rgba(255,143,192,.82); font-size:17px; -webkit-text-stroke:0.9px currentColor;"></i></div>
+                      </div>
+                      <sc-if value="{{g.extras}}" hint-placeholder-val="{{true}}">
+                        <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                          <sc-for list="{{r.flags}}" as="f" hint-placeholder-count="3"><button onClick="{{f.onTap}}" style="display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; border:{{f.bd}}; background:{{f.bg}}; color:{{f.fg}}; font-weight:800; font-size:12px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{f.i}}" style="font-size:14px;"></i>{{f.lab}}</button></sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="display:flex; gap:8px;">
+                        <button onClick="{{r.onUp}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#e0bdd2; opacity:{{r.upDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-arrow-up" style="font-size:18px;"></i></button>
+                        <button onClick="{{r.onDown}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#e0bdd2; opacity:{{r.downDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-arrow-down" style="font-size:18px;"></i></button>
+                        <button onClick="{{r.onSwap}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#fff2f9; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti ti-repeat" style="font-size:17px;"></i>Swap</button>
+                        <button onClick="{{r.onDel}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,79,160,.16); color:#ff7fb4; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-trash" style="font-size:18px;"></i></button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <button onClick="{{g.onTray}}" style="display:flex; align-items:center; justify-content:center; gap:10px; background:rgba(255,95,168,.06); border:4.5px dashed #ff4fa0; border-radius:22px; padding:19px 0; cursor:pointer; box-shadow:0 0 24px rgba(255,79,160,.28); background-image:repeating-linear-gradient(115deg, rgba(255,95,168,.1) 0 13px, rgba(255,255,255,0) 13px 28px);" style-active="transform:translateY(2px);">
+                <i class="ti {{g.trayIcon}}" style="color:#ff8fc0; font-size:19px;"></i>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; color:#ff8fc0;">{{g.trayLab}}</span>
+              </button>
+
+              <sc-if value="{{g.trayOpen}}" hint-placeholder-val="{{false}}">
+                <div style="background:rgba(0,0,0,.3); border-radius:22px; padding:14px 13px 16px; display:flex; flex-direction:column; gap:14px; animation:edPop .2s ease both;">
+                  <div style="display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px;">
+                    <sc-for list="{{g.cats}}" as="k" hint-placeholder-count="6"><button onClick="{{k.onPick}}" style="flex:none; display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:13px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; white-space:nowrap;" style-active="transform:translateY(2px);"><i class="ti {{k.i}}" style="font-size:15px;"></i>{{k.lab}}</button></sc-for>
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px 9px;">
+                    <sc-for list="{{g.tools}}" as="t" hint-placeholder-count="8">
+                      <button onClick="{{t.onAdd}}" style="display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;" style-active="transform:translateY(2px);">
+                        <span style="width:52px; height:52px; border-radius:18px; background:{{t.coin}}; box-shadow:0 4px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="color:#fff2f9; font-size:22px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                        <span style="font-size:10.5px; font-weight:800; color:#f0dceb; text-align:center; line-height:1.15;">{{t.t}}</span>
+                        <span style="font-size:9.5px; font-weight:800; color:#96637e;">{{t.lab}}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{g.onSet}}" hint-placeholder-val="{{false}}">
+            <div style="padding:8px 38px 20px; display:flex; flex-direction:column; gap:12px;">
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{g.sVoice.bg}};">
+                <button onClick="{{g.sVoice.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{g.sVoice.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-microphone" style="color:{{g.sVoice.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Voice</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{g.voiceSub}}</span>
+                  </span>
+                  <i class="ti {{g.sVoice.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{g.sVoice.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:flex; gap:7px;">
+                      <sc-for list="{{g.voices}}" as="v" hint-placeholder-count="3">
+                        <button onClick="{{v.onPick}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);">
+                          <i class="ti {{v.i}}" style="color:{{v.icc}}; font-size:15px;"></i>
+                          <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{v.fg}}; line-height:1;">{{v.n}}</span>
+                          <span style="font-size:9px; font-weight:700; color:{{v.sub}};">{{v.s}}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; gap:4px; background:#150710; border-radius:11px; padding:4px;">
+                      <sc-for list="{{g.talks}}" as="t" hint-placeholder-count="3"><button onClick="{{t.onPick}}" style="flex:1; padding:7px 0; border-radius:8px; border:none; background:{{t.bg}}; color:{{t.fg}}; font-weight:800; font-size:11px; cursor:pointer;">{{t.lab}}</button></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{g.sSound.bg}};">
+                <button onClick="{{g.sSound.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{g.sSound.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-volume" style="color:{{g.sSound.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Sound</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{g.soundSub}}</span>
+                  </span>
+                  <i class="ti {{g.sSound.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{g.sSound.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
+                      <sc-for list="{{g.sounds}}" as="v" hint-placeholder-count="6">
+                        <button onClick="{{v.onPick}}" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti {{v.i}}" style="color:{{v.fg}}; font-size:14px;"></i><span style="font-size:10px; font-weight:800; color:{{v.fg}}; line-height:1;">{{v.n}}</span></button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:#241019; border-radius:13px; padding:9px 12px;">
+                      <i class="ti ti-volume" style="color:#9a6a86; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; display:flex; align-items:flex-end; gap:5px; height:22px;">
+                        <sc-for list="{{g.bars}}" as="x" hint-placeholder-count="5"><button onClick="{{x.onPick}}" style="flex:1; height:{{x.h}}; border-radius:5px; border:none; background:{{x.bg}}; cursor:pointer; padding:0;"></button></sc-for>
+                      </span>
+                      <span style="font-size:10px; font-weight:800; color:#c98ca6; min-width:34px; text-align:right; flex:none;">{{g.volLab}}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{g.sGuide.bg}};">
+                <button onClick="{{g.sGuide.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{g.sGuide.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-compass" style="color:{{g.sGuide.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Guidance</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{g.guideSub}}</span>
+                  </span>
+                  <i class="ti {{g.sGuide.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{g.sGuide.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <sc-for list="{{g.guides}}" as="g" hint-placeholder-count="3">
+                      <button onClick="{{g.onPick}}" style="display:flex; align-items:center; gap:10px; width:100%; border:{{g.bd}}; border-radius:13px; padding:9px 11px; background:{{g.bg}}; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{g.i}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:12px; font-weight:800; color:{{g.fg}};">{{g.n}}</span>
+                          <span style="display:block; font-size:9.5px; font-weight:700; color:{{g.sub}};">{{g.s}}</span>
+                        </span>
+                        <i class="ti {{g.check}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{g.sRun.bg}};">
+                <button onClick="{{g.sRun.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{g.sRun.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-player-play" style="color:{{g.sRun.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">While it runs</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{g.runSub}}</span>
+                  </span>
+                  <i class="ti {{g.sRun.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{g.sRun.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:10px 11px 12px; display:flex; flex-direction:column; gap:6px; animation:edPop .2s ease both;">
+                    <sc-for list="{{g.toggles}}" as="t" hint-placeholder-count="5">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2px dashed #6b4258; overflow:hidden; background:#1e0d18;">
+                <button onClick="{{g.sSave.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:38px; height:38px; border-radius:13px; background:#2a1424; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-flask" style="color:#c9a6ff; font-size:17px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:#e6cfe0; line-height:1.1;">Advanced</span>
+                    <span style="display:block; font-size:10.5px; font-weight:700; color:#8a5f76;">{{g.saveSub}}</span>
+                  </span>
+                  <i class="ti {{g.sSave.chev}}" style="color:#8a5f76; font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{g.sSave.open}}" hint-placeholder-val="{{false}}">
+                  <div style="padding:0 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <button onClick="{{g.onNew}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                      <i class="ti ti-copy" style="color:#ff8fc0; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">Keep it as a new stack</span>
+                        <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">leaves the original on your shelf</span>
+                      </span>
+                      <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{g.newTrack}}; flex:none;"><span style="position:absolute; top:2px; left:{{g.newKnob}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                    </button>
+                    <sc-if value="{{g.isNew}}" hint-placeholder-val="{{false}}">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <sc-for list="{{g.names}}" as="k" hint-placeholder-count="3"><button onClick="{{k.onPick}}" style="padding:8px 12px; border-radius:11px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-weight:800; font-size:11.5px; cursor:pointer;" style-active="transform:translateY(2px);">{{k.n}}</button></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-for list="{{g.advToggles}}" as="t" hint-placeholder-count="2">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="flex:none; padding:10px 22px 32px;">
+          <div style="display:flex; gap:9px; align-items:stretch;">
+            <button title="Save" style="order:{{fOrdSave}}; flex:none; width:56px; display:flex; align-items:center; justify-content:center; border-radius:19px; border:2.5px solid #160510; background:rgba(255,242,249,.1); box-shadow:0 7px 18px rgba(0,0,0,.45); color:#fff2f9; cursor:pointer; padding:0;" style-active="transform:translateY(3px);"><i class="ti ti-device-floppy" style="font-size:23px;"></i></button>
+            <button style="order:{{fOrdStart}}; flex:{{fStart}}; display:flex; align-items:center; justify-content:center; gap:8px; padding:17px 0; border-radius:19px; border:2.5px solid #160510; background:#ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); color:#2a0d1c; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; cursor:pointer;" style-active="transform:translateY(3px); box-shadow:0 3px 10px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45);"><i class="ti ti-player-play-filled" style="font-size:19px;"></i>Start</button>
+            <button onClick="{{g.onToggleSet}}" style="order:{{fOrdGear}}; flex:none; width:56px; border-radius:19px; border:2.5px solid #160510; background:{{g.setBg}}; box-shadow:0 7px 18px rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;" style-active="transform:translateY(3px);"><i class="ti {{g.setIcon}}" style="color:{{g.setIc}}; font-size:23px;"></i></button>
+          </div>
+        </div>
+      </div>
+      </x-import>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; width:390px; text-wrap:pretty;">No tab strip at all — the header is just the title and the total. The gear between save and start flips the same screen into the tinted settings and back, so nothing separates the content from the buttons: one full-bleed plum screen. Save is an icon, Start takes the width, and the footer runs on thinner borders than the blocks so it can sit wider, and the whole length row is gone from the footer — lengths live inside each block.</div>
+    </div>
+
+    <div id="2a" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#2a" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">2a</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">Striped blocks + tinted settings</span></div>
+      <div style="display:inline-block; padding:11px; border-radius:59px; background:#0a0409; box-shadow:0 10px 0 #000, inset 0 0 0 2px #2a1523; line-height:0;">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{dark}}" hint-size="402px,874px">
+      <div style="height:100%; display:flex; flex-direction:column; background:radial-gradient(120% 72% at 50% 0%, #2c1442 0%, #1c0d26 58%, #150a1a 100%);" data-screen-label="2a Editor merged">
+
+        <div style="flex:none; padding:60px 38px 14px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <button style="width:40px; height:40px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#f0dceb; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-chevron-left" style="font-size:19px;"></i></button>
+            <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:27px; color:#fff2f9; line-height:1;">Make it yours</span>
+            <span style="flex:none; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:#ffc41f;">{{c.totalNum}} min</span>
+          </div>
+          <div style="display:flex; gap:5px; background:rgba(0,0,0,.34); border-radius:14px; padding:4px; margin-top:14px;">
+            <sc-for list="{{c.tabs}}" as="t" hint-placeholder-count="2"><button onClick="{{t.onPick}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 0; border-radius:11px; border:none; background:{{t.bg}}; box-shadow:{{t.sh}}; color:{{t.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13.5px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{t.i}}" style="font-size:15px;"></i>{{t.lab}}</button></sc-for>
+          </div>
+        </div>
+
+        <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;">
+          <sc-if value="{{c.onBlocks}}" hint-placeholder-val="{{true}}">
+            <div style="padding:8px 38px 18px; display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{c.rows}}" as="r" hint-placeholder-count="5">
+                <div style="border-radius:22px; border:{{r.ring}}; box-shadow:{{r.ringShadow}}; overflow:hidden; background:#1b0b16;">
+                  <button onClick="{{r.onSelect}}" style="display:block; width:100%; border:none; padding:0; margin:0; cursor:pointer; background:{{r.faceBg}}; position:relative; text-align:left;" style-active="transform:translateY(1px);">
+                    <span style="position:absolute; inset:0; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px);"></span>
+                    <span style="position:relative; display:flex; align-items:center; gap:14px; padding:17px 18px 19px;">
+                      <i class="ti {{r.i}}" style="color:{{r.ink}}; font-size:24px; flex:none; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.18));"></i>
+                      <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:{{r.ink}}; line-height:1;">{{r.tCap}}</span>
+                      <span style="flex:none; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:{{r.inkSoft}}; font-variant-numeric:tabular-nums;">{{r.tm}}</span>
+                    </span>
+                    <span style="position:absolute; bottom:6px; left:50%; width:32px; height:4px; margin-left:-16px; border-radius:2px; background:{{r.grip}};"></span>
+                  </button>
+                  <sc-if value="{{r.sel}}" hint-placeholder-val="{{false}}">
+                    <div style="padding:15px 16px 16px; display:flex; flex-direction:column; gap:13px; animation:edPop .2s ease both;">
+                      <div style="font-family:'Baloo 2',sans-serif; font-size:15.5px; font-weight:700; color:#fff2f9; line-height:1.3; text-wrap:pretty;">{{r.desc}}</div>
+                      <div style="position:relative; margin-right:-16px; padding-right:28px;">
+                        <div style="display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px;">
+                          <sc-for list="{{r.durs}}" as="d" hint-placeholder-count="8"><button onClick="{{d.onPick}}" style="flex:none; min-width:54px; padding:10px 12px; border-radius:13px; border:none; background:{{d.bg}}; box-shadow:{{d.sh}}; color:{{d.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{d.lab}}</button></sc-for>
+                        </div>
+                        <div style="position:absolute; top:0; right:0; bottom:3px; width:74px; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; background:linear-gradient(90deg, rgba(27,11,22,0) 0%, rgba(27,11,22,.42) 40%, rgba(27,11,22,.9) 66%, #1b0b16 74%, #1b0b16 100%);"><i class="ti ti-chevron-right" style="color:rgba(255,143,192,.82); font-size:17px; -webkit-text-stroke:0.9px currentColor;"></i></div>
+                      </div>
+                      <sc-if value="{{c.extras}}" hint-placeholder-val="{{true}}">
+                        <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                          <sc-for list="{{r.flags}}" as="f" hint-placeholder-count="3"><button onClick="{{f.onTap}}" style="display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; border:{{f.bd}}; background:{{f.bg}}; color:{{f.fg}}; font-weight:800; font-size:12px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{f.i}}" style="font-size:14px;"></i>{{f.lab}}</button></sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="display:flex; gap:8px;">
+                        <button onClick="{{r.onUp}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#e0bdd2; opacity:{{r.upDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-arrow-up" style="font-size:18px;"></i></button>
+                        <button onClick="{{r.onDown}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#e0bdd2; opacity:{{r.downDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-arrow-down" style="font-size:18px;"></i></button>
+                        <button onClick="{{r.onSwap}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:13px; border:none; background:rgba(255,242,249,.07); color:#fff2f9; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti ti-repeat" style="font-size:17px;"></i>Swap</button>
+                        <button onClick="{{r.onDel}}" style="width:44px; height:44px; border-radius:13px; border:none; background:rgba(255,79,160,.16); color:#ff7fb4; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-trash" style="font-size:18px;"></i></button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <button onClick="{{c.onTray}}" style="display:flex; align-items:center; justify-content:center; gap:10px; background:rgba(255,95,168,.06); border:4.5px dashed #ff4fa0; border-radius:22px; padding:19px 0; cursor:pointer; box-shadow:0 0 24px rgba(255,79,160,.28); background-image:repeating-linear-gradient(115deg, rgba(255,95,168,.1) 0 13px, rgba(255,255,255,0) 13px 28px);" style-active="transform:translateY(2px);">
+                <i class="ti {{c.trayIcon}}" style="color:#ff8fc0; font-size:19px;"></i>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; color:#ff8fc0;">{{c.trayLab}}</span>
+              </button>
+
+              <sc-if value="{{c.trayOpen}}" hint-placeholder-val="{{false}}">
+                <div style="background:rgba(0,0,0,.3); border-radius:22px; padding:14px 13px 16px; display:flex; flex-direction:column; gap:14px; animation:edPop .2s ease both;">
+                  <div style="display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px;">
+                    <sc-for list="{{c.cats}}" as="k" hint-placeholder-count="6"><button onClick="{{k.onPick}}" style="flex:none; display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:13px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; cursor:pointer; white-space:nowrap;" style-active="transform:translateY(2px);"><i class="ti {{k.i}}" style="font-size:15px;"></i>{{k.lab}}</button></sc-for>
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px 9px;">
+                    <sc-for list="{{c.tools}}" as="t" hint-placeholder-count="8">
+                      <button onClick="{{t.onAdd}}" style="display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;" style-active="transform:translateY(2px);">
+                        <span style="width:52px; height:52px; border-radius:18px; background:{{t.coin}}; box-shadow:0 4px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="color:#fff2f9; font-size:22px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                        <span style="font-size:10.5px; font-weight:800; color:#f0dceb; text-align:center; line-height:1.15;">{{t.t}}</span>
+                        <span style="font-size:9.5px; font-weight:800; color:#96637e;">{{t.lab}}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{c.onSet}}" hint-placeholder-val="{{false}}">
+            <div style="padding:8px 38px 20px; display:flex; flex-direction:column; gap:12px;">
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{c.sVoice.bg}};">
+                <button onClick="{{c.sVoice.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{c.sVoice.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-microphone" style="color:{{c.sVoice.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Voice</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{c.voiceSub}}</span>
+                  </span>
+                  <i class="ti {{c.sVoice.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{c.sVoice.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:flex; gap:7px;">
+                      <sc-for list="{{c.voices}}" as="v" hint-placeholder-count="3">
+                        <button onClick="{{v.onPick}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);">
+                          <i class="ti {{v.i}}" style="color:{{v.icc}}; font-size:15px;"></i>
+                          <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{v.fg}}; line-height:1;">{{v.n}}</span>
+                          <span style="font-size:9px; font-weight:700; color:{{v.sub}};">{{v.s}}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; gap:4px; background:#150710; border-radius:11px; padding:4px;">
+                      <sc-for list="{{c.talks}}" as="t" hint-placeholder-count="3"><button onClick="{{t.onPick}}" style="flex:1; padding:7px 0; border-radius:8px; border:none; background:{{t.bg}}; color:{{t.fg}}; font-weight:800; font-size:11px; cursor:pointer;">{{t.lab}}</button></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{c.sSound.bg}};">
+                <button onClick="{{c.sSound.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{c.sSound.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-volume" style="color:{{c.sSound.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Sound</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{c.soundSub}}</span>
+                  </span>
+                  <i class="ti {{c.sSound.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{c.sSound.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
+                      <sc-for list="{{c.sounds}}" as="v" hint-placeholder-count="6">
+                        <button onClick="{{v.onPick}}" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti {{v.i}}" style="color:{{v.fg}}; font-size:14px;"></i><span style="font-size:10px; font-weight:800; color:{{v.fg}}; line-height:1;">{{v.n}}</span></button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:#241019; border-radius:13px; padding:9px 12px;">
+                      <i class="ti ti-volume" style="color:#9a6a86; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; display:flex; align-items:flex-end; gap:5px; height:22px;">
+                        <sc-for list="{{c.bars}}" as="x" hint-placeholder-count="5"><button onClick="{{x.onPick}}" style="flex:1; height:{{x.h}}; border-radius:5px; border:none; background:{{x.bg}}; cursor:pointer; padding:0;"></button></sc-for>
+                      </span>
+                      <span style="font-size:10px; font-weight:800; color:#c98ca6; min-width:34px; text-align:right; flex:none;">{{c.volLab}}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{c.sGuide.bg}};">
+                <button onClick="{{c.sGuide.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{c.sGuide.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-compass" style="color:{{c.sGuide.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Guidance</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{c.guideSub}}</span>
+                  </span>
+                  <i class="ti {{c.sGuide.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{c.sGuide.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <sc-for list="{{c.guides}}" as="g" hint-placeholder-count="3">
+                      <button onClick="{{g.onPick}}" style="display:flex; align-items:center; gap:10px; width:100%; border:{{g.bd}}; border-radius:13px; padding:9px 11px; background:{{g.bg}}; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{g.i}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:12px; font-weight:800; color:{{g.fg}};">{{g.n}}</span>
+                          <span style="display:block; font-size:9.5px; font-weight:700; color:{{g.sub}};">{{g.s}}</span>
+                        </span>
+                        <i class="ti {{g.check}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{c.sRun.bg}};">
+                <button onClick="{{c.sRun.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{c.sRun.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-player-play" style="color:{{c.sRun.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">While it runs</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{c.runSub}}</span>
+                  </span>
+                  <i class="ti {{c.sRun.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{c.sRun.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:10px 11px 12px; display:flex; flex-direction:column; gap:6px; animation:edPop .2s ease both;">
+                    <sc-for list="{{c.toggles}}" as="t" hint-placeholder-count="5">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2px dashed #6b4258; overflow:hidden; background:#1e0d18;">
+                <button onClick="{{c.sSave.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:38px; height:38px; border-radius:13px; background:#2a1424; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-flask" style="color:#c9a6ff; font-size:17px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:#e6cfe0; line-height:1.1;">Advanced</span>
+                    <span style="display:block; font-size:10.5px; font-weight:700; color:#8a5f76;">{{c.saveSub}}</span>
+                  </span>
+                  <i class="ti {{c.sSave.chev}}" style="color:#8a5f76; font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{c.sSave.open}}" hint-placeholder-val="{{false}}">
+                  <div style="padding:0 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <button onClick="{{c.onNew}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                      <i class="ti ti-copy" style="color:#ff8fc0; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">Keep it as a new stack</span>
+                        <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">leaves the original on your shelf</span>
+                      </span>
+                      <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{c.newTrack}}; flex:none;"><span style="position:absolute; top:2px; left:{{c.newKnob}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                    </button>
+                    <sc-if value="{{c.isNew}}" hint-placeholder-val="{{false}}">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <sc-for list="{{c.names}}" as="k" hint-placeholder-count="3"><button onClick="{{k.onPick}}" style="padding:8px 12px; border-radius:11px; border:none; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-weight:800; font-size:11.5px; cursor:pointer;" style-active="transform:translateY(2px);">{{k.n}}</button></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-for list="{{c.advToggles}}" as="t" hint-placeholder-count="2">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="flex:none; padding:10px 38px 34px;">
+          <sc-if value="{{c.onBlocks}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
+              <div style="display:flex; align-items:baseline; gap:8px; line-height:1.5; padding-top:2px;">
+                <span style="font-size:11px; font-weight:800; letter-spacing:1.4px; color:#c98ca6; flex:none;">FIT IT IN</span>
+                <span style="font-size:11px; font-weight:700; color:#8a5f76; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">{{c.stepCount}}</span>
+              </div>
+              <div style="position:relative; margin:0 -38px; padding-left:38px;">
+                <div ref="{{stripRef}}" onScroll="{{onStripScroll}}" style="display:flex; gap:7px; overflow-x:auto; padding-right:{{stripPadRight}}; padding-bottom:2px;">
+                  <sc-for list="{{c.presets}}" as="k" hint-placeholder-count="9"><button onClick="{{k.onPick}}" style="flex:none; min-width:60px; padding:10px 0; border-radius:14px; border:{{k.bd}}; background:{{k.bg}}; box-shadow:{{k.sh}}; color:{{k.fg}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{k.lab}}</button></sc-for>
+                </div>
+                <sc-if value="{{hFade}}" hint-placeholder-val="{{true}}">
+                  <div style="position:absolute; top:0; right:0; bottom:2px; width:86px; pointer-events:none; display:flex; align-items:center; justify-content:flex-end; padding-right:15px; background:linear-gradient(90deg, rgba(21,10,26,0) 0%, rgba(21,10,26,.72) 34%, rgba(20,8,26,.96) 78%, #14081a 100%);">
+                    <sc-if value="{{stripMore}}" hint-placeholder-val="{{true}}">
+                      <span style="display:inline-flex; align-items:center; justify-content:flex-end;">
+                        <sc-if value="{{aChevron}}" hint-placeholder-val="{{true}}"><i class="ti ti-chevron-right" style="color:rgba(255,143,192,.82); font-size:17px; -webkit-text-stroke:0.9px currentColor;"></i></sc-if>
+                        <sc-if value="{{aDouble}}" hint-placeholder-val="{{false}}"><i class="ti ti-chevrons-right" style="color:rgba(255,143,192,.5); font-size:13px;"></i></sc-if>
+                        <sc-if value="{{aCaret}}" hint-placeholder-val="{{false}}"><span style="width:0; height:0; border-left:6px solid rgba(255,143,192,.6); border-top:5px solid transparent; border-bottom:5px solid transparent;"></span></sc-if>
+                        <sc-if value="{{aDots}}" hint-placeholder-val="{{false}}"><span style="display:inline-flex; gap:3px;"><span style="width:3px; height:3px; border-radius:2px; background:rgba(255,143,192,.75);"></span><span style="width:3px; height:3px; border-radius:2px; background:rgba(255,143,192,.5);"></span><span style="width:3px; height:3px; border-radius:2px; background:rgba(255,143,192,.28);"></span></span></sc-if>
+                        <sc-if value="{{aHair}}" hint-placeholder-val="{{false}}"><span style="width:2px; height:22px; border-radius:2px; background:linear-gradient(180deg, rgba(255,143,192,0), rgba(255,143,192,.8), rgba(255,143,192,0));"></span></sc-if>
+                        <sc-if value="{{aGrip}}" hint-placeholder-val="{{false}}"><span style="display:inline-flex; gap:2px; align-items:center;"><span style="width:2px; height:14px; border-radius:2px; background:rgba(255,143,192,.7);"></span><span style="width:2px; height:10px; border-radius:2px; background:rgba(255,143,192,.45);"></span><span style="width:2px; height:6px; border-radius:2px; background:rgba(255,143,192,.25);"></span></span></sc-if>
+                        <sc-if value="{{aCoin}}" hint-placeholder-val="{{false}}"><span style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:rgba(255,143,192,.16); border:2px solid #ff8fc0;"><i class="ti ti-chevron-right" style="color:#ff8fc0; font-size:15px;"></i></span></sc-if>
+                        <sc-if value="{{aCount}}" hint-placeholder-val="{{false}}"><span style="padding:3px 7px; border-radius:9px; background:rgba(255,143,192,.14); font-size:10.5px; font-weight:800; color:#ff8fc0;">{{moreLab}}</span></sc-if>
+                      </span>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{stripScrolled}}" hint-placeholder-val="{{false}}">
+                  <div style="position:absolute; top:0; left:0; bottom:2px; width:46px; pointer-events:none; background:linear-gradient(270deg, rgba(21,10,26,0) 0%, rgba(21,10,26,.9) 52%, #14081a 92%);"></div>
+                </sc-if>
+                <sc-if value="{{hArrow}}" hint-placeholder-val="{{false}}">
+                  <button onClick="{{onStripNext}}" style="position:absolute; top:2px; right:0; width:38px; height:38px; border-radius:13px; border:3px solid #160510; background:#ffc41f; color:#2a1c00; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 5px 14px rgba(0,0,0,.5); padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-chevron-right" style="font-size:19px;"></i></button>
+                </sc-if>
+              </div>
+              <sc-if value="{{hDots}}" hint-placeholder-val="{{false}}">
+                <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:-2px;">
+                  <span style="width:16px; height:5px; border-radius:3px; background:#ffc41f;"></span>
+                  <span style="width:5px; height:5px; border-radius:3px; background:#5f3d51;"></span>
+                  <span style="width:5px; height:5px; border-radius:3px; background:#5f3d51;"></span>
+                </div>
+              </sc-if>
+
+            </div>
+          </sc-if>
+          <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:17px 0; border-radius:20px; border:4.5px solid #160510; background:#ff4fa0; box-shadow:0 7px 18px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45); color:#2a0d1c; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; cursor:pointer;" style-active="transform:translateY(3px); box-shadow:0 3px 10px rgba(0,0,0,.45), 0 0 34px rgba(255,79,160,.45);"><i class="ti ti-device-floppy" style="font-size:20px;"></i>{{c.saveLab}}</button>
+        </div>
+      </div>
+      </x-import>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; width:390px; text-wrap:pretty;">Each block is its own colour at rest, ignites to full candy when open, and the grip line says it's draggable. Open it and you get the sentence, then the <b style="color:#ffc41f;">length strip</b>, the per-block options, and move/swap/delete — no stepper. Settings are the tinted drawers.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:34px 30px 70px; font-family:'Jost',sans-serif; display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#ff8fc0;">TURN 1 · THE EDITOR, RE-CUT</div>
+    <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px; color:#fff2f9; line-height:1;">Where do the settings live?</div>
+    <div style="font-size:12.5px; font-weight:600; color:#9a6a86; max-width:820px; text-wrap:pretty;">Both drop the +/- stepper for a sideways length strip, give <b style="color:#ffc41f;">Add a block</b> real categories, hang per-block options off the open block, and move <b style="color:#ffc41f;">fit it in</b> to the bottom where your thumb is. <a href="#1a">1a</a> keeps two tabs; <a href="#1b">1b</a> is one scroll with the settings as tinted drawers at the end.</div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start;">
+
+    <div id="1a" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#1a" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">1a</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">Two tabs, denser</span><span style="font-size:12px; font-weight:600; color:#9a6a86;">— length lives at the bottom</span></div>
+      <div style="width:390px; height:844px; border:3px solid #160510; border-radius:44px; overflow:hidden; background:#180a14; box-shadow:0 8px 0 #160510; display:flex; flex-direction:column;" data-screen-label="1a Editor with tabs">
+
+        <div style="flex:none; background:#1d0c17; border-bottom:2px solid #120409; padding:12px 15px 9px;">
+          <div style="display:flex; align-items:center; gap:11px;">
+            <button style="width:32px; height:32px; border-radius:50%; border:2px solid #3a1f30; background:#241019; color:#e6cfe0; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-chevron-left" style="font-size:15px;"></i></button>
+            <span style="flex:1; min-width:0;">
+              <span style="display:block; font-size:8.5px; font-weight:800; letter-spacing:1.3px; color:#ff8fc0;">{{a.kicker}}</span>
+              <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; color:#fff2f9; line-height:1.1;">Caught scrolling</span>
+            </span>
+            <span style="flex:none; display:inline-flex; align-items:baseline; gap:3px; padding:4px 10px; border-radius:11px; background:#150710;"><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#ffc41f;">{{a.totalNum}}</span><span style="font-size:9.5px; font-weight:800; color:#b98a25;">min</span></span>
+          </div>
+          <div style="display:flex; gap:4px; background:#150710; border-radius:11px; padding:3px; margin-top:9px;">
+            <sc-for list="{{a.tabs}}" as="t" hint-placeholder-count="2"><button onClick="{{t.onPick}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:6.5px 0; border-radius:9px; border:none; background:{{t.bg}}; box-shadow:{{t.sh}}; color:{{t.fg}}; font-family:'Jost',sans-serif; font-weight:800; font-size:11px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{t.i}}" style="font-size:13px;"></i>{{t.lab}}</button></sc-for>
+          </div>
+        </div>
+
+        <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;">
+          <sc-if value="{{a.onBlocks}}" hint-placeholder-val="{{true}}">
+            <div style="padding:11px 14px 16px; display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{a.rows}}" as="r" hint-placeholder-count="5">
+                <div style="border-radius:19px; border:{{r.border}}; box-shadow:{{r.shadow}}; overflow:hidden; background:{{r.bg}};">
+                  <button onClick="{{r.onSelect}}" style="display:flex; width:100%; align-items:center; gap:11px; padding:10px 12px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                    <span style="width:38px; height:38px; border-radius:13px; background:{{r.coin}}; box-shadow:0 3px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti {{r.i}}" style="color:#fff2f9; font-size:17px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                    <span style="flex:1; min-width:0;">
+                      <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.1;">{{r.t}}</span>
+                      <span style="display:block; font-size:9px; font-weight:700; color:{{r.subInk}}; letter-spacing:.2px;">{{r.sub}}</span>
+                    </span>
+                    <span style="flex:none; font-weight:800; font-size:13px; color:{{r.tmInk}}; font-variant-numeric:tabular-nums;">{{r.tm}}</span>
+                    <i class="ti {{r.chev}}" style="color:#7d5468; font-size:14px; flex:none;"></i>
+                  </button>
+                  <sc-if value="{{r.sel}}" hint-placeholder-val="{{false}}">
+                    <div style="padding:0 11px 11px; display:flex; flex-direction:column; gap:9px; animation:edPop .2s ease both;">
+                      <div style="display:flex; gap:6px; overflow-x:auto; padding:2px 1px 3px;">
+                        <sc-for list="{{r.durs}}" as="d" hint-placeholder-count="8"><button onClick="{{d.onPick}}" style="flex:none; min-width:44px; padding:7px 9px; border-radius:11px; border:none; background:{{d.bg}}; box-shadow:{{d.sh}}; color:{{d.fg}}; font-weight:800; font-size:11.5px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{d.lab}}</button></sc-for>
+                      </div>
+                      <sc-if value="{{a.extras}}" hint-placeholder-val="{{true}}">
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                          <sc-for list="{{r.flags}}" as="f" hint-placeholder-count="3"><button onClick="{{f.onTap}}" style="display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:11px; border:{{f.bd}}; background:{{f.bg}}; color:{{f.fg}}; font-weight:800; font-size:10.5px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{f.i}}" style="font-size:12px;"></i>{{f.lab}}</button></sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="display:flex; gap:6px;">
+                        <button onClick="{{r.onUp}}" style="width:36px; height:34px; border-radius:11px; border:none; background:#170811; color:#c98ca6; opacity:{{r.upDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;"><i class="ti ti-arrow-up" style="font-size:14px;"></i></button>
+                        <button onClick="{{r.onDown}}" style="width:36px; height:34px; border-radius:11px; border:none; background:#170811; color:#c98ca6; opacity:{{r.downDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;"><i class="ti ti-arrow-down" style="font-size:14px;"></i></button>
+                        <button onClick="{{r.onSwap}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:34px; border-radius:11px; border:none; background:#170811; color:#e6cfe0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti ti-repeat" style="font-size:13px;"></i>Swap</button>
+                        <button onClick="{{r.onDel}}" style="width:36px; height:34px; border-radius:11px; border:none; background:#2b1020; color:#ff7fb4; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-trash" style="font-size:14px;"></i></button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <button onClick="{{a.onTray}}" style="display:flex; align-items:center; justify-content:center; gap:8px; background:#241019; border:2px dashed #ff5fa8; border-radius:18px; padding:11px 0; cursor:pointer; background-image:repeating-linear-gradient(115deg, rgba(255,95,168,.07) 0 11px, rgba(255,255,255,0) 11px 24px);" style-active="transform:translateY(2px);">
+                <i class="ti {{a.trayIcon}}" style="color:#ff8fc0; font-size:15px;"></i>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14.5px; color:#ff8fc0;">{{a.trayLab}}</span>
+              </button>
+
+              <sc-if value="{{a.trayOpen}}" hint-placeholder-val="{{false}}">
+                <div style="background:#1d0e18; border-radius:18px; padding:11px 10px 12px; display:flex; flex-direction:column; gap:10px; animation:edPop .2s ease both;">
+                  <div style="display:flex; gap:6px; overflow-x:auto; padding:1px 1px 3px;">
+                    <sc-for list="{{a.cats}}" as="c" hint-placeholder-count="6"><button onClick="{{c.onPick}}" style="flex:none; display:inline-flex; align-items:center; gap:5px; padding:7px 11px; border-radius:11px; border:none; background:{{c.bg}}; box-shadow:{{c.sh}}; color:{{c.fg}}; font-weight:800; font-size:11px; cursor:pointer; white-space:nowrap;" style-active="transform:translateY(2px);"><i class="ti {{c.i}}" style="font-size:12px;"></i>{{c.lab}}</button></sc-for>
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px 8px;">
+                    <sc-for list="{{a.tools}}" as="t" hint-placeholder-count="8">
+                      <button onClick="{{t.onAdd}}" style="display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:none; padding:0; cursor:pointer;" style-active="transform:translateY(2px);">
+                        <span style="width:40px; height:40px; border-radius:14px; background:{{t.coin}}; box-shadow:0 3px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="color:#fff2f9; font-size:17px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                        <span style="font-size:9px; font-weight:800; color:#e0bdd2; text-align:center; line-height:1.12;">{{t.t}}</span>
+                        <span style="font-size:8.5px; font-weight:800; color:#7d5468;">{{t.lab}}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{a.onSet}}" hint-placeholder-val="{{false}}">
+            <div style="padding:12px 14px 18px; display:flex; flex-direction:column; gap:9px;">
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{a.sVoice.bg}};">
+                <button onClick="{{a.sVoice.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{a.sVoice.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-microphone" style="color:{{a.sVoice.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Voice</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{a.voiceSub}}</span>
+                  </span>
+                  <i class="ti {{a.sVoice.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{a.sVoice.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:flex; gap:7px;">
+                      <sc-for list="{{a.voices}}" as="v" hint-placeholder-count="3">
+                        <button onClick="{{v.onPick}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);">
+                          <i class="ti {{v.i}}" style="color:{{v.icc}}; font-size:15px;"></i>
+                          <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{v.fg}}; line-height:1;">{{v.n}}</span>
+                          <span style="font-size:9px; font-weight:700; color:{{v.sub}};">{{v.s}}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; gap:4px; background:#150710; border-radius:11px; padding:4px;">
+                      <sc-for list="{{a.talks}}" as="t" hint-placeholder-count="3"><button onClick="{{t.onPick}}" style="flex:1; padding:7px 0; border-radius:8px; border:none; background:{{t.bg}}; color:{{t.fg}}; font-weight:800; font-size:11px; cursor:pointer;">{{t.lab}}</button></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{a.sSound.bg}};">
+                <button onClick="{{a.sSound.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{a.sSound.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-volume" style="color:{{a.sSound.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Sound</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{a.soundSub}}</span>
+                  </span>
+                  <i class="ti {{a.sSound.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{a.sSound.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                    <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
+                      <sc-for list="{{a.sounds}}" as="v" hint-placeholder-count="6">
+                        <button onClick="{{v.onPick}}" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti {{v.i}}" style="color:{{v.fg}}; font-size:14px;"></i><span style="font-size:10px; font-weight:800; color:{{v.fg}}; line-height:1;">{{v.n}}</span></button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:#241019; border-radius:13px; padding:9px 12px;">
+                      <i class="ti ti-volume" style="color:#9a6a86; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; display:flex; align-items:flex-end; gap:5px; height:22px;">
+                        <sc-for list="{{a.bars}}" as="b" hint-placeholder-count="5"><button onClick="{{b.onPick}}" style="flex:1; height:{{b.h}}; border-radius:5px; border:none; background:{{b.bg}}; cursor:pointer; padding:0;"></button></sc-for>
+                      </span>
+                      <span style="font-size:10px; font-weight:800; color:#c98ca6; min-width:34px; text-align:right; flex:none;">{{a.volLab}}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{a.sGuide.bg}};">
+                <button onClick="{{a.sGuide.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{a.sGuide.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-compass" style="color:{{a.sGuide.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Guidance</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{a.guideSub}}</span>
+                  </span>
+                  <i class="ti {{a.sGuide.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{a.sGuide.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <sc-for list="{{a.guides}}" as="g" hint-placeholder-count="3">
+                      <button onClick="{{g.onPick}}" style="display:flex; align-items:center; gap:10px; width:100%; border:{{g.bd}}; border-radius:13px; padding:9px 11px; background:{{g.bg}}; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{g.i}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:12px; font-weight:800; color:{{g.fg}};">{{g.n}}</span>
+                          <span style="display:block; font-size:9.5px; font-weight:700; color:{{g.sub}};">{{g.s}}</span>
+                        </span>
+                        <i class="ti {{g.check}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{a.sRun.bg}};">
+                <button onClick="{{a.sRun.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:42px; height:42px; border-radius:14px; background:{{a.sRun.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-player-play" style="color:{{a.sRun.ic}}; font-size:19px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">While it runs</span>
+                    <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{a.runSub}}</span>
+                  </span>
+                  <i class="ti {{a.sRun.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{a.sRun.open}}" hint-placeholder-val="{{false}}">
+                  <div style="background:#1b0b16; padding:10px 11px 12px; display:flex; flex-direction:column; gap:6px; animation:edPop .2s ease both;">
+                    <sc-for list="{{a.toggles}}" as="t" hint-placeholder-count="5">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="border-radius:19px; border:2px dashed #6b4258; overflow:hidden; background:#1e0d18;">
+                <button onClick="{{a.sSave.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <span style="width:38px; height:38px; border-radius:13px; background:#2a1424; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-flask" style="color:#c9a6ff; font-size:17px;"></i></span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:#e6cfe0; line-height:1.1;">Advanced</span>
+                    <span style="display:block; font-size:10.5px; font-weight:700; color:#8a5f76;">{{a.saveSub}}</span>
+                  </span>
+                  <i class="ti {{a.sSave.chev}}" style="color:#8a5f76; font-size:17px; flex:none;"></i>
+                </button>
+                <sc-if value="{{a.sSave.open}}" hint-placeholder-val="{{false}}">
+                  <div style="padding:0 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                    <button onClick="{{a.onNew}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                      <i class="ti ti-copy" style="color:#ff8fc0; font-size:14px; flex:none;"></i>
+                      <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">Keep it as a new stack</span>
+                        <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">leaves the original on your shelf</span>
+                      </span>
+                      <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{a.newTrack}}; flex:none;"><span style="position:absolute; top:2px; left:{{a.newKnob}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                    </button>
+                    <sc-if value="{{a.isNew}}" hint-placeholder-val="{{false}}">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <sc-for list="{{a.names}}" as="c" hint-placeholder-count="3"><button onClick="{{c.onPick}}" style="padding:8px 12px; border-radius:11px; border:none; background:{{c.bg}}; box-shadow:{{c.sh}}; color:{{c.fg}}; font-weight:800; font-size:11.5px; cursor:pointer;" style-active="transform:translateY(2px);">{{c.n}}</button></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-for list="{{a.advToggles}}" as="t" hint-placeholder-count="2">
+                      <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                        <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                          <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                        </span>
+                        <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="flex:none; background:#1d0c17; border-top:2px solid #120409; padding:8px 14px 13px;">
+          <sc-if value="{{a.onBlocks}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:9px;">
+              <div style="display:flex; align-items:baseline; gap:7px;">
+                <span style="font-size:8.5px; font-weight:800; letter-spacing:1.2px; color:#6f4a5e;">FIT IT IN</span>
+                <span style="font-size:9.5px; font-weight:700; color:#8a5f76;">{{a.stepCount}}</span>
+              </div>
+              <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:2px;">
+                <sc-for list="{{a.presets}}" as="c" hint-placeholder-count="8"><button onClick="{{c.onPick}}" style="flex:none; min-width:46px; padding:7px 10px; border-radius:11px; border:none; background:{{c.bg}}; box-shadow:{{c.sh}}; color:{{c.fg}}; font-weight:800; font-size:12px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{c.lab}}</button></sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 0; border-radius:16px; border:2.5px solid #160510; background:#ff5fa8; box-shadow:0 4px 0 #160510; color:#2a1730; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; cursor:pointer;" style-active="transform:translateY(3px); box-shadow:0 1px 0 #160510;"><i class="ti ti-device-floppy" style="font-size:16px;"></i>{{a.saveLab}}</button>
+        </div>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; width:390px; text-wrap:pretty;">Tabs stay, but the work moved: block rows carry their own <b style="color:#ffc41f;">length strip</b> and options instead of a stepper, and <b style="color:#ffc41f;">fit it in</b> sits in the footer with the save. Settings are five tinted drawers that open in place — the last one is dashed <b style="color:#c9a6ff;">Advanced</b>.</div>
+    </div>
+
+
+    <div id="1b" style="width:390px; flex:none;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><a href="#1b" style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:26px; border-radius:9px; background:#ff4fa0; color:#160510; border:2px solid #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;">1b</a><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9;">One scroll, no tabs</span><span style="font-size:12px; font-weight:600; color:#9a6a86;">— length as a ruler</span></div>
+      <div style="width:390px; height:844px; border:3px solid #160510; border-radius:44px; overflow:hidden; background:#180a14; box-shadow:0 8px 0 #160510; display:flex; flex-direction:column;" data-screen-label="1b Editor one scroll">
+
+        <div style="flex:none; background:#1d0c17; border-bottom:2px solid #120409; padding:12px 15px 11px; display:flex; align-items:center; gap:11px;">
+          <button style="width:32px; height:32px; border-radius:50%; border:2px solid #3a1f30; background:#241019; color:#e6cfe0; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-chevron-left" style="font-size:15px;"></i></button>
+          <span style="flex:1; min-width:0;">
+            <span style="display:block; font-size:8.5px; font-weight:800; letter-spacing:1.3px; color:#ff8fc0;">{{b.kicker}}</span>
+            <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; color:#fff2f9; line-height:1.1;">Caught scrolling</span>
+          </span>
+          <span style="flex:none; display:inline-flex; align-items:baseline; gap:3px; padding:4px 10px; border-radius:11px; background:#150710;"><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#ffc41f;">{{b.totalNum}}</span><span style="font-size:9.5px; font-weight:800; color:#b98a25;">min</span></span>
+        </div>
+
+        <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:11px 14px 18px; display:flex; flex-direction:column; gap:8px;">
+          <div style="font-size:8.5px; font-weight:800; letter-spacing:1.2px; color:#6f4a5e;">THE SIT · {{b.stepCount}}</div>
+          <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="5">
+            <div style="border-radius:19px; border:{{r.border}}; box-shadow:{{r.shadow}}; overflow:hidden; background:{{r.bg}};">
+              <button onClick="{{r.onSelect}}" style="display:flex; width:100%; align-items:center; gap:11px; padding:9px 12px 10px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                <span style="width:34px; height:34px; border-radius:12px; background:{{r.coin}}; box-shadow:0 3px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti {{r.i}}" style="color:#fff2f9; font-size:16px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;">
+                  <span style="display:flex; align-items:baseline; gap:7px;">
+                    <span style="flex:1; min-width:0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14.5px; color:#fff2f9; line-height:1.1;">{{r.t}}</span>
+                    <span style="flex:none; font-weight:800; font-size:12px; color:{{r.tmInk}}; font-variant-numeric:tabular-nums;">{{r.tm}}</span>
+                  </span>
+                  <span style="display:block; height:5px; border-radius:3px; background:#170811;"><span style="display:block; width:{{r.pct}}; height:5px; border-radius:3px; background:{{r.barBg}};"></span></span>
+                </span>
+                <i class="ti {{r.chev}}" style="color:#7d5468; font-size:14px; flex:none;"></i>
+              </button>
+              <sc-if value="{{r.sel}}" hint-placeholder-val="{{false}}">
+                <div style="padding:0 11px 11px; display:flex; flex-direction:column; gap:9px; animation:edPop .2s ease both;">
+                  <div style="display:flex; gap:6px; overflow-x:auto; padding:2px 1px 3px;">
+                    <sc-for list="{{r.durs}}" as="d" hint-placeholder-count="8"><button onClick="{{d.onPick}}" style="flex:none; min-width:44px; padding:7px 9px; border-radius:11px; border:none; background:{{d.bg}}; box-shadow:{{d.sh}}; color:{{d.fg}}; font-weight:800; font-size:11.5px; cursor:pointer; font-variant-numeric:tabular-nums;" style-active="transform:translateY(2px);">{{d.lab}}</button></sc-for>
+                  </div>
+                  <sc-if value="{{b.extras}}" hint-placeholder-val="{{true}}">
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                      <sc-for list="{{r.flags}}" as="f" hint-placeholder-count="3"><button onClick="{{f.onTap}}" style="display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:11px; border:{{f.bd}}; background:{{f.bg}}; color:{{f.fg}}; font-weight:800; font-size:10.5px; cursor:pointer;" style-active="transform:translateY(1px);"><i class="ti {{f.i}}" style="font-size:12px;"></i>{{f.lab}}</button></sc-for>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex; gap:6px;">
+                    <button onClick="{{r.onUp}}" style="width:36px; height:34px; border-radius:11px; border:none; background:#170811; color:#c98ca6; opacity:{{r.upDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;"><i class="ti ti-arrow-up" style="font-size:14px;"></i></button>
+                    <button onClick="{{r.onDown}}" style="width:36px; height:34px; border-radius:11px; border:none; background:#170811; color:#c98ca6; opacity:{{r.downDim}}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;"><i class="ti ti-arrow-down" style="font-size:14px;"></i></button>
+                    <button onClick="{{r.onSwap}}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:34px; border-radius:11px; border:none; background:#170811; color:#e6cfe0; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti ti-repeat" style="font-size:13px;"></i>Swap</button>
+                    <button onClick="{{r.onDel}}" style="width:36px; height:34px; border-radius:11px; border:none; background:#2b1020; color:#ff7fb4; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; padding:0;" style-active="transform:translateY(2px);"><i class="ti ti-trash" style="font-size:14px;"></i></button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <button onClick="{{b.onTray}}" style="display:flex; align-items:center; justify-content:center; gap:8px; background:#241019; border:2px dashed #ff5fa8; border-radius:18px; padding:11px 0; cursor:pointer; background-image:repeating-linear-gradient(115deg, rgba(255,95,168,.07) 0 11px, rgba(255,255,255,0) 11px 24px);" style-active="transform:translateY(2px);">
+            <i class="ti {{b.trayIcon}}" style="color:#ff8fc0; font-size:15px;"></i>
+            <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14.5px; color:#ff8fc0;">{{b.trayLab}}</span>
+          </button>
+          <sc-if value="{{b.trayOpen}}" hint-placeholder-val="{{false}}">
+            <div style="background:#1d0e18; border-radius:18px; padding:11px 10px 12px; display:flex; flex-direction:column; gap:10px; animation:edPop .2s ease both;">
+              <div style="display:flex; gap:6px; overflow-x:auto; padding:1px 1px 3px;">
+                <sc-for list="{{b.cats}}" as="c" hint-placeholder-count="6"><button onClick="{{c.onPick}}" style="flex:none; display:inline-flex; align-items:center; gap:5px; padding:7px 11px; border-radius:11px; border:none; background:{{c.bg}}; box-shadow:{{c.sh}}; color:{{c.fg}}; font-weight:800; font-size:11px; cursor:pointer; white-space:nowrap;" style-active="transform:translateY(2px);"><i class="ti {{c.i}}" style="font-size:12px;"></i>{{c.lab}}</button></sc-for>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px 8px;">
+                <sc-for list="{{b.tools}}" as="t" hint-placeholder-count="8">
+                  <button onClick="{{t.onAdd}}" style="display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:none; padding:0; cursor:pointer;" style-active="transform:translateY(2px);">
+                    <span style="width:40px; height:40px; border-radius:14px; background:{{t.coin}}; box-shadow:0 3px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="color:#fff2f9; font-size:17px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28));"></i></span>
+                    <span style="font-size:9px; font-weight:800; color:#e0bdd2; text-align:center; line-height:1.12;">{{t.t}}</span>
+                    <span style="font-size:8.5px; font-weight:800; color:#7d5468;">{{t.lab}}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="font-size:8.5px; font-weight:800; letter-spacing:1.2px; color:#6f4a5e; margin-top:7px;">HOW IT FEELS</div>
+
+          <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{b.sVoice.bg}};">
+            <button onClick="{{b.sVoice.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+              <span style="width:42px; height:42px; border-radius:14px; background:{{b.sVoice.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-microphone" style="color:{{b.sVoice.ic}}; font-size:19px;"></i></span>
+              <span style="flex:1; min-width:0;">
+                <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Voice &amp; sound</span>
+                <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{b.mixSub}}</span>
+              </span>
+              <i class="ti {{b.sVoice.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+            </button>
+            <sc-if value="{{b.sVoice.open}}" hint-placeholder-val="{{false}}">
+              <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:8px; animation:edPop .2s ease both;">
+                <div style="display:flex; gap:7px;">
+                  <sc-for list="{{b.voices}}" as="v" hint-placeholder-count="3">
+                    <button onClick="{{v.onPick}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);">
+                      <i class="ti {{v.i}}" style="color:{{v.icc}}; font-size:15px;"></i>
+                      <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{v.fg}}; line-height:1;">{{v.n}}</span>
+                      <span style="font-size:9px; font-weight:700; color:{{v.sub}};">{{v.s}}</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="display:flex; gap:4px; background:#150710; border-radius:11px; padding:4px;">
+                  <sc-for list="{{b.talks}}" as="t" hint-placeholder-count="3"><button onClick="{{t.onPick}}" style="flex:1; padding:7px 0; border-radius:8px; border:none; background:{{t.bg}}; color:{{t.fg}}; font-weight:800; font-size:11px; cursor:pointer;">{{t.lab}}</button></sc-for>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
+                  <sc-for list="{{b.sounds}}" as="v" hint-placeholder-count="6">
+                    <button onClick="{{v.onPick}}" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 4px; border-radius:13px; border:none; background:{{v.bg}}; box-shadow:{{v.sh}}; cursor:pointer;" style-active="transform:translateY(2px);"><i class="ti {{v.i}}" style="color:{{v.fg}}; font-size:14px;"></i><span style="font-size:10px; font-weight:800; color:{{v.fg}}; line-height:1;">{{v.n}}</span></button>
+                  </sc-for>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; background:#241019; border-radius:13px; padding:9px 12px;">
+                  <i class="ti ti-volume" style="color:#9a6a86; font-size:14px; flex:none;"></i>
+                  <span style="flex:1; display:flex; align-items:flex-end; gap:5px; height:22px;">
+                    <sc-for list="{{b.bars}}" as="x" hint-placeholder-count="5"><button onClick="{{x.onPick}}" style="flex:1; height:{{x.h}}; border-radius:5px; border:none; background:{{x.bg}}; cursor:pointer; padding:0;"></button></sc-for>
+                  </span>
+                  <span style="font-size:10px; font-weight:800; color:#c98ca6; min-width:34px; text-align:right; flex:none;">{{b.volLab}}</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; background:{{b.sGuide.bg}};">
+            <button onClick="{{b.sGuide.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+              <span style="width:42px; height:42px; border-radius:14px; background:{{b.sGuide.coin}}; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-compass" style="color:{{b.sGuide.ic}}; font-size:19px;"></i></span>
+              <span style="flex:1; min-width:0;">
+                <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1;">Guidance</span>
+                <span style="display:block; font-size:11px; font-weight:700; color:rgba(255,242,249,.66);">{{b.guideSub}}</span>
+              </span>
+              <i class="ti {{b.sGuide.chev}}" style="color:rgba(255,242,249,.72); font-size:17px; flex:none;"></i>
+            </button>
+            <sc-if value="{{b.sGuide.open}}" hint-placeholder-val="{{false}}">
+              <div style="background:#1b0b16; padding:11px 11px 12px; display:flex; flex-direction:column; gap:7px; animation:edPop .2s ease both;">
+                <sc-for list="{{b.guides}}" as="g" hint-placeholder-count="3">
+                  <button onClick="{{g.onPick}}" style="display:flex; align-items:center; gap:10px; width:100%; border:{{g.bd}}; border-radius:13px; padding:9px 11px; background:{{g.bg}}; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                    <i class="ti {{g.i}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                    <span style="flex:1; min-width:0;">
+                      <span style="display:block; font-size:12px; font-weight:800; color:{{g.fg}};">{{g.n}}</span>
+                      <span style="display:block; font-size:9.5px; font-weight:700; color:{{g.sub}};">{{g.s}}</span>
+                    </span>
+                    <i class="ti {{g.check}}" style="color:{{g.icc}}; font-size:15px; flex:none;"></i>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="border-radius:19px; border:2px dashed #6b4258; overflow:hidden; background:#1e0d18;">
+            <button onClick="{{b.sRun.onTap}}" style="display:flex; width:100%; align-items:center; gap:12px; padding:11px 13px; background:none; border:none; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+              <span style="width:38px; height:38px; border-radius:13px; background:#2a1424; display:inline-flex; align-items:center; justify-content:center; flex:none;"><i class="ti ti-flask" style="color:#c9a6ff; font-size:17px;"></i></span>
+              <span style="flex:1; min-width:0;">
+                <span style="display:block; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:#e6cfe0; line-height:1.1;">Advanced</span>
+                <span style="display:block; font-size:10.5px; font-weight:700; color:#8a5f76;">{{b.runSub}}</span>
+              </span>
+              <i class="ti {{b.sRun.chev}}" style="color:#8a5f76; font-size:17px; flex:none;"></i>
+            </button>
+            <sc-if value="{{b.sRun.open}}" hint-placeholder-val="{{false}}">
+              <div style="padding:0 11px 12px; display:flex; flex-direction:column; gap:6px; animation:edPop .2s ease both;">
+                <sc-for list="{{b.toggles}}" as="t" hint-placeholder-count="5">
+                  <button onClick="{{t.onTap}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                    <i class="ti {{t.i}}" style="color:{{t.icc}}; font-size:14px; flex:none;"></i>
+                    <span style="flex:1; min-width:0;">
+                      <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">{{t.n}}</span>
+                      <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">{{t.s}}</span>
+                    </span>
+                    <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{t.trackBg}}; flex:none;"><span style="position:absolute; top:2px; left:{{t.knobX}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                  </button>
+                </sc-for>
+                <button onClick="{{b.onNew}}" style="display:flex; align-items:center; gap:10px; width:100%; background:#241019; border:none; border-radius:13px; padding:9px 11px; cursor:pointer; text-align:left;" style-active="transform:translateY(1px);">
+                  <i class="ti ti-copy" style="color:#ff8fc0; font-size:14px; flex:none;"></i>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-size:11.5px; font-weight:800; color:#e6cfe0;">Keep it as a new stack</span>
+                    <span style="display:block; font-size:9px; font-weight:600; color:#8a5f76;">leaves the original on your shelf</span>
+                  </span>
+                  <span style="position:relative; width:32px; height:18px; border-radius:9px; background:{{b.newTrack}}; flex:none;"><span style="position:absolute; top:2px; left:{{b.newKnob}}; width:14px; height:14px; border-radius:50%; background:#fff2f9; transition:left .16s ease;"></span></span>
+                </button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="flex:none; background:#1d0c17; border-top:2px solid #120409; padding:7px 14px 13px;">
+          <div style="display:flex; align-items:baseline; gap:7px; margin-bottom:2px;">
+            <span style="font-size:8.5px; font-weight:800; letter-spacing:1.2px; color:#6f4a5e;">STRETCH IT</span>
+            <span style="font-size:9.5px; font-weight:700; color:#8a5f76;">slide to any length</span>
+          </div>
+          <div style="display:flex; align-items:flex-end; gap:0; overflow-x:auto; padding-bottom:4px;">
+            <sc-for list="{{b.ticks}}" as="t" hint-placeholder-count="30">
+              <button onClick="{{t.onPick}}" style="flex:none; width:15px; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; padding:0; cursor:pointer;">
+                <span style="width:3px; height:{{t.h}}; border-radius:2px; background:{{t.bg}};"></span>
+                <span style="font-size:8px; font-weight:800; color:{{t.fg}}; height:9px;">{{t.lab}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:6px; padding:12px 0; border-radius:16px; border:2.5px solid #160510; background:#ff5fa8; box-shadow:0 4px 0 #160510; color:#2a1730; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; cursor:pointer;" style-active="transform:translateY(3px); box-shadow:0 1px 0 #160510;"><i class="ti ti-device-floppy" style="font-size:16px;"></i>{{b.saveLab}}</button>
+        </div>
+      </div>
+      <div style="font-size:11px; font-weight:600; color:#9a6a86; margin-top:11px; width:390px; text-wrap:pretty;">No tabs at all — the sit, then <b style="color:#ffc41f;">how it feels</b> as two tinted drawers and one dashed <b style="color:#c9a6ff;">Advanced</b>. Each block shows a proportional bar so length is visible without numbers, and the footer is a <b style="color:#ffc41f;">ruler</b> you scroll to any total.</div>
+    </div>
+
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:880,&quot;height&quot;:1080},&quot;footerOrder&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;save-gear-start&quot;,&quot;gear-left&quot;,&quot;start-right&quot;,&quot;start-left&quot;,&quot;save-start-gear&quot;],&quot;default&quot;:&quot;save-gear-start&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;2b footer buttons&quot;},&quot;scrollHint&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;fade&quot;,&quot;peek&quot;,&quot;arrow&quot;,&quot;dots&quot;],&quot;default&quot;:&quot;fade&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Length chips scroll hint&quot;},&quot;arrowStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;chevron&quot;,&quot;double&quot;,&quot;caret&quot;,&quot;dots&quot;,&quot;hairline&quot;,&quot;grip&quot;,&quot;coin&quot;,&quot;count&quot;,&quot;none&quot;],&quot;default&quot;:&quot;chevron&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Length chips scroll hint&quot;},&quot;tintedSettings&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Settings look&quot;},&quot;catTray&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Add a block&quot;},&quot;perStepExtras&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Blocks&quot;}}">
+class Component extends DCLogic {
+  strip = React.createRef();
+  onStripNext = () => { const el = this.strip.current; if (el) el.scrollBy({ left: 150, behavior: "smooth" }); };
+  onStripScroll = e => {
+    const el = e.target;
+    const start = el.scrollLeft > 6;
+    const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 6;
+    const st = this.state || {};
+    if (start !== st.stripScrolled || end !== st.stripMore) this.setState({ stripScrolled: start, stripMore: end });
+  };
+  renderVals() {
+    const HUE = { restore: "var(--restore)", move: "var(--move)", create: "var(--create)", connect: "var(--connect)", focus: "var(--focus)", nourish: "var(--nourish)", play: "var(--play)" };
+    const pad = n => (n < 10 ? "0" : "") + n;
+    const fmt = m => m < 1 ? Math.round(m * 60) + "s" : (m % 1 ? Math.floor(m) + ":" + pad(Math.round((m % 1) * 60)) : m + " min");
+    const shortF = m => m < 1 ? Math.round(m * 60) + "s" : (m % 1 ? Math.floor(m) + ":" + pad(Math.round((m % 1) * 60)) : m + "m");
+    const DURS = [.5, 1, 1.5, 2, 3, 5, 8, 10, 15];
+    const PRESETS = [3, 5, 8, 10, 15, 20, 30, 45, 60];
+    const BASE = [
+      { i: "ti-eye", t: "look far away", d: "restore", m: 1, f: { voice: true }, desc: "Twenty feet out, past the screen. The eyes lead, the head follows." },
+      { i: "ti-lungs", t: "box breath", d: "restore", m: 2, f: { voice: true, eyes: true }, desc: "In four, hold four, out four. I'll count the first round with you." },
+      { i: "ti-pencil", t: "name the pull", d: "create", m: 1.5, f: { voice: true }, desc: "One word for what you were reaching for. Naming it loosens it." },
+      { i: "ti-walk", t: "step outside", d: "move", m: 3, f: { voice: false }, desc: "Door, air, a few steps. No phone comes with you." },
+      { i: "ti-notebook", t: "one line down", d: "create", m: 1, f: { voice: true }, desc: "A single line about where you are now. Tap when it's down." }
+    ];
+    const CATS = [
+      { k: "breath", lab: "Breath", i: "ti-lungs", d: "restore", tools: [
+        { i: "ti-lungs", t: "box breath", m: 2 }, { i: "ti-wind", t: "long sigh", m: 1 },
+        { i: "ti-arrows-vertical", t: "4-7-8", m: 2 }, { i: "ti-hash", t: "count ten", m: 1.5 },
+        { i: "ti-nose", t: "one nostril", m: 2 }, { i: "ti-wave-sine", t: "match the wave", m: 3 },
+        { i: "ti-player-pause", t: "hold at the top", m: 1 }, { i: "ti-activity-heartbeat", t: "slow to six", m: 3 } ] },
+      { k: "body", lab: "Body", i: "ti-run", d: "move", tools: [
+        { i: "ti-stretching", t: "shoulder roll", m: 1 }, { i: "ti-walk", t: "step outside", m: 3 },
+        { i: "ti-snowflake", t: "cold splash", m: .5 }, { i: "ti-stairs-up", t: "one flight", m: 2 },
+        { i: "ti-yoga", t: "forward fold", m: 1.5 }, { i: "ti-hand-stop", t: "shake it out", m: 1 },
+        { i: "ti-scan-eye", t: "body scan", m: 5 }, { i: "ti-glass-full", t: "glass of water", m: .5 } ] },
+      { k: "mind", lab: "Mind", i: "ti-bulb", d: "focus", tools: [
+        { i: "ti-pencil", t: "name the pull", m: 1.5 }, { i: "ti-target-arrow", t: "the next move", m: 1 },
+        { i: "ti-eye", t: "look far away", m: 1 }, { i: "ti-list-check", t: "brain dump", m: 3 },
+        { i: "ti-question-mark", t: "ask why once", m: 1 }, { i: "ti-clock-hour-3", t: "five-minute start", m: 5 },
+        { i: "ti-eye-off", t: "close the tabs", m: .5 }, { i: "ti-map-pin", t: "where am I", m: 1 } ] },
+      { k: "feel", lab: "Feel", i: "ti-heart", d: "connect", tools: [
+        { i: "ti-heart", t: "say thanks", m: 1 }, { i: "ti-hand-love-you", t: "hand on chest", m: 1.5 },
+        { i: "ti-message-circle", t: "text one person", m: 1 }, { i: "ti-mood-smile", t: "kind sentence", m: 1 },
+        { i: "ti-sparkles", t: "one good thing", m: 1 }, { i: "ti-users", t: "picture a friend", m: 2 } ] },
+      { k: "rest", lab: "Rest", i: "ti-moon", d: "play", tools: [
+        { i: "ti-bell", t: "sit in silence", m: 2 }, { i: "ti-music", t: "one song", m: 4 },
+        { i: "ti-sun", t: "stand in light", m: 2 }, { i: "ti-coffee", t: "slow drink", m: 3 },
+        { i: "ti-cloud", t: "watch nothing", m: 5 }, { i: "ti-bed", t: "lie flat", m: 8 } ] },
+      { k: "log", lab: "Log", i: "ti-notebook", d: "create", tools: [
+        { i: "ti-notebook", t: "one line down", m: 1 }, { i: "ti-camera", t: "photo of now", m: .5 },
+        { i: "ti-mood-heart", t: "rate the mood", m: .5 }, { i: "ti-flag", t: "mark the win", m: .5 },
+        { i: "ti-microphone", t: "voice memo", m: 1.5 }, { i: "ti-checkbox", t: "seal it", m: .5 } ] }
+    ];
+    const TINT = this.props.tintedSettings ?? true;
+    const catTray = this.props.catTray ?? true;
+    const extras = this.props.perStepExtras ?? true;
+
+    const mk = (ns, opts) => {
+      const O = opts || {};
+      const st = this.state || {};
+      const G = (k, dv) => st[ns + k] === undefined ? dv : st[ns + k];
+      const S = o => { const p = {}; Object.keys(o).forEach(k => { p[ns + k] = o[k]; }); this.setState(p); };
+      const list = G("list", O.empty ? [] : BASE);
+      const setL = l => S({ list: l });
+      const total = list.reduce((a, r) => a + r.m, 0);
+      const pick = G("pick", null);
+      const tab = G("tab", "blocks");
+      const openSet = G("set", null);
+      const trayOpen = O.alwaysTray ? true : !!G("tray", false);
+      const swap = G("swap", null);
+      const cat = G("cat", "breath");
+
+      const rows = list.map((r, i) => {
+        const hue = HUE[r.d] || HUE.restore, sel = pick === i, f = r.f || {};
+        const labs = [r.d];
+        if (f.voice !== false) labs.push("voice cue");
+        if (f.hold) labs.push("hold till I tap");
+        if (f.eyes) labs.push("eyes closed");
+        const flagDefs = [
+          { k: "voice", lab: "Voice cue", i: "ti-volume", on: f.voice !== false },
+          { k: "hold", lab: "Hold till I tap", i: "ti-hand-stop", on: !!f.hold },
+          { k: "eyes", lab: "Eyes closed", i: "ti-eye-off", on: !!f.eyes }
+        ];
+        const move = (from, to) => { const L = list.slice(); L.splice(to, 0, L.splice(from, 1)[0]); setL(L); S({ pick: to }); };
+        return {
+          i: r.i, t: r.t, sel, tm: fmt(r.m), sub: labs.join(" \u00b7 "),
+          chev: sel ? "ti-chevron-up" : "ti-chevron-down",
+          coin: "color-mix(in srgb, " + hue + " 90%, #160510)",
+          barBg: hue,
+          pct: Math.max(5, Math.round(r.m / Math.max(total, .5) * 100)) + "%",
+          bg: sel ? "linear-gradient(100deg, color-mix(in srgb, " + hue + " 26%, #1d0e18), color-mix(in srgb, " + hue + " 9%, #1d0e18))" : "#22101c",
+          border: sel ? "2.5px solid " + hue : "2.5px solid #160510",
+          shadow: sel ? "0 5px 0 #160510" : "0 4px 0 #160510",
+          tmInk: sel ? "#fff2f9" : "#c98ca6",
+          subInk: sel ? "rgba(255,242,249,.62)" : "#7d5468",
+          desc: r.desc || labs.join(" \u00b7 "),
+          faceBg: "linear-gradient(100deg, color-mix(in srgb, " + hue + " 84%, #fff), " + hue + ")",
+          ink: "#160510",
+          inkSoft: "rgba(22,5,16,.66)",
+          grip: "rgba(22,5,16,.26)",
+          tCap: r.t.charAt(0).toUpperCase() + r.t.slice(1),
+          ring: sel ? "4.5px solid #ff4fa0" : "4.5px solid #160510",
+          ringShadow: sel
+            ? "0 8px 20px rgba(0,0,0,.5), 0 0 0 5px rgba(255,79,160,.2), 0 0 38px rgba(255,79,160,.5)"
+            : "0 7px 18px rgba(0,0,0,.45), 0 0 28px color-mix(in srgb, " + hue + " 46%, transparent)",
+          upDim: i === 0 ? .3 : 1,
+          downDim: i === list.length - 1 ? .3 : 1,
+          durs: DURS.map(v => ({ lab: shortF(v),
+            bg: v === r.m ? hue : "#170811",
+            fg: v === r.m ? "#160510" : "#c98ca6",
+            sh: v === r.m ? "0 3px 0 rgba(0,0,0,.4)" : "none",
+            onPick: () => { const L = list.slice(); L[i] = Object.assign({}, L[i], { m: v }); setL(L); } })),
+          flags: flagDefs.map(x => ({ lab: x.lab, i: x.i,
+            bg: x.on ? "color-mix(in srgb, " + hue + " 30%, #170811)" : "#170811",
+            fg: x.on ? "#fff2f9" : "#8a5f76",
+            bd: x.on ? "1.5px solid " + hue : "1.5px solid #33192a",
+            onTap: () => { const L = list.slice(); const nf = Object.assign({ voice: true }, L[i].f || {}); nf[x.k] = !x.on; L[i] = Object.assign({}, L[i], { f: nf }); setL(L); } })),
+          onSelect: () => S({ pick: sel ? null : i, tray: false, swap: null }),
+          onUp: () => { if (i > 0) move(i, i - 1); },
+          onDown: () => { if (i < list.length - 1) move(i, i + 1); },
+          onSwap: () => S({ tray: true, swap: i }),
+          onDel: () => { const L = list.slice(); L.splice(i, 1); setL(L); S({ pick: null }); }
+        };
+      });
+
+      const cats = CATS.map(c => { const on = c.k === cat; return { lab: c.lab, i: c.i,
+        bg: on ? HUE[c.d] : "#241019",
+        fg: on ? "#160510" : "#c98ca6",
+        sh: on ? "0 3px 0 rgba(0,0,0,.34)" : "none",
+        onPick: () => S({ cat: c.k }) }; });
+      const catNow = CATS.filter(c => c.k === cat)[0] || CATS[0];
+      const pool = catTray ? catNow.tools : CATS.reduce((a, c) => a.concat(c.tools.slice(0, 2).map(t => Object.assign({ d: c.d }, t))), []);
+      const tools = pool.map(t => ({ i: t.i, t: t.t, lab: shortF(t.m),
+        coin: "color-mix(in srgb, " + (HUE[t.d || catNow.d]) + " 90%, #160510)",
+        onAdd: () => { const L = list.slice();
+          const item = { i: t.i, t: t.t, d: t.d || catNow.d, m: t.m, f: { voice: true } };
+          if (swap !== null && L[swap]) { item.m = L[swap].m; L[swap] = item; } else L.push(item);
+          setL(L); S({ tray: !!O.alwaysTray, swap: null, pick: null }); } }));
+
+      const tabs = [{ k: "blocks", lab: "Order & length", i: "ti-stack-2" }, { k: "set", lab: "How it feels", i: "ti-adjustments-horizontal" }]
+        .map(t => { const on = t.k === tab; return { lab: t.lab, i: t.i,
+          bg: on ? "#2f1526" : "transparent",
+          sh: on ? "0 2px 0 rgba(0,0,0,.35)" : "none",
+          fg: on ? "#fff2f9" : "#8a5f76",
+          onPick: () => S({ tab: t.k }) }; });
+
+      const presets = PRESETS.map(v => { const on = Math.abs(total - v) < .26;
+        return { lab: v + "m",
+          bg: on ? "repeating-linear-gradient(45deg, #ffd45c 0 8px, #ffc41f 8px 16px)" : "rgba(255,242,249,.12)",
+          fg: on ? "#2a1c00" : "#fff2f9",
+          bd: on ? "3px solid #ffc41f" : "3px solid #160510",
+          sh: on ? "0 5px 14px rgba(0,0,0,.45), 0 0 20px rgba(255,196,31,.45)" : "0 4px 10px rgba(0,0,0,.35)",
+          onPick: () => { const k = total > 0 ? v / total : 1; setL(list.map(r => Object.assign({}, r, { m: Math.max(.5, Math.round(r.m * k * 2) / 2) }))); } }; });
+      const ticks = [];
+      for (let m = 1; m <= 45; m++) {
+        const five = m % 5 === 0, on = m <= Math.round(total);
+        ticks.push({ lab: five ? m + "" : "", h: five ? "17px" : "9px",
+          bg: on ? (five ? "#ffc41f" : "#e0a81c") : "#3a1f30",
+          fg: on ? "#ffc41f" : "#5f3d51",
+          onPick: () => { const k = total > 0 ? m / total : 1; setL(list.map(r => Object.assign({}, r, { m: Math.max(.5, Math.round(r.m * k * 2) / 2) }))); } });
+      }
+
+      const sRow = (k, icoHue) => { const on = openSet === k, hue = HUE[icoHue];
+        return { open: on, chev: on ? "ti-chevron-up" : "ti-chevron-right",
+          bg: TINT ? "linear-gradient(100deg, color-mix(in srgb, " + hue + " 46%, #29101f), color-mix(in srgb, " + hue + " 20%, #29101f))" : "#241019",
+          coin: "color-mix(in srgb, " + hue + " 20%, #160510)",
+          ic: hue,
+          onTap: () => S({ set: on ? null : k }) }; };
+
+      const voiceK = G("voice", "ivy");
+      const voices = [{ k: "ivy", n: "Ivy", s: "warm, low", i: "ti-user" }, { k: "nate", n: "Nate", s: "dry, steady", i: "ti-user" }, { k: "none", n: "No voice", s: "sound only", i: "ti-microphone-off" }]
+        .map(v => { const on = v.k === voiceK; return { n: v.n, s: v.s, i: v.i,
+          bg: on ? HUE.connect : "#241019",
+          sh: on ? "0 4px 0 color-mix(in srgb, " + HUE.connect + " 45%, #000)" : "0 4px 0 rgba(0,0,0,.3)",
+          fg: on ? "#160510" : "#e6cfe0",
+          sub: on ? "rgba(22,5,16,.6)" : "#9a6a86",
+          icc: on ? "#160510" : "#c98ca6",
+          onPick: () => S({ voice: v.k }) }; });
+      const talkI = G("talk", 1);
+      const talkLabs = ["silence", "cues only", "full guide"];
+      const talks = talkLabs.map((lab, i) => ({ lab,
+        bg: i === talkI ? "#241019" : "transparent",
+        fg: i === talkI ? "#fff2f9" : "#8a5f76",
+        onPick: () => S({ talk: i }) }));
+      const soundK = G("sound", "brown");
+      const soundDefs = [{ k: "none", n: "None", i: "ti-volume-off" }, { k: "rain", n: "Rain", i: "ti-cloud-rain" }, { k: "brown", n: "Brown noise", i: "ti-wave-saw-tool" }, { k: "ocean", n: "Ocean", i: "ti-ripple" }, { k: "fire", n: "Fireplace", i: "ti-flame" }, { k: "forest", n: "Forest", i: "ti-trees" }];
+      const sounds = soundDefs.map(v => { const on = v.k === soundK; return { n: v.n, i: v.i,
+        bg: on ? HUE.move : "#241019",
+        sh: on ? "0 4px 0 color-mix(in srgb, " + HUE.move + " 45%, #000)" : "0 4px 0 rgba(0,0,0,.3)",
+        fg: on ? "#160510" : "#c98ca6",
+        onPick: () => S({ sound: v.k }) }; });
+      const vol = G("vol", 3);
+      const bars = [1, 2, 3, 4, 5].map(v => ({ h: (7 + v * 4) + "px",
+        bg: v <= vol ? HUE.move : "#2c1522",
+        onPick: () => S({ vol: v }) }));
+      const volLab = ["off", "faint", "quiet", "there", "up", "loud"][vol];
+      const guideK = G("guide", "light");
+      const guides = [
+        { k: "light", n: "Light", s: "she names the step, then leaves", i: "ti-feather" },
+        { k: "normal", n: "Alongside", s: "a nudge partway through each one", i: "ti-compass" },
+        { k: "held", n: "Hand-held", s: "talked through the whole way", i: "ti-hand-love-you" }
+      ].map(g => { const on = g.k === guideK; return { n: g.n, s: g.s, i: g.i,
+        bg: on ? "repeating-linear-gradient(45deg, color-mix(in srgb, " + HUE.focus + " 82%, #fff) 0 9px, " + HUE.focus + " 9px 18px)" : "#170811",
+        bd: on ? "2px solid " + HUE.focus : "2px solid #33192a",
+        fg: on ? "#0c1c26" : "#e6cfe0",
+        sub: on ? "rgba(12,28,38,.66)" : "#8a5f76",
+        icc: on ? "#0c1c26" : HUE.focus,
+        check: on ? "ti-check" : "ti-chevron-right",
+        onPick: () => S({ guide: g.k }) }; });
+      const guideSub = { light: "light \u00b7 she steps back", normal: "alongside you", held: "hand-held all the way" }[guideK];
+      const T = Object.assign({ bell: true, haptic: true, dim: false, log: true, awake: true, skip: true, aloud: false }, G("t", {}));
+      const mkTog = defs => defs.map(t => { const on = !!T[t.k]; return { n: t.n, s: t.s, i: t.i,
+        icc: on ? HUE.nourish : "#6f4a5e",
+        trackBg: on ? HUE.nourish : "#2c1522",
+        knobX: on ? "18px" : "2px",
+        onTap: () => { const o = {}; o[t.k] = !on; S({ t: Object.assign({}, T, o) }); } }; });
+      const toggles = mkTog([
+        { k: "bell", n: "Bell at each step", s: "a soft chime when it changes", i: "ti-bell" },
+        { k: "haptic", n: "Haptic pulse", s: "a buzz instead of the chime", i: "ti-vibration" },
+        { k: "dim", n: "Dim the screen", s: "goes dark between cues", i: "ti-moon" },
+        { k: "log", n: "Log it to my journal", s: "one line after you land", i: "ti-notebook" },
+        { k: "awake", n: "Keep the screen awake", s: "no lock mid-sit", i: "ti-device-mobile" }
+      ]);
+      const advToggles = mkTog([
+        { k: "skip", n: "Let me skip a block", s: "swipe past without breaking the run", i: "ti-player-track-next" },
+        { k: "aloud", n: "Count the last ten", s: "spoken, so you can close your eyes", i: "ti-clock-play" }
+      ]);
+      const isNew = !!G("new", false);
+      const nameNow = G("name", "The comeback");
+      const names = ["The comeback", "Drift catch", "My long one"].map(n => ({ n,
+        bg: n === nameNow ? "#ff5fa8" : "#241019",
+        fg: n === nameNow ? "#2a1730" : "#c98ca6",
+        sh: n === nameNow ? "0 3px 0 color-mix(in srgb, #ff5fa8 45%, #000)" : "none",
+        onPick: () => S({ name: n }) }));
+
+      const onCount = list.length;
+      const scaleTo = v => { const k = total > 0 ? v / total : 1; setL(list.map(r => Object.assign({}, r, { m: Math.max(.5, Math.round(r.m * k * 2) / 2) }))); };
+      const openSheet = !!G("sheet", false);
+      const marks = [5, 15, 30, 45].map(v => ({ lab: v + "", left: (v / 45 * 100) + "%", fg: total >= v - .3 ? "#ffc41f" : "#6f4a5e" }));
+      const tiles = [
+        { v: 5, n: "Quick", s: "one breath deep" }, { v: 10, n: "Normal", s: "the usual sit" },
+        { v: 20, n: "Long", s: "room to wander" }, { v: 30, n: "Deep", s: "no rush at all" }
+      ].map(t => { const on = Math.abs(total - t.v) < .3; return { n: t.n, s: t.s, lab: t.v + " min",
+        bg: on ? "repeating-linear-gradient(45deg, #ffd45c 0 9px, #ffc41f 9px 18px)" : "rgba(255,242,249,.06)",
+        bd: on ? "3px solid #ffc41f" : "3px solid #160510",
+        fg: on ? "#2a1c00" : "#fff2f9", sub: on ? "rgba(42,28,0,.62)" : "#96637e",
+        onPick: () => { scaleTo(t.v); S({ sheet: false }); } }; });
+      return {
+        pct45: Math.min(100, Math.round(total / 45 * 100)) + "%",
+        knob45: "calc(" + Math.min(100, Math.round(total / 45 * 100)) + "% - 13px)",
+        marks, tiles, openSheet, onSheet: () => S({ sheet: !openSheet }),
+        totalLab: (Math.round(total * 10) / 10) + " min",
+        openLab: openSheet ? "ti-chevron-down" : "ti-chevron-up",
+        rows, cats, tools, tabs, presets, ticks, extras,
+        onBlocks: tab === "blocks", onSet: tab === "set",
+        onToggleSet: () => S({ tab: tab === "set" ? "blocks" : "set", pick: null, tray: false }),
+        setBg: tab === "set" ? "#ff4fa0" : "rgba(255,242,249,.1)",
+        setIc: tab === "set" ? "#2a0d1c" : "#ff8fc0",
+        setIcon: tab === "set" ? "ti-stack-2" : "ti-adjustments-horizontal",
+        kicker: "MAKE IT YOURS \u00b7 " + onCount + " BLOCKS",
+        isEmpty: onCount === 0,
+        countLab: onCount === 1 ? "1 block" : onCount + " blocks",
+        totalNum: Math.round(total * 10) / 10,
+        stepCount: onCount + " blocks \u00b7 " + fmt(total),
+        trayShown: trayOpen && !G("collapse", false),
+        trayCollapsed: !!G("collapse", false),
+        collapseIcon: G("collapse", false) ? "ti-chevron-up" : "ti-chevron-down",
+        collapseLab: G("collapse", false) ? "Add blocks" : "Hide",
+        onTrayCollapse: () => S({ collapse: !G("collapse", false) }),
+        trayOpen, trayIcon: trayOpen ? "ti-chevron-up" : "ti-plus",
+        trayLab: swap !== null ? "Add in its place" : "Add a block",
+        onTray: () => S({ tray: !trayOpen, swap: null, pick: trayOpen ? pick : null }),
+        sVoice: sRow("voice", "connect"), sSound: sRow("sound", "move"), sGuide: sRow("guide", "focus"),
+        sRun: sRow("run", "nourish"), sSave: sRow("save", "create"),
+        voices, talks, sounds, bars, volLab, guides, guideSub, toggles, advToggles,
+        voiceSub: (voiceK === "none" ? "no voice" : (voiceK === "ivy" ? "Ivy" : "Nate")) + " \u00b7 " + talkLabs[talkI],
+        soundSub: (soundDefs.filter(s => s.k === soundK)[0] || soundDefs[0]).n.toLowerCase() + " \u00b7 " + volLab,
+        mixSub: (voiceK === "none" ? "no voice" : (voiceK === "ivy" ? "Ivy" : "Nate")) + " \u00b7 " + (soundDefs.filter(s => s.k === soundK)[0] || soundDefs[0]).n.toLowerCase(),
+        runSub: (T.bell ? "bell" : "no bell") + " \u00b7 " + (T.haptic ? "haptics" : "no buzz") + (T.dim ? " \u00b7 dimmed" : ""),
+        saveSub: isNew ? "saving as \u201c" + nameNow + "\u201d" : "replacing this session",
+        isNew, onNew: () => S({ "new": !isNew }), names,
+        newTrack: isNew ? "#ff5fa8" : "#2c1522", newKnob: isNew ? "18px" : "2px",
+        saveLab: isNew ? "Save as \u201c" + nameNow + "\u201d" : "Save my session"
+      };
+    };
+
+    const FO = this.props.footerOrder ?? "save-gear-start";
+    const FMAP = {
+      "save-gear-start": { save: 1, gear: 2, start: 3, fSave: 1, fStart: 1.6 },
+      "start-right": { save: 1, gear: 2, start: 3, fSave: 1, fStart: 1.6 },
+      "start-left": { start: 1, save: 2, gear: 3, fSave: 1, fStart: 1.6 },
+      "gear-left": { gear: 1, save: 2, start: 3, fSave: 1, fStart: 1.6 },
+      "save-start-gear": { save: 1, start: 2, gear: 3, fSave: 1, fStart: 1.35 }
+    };
+    const FM = FMAP[FO] || FMAP["save-gear-start"];
+    const hint = this.props.scrollHint ?? "fade";
+    return { a: mk("a"), b: mk("b"), c: mk("c"), d: mk("d"), e: mk("e"), f: mk("f"), g: mk("g"), h: mk("h", { empty: true, alwaysTray: true }), dark: true, fw: 390, fh: 844,
+      fOrdSave: FM.save, fOrdStart: FM.start, fOrdGear: FM.gear, fSave: FM.fSave, fStart: FM.fStart,
+      stripRef: this.strip, onStripNext: this.onStripNext, onStripScroll: this.onStripScroll,
+      arrow: this.props.arrowStyle ?? "chevron",
+      aNone: (this.props.arrowStyle ?? "chevron") === "none",
+      aChevron: (this.props.arrowStyle ?? "chevron") === "chevron",
+      aDouble: (this.props.arrowStyle ?? "chevron") === "double",
+      aCaret: (this.props.arrowStyle ?? "chevron") === "caret",
+      aDots: (this.props.arrowStyle ?? "chevron") === "dots",
+      aHair: (this.props.arrowStyle ?? "chevron") === "hairline",
+      aCoin: (this.props.arrowStyle ?? "chevron") === "coin",
+      aCount: (this.props.arrowStyle ?? "chevron") === "count",
+      aGrip: (this.props.arrowStyle ?? "chevron") === "grip",
+      moreLab: "+4",
+      stripScrolled: !!(this.state || {}).stripScrolled,
+      stripMore: (this.state || {}).stripMore === undefined ? true : !!this.state.stripMore,
+      hFade: hint === "fade", hArrow: hint === "arrow", hDots: hint === "dots", hPeek: hint === "peek",
+      stripPadRight: hint === "arrow" ? "44px" : (hint === "fade" ? "30px" : "0"),
+      stripMarginRight: hint === "peek" ? "-38px" : "0" };
+  }
+}
+
+</script>
+</body>
+</html>

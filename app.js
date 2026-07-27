@@ -17,7 +17,8 @@
      SEC:JOURNEY-TRAIL   drawJourney + the visible trail UI
      SEC:TIMELINE        tickCharge / pager / recenter / buildPull — THE REGRESSION ZONE — DANGER
      SEC:COCKPIT         expanded tracker ring + stage modes + bookends
-     SEC:TOOLBOX2        the home-scroll Toolbox (frame 20a/20c: Plan + grids + heroes + bento + dose card)
+     SEC:TOOLBOX2        the home-scroll Toolbox (frame 20a/20c/21e: Plan + grids + heroes + bento + dose card w/ per-step times + minute grid)
+     SEC:EDITOR          the full-screen Session Editor overlay (design 2b/4a) — blocks + settings + tool tray; the ONE composer for stacks
      SEC:ONBOARD         onboarding V2 survey
      SEC:STATE           S / fresh() / load() migrations / save() / export-import — DANGER
      SEC:GAME            the game world (openGame …)
@@ -1797,7 +1798,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit,.tf-axis-peek,.tf-axis-proxy";
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -5214,7 +5215,7 @@
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return false;
     if (!tf.classList.contains("tf-onehome") || tf.classList.contains("tf-staged")) return false; // only the calm home faces own the axis; a guided/staged cockpit does not
     if (_paneAnim || (typeof _dragLock !== "undefined" && _dragLock)) return false; // never while a pane settle or a timeline block-drag owns the DOM
-    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov, #sheet.on")) return false; // an overlay above home owns touch
+    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov, .sed-ov, .pk-ov, #sheet.on")) return false; // an overlay above home owns touch
     if (e.target && e.target.closest && e.target.closest(PANE_GUARD)) return false; // buttons/inputs/the circle/doors keep their own taps (the disc = playFirst, doors = their handlers)
     return true;
   }
@@ -5515,11 +5516,15 @@
     { id: "settle",  name: "Settle",  dom: "play",    ti: "ti-mood-smile",      items: ["feelBetter", "body", "t_meditate", "t_patience"] }
   ];
   var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
+  var _tbxMore = false;        // the dose card's "more" minute grid, open/closed. Module-level so an in-place repaint (dose change) keeps it open.
+  var TBX_MINS = [1, 3, 8, 10, 15, 20, 30, 45]; // the 21a minute grid (4-col × 2). The design's own ladder is unreadable (its data script is past the 256KB import cut) — this one brackets the 2/5 fast chips on both sides. Flagged in the handoff.
+  // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
+  function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
   function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet)
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
   }
-  function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; if (d === 2 || d === 5) return d; var it = tbxItem(id); return (it && it.def) || 5; } catch (e) { return 5; } } // guarded read; NO SCHEMA bump (additive S.tools precedent)
+  function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; if (typeof d === "number" && d >= 0.5 && d <= 180) return d; var it = tbxItem(id); return (it && it.def) || 5; } catch (e) { return 5; } } // guarded read; ANY minute the grid offers (was: only the 2/5 fast-path), same additive store, NO SCHEMA bump
   function tbxSetDose(id, m) { try { S.tools = S.tools || {}; S.tools.tbxDose = S.tools.tbxDose || {}; S.tools.tbxDose[id] = m; save(); } catch (e) {} }
   function tbxCustoms() { try { return (S.tools && S.tools.tbxCustom) || []; } catch (e) { return []; } } // user-built stacks (additive list on S.tools; dedicated store so no existing consumer of S.tools.custom/stack breaks — David 2026-07-23 fallback clause)
   function tbxTrackDoms(track) { var seen = []; (track || []).forEach(function (s) { var d = TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom); if (d && seen.indexOf(d) < 0) seen.push(d); }); return seen; } // domains present in a track (for custom tile hue + peek coins); variants carry their own dom (David 2026-07-23)
@@ -5530,11 +5535,12 @@
     return { name: c.name, dom: dom, ti: c.ti || "ti-stack-2", peek: doms.filter(function (d) { return d !== dom; }).slice(0, 2), kicker: "YOUR STACK", def: 5, track: c.track, custom: true };
   }
   function tbxHasEdit(id) { try { return !!(S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id] && S.tools.tbxEdit[id].length); } catch (e) { return false; } }
+  function tbxStep(s) { var o = { k: s.k, d: s.d, med: s.med }; if (s.t) o.t = s.t; if (s.i) o.i = s.i; if (s.dom) o.dom = s.dom; if (s.f) o.f = s.f; return o; } // ONE step-copy idiom: the runner's k/d/med + the Session Editor's ADDITIVE label carriage (t/i/dom/f) when a step has it. runStack ignores the extras.
   function tbxTrack(id) { // the LIVE track for a stack: the user's per-stack edit if one exists, else the item's default track. All consumers (dose card steps, Start, hero launches) read through here so an edit takes effect everywhere. Dose scaling still applies at launch.
-    try { var e = S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id]; if (e && e.length) return e.map(function (s) { return { k: s.k, d: s.d, med: s.med }; }); } catch (er) {}
-    var it = tbxItem(id); return (it && it.track) ? it.track.map(function (s) { return { k: s.k, d: s.d, med: s.med }; }) : [];
+    try { var e = S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id]; if (e && e.length) return e.map(tbxStep); } catch (er) {}
+    var it = tbxItem(id); return (it && it.track) ? it.track.map(tbxStep) : [];
   }
-  function tbxSetEdit(id, t) { try { S.tools = S.tools || {}; S.tools.tbxEdit = S.tools.tbxEdit || {}; S.tools.tbxEdit[id] = (t || []).map(function (s) { return { k: s.k, d: s.d, med: s.med }; }); save(); } catch (e) {} } // additive; NO SCHEMA bump
+  function tbxSetEdit(id, t) { try { S.tools = S.tools || {}; S.tools.tbxEdit = S.tools.tbxEdit || {}; S.tools.tbxEdit[id] = (t || []).map(tbxStep); save(); } catch (e) {} } // additive; NO SCHEMA bump
   function tbxResetEdit(id) { try { if (S.tools && S.tools.tbxEdit) { delete S.tools.tbxEdit[id]; save(); } } catch (e) {} }
   function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(function (s) { return { k: s.k, d: s.d }; }); var f = target / base; return track.map(function (s) { return { k: s.k, d: Math.max(20, Math.round((s.d || 0) * f)) }; }); } // scale step durations proportionally to the chosen dose (2/5 min); floor 20s/step
   function tbxLaunch(id, mins) { // THE LAUNCH CONTRACT (decision 5): identical to the old tiles + logs the tbx id for most-used ordering (decision 6)
@@ -5550,10 +5556,11 @@
     return plan;
   }
   function tbxWhisper() { try { toast(tr("You can edit steps and timing in Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
-  function tbxDerivedSteps(track) { return (track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (m.col || "#63d3c9"), ic: (m.ti || "ti-circle"), t: (m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks (and edited/custom stacks) show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines)
+  function tbxDerivedSteps(track) { return (track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (s.dom ? tbxVar(s.dom) : (m.col || "#63d3c9")), ic: (s.i || m.ti || "ti-circle"), t: (s.t || m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks (and edited/custom stacks) show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines). A step edited in the Session Editor carries its own label/icon/hue, so the preview reads in the editor's words.
+  function tbxTm(sec) { sec = Math.max(0, Math.round(sec || 0)); if (sec < 60) return sec + "s"; var m = sec / 60; return (sec % 60 === 0) ? (m + "m") : (Math.floor(m) + ":" + pad(sec % 60)); } // per-step time column (design 21e: 10.5px 800 tabular) — the scaled duration this step will actually run
   function tbxTile(host, id) { // one grid cell = squircle face + up-to-2 peek coins + domain-hued label; tap → dose card in place
     var it = tbxItem(id); if (!it) return null;
-    var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name));
+    var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name)); cell.setAttribute("data-tbxcell", id);
     var wrap = add(cell, "div", "tbx-face-wrap");
     (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
     var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = tbxLip(tbxVar(it.dom)); add(face, "i", "ti " + it.ti);
@@ -5617,32 +5624,45 @@
     var sq = bento.querySelector('[data-tbxcat="' + catId + '"]'); if (!sq) return;
     var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
   }
-  function tbxBuildDose(id) { // frame 20c: face + hue kicker + name, plain-word steps, 2/5 dose chips + pink Start, PLUS gate row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
+  function tbxBuildDose(id) { // frame 21e: face + hue kicker + name, plain-word steps WITH their scaled times, 2/5 dose chips + "more" minute grid (21a) + pink Start, Plus row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
     var it = tbxItem(id); if (!it) return document.createElement("div"); var d = tbxVar(it.dom);
     var card = document.createElement("div"); card.className = "tbx-dose tbx-open"; card.setAttribute("data-tbxdose", id);
     var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = tbxLip(d); add(fc, "i", "ti " + it.ti);
     var htx = add(head, "div", "tbx-dose-htx"); var k = add(htx, "div", "tbx-dose-kicker", tr(it.kicker)); k.style.color = d; add(htx, "div", "tbx-dose-name", tr(it.name));
-    var steps = (!tbxHasEdit(id) && it.steps) ? it.steps : tbxDerivedSteps(tbxTrack(id)); var sc = add(card, "div", "tbx-dose-steps"); // a hand-authored step script (Caught Scrolling) shows verbatim UNTIL the user edits the stack; then steps re-derive from the live track
-    steps.forEach(function (st) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); });
-    var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips"); var cur = tbxDose(id);
-    [2, 5].forEach(function (m) {
+    var chev = add(head, "button", "tbx-dose-chev"); add(chev, "i", "ti ti-chevron-up"); chev.setAttribute("aria-label", tr("Close")); chev.onclick = function () { var cell = document.querySelector('.tbx [data-tbxcell="' + id + '"]'); if (cell) tbxOpenDose(id, cell); }; // 21e: the chevron folds the preview back into the tile
+    var cur = tbxDose(id), track = tbxTrack(id), scripted = (!tbxHasEdit(id) && it.steps);
+    var steps = scripted ? it.steps : tbxDerivedSteps(track); // a hand-authored step script (Caught Scrolling) shows verbatim UNTIL the user edits the stack; then steps re-derive from the live track
+    var times = scripted ? null : tbxScaleTrack(track, cur).map(function (s) { return tbxTm(s.d); }); // ONLY when the rows are the track 1:1 — a 5-line script over a 2-tool track has no honest per-row time
+    var sc = add(card, "div", "tbx-dose-steps");
+    steps.forEach(function (st, i) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); if (times && times[i]) add(row, "span", "tbx-step-tm", times[i]); });
+    var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips");
+    [2, 5].forEach(function (m) { // the two fast-path chips stay first (David's 2/5 grammar); anything else lives in the grid behind "more"
       var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + " " + tr("min"));
-      if (m === cur) { chip.style.background = d; chip.style.boxShadow = tbxLip(d); }
-      chip.onclick = function () { tbxSetDose(id, m); chips.querySelectorAll(".tbx-chip").forEach(function (ch) { ch.classList.remove("on"); ch.style.background = ""; ch.style.boxShadow = ""; }); chip.classList.add("on"); chip.style.background = d; chip.style.boxShadow = tbxLip(d); }; // re-skin in place, card stays open
+      if (m === cur) { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); } else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
+      chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
     });
-    var start = add(foot, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start"));
+    var more = add(foot, "button", "tbx-more"); add(more, "i", "ti ti-adjustments-horizontal"); add(more, "span", null, tr("more"));
+    if (_tbxMore) { more.style.background = tbxCandy(d); more.style.color = "#160510"; }
+    else if (cur !== 2 && cur !== 5) { more.style.background = "color-mix(in srgb, " + d + " 34%, #180a14)"; more.style.color = "#fff2f9"; } // a grid-chosen dose keeps the row honest when the grid is folded
+    more.onclick = function () { _tbxMore = !_tbxMore; tbxRepaintDose(id); };
+    if (_tbxMore) { // 21a minute grid: tap, never type — the steps above resize live
+      var mg = add(card, "div", "tbx-mgrid"); add(mg, "div", "tbx-mgrid-lbl", tr("YOUR MINUTES · THE STEPS RESIZE ABOVE"));
+      var mrow = add(mg, "div", "tbx-mrow");
+      TBX_MINS.forEach(function (v) { var c = add(mrow, "button", "tbx-mchip", v + tr("m")); if (v === cur) { c.style.background = tbxCandy(d); c.style.color = "#160510"; c.style.boxShadow = tbxLip(d); } else c.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)"; c.onclick = function () { tbxSetDose(id, v); tbxRepaintDose(id); }; });
+    }
+    var start = add(card, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start")); // 21e: Start is the full-width row UNDER the dose row (was inline in the foot)
     start.onclick = function () { try { tbxLaunch(id, tbxDose(id)); } catch (e) {} };
-    var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti ti-lock"); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); add(gate, "span", "tbx-gate-badge", tr("PLUS")); // the PLUS badge stays visible even when TBX_PLUS grants access (it signals the future paywall)
-    gate.onclick = function () { if (TBX_PLUS) tbxEditSteps(id); else tbxWhisper(); }; // THE ONE FLAG: paid → functional (opens the composer); non-paid → whisper toast
+    var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti " + (TBX_PLUS ? "ti-adjustments-horizontal" : "ti-lock")); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); var gr = add(gate, "span", "tbx-gate-r"); add(gr, "span", "tbx-gate-badge", tr("PLUS")); if (TBX_PLUS) add(gr, "i", "ti ti-chevron-right tbx-gate-chev"); // 21f: with Plus the row is a live chevron row into the Session Editor; the PLUS badge stays (it signals the future paywall)
+    gate.onclick = function () { if (TBX_PLUS) tbxEditSteps(id); else tbxWhisper(); }; // THE ONE FLAG: paid → functional (opens the editor); non-paid → whisper toast
     if (tbxHasEdit(id)) { var rst = add(card, "button", "tbx-reset"); add(rst, "span", null, tr("Back to default")); rst.onclick = function () { tbxResetEdit(id); tbxRepaintDose(id); }; } // subtle reset row, only when an edit exists — reverts to the stack's default steps (a registry stack) or its saved track (a custom)
     return card;
   }
-  function tbxEditSteps(id) { // per-stack step/timing edit: opens the EXISTING CapCut session composer (openSessionComposer, via the stackTimeline grammar) seeded with the stack's live track. onSave persists additively to S.tools.tbxEdit[id] and repaints the open dose card live; Begin runs the edited track. NO new editor, no third menu (constitution).
+  function tbxEditSteps(id) { // per-stack step/timing edit: opens the SESSION EDITOR (@SEC:EDITOR) seeded from the stack's live track. Save persists additively to S.tools.tbxEdit[id] (or forks a new custom when "Keep it as a new stack" is on) and repaints the dose card behind it; Start runs the edited track at the chosen dose. Replaced openSessionComposer here 2026-07-27 — one editor, not two.
     var it = tbxItem(id); if (!it) return;
-    openSessionComposer({
-      title: tr(it.name), track: tbxTrack(id), lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Begin session →"),
-      onSave: function (t) { tbxSetEdit(id, t); tbxRepaintDose(id); }, // fires on every edit → persist + reflect in the dose card behind the composer
-      onPlay: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Begin → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
+    sedOpen({
+      id: id, title: it.name, rows: sedRowsFromTrack(tbxTrack(id)),
+      onSave: function (t, asNew) { if (asNew) { tbxSaveCustom(t); return; } tbxSetEdit(id, t); tbxRepaintDose(id); try { toast(tr("Saved.")); } catch (e) {} },
+      onStart: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Start → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
     });
   }
   function tbxRepaintDose(id) { // swap the open dose card for a freshly-built one so an edit/reset shows immediately (single-open; the card carries data-tbxdose)
@@ -5655,10 +5675,11 @@
     var root = cell.closest ? cell.closest(".tbx") : null; if (!root) return;
     var wasOpen = _tbxOpenStack === id;
     var existing = root.querySelector(".tbx-dose"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-    _tbxOpenStack = null;
+    _tbxOpenStack = null; _tbxMore = false;
     if (wasOpen) return;
     var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
     var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
+    try { var cr = cell.getBoundingClientRect(), pr = card.getBoundingClientRect(); card.style.transformOrigin = Math.round(cr.left + cr.width / 2 - pr.left) + "px 0"; } catch (e) {} // 21e: the panel springs open OUT OF the tapped tile's column
   }
   function tbxBuilderTile(host) { // the PINNED 8th tile: same tile mark (54px face / radius 19 / lip) in create-purple with ti-plus + label "Build", no peek coins. Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
@@ -5668,12 +5689,11 @@
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
   }
-  function tbxBuildCustom() { // BUILD flow: the SAME CapCut composer, seeded default, assemble steps/durations → then PLAY it now OR Save it (David 2026-07-23: the Build tile pushed only Save; now it offers both — play-now primary, save secondary). Reuses openSessionComposer (no new editor / third menu).
-    openSessionComposer({
-      title: tr("Build a stack"), track: [{ k: "breathe", d: 120 }], lookup: function (k) { return stackTool(k); }, pool: STACK_POOL_IDS, addDur: 60, poolLabel: tr("Add a tool"), playLabel: tr("Begin session →"),
-      onSave: function () {}, // custom isn't persisted here — play-now persists nothing; Save persists via the named-save path
-      onPlay: function (t) { if (!t || !t.length) return; tbxPlayNow(t); }, // PRIMARY: play the composed track now through the Landing Contract, save nothing
-      secondaryLabel: tr("Save this stack"), onSecondary: function (t) { if (!t || !t.length) return; tbxSaveCustom(t); } // SECONDARY: the unchanged name → tbxCustom persist path
+  function tbxBuildCustom() { // BUILD flow (design 4a = the same editor from empty): the SESSION EDITOR with no rows, the "Nothing in it yet" state and the tool tray already open. Start plays it now without persisting; Save names it into S.tools.tbxCustom.
+    sedOpen({
+      title: "Build a stack", rows: [], pinTray: true,
+      onSave: function (t) { if (t && t.length) tbxSaveCustom(t); }, // the unchanged name → tbxCustom persist path
+      onStart: function (t) { if (t && t.length) tbxPlayNow(t); }    // play the composed track now through the Landing Contract, save nothing
     });
   }
   function tbxPlayNow(track) { // play a freshly composed (UNSAVED) stack immediately via the Landing Contract — same landFromHome/leaveHomeForPlayer + runStack path as tbxLaunch, but no id, no tickTool, no persistence (David 2026-07-23 Build play-now)
@@ -5728,8 +5748,202 @@
     "FOR YOU NOW · MORNING": "СЕЙЧАС ДЛЯ ТЕБЯ · УТРО", "NEXT BLOCK · DEEP WORK": "СЛЕДУЮЩИЙ БЛОК · ФОКУС", "FOR YOU NOW · LATE NIGHT": "СЕЙЧАС ДЛЯ ТЕБЯ · ПОЗДНЯЯ НОЧЬ", "FOR YOU NOW · WINDING DOWN": "СЕЙЧАС ДЛЯ ТЕБЯ · ЗАВЕРШЕНИЕ", "NEXT BLOCK": "СЛЕДУЮЩИЙ БЛОК", "Morning stack": "Утренний стек",
     "name where you went": "назови, куда ушёл", "three slow breaths": "три медленных вдоха", "feel why it matters": "почувствуй, почему это важно", "choose on purpose, staying counts": "выбери осознанно, остаться — это тоже победа", "log the catch": "отметь, что поймал",
     "min": "мин", "Start": "Начать", "inside": "внутри", "Adjust steps & timing": "Настрой шаги и время", "PLUS": "PLUS",
+    "more": "ещё", "m": "м", "Close": "Закрыть", "YOUR MINUTES · THE STEPS RESIZE ABOVE": "ТВОИ МИНУТЫ · ШАГИ ПОДСТРОЯТСЯ ВЫШЕ",
     "Build": "Собрать", "YOUR STACK": "ТВОЙ СТЕК", "Save this stack": "Сохранить стек", "Stack saved.": "Стек сохранён.", "Name your stack": "Назови стек", "My stack": "Мой стек", "Save": "Сохранить", "Back to default": "Вернуть по умолчанию",
     "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "You can edit steps and timing in Plus.": "Редактировать шаги и время можно в Plus."
+  });
+  // @SEC:EDITOR — the full-screen SESSION EDITOR (Claude-Design "Session Editor" frame 4a, Opus-built 2026-07-27). ONE overlay shell, two modes: BLOCKS (candy rows; tap = expand in place → desc + duration rail + flag chips + up/down/Swap/Delete) and SETTINGS (the gear; tinted collapsible cards — ONLY the controls the runner honors, no fake switches). A bottom tool tray (6 categories × 4-col coins) adds a step; BUILD mode = the same editor with an empty list, the dashed "Nothing in it yet" state and the tray PINNED open. REPLACES openSessionComposer for stacks (tbxEditSteps) + the Build tile — no third menu system, this IS the composer now. Design px/hex live in .sed-* (index.html); JS sets only hue-derived values. Child-drain only (ratchet). Rows carry their design label/icon/domain/flags through tbxSetEdit ADDITIVELY, so an edited stack keeps its words in the dose card too.
+  var SED_DURS = [0.5, 1, 1.5, 2, 3, 5, 8, 10, 15]; // the design's DURS rail (minutes)
+  var SED_CATS = [ // the design's 6-category tool tray. sk = the STACK_TOOLS / TBX_VARIANTS id that actually RUNS (design label stays the row title); desc = the design's own line where it wrote one.
+    { k: "breath", lab: "Breath", i: "ti-lungs", d: "restore", tools: [
+      { i: "ti-lungs", t: "box breath", m: 2, sk: "v_box", desc: "In four, hold four, out four. I'll count the first round with you." }, { i: "ti-wind", t: "long sigh", m: 1, sk: "v_exhale" },
+      { i: "ti-arrows-vertical", t: "4-7-8", m: 2, sk: "v_478" }, { i: "ti-hash", t: "count ten", m: 1.5, sk: "breathe" },
+      { i: "ti-nose", t: "one nostril", m: 2, sk: "v_nostril" }, { i: "ti-wave-sine", t: "match the wave", m: 3, sk: "v_coherent" },
+      { i: "ti-player-pause", t: "hold at the top", m: 1, sk: "v_box" }, { i: "ti-activity-heartbeat", t: "slow to six", m: 3, sk: "v_coherent" } ] },
+    { k: "body", lab: "Body", i: "ti-run", d: "move", tools: [
+      { i: "ti-stretching", t: "shoulder roll", m: 1, sk: "stretch" }, { i: "ti-walk", t: "step outside", m: 3, sk: "stretch", desc: "Door, air, a few steps. No phone comes with you." },
+      { i: "ti-snowflake", t: "cold splash", m: 0.5, sk: "stretch" }, { i: "ti-stairs-up", t: "one flight", m: 2, sk: "stretch" },
+      { i: "ti-yoga", t: "forward fold", m: 1.5, sk: "stretch" }, { i: "ti-hand-stop", t: "shake it out", m: 1, sk: "stretch" },
+      { i: "ti-scan-eye", t: "body scan", m: 5, sk: "v_bodyscan" }, { i: "ti-glass-full", t: "glass of water", m: 0.5, sk: "relax" } ] },
+    { k: "mind", lab: "Mind", i: "ti-bulb", d: "focus", tools: [
+      { i: "ti-pencil", t: "name the pull", m: 1.5, sk: "mantra", desc: "One word for what you were reaching for. Naming it loosens it." }, { i: "ti-target-arrow", t: "the next move", m: 1, sk: "mantra" },
+      { i: "ti-eye", t: "look far away", m: 1, sk: "relax", desc: "Twenty feet out, past the screen. The eyes lead, the head follows." }, { i: "ti-list-check", t: "brain dump", m: 3, sk: "mantra" },
+      { i: "ti-question-mark", t: "ask why once", m: 1, sk: "mantra" }, { i: "ti-clock-hour-3", t: "five-minute start", m: 5, sk: "v_noting" },
+      { i: "ti-eye-off", t: "close the tabs", m: 0.5, sk: "relax" }, { i: "ti-map-pin", t: "where am I", m: 1, sk: "v_open" } ] },
+    { k: "feel", lab: "Feel", i: "ti-heart", d: "connect", tools: [
+      { i: "ti-heart", t: "say thanks", m: 1, sk: "gratitude" }, { i: "ti-hand-love-you", t: "hand on chest", m: 1.5, sk: "relax" },
+      { i: "ti-message-circle", t: "text one person", m: 1, sk: "gratitude" }, { i: "ti-mood-smile", t: "kind sentence", m: 1, sk: "v_metta" },
+      { i: "ti-sparkles", t: "one good thing", m: 1, sk: "gratitude" }, { i: "ti-users", t: "picture a friend", m: 2, sk: "v_metta" } ] },
+    { k: "rest", lab: "Rest", i: "ti-moon", d: "play", tools: [
+      { i: "ti-bell", t: "sit in silence", m: 2, sk: "meditate" }, { i: "ti-music", t: "one song", m: 4, sk: "relax" },
+      { i: "ti-sun", t: "stand in light", m: 2, sk: "relax" }, { i: "ti-coffee", t: "slow drink", m: 3, sk: "relax" },
+      { i: "ti-cloud", t: "watch nothing", m: 5, sk: "v_open" }, { i: "ti-bed", t: "lie flat", m: 8, sk: "v_bodyscan" } ] },
+    { k: "log", lab: "Log", i: "ti-notebook", d: "create", tools: [
+      { i: "ti-notebook", t: "one line down", m: 1, sk: "gratitude", desc: "A single line about where you are now. Tap when it's down." }, { i: "ti-camera", t: "photo of now", m: 0.5, sk: "gratitude" },
+      { i: "ti-mood-heart", t: "rate the mood", m: 0.5, sk: "gratitude" }, { i: "ti-flag", t: "mark the win", m: 0.5, sk: "gratitude" },
+      { i: "ti-microphone", t: "voice memo", m: 1.5, sk: "gratitude" }, { i: "ti-checkbox", t: "seal it", m: 0.5, sk: "gratitude" } ] }
+  ];
+  var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: "Calm pad", i: "ti-wave-saw-tool" }, { k: "music", n: "Music", i: "ti-music" }, { k: "forest", n: "Forest", i: "ti-trees" }, { k: "birds", n: "Birds", i: "ti-feather" }, { k: "floating", n: "Floating", i: "ti-cloud" }]; // the REAL bed keys (bedMode/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
+  var SED_VOLLAB = ["off", "faint", "quiet", "there", "up", "loud"];
+  var _sed = null; // the live editor (null = closed). Transient; nothing here is state until Save/Start.
+  function sedFmt(m) { return m < 1 ? Math.round(m * 60) + "s" : (m % 1 ? Math.floor(m) + ":" + pad(Math.round((m % 1) * 60)) : m + " " + tr("min")); }
+  function sedShort(m) { return m < 1 ? Math.round(m * 60) + "s" : (m % 1 ? Math.floor(m) + ":" + pad(Math.round((m % 1) * 60)) : m + "m"); }
+  function sedHue(d) { return "var(--" + (d || "restore") + ")"; }
+  function sedCap(s) { s = s || ""; return s.charAt(0).toUpperCase() + s.slice(1); }
+  function sedTrayTool(sk) { var out = null; SED_CATS.forEach(function (c) { c.tools.forEach(function (t) { if (!out && t.sk === sk) out = t; }); }); return out; } // reverse-lookup: a track step with no design label borrows the first tray tool that runs the same thing
+  function sedRowsFromTrack(track) { // a saved track → editor rows. Design fields (t/i/dom/f/desc) ride through tbxSetEdit when present; otherwise fall back to the tray tool, then the registry tool.
+    return (track || []).map(function (s) {
+      var m = stackTool(s.k) || {}, tt = sedTrayTool(s.k) || {}, dom = s.dom || TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom) || tt.d || "restore";
+      return { k: s.k, med: s.med, m: Math.max(0.5, Math.round(((s.d || m.dur || 60) / 60) * 2) / 2), t: s.t || m.name || tt.t || s.k, i: s.i || m.ti || tt.i || "ti-circle", d: dom, f: s.f || { voice: true }, desc: s.desc || tt.desc || m.desc || "" };
+    });
+  }
+  function sedTrack() { return (_sed ? _sed.rows : []).map(function (r) { return { k: r.k, d: Math.max(20, Math.round(r.m * 60)), med: r.med, t: r.t, i: r.i, dom: r.d, f: r.f }; }); } // the runner reads k/d/med; t/i/dom/f are ADDITIVE label carriage (ignored by runStack)
+  function sedTotal() { var t = 0; (_sed ? _sed.rows : []).forEach(function (r) { t += r.m || 0; }); return Math.round(t * 10) / 10; }
+  function sedClose() { if (_sed && _sed.ov && _sed.ov.parentNode) _sed.ov.parentNode.removeChild(_sed.ov); _sed = null; }
+  function sedOpen(cfg) { // THE ENTRY. cfg = { id, title, rows, pinTray, onSave(track), onStart(track) }
+    cfg = cfg || {}; sedClose();
+    _sed = { id: cfg.id || null, rows: cfg.rows || [], tab: "blocks", pick: null, swap: null, cat: SED_CATS[0].k, tray: !!cfg.pinTray, pinTray: !!cfg.pinTray, collapse: false, set: null, asNew: false, onSave: cfg.onSave, onStart: cfg.onStart };
+    var ov = add(document.body, "div", "sed-ov"); _sed.ov = ov; var root = add(ov, "div", "sed");
+    var head = add(root, "div", "sed-head");
+    var back = add(head, "button", "sed-back"); add(back, "i", "ti ti-chevron-left"); back.setAttribute("aria-label", tr("Back")); back.onclick = function () { sedClose(); };
+    add(head, "span", "sed-title", tr(cfg.title || "Make it yours"));
+    _sed.totalEl = add(head, "span", "sed-total");
+    _sed.body = add(root, "div", "sed-body");
+    var foot = add(root, "div", "sed-foot"); // 2b: the footer sits straight on the plum background — no dark divider band, no length row (lengths live inside each block)
+    var btns = add(foot, "div", "sed-btns");
+    var sv = add(btns, "button", "sed-fsave"); add(sv, "i", "ti ti-device-floppy"); sv.setAttribute("aria-label", tr("Save")); sv.onclick = function () { sedDoSave(); };
+    var st = add(btns, "button", "sed-fstart"); add(st, "i", "ti ti-player-play-filled"); add(st, "span", null, tr("Start")); st.onclick = function () { var t = sedTrack(); if (!t.length) { toast(tr("Nothing in it yet")); return; } sedClose(); if (_sedStart) _sedStart(t); };
+    _sedStart = cfg.onStart || null;
+    _sed.gear = add(btns, "button", "sed-fgear"); _sed.gearIcon = add(_sed.gear, "i", "ti ti-adjustments-horizontal"); _sed.gear.setAttribute("aria-label", tr("Settings"));
+    _sed.gear.onclick = function () { _sed.tab = _sed.tab === "set" ? "blocks" : "set"; _sed.pick = null; if (!_sed.pinTray) _sed.tray = false; sedPaint(); };
+    sedPaint();
+  }
+  var _sedStart = null; // captured before close() clears _sed (Start closes the editor, THEN runs)
+  function sedDoSave() { var t = sedTrack(); if (!t.length) { toast(tr("Nothing in it yet")); return; } var asNew = _sed.asNew, cb = _sed.onSave; sedClose(); if (cb) cb(t, asNew); }
+  function sedMove(from, to) { if (to < 0 || to >= _sed.rows.length) return; var L = _sed.rows; L.splice(to, 0, L.splice(from, 1)[0]); _sed.pick = to; sedPaint(); }
+  function sedPaint() {
+    if (!_sed) return;
+    _sed.totalEl.textContent = sedTotal() + " " + tr("min");
+    var b = _sed.body; while (b.firstChild) b.removeChild(b.firstChild);
+    if (_sed.tab === "blocks") sedPaintBlocks(b); else sedPaintSet(b);
+    _sed.gearIcon.className = "ti " + (_sed.tab === "set" ? "ti-stack-2" : "ti-adjustments-horizontal");
+    _sed.gear.classList.toggle("on", _sed.tab === "set");
+  }
+  function sedPaintBlocks(host) {
+    var list = add(host, "div", "sed-list");
+    _sed.rows.forEach(function (r, i) { sedRow(list, r, i); });
+    if (!_sed.rows.length) { var e = add(list, "div", "sed-empty"); add(e, "i", "ti ti-stack-2"); add(e, "span", null, tr("Nothing in it yet")); }
+    var open = _sed.tray || _sed.pinTray;
+    var addb = add(list, "button", "sed-add"); add(addb, "i", "ti " + (open ? "ti-chevron-down" : "ti-plus")); add(addb, "span", null, tr(_sed.swap != null ? "Add in its place" : "Add a block")); // chevron law (David 2026-07-27, stated twice in the handoff): collapsed = up, expanded = down. The design markup had trayOpen → chevron-up; the law wins so every chevron in the build reads the same way.
+    addb.onclick = function () { _sed.tray = !open; _sed.swap = null; if (!_sed.tray) _sed.pinTray = false; sedPaint(); };
+    if (open) sedPaintTray(list);
+  }
+  function sedRow(host, r, i) {
+    var hue = sedHue(r.d), sel = _sed.pick === i;
+    var wrap = add(host, "div", "sed-row" + (sel ? " sel" : ""));
+    if (!sel) wrap.style.boxShadow = "0 7px 18px rgba(0,0,0,.45), 0 0 28px color-mix(in srgb, " + hue + " 46%, transparent)";
+    var face = add(wrap, "button", "sed-face"); face.style.background = "linear-gradient(100deg, color-mix(in srgb, " + hue + " 84%, #fff), " + hue + ")";
+    add(face, "span", "sed-stripe");
+    var fx = add(face, "span", "sed-fx"); add(fx, "i", "ti " + r.i); add(fx, "span", "sed-rt", sedCap(tr(r.t))); add(fx, "span", "sed-rm", sedFmt(r.m));
+    add(face, "span", "sed-grip");
+    face.onclick = function () { _sed.pick = sel ? null : i; if (!_sed.pinTray) _sed.tray = false; _sed.swap = null; sedPaint(); };
+    if (!sel) return;
+    var body = add(wrap, "div", "sed-rbody");
+    if (r.desc) add(body, "div", "sed-desc", tr(r.desc));
+    var railW = add(body, "div", "sed-railw"), rail = add(railW, "div", "sed-rail");
+    SED_DURS.forEach(function (v) { var on = v === r.m, c = add(rail, "button", "sed-dchip", sedShort(v)); if (on) { c.style.background = tbxCandy(hue); c.style.color = "#160510"; c.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; } else c.style.borderColor = "color-mix(in srgb, " + hue + " 38%, #33192a)"; c.onclick = function () { r.m = v; sedPaint(); }; });
+    var fade = add(railW, "div", "sed-railfade"); add(fade, "i", "ti ti-chevron-right");
+    var flags = add(body, "div", "sed-flags"); r.f = r.f || { voice: true };
+    // PER-STEP FLAGS (design perStepExtras): they PERSIST on the step (additive `f`), and today the runner honors only the app-wide voice switch — the per-step read lands with the runner work. Flagged in the handoff, not hidden.
+    [{ k: "voice", lab: "Voice cue", i: "ti-volume" }, { k: "hold", lab: "Hold till I tap", i: "ti-hand-stop" }, { k: "eyes", lab: "Eyes closed", i: "ti-eye-off" }].forEach(function (x) {
+      var on = x.k === "voice" ? r.f.voice !== false : !!r.f[x.k], c = add(flags, "button", "sed-flag");
+      var fi = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.lab));
+      if (on) { c.style.background = tbxCandy(hue); c.style.color = "#160510"; c.style.borderColor = hue; add(c, "i", "ti ti-check"); }
+      else { c.style.borderColor = "color-mix(in srgb, " + hue + " 34%, #33192a)"; fi.style.color = hue; }
+      c.onclick = function () { r.f[x.k] = !on; sedPaint(); };
+    });
+    var ctl = add(body, "div", "sed-ctl");
+    var up = add(ctl, "button", "sed-sq"); add(up, "i", "ti ti-arrow-up"); up.style.opacity = i === 0 ? ".3" : "1"; up.setAttribute("aria-label", tr("Move up")); up.onclick = function () { sedMove(i, i - 1); };
+    var dn = add(ctl, "button", "sed-sq"); add(dn, "i", "ti ti-arrow-down"); dn.style.opacity = i === _sed.rows.length - 1 ? ".3" : "1"; dn.setAttribute("aria-label", tr("Move down")); dn.onclick = function () { sedMove(i, i + 1); };
+    var sw = add(ctl, "button", "sed-swap"); add(sw, "i", "ti ti-repeat"); add(sw, "span", null, tr("Swap")); sw.onclick = function () { _sed.tray = true; _sed.collapse = false; _sed.swap = i; sedPaint(); };
+    var dl = add(ctl, "button", "sed-del"); add(dl, "i", "ti ti-trash"); dl.setAttribute("aria-label", tr("Delete")); dl.onclick = function () { _sed.rows.splice(i, 1); _sed.pick = null; sedPaint(); };
+  }
+  function sedSetCard(host, key, hueTok, icon, name, sub, dashed) { // one collapsible tinted settings card; returns its open body (or null when collapsed)
+    var hue = sedHue(hueTok), on = _sed.set === key, card = add(host, "div", "sed-card" + (dashed ? " dash" : ""));
+    if (!dashed) card.style.background = "linear-gradient(100deg, color-mix(in srgb, " + hue + " 46%, #29101f), color-mix(in srgb, " + hue + " 20%, #29101f))";
+    var b = add(card, "button", "sed-cardh");
+    var coin = add(b, "span", "sed-cardcoin"); coin.style.background = dashed ? "#2a1424" : "color-mix(in srgb, " + hue + " 20%, #160510)";
+    var ci = add(coin, "i", "ti " + icon); ci.style.color = dashed ? "#c9a6ff" : hue;
+    var tx = add(b, "span", "sed-cardtx"); add(tx, "span", "sed-cardn", tr(name)); add(tx, "span", "sed-cards", sub);
+    add(b, "i", "ti " + (on ? "ti-chevron-down" : "ti-chevron-up") + " sed-cardchev"); // 18a backport: collapsed = up, expanded = down
+    b.onclick = function () { _sed.set = on ? null : key; sedPaint(); };
+    return on ? add(card, "div", "sed-cardb") : null;
+  }
+  function sedVoices() { var ru = curLang() === "ru"; return ru ? [{ k: "izo", n: "izo", s: "warm, low" }, { k: "aida", n: "Aida", s: "bright, close" }, { k: "none", n: "No voice", s: "sound only" }] : [{ k: "dave", n: "Dave", s: "warm, low" }, { k: "millie", n: "Millie", s: "bright, close" }, { k: "none", n: "No voice", s: "sound only" }]; }
+  function sedVoiceKey() { if (S.voice === false) return "none"; return (curLang() === "ru") ? ((S.ruVoice === "aida") ? "aida" : "izo") : ((S.voicePick === "millie") ? "millie" : "dave"); }
+  function sedSetVoiceKey(k) { if (k === "none") { S.voice = false; try { TTS.stop(); } catch (e) {} } else { S.voice = true; try { if (curLang() === "ru") TTS.setRuVoice(k); else TTS.setVoice(k); } catch (e) {} } save(); }
+  function sedPaintSet(host) { // ONLY the controls the runner honors: the app's real voice pick (@SEC:TTS), its real background bed + bg volume (@SEC:AUDIO), and save-as-new. The design's talk-amount / guidance / while-it-runs switches have nothing behind them yet, so they are NOT drawn (no fake toggles).
+    var wrap = add(host, "div", "sed-set");
+    var vk = sedVoiceKey(), vlist = sedVoices(), vnow = vlist.filter(function (v) { return v.k === vk; })[0] || vlist[0];
+    var vb = sedSetCard(wrap, "voice", "connect", "ti-microphone", "Voice", tr(vnow.n));
+    if (vb) { var vr = add(vb, "div", "sed-vrow"); vlist.forEach(function (v) { var on = v.k === vk, c = add(vr, "button", "sed-vcard"); var vi = add(c, "i", "ti " + (v.k === "none" ? "ti-microphone-off" : "ti-user")); add(c, "span", "sed-vn", tr(v.n)); add(c, "span", "sed-vs", tr(v.s)); if (on) { c.style.background = tbxCandy(sedHue("connect")); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("connect") + " 45%, #000)"; c.classList.add("on"); } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("connect") + " 34%, #33192a)"; vi.style.color = sedHue("connect"); } c.onclick = function () { sedSetVoiceKey(v.k); sedPaint(); }; }); }
+    var bed = (S.audio && S.audio.bed) || "pad", bnow = SED_BEDS.filter(function (x) { return x.k === bed; })[0] || SED_BEDS[1];
+    var vol = Math.max(0, Math.min(5, Math.round(((S.audio && S.audio.bg != null ? S.audio.bg : 1)) * 5)));
+    var sb = sedSetCard(wrap, "sound", "move", "ti-volume", "Sound", tr(bnow.n) + " · " + tr(SED_VOLLAB[vol]));
+    if (sb) {
+      var g = add(sb, "div", "sed-sgrid");
+      SED_BEDS.forEach(function (x) { var on = x.k === bed, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = "#160510"; c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, #000)"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, #33192a)"; si.style.color = sedHue("move"); } c.onclick = function () { S.audio = S.audio || { voice: 1, bg: 1 }; S.audio.bed = x.k; save(); sedPaint(); }; });
+      var vr2 = add(sb, "div", "sed-vol"); add(vr2, "i", "ti ti-volume");
+      var bars = add(vr2, "span", "sed-bars");
+      [1, 2, 3, 4, 5].forEach(function (v) { var bq = add(bars, "button", "sed-bar"); bq.style.height = (7 + v * 4) + "px"; bq.style.background = v <= vol ? sedHue("move") : "#2c1522"; bq.setAttribute("aria-label", tr(SED_VOLLAB[v])); bq.onclick = function () { setAudioVol("bg", v / 5); save(); sedPaint(); }; });
+      add(vr2, "span", "sed-vollab", tr(SED_VOLLAB[vol]));
+    }
+    var ab = sedSetCard(wrap, "save", "create", "ti-flask", "Advanced", _sed.asNew ? tr("saving as a new stack") : tr("replacing this session"), true);
+    if (ab) {
+      var nb = add(ab, "button", "sed-trow");
+      var ni = add(nb, "i", "ti ti-copy"); ni.style.color = "#ff8fc0";
+      var ntx = add(nb, "span", "sed-cardtx"); add(ntx, "span", "sed-trown", tr("Keep it as a new stack")); add(ntx, "span", "sed-trows", tr("leaves the original on your shelf"));
+      var trk = add(nb, "span", "sed-switch"); trk.style.background = _sed.asNew ? "#ff5fa8" : "#2c1522"; var knob = add(trk, "span", "sed-knob"); knob.style.left = _sed.asNew ? "18px" : "2px";
+      nb.onclick = function () { _sed.asNew = !_sed.asNew; sedPaint(); };
+    }
+  }
+  function sedPaintTray(parent) { // 2b: the tray is IN FLOW right under the dashed Add-a-block row (not a bottom sheet) — the footer stays the three buttons on plum
+    var host = add(parent, "div", "sed-tray");
+    var chips = add(host, "div", "sed-catrail");
+    SED_CATS.forEach(function (c) { var on = c.k === _sed.cat, b = add(chips, "button", "sed-catchip"); var ci = add(b, "i", "ti " + c.i); add(b, "span", null, tr(c.lab)); if (on) { b.style.background = tbxCandy(sedHue(c.d)); b.style.color = "#160510"; b.style.boxShadow = "0 3px 0 rgba(0,0,0,.34)"; } else { b.style.borderColor = "color-mix(in srgb, " + sedHue(c.d) + " 40%, #33192a)"; ci.style.color = sedHue(c.d); } b.onclick = function () { _sed.cat = c.k; sedPaint(); }; });
+    var cat = SED_CATS.filter(function (c) { return c.k === _sed.cat; })[0] || SED_CATS[0];
+    var grid = add(host, "div", "sed-toolgrid");
+    cat.tools.forEach(function (t) {
+      var b = add(grid, "button", "sed-tool"); var coin = add(b, "span", "sed-toolcoin"); coin.style.background = "color-mix(in srgb, " + sedHue(cat.d) + " 90%, #160510)"; add(coin, "i", "ti " + t.i);
+      add(b, "span", "sed-tooln", tr(t.t)); add(b, "span", "sed-toolm", sedShort(t.m));
+      b.onclick = function () {
+        var row = { k: t.sk, m: t.m, t: t.t, i: t.i, d: cat.d, f: { voice: true }, desc: t.desc || "" };
+        if (_sed.swap != null && _sed.rows[_sed.swap]) { row.m = _sed.rows[_sed.swap].m; _sed.rows[_sed.swap] = row; } else _sed.rows.push(row);
+        _sed.swap = null; _sed.pick = null; if (!_sed.pinTray) _sed.tray = false;
+        sedPaint();
+      };
+    });
+  }
+  Object.assign(I18N.ru, { // SESSION EDITOR strings (B4 law: EN source + RU dict, same commit).
+    "Make it yours": "Настрой под себя", "Build a stack": "Собери стек", "Nothing in it yet": "Пока пусто", "Swap": "Заменить", "Delete": "Удалить", "Move up": "Выше", "Move down": "Ниже", "Settings": "Настройки", "Back": "Назад",
+    "Add a block": "Добавить блок", "Add in its place": "Заменить этот", "Saved.": "Сохранено.",
+    "Voice cue": "Голосовая подсказка", "Hold till I tap": "Держать до касания", "Eyes closed": "Глаза закрыты",
+    "Voice": "Голос", "Sound": "Звук", "Advanced": "Дополнительно", "No voice": "Без голоса", "sound only": "только звук", "warm, low": "тёплый, низкий", "bright, close": "яркий, близкий",
+    "None": "Нет", "Calm pad": "Спокойный фон", "Music": "Музыка", "Forest": "Лес", "Birds": "Птицы", "Floating": "Парение",
+    "off": "выкл", "faint": "еле слышно", "quiet": "тихо", "there": "заметно", "up": "громче", "loud": "громко",
+    "Keep it as a new stack": "Сохранить как новый стек", "leaves the original on your shelf": "оригинал останется на полке", "saving as a new stack": "сохраню как новый стек", "replacing this session": "заменю эту сессию",
+    "Breath": "Дыхание", "Feel": "Чувства", "Rest": "Отдых", "Log": "Запись",
+    "box breath": "квадратное дыхание", "long sigh": "долгий выдох", "4-7-8": "4-7-8", "count ten": "счёт до десяти", "one nostril": "одна ноздря", "match the wave": "поймай волну", "hold at the top": "задержка вверху", "slow to six": "замедлись до шести",
+    "shoulder roll": "круги плечами", "step outside": "выйди на улицу", "cold splash": "холодная вода", "one flight": "один пролёт", "forward fold": "наклон вперёд", "shake it out": "стряхни", "body scan": "скан тела", "glass of water": "стакан воды",
+    "name the pull": "назови тягу", "the next move": "следующий шаг", "look far away": "посмотри вдаль", "brain dump": "выгрузи мысли", "ask why once": "спроси почему", "five-minute start": "старт на пять минут", "close the tabs": "закрой вкладки", "where am I": "где я",
+    "say thanks": "скажи спасибо", "hand on chest": "ладонь на грудь", "text one person": "напиши одному", "kind sentence": "добрая фраза", "one good thing": "одно хорошее", "picture a friend": "представь друга",
+    "sit in silence": "посиди в тишине", "one song": "одна песня", "stand in light": "постой на свету", "slow drink": "медленный глоток", "watch nothing": "смотри в никуда", "lie flat": "ляг ровно",
+    "one line down": "одна строка", "photo of now": "фото сейчас", "rate the mood": "оцени настроение", "mark the win": "отметь победу", "voice memo": "голосовая заметка", "seal it": "закрепи",
+    "In four, hold four, out four. I'll count the first round with you.": "На четыре, держи четыре, выдох на четыре. Первый круг посчитаю с тобой.",
+    "Door, air, a few steps. No phone comes with you.": "Дверь, воздух, пара шагов. Телефон остаётся.",
+    "One word for what you were reaching for. Naming it loosens it.": "Одно слово о том, к чему ты тянулся. Назвал — отпустило.",
+    "Twenty feet out, past the screen. The eyes lead, the head follows.": "Метров на шесть вдаль, мимо экрана. Глаза ведут, голова следом.",
+    "A single line about where you are now. Tap when it's down.": "Одна строка о том, где ты сейчас. Коснись, когда записал."
   });
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====

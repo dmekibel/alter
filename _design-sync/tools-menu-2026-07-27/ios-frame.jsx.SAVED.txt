@@ -1,0 +1,1 @@
+Saved separately by DesignSync import 2026-07-27 — the real ios-frame.jsx content was written to ios-frame.jsx in this folder (see that file). This marker exists only because the import happened in two steps.
