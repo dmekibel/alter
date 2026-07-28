@@ -1736,17 +1736,18 @@
   .tbx{ --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --play:#ffc83d; --restore:#2ab8c4; --upkeep:#7f9bc4; display:flex; flex-direction:column; align-items:stretch; gap:12px; width:100%; padding:0 0 20px; font-family:"Jost",sans-serif; } /* TOOLBOX-UP (David 2026-07-23): top padding 6px→0 so the first tile row sits as high as possible in the ground zone (paired with .tfw-ground margin-top pull). */
   .tbx *{ box-sizing:border-box; }
   .tbx-planwrap{ display:flex; justify-content:center; }
-  .tbx-plan{ display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:14px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background-color:#8F55DE; position:relative; top:-3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .tbx-plan i{ font-size:16px; color:#e8ddff; }
-  .tbx-plan span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; color:#e8ddff; white-space:nowrap; }
+  /* FP3 §4: home idle carries exactly ONE button under the sub-line — Plan my day, violet #8a5cf0 / r15 / 0 4px 0 ink / #fff2f9 Baloo 15px. */
+  .tbx-plan{ display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background-color:#8a5cf0; position:relative; top:-3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tbx-plan i{ font-size:17px; color:#fff2f9; }
+  .tbx-plan span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; white-space:nowrap; }
   .tbx-plan:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
   /* TILE MARK — bigger + fidelity fix (David 2026-07-23 device "the stack peek looks broken; make them a bit bigger"). Rendered-vs-rendered diff of the canvas (frame 20a) vs the app found: geometry (offsets/sizes/radius) was pixel-identical, but the COIN Z-ORDER was reversed. Canvas telescopes big-coin-in-FRONT (coin1 z3 > coin2 z2, both behind face) → tight nested slivers; the app had both coins z-index:1 so DOM order painted the SMALLER coin2 in front of the bigger coin1 → the two coins splayed apart = the "messy fan". FIX: face z3 > coin1 z2 > coin2 z1 (mirror the canvas). SCALE: base numbers = canvas geometry × (54/46 ≈ 1.174) → face 54, track 64, coins 46/38, radius 19, icon 23, label 11, offsets scaled to preserve the exact visible-overhang proportion. `--tun-tbx-tile` (default 1) multiplies every number so David tunes the whole mark from one var (set on :root via the tuner; cleared → 1 = these locked numbers). */
   .tbx-grid{ display:grid; grid-template-columns:repeat(4, calc(64px * var(--tun-tbx-tile, 1))); justify-content:center; gap:calc(16px * var(--tun-tbx-tile, 1)) calc(14px * var(--tun-tbx-tile, 1)); }
   .tbx-grid-main{ padding:6px 0; }
   .tbx-cell{ display:flex; flex-direction:column; align-items:center; gap:calc(7px * var(--tun-tbx-tile, 1)); width:calc(64px * var(--tun-tbx-tile, 1)); background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-face-wrap{ position:relative; width:calc(54px * var(--tun-tbx-tile, 1)); height:calc(54px * var(--tun-tbx-tile, 1)); }
-  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); border:2.5px solid #160510; box-shadow:0 4px 0 #160510; display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */ /* FIX PASS 2 E (design 2026-07-28): the face card is a HUE face (100° candy gradient, painted in JS) behind an INK outline + hard ink sticker — borderless soft-shadow cards were the miss. Shards (.tbx-coin) stay as they are: "shards are right". */
-  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#160510; } /* FIX PASS 2 F: ink-on-hue — never white on a hue fill */
+  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); border:none; box-shadow:0 3px 0 rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */ /* home-idle-ref.jpeg (David's own design photo) IS the law for this component: BORDERLESS soft deep tiles, white glyph, subtle dark drop. The deep per-domain fill is painted by tbxFaceFill. NO ink outline here — David 2026-07-28: "why the fuck would you add black outlines to the tools on the homepage when it was already good?" FIX PASS 2 E and FIX PASS 3 item 7 both put a 2.5px #160510 border on these faces; both were wrong, they contradict his reference AND the locked launcher-tile language (real fill, white icon, soft extrude). Do not re-add it. The WALL fan tiles are a different component and DO keep their ink borders. Shards (.tbx-coin) stay. */
+  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#fff2f9; } /* white reads on the DEEP fill; the ink-on-hue law governs BRIGHT hue fills, which these no longer are */
   .tbx-coin{ position:absolute; border-radius:calc(19px * var(--tun-tbx-tile, 1)); }
   .tbx-coin1{ width:calc(46px * var(--tun-tbx-tile, 1)); height:calc(46px * var(--tun-tbx-tile, 1)); top:calc(-2px * var(--tun-tbx-tile, 1)); left:calc(-5px * var(--tun-tbx-tile, 1)); z-index:2; } /* the BIGGER peek coin — z2, paints in FRONT of coin2 (canvas telescope) */
   .tbx-coin2{ width:calc(38px * var(--tun-tbx-tile, 1)); height:calc(38px * var(--tun-tbx-tile, 1)); top:calc(-3px * var(--tun-tbx-tile, 1)); left:calc(-8px * var(--tun-tbx-tile, 1)); z-index:1; } /* the smaller/outer coin — z1, behind coin1 */
@@ -1938,28 +1939,26 @@
   .pk-wall{ position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); animation:ovFade var(--dur-micro) var(--ease-settle) both; }
   .pk-head{ flex:none; padding:max(56px, calc(env(safe-area-inset-top,0px) + 14px)) 22px 12px; display:flex; align-items:center; gap:12px; }
   .pk-headtx{ flex:1; min-width:0; }
-  .pk-back{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; } /* the wall's way OUT — 18a has no close on the wall, but this picker replaces a dismissible overlay, so backing out must exist (and leaves zero litter: nothing is written until Start) */
+  .pk-back{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; background:rgba(255,242,249,.05); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; } /* the wall's way OUT — 18a has no close on the wall, but this picker replaces a dismissible overlay, so backing out must exist (and leaves zero litter: nothing is written until Start) */
   .pk-back i{ font-size:19px; }
-  .pk-back:active{ transform:translateY(2px); }
+  .pk-back:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; } /* FP4 6: the wall back coin is a CHIP now — ink border + 3px sticker that collapses under the press law (was the ghost recipe) */
   .pk-kick{ display:block; font-size:11px; font-weight:800; letter-spacing:1.5px; color:#ff8fc0; }
   .pk-title{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:30px; color:#fff2f9; line-height:1.05; }
   .pk-body{ flex:1; min-height:0; overflow-y:auto; padding:0 22px 12px; display:flex; flex-direction:column; gap:16px; }
   .pk-fgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
   .pk-folder{ display:flex; flex-direction:column; gap:9px; padding:11px 11px 12px; border-radius:20px; background:#1e0b18; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-folder:active{ transform:translateY(2px); }
-  /* ===== THE DOMAIN TILE — ROUND 3 (David's own 18a-picker PNG is canonical on STRUCTURE and OVERRIDES FIX PASS 1 §4 + FIX PASS 2 §A here): the tile is ONE button; inside it a 3×2 grid of FLAT tight coins (no shards, no fan — those stay on the folder-sheet bundles and the queue deck), then a name row along the bottom INSIDE the tile: domain glyph in the hue · name in #fff2f9 · count on the right. FIX PASS 2's MATERIAL laws survive intact and the PNG obeys them: hue candy face, 2.5px ink outline, hard ink sticker, INK glyph, no blooms. SELECTION is the only legal hue border: a tile holding ≥1 queued pick turns its edge pink, and so does each picked coin (plus a diagonal gloss streak). ===== */
-  .pk-ftile{ display:flex; flex-direction:column; width:100%; padding:10px; border-radius:15px; border:3px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
-  .pk-ftile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (PNG: Move + Focus): the ONE place a hue edge is legal */
-  .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; border:2.5px solid #160510; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  /* ===== THE DOMAIN TILE — FIX PASS 4 (2026-07-28 13:30). The design side reviewed the 13:22 build and REJECTED 18a-picker.png's own structure, so FP4 wins over the PNG: the tile face is ONLY a 2x2 FAN of four mini sheets on the wash (fanned, so it reads as stickers rather than a grid), and the name goes back CENTERED UNDER the tile in its hue. Counts are gone everywhere on the wall. What survives from earlier passes: the shell (12% wash on #241022, 3px ink, 0 4px 0, r15, pad 10), the mini material (pkCandy 100% gradient face, 2.5px ink, 0 3px 0 ink sticker, r11, INK glyph — "ink-on-hue landed"), and the selection states (pink ring on the tile + on the picked mini, with the diagonal gloss). ===== */
+  .pk-fcell{ display:flex; flex-direction:column; width:100%; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-ftile{ display:flex; flex-direction:column; padding:10px; border-radius:15px; border:3px solid #160510; box-shadow:0 4px 0 #160510; }
+  .pk-fcell:active .pk-ftile{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION: the ONE place a hue edge is legal */
+  .pk-fname{ display:block; margin-top:7px; text-align:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; line-height:1.1; }
+  .pk-mini{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:3px; }
+  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; border:2.5px solid #160510; overflow:hidden; display:flex; align-items:center; justify-content:center; } /* the fan angle is set per-sheet in JS (PK_FAN) */
   .pk-mini .pk-face i{ font-size:15px; color:#160510; position:relative; z-index:1; } /* ICON IS INK. Never white, never a tint. */
   .pk-mini .pk-face.on{ border-color:#ff4fa0; } /* the picked activity inside the folder */
-  .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the PNG's diagonal shine on a picked coin */
-  .pk-fnrow{ display:flex; align-items:center; gap:6px; margin-top:9px; }
-  .pk-fnrow > i{ flex:none; font-size:14px; }
-  .pk-fnm{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.05; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pk-fct{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; }
+  .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the diagonal shine on a picked coin */
   .pk-frow{ display:flex; align-items:center; gap:6px; }
   .pk-frow > i{ font-size:15px; flex:none; }
   .pk-seclbl{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#96637e; }
@@ -2135,6 +2134,22 @@
   #trackerFull .tf-grab::before{ content:""; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:#5a4a64; }
   .tf-close{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:50%; transform:translateX(-50%); width:46px; height:30px; border-radius:0 0 14px 14px; background:transparent; border:none; color:#7a5870; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:4; } /* above the tf-grab drag zone so the chevron tap still closes */
   .tf-stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; gap:0; }
+  /* ===== FP3 (2a-player-idle-v2 PNG) — THE HOME IDLE FACE ===== */
+  .tf-datekick{ display:none; font-family:"Jost",sans-serif; font:800 17px "Jost",sans-serif; letter-spacing:2.8px; color:#e8c7d8; text-align:center; }
+  #trackerFull.tf-home.st-idle .tf-datekick{ display:block; order:-1; margin-bottom:14px; } /* §1: nothing else above the circle — .tf-say / .tf-sf are already display:none on .tf-onehome */
+  #trackerFull.tf-home.st-idle .tf-verdict{ display:block; max-width:78vw; margin:6px auto 0; text-align:center; font-size:15px; font-weight:600; line-height:1.35; color:#b98ba3; letter-spacing:0; text-transform:none; } /* the sub-line wraps to two lines in the PNG — inline-flex could not wrap */
+  .tf-earlypill{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 13px; border-radius:12px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e8c7d8; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* §2a: the PNG's tiny ghost mini-pill — start the next block early. Ghost recipe, no fill, no bloom. */
+  #trackerFull.tf-home.st-idle .tf-earlypill{ order:3; } /* the stage is order-driven on the idle home (ring 0 · title 1 · sub-line 2) — the pill must land AFTER the sub-line, not above the circle */
+  .tf-earlypill i{ font-size:12px; }
+  .tf-earlypill:active{ transform:translateY(2px); }
+  /* §2b — the NEXT block is UP: the disc wears that activity (hue + FP3 stripe overlay + its glyph in ink), and the title names it. */
+  #trackerFull.tf-home.st-idle.st-upnext .tf-tile{ border:3px solid #160510 !important; box-shadow:0 0 0 7px #2a1730 !important; font-size:70px; }
+  #trackerFull.tf-home.st-idle.st-upnext .tf-tile i{ margin-left:0; }
+  #trackerFull.tf-home.st-idle.st-upnext #tfTitle{ font-family:"Baloo 2",sans-serif; font-size:34px; font-weight:800; color:#fff2f9; }
+  /* §3: the catch-up trio is re-housed as a card ON TOP of the idle home — it no longer REPLACES the face. Handlers/write-paths unchanged. */
+  .tf-catchup{ position:absolute; left:16px; right:16px; bottom:calc(env(safe-area-inset-bottom,0px) + 22px); z-index:8; display:flex; flex-direction:column; gap:9px; padding:14px; border-radius:20px; border:2.5px solid #160510; background:#241328; box-shadow:0 6px 0 #160510, 0 14px 30px rgba(0,0,0,.5); animation:edPop .18s ease both; }
+  .tf-catchup .tf-cul{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; line-height:1.15; }
+  .tf-catchup .tf-cus{ font-size:12.5px; font-weight:600; color:#b98ba3; margin-top:-4px; }
   /* ===== COCKPIT STAGE (CKPT-1, David 2026-06-28): #trackerFull.tf-staged shrinks the ring to a top-LEFT corner puck (still a LIVE mini-tracker) and hands the freed area to #tfStageBody. Without .tf-staged the layout is byte-identical to today. Pure class toggle on already-laid-out elements — no JS geometry, animates for free, never re-measures the FLIP pairs (ALL ids unchanged). Reuses .tf-chip/.tf-b material — NO new colors/neon/glow/white. */
   #tfStageBody{ display:none; }
   #trackerFull.tf-staged .tf-stage{ flex:none; flex-direction:row; align-items:center; justify-content:flex-start; gap:12px; }
@@ -3367,6 +3382,7 @@
     <div class="tf-sf" id="sfReadout"></div><!-- B: live Soul Force readout (top-center), updated by renderTrackerFull -->
     <div class="tf-say" id="tfSay"></div><!-- the guardian's continuity heartbeat: one line proving it remembers you, on every open (soul-layer seam #1) -->
     <div class="tf-stage">
+      <div class="tf-datekick" id="tfDateKick"></div><!-- FP3 §1: the date kicker, the ONLY thing between the story strip and the circle on the home idle face -->
       <div class="tf-ring" id="tfRing"><!-- conic green reward band (set in JS) hugging a STRIPED activity tile = #14 album-in-reward-ring -->
         <div class="tf-tile" id="tfTile"><i class="ti ti-brain"></i></div>
         <div class="tf-endpip"></div><!-- RUN-1 mock 3: block-end notch at 12 o'clock -->
@@ -3418,6 +3434,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1231"></script>
+  <script src="app.js?v=1235"></script>
 </body>
 </html>

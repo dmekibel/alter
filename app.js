@@ -1774,7 +1774,9 @@
   }
   function openJourney() {
     if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } // if home had adopted the trail into its sky, take it back before the standalone overlay draws into it (single journey DOM)
-    var p = el("journeyPath"); if (!p) return; p.classList.remove("jp-leaving", "jp-sliding"); p.style.transform = ""; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640). jp-sliding/transform reset: never inherit a TRANS_V2 slide-out state on re-open.
+    var p = el("journeyPath"); if (!p) return;
+    try { var _jt0 = el("jpTrail"); if (_jt0 && !p.contains(_jt0)) p.appendChild(_jt0); } catch (e) {} // FP3 §7b SELF-HEAL: if home adopted the trail into its sky and then died without releasing it, re-home it here — the journey must never present as a blank page, no matter who opens it (drawJourney(true) below then fills it)
+    p.classList.remove("jp-leaving", "jp-sliding"); p.style.transform = ""; p.classList.add("on"); document.body.classList.add("journey-open"); // body scroll is permanently locked in CSS now (body{height:100vh;overflow:hidden}) — no per-screen overflow toggling (v640). jp-sliding/transform reset: never inherit a TRANS_V2 slide-out state on re-open.
     document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); // keep the nav highlight honest: Journey is what's showing
     try { if (S.guide && S.guide.mode === "guided") journeyTick(); } catch (e) {}
     drawJourney(true); cascadeJourney(); // stepping-stones pop in on open (v659)
@@ -1825,7 +1827,7 @@
     document.body.classList.remove("home-onepage"); // PUCK FIX (David 2026-07-22 "planner shows no home button"): the home-onepage class fades the puck to opacity:0 (nothing to return from AT home). Only the door path cleared it via teardownWorld — a pane reached any other way left it set, hiding the home button. Clearing it on EVERY pane rest guarantees the puck is lit on planner/journey/game.
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
-    else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (!_jt || !_jt.children.length) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
+    else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (_jt && jp && !jp.contains(_jt)) jp.appendChild(_jt); if (!_jt || !_jt.children.length || !jp.contains(_jt)) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
   }
   var _paneAnim = false;
@@ -3846,24 +3848,15 @@
     var _say = el("tfSay"); if (_say) _say.textContent = bkContinuity(); // soul-layer heartbeat: the guardian speaks what it remembers, on every open
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
+    var _catch = null; if (S0.id === "claim") { _catch = S0; S0 = { id: "idle", t: null }; t = null; } // FP3 §3: the catch-up state no longer OWNS a face — it renders the FP3 idle home and layers its trio on top (tfCatchUp)
+    tfCatchUpClose(); // any render clears the card first; only the idle branch re-adds it while the claim state holds
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } // reset off-plan border + any prior tap wiring before a state re-paints the disc. removeProperty (not = "") because the idle-with-a-plan disc paints its stripes !important to beat the tf-home pink — a plain reassignment in another face would lose to it.
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home", "tf-onehome"); // ONE-HOME: clear the shared frame class too; each full-screen face re-adds it via renderHomeFrame()
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "st-upnext", "tf-nextsheet", "tf-home", "tf-onehome"); // ONE-HOME: clear the shared frame class too; each full-screen face re-adds it via renderHomeFrame(). st-upnext (FP3 §2b) is an idle SUB-state and must never survive into another face.
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
     renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
-    if (S0.id === "claim") { tf.classList.add("st-claim"); var CB = S0.block, CD = DOM[domainOf(CB)] || DOM.focus, gap = Math.max(1, logicalNowMin() - S0.gapStartMin);
-      if (tile) { tile.style.background = CD.c; tile.style.border = "none"; tile.style.color = "#fff"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ' + tiClass(CB) + '"></i>'; } // FOUNDATION RESKIN F2: flat vivid activity disc + white icon (the home/on-plan dial language), was tfStripe → loud
-      el("tfTitle").textContent = CB.title;
-      el("tfVerdict").textContent = "welcome back";
-      el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = dur(gap);
-      el("tfElabel").textContent = "away";
-      el("tfCtx").textContent = "gap " + fmt(S0.gapStartMin) + "–now";
-      el("tfSpark").innerHTML = fireHTML(streak);
-      setRing(0, "#2a1832", true); renderSwitchChips(""); renderTFControls("claim"); // FOUNDATION RESKIN F2: plum bezel (#2a1832) around the vivid disc — the same resting dial as home/off, not the old full domain-color annulus. ONE-HOME: renderTFControls rebuilds the claim column into one row + quiet row (Track now / Did it already · not mine) — see the claim branch there. The "welcome back" greeting stays in tfVerdict (shown, in normal flow above the controls — never a card over the buttons).
-      renderHomeFrame(true); // ONE-HOME: claim is a CALM face — full frame + tool grid
-      return;
-    }
+    // FP3 §3: the old claim FACE (its own disc/title/"away" clock + the stacked Track now / Did it already / Not mine column) is RETIRED. The state is remapped to idle above and its trio is re-housed in tfCatchUp() as a card over the home face; handlers unchanged.
     if (S0.id === "night") { tf.classList.add("st-night");
       if (tile) { tile.style.background = "#2e2650"; tile.style.border = "none"; tile.style.color = "#b8a8e0"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-moon"></i>'; } // FOUNDATION RESKIN F2: calm solid deep-violet moon disc (no stripe, no harsh filter) inside the breathing violet nightlight ring
       el("tfTitle").textContent = "rest";
@@ -3877,23 +3870,31 @@
       return;
     }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
-      el("tfTitle").textContent = tr("What now?"); // GRAND BUILD H: the mock's composition — the QUESTION is the title; the plan is the sub-line
-      // RUN-1 mocks 1&2: the sub-line IS a mini timeline block (pink hairline + countdown) with a plan; a warm invite line without one
-      if (nb) { el("tfVerdict").textContent = tr("starts at") + " " + fmt(hm(nb.time)) + " · " + tr("play begins it now"); } // ROUND 3 (2a-player-idle PNG): the disc now WEARS the next block (its hue, its stripes), so the sub-line under it says WHEN and what the tap does. The PNG's dash is a "·" here — Gate 1 (copy-audit.py) zero-tolerates em/en dashes app-wide; the middle dot is this line's native separator. Replaces the block-name + countdown sub-block (the name still reads on the story strip above and in the planner).
+      // FP3 §1+§2 (2a-player-idle-v2 PNG). Date kicker above the circle, then TWO variants:
+      //   (b) the next block is UP (due now, or starting within TF_UPNEXT_MIN) → the disc WEARS that activity (its hue + the FP3 stripe overlay + its own glyph in ink), title "Next: <block>", sub-line "starts at H:MM · play begins it now".
+      //   (a) the next block is LATER, or there is none → the flat PINK play disc, title "What now?", the PNG's next-line, plus a ghost mini-pill offering to start it early.
+      // Every em dash in the PNG is a "·" here: Gate 1 (copy-audit.py) zero-tolerates em/en dashes app-wide.
+      var _dk = el("tfDateKick"); if (_dk) { var _dd = new Date(), _dl = curLang(); _dk.textContent = (_dd.toLocaleDateString(_dl, { weekday: "long" }) + " · " + _dd.toLocaleDateString(_dl, { month: "long", day: "numeric" })).toUpperCase(); } // real locale names — RU renders natively, so no dict keys for weekday/month
+      var _upn = !!nb && (hm(nb.time) - nowMin()) <= TF_UPNEXT_MIN; tf.classList.toggle("st-upnext", _upn);
+      el("tfTitle").textContent = _upn ? (tr("Next:") + " " + nb.title) : tr("What now?"); // the QUESTION is the title until the block is actually up, then the block NAMES itself
+      if (_upn) { el("tfVerdict").textContent = tr("starts at") + " " + fmt(hm(nb.time)) + " · " + tr("play begins it now"); }
+      else if (nb) { var _gm = Math.max(0, hm(nb.time) - nowMin()); el("tfVerdict").textContent = tr("next:") + " " + nb.title + " · " + fmt(hm(nb.time)) + " · " + tr("you've got") + " " + pkShort(_gm) + ", " + tr("play opens the picker"); }
       else { var _iv = tfIdleInvite(); el("tfVerdict").innerHTML = '<span class="tf-invite">' + tr(_iv.t) + '</span>'; } // NUMERIC PASS (David 2026-07-22): the home next-line is PLAIN TEXT — no leading icon (the board shows text only)
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '<i class="ti ti-diamond-filled" style="color:#ffd24a"></i> <b>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</b>'; // H-D3 (David 2026-07-20): idle header right = the gem count with a diamond, matching the What-now mockup (was streak + tracked-mins)
-      if (tile) { tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst;
-        // ROUND 3 (2a-player-idle PNG): with something planned the idle disc WEARS THAT BLOCK — the same 115°/13px candy stripes the live disc uses, in the next block's hue, behind an INK play triangle. With nothing planned it stays the flat pink play disc (unchanged). setProperty(…,"important") because the tf-home.st-idle rule paints the pink !important; removeProperty hands it straight back.
-        if (nb) { tile.style.setProperty("background", "repeating-linear-gradient(115deg," + ND.c + " 0 13px," + mixHex(ND.c, "#ffffff", 0.22) + " 13px 26px)", "important"); tile.style.setProperty("color", "#160510", "important"); }
-        else { tile.style.removeProperty("background"); tile.style.removeProperty("color"); } }
+      if (tile) { tile.style.filter = ""; tile.style.cursor = "pointer"; tile.onclick = playFirst;
+        // setProperty(…,"important") because the tf-home.st-idle rule paints the pink !important; removeProperty hands it straight back for variant (a).
+        if (_upn) { tile.innerHTML = tiIcon(nb); tile.style.setProperty("background", "repeating-linear-gradient(115deg, rgba(255,255,255,.26) 0 16px, transparent 16px 34px), " + ND.c, "important"); tile.style.setProperty("color", "#2a1730", "important"); }
+        else { tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } }
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips("");
       // §10f.7 HOME (David ✓ 2026-07-13): the idle cockpit IS the app's landing home — story bars on top, the pink Track CIRCLE, Plan-my-day above a tools side-scroll. Supersedes the old 3-door §12 frame + docked next-sheet.
       HOME_MODE = true; tf.classList.add("tf-home"); document.body.classList.add("home-pane"); document.body.classList.remove("nav-collapsed"); try { document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navHome"); }); } catch (e) {} // home is a PLACE: the FULL bottom nav sits above the cockpit here + Home is the lit tab (David 2026-07-20)
       var _sh = el("tfNextSheet"); if (_sh) _sh.style.display = "none";
+      tfEarlyPill(_upn ? null : nb); // FP3 §2a: the PNG's ghost mini-pill under the sub-line ("or start <block> early"). Only in variant (a) — once the block is UP the disc itself starts it.
       renderHomeFace(nb);
+      if (_catch) tfCatchUp(); // FP3 §3: the catch-up trio rides ON TOP of this face now; it never replaces it
       if (ONEHOME) { var _tf0 = el("trackerFull"); if (_tf0) _tf0.classList.add("tf-onehome"); var _hg0 = el("tfHomeGrid"); if (_hg0) { _hg0.style.display = "none"; while (_hg0.firstChild) _hg0.removeChild(_hg0.firstChild); } } // ONE-HOME: idle keeps its APPROVED composition (grid in #tfCtrls via renderHomeFace) — only ADD the shared class so the frame CSS is uniform; keep the shared #tfHomeGrid host empty+hidden so the grid never doubles. tf-home ⊂ tf-onehome, look UNCHANGED (David approves idle).
       return;
     }
@@ -4942,7 +4943,7 @@
     function step() { var d = target - _ringP; if (Math.abs(d) < 0.006) { _ringP = target; paint(target); _ringRaf = 0; return; } _ringP += d * 0.16; paint(_ringP); _ringRaf = requestAnimationFrame(step); }
     _ringRaf = requestAnimationFrame(step); // GUITAR-HERO fill: glide the green up to the live % (and from 0 on open) so being on-task visibly charges the ring (David 2026-06-27)
   }
-  function tfDone() { var run = activeTimers(); closeTrackerFull(); if (run.length) stopTimer(run[run.length - 1].id); } // finish the activity → close, then log it + fire the on-plan reward (stopTimer)
+  function tfDone() { var run = activeTimers(); if (run.length) stopTimer(run[run.length - 1].id); if (TF_OPEN) { try { renderTrackerFull(); } catch (e) {} } else { try { openHome(); } catch (e) {} } } // FP3 §7a (David's bug: Done landed on an EMPTY journey page). Canonical 2a is "Done → burst → re-prime to next" ON HOME. The old closeTrackerFull() tore the home cockpit down BEFORE the write, so stopTimer's renderAll fell through to whatever pane sat below (journey) — with the trail still adopted into home's dead sky, that reads blank. The write path is byte-identical (stopTimer still logs, earns, combos, crowns, celebrates); we simply stay on the player and re-prime the face, which lands on idle variant a/b per what is next.
   function fmtCD(ms) { var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); } // countdown m:ss (or h:mm:ss)
   function tfStartBreak() { var run = activeTimers(), t = run[run.length - 1], g = t ? { title: t.title, dom: domainOf(t), catK: t.catK, color: t.color } : null; if (t) stopTimer(t.id); S.brk = { title: g ? g.title : "", dom: g ? g.dom : "focus", catK: g ? g.catK : null, color: g ? g.color : "#36b3f0", start: Date.now(), mins: 0 }; save(); renderLiveTracker(); renderToday(); renderTrackerFull(); } // ONE-TAP PAUSE (David 2026-07-21): pausing must ask NOTHING — stop the timer, hold the goal open-ended (mins:0 = no countdown, never expires), resume when ready. No duration sheet, no future rest block dropped (an open pause has no known end). Timed breaks still live in Replan/planBreak; the +time chips (tfBreakPlus) can convert a pause into a timed break after the fact.
   function tfResumeBreak() { var B = S.brk; S.brk = null; save(); if (B && B.title) startTimer({ title: B.title, catK: B.catK, color: B.color }); renderLiveTracker(); renderToday(); renderTrackerFull(); } // come back → restart the paused goal
@@ -4978,8 +4979,8 @@
   // Plan-my-day makes). There is NO Stop button anywhere now, and no "extend" door — the extend sheet still auto-opens in the last 5 minutes.
   function TF_LIVE_DOORS() {
     return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true, finish: "solid", c: "#28cf86", ink: "#160510" },
-            { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
-            { icon: "ti-calendar-event", label: "Replan", fn: tbxPlanDay, half: true }];
+            { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true },
+            { icon: "ti-clock-plus", label: "Extend", fn: tfRevealExtend, half: true }]; // FP3 §6, the design's caption on the approved live PNG: "ghost Break / Extend, tools stay as break-starters — there is NO Stop button". This REPLACES round-2's Pause/Replan pair (Pause was the same tfStartBreak fn, now under its real name; Replan is dropped and the dormant tfRevealExtend path is revived). The deck stays one scroll below the fold = "tools stay".
   }
   // ===== ONE shared decision matrix (David 2026-06-28) =====
   // The SINGLE source of truth for what controls a tracker state offers. Both the EXPANDED ring (renderTFControls)
@@ -5044,6 +5045,33 @@
       default: // OFF-PLAN (incl. drift) while tracking. FIX PASS 2 D (design 2026-07-28): ONE live door set for every live face — Done · Pause · Replan. The gray-lavender full-width Stop bar and the drift's blue-Replan-primary variant are both retired: Replan is now always one tap away as a ghost, so drift keeps its way back without a second door language.
         return TF_LIVE_DOORS();
     }
+  }
+  var TF_UPNEXT_MIN = 10; // FP3 §2: "the next block is UP" = it starts within this many minutes (or is already past its start, which is negative and passes too)
+  function tfEarlyPill(nb) { // FP3 §2a — the ghost mini-pill under the sub-line. Built once, then shown/hidden + relabelled in place (no wipe).
+    var stage = document.querySelector("#trackerFull .tf-stage"); if (!stage) return;
+    var p = el("tfEarlyPill");
+    if (!nb) { if (p) p.style.display = "none"; return; }
+    if (!p) { p = document.createElement("button"); p.id = "tfEarlyPill"; p.className = "tf-earlypill"; p.innerHTML = '<i class="ti ti-player-play-filled"></i><span></span>'; var vd = el("tfVerdict"); if (vd && vd.nextSibling) stage.insertBefore(p, vd.nextSibling); else stage.appendChild(p); }
+    p.style.display = ""; p.querySelector("span").textContent = tr("or start") + " " + nb.title + " " + tr("early");
+    p.onclick = (function (b) { return function (ev) { if (ev) ev.stopPropagation(); try { startPlanned(b); renderTrackerFull(); } catch (e) {} }; })(nb); // the EXISTING start path, untouched
+  }
+  // FP3 §3 — THE CATCH-UP RE-HOUSING. The welcome-back trio (Track now · Did it already · Not mine) used to REPLACE the home idle face with a whole
+  // claim face. It is now a card layered ON TOP of the FP3 idle face. The three entries come straight from trackerControls("claim"), so every handler
+  // and write-path (startPlanned / tfClaim / tfClaimDismiss) is byte-identical — this is a re-housing, not a redesign. There is no full-width "Track
+  // now" bar and no "Did it already"/"Not mine" on the home face itself any more.
+  function tfCatchUpClose() { var c = el("tfCatchUp"); if (c && c.parentNode) c.parentNode.removeChild(c); }
+  function tfCatchUp() {
+    tfCatchUpClose();
+    var host = document.querySelector("#trackerFull .tf-inner"); if (!host) return;
+    var ctrls = []; try { ctrls = trackerControls("claim"); } catch (e) { return; }
+    var card = add(host, "div", "tf-catchup"); card.id = "tfCatchUp";
+    var blk = null; try { blk = trackerState().block; } catch (e) {}
+    add(card, "div", "tf-cul", tr("Welcome back") + (blk && blk.title ? (" · " + blk.title) : ""));
+    add(card, "div", "tf-cus", tr("that window is open. was it you?"));
+    ctrls.forEach(function (x) { var bn = add(card, "button", "tf-door tf-door-" + (x.finish || "ghost"));
+      if (x.finish === "solid") { bn.style.background = x.c; bn.style.color = x.ink; }
+      else if (x.finish === "striped") { bn.style.background = tfStripeDoor(x.c); bn.style.color = x.ink; }
+      bn.innerHTML = '<i class="ti ' + x.icon + '"></i> ' + x.label; bn.onclick = x.fn; });
   }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
     var ctrls = trackerControls(state);
@@ -5523,7 +5551,11 @@
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
   function tbxHexOf(tok) { return (tok && tok.charAt(0) === "#") ? tok : (TBX_HEX[tok] || TBX_HEX.create); }                                    // domain token → its literal hex (the .tbx CSS vars mirror TBX_HEX exactly), so JS can do real color math on it
-  function tbxFaceGrad(tok) { var h = tbxHexOf(tok); return "linear-gradient(100deg," + mixHex(h, "#ffffff", 0.18) + " 0%," + h + " 60%)"; }  // FIX PASS 2 E (design 2026-07-28, verbatim): the tool-deck FACE card is a hue face — color-mix(hue 82%, #fff) → hue at 60% on a 100° axis. Resolved through mixHex (plain rgb) so designAudit can read it back; the ink outline + 0 4px 0 ink sticker + ink glyph live in .tbx-face.
+  // FP3 §7 — THE DECK FILL, fitted to David's own home-idle-ref.jpeg (the only COMPLETE ref of the deck). Sampled tile fills off the jpeg (PIL, 13x13 patch inside each tile, glyph avoided):
+  //   #5e82bd · #9383c6 · #ba6e7a · #749a71 · #b3974d · #778cc2 · #5c8e89 · #8a76be
+  // A least-squares fit over the six same-family pairs (focus→lungs, create→flower, connect→rock, nourish→run, play→bulb, restore→wave) lands on mixHex(hue, "#84706a", 0.54), RMS 11.7/255 per channel.
+  // NOTE for the record: the ref is NOT "hue mixed toward night" — every channel moves toward a warm MID taupe, so a low channel RISES (connect's green 95→110). Mixing toward a dark colour cannot do that; this is a desaturation, and the fitted grey is what the pixels actually say.
+  function tbxFaceFill(tok) { return mixHex(tbxHexOf(tok), "#84706a", 0.54); }
   function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet)
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
@@ -5567,7 +5599,7 @@
     var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name)); cell.setAttribute("data-tbxcell", id);
     var wrap = add(cell, "div", "tbx-face-wrap");
     (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceGrad(it.dom); face.style.boxShadow = "0 4px 0 #160510"; add(face, "i", "ti " + it.ti); // FIX PASS 2 E: hue candy face + hard INK sticker (the borderless soft-shadow card + white glyph was the miss); the peek shards keep their own lip — "shards are right"
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceFill(it.dom); face.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; add(face, "i", "ti " + it.ti); // FIX PASS 2 E: hue candy face + hard INK sticker (the borderless soft-shadow card + white glyph was the miss); the peek shards keep their own lip — "shards are right"
     var lbl = add(cell, "span", "tbx-label", tr(it.name)); lbl.style.color = tbxVar(it.dom);
     cell.onclick = function () { try { tbxOpenDose(id, cell); } catch (e) {} };
     return cell;
@@ -5688,7 +5720,7 @@
   function tbxBuilderTile(host) { // the PINNED 8th tile: same tile mark (54px face / radius 19 / lip) in create-purple with ti-plus + label "Build", no peek coins. Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
     var wrap = add(cell, "div", "tbx-face-wrap");
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceGrad("create"); face.style.boxShadow = "0 4px 0 #160510"; add(face, "i", "ti ti-plus"); // FIX PASS 2 E: the pinned 8th tile wears the same hue candy face + ink sticker as every other deck tile
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceFill("create"); face.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; add(face, "i", "ti ti-plus"); // FIX PASS 2 E: the pinned 8th tile wears the same hue candy face + ink sticker as every other deck tile
     var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = "var(--create)";
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
@@ -5952,6 +5984,7 @@
   // @CONTRACT: the wall footer and the sheet footer are ONE painter (pkFoot) — opening a folder must not shift the bottom by a pixel (David 2026-07-27).
   var PK_LENS = [10, 15, 20, 30, 45, 60, 90, 120, 180];                                   // the length rail (minutes); a chain's rail scales ALL its steps proportionally
   var PK_PRIS = [{ v: 3, l: "Must" }, { v: 2, l: "Should" }, { v: 1, l: "Whenever" }];     // priority shows its VALUE once set; the word "Priority" only when unset (David 2026-07-27)
+  var PK_FAN = [-3.5, 2.5, 3.5, -2.5]; // FP4 1: the 2x2 fan angles, alternating so no two neighbours lean the same way (stickers, not a grid)
   var PK_TOPN = 11; // activities shown in a folder before the dashed "More" tile opens the grouped view
   var _pk = null;   // the live picker (null = closed). Nothing here is state until Start.
   function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
@@ -6013,20 +6046,18 @@
     var by = bentoByDomain(), grid = add(host, "div", "pk-fgrid");
     DOM_ORDER.forEach(function (d) {
       var acts = by[d] || []; if (!acts.length) return; var D = DOM[d], hue = D.c;
-      var took = {}, nq = 0; // ROUND 3 (18a PNG): what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
+      var took = {}, nq = 0; // what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
       (_pk.queue || []).forEach(function (p) { if (p.kind === "act" && p.dom === d) { nq++; took[p.title] = 1; } });
-      var tile = add(grid, "button", "pk-ftile"); tile.style.background = mixHex(hue, "#241022", 0.88); // the shell is NIGHT (#241022) washed 12% with the hue — never a full hue face. Border + sticker are ink (CSS).
-      if (nq) tile.classList.add("on"); // ≥1 pick from this folder → the edge goes pink (selection is the ONE legal hue border)
+      var b = add(grid, "button", "pk-fcell");
+      var tile = add(b, "span", "pk-ftile"); tile.style.background = mixHex(hue, "#241022", 0.88); // the shell is NIGHT (#241022) washed 12% with the hue — never a full hue face. Border + sticker are ink (CSS).
+      if (nq) tile.classList.add("on"); // >=1 pick from this folder → the edge goes pink (selection is the ONE legal hue border)
       var mini = add(tile, "span", "pk-mini");
-      acts.slice(0, 6).forEach(function (a) { // 3x2 of FLAT tight coins, exactly the PNG — no shard/fan layers here (the folder-sheet bundles and the queue deck keep theirs)
-        var fc = add(mini, "span", "pk-face"); fc.style.background = pkCandy(hue); fc.style.boxShadow = "0 3px 0 #160510";
-        if (took[a.title]) { fc.classList.add("on"); add(fc, "span", "pk-gloss"); } // the picked activity: pink edge + the PNG's diagonal shine
+      acts.slice(0, 4).forEach(function (a, i) { // FP4 1: EXACTLY four mini sheets, 2x2, each slightly fanned so the face reads as stickers dropped on the wash, not a grid
+        var fc = add(mini, "span", "pk-face"); fc.style.background = pkCandy(hue); fc.style.boxShadow = "0 3px 0 #160510"; fc.style.transform = "rotate(" + PK_FAN[i % PK_FAN.length] + "deg)";
+        if (took[a.title]) { fc.classList.add("on"); add(fc, "span", "pk-gloss"); } // the picked activity: pink edge + the diagonal shine
         add(fc, "i", "ti " + tiClass(a)); });
-      var nrow = add(tile, "span", "pk-fnrow"); // the name row lives INSIDE the tile bottom (PNG): domain glyph in the hue · name · count
-      var ni = add(nrow, "i", "ti " + (D.ti || "ti-circle")); ni.style.color = hue;
-      add(nrow, "span", "pk-fnm", tr(D.l));
-      var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? hue : mixHex(hue, "#160510", 0.45); // plain total, dimmed, until this folder has given something — then "n / total" in the live hue (PNG's Move "1 / 9")
-      tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+      var nm = add(b, "span", "pk-fname", tr(D.l)); nm.style.color = hue; // FP4 2: the domain name centered UNDER the tile, in its hue. FP4 3: no count, anywhere on this wall.
+      b.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
     var sec = add(host, "div", "pk-sec"); add(sec, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
     var sg = add(sec, "div", "pk-fgrid");
@@ -6051,10 +6082,12 @@
     if (n && !_pk.wallMin) pkPanel(add(host, "div", "pk-panel"), bg || "#130609");
     var bar = add(host, "div", "pk-bar"), tx = add(bar, "span", "pk-bartx");
     var kick = add(tx, "span", "pk-bark"), lab = add(tx, "span", "pk-barl");
-    if (!n) { kick.textContent = tr("Tap what you feel like"); kick.style.color = "#96637e"; lab.style.display = "none"; } // empty = the tiny tracked kicker alone, never a giant white sentence
-    else if (n === 1) { kick.textContent = tr("ONE THING"); kick.style.color = "#96637e"; lab.textContent = q[0].title; }
-    else { kick.textContent = tr("ON YOUR PLATE"); kick.style.color = "#ff8fc0"; lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); } // never a name → name → name list (David 2026-07-27)
-    var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n > 1 ? "ti-layout-list" : "ti-plus")); add(go, "span", null, n > 1 ? tr("Arrange") : tr("Add to today"));
+    // FP4 5 — ONE ActionBar, three states. The kicker never changes WORDS (only its colour), so the bar reads as one instrument instead of three; the label carries the state in plain words; the right verb is disabled-Arrange / Add to today / Arrange.
+    kick.textContent = tr("ON YOUR PLATE"); kick.style.color = n ? "#ff8fc0" : "#96637e";
+    if (!n) lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like");
+    else if (n === 1) lab.textContent = q[0].title + " · " + pkShort(q[0].mins || 0);
+    else lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); // never a name → name → name list (David 2026-07-27)
+    var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-layout-list")); add(go, "span", null, n === 1 ? tr("Add to today") : tr("Arrange"));
     if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
     else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
   }
@@ -15460,7 +15493,7 @@
   Object.assign(I18N.ru, { "Day taking shape": "День собирается", "Day is set": "День собран", "things. See you at the first.": "дел. Увидимся на первом.", "First one lived — the day is lit.": "Первое дело прожито — день зажёгся." }); // plan-day strip + seal + first-light strings (B4)
   Object.assign(I18N.ru, { "start": "начало", "length": "длина", "More": "Ещё", "Block": "Блок" }); // edge-inspector strings (B4; "delete" already in the dict)
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
-  Object.assign(I18N.ru, { "starts at": "начало в", "play begins it now": "старт запустит сейчас" }); // ROUND 3 (2a-player-idle PNG): the idle-with-a-plan sub-line under the disc (B4 law — EN source + RU in the same commit)
+  Object.assign(I18N.ru, { "starts at": "начало в", "play begins it now": "старт запустит сейчас", "next:": "далее:", "you've got": "у тебя есть", "play opens the picker": "старт откроет выбор", "or start": "или начать", "early": "раньше", "Next:": "Далее:", "Extend": "Продлить", "nothing yet": "пока пусто", "tap what you feel like": "нажми на то, чего хочется", "Welcome back": "С возвращением", "that window is open. was it you?": "это окно открыто. это был ты?" }); // ROUND 3 (2a-player-idle PNG): the idle-with-a-plan sub-line under the disc (B4 law — EN source + RU in the same commit)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
   Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь", "Guide's voice": "Голос гида", "the spoken guide during a session": "озвученный гид во время сессии" });
   Object.assign(I18N.ru, { // ONBOARDING V2 (B4) — survey, options, plan, beats
@@ -15708,7 +15741,8 @@
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
     chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
-    chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= 0.12, Math.round((rr.top - br.bottom) / H * 100) + "%", "7-12%");
+    var _dkE = el("tfDateKick"), _dkOn = !!(_dkE && _dkE.offsetParent !== null && _dkE.textContent); // FP3 §1 (2026-07-28): the date kicker now legitimately LIVES in this band — the v2 idle PNG reads strip → date line → circle. The 7-12% window predates it, so it only applies when the kicker is absent; with the kicker rendered the band is 7-16%. Kept as ONE gate (not two segments) so it stays cheap and cannot drift out of sync with the kicker being show/hidden.
+    chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= (_dkOn ? 0.16 : 0.12), Math.round((rr.top - br.bottom) / H * 100) + "%", _dkOn ? "7-16% (date kicker sits in the band)" : "7-12%");
     if (tile) { var rim = (ring.offsetWidth - tile.offsetWidth) / 2; chk("ring rim px/side", rim >= 5 && rim <= 11, Math.round(rim), "5-11"); } // offsetWidth: the idle breath (tfBreathe scale) must not flap this gate — getBoundingClientRect returns the TRANSFORMED box, so mid-breath (×1.0346) the disc measured 185px instead of its 179px layout width and the rim read 5 instead of 8 = intermittent FAIL
     var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
     chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px");
@@ -15730,12 +15764,12 @@
       }
     }
     // FIX PASS 2 E (design 2026-07-28): the deck faces are no longer FLAT hue — they're a 100° candy gradient behind an ink outline + a hard ink sticker, with an INK glyph. The old flat-rgb reads would false-FAIL forever, so they're replaced by the new law: gradient carrying the tile's own raw hue, ink border, ink sticker, ink glyph. (Geometry gates below are untouched.)
-    if (tfaces.length >= 3) { var f0 = getComputedStyle(tfaces[0]), bi0 = f0.backgroundImage, bi2 = getComputedStyle(tfaces[2]).backgroundImage;
-      chk("tile1 face candy gradient carries move hue", bi0.indexOf("linear-gradient") >= 0 && bi0.indexOf("rgb(255, 138, 58)") >= 0, bi0.slice(0, 64), "linear-gradient(100deg,…, rgb(255,138,58) 60%)");
-      chk("tile3 face candy gradient carries connect hue", bi2.indexOf("linear-gradient") >= 0 && bi2.indexOf("rgb(255, 95, 160)") >= 0, bi2.slice(0, 64), "linear-gradient(100deg,…, rgb(255,95,160) 60%)");
-      chk("tile face ink border 2.5px", f0.borderTopColor === "rgb(22, 5, 16)" && Math.abs(parseFloat(f0.borderTopWidth) - 2.5) <= 0.6, f0.borderTopWidth + " " + f0.borderTopColor, "2.5px rgb(22,5,16)");
-      chk("tile face sticker 0 4px 0 #160510", f0.boxShadow.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(f0.boxShadow), f0.boxShadow.slice(0, 46), "rgb(22,5,16) 0px 4px 0px");
-      var g0 = tfaces[0].querySelector("i"); chk("tile glyph is INK (never white on a hue fill)", !!g0 && getComputedStyle(g0).color === "rgb(22, 5, 16)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(22,5,16)");
+    if (tfaces.length >= 3) { var f0 = getComputedStyle(tfaces[0]);
+      chk("tile1 face DEEP fill (move, not the raw hue)", rgb(tfaces[0]) === "rgb(189, 124, 84)", rgb(tfaces[0]), "rgb(189,124,84) = mixHex(#ff8a3a,#84706a,.54)");
+      chk("tile3 face DEEP fill (connect, not the raw hue)", rgb(tfaces[2]) === "rgb(189, 104, 131)", rgb(tfaces[2]), "rgb(189,104,131) = mixHex(#ff5fa0,#84706a,.54)");
+      chk("tile face BORDERLESS (David 2026-07-28: no black outlines on the home tools)", parseFloat(f0.borderTopWidth || 0) === 0, f0.borderTopWidth || "0px", "0px");
+      chk("tile face sticker 0 3px 0 rgba(0,0,0,.4)", /0px\s+3px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") >= 0, f0.boxShadow.slice(0, 46), "rgba(0,0,0,0.4) 0px 3px 0px");
+      var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
       var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", f0.borderTopLeftRadius === "19px", f0.borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
