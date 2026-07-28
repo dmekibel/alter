@@ -3834,7 +3834,7 @@
       var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
       var _S0 = trackerState(), _t = _S0.t; // keep the corner puck a LIVE mini-tracker: show WHAT + running mm:ss off the live timer
       var _tt2 = el("tfTitle"); if (_tt2) { _tt2.classList.remove("switchable"); _tt2.style.background = ""; _tt2.style.color = ""; _tt2.style.borderColor = ""; _tt2.onclick = null; _tt2.textContent = _t ? (_t.title || "Tracking") : (stageLabel(TF_MODE) || ""); }
-      var _ti2 = el("tfTile"); if (_ti2) { var _D2 = _t ? (DOM[domainOf(_t)] || DOM.restore) : DOM.restore; _ti2.style.background = _D2.c; _ti2.style.border = "none"; _ti2.style.color = "#fff"; _ti2.style.filter = ""; _ti2.innerHTML = _t ? tiIcon(_t) : '<i class="ti ' + (_D2.ti || "ti-moon") + '"></i>'; } // FOUNDATION RESKIN F4: flat activity puck + white icon (was tfStripe → loud) so the corner mini-tracker matches the new-era flat dial
+      var _ti2 = el("tfTile"); if (_ti2) { var _D2 = _t ? (DOM[domainOf(_t)] || DOM.restore) : DOM.restore; _ti2.style.removeProperty("background"); _ti2.style.removeProperty("color"); _ti2.style.background = _D2.c; _ti2.style.border = "none"; _ti2.style.color = "#fff"; _ti2.style.filter = ""; _ti2.innerHTML = _t ? tiIcon(_t) : '<i class="ti ' + (_D2.ti || "ti-moon") + '"></i>'; } // FOUNDATION RESKIN F4: flat activity puck + white icon (was tfStripe → loud) so the corner mini-tracker matches the new-era flat dial
       var _tm2 = el("tfTime"); if (_tm2) { if (_t) { _tm2.setAttribute("data-tid", _t.id); _tm2.textContent = elapsedStr(_t); } else { _tm2.removeAttribute("data-tid"); _tm2.textContent = ""; } }
       var _elMin2 = _t ? (Date.now() - _t.start) / 60000 : 0, _p2 = _t ? Math.max(0, Math.min(1, _elMin2 / 60)) : 1;
       setRing(_p2, _t ? "#28cf86" : DOM.restore.c);
@@ -3846,7 +3846,7 @@
     var _say = el("tfSay"); if (_say) _say.textContent = bkContinuity(); // soul-layer heartbeat: the guardian speaks what it remembers, on every open
     renderStageChips(); // TRACK-mode entry doors (Journal …) — calm chips under the controls; CSS hides them once a stage is active
     var S0 = trackerState(), t = S0.t, tile = el("tfTile"), streak = (S.game && S.game.streak) || 0;
-    if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; } // reset off-plan border + any prior tap wiring before a state re-paints the disc
+    if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } // reset off-plan border + any prior tap wiring before a state re-paints the disc. removeProperty (not = "") because the idle-with-a-plan disc paints its stripes !important to beat the tf-home pink — a plain reassignment in another face would lose to it.
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "tf-nextsheet", "tf-home", "tf-onehome"); // ONE-HOME: clear the shared frame class too; each full-screen face re-adds it via renderHomeFrame()
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
     renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
@@ -3879,13 +3879,15 @@
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
       el("tfTitle").textContent = tr("What now?"); // GRAND BUILD H: the mock's composition — the QUESTION is the title; the plan is the sub-line
       // RUN-1 mocks 1&2: the sub-line IS a mini timeline block (pink hairline + countdown) with a plan; a warm invite line without one
-      if (nb) { var _cd = hm(nb.time) - nowMin(), _cdL = _cd > 1 ? (tr("in") + " " + (_cd < 60 ? (_cd + " " + tr("min")) : durLoc(_cd))) : tr("now"); // canon spells "через 12 мин" under an hour
-        el("tfVerdict").innerHTML = '<span class="tf-subblock"><span class="sb-t">' + esc(nb.title) + '</span><span class="sb-dot">·</span><span class="sb-cd">' + esc(_cdL) + '</span></span>'; } // NUMERIC PASS (David 2026-07-22): plain text next-line on home — no leading icon (the board)
+      if (nb) { el("tfVerdict").textContent = tr("starts at") + " " + fmt(hm(nb.time)) + " · " + tr("play begins it now"); } // ROUND 3 (2a-player-idle PNG): the disc now WEARS the next block (its hue, its stripes), so the sub-line under it says WHEN and what the tap does. The PNG's dash is a "·" here — Gate 1 (copy-audit.py) zero-tolerates em/en dashes app-wide; the middle dot is this line's native separator. Replaces the block-name + countdown sub-block (the name still reads on the story strip above and in the planner).
       else { var _iv = tfIdleInvite(); el("tfVerdict").innerHTML = '<span class="tf-invite">' + tr(_iv.t) + '</span>'; } // NUMERIC PASS (David 2026-07-22): the home next-line is PLAIN TEXT — no leading icon (the board shows text only)
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '<i class="ti ti-diamond-filled" style="color:#ffd24a"></i> <b>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</b>'; // H-D3 (David 2026-07-20): idle header right = the gem count with a diamond, matching the What-now mockup (was streak + tracked-mins)
-      if (tile) { tile.style.background = "#ff5fa8"; tile.style.color = "#4a1126"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst; } // §12 frame 07: the idle disc is ALWAYS the pink play — the app's verb; FILLED triangle (David 2026-07-20 ref)
+      if (tile) { tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; tile.style.cursor = "pointer"; tile.onclick = playFirst;
+        // ROUND 3 (2a-player-idle PNG): with something planned the idle disc WEARS THAT BLOCK — the same 115°/13px candy stripes the live disc uses, in the next block's hue, behind an INK play triangle. With nothing planned it stays the flat pink play disc (unchanged). setProperty(…,"important") because the tf-home.st-idle rule paints the pink !important; removeProperty hands it straight back.
+        if (nb) { tile.style.setProperty("background", "repeating-linear-gradient(115deg," + ND.c + " 0 13px," + mixHex(ND.c, "#ffffff", 0.22) + " 13px 26px)", "important"); tile.style.setProperty("color", "#160510", "important"); }
+        else { tile.style.removeProperty("background"); tile.style.removeProperty("color"); } }
       el("tfElabel").textContent = nb ? "starts" : "";
       setRing(0, "#6a5870"); setTFNext(nb ? (hm(nb.time) + (nb.mins || 30)) : nowMin()); renderSwitchChips("");
       // §10f.7 HOME (David ✓ 2026-07-13): the idle cockpit IS the app's landing home — story bars on top, the pink Track CIRCLE, Plan-my-day above a tools side-scroll. Supersedes the old 3-door §12 frame + docked next-sheet.
@@ -3911,8 +3913,8 @@
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
     tf.classList.add(onplan ? "st-onplan" : "st-off");
     // RUN-1 mocks 3/4: on-plan disc = striped (winning); off-plan disc = MATTE (dark tint + colored border + colored icon, no stripe, no filter)
-    if (tile) { if (onplan) { tile.style.background = D.c; tile.style.border = "none"; tile.style.color = "#fff"; tile.style.filter = ""; } else { tile.style.background = mixHex(D.c, "#160510", 0.82); tile.style.border = "3px solid " + D.c; tile.style.color = D.light; tile.style.filter = "none"; } tile.innerHTML = tiIcon(t); } // FOUNDATION RESKIN F1: on-plan disc = FLAT vivid activity fill + white icon (the home dial's flat-disc language, was tfStripe → loud game-piece); off-plan stays the quiet OUTLINED disc (dark fill + colored border + colored icon, STYLE-NEW-ERA)
-    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = mixHex(D.c, "#160510", 0.68); _tt.style.color = D.light; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // FOUNDATION RESKIN F1: a friendlier domain-tinted pill (68% toward ink, carries more of the activity color, like the menu-row cards) — was 80% near-black + too heavy against the new-era dial
+    if (tile) { tile.style.background = "repeating-linear-gradient(115deg," + D.c + " 0 13px," + mixHex(D.c, "#ffffff", 0.22) + " 13px 26px)"; tile.style.border = "3px solid #160510"; tile.style.color = "#160510"; tile.style.filter = "none"; tile.innerHTML = tiIcon(t); } // FIX PASS 2 B (design 2026-07-28, verbatim .disc-live): ONE live disc for on-plan AND off-plan — 115°/13px hue candy stripes, ink outline, ink glyph (56px + the 7px #2a1730 halo live in CSS). Supersedes the F1 flat-fill/white-icon + the off-plan hue-bordered matte disc (a hue border on a resting element is selection-only now).
+    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = "linear-gradient(100deg," + mixHex(D.c, "#ffffff", 0.20) + "," + D.c + ")"; _tt.style.color = "#160510"; _tt.style.borderColor = "#160510"; _tt.onclick = function () { tfPickTrack("Switch to?"); }; // FIX PASS 2 C (verbatim .title-pill): hue candy gradient + INK text (was a muddy 68%-ink fill with light-hue text); the ink outline / 16px radius / 5px sticker / Baloo 19px live in CSS
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan"); // kept for a11y — hidden by CSS in the five-element live body
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
     var elMin = (Date.now() - t.start) / 60000;
@@ -4970,6 +4972,15 @@
   }
   function tfClaimDismiss() { S._claimDismissed = true; save(); renderTrackerFull(); } // "not mine" → clear the claim, fall through to idle/night
   function tfNightBreathe() { if (typeof breathwork === "function") breathwork(4); else toast("rest — I've got the morning."); } // calm chip: a 4-cycle breath, or a gentle line
+  // FIX PASS 2 D (design 2026-07-28, frame 2a) — THE LIVE DOOR SET. One set for every live face (on-plan, off-plan, drift): the tools swap for
+  // Done (the solid green ending — same tfDone handler the old "Stop" carried, so nothing about the write path changed) plus two ghosts,
+  // Pause (the existing one-tap open-ended hold, tfStartBreak) and Replan (the What's-next picker at the next 5-min slot, exactly the call
+  // Plan-my-day makes). There is NO Stop button anywhere now, and no "extend" door — the extend sheet still auto-opens in the last 5 minutes.
+  function TF_LIVE_DOORS() {
+    return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true, finish: "solid", c: "#28cf86", ink: "#160510" },
+            { icon: "ti-player-pause", label: "Pause", fn: tfStartBreak, half: true },
+            { icon: "ti-calendar-event", label: "Replan", fn: tbxPlanDay, half: true }];
+  }
   // ===== ONE shared decision matrix (David 2026-06-28) =====
   // The SINGLE source of truth for what controls a tracker state offers. Both the EXPANDED ring (renderTFControls)
   // AND the FOLDED dock seg (renderLiveDock) render from this, so the two surfaces ALWAYS show the same actions
@@ -5007,9 +5018,7 @@
                 { icon: "ti-x", label: "End", fn: tfEndBreak }];
       case "onplan": // David device 2026-07-03, the logical matrix: ONE ending — «Стоп» (= done = shutoff; counts the win). «Перерыв» is the explicit pause-with-duration. Reschedule REMOVED (the title pill IS the switch). Extend lives in the docked chips («продлить?»).
         // DECLUTTER (David 2026-07-21): tracking face = two-clock minimal. ONE big Stop + ONE quiet secondary row (Break · extend). Regulation chips + the always-docked extend sheet are gone; "extend" reveals the existing chip sheet on demand (tfExtendPlan path unchanged).
-        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#ff5fa8", ink: "#4a1126" },
-                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }, // FOUNDATION RESKIN F1 (2026-07-21): Stop = PINK, the app's commit color (pink = commit per the color law; Stop logs the finished block = a commit). Matches the home play-disc pink so the one big primary reads as the same instrument. Was deep green.
-                { icon: "ti-clock-plus", label: "extend", fn: tfRevealExtend, half: true }];
+        return TF_LIVE_DOORS(); // FIX PASS 2 D (design 2026-07-28): there is NO Stop button. While live, the tools swap for the doors — Done (solid green) · Pause · Replan (ghosts). Supersedes the F1 pink Stop + Break/extend row.
       // ===== COCKPIT GUIDED MODES (CKPT-3, David 2026-06-28): same {icon,label,fn,primary} shape → renderTFControls AND renderDockSeg render them + the morph pairs them 1:1. Wave-1 = minimal [Done -> exitStage]; real beat-controls land in CKPT-5/6/8. =====
       case "journal":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
@@ -5032,16 +5041,8 @@
       case "am":
         return [{ icon: "ti-circle-check", label: "Save", fn: function () { exitStage(true); }, primary: true },
                 { icon: "ti-chevron-down", label: "Close", fn: function () { exitStage(false); } }];
-      default: { // OFF-PLAN while tracking (David 2026-07-02, C7+D2): the fusion tap LEADS — "Keep going N more minutes" turns the live track into a plan in one move. Pause is table-stakes (it only existed on-plan — that's why it was never seen). Replan/Create + Stop stay. Drift keeps Replan primary (planning-the-drift makes no sense — the way back leads).
-        var _dr = false; try { _dr = !!trackerState().drift; } catch (e) {}
-        var mk = tfHasPlan() ? { icon: "ti-arrows-shuffle", label: "Replan", fn: tfReplan } : { icon: "ti-calendar-plus", label: "Create plan", fn: tfCreatePlan };
-        if (_dr) return [{ icon: mk.icon, label: mk.label, fn: mk.fn, primary: true, finish: "solid", c: "#36b3f0", ink: "#08283c" }, // FOUNDATION RESKIN F1: the drift Replan primary = SOLID blue (was striped — stripes are an accent, not a wall; a loud striped door clashed with the new-era dial)
-                         { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true },
-                         { icon: "ti-player-stop", label: "Stop", fn: tfDone, half: true }];
-        return [{ icon: "ti-player-stop", label: "Stop", fn: tfDone, primary: true, finish: "solid", c: "#6b5a78", ink: "#f2ecf7" },
-                { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true }, // Batch 2 + David device 2026-07-03: "Pause" renamed to what it IS — «Перерыв» (break with a duration); Stop is the one ending everywhere.
-                { icon: "ti-clock-plus", label: "extend", fn: tfRevealExtend, half: true }]; // DECLUTTER 2026-07-21: off-plan extend now a quiet text-button too (reveals the "how much more?" chip sheet on demand); the sheet is no longer a docked tier
-      }
+      default: // OFF-PLAN (incl. drift) while tracking. FIX PASS 2 D (design 2026-07-28): ONE live door set for every live face — Done · Pause · Replan. The gray-lavender full-width Stop bar and the drift's blue-Replan-primary variant are both retired: Replan is now always one tap away as a ghost, so drift keeps its way back without a second door language.
+        return TF_LIVE_DOORS();
     }
   }
   function renderTFControls(state) { var c = el("tfCtrls"); if (!c) return; c.innerHTML = "";
@@ -5521,6 +5522,8 @@
   var TBX_MINS = [1, 3, 8, 10, 15, 20, 30, 45]; // the 21a minute grid (4-col × 2). The design's own ladder is unreadable (its data script is past the 256KB import cut) — this one brackets the 2/5 fast chips on both sides. Flagged in the handoff.
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
+  function tbxHexOf(tok) { return (tok && tok.charAt(0) === "#") ? tok : (TBX_HEX[tok] || TBX_HEX.create); }                                    // domain token → its literal hex (the .tbx CSS vars mirror TBX_HEX exactly), so JS can do real color math on it
+  function tbxFaceGrad(tok) { var h = tbxHexOf(tok); return "linear-gradient(100deg," + mixHex(h, "#ffffff", 0.18) + " 0%," + h + " 60%)"; }  // FIX PASS 2 E (design 2026-07-28, verbatim): the tool-deck FACE card is a hue face — color-mix(hue 82%, #fff) → hue at 60% on a 100° axis. Resolved through mixHex (plain rgb) so designAudit can read it back; the ink outline + 0 4px 0 ink sticker + ink glyph live in .tbx-face.
   function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet)
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
@@ -5564,7 +5567,7 @@
     var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name)); cell.setAttribute("data-tbxcell", id);
     var wrap = add(cell, "div", "tbx-face-wrap");
     (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = tbxLip(tbxVar(it.dom)); add(face, "i", "ti " + it.ti);
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceGrad(it.dom); face.style.boxShadow = "0 4px 0 #160510"; add(face, "i", "ti " + it.ti); // FIX PASS 2 E: hue candy face + hard INK sticker (the borderless soft-shadow card + white glyph was the miss); the peek shards keep their own lip — "shards are right"
     var lbl = add(cell, "span", "tbx-label", tr(it.name)); lbl.style.color = tbxVar(it.dom);
     cell.onclick = function () { try { tbxOpenDose(id, cell); } catch (e) {} };
     return cell;
@@ -5685,7 +5688,7 @@
   function tbxBuilderTile(host) { // the PINNED 8th tile: same tile mark (54px face / radius 19 / lip) in create-purple with ti-plus + label "Build", no peek coins. Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
     var wrap = add(cell, "div", "tbx-face-wrap");
-    var face = add(wrap, "div", "tbx-face"); face.style.background = "var(--create)"; face.style.boxShadow = tbxLip("var(--create)"); add(face, "i", "ti ti-plus");
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceGrad("create"); face.style.boxShadow = "0 4px 0 #160510"; add(face, "i", "ti ti-plus"); // FIX PASS 2 E: the pinned 8th tile wears the same hue candy face + ink sticker as every other deck tile
     var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = "var(--create)";
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
@@ -5955,6 +5958,7 @@
   function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
   function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
+  function pkCandy(hex) { return "linear-gradient(100deg," + mixHex(hex, "#ffffff", 0.18) + " 0%," + hex + " 60%)"; } // FIX PASS 2 A (design 2026-07-28, verbatim): the mini-sheet face = color-mix(hue 82%, #fff) → hue at 60%, on a 100° axis. mixHex(…,0.18) IS the 82% mix; it resolves to rgb() so the design audit can read it.
   function pkDeep(dom) { return mixHex(pkHue(dom), "#160510", 0.45); }
   function pkLip(dom) { return "0 4px 0 " + pkDeep(dom) + ", 0 0 0 2px #160510"; }
   function pkChains() { try { return (S.tools && S.tools.pkChains) || []; } catch (e) { return []; } } // additive store, guarded read — NO SCHEMA bump
@@ -6009,15 +6013,20 @@
     var by = bentoByDomain(), grid = add(host, "div", "pk-fgrid");
     DOM_ORDER.forEach(function (d) {
       var acts = by[d] || []; if (!acts.length) return; var D = DOM[d], hue = D.c;
-      var b = add(grid, "button", "pk-fcell");
-      var tile = add(b, "span", "pk-ftile"); tile.style.background = mixHex(hue, "#1e0b18", 0.88); // the ONLY hue on the card chrome: a 12% wash on --tile-night. Border + sticker are ink (CSS).
+      var took = {}, nq = 0; // ROUND 3 (18a PNG): what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
+      (_pk.queue || []).forEach(function (p) { if (p.kind === "act" && p.dom === d) { nq++; took[p.title] = 1; } });
+      var tile = add(grid, "button", "pk-ftile"); tile.style.background = mixHex(hue, "#241022", 0.88); // the shell is NIGHT (#241022) washed 12% with the hue — never a full hue face. Border + sticker are ink (CSS).
+      if (nq) tile.classList.add("on"); // ≥1 pick from this folder → the edge goes pink (selection is the ONE legal hue border)
       var mini = add(tile, "span", "pk-mini");
-      acts.slice(0, 4).forEach(function (a) { var w = add(mini, "span", "pk-mstack"); // 2x2 fanned mini-sheets — each one a real activity, shards peeking up-left
-        var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55);
-        var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
-        var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = "0 2.5px 0 " + mixHex(hue, "#000000", 0.55); add(fc, "i", "ti " + tiClass(a)); });
-      var nm = add(b, "span", "pk-fname", tr(D.l)); nm.style.color = hue; // the domain name centered UNDER the tile, in its hue. No icon, no count anywhere.
-      b.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+      acts.slice(0, 6).forEach(function (a) { // 3x2 of FLAT tight coins, exactly the PNG — no shard/fan layers here (the folder-sheet bundles and the queue deck keep theirs)
+        var fc = add(mini, "span", "pk-face"); fc.style.background = pkCandy(hue); fc.style.boxShadow = "0 3px 0 #160510";
+        if (took[a.title]) { fc.classList.add("on"); add(fc, "span", "pk-gloss"); } // the picked activity: pink edge + the PNG's diagonal shine
+        add(fc, "i", "ti " + tiClass(a)); });
+      var nrow = add(tile, "span", "pk-fnrow"); // the name row lives INSIDE the tile bottom (PNG): domain glyph in the hue · name · count
+      var ni = add(nrow, "i", "ti " + (D.ti || "ti-circle")); ni.style.color = hue;
+      add(nrow, "span", "pk-fnm", tr(D.l));
+      var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? hue : mixHex(hue, "#160510", 0.45); // plain total, dimmed, until this folder has given something — then "n / total" in the live hue (PNG's Move "1 / 9")
+      tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
     var sec = add(host, "div", "pk-sec"); add(sec, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
     var sg = add(sec, "div", "pk-fgrid");
@@ -6090,7 +6099,7 @@
   function pkStepList(host, steps) { steps.forEach(function (s) { var r = add(host, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = s.c; c.style.boxShadow = "0 2px 0 " + mixHex(s.c, "#160510", 0.45) + ", 0 0 0 2px #160510"; add(c, "i", "ti " + s.i); add(r, "span", "pk-stept", s.t); add(r, "span", "pk-stepm", pkShort(s.m)); }); } // read-only scaled readout — a chain's steps are set in the Session Editor, not here
   function pkActSteps(host, p) { // an activity's steps ARE the block's own sub-steps (the existing b.subs model) — tap to add one from the same folder sheet, never a keyboard
     var box = add(host, "div", "pk-steps");
-    (p.subs || []).forEach(function (s, i) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(pkHue(p.dom), "#160510", 0.35); add(c, "i", "ti ti-point"); add(r, "span", "pk-stept", s.t);
+    (p.subs || []).forEach(function (s, i) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(pkHue(p.dom), "#160510", 0.35); add(c, "i", "ti ti-point").style.color = "#f0dceb"; add(r, "span", "pk-stept", s.t); // the sub-step dot rides a DARKENED hue coin, so it keeps a light glyph (the ink-on-hue law applies to full-hue fills)
       var x = add(r, "button", "pk-qx"); x.style.position = "static"; add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function () { p.subs.splice(i, 1); pkPaint(); }; });
     var b = add(box, "button", "pk-addstep"); add(b, "i", "ti ti-plus"); add(b, "span", null, tr("Add a step"));
     b.onclick = function () { _pk.stepFor = p.uid; _pk.sheet = { kind: "dom", dom: p.dom, more: false, naming: false, draft: "" }; pkBuildSheet(); };
@@ -6237,7 +6246,7 @@
     var t2 = add(row2, "button", "pk-trash"); add(t2, "i", "ti ti-trash"); t2.setAttribute("aria-label", tr("Remove")); t2.onclick = function () { pkDrop(i); };
     if (_pk.aPri) { var pr = add(host, "div", "pk-pris"); PK_PRIS.forEach(function (P) { var b = add(pr, "button", "pk-pri", tr(P.l)); pkSkin(b, null, hue, p.prio === P.v); b.onclick = function () { p.prio = (p.prio === P.v) ? 0 : P.v; _pk.aPri = false; pkPaintArr(); }; }); }
     if (_pk.aSteps) { var box = add(host, "div", "pk-steps");
-      (p.subs || []).forEach(function (s, si) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(hue, "#160510", 0.35); add(c, "i", "ti ti-point"); add(r, "span", "pk-stept", s.t);
+      (p.subs || []).forEach(function (s, si) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(hue, "#160510", 0.35); add(c, "i", "ti ti-point").style.color = "#f0dceb"; add(r, "span", "pk-stept", s.t); // dark coin → light glyph (see pkChainBox)
         var x = add(r, "button", "pk-qx"); x.style.position = "static"; add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function () { p.subs.splice(si, 1); pkPaintArr(); }; });
       var ad = add(box, "button", "pk-addstep"); add(ad, "i", "ti ti-plus"); add(ad, "span", null, tr("Add a step"));
       ad.onclick = function () { _pk.stepFor = p.uid; _pk.view = "pick"; _pk.sheet = { kind: "dom", dom: p.dom, more: false, naming: false, draft: "" }; pkPaintShell(); pkBuildSheet(); };
@@ -15451,6 +15460,7 @@
   Object.assign(I18N.ru, { "Day taking shape": "День собирается", "Day is set": "День собран", "things. See you at the first.": "дел. Увидимся на первом.", "First one lived — the day is lit.": "Первое дело прожито — день зажёгся." }); // plan-day strip + seal + first-light strings (B4)
   Object.assign(I18N.ru, { "start": "начало", "length": "длина", "More": "Ещё", "Block": "Блок" }); // edge-inspector strings (B4; "delete" already in the dict)
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
+  Object.assign(I18N.ru, { "starts at": "начало в", "play begins it now": "старт запустит сейчас" }); // ROUND 3 (2a-player-idle PNG): the idle-with-a-plan sub-line under the disc (B4 law — EN source + RU in the same commit)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
   Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime — even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful — a warm drifting drone · Mysterious — a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь", "Guide's voice": "Голос гида", "the spoken guide during a session": "озвученный гид во время сессии" });
   Object.assign(I18N.ru, { // ONBOARDING V2 (B4) — survey, options, plan, beats
@@ -15719,7 +15729,14 @@
         chk("deck row clears the home fold (names not clipped)", (hzr.bottom - dlb) >= 26, Math.round(hzr.bottom - dlb) + "px above the zone bottom · label bottom " + Math.round(dlb) + " / vh " + H, "≥26px (12px of air + the ~14px sky sliver the world lands with; the ground pull also subtracts the device safe-area)");
       }
     }
-    if (tfaces.length >= 3) { chk("tile1 face hex (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58)"); chk("tile3 face hex (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160)"); var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", getComputedStyle(tfaces[0]).borderTopLeftRadius === "19px", getComputedStyle(tfaces[0]).borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +getComputedStyle(tfaces[0]).zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
+    // FIX PASS 2 E (design 2026-07-28): the deck faces are no longer FLAT hue — they're a 100° candy gradient behind an ink outline + a hard ink sticker, with an INK glyph. The old flat-rgb reads would false-FAIL forever, so they're replaced by the new law: gradient carrying the tile's own raw hue, ink border, ink sticker, ink glyph. (Geometry gates below are untouched.)
+    if (tfaces.length >= 3) { var f0 = getComputedStyle(tfaces[0]), bi0 = f0.backgroundImage, bi2 = getComputedStyle(tfaces[2]).backgroundImage;
+      chk("tile1 face candy gradient carries move hue", bi0.indexOf("linear-gradient") >= 0 && bi0.indexOf("rgb(255, 138, 58)") >= 0, bi0.slice(0, 64), "linear-gradient(100deg,…, rgb(255,138,58) 60%)");
+      chk("tile3 face candy gradient carries connect hue", bi2.indexOf("linear-gradient") >= 0 && bi2.indexOf("rgb(255, 95, 160)") >= 0, bi2.slice(0, 64), "linear-gradient(100deg,…, rgb(255,95,160) 60%)");
+      chk("tile face ink border 2.5px", f0.borderTopColor === "rgb(22, 5, 16)" && Math.abs(parseFloat(f0.borderTopWidth) - 2.5) <= 0.6, f0.borderTopWidth + " " + f0.borderTopColor, "2.5px rgb(22,5,16)");
+      chk("tile face sticker 0 4px 0 #160510", f0.boxShadow.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(f0.boxShadow), f0.boxShadow.slice(0, 46), "rgb(22,5,16) 0px 4px 0px");
+      var g0 = tfaces[0].querySelector("i"); chk("tile glyph is INK (never white on a hue fill)", !!g0 && getComputedStyle(g0).color === "rgb(22, 5, 16)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(22,5,16)");
+      var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", f0.borderTopLeftRadius === "19px", f0.borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");

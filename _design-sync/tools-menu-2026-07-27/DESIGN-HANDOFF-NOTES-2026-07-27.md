@@ -1,9 +1,54 @@
 # Alter — Design Handoff Notes
-Last updated: 2026-07-27 (FIX PASS added after reviewing the build screenshots). Design system guide (`_ds/…202b0364…`) is the law; when this doc and the guide conflict, the guide wins.
+Last updated: 2026-07-28 (FIX PASS 2 — build screenshots from 11:42 still violate the ink/sticker laws; verbatim CSS now included. STOP WRITING YOUR OWN VALUES — paste these). Design system guide (`_ds/…202b0364…`) is the law; when this doc and the guide conflict, the guide wins.
 
 ---
 
-## ⚠️ FIX PASS — the build has drifted. Correct ALL of these.
+## 🔴 FIX PASS 2 (2026-07-28) — copy-paste CSS. Do not improvise.
+
+Reviewed: the live "What's next?" wall and the live player. Same violations as FIX PASS 1 are STILL in the build (white icons on hue, soft hue-glow shadows, zero ink borders) plus new player ones. Every rule below is literal CSS from the reference DCs — paste it, don't restyle it.
+
+### A. Domain folder tile (wall) — the build renders full-saturated hue slabs with white line icons. Wrong twice.
+```css
+/* tile shell — NIGHT washed 12% with the hue, never a full hue face */
+.folder-tile { background: color-mix(in srgb, var(--hue) 12%, #241022); border: 3px solid #160510; border-radius: 15px; box-shadow: 0 4px 0 #160510; padding: 10px; }
+/* inside: 2×2 mini fanned sheets. Each mini sheet FACE is the hue: */
+.mini-sheet { background: linear-gradient(100deg, color-mix(in srgb, var(--hue) 82%, #fff) 0%, var(--hue) 60%); border: 2.5px solid #160510; border-radius: 11px; box-shadow: 0 3px 0 #160510; }
+.mini-sheet .ti { color: #160510; } /* ICON IS INK. Never white, never a tint. */
+/* name centered UNDER the tile, in the hue: */
+.folder-name { font: 800 15px 'Baloo 2'; color: var(--hue); text-align: center; }
+```
+No `filter: drop-shadow`, no `box-shadow: 0 0 40px <hue>` blooms anywhere on the wall.
+
+### B. Player disc, live — the build shows a dark disc with a thin hue ring. Canonical (2a):
+```css
+/* live disc = the domain's candy stripes, ink edge, halo ring */
+.disc-live { width: 214px; height: 214px; border-radius: 50%; border: 3px solid #160510; box-shadow: 0 0 0 7px #2a1730; background: repeating-linear-gradient(115deg, var(--hue) 0 13px, color-mix(in srgb, var(--hue) 78%, #fff) 13px 26px); }
+.disc-live .ti { color: #160510; font-size: 56px; } /* activity glyph in INK */
+/* progress ring floods clockwise in green #28cf86 with a #fff2f9 arc-head dot */
+```
+
+### C. Title pill under the disc — build: muddy brown fill + orange text. Canonical:
+```css
+.title-pill { background: linear-gradient(100deg, color-mix(in srgb, var(--hue) 80%, #fff), var(--hue)); color: #160510; border: 2.5px solid #160510; border-radius: 16px; box-shadow: 0 5px 0 #160510; font: 800 19px 'Baloo 2'; padding: 9px 18px; }
+```
+
+### D. There is NO "Stop" button. While live, tools swap for the doors (2a):
+- **Done** — solid green `#28cf86`, 54px tall, `2.5px solid #160510`, `0 5px 0 #160510`, ink text.
+- **Pause** / **Replan** — ghost: `2.5px solid #4b2a44` on `rgba(255,242,249,.05)`, text `#e8c7d8`. No fill, no bloom.
+The gray-lavender full-width "Stop" bar and the still-visible tool grid during a live session are both wrong — live mode hides the tool deck.
+
+### E. Tool deck tiles (idle home only) — shards are right, faces are wrong:
+face card = hue face (100° gradient as in A) with **ink glyph**, `2.5px solid #160510`, `0 4px 0 #160510`; name under it in its own hue. White icons + borderless soft-shadow cards = redo.
+
+### F. Global grep-and-kill list
+- `color: #fff` / `color: white` on any element sitting on a hue fill → `#160510`.
+- `box-shadow` containing `px` blur under cards/tiles/buttons → hard `0 Npx 0 #160510` per the press ladder (chips 3 / tiles 4 / buttons 5 / stone 7).
+- borders in a hue on resting elements → `#160510` (hue border = selection only).
+- Acceptance check: screenshot any screen, desaturate it — every element must still show a dark outline and a hard offset shadow. If it looks like soft neon blobs, it fails.
+
+---
+
+## ⚠️ FIX PASS 1 — the build has drifted. Correct ALL of these.
 
 Reviewed screenshots: the "What next?" domain wall and the "Build a stack" editor. Both violate core laws. Fix list, in order of egregiousness:
 

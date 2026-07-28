@@ -1723,6 +1723,8 @@
   #trackerFull.tf-onepage.tf-onehome #tfHomeBars{ transition:none !important; }
   #trackerFull.tf-onepage.tf-onehome .tf-stage{ touch-action:pan-y !important; } /* SCROLL FIX (David 2026-07-22): the stage carries an inline touch-action:none for drag-to-close — a dead scroll zone dead-center on the one-page home. Force pan-y so the circle area scrolls the column like everything else (tfDrag also bails here). */
   #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -19vh) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px); } /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
+  /* FIX PASS 2 D (design 2026-07-28) "live mode hides the tool deck": the ground PULL is cancelled while tracking, so the deck starts exactly at the fold instead of rising into the live face. Reconciles the design law with David's 2026-07-22 device law ("when tracking you should still be able to scroll down and see the tools") — the deck is hidden on the live screen, one scroll away, not deleted. */
+  #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
   /* GROUND section header + the extra tool rows (rendered by renderGroundTools with the same .tf-htool tiles) */
@@ -1743,8 +1745,8 @@
   .tbx-grid-main{ padding:6px 0; }
   .tbx-cell{ display:flex; flex-direction:column; align-items:center; gap:calc(7px * var(--tun-tbx-tile, 1)); width:calc(64px * var(--tun-tbx-tile, 1)); background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-face-wrap{ position:relative; width:calc(54px * var(--tun-tbx-tile, 1)); height:calc(54px * var(--tun-tbx-tile, 1)); }
-  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */
-  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#fff2f9; }
+  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); border:2.5px solid #160510; box-shadow:0 4px 0 #160510; display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */ /* FIX PASS 2 E (design 2026-07-28): the face card is a HUE face (100° candy gradient, painted in JS) behind an INK outline + hard ink sticker — borderless soft-shadow cards were the miss. Shards (.tbx-coin) stay as they are: "shards are right". */
+  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#160510; } /* FIX PASS 2 F: ink-on-hue — never white on a hue fill */
   .tbx-coin{ position:absolute; border-radius:calc(19px * var(--tun-tbx-tile, 1)); }
   .tbx-coin1{ width:calc(46px * var(--tun-tbx-tile, 1)); height:calc(46px * var(--tun-tbx-tile, 1)); top:calc(-2px * var(--tun-tbx-tile, 1)); left:calc(-5px * var(--tun-tbx-tile, 1)); z-index:2; } /* the BIGGER peek coin — z2, paints in FRONT of coin2 (canvas telescope) */
   .tbx-coin2{ width:calc(38px * var(--tun-tbx-tile, 1)); height:calc(38px * var(--tun-tbx-tile, 1)); top:calc(-3px * var(--tun-tbx-tile, 1)); left:calc(-8px * var(--tun-tbx-tile, 1)); z-index:1; } /* the smaller/outer coin — z1, behind coin1 */
@@ -1753,7 +1755,7 @@
   .tbx-hero{ background:#241019; border-radius:18px; padding:12px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); display:flex; align-items:center; gap:12px; }
   .tbx-hero-coins{ display:flex; gap:6px; flex:0 0 auto; }
   .tbx-hcoin{ width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
-  .tbx-hcoin i{ font-size:15px; color:#fff2f9; }
+  .tbx-hcoin i{ font-size:15px; color:#160510; } /* FIX PASS 2 F: ink-on-hue */
   .tbx-hero-mid{ flex:1; min-width:0; }
   .tbx-hkicker{ display:block; font-size:9px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; }
   .tbx-hname{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; }
@@ -1766,7 +1768,7 @@
   .tbx-square:active{ transform:translateY(2px); }
   .tbx-sq-prev{ display:grid; grid-template-columns:repeat(2,20px); gap:5px; }
   .tbx-sq-mini{ width:20px; height:20px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
-  .tbx-sq-mini i{ font-size:10px; color:#fff2f9; }
+  .tbx-sq-mini i{ font-size:10px; color:#160510; } /* FIX PASS 2 F: ink-on-hue */
   .tbx-sq-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10px; line-height:1; }
   .tbx-panel{ grid-column:1/-1; border-radius:18px; padding:12px 13px; }
   .tbx-panel-head{ display:flex; align-items:center; gap:8px; width:100%; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -1779,14 +1781,14 @@
   .tbx-dose{ background:#241019; border-radius:18px; padding:13px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
   .tbx-dose-head{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
   .tbx-dose-face{ width:44px; height:44px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-  .tbx-dose-face i{ font-size:20px; color:#fff2f9; }
+  .tbx-dose-face i{ font-size:20px; color:#160510; } /* FIX PASS 2 F: ink-on-hue */
   .tbx-dose-htx{ min-width:0; }
   .tbx-dose-kicker{ font-size:9px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; }
   .tbx-dose-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; }
   .tbx-dose-steps{ display:flex; flex-direction:column; gap:7px; }
   .tbx-step{ display:flex; align-items:center; gap:10px; }
   .tbx-stepcoin{ width:24px; height:24px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-  .tbx-stepcoin i{ font-size:11px; color:#fff2f9; }
+  .tbx-stepcoin i{ font-size:11px; color:#160510; } /* FIX PASS 2 F: ink-on-hue (the one dark-seal step carries its own gold ink inline) */
   .tbx-step-tx{ flex:1; min-width:0; font-size:12px; font-weight:700; color:#e6cfe0; }
   .tbx-step-tm{ flex:0 0 auto; font-size:10.5px; font-weight:800; color:#9a6a86; font-variant-numeric:tabular-nums; } /* 21e per-step time column — the duration this step actually runs at the chosen dose */
   .tbx-dose-chev{ margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:9px; border:none; background:#180a14; color:#9a6a86; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -1930,7 +1932,7 @@
   .sed-fsave:active,.sed-fgear:active{ transform:translateY(3px); }
   .sed-fstart:active{ transform:translateY(4px); box-shadow:0 1px 0 #160510; }
   /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-panel/.pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
-  .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; }
+  .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --play:#ffc83d; --restore:#2ab8c4; --upkeep:#7f9bc4; } /* the 8 domain vars, mirrored from .tbx: a chain step carried out of the Session Editor stores its hue as var(--dom), and it must resolve here too (an unresolved var painted a transparent coin) */
   .pk-ov *{ box-sizing:border-box; }
   .pk-ov ::-webkit-scrollbar{ width:0; height:0; }
   .pk-wall{ position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); animation:ovFade var(--dur-micro) var(--ease-settle) both; }
@@ -1945,17 +1947,19 @@
   .pk-fgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
   .pk-folder{ display:flex; flex-direction:column; gap:9px; padding:11px 11px 12px; border-radius:20px; background:#1e0b18; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-folder:active{ transform:translateY(2px); }
-  /* the DOMAIN tile: borders and sticker are ink, always — the hue lives in the fill (12% wash) and in the name under the card, never in the edge */
-  .pk-fcell{ display:flex; flex-direction:column; width:100%; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .pk-ftile{ display:flex; flex-direction:column; padding:11px 11px 12px; border-radius:20px; border:3px solid #160510; box-shadow:0 4px 0 #160510; }
-  .pk-fcell:active .pk-ftile{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .pk-fname{ display:block; margin-top:7px; text-align:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15.5px; line-height:1.1; }
-  .pk-mini{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:6px 0 0 6px; }
-  .pk-mstack{ aspect-ratio:1; position:relative; }
-  .pk-mstack .pk-pk2{ position:absolute; left:-6px; top:-6px; right:6px; bottom:6px; border-radius:26%; }
-  .pk-mstack .pk-pk1{ position:absolute; left:-3px; top:-3px; right:3px; bottom:3px; border-radius:26%; }
-  .pk-mstack .pk-face{ position:absolute; inset:0; border-radius:26%; display:flex; align-items:center; justify-content:center; }
-  .pk-mstack .pk-face i{ font-size:15px; color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); } /* ink-on-hue law: never a lighter tint of the coin's own hue */
+  /* ===== THE DOMAIN TILE — ROUND 3 (David's own 18a-picker PNG is canonical on STRUCTURE and OVERRIDES FIX PASS 1 §4 + FIX PASS 2 §A here): the tile is ONE button; inside it a 3×2 grid of FLAT tight coins (no shards, no fan — those stay on the folder-sheet bundles and the queue deck), then a name row along the bottom INSIDE the tile: domain glyph in the hue · name in #fff2f9 · count on the right. FIX PASS 2's MATERIAL laws survive intact and the PNG obeys them: hue candy face, 2.5px ink outline, hard ink sticker, INK glyph, no blooms. SELECTION is the only legal hue border: a tile holding ≥1 queued pick turns its edge pink, and so does each picked coin (plus a diagonal gloss streak). ===== */
+  .pk-ftile{ display:flex; flex-direction:column; width:100%; padding:10px; border-radius:15px; border:3px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
+  .pk-ftile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (PNG: Move + Focus): the ONE place a hue edge is legal */
+  .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; border:2.5px solid #160510; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .pk-mini .pk-face i{ font-size:15px; color:#160510; position:relative; z-index:1; } /* ICON IS INK. Never white, never a tint. */
+  .pk-mini .pk-face.on{ border-color:#ff4fa0; } /* the picked activity inside the folder */
+  .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the PNG's diagonal shine on a picked coin */
+  .pk-fnrow{ display:flex; align-items:center; gap:6px; margin-top:9px; }
+  .pk-fnrow > i{ flex:none; font-size:14px; }
+  .pk-fnm{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.05; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pk-fct{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; }
   .pk-frow{ display:flex; align-items:center; gap:6px; }
   .pk-frow > i{ font-size:15px; flex:none; }
   .pk-seclbl{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#96637e; }
@@ -2012,7 +2016,7 @@
   .pk-steps{ display:flex; flex-direction:column; gap:8px; animation:edPop .14s ease both; }
   .pk-step{ display:flex; align-items:center; gap:9px; }
   .pk-stepc{ width:26px; height:26px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }
-  .pk-stepc i{ color:#fff2f9; font-size:13px; }
+  .pk-stepc i{ color:#160510; font-size:13px; } /* FIX PASS 2 F: ink-on-hue (the dark sub-step dots set their own light glyph inline) */
   .pk-stept{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:700; font-size:13.5px; color:#e0bdd2; }
   .pk-stepm{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; color:#96637e; }
   .pk-addstep{ width:100%; min-height:44px; border-radius:13px; border:2px dashed #4b2a44; background:rgba(255,242,249,.03); color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; animation:edPop .14s ease both; -webkit-tap-highlight-color:transparent; }
@@ -2195,8 +2199,11 @@
   .tf-door{ width:100%; min-height:54px; border:2.5px solid #160510; border-radius:13px; font-family:"Jost",sans-serif; font-weight:800; font-size:15.5px; display:flex; align-items:center; justify-content:center; gap:9px; cursor:pointer; box-shadow:0 4px 0 #160510; transition:transform .16s cubic-bezier(.34,1.56,.64,1), box-shadow .16s cubic-bezier(.34,1.56,.64,1); }
   .tf-door:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
   .tf-door i{ font-size:19px; }
-  .tf-door-ghost{ background:transparent; border-color:#3a2540; box-shadow:none; color:#c9a6c4; font-weight:700; font-size:14px; min-height:48px; }
+  .tf-door-ghost{ background:rgba(255,242,249,.05); border-color:#4b2a44; border-width:2.5px; box-shadow:none; color:#e8c7d8; font-weight:700; font-size:14px; min-height:48px; } /* FIX PASS 2 D (verbatim): the ghost door = 2.5px #4b2a44 on rgba(255,242,249,.05), text #e8c7d8. No fill, no bloom. Same ghost material as the picker's .pk-back/.pk-circ. */
   .tf-door-ghost:active{ transform:translateY(2px); }
+  /* FIX PASS 2 D: on the LIVE face the tools swap for the doors — Done is the solid green 54px stone (buttons = 5px on the press ladder), Pause + Replan are ghosts. There is NO Stop button anywhere. */
+  #trackerFull.st-onplan .tf-door-solid, #trackerFull.st-off .tf-door-solid{ box-shadow:0 5px 0 #160510; }
+  #trackerFull.st-onplan .tf-door-solid:active, #trackerFull.st-off .tf-door-solid:active{ transform:translateY(4px); box-shadow:0 1px 0 #160510; }
   /* GRAND BUILD F — fog-of-war chapter banners: distant chapters are mist, not padlocked walls */
   .jp-unit.fog{ background:linear-gradient(180deg, rgba(42,19,32,.85), rgba(42,19,32,.3)); border-color:#33182a; color:#7a5a6c; margin:14px 26px 6px; padding:9px 15px; }
   .jp-unit.fog .ju-t{ font-size:15px; opacity:.8; }
@@ -2301,16 +2308,20 @@
   /* ===== RUN-1 1:1 LIVE COCKPIT (David 2026-07-03 — mocks 3 & 4): the five-element winning body — chrome leaves; even green annulus + converter dot; off-plan = dashed ring + matte disc ===== */
   #trackerFull.st-onplan .tf-clock, #trackerFull.st-onplan .tf-spark, #trackerFull.st-onplan .tf-say, #trackerFull.st-onplan .tf-sf, #trackerFull.st-onplan .tf-verdict, #trackerFull.st-onplan .tf-elabel, #trackerFull.st-onplan .tf-switch, #trackerFull.st-onplan #tfStageChips, #trackerFull.st-onplan #tfGear,
   #trackerFull.st-off .tf-clock, #trackerFull.st-off .tf-spark, #trackerFull.st-off .tf-say, #trackerFull.st-off .tf-sf, #trackerFull.st-off .tf-verdict, #trackerFull.st-off .tf-elabel, #trackerFull.st-off .tf-switch, #trackerFull.st-off #tfStageChips, #trackerFull.st-off #tfGear{ display:none; } /* chrome leaves — but the CLOSE chevron STAYS in on/off-plan (Batch 2 item 1: a clear close ≠ the deliberate green Done) */
-  #trackerFull.st-onplan .tf-title.switchable, #trackerFull.st-off .tf-title.switchable{ margin-top:18px; padding:8px 18px; font-family:var(--bub); font-weight:800; font-size:18px; border:none; border-radius:22px; box-shadow:0 3px 0 #160510; } /* FOUNDATION RESKIN F1: friendly Baloo switch-pill (bigger, no ink border, soft lift) — matches the home face's big-friendly type; was Jost 15px with an ink border */
+  /* FIX PASS 2 C (design 2026-07-28, verbatim .title-pill): the name under the disc is a HUE CANDY pill (100° gradient painted in JS) with INK text, a 2.5px ink outline and a 5px hard ink sticker — the muddy 68%-ink fill + light-hue text was the miss. */
+  #trackerFull.st-onplan .tf-title.switchable, #trackerFull.st-off .tf-title.switchable{ margin-top:18px; padding:9px 18px; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; border:2.5px solid #160510; border-radius:16px; box-shadow:0 5px 0 #160510; }
+  #trackerFull.st-onplan .tf-title.switchable:active, #trackerFull.st-off .tf-title.switchable:active{ transform:translateY(4px); box-shadow:0 1px 0 #160510; } /* press ladder: 5px sticker → 4px travel */
   #trackerFull.st-onplan .tf-time, #trackerFull.st-off .tf-time{ margin-top:8px; font-size:44px; line-height:1; font-family:"Jost",sans-serif; font-weight:800; letter-spacing:1px; font-variant-numeric:tabular-nums; } /* canon 3/4: Jost 800 heavy; line-height:1 so the tall glyphs don't overrun the line below */
   #trackerFull.st-onplan .tf-time{ animation:tfMinPop 4s ease-in-out infinite; transform-origin:center; } /* minute-earn pop */
   @keyframes tfMinPop{ 0%,88%,100%{ transform:scale(1); } 93%{ transform:scale(1.05); } }
   #trackerFull.st-onplan .tf-ctx, #trackerFull.st-off .tf-ctx{ margin-top:11px; font-size:13.5px; color:#b39ab0; } /* room so the pulsing timer never covers the «по плану» line (David device) */
   /* EVEN + CHUNKY (David 2026-07-03): keep the hard game-piece drop-shadow AND an even green band — nudge the disc up 3px so the disc+6px-shadow mass is centered in the ring → visible green reads equal top & bottom */
-  #trackerFull.st-onplan .tf-tile{ box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.10); transform:translateY(-3px); }
+  /* ===== FIX PASS 2 B (design 2026-07-28, verbatim .disc-live) — the LIVE player disc. Was a dark disc with a thin hue ring (off-plan) / a flat vivid disc (on-plan); canonical 2a is ONE disc for both: 115°/13px hue candy STRIPES, a 3px ink outline, a 7px #2a1730 halo and a 56px INK glyph. The design's 214px lands on David's 430pt frame as 60vw ring − 46px inset; the progress band keeps ~16px of green outside the halo. ===== */
+  #trackerFull.st-onplan:not(.tf-staged) #tfRing, #trackerFull.st-off:not(.tf-staged) #tfRing{ width:min(60vw,260px); }
+  #trackerFull.st-onplan:not(.tf-staged) .tf-tile, #trackerFull.st-off:not(.tf-staged) .tf-tile{ width:calc(100% - 46px); border:3px solid #160510; box-shadow:0 0 0 7px #2a1730; font-size:56px; transform:none; filter:none; } /* :not(.tf-staged) — a guided stage corner-poses the ring at 64px and can still carry a stale st-* class; the wide inset must never reach it */
   .tf-endpip{ display:none !important; } /* RETIRED (David device 2026-07-03): the 12-o'clock notch read as a stray circular shadow */
-  .tf-convdot{ position:absolute; width:13px; height:13px; border-radius:50%; background:#ffd24a; box-shadow:0 0 6px 1px rgba(255,210,74,.7); display:none; z-index:2; pointer-events:none; animation:tfConvDot 3s ease-in-out infinite; } /* the PRESENT MOMENT BURNING — gold, sized to the band so it fully covers the green leading edge (David device 2026-07-03) */
-  @keyframes tfConvDot{ 0%,100%{ transform:translate(-50%,-50%) scale(1); box-shadow:0 0 6px 1px rgba(255,210,74,.7); } 50%{ transform:translate(-50%,-50%) scale(1.35); box-shadow:0 0 13px 4px rgba(255,210,74,.95); } }
+  .tf-convdot{ position:absolute; width:13px; height:13px; border-radius:50%; background:#fff2f9; display:none; z-index:2; pointer-events:none; animation:tfConvDot 3s ease-in-out infinite; } /* FIX PASS 2 B: the arc-head dot is #fff2f9 — the gold bloom is gone (no soft neon blobs) */
+  @keyframes tfConvDot{ 0%,100%{ transform:translate(-50%,-50%) scale(1); } 50%{ transform:translate(-50%,-50%) scale(1.35); } }
   #trackerFull.st-onplan .tf-convdot{ display:block; }
   /* LIVE META (streak · Spark) + NEXT-UP — only in the live cockpit states, tasteful and dim (David device 2026-07-03) */
   .tf-livemeta{ display:none; position:absolute; top:calc(env(safe-area-inset-top,0px) + 22px); left:20px; right:20px; z-index:3; align-items:center; justify-content:space-between; font-family:"Jost",sans-serif; font-weight:800; font-size:13.5px; color:#c9a0b8; pointer-events:none; }
@@ -2329,7 +2340,7 @@
   #trackerFull.st-onplan #tfRing, #trackerFull.st-off #tfRing, #trackerFull.st-claim #tfRing, #trackerFull.st-break #tfRing{ box-shadow:0 12px 26px rgba(0,0,0,.5); } /* the home dial's soft floating lift (no colored bloom — the arc is its own light) */
   #trackerFull.st-night #tfRing{ box-shadow:0 12px 26px rgba(0,0,0,.5), 0 0 40px rgba(90,74,134,.22); } /* night: the same lift + a faint violet nightlight bloom */
   #trackerFull.st-off .tf-ring{ box-sizing:border-box; } /* solid dark-plum bezel painted in JS (setRing-less) — was a 2px dashed ring (old-era) */
-  #trackerFull.st-off .tf-tile{ filter:none; box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.10); } /* quiet outlined disc: colored border + icon, no stripe, no filter, chunky soft drop */
+  /* FIX PASS 2 B: the off-plan disc is NO LONGER a quiet outlined disc — on-plan and off-plan share the ONE canonical live disc (striped hue face, ink outline, 7px plum halo) defined above. Only the ARC differs (green flood on-plan, empty plum off-plan). */
   #trackerFull.st-break .tf-tile{ box-shadow:0 6px 0 #160510, inset 0 2px 0 rgba(255,255,255,.14); } /* the flat gold pause disc gets the same soft extrude as the home/on-plan discs */
   #trackerFull.st-break .tf-sf, #trackerFull.st-break .tf-say{ display:none; } /* FOUNDATION RESKIN F3: hide the Soul-Force readout + continuity line on the pause face — they overflowed behind the dial (visible collision) and broke the calm; break now reads as a quiet sibling like on-plan/off */
   /* welcome-back CLAIM: the verdict reads warm, the primary button is the reward-green Done style (reused) */
@@ -3407,6 +3418,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1228"></script>
+  <script src="app.js?v=1231"></script>
 </body>
 </html>
