@@ -1948,17 +1948,19 @@
   .pk-fgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
   .pk-folder{ display:flex; flex-direction:column; gap:9px; padding:11px 11px 12px; border-radius:20px; background:#1e0b18; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-folder:active{ transform:translateY(2px); }
-  /* ===== THE DOMAIN TILE — FIX PASS 4 (2026-07-28 13:30). The design side reviewed the 13:22 build and REJECTED 18a-picker.png's own structure, so FP4 wins over the PNG: the tile face is ONLY a 2x2 FAN of four mini sheets on the wash (fanned, so it reads as stickers rather than a grid), and the name goes back CENTERED UNDER the tile in its hue. Counts are gone everywhere on the wall. What survives from earlier passes: the shell (12% wash on #241022, 3px ink, 0 4px 0, r15, pad 10), the mini material (pkCandy 100% gradient face, 2.5px ink, 0 3px 0 ink sticker, r11, INK glyph — "ink-on-hue landed"), and the selection states (pink ring on the tile + on the picked mini, with the diagonal gloss). ===== */
-  .pk-fcell{ display:flex; flex-direction:column; width:100%; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .pk-ftile{ display:flex; flex-direction:column; padding:10px; border-radius:15px; border:3px solid #160510; box-shadow:0 4px 0 #160510; }
-  .pk-fcell:active .pk-ftile{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION: the ONE place a hue edge is legal */
-  .pk-fname{ display:block; margin-top:7px; text-align:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; line-height:1.1; }
-  .pk-mini{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:3px; }
-  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; border:2.5px solid #160510; overflow:hidden; display:flex; align-items:center; justify-content:center; } /* the fan angle is set per-sheet in JS (PK_FAN) */
-  .pk-mini .pk-face i{ font-size:15px; color:#160510; position:relative; z-index:1; } /* ICON IS INK. Never white, never a tint. */
+  /* ===== THE DOMAIN TILE — DESIGN AUTHORITY RESET (2026-07-28). The ONLY truth for this component is David's artifact, 18a-picker.view.png. The HANDOFF fix passes are a lossy middleman that contradicted it repeatedly: FP1 §3/§4/§8, FP2 §A and FP4's fan / no-counts / name-under / ink-glyph structure are ALL contradicted by the artifact and must never be re-applied here. The artifact shows: ONE button per domain; inside it a 3-col grid of six FLAT tight coins (no shards, NO fan, no rotation) in the bright hue with WHITE glyphs; then a row along the tile bottom, domain glyph in the hue · name in #fff2f9 · count on the right. Selection is the only legal hue edge: a tile holding a queued pick turns its border pink, and so does the picked coin (plus the diagonal gloss). ===== */
+  .pk-ftile{ display:flex; flex-direction:column; width:100%; padding:10px; border-radius:15px; border:3px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
+  .pk-ftile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
+  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (artifact: Move + Focus): the ONE place a hue edge is legal */
+  .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; border:2.5px solid #160510; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .pk-mini .pk-face i{ font-size:15px; color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); position:relative; z-index:1; } /* WHITE, per the artifact. FIX PASS 2 §A's "ICON IS INK" was wrong for this component and is not to come back. */
   .pk-mini .pk-face.on{ border-color:#ff4fa0; } /* the picked activity inside the folder */
-  .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the diagonal shine on a picked coin */
+  .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the artifact's diagonal shine on a picked coin */
+  .pk-fnrow{ display:flex; align-items:center; gap:6px; margin-top:9px; }
+  .pk-fnrow > i{ flex:none; font-size:14px; }
+  .pk-fnm{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.05; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pk-fct{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; }
   .pk-frow{ display:flex; align-items:center; gap:6px; }
   .pk-frow > i{ font-size:15px; flex:none; }
   .pk-seclbl{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#96637e; }
@@ -3434,6 +3436,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1237"></script>
+  <script src="app.js?v=1239"></script>
 </body>
 </html>

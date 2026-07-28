@@ -5,6 +5,14 @@ A guardian-angel life-sim PWA (pixel-art planner + tracker + game). Single user:
 **The business runs on `@COFOUNDER.md`** (the operator layer: roles, cadence, money rules, the launch state machine). Run `/standup` at session start to orient. This file (CLAUDE.md) is how we BUILD; COFOUNDER.md is how we RUN THE BUSINESS.
 @COFOUNDER.md
 
+## DESIGN AUTHORITY LAW (David 2026-07-28, born from the fix-pass disaster — "stop making random decisions")
+David designs in Claude Design; ONLY his artifacts are design truth: **his exported PNGs/screens, his reference screenshots, and any build he explicitly calls correct** (recoverable via `git show`). The design project's HANDOFF.md prose ("fix passes") is a LOSSY MIDDLEMAN written by another Claude session that repeatedly drifts toward its own component library and contradicts David's actual designs (it ordered ink glyphs, 2×2 fans, killed counts, and reworded his headers — none drawn by David; obeying it destroyed a correct build twice). Procedure, mandatory:
+1. Before executing ANY design instruction (fix pass, handoff note, DS component), **DIFF it against David's artifacts** for that surface.
+2. Execute only where prose and artifact AGREE, or where the artifact is silent.
+3. Every contradiction → ONE LINE to David naming both options; never auto-apply either. "Newest prose" is NOT newest verdict — the prose author is not David.
+4. Colors come only from the app's own registry, direct exports, or direct screenshots. NEVER from photos of screens (camera exposure reads as design — the muted-deck disaster).
+5. Ship every corrective round immediately; David must never review a stale build.
+
 ## Writing copy (HARD RULE)
 Before writing ANY user-facing line (tool cards, pools, onboarding, journey, toasts, lessons), load `_specs/SCRIPT-ENGINE.md` and run its procedure. It is the capstone: it orchestrates `_specs/VOICE-BIBLE.md` (register + craft devices) and `_specs/WRITING-SYSTEM.md` (anti-AI gate), grounded in David's own `fieldguide/.../WRITING-CRAFT.md` + `balance/.../AI-TELL-DETECTOR.md`, and adds the thesis every line must carry, the teaching method, and the adaptive axes.
 
