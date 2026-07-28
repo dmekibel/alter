@@ -1953,8 +1953,8 @@
   .pk-ftile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
   .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (artifact: Move + Focus): the ONE place a hue edge is legal */
   .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; border:2.5px solid #160510; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-  .pk-mini .pk-face i{ font-size:15px; color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); position:relative; z-index:1; } /* WHITE, per the artifact. FIX PASS 2 §A's "ICON IS INK" was wrong for this component and is not to come back. */
+  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; overflow:hidden; display:flex; align-items:center; justify-content:center; } /* NO border: PIL scan of 18a-picker.view.png crosses straight from the tile wash #1e0b18 into the face with no dark ring. The 2.5px #160510 edge was fix-pass invention. */
+  .pk-mini .pk-face i{ font-size:12px; color:#fff2f9; position:relative; z-index:1; } /* white, NO drop shadow (0 of 68 stroke-adjacent px were darker than the face) and glyph:coin height = 0.28 measured (12/43px) */ /* WHITE, per the artifact. FIX PASS 2 §A's "ICON IS INK" was wrong for this component and is not to come back. */
   .pk-mini .pk-face.on{ border-color:#ff4fa0; } /* the picked activity inside the folder */
   .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the artifact's diagonal shine on a picked coin */
   .pk-fnrow{ display:flex; align-items:center; gap:6px; margin-top:9px; }
@@ -2070,7 +2070,7 @@
   .pk-cell{ display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .pk-cell:active{ transform:translateY(3px); }
   .pk-cellf{ width:100%; aspect-ratio:1; border-radius:28%; display:flex; align-items:center; justify-content:center; position:relative; }
-  .pk-cellf i{ font-size:23px; filter:drop-shadow(0 2px 0 rgba(0,0,0,.2)); }
+  .pk-cellf i{ font-size:21px; color:#fff2f9; } /* same coin language as the wall: white glyph, no drop shadow, 0.28 of the coin */
   .pk-cellf.dash{ border:2.5px dashed #8a5f76; background:rgba(255,242,249,.04); }
   .pk-cellf.dash i{ color:#c9a3b8; font-size:22px; filter:none; }
   .pk-cellt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; line-height:1.1; text-align:center; }
@@ -2078,7 +2078,7 @@
   .pk-groups{ display:flex; flex-direction:column; gap:16px; animation:edPop .16s ease both; }
   .pk-group{ display:flex; flex-direction:column; gap:10px; }
   .pk-ggrid{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:11px 8px; }
-  .pk-ggrid .pk-cellf i{ font-size:18px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.2)); }
+  .pk-ggrid .pk-cellf i{ font-size:17px; }
   .pk-ggrid .pk-cellt{ font-size:10px; }
   /* ---- the arranger ---- */
   .pk-arr{ position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(115% 65% at 50% 0%, #44193a 0%, #2c1224 55%, #210e1a 100%); animation:edPop .2s ease both; }
@@ -3436,6 +3436,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1239"></script>
+  <script src="app.js?v=1240"></script>
 </body>
 </html>
