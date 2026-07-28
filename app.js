@@ -5550,7 +5550,7 @@
     landFromHome(); leaveHomeForPlayer();
     try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
   }
-  function tbxPlanDay() { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} } // Plan-my-day = the same path the planner edge-door uses (consolidation, not new nav)
+  function tbxPlanDay() { var _at = Math.max(0, Math.min(1410, Math.ceil(nowMin() / 5) * 5)); try { pkOpen({ k: todayK(), at: _at }); } catch (e) {} } // Plan-my-day = the What's-next picker (David 2026-07-27); pkLand owns what happens after. The picker is a body-level z98 overlay, so it layers OVER the open home (z90) — no leaveHomeForPlayer, no setPaneRest: back/scrim returns to home untouched, and committing lands the blocks + re-renders home under it. `at` = now rounded UP to the next 5-min mark (clamped 0..1410), so the gap it offers starts at the next real slot.
   function tbxPlanButton(host) { // the Plan-my-day sticker. HOME-FACE PLACEMENT (David 2026-07-23 device "belongs on the home face"): rendered into #tfCtrls directly below the circle + What-now + next-line block, visible at rest — NOT in the toolbox scroll section (it existed there before; now it lives here once). Exact approved styling via .tbx-plan (#8F55DE / radius 14 / 2.5px #160510 / 0 4px 0 lip / Baloo 2 800 13px #e8ddff / ti-calendar). Same tbxPlanDay handler.
     if (!host) return null;
     var planWrap = add(host, "div", "tbx-planwrap"); var plan = add(planWrap, "button", "tbx-plan"); add(plan, "i", "ti ti-calendar"); add(plan, "span", null, tr("Plan my day")); plan.onclick = function () { try { tbxPlanDay(); } catch (e) {} };
@@ -6413,7 +6413,7 @@
         if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); } }
       if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) { var _fh = new Date().getHours(); S.guide.fd = (_fh >= 23 || _fh < 4) ? { k: tomK(), eve: 1 } : { k: todayK(), eve: _fh >= 17 ? 1 : 0 }; } // TIME-OF-DAY (David 2026-07-08): the first-day journey IS the tutorial / entry, so it runs TODAY at any normal hour (evening included; `eve` flag drives evening-aware copy). Only genuine late-night (11pm-4am) defers to tomorrow with the floor close ("we start properly tomorrow").
       save(); ov.remove();
-      try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
+      try { renderAll(); viewK = todayK(); zoomMode = "day"; openHome(); } catch (e) {} // land on HOME after onboarding (David 2026-07-27, supersedes the journey-first landing) — same call the returning-user boot seam uses; the first-day trail (S.guide.fd, seeded above) still waits behind the journey door
     }
     function planItems() { // THE STARTER PLAN (P2 rewire): built from the shortened map's retained signal — bed · friction · vibe · and above all INGREDIENTS ("one rung up, made of what your good days are made of"). Every item = a real habit seed with an HONEST trace answering what you just said. Priority-ordered; max 4 + the already-done breath.
       var items = [{ t: "One conscious breath", ic: "ti-wind", c: "#46e2a4", trace: "already done, just now — see? it counts", done: true }];
@@ -6766,7 +6766,7 @@
       }
       if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = { k: todayK() }; // FIVE STONES (F1, David 2026-07-02): a brand-new save gets the hand-authored first-day trail; a Redo-setup on a real save (spark total > 60) never does
       save(); ov.remove();
-      try { renderAll(); viewK = todayK(); zoomMode = "day"; openJourney(); } catch (e) {}
+      try { renderAll(); viewK = todayK(); zoomMode = "day"; openHome(); } catch (e) {} // land on HOME after onboarding (David 2026-07-27, supersedes the journey-first landing) — same call the returning-user boot seam uses; the first-day trail (S.guide.fd, seeded above) still waits behind the journey door
     }
     function stdFoot(primaryLabel, showBack) {
       var b = add(foot, "button", "ob-btn" + (step === STEPS - 1 ? " go" : ""), primaryLabel); b.onclick = next;
@@ -15699,7 +15699,7 @@
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
     chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
     chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= 0.12, Math.round((rr.top - br.bottom) / H * 100) + "%", "7-12%");
-    if (tile) { var ir = tile.getBoundingClientRect(); chk("ring rim px/side", (rr.width - ir.width) / 2 >= 5 && (rr.width - ir.width) / 2 <= 11, Math.round((rr.width - ir.width) / 2), "5-11"); }
+    if (tile) { var rim = (ring.offsetWidth - tile.offsetWidth) / 2; chk("ring rim px/side", rim >= 5 && rim <= 11, Math.round(rim), "5-11"); } // offsetWidth: the idle breath (tfBreathe scale) must not flap this gate — getBoundingClientRect returns the TRANSFORMED box, so mid-breath (×1.0346) the disc measured 185px instead of its 179px layout width and the rim read 5 instead of 8 = intermittent FAIL
     var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
     chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px");
     chk("plan button present on home face", !!plan, plan ? "present" : "missing", "present"); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker moved to the home face (#tfCtrls, below the circle block); it must exist once
@@ -15708,6 +15708,17 @@
     chk("builder tile present (pinned 8th)", !!document.querySelector("#tbxGridTop .tbx-cell-build"), document.querySelector("#tbxGridTop .tbx-cell-build") ? "present" : "missing", "present"); // BUILD-CUSTOM (David 2026-07-23): the create-purple "Build" tile is always the last top-8 cell
     if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); chk("door top below strip bottom", pr.top >= br.bottom, "door top " + Math.round(pr.top) + " · strip bottom " + Math.round(br.bottom), "door top ≥ strip bottom"); } // DOORS-DOWN (David 2026-07-23 device): the edge-tab top must clear the story strip's bottom edge
     if (gd) chk("door garden fill", rgb(gd) === "rgb(24, 70, 48)", rgb(gd), "rgb(24,70,48)");
+    // FACE-UP + DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the face rides too low… the deck names are clipped"). Both gates measure against the HOME ZONE slab, never against a viewport-absolute Y: #tfWorld's scrollTop varies with the landing retry, so an absolute Y would false-FAIL a correct board.
+    var hz = el("tfWorldHome");
+    if (hz) {
+      var hzr = hz.getBoundingClientRect(), stripOff = br.top - hzr.top;
+      chk("strip at the top of the home zone (no dead sky)", stripOff >= 40 && stripOff <= 120, Math.round(stripOff) + "px below zone top", "40-120px (= env(safe-top) + --tun-sky-gap 54px ≈ HUD bottom + 13)"); // the auto-margin dead band above the strip is what "rides too low" was; this is the gate that keeps it dead
+      var dlabs = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-label")).slice(0, 4), dlb = 0; // the FIRST deck row (4 cells) — the row that peeks above the fold on the idle home; take the lowest label (they wrap to 2-3 lines)
+      if (dlabs.length) {
+        dlabs.forEach(function (n) { dlb = Math.max(dlb, n.getBoundingClientRect().bottom); });
+        chk("deck row clears the home fold (names not clipped)", (hzr.bottom - dlb) >= 26, Math.round(hzr.bottom - dlb) + "px above the zone bottom · label bottom " + Math.round(dlb) + " / vh " + H, "≥26px (12px of air + the ~14px sky sliver the world lands with; the ground pull also subtracts the device safe-area)");
+      }
+    }
     if (tfaces.length >= 3) { chk("tile1 face hex (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58)"); chk("tile3 face hex (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160)"); var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", getComputedStyle(tfaces[0]).borderTopLeftRadius === "19px", getComputedStyle(tfaces[0]).borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +getComputedStyle(tfaces[0]).zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
@@ -16172,7 +16183,7 @@
     { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 16, step: 1, def: 5, unit: "vh", vars: function (v) { return { "--tun-tools-gap": v + "vh" }; } }, // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
     { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
     { k: "doorH", lbl: "Door height", min: 56, max: 160, step: 2, def: 80, unit: "px", vars: function (v) { return { "--tun-door-h": v + "px" }; } },
-    { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 32, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } }, // DOORS-DOWN (David 2026-07-23): CSS default moved 23→32dvh — the def must track the CSS fallback or tunerApply un-fixes it for dev users
+    { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 23, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } }, // DOORS-TRACK-THE-STRIP (David 2026-07-27): CSS default moved 32→23dvh when the face rose — the def must track the CSS fallback or tunerApply un-fixes it for dev users (v1225's lesson). Was 23→32 on 2026-07-23 (DOORS-DOWN) while the strip still sat low.
     { k: "ringTh", lbl: "Ring thickness", min: 4, max: 20, step: 1, def: 16, unit: "px", vars: function (v) { return { "--tun-ring-th": v + "px" }; } }, // the disc inset = full rim; visible rim ≈ v/2 per side
     { k: "bloom", lbl: "Bloom strength", min: 0, max: 100, step: 1, def: 60, unit: "%", vars: function (v) { var f = v / 100; return { "--tun-bloom-a": (f * 0.20).toFixed(3), "--tun-bloom-blur": Math.round(f * 47) + "px" }; } }, // 60% = EXACTLY the approved .12 alpha / 28px blur (the CSS #tfRing defaults; re-scaled 2026-07-27 when the .18/40 scale went stale) — designAudit's "bloom calm" gate is ≤.14/≤32px, so the def must land under it
     { k: "tileBright", lbl: "Tile brightness", min: 55, max: 130, step: 1, def: 100, unit: "%", vars: function (v) { return { "--tun-tile-bright": (v / 100).toFixed(2) }; } },

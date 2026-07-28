@@ -3,6 +3,18 @@
 
 ---
 
+## STATUS UPDATE (2026-07-27 (3), Fable-orchestrated + Opus-agent-built): DAVID'S 3 PHONE BUGS FIXED — landing, home face, Plan-my-day → picker, v1227-v1228
+David's device report on v1226, all three diagnosed (code-first) + fixed by the Opus agent + preview-verified:
+1. **Fresh onboarding landed on Journey** — both onboarding finishers (V1+V2, @SEC:ONBOARD) literally called `openJourney()`; now `openHome()` (the same canonical landing the returning-user seam uses). First-day seeding (S.guide.fd) untouched; journey stays reachable.
+2. **Home face "broken / shifted downwards"** — NOT a regression (old designAudit passed 20/20 on it): the locked geometry had a dead sky band (strip bottom ~26vh) + the deck names flush at 100vh (clipped under the iOS home indicator). Fix: killed the `margin-top:auto` dead band on `#tfHomeBars` (strip now = HUD + ~13px on every safe-area), doors track the strip (`--tun-door-cy` 32→23dvh, CSS fallback + tuner def moved TOGETHER per the v1225 lesson), ground pull now `-19vh − env(safe-area-inset-bottom)` so the deck clears the fold. **designAudit extended 20→22** (no-dead-sky gate + deck-clears-fold gate) — ALL PASS (22) verified live on the raised home. Circle 52vw, tile hexes, timeline untouched.
+3. **Plan-my-day opened the planner** — `tbxPlanDay()` now opens the 18a picker over home: `pkOpen({k: todayK(), at: next-5min})`, z98 over trackerFull z90 (verified live: opens with live kicker, back/scrim returns to home intact, pkLand unchanged).
+Plus one found-in-verification fix (v1228): the audit's ring-rim check measured the disc mid-`tfBreathe` (transform-scaled rect → intermittent "got 5 want 5-11" FAIL); now `offsetWidth` both sides (transform-immune). v1228 is that one dev-only audit line over the verified v1227; preship + ratchet clean (anchors 22/22, wipes 147 ≤ 147, SCHEMA 5); the 3× audit-stability re-run is queued for the next preview session (the preview pane died at the end of this one) — user-facing surfaces were all verified at v1227.
+**DEVICE-UNTESTED:** the raised home on real safe-areas (strip/door/deck positions derive from env() — the tuner knobs --tun-sky-gap/--tun-door-cy/--tun-ground-pull are the adjustment path if David's eye wants nudges), and the standing v1224 gesture list.
+**ONE move — David:** fresh.html (v1228) on the phone: start-fresh → onboard → should land HOME with the raised face; tap Plan my day → picker. Verdict + any pixel nudges via the Design tuner.
+**ONE move — Claude:** act on the phone verdicts; then the save-as-chain moment (next design work) + pull Player.dc.html into _design-sync before any 2a build.
+
+---
+
 ## STATUS UPDATE (2026-07-27 (2), Fable-orchestrated + Opus-agent-built): FIX PASS SHIPPED — 9 design-drift corrections on the trilogy, v1226
 David's design session reviewed the v1222–24 build shots and appended a 9-item **FIX PASS** to the design handoff notes (the repo copy was stale — now synced at `_design-sync/tools-menu-2026-07-27/DESIGN-HANDOFF-NOTES-2026-07-27.md`). This Fable session verified all 9 items against the code + the live DS project. All real; three root causes worth knowing:
 - Several "violations" are FAITHFUL PORTS of the turn markup — the bloomed Start, striped empty slab, count badges and 3-col flat minis are in the `.dc.html` itself. The FIX PASS knowingly supersedes the turn (and the stale `DomainBento` component). Law order is written into the spec so the builder doesn't "restore fidelity" backwards.
