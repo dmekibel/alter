@@ -1746,8 +1746,8 @@
   .tbx-grid-main{ padding:6px 0; }
   .tbx-cell{ display:flex; flex-direction:column; align-items:center; gap:calc(7px * var(--tun-tbx-tile, 1)); width:calc(64px * var(--tun-tbx-tile, 1)); background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-face-wrap{ position:relative; width:calc(54px * var(--tun-tbx-tile, 1)); height:calc(54px * var(--tun-tbx-tile, 1)); }
-  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); border:none; box-shadow:0 3px 0 rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */ /* home-idle-ref.jpeg (David's own design photo) IS the law for this component: BORDERLESS soft deep tiles, white glyph, subtle dark drop. The deep per-domain fill is painted by tbxFaceFill. NO ink outline here — David 2026-07-28: "why the fuck would you add black outlines to the tools on the homepage when it was already good?" FIX PASS 2 E and FIX PASS 3 item 7 both put a 2.5px #160510 border on these faces; both were wrong, they contradict his reference AND the locked launcher-tile language (real fill, white icon, soft extrude). Do not re-add it. The WALL fan tiles are a different component and DO keep their ink borders. Shards (.tbx-coin) stay. */
-  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#fff2f9; } /* white reads on the DEEP fill; the ink-on-hue law governs BRIGHT hue fills, which these no longer are */
+  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */ /* RESTORED to v1228 verbatim 2026-07-28. The face is the tool's OWN bright colour with a white glyph and the tbxLip soft extrude (all painted in JS) — borderless, per David's outline verdict. Two fix passes broke this: FIX PASS 2 E put a candy gradient + ink border on it, FIX PASS 3 item 7 put a "deep muted" fill on it fitted by sampling home-idle-ref.jpeg. That jpeg is a PHOTOGRAPH OF A SCREEN, so the fit captured the camera's dim exposure and warm white balance, not the design. FILLS ARE THE TOOL'S OWN COLOUR, NEVER SAMPLED FROM PHOTOS — photos of screens lie about colour (David 2026-07-28). */
+  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#fff2f9; }
   .tbx-coin{ position:absolute; border-radius:calc(19px * var(--tun-tbx-tile, 1)); }
   .tbx-coin1{ width:calc(46px * var(--tun-tbx-tile, 1)); height:calc(46px * var(--tun-tbx-tile, 1)); top:calc(-2px * var(--tun-tbx-tile, 1)); left:calc(-5px * var(--tun-tbx-tile, 1)); z-index:2; } /* the BIGGER peek coin — z2, paints in FRONT of coin2 (canvas telescope) */
   .tbx-coin2{ width:calc(38px * var(--tun-tbx-tile, 1)); height:calc(38px * var(--tun-tbx-tile, 1)); top:calc(-3px * var(--tun-tbx-tile, 1)); left:calc(-8px * var(--tun-tbx-tile, 1)); z-index:1; } /* the smaller/outer coin — z1, behind coin1 */
@@ -3434,6 +3434,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1236"></script>
+  <script src="app.js?v=1237"></script>
 </body>
 </html>

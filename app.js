@@ -5545,12 +5545,7 @@
   var TBX_MINS = [1, 3, 8, 10, 15, 20, 30, 45]; // the 21a minute grid (4-col × 2). The design's own ladder is unreadable (its data script is past the 256KB import cut) — this one brackets the 2/5 fast chips on both sides. Flagged in the handoff.
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
-  function tbxHexOf(tok) { return (tok && tok.charAt(0) === "#") ? tok : (TBX_HEX[tok] || TBX_HEX.create); }                                    // domain token → its literal hex (the .tbx CSS vars mirror TBX_HEX exactly), so JS can do real color math on it
-  // FP3 §7 — THE DECK FILL, fitted to David's own home-idle-ref.jpeg (the only COMPLETE ref of the deck). Sampled tile fills off the jpeg (PIL, 13x13 patch inside each tile, glyph avoided):
-  //   #5e82bd · #9383c6 · #ba6e7a · #749a71 · #b3974d · #778cc2 · #5c8e89 · #8a76be
-  // A least-squares fit over the six same-family pairs (focus→lungs, create→flower, connect→rock, nourish→run, play→bulb, restore→wave) lands on mixHex(hue, "#84706a", 0.54), RMS 11.7/255 per channel.
-  // NOTE for the record: the ref is NOT "hue mixed toward night" — every channel moves toward a warm MID taupe, so a low channel RISES (connect's green 95→110). Mixing toward a dark colour cannot do that; this is a desaturation, and the fitted grey is what the pixels actually say.
-  function tbxFaceFill(tok) { return mixHex(tbxHexOf(tok), "#84706a", 0.54); }
+  // (The FP3 "deep muted" deck fill and its tbxHexOf helper are DELETED. They were least-squares fitted to home-idle-ref.jpeg, which is a photograph of a screen: the fit captured camera exposure + warm white balance, not the design. Fills are the tool's own colour, never sampled from photos — David 2026-07-28.)
   function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet)
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
@@ -5594,7 +5589,7 @@
     var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name)); cell.setAttribute("data-tbxcell", id);
     var wrap = add(cell, "div", "tbx-face-wrap");
     (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceFill(it.dom); face.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; add(face, "i", "ti " + it.ti); // FIX PASS 2 E: hue candy face + hard INK sticker (the borderless soft-shadow card + white glyph was the miss); the peek shards keep their own lip — "shards are right"
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = tbxLip(tbxVar(it.dom)); add(face, "i", "ti " + it.ti); // FIX PASS 2 E: hue candy face + hard INK sticker (the borderless soft-shadow card + white glyph was the miss); the peek shards keep their own lip — "shards are right"
     var lbl = add(cell, "span", "tbx-label", tr(it.name)); lbl.style.color = tbxVar(it.dom);
     cell.onclick = function () { try { tbxOpenDose(id, cell); } catch (e) {} };
     return cell;
@@ -5715,7 +5710,7 @@
   function tbxBuilderTile(host) { // the PINNED 8th tile: same tile mark (54px face / radius 19 / lip) in create-purple with ti-plus + label "Build", no peek coins. Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
     var wrap = add(cell, "div", "tbx-face-wrap");
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxFaceFill("create"); face.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; add(face, "i", "ti ti-plus"); // FIX PASS 2 E: the pinned 8th tile wears the same hue candy face + ink sticker as every other deck tile
+    var face = add(wrap, "div", "tbx-face"); face.style.background = "var(--create)"; face.style.boxShadow = tbxLip("var(--create)"); add(face, "i", "ti ti-plus"); // FIX PASS 2 E: the pinned 8th tile wears the same hue candy face + ink sticker as every other deck tile
     var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = "var(--create)";
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
@@ -15760,10 +15755,10 @@
     }
     // FIX PASS 2 E (design 2026-07-28): the deck faces are no longer FLAT hue — they're a 100° candy gradient behind an ink outline + a hard ink sticker, with an INK glyph. The old flat-rgb reads would false-FAIL forever, so they're replaced by the new law: gradient carrying the tile's own raw hue, ink border, ink sticker, ink glyph. (Geometry gates below are untouched.)
     if (tfaces.length >= 3) { var f0 = getComputedStyle(tfaces[0]);
-      chk("tile1 face DEEP fill (move, not the raw hue)", rgb(tfaces[0]) === "rgb(189, 124, 84)", rgb(tfaces[0]), "rgb(189,124,84) = mixHex(#ff8a3a,#84706a,.54)");
-      chk("tile3 face DEEP fill (connect, not the raw hue)", rgb(tfaces[2]) === "rgb(189, 104, 131)", rgb(tfaces[2]), "rgb(189,104,131) = mixHex(#ff5fa0,#84706a,.54)");
+      chk("tile1 face RAW hue (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58) = --move, the tool's own colour");
+      chk("tile3 face RAW hue (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160) = --connect, the tool's own colour");
       chk("tile face BORDERLESS (David 2026-07-28: no black outlines on the home tools)", parseFloat(f0.borderTopWidth || 0) === 0, f0.borderTopWidth || "0px", "0px");
-      chk("tile face sticker 0 3px 0 rgba(0,0,0,.4)", /0px\s+3px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") >= 0, f0.boxShadow.slice(0, 46), "rgba(0,0,0,0.4) 0px 3px 0px");
+      chk("tile face lip 0 4px 0 (the tile's own colour darkened, v1228 tbxLip)", /0px\s+4px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px 4px 0px in color-mix(hue 45%, #000)");
       var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
       var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", f0.borderTopLeftRadius === "19px", f0.borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
