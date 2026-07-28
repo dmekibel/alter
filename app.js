@@ -3598,24 +3598,19 @@
       txt.style.removeProperty("display"); ttl.textContent = t.title || "Tracking";
       elx.setAttribute("data-tid", t.id); elx.textContent = elapsedStr(t); // .live-elapsed[data-tid] → the 1s loop keeps mm:ss ticking for free
       p._discAct = null; // mockup grammar: the WHOLE puck taps home — pause/stop/break live in the player (front-and-center at home, two-clock law)
-    } else { // NOT tracking, no pause: is something coming up today?
-      var nb = (st.id === "idle") ? nextPlannedBlock(todayK()) : null; // only the plain idle state offers a start; claim/night keep the bare home disc (their own faces handle those)
-      if (nb) { // NEXT-UP — the upcoming block's color + icon; tap disc = start it, then land on the tracking face
-        var ND = DOM[domainOf(nb)] || DOM.focus;
-        p.classList.remove("puck-bare", "puck-wide"); p.classList.add("puck-pill"); // NEXT-UP stays compact (a colored disc), not the wide player pill
-        paintDisc(ND.c, ND.ink || "#160510", tiClass(nb));
-        disc.classList.add("gpk-nextbadge"); // a small play badge corner (CSS ::after)
-        txt.style.setProperty("display", "none"); // NEXT-UP is disc + tail only (compact); the title lives on the block, the puck just offers "start"
-        p._discAct = (function (b) { return function () { startPlanned(b); try { openHome(); } catch (e) {} }; })(nb); // start the block, then land on the tracking face (openHome shows the live cockpit)
-      } else { // BARE — plain pink home disc (= today's static puck). tap disc = home (no _discAct → falls to openHome).
-        p.classList.remove("puck-pill", "puck-wide"); p.classList.add("puck-bare");
-        paintDisc("#ff5fa8", "#fff", "ti-home");
-        disc.classList.remove("gpk-nextbadge");
-        txt.style.setProperty("display", "none");
-        p._discAct = null;
-      }
+    } else { // NOT tracking, no pause → the bare pink home disc, whatever is or isn't coming up
+      // REVERSAL 2026-07-28 (David, direct): OFF home with something coming up, the corner button must still LOOK like the plain pink home and
+      // clicking it must ONLY navigate home — never wear the next block's hue, never start it. The hue + play duty moved to the HOME DISC (the FP3
+      // idle-with-a-plan face). This reverses the LIVING PUCK grammar (DECISIONS.md 2026-07-21) for the idle-with-upcoming case ONLY; the tracking
+      // face (activity color + elapsed) and the gold paused face are UNCHANGED and still follow the 07-21 decision. Do not bring the shape-shifter
+      // back for this state. So the NEXT-UP branch is gone: both idle sub-states render the one bare pink home.
+      p.classList.remove("puck-pill", "puck-wide"); p.classList.add("puck-bare");
+      paintDisc("#ff5fa8", "#fff", "ti-home");
+      disc.classList.remove("gpk-nextbadge"); // no play badge in this state either
+      txt.style.setProperty("display", "none");
+      p._discAct = null; // no _discAct → the disc click falls through to puckGoHome()
     }
-    if (st.id !== "idle") disc.classList.remove("gpk-nextbadge"); // the badge belongs ONLY to the NEXT-UP face (an idle sub-state); clear it on every other face
+    disc.classList.remove("gpk-nextbadge"); // the NEXT-UP play badge is retired app-wide by the 2026-07-28 reversal; clear it on every face so no stale build leaves one behind
   }
   function renderLiveTracker() {
     var lt = el("liveTracker"), lb = el("ltLabel"), lh = el("ltHint"); renderLiveDock(); if (!lt || !lb) return;
