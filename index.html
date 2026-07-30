@@ -1732,7 +1732,7 @@
   .tfw-skylabel{ width:100%; text-align:center; font-family:var(--bub); font-weight:800; font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:#b39ab0; margin:14px 0 4px; }
   /* while the one-page world is on, the inner column is just the fixed frame for the overlays — #tfWorld owns the scroll flow */
   #trackerFull.tf-onepage.tf-onehome .tf-inner{ overflow:hidden; }
-  /* ===== @SEC:TOOLBOX2 — the home-scroll TOOLBOX (frame 20a + 20c). Renders into the GROUND zone (#tfWorldGround). All colors resolve from the 8 domain CSS vars scoped to .tbx; lips = color-mix hard offsets (color-mix already ships in this app). --play #ffc83d DIVERGES from DOM.play.c #d99f30 on this surface (pixel-fidelity mandate). ===== */
+  /* ===== @SEC:TOOLBOX2 — the home-scroll TOOLBOX (frame 20a + 20c). Renders into the GROUND zone (#tfWorldGround). All colors resolve from the 8 domain CSS vars scoped to .tbx; lips = color-mix hard offsets (color-mix already ships in this app). These vars now match the DOM registry exactly: play unified on this surface's #ffc83d 2026-07-30 (the registry's darker #d99f30 is gone). ===== */
   .tbx{ --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --play:#ffc83d; --restore:#2ab8c4; --upkeep:#7f9bc4; display:flex; flex-direction:column; align-items:stretch; gap:12px; width:100%; padding:0 0 20px; font-family:"Jost",sans-serif; } /* TOOLBOX-UP (David 2026-07-23): top padding 6px→0 so the first tile row sits as high as possible in the ground zone (paired with .tfw-ground margin-top pull). */
   .tbx *{ box-sizing:border-box; }
   .tbx-planwrap{ display:flex; justify-content:center; }
@@ -1869,19 +1869,35 @@
   .sed-add i{ color:#ff8fc0; font-size:19px; }
   .sed-add span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#ff8fc0; }
   .sed-add:active{ transform:translateY(2px); }
-  .sed-tray{ background:rgba(0,0,0,.3); border-radius:22px; padding:14px 13px 16px; display:flex; flex-direction:column; gap:14px; animation:edPop .2s ease both; }
-  .sed-catrail{ display:flex; gap:8px; overflow-x:auto; padding:1px 1px 3px; touch-action:pan-x; }
-  .sed-catchip{ flex:none; display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:13px; border:1.5px solid #33192a; background:#241019; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
-  .sed-catchip i{ font-size:15px; }
-  .sed-catchip:active{ transform:translateY(2px); }
+  /* 4a artifact: an EMPTY list is the striped WELL, not a dashed add-row (the pinned sheet below is the add mechanism). The stripes are the artifact's own, drawn by David — they are not an ignition state. */
+  .sed-list.empty{ min-height:100%; } /* the list still owns the full height so the tray sheet can't drag the well around; the well itself is a fixed slab at the top of it and the rest stays plain ground */
+  .sed-well{ flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; width:100%; height:130px; min-height:122px; padding:0 20px; border:3px dashed #ff4fa0; border-radius:26px; background-color:color-mix(in srgb, #ff4fa0 10%, #1e0b18); background-image:repeating-linear-gradient(45deg, rgba(255,95,160,.18) 0 9px, transparent 9px 18px); cursor:pointer; -webkit-tap-highlight-color:transparent; } /* the frame's empty state is a COMPACT SLAB, not a full-height panel: it no longer flex-fills the list (which grew to ~500px of stripes when the tray collapsed), and the ground below it stays plain. Stripes are dim PINK — the old white band read greyish-mauve over the wash. */
+  .sed-well i{ color:#ffd7ea; font-size:36px; }
+  .sed-well span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#ffd7ea; }
+  .sed-well:active{ transform:translateY(2px); }
+  /* the tool tray is a PINNED BOTTOM SHEET (between the scrolling list and the foot), not inline list content */
+  .sed-sheet{ flex:none; background:#1c0a17; border-top:3px solid #160510; border-radius:28px 28px 0 0; box-shadow:0 -14px 34px rgba(0,0,0,.6); }
+  .sed-tab{ display:flex; flex-direction:column; align-items:center; gap:7px; width:100%; background:none; border:none; padding:10px 0 8px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .sed-grab{ width:44px; height:5px; border-radius:3px; background:#4b2a44; }
+  .sed-tabrow{ display:inline-flex; align-items:center; gap:8px; }
+  .sed-tabrow i{ color:#ff8fc0; font-size:19px; }
+  .sed-tabrow span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; color:#ff8fc0; }
+  .sed-tab:active{ transform:translateY(2px); }
+  .sed-sheetb{ padding:2px 20px 16px; display:flex; flex-direction:column; gap:14px; animation:edPop .2s ease both; }
+  .sed-catrail{ display:flex; gap:8px; overflow-x:auto; padding:1px 1px 5px; touch-action:pan-x; }
+  /* Chip.jsx verbatim: idle = dark plum pill with white text AND icon; selected = the FLAT category hue (no candy stripes, no per-category outline or icon tint) */
+  .sed-catchip{ flex:none; display:inline-flex; align-items:center; gap:6px; padding:10px 15px; border-radius:12px; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; background:#48122f; color:#ffe3f1; font-family:"Baloo 2",sans-serif; font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+  .sed-catchip i{ font-size:15px; color:inherit; }
+  .sed-catchip.on{ color:#4a1126; font-weight:800; }
+  .sed-catchip:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
   .sed-toolgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px 9px; }
   .sed-tool{ display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .sed-toolcoin{ width:52px; height:52px; border-radius:18px; box-shadow:0 4px 0 rgba(0,0,0,.34); display:inline-flex; align-items:center; justify-content:center; }
+  .sed-toolcoin{ width:52px; height:52px; border-radius:18px; box-shadow:0 2.5px 0 var(--lip,rgba(0,0,0,.34)); display:inline-flex; align-items:center; justify-content:center; }
   .sed-toolcoin i{ color:#fff2f9; font-size:22px; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); }
-  .sed-tooln{ font-size:10.5px; font-weight:800; color:#f0dceb; text-align:center; line-height:1.15; }
-  .sed-toolm{ font-size:9.5px; font-weight:800; color:#96637e; }
+  .sed-tooln{ font-size:10.5px; font-weight:800; color:#f0dceb; text-align:center; line-height:1.15; height:2.3em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; } /* fixed TWO-LINE box: a wrapping name ("match the wave") can no longer push its duration off the row's shared baseline */
+  .sed-toolm{ font-size:9.5px; font-weight:800; color:#dfa55e; } /* WARM TAN, sampled off David's direct frame export — the mauve #96637e read as a disabled label under the tool names */
   .sed-tool:active{ transform:translateY(3px); }
-  .sed-tool:active .sed-toolcoin{ box-shadow:0 1px 0 rgba(0,0,0,.34); }
+  .sed-tool:active .sed-toolcoin{ box-shadow:0 1px 0 var(--lip,rgba(0,0,0,.34)); }
   .sed-set{ padding:8px 38px 20px; display:flex; flex-direction:column; gap:12px; }
   .sed-card{ border-radius:19px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; overflow:hidden; }
   .sed-card.dash{ border:2px dashed #6b4258; box-shadow:none; background:#1e0d18; }
@@ -1922,18 +1938,18 @@
   .sed-foot{ flex:none; padding:10px 22px calc(env(safe-area-inset-bottom,0px) + 26px); } /* 2b: straight on the plum, no divider band */
   .sed-btns{ display:flex; gap:9px; align-items:stretch; }
   /* RunBar: the secondaries are GHOST squares, the primary is a flat sticker — no soft shadows, no bloom */
-  .sed-fsave{ order:1; flex:none; width:56px; display:flex; align-items:center; justify-content:center; border-radius:19px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); box-shadow:none; color:#fff2f9; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
-  .sed-fsave i{ font-size:23px; }
-  .sed-fgear{ order:2; flex:none; width:56px; border-radius:19px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); box-shadow:none; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
-  .sed-fgear i{ color:#ff8fc0; font-size:23px; }
+  .sed-fsave{ order:1; flex:none; width:48px; display:flex; align-items:center; justify-content:center; border-radius:15px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); box-shadow:none; color:#fff2f9; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .sed-fsave i{ font-size:19px; }
+  .sed-fgear{ order:2; flex:none; width:48px; border-radius:15px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); box-shadow:none; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .sed-fgear i{ color:#ff8fc0; font-size:19px; }
   .sed-fgear.on{ background:#ff4fa0; border-color:#160510; }
-  .sed-fgear.on i{ color:#2a0d1c; }
-  .sed-fstart{ order:3; flex:1.6; display:flex; align-items:center; justify-content:center; gap:8px; padding:17px 0; border-radius:19px; border:2.5px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #160510; color:#2a0d1c; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .sed-fgear.on i{ color:#2a1730; } /* ink-ON-A-HUE is #2a1730, never #160510 (CLAUDE.md) */
+  .sed-fstart{ order:3; flex:1.6; min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 18px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 color-mix(in srgb, #ff4fa0 40%, #000); color:#2a1730; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .sed-fstart i{ font-size:19px; }
   .sed-fsave:active,.sed-fgear:active{ transform:translateY(3px); }
-  .sed-fstart:active{ transform:translateY(4px); box-shadow:0 1px 0 #160510; }
+  .sed-fstart:active{ transform:translateY(4px); box-shadow:0 1px 0 color-mix(in srgb, #ff4fa0 40%, #000); }
   /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-panel/.pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
-  .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --play:#ffc83d; --restore:#2ab8c4; --upkeep:#7f9bc4; } /* the 8 domain vars, mirrored from .tbx: a chain step carried out of the Session Editor stores its hue as var(--dom), and it must resolve here too (an unresolved var painted a transparent coin) */
+  .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --restore:#2ab8c4; --upkeep:#7f9bc4; } /* the domain vars, mirrored from .tbx: a chain step carried out of the Session Editor stores its hue as var(--dom), and it must resolve here too (an unresolved var painted a transparent coin). --play is deliberately ABSENT: DOM.play.c is now #ffc83d itself, so the picker-scoped copy was the last trace of the old two-golds split. */
   .pk-ov *{ box-sizing:border-box; }
   .pk-ov ::-webkit-scrollbar{ width:0; height:0; }
   .pk-wall{ position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); animation:ovFade var(--dur-micro) var(--ease-settle) both; }
@@ -1948,23 +1964,28 @@
   .pk-fgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
   .pk-folder{ display:flex; flex-direction:column; gap:9px; padding:11px 11px 12px; border-radius:20px; background:#1e0b18; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-folder:active{ transform:translateY(2px); }
-  /* ===== THE DOMAIN TILE — DESIGN AUTHORITY RESET (2026-07-28). The ONLY truth for this component is David's artifact, 18a-picker.view.png. The HANDOFF fix passes are a lossy middleman that contradicted it repeatedly: FP1 §3/§4/§8, FP2 §A and FP4's fan / no-counts / name-under / ink-glyph structure are ALL contradicted by the artifact and must never be re-applied here. The artifact shows: ONE button per domain; inside it a 3-col grid of six FLAT tight coins (no shards, NO fan, no rotation) in the bright hue with WHITE glyphs; then a row along the tile bottom, domain glyph in the hue · name in #fff2f9 · count on the right. Selection is the only legal hue edge: a tile holding a queued pick turns its border pink, and so does the picked coin (plus the diagonal gloss). ===== */
-  .pk-ftile{ display:flex; flex-direction:column; width:100%; padding:10px; border-radius:15px; border:3px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
+  /* ===== THE DOMAIN TILE — DESIGN AUTHORITY RESET (2026-07-28). The ONLY truth for this component is David's artifact, 18a-picker.view.png. The HANDOFF fix passes are a lossy middleman that contradicted it repeatedly: FP1 §3/§4/§8, FP2 §A and FP4's fan / no-counts / name-under / ink-glyph structure are ALL contradicted by the artifact and must never be re-applied here. The artifact shows: ONE button per domain; inside it a 3-col grid of six FLAT tight coins (no shards, NO fan, no rotation) in the bright hue with WHITE glyphs; then a row along the tile bottom, domain glyph in the hue · name in #fff2f9 · count on the right. Selection is the only legal hue edge: a tile holding a queued pick turns its border pink, and so does the picked coin, which also IGNITES (the 115deg white-veil stripes + ink glyph of the DS ignition token, identical to its tile in the folder sheet). ===== */
+  /* DS SOURCE VALUES (2026-07-30, supersede the earlier measurements on this component): card 2.5px border in color-mix(HUE 30%, #160510) over color-mix(HUE 12%, #1e0b18) — both set inline per hue — radius 20, hard 0 4px 0 #160510 sticker, padding 11/11/12, gap 9, coin grid gap 5. */
+  .pk-ftile{ display:flex; flex-direction:column; gap:9px; width:100%; padding:11px 11px 12px; border-radius:20px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-ftile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
-  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (artifact: Move + Focus): the ONE place a hue edge is legal */
-  .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:11px; overflow:hidden; display:flex; align-items:center; justify-content:center; } /* NO border: PIL scan of 18a-picker.view.png crosses straight from the tile wash #1e0b18 into the face with no dark ring. The 2.5px #160510 edge was fix-pass invention. */
-  .pk-mini .pk-face i{ font-size:12px; color:#fff2f9; position:relative; z-index:1; } /* white, NO drop shadow (0 of 68 stroke-adjacent px were darker than the face) and glyph:coin height = 0.28 measured (12/43px) */ /* WHITE, per the artifact. FIX PASS 2 §A's "ICON IS INK" was wrong for this component and is not to come back. */
-  .pk-mini .pk-face.on{ border-color:#ff4fa0; } /* the picked activity inside the folder */
-  .pk-gloss{ position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 42%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%); } /* the artifact's diagonal shine on a picked coin */
-  .pk-fnrow{ display:flex; align-items:center; gap:6px; margin-top:9px; }
-  .pk-fnrow > i{ flex:none; font-size:14px; }
-  .pk-fnm{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.05; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pk-fct{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; }
+  .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (artifact: Move + Focus): the ONE place a hue edge is legal. pkPaintWall also sets this inline, since an inline rest-colour would outrank a class. */
+  .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+  .pk-mini .pk-face{ position:relative; aspect-ratio:1; border-radius:28%; overflow:hidden; display:flex; align-items:center; justify-content:center; } /* NO border: PIL scan of 18a-picker.view.png crosses straight from the tile wash #1e0b18 into the face with no dark ring. The 2.5px #160510 edge was fix-pass invention. */
+  .pk-mini .pk-face i{ font-size:15px; color:#fff2f9; position:relative; z-index:1; } /* white, NO drop shadow (0 of 68 stroke-adjacent px were darker than the face) */ /* WHITE at rest, per the artifact and the DS. FIX PASS 2 §A's blanket "ICON IS INK" was wrong for this component; only an IGNITED coin takes ink, and pkPaintWall sets that inline. */
+  .pk-mini .pk-face.on{ border-color:#ff4fa0; } /* the picked activity inside the folder — a DOM marker now: its stripes, ring and ink glyph are set inline by pkPaintWall so the coin matches its sheet tile exactly. (The old .pk-gloss diagonal shine was our earlier reading of that same pixel and is deleted — do not bring it back alongside the ignition.) */
+  .pk-fnrow{ display:flex; align-items:center; gap:6px; } /* the 9px above comes from .pk-ftile's gap now, exactly as the DS states it */
+  .pk-fnrow > i{ flex:none; font-size:15px; }
+  .pk-fnm{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.05; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pk-fct{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11.5px; }
   .pk-frow{ display:flex; align-items:center; gap:6px; }
   .pk-frow > i{ font-size:15px; flex:none; }
   .pk-seclbl{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#96637e; }
-  .pk-sec{ display:flex; flex-direction:column; gap:11px; }
+  /* SAVED & READY-MADE is PINNED above the plate bar (artifact order: label · card arcs · chevron · bar). Collapsed it shows only the top edge of the two cards, so chains and stacks stay one tap away without scrolling past eight folders. */
+  .pk-savedwrap{ flex:none; display:flex; flex-direction:column; gap:9px; padding:10px 22px 0; } /* NO divider rule above the kicker: the frame lets the wall run straight into the drawer */
+  .pk-savedwrap .pk-seclbl{ font-size:10px; text-transform:uppercase; } /* DS: the section label is the 10px/800/uppercase kicker */
+  .pk-peekrow{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+  .pk-peek{ height:30px; padding:0; border:2px dashed; border-bottom:none; border-radius:20px 20px 0 0; background:#1e0b18; overflow:hidden; cursor:pointer; -webkit-appearance:none; -webkit-tap-highlight-color:transparent; } /* the frame's arcs: 2px dashed, colour muted to color-mix(HUE 75%, #1e0b18) inline (Chains #ff4fa0 · Stacks #2ab8c4 are the source hues), on the #1e0b18 tile base */
+  .pk-peek:active{ transform:translateY(2px); }
   .pk-folder.dash{ border:2.5px dashed #6b4258; }
   .pk-deckrow{ display:flex; gap:8px; padding:7px 0 0 7px; }
   .pk-deck{ flex:1; aspect-ratio:1; position:relative; }
@@ -1998,7 +2019,7 @@
   .pk-railw{ display:flex; gap:4px; align-items:stretch; }
   .pk-railb{ position:relative; flex:1; min-width:0; }
   .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; }
-  .pk-lchip{ flex:none; min-width:63px; min-height:44px; padding:9px 10px; border-radius:11px; border:1.5px solid transparent; background:#241019; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-lchip{ flex:none; min-width:54px; min-height:44px; padding:10px 12px; border-radius:13px; border:none; background:#170811; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: the length chips are BORDERLESS; pkSkinChip paints rest (#170811) vs ignited (hue + the 115deg veil + ink) */
   .pk-lchip:active{ transform:translateY(2px); }
   .pk-fade{ position:absolute; top:0; right:0; bottom:0; width:30px; pointer-events:none; }
   .pk-fwd{ flex:none; width:34px; border:none; background:none; color:#ff8fc0; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -2025,10 +2046,11 @@
   .pk-bar{ flex:none; padding:10px 22px calc(env(safe-area-inset-bottom,0px) + 28px); display:flex; align-items:center; gap:9px; }
   .pk-bartx{ flex:1; min-width:0; }
   .pk-bark{ display:block; font-size:10px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; }
-  .pk-barl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 16px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #4a0e2c; color:#160510; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .pk-go i{ font-size:18px; }
-  .pk-go:active{ transform:translateY(4px); box-shadow:0 1px 0 #4a0e2c; } /* press ladder: 5px sticker → 4px travel */
+  .pk-barl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#fff2f9; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* DS: the populated label holds ONE line */
+  .pk-barl.hint{ font-size:14px; color:#c98ca6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; line-height:1.15; } /* DS: the empty state is a HINT (14px #c98ca6), not a title. MEASURED at 375px: the label slot is 190px beside the 131px Arrange, and the sentence needs 220px at 14px — so nowrap clips it to "…you feel li". The DS's stated purpose is the WHOLE hint being readable, so only this state wraps, to two lines. The populated label above keeps its single nowrap line. */
+  .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 18px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #662040; color:#2a1730; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: under-shadow is HUE-derived — color-mix(in srgb, #ff4fa0 40%, #000) = #662040 — never plain ink; label is ink-on-fill #2a1730 */
+  .pk-go i{ font-size:19px; }
+  .pk-go:active{ transform:translateY(4px); box-shadow:0 1px 0 #662040; } /* press ladder: 5px sticker → 4px travel */
   /* ---- the folder sheet ---- */
   .pk-sh-ov{ position:absolute; inset:0; }
   .pk-scrim{ position:absolute; inset:0; border:none; background:rgba(7,3,8,.6); cursor:pointer; padding:0; }
@@ -2037,7 +2059,7 @@
   .pk-grab{ flex:none; display:flex; justify-content:center; padding:9px 0 2px; }
   .pk-grab span{ width:44px; height:5px; border-radius:3px; background:#4b2a44; }
   .pk-shhead{ flex:none; padding:8px 20px 14px; display:flex; align-items:center; gap:12px; }
-  .pk-circ{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e0bdd2; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .pk-circ{ flex:none; width:44px; height:44px; border-radius:50%; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#ffe3f1; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; } /* DS ghost close: 2.5px #4b2a44 ring, 5%-white ground, 19px #ffe3f1 glyph */
   .pk-circ i{ font-size:19px; }
   .pk-circ:active{ transform:translateY(2px); }
   .pk-shcoin{ width:44px; height:44px; border-radius:15px; display:flex; align-items:center; justify-content:center; flex:none; }
@@ -2073,7 +2095,7 @@
   .pk-cellf i{ font-size:21px; color:#fff2f9; } /* same coin language as the wall: white glyph, no drop shadow, 0.28 of the coin */
   .pk-cellf.dash{ border:2.5px dashed #8a5f76; background:rgba(255,242,249,.04); }
   .pk-cellf.dash i{ color:#c9a3b8; font-size:22px; filter:none; }
-  .pk-cellt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; line-height:1.1; text-align:center; }
+  .pk-cellt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; line-height:1.1; text-align:center; } /* the frame's tile labels: 12.5px CREAM (#f0dceb, set by pkCell) — the Just-<domain> timebox keeps the domain hue and More stays muted */
   .pk-cbadge{ position:absolute; top:-6px; right:-6px; min-width:26px; height:22px; padding:0 5px; border-radius:11px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#ff8fc0; }
   .pk-groups{ display:flex; flex-direction:column; gap:16px; animation:edPop .16s ease both; }
   .pk-group{ display:flex; flex-direction:column; gap:10px; }
@@ -3436,6 +3458,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1241"></script>
+  <script src="app.js?v=1242"></script>
 </body>
 </html>

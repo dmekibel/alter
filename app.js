@@ -379,7 +379,7 @@
   function blockStatus(dk, b) { var bs = hm(b.time), be = bs + (b.mins || 30), dl = (S && S.log && S.log[dk]) || [], ov = false, bd = domainOf(b); for (var i = 0; i < dl.length; i++) { var ls = hm(dl[i].time), le = ls + (dl[i].mins || 0); if (ls < be && le > bs && domainOf(dl[i]) === bd) { ov = true; break; } } if (b.done || ov) return "ok"; if (dk < todayK()) return "miss"; if (dk === todayK() && be <= logicalNowMin()) return "miss"; return "plan"; } // "done" only if you actually did the SAME domain; otherwise a passed plan goes ghost/dark (David 2026-06-23)
   var viewK = todayK(), zoomMode = "day", pendingScrollNow = true, nowLineEl = null;
 
-  var DEFAULT_HABITS = [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "ti-home-2", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "ti-tooth", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "ti-book", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
+  var DEFAULT_HABITS = [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "tidy", e: "ti-home-2", l: "Tidy space", type: "build", per: 0, color: "#ff8a1e" }, { id: "teeth", e: "ti-dental", l: "Brush teeth", type: "build", per: 0, color: "#48d0e0" }, { id: "read", e: "ti-book", l: "Read", type: "build", per: 3, color: "#9a5cf0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }];
   var TIDY_SUB = ["Make the bed", "Clear the table", "Do laundry", "Sweep / vacuum", "Clear the desk", "Take out trash"];
   // SHORT-TERM goal decomposition (David: "split complex cleaning into subtasks — dishes, vacuum…"): any complex activity → concrete steps
   var SUBTASKS = {
@@ -535,9 +535,9 @@
     focus:   { l: "Focus",   e: "🎯", c: "#36b3f0", light: "#5ec4f5", dark: "#22a6e8", ring: "#aadcf8", ink: "#08283c", ti: "ti-brain" },
     create:  { l: "Create",  e: "🎨", c: "#b07aff", light: "#c7adff", dark: "#9a5cf0", ring: "#ddccff", ink: "#241548", ti: "ti-palette" },
     connect: { l: "Connect", e: "💛", c: "#ff5fa0", light: "#ff7ab0", dark: "#ff4f96", ring: "#ffb3d6", ink: "#4a1126", ti: "ti-users" },
-    play:    { l: "Play",    e: "🎮", c: "#d99f30", light: "#f0c860", dark: "#c08a22", ring: "#f2d894", ink: "#4a3000", ti: "ti-device-gamepad-2" },
+    play:    { l: "Play",    e: "🎮", c: "#ffc83d", light: "#f0c860", dark: "#c08a22", ring: "#f2d894", ink: "#4a3000", ti: "ti-device-gamepad-2" }, // ONE PLAY GOLD (David 2026-07-30): #ffc83d, the value the toolbox/editor/picker surfaces already used. The old #d99f30 split the domain in two — the newer surfaces were built to the bright gold and the registry stayed dark, so a Play block and a Play tool never matched.
     restore: { l: "Restore", e: "🌙", c: "#2ab8c4", light: "#5fd6df", dark: "#1f9aa6", ring: "#a3e4e9", ink: "#06343a", ti: "ti-moon" },
-    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-broom" },
+    upkeep:  { l: "Upkeep",  e: "🧹", c: "#7f9bc4", light: "#9fb6d8", dark: "#6781a8", ring: "#c4d4e8", ink: "#16243a", ti: "ti-shirt" }, // ti-shirt, the picker artifact's Upkeep glyph — and ti-broom does not EXIST in the loaded Tabler webfont (3.31.0 resolves it to content:none), so every Upkeep coin and folder glyph was rendering blank
     drift:   { l: "Drift",   e: "🌫️", c: "#565b66", light: "#b8bcc6", dark: "#2a2d34", ring: "#7a808c", ink: "#cdd2db", ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
@@ -584,19 +584,19 @@
   var TIMAP = [
     ["shower","ti-bath"],["bath","ti-bath"],["wash","ti-droplet"],["skincare","ti-droplet"],["bed","ti-bed"],["sleep","ti-bed"],["nap","ti-bed"],["wind down","ti-moon"],
     ["breakfast","ti-coffee"],["lunch","ti-coffee"],["dinner","ti-tools-kitchen-2"],["cook","ti-tools-kitchen-2"],["meal","ti-tools-kitchen-2"],["coffee","ti-coffee"],["snack","ti-cookie"],["hydrate","ti-droplet"],["water","ti-droplet"],["grocer","ti-shopping-cart"],["eat","ti-bowl-spoon"],
-    ["run","ti-run"],["gym","ti-barbell"],["walk","ti-walk"],["yoga","ti-yoga"],["stretch","ti-stretching"],["cycle","ti-bike"],["bike","ti-bike"],["swim","ti-swimming"],["hike","ti-mountain"],["sport","ti-ball-football"],["danc","ti-dance"],
+    ["run","ti-run"],["gym","ti-barbell"],["walk","ti-walk"],["yoga","ti-yoga"],["stretch","ti-stretching"],["cycle","ti-bike"],["bike","ti-bike"],["swim","ti-swimming"],["hike","ti-mountain"],["sport","ti-ball-football"],["danc","ti-music"],
     ["deep work","ti-brain"],["program","ti-code"],["code","ti-code"],["study","ti-book"],["research","ti-microscope"],["email","ti-mail"],["meeting","ti-users"],["call","ti-phone"],["admin","ti-clipboard"],["plan","ti-clipboard"],["budget","ti-coin"],["invoice","ti-file-invoice"],["work","ti-briefcase"],
     ["paint","ti-palette"],["draw","ti-pencil"],["sketch","ti-pencil"],["write","ti-pencil"],["design","ti-palette"],["music","ti-music"],["guitar","ti-guitar-pick"],["piano","ti-piano"],["sing","ti-microphone-2"],["youtube","ti-brand-youtube"],["video","ti-video"],["photo","ti-camera"],["content","ti-device-mobile"],["midjourney","ti-sparkles"],
     ["family","ti-users"],["friend","ti-users"],["partner","ti-heart"],["date","ti-heart"],["hug","ti-heart"],["help","ti-heart-handshake"],["text","ti-message"],["network","ti-users-group"],["people","ti-users"],
     ["game","ti-device-gamepad-2"],["movie","ti-movie"],["watch","ti-device-tv"],["puzzle","ti-puzzle"],["chess","ti-chess"],["podcast","ti-headphones"],["listen","ti-headphones"],["travel","ti-plane"],["explore","ti-map"],["read","ti-book"],
     ["meditat","ti-moon"],["breath","ti-wind"],["journal","ti-notebook"],["pray","ti-pray"],["nature","ti-tree"],["gratitude","ti-heart"],["reflect","ti-moon"],["therapy","ti-armchair"],["sauna","ti-flame"],["rest","ti-moon"],
-    ["clean","ti-broom"],["tidy","ti-broom"],["laundry","ti-wash-machine"],["dish","ti-bowl"],["brush","ti-dental"],["teeth","ti-dental"],["groom","ti-razor"],["errand","ti-shopping-bag"],["doctor","ti-stethoscope"],["chore","ti-broom"],
-    ["scroll","ti-windmill"],["vibe","ti-windmill"],["instagram","ti-brand-instagram"],["tiktok","ti-brand-tiktok"],["weed","ti-plant"],["cigarette","ti-cigarette"],["smok","ti-cigarette"],["alcohol","ti-bottle"],["procrastinat","ti-windmill"],["break","ti-coffee"],
+    ["clean","ti-spray"],["tidy","ti-spray"],["laundry","ti-wash-machine"],["dish","ti-bowl"],["brush","ti-dental"],["teeth","ti-dental"],["groom","ti-razor"],["errand","ti-shopping-bag"],["doctor","ti-stethoscope"],["chore","ti-spray"], // ti-spray, not ti-broom: the broom class is missing from the Tabler 3.31.0 webfont, so Tidy / Clean room / chores drew an EMPTY coin everywhere in the app
+    ["scroll","ti-windmill"],["vibe","ti-windmill"],["instagram","ti-brand-instagram"],["tiktok","ti-brand-tiktok"],["weed","ti-plant"],["cigarette","ti-smoking"],["smok","ti-smoking"],["alcohol","ti-bottle"],["procrastinat","ti-windmill"],["break","ti-coffee"],
     ["hobby","ti-confetti"],["ship","ti-rocket"],["send","ti-rocket"],
     // W2 emoji-sweep additions (David 2026-07-21): titles from CATS/OCCUPATIONS that fell through to the generic domain icon.
     ["writing","ti-pencil"],["publish","ti-rocket"],["outreach","ti-users-group"],["sell","ti-coin"],["apply","ti-send"],["side hustle","ti-briefcase"],["hang out","ti-users"],["cafe","ti-coffee"],["affirmation","ti-message-2"],["quality time","ti-heart"],["compliment","ti-heart"],
-    ["craft","ti-scissors"],["relax","ti-armchair"],["language","ti-language"],["garden","ti-plant-2"],["porn","ti-eye-off"],["vape","ti-cigarette"],["caffeine","ti-coffee"],["sugar","ti-cookie"],["junk food","ti-burger"],["shopping","ti-shopping-bag"],["gambl","ti-cards"],
-    ["edit","ti-edit"],["experiment","ti-flask"],["message","ti-message"],["pitch","ti-presentation"],["debug","ti-bug"],["deploy","ti-rocket"],["test","ti-checkbox"],["demo","ti-presentation"],["close deal","ti-handshake"],["fundraise","ti-coin"],["newsletter","ti-mail"],["film","ti-video"],["record","ti-video"],["monetize","ti-coin"],
+    ["craft","ti-scissors"],["relax","ti-armchair"],["language","ti-language"],["garden","ti-plant-2"],["porn","ti-eye-off"],["vape","ti-smoking"],["caffeine","ti-coffee"],["sugar","ti-cookie"],["junk food","ti-burger"],["shopping","ti-shopping-bag"],["gambl","ti-cards"],
+    ["edit","ti-edit"],["experiment","ti-flask"],["message","ti-message"],["pitch","ti-presentation"],["debug","ti-bug"],["deploy","ti-rocket"],["test","ti-checkbox"],["demo","ti-presentation"],["close deal","ti-heart-handshake"],["fundraise","ti-coin"],["newsletter","ti-mail"],["film","ti-video"],["record","ti-video"],["monetize","ti-coin"],
     ["lecture","ti-school"],["practice","ti-repeat"],["assignment","ti-file-text"],["project","ti-clipboard-list"],["revise","ti-refresh"],["organize","ti-clipboard"],["office hours","ti-school"],["group work","ti-users"],["analysis","ti-chart-bar"]
   ];
   function tiClass(item) { var t = (item && item.title || "").toLowerCase(); for (var i = 0; i < TIMAP.length; i++) if (t.indexOf(TIMAP[i][0]) !== -1) return TIMAP[i][1]; return DOM[domainOf(item)].ti; }
@@ -2319,7 +2319,7 @@
       (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
       var _mIcons = ["ti-star", JP_CHAPTERS[f].ic, "ti-flag-2"]; // Duolingo variety: star · the world's own glyph · a milestone flag
       for (var z = 0; z < 3; z++) coin("mystery", { title: "", color: _w.c, icon: _mIcons[z] }, gi++);
-      trophy("locked", "ti-treasure-chest").querySelector(".jt-b").style.cssText = "background:" + mixHex(_w.c, "#160510", 0.5) + ";border-color:" + mixHex(_w.c, "#160510", 0.15) + ";color:" + _w.c + ";box-shadow:0 4px 0 #160510,0 0 14px " + _w.c + "44;";
+      trophy("locked", "ti-box").querySelector(".jt-b").style.cssText = "background:" + mixHex(_w.c, "#160510", 0.5) + ";border-color:" + mixHex(_w.c, "#160510", 0.15) + ";color:" + _w.c + ";box-shadow:0 4px 0 #160510,0 0 14px " + _w.c + "44;";
     }
     // ACTIVE chapter = TODAY — wears ITS world's hue as the BRIGHT striped hero banner (door stripes, ink text legible — never the dark stripe).
     var _wA = JP_WORLDS[jn] || JP_WORLDS[0];
@@ -5493,9 +5493,9 @@
   var TBX2 = true;             // kill-switch: false restores the old 2x4 home grid + full-tool ground shelf exactly.
   var TBX_PLUS = true;         // BETA: assume the user pays — full access, incl. custom-editing the tools (David 2026-07-23). ONE flag, consulted at every Plus gate (currently the dose-card "Adjust steps & timing" row). true → the row is FUNCTIONAL (opens the composer); the PLUS badge stays visible (it signals the future paywall). Flip to false when shipping to non-payers → the row falls back to the whisper toast.
   var TBX_TOOLDOM = { stretch: "move", relax: "restore", breathe: "restore", meditate: "focus", reprogram: "create", mantra: "create", gratitude: "connect" }; // STACK_TOOLS id → toolbox domain hue (for custom-stack tile face + peek coins; STACK_TOOLS carry no domain token)
-  var TBX_HEX = { move: "#ff8a3a", nourish: "#34d39a", focus: "#36b3f0", create: "#b07aff", connect: "#ff5fa0", play: "#ffc83d", restore: "#2ab8c4", upkeep: "#7f9bc4" }; // toolbox domain hexes (mirrored as CSS vars on .tbx). NOTE: --play #ffc83d intentionally DIVERGES from DOM.play.c #d99f30 on this surface (pixel-fidelity mandate, DESIGN-EXTRACT §0) — flagged in the handoff.
+  var TBX_HEX = { move: "#ff8a3a", nourish: "#34d39a", focus: "#36b3f0", create: "#b07aff", connect: "#ff5fa0", play: "#ffc83d", restore: "#2ab8c4", upkeep: "#7f9bc4" }; // toolbox domain hexes (mirrored as CSS vars on .tbx). These now MATCH the DOM registry exactly — play was the last divergence (#ffc83d here vs #d99f30 there) and David unified on this brighter gold 2026-07-30, so a Play tool and a Play block finally read as one domain.
   var TBX_BOLT = "#ff4fa0", TBX_SEALBG = "#241328", TBX_SEALINK = "#ffc41f", TBX_PINK = "#ff5fa8", TBX_INK = "#160510"; // literal hexes from DESIGN-EXTRACT (the raise-stakes bolt step + the log-step seal are NOT domain vars).
-  function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + ")"); } // domain token → CSS var (resolves inside .tbx); literal hex passes through
+  function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + "," + (TBX_HEX[tok] || "#63d3c9") + ")"); } // domain token → CSS var WITH ITS HEX AS THE FALLBACK; literal hex passes through. A step's colour is stored as this string and travels between surfaces (Session Editor → stack → picker), so it must survive landing somewhere that doesn't declare that var — an unresolved var() paints TRANSPARENT, which is how a Play coin went invisible in the picker the moment --play stopped being mirrored there.
   function tbxLip(colExpr) { return "0 4px 0 color-mix(in srgb, " + colExpr + " 45%, #000)"; } // the universal hard-offset lip idiom (DESIGN-EXTRACT §0); color-mix already ships in this app (index.html .obv-gate)
   // Registry: every named item from DESIGN-EXTRACT §3 (16 stacks + 12 plain tools). peek = the deduped coin colors verbatim from §3 (the dedup rule — drop steps whose color equals the face or an earlier coin, max 2 — was applied at design time; "Can't Sleep" legitimately renders ONE coin). track = best-effort map onto STACK_TOOLS ids so Start actually runs; step durations scale to the chosen dose. kicker = the dose-card context line. steps (Caught Scrolling only) = the design's plain-word script; every other stack derives its steps from the track's real tools (reuses already-gated tool copy). def = default dose (minutes).
   var TBX_ITEMS = {
@@ -5778,7 +5778,7 @@
     "Build": "Собрать", "YOUR STACK": "ТВОЙ СТЕК", "Save this stack": "Сохранить стек", "Stack saved.": "Стек сохранён.", "Name your stack": "Назови стек", "My stack": "Мой стек", "Save": "Сохранить", "Back to default": "Вернуть по умолчанию",
     "For when you need something specific: one box to settle, one to go deeper.": "Когда нужно что-то конкретное: одна коробка — осесть, другая — уйти глубже.", "You can edit steps and timing in Plus.": "Редактировать шаги и время можно в Plus."
   });
-  // @SEC:EDITOR — the full-screen SESSION EDITOR (Claude-Design "Session Editor" frame 4a, Opus-built 2026-07-27). ONE overlay shell, two modes: BLOCKS (candy rows; tap = expand in place → desc + duration rail + flag chips + up/down/Swap/Delete) and SETTINGS (the gear; tinted collapsible cards — ONLY the controls the runner honors, no fake switches). A bottom tool tray (6 categories × 4-col coins) adds a step; BUILD mode = the same editor with an empty list, the dashed "Nothing in it yet" state and the tray PINNED open. REPLACES openSessionComposer for stacks (tbxEditSteps) + the Build tile — no third menu system, this IS the composer now. Design px/hex live in .sed-* (index.html); JS sets only hue-derived values. Child-drain only (ratchet). Rows carry their design label/icon/domain/flags through tbxSetEdit ADDITIVELY, so an edited stack keeps its words in the dose card too.
+  // @SEC:EDITOR — the full-screen SESSION EDITOR (Claude-Design "Session Editor" frame 4a, Opus-built 2026-07-27). ONE overlay shell, two modes: BLOCKS (candy rows; tap = expand in place → desc + duration rail + flag chips + up/down/Swap/Delete) and SETTINGS (the gear; tinted collapsible cards — ONLY the controls the runner honors, no fake switches). A PINNED BOTTOM SHEET (chevron tab → 6 category chips → 4-col tool coins), docked between the scrolling list and the foot, adds a step; BUILD mode = the same editor with an empty list, the striped dashed "Nothing in it yet" WELL and the sheet pinned (it collapses to its tab, never away). 2026-07-30 artifact pass: sheet + well + Chip.jsx chips + two-line tile labels. REPLACES openSessionComposer for stacks (tbxEditSteps) + the Build tile — no third menu system, this IS the composer now. Design px/hex live in .sed-* (index.html); JS sets only hue-derived values. Child-drain only (ratchet). Rows carry their design label/icon/domain/flags through tbxSetEdit ADDITIVELY, so an edited stack keeps its words in the dose card too.
   var SED_DURS = [0.5, 1, 1.5, 2, 3, 5, 8, 10, 15]; // the design's DURS rail (minutes)
   var SED_CATS = [ // the design's 6-category tool tray. sk = the STACK_TOOLS / TBX_VARIANTS id that actually RUNS (design label stays the row title); desc = the design's own line where it wrote one.
     { k: "breath", lab: "Breath", i: "ti-lungs", d: "restore", tools: [
@@ -5835,6 +5835,7 @@
     add(head, "span", "sed-title", tr(cfg.title || "Make it yours"));
     _sed.totalEl = add(head, "span", "sed-total");
     _sed.body = add(root, "div", "sed-body");
+    _sed.sheet = add(root, "div", "sed-sheet"); // 4a artifact: the tool tray is a PINNED BOTTOM SHEET docked between the scrolling list and the foot (it used to paint inline inside sed-list, which left the library floating under the add-row over a dead void)
     var foot = add(root, "div", "sed-foot"); // 2b: the footer sits straight on the plum background — no dark divider band, no length row (lengths live inside each block)
     var btns = add(foot, "div", "sed-btns");
     var sv = add(btns, "button", "sed-fsave"); add(sv, "i", "ti ti-device-floppy"); sv.setAttribute("aria-label", tr("Save")); sv.onclick = function () { sedDoSave(); };
@@ -5852,16 +5853,21 @@
     _sed.totalEl.textContent = sedTotal() + " " + tr("min");
     var b = _sed.body; while (b.firstChild) b.removeChild(b.firstChild);
     if (_sed.tab === "blocks") sedPaintBlocks(b); else sedPaintSet(b);
+    sedPaintTray(); // the tray sheet lives OUTSIDE sed-body, so it is painted every time the editor repaints, not from inside the list
     _sed.gearIcon.className = "ti " + (_sed.tab === "set" ? "ti-stack-2" : "ti-adjustments-horizontal");
     _sed.gear.classList.toggle("on", _sed.tab === "set");
   }
   function sedPaintBlocks(host) {
-    var list = add(host, "div", "sed-list");
+    var list = add(host, "div", "sed-list" + (_sed.rows.length ? "" : " empty"));
     _sed.rows.forEach(function (r, i) { sedRow(list, r, i); });
-    var open = _sed.tray || _sed.pinTray; // an empty list needs no slab of its own: the dashed add-row below IS the empty state (2b/4a = ONE dashed row)
+    if (!_sed.rows.length) { // 4a artifact: an empty list is the striped WELL, display-only — the pinned sheet below is the add mechanism. Tapping it just calls the sheet back up when it is collapsed.
+      var well = add(list, "button", "sed-well"); add(well, "i", "ti ti-stack-2"); add(well, "span", null, tr("Nothing in it yet"));
+      well.onclick = function () { if (!_sed.tray) { _sed.tray = true; sedPaint(); } };
+      return;
+    }
+    var open = !!_sed.tray; // the sheet's EXPANDED state (in BUILD mode it stays docked as a tab when collapsed, so pinTray is no longer part of "open")
     var addb = add(list, "button", "sed-add"); add(addb, "i", "ti " + (open ? "ti-chevron-down" : "ti-plus")); add(addb, "span", null, tr(_sed.swap != null ? "Add in its place" : "Add a block")); // chevron law (David 2026-07-27, stated twice in the handoff): collapsed = up, expanded = down. The design markup had trayOpen → chevron-up; the law wins so every chevron in the build reads the same way.
-    addb.onclick = function () { _sed.tray = !open; _sed.swap = null; if (!_sed.tray) _sed.pinTray = false; sedPaint(); };
-    if (open) sedPaintTray(list);
+    addb.onclick = function () { _sed.tray = !open; _sed.swap = null; sedPaint(); }; // pinTray is a MODE (BUILD), not a toggle — collapsing no longer un-pins it, or the sheet would vanish for the rest of the session
   }
   function sedRow(host, r, i) {
     var hue = sedHue(r.d), sel = _sed.pick === i;
@@ -5932,14 +5938,24 @@
       nb.onclick = function () { _sed.asNew = !_sed.asNew; sedPaint(); };
     }
   }
-  function sedPaintTray(parent) { // 2b: the tray is IN FLOW right under the dashed Add-a-block row (not a bottom sheet) — the footer stays the three buttons on plum
-    var host = add(parent, "div", "sed-tray");
-    var chips = add(host, "div", "sed-catrail");
-    SED_CATS.forEach(function (c) { var on = c.k === _sed.cat, b = add(chips, "button", "sed-catchip"); var ci = add(b, "i", "ti " + c.i); add(b, "span", null, tr(c.lab)); if (on) { b.style.background = tbxCandy(sedHue(c.d)); b.style.color = "#160510"; b.style.boxShadow = "0 3px 0 rgba(0,0,0,.34)"; } else { b.style.borderColor = "color-mix(in srgb, " + sedHue(c.d) + " 40%, #33192a)"; ci.style.color = sedHue(c.d); } b.onclick = function () { _sed.cat = c.k; sedPaint(); }; });
+  function sedPaintTray() { // 4a artifact: the tray is the PINNED BOTTOM SHEET (chevron tab → category chips → 4-col tool grid), docked above the foot. BUILD mode keeps the tab on screen when collapsed; edit mode hides the sheet until the dashed add-row calls it back.
+    var host = _sed.sheet; while (host.firstChild) host.removeChild(host.firstChild);
+    var show = _sed.tab === "blocks" && (_sed.pinTray || _sed.tray); // settings has no tray at all
+    host.style.display = show ? "" : "none";
+    if (!show) return;
+    var open = !!_sed.tray;
+    var tab = add(host, "button", "sed-tab"); add(tab, "span", "sed-grab");
+    var trow = add(tab, "span", "sed-tabrow"); add(trow, "i", "ti " + (open ? "ti-chevron-down" : "ti-chevron-up")); // chevron law (David 2026-07-27): expanded = down, collapsed = up
+    if (_sed.swap != null) add(trow, "span", null, tr("Add in its place")); // swap logic unchanged — the label just moved onto the tab
+    tab.onclick = function () { _sed.tray = !open; _sed.swap = null; sedPaint(); };
+    if (!open) return;
+    var sheetb = add(host, "div", "sed-sheetb");
+    var chips = add(sheetb, "div", "sed-catrail");
+    SED_CATS.forEach(function (c) { var on = c.k === _sed.cat, b = add(chips, "button", "sed-catchip" + (on ? " on" : "")); add(b, "i", "ti " + c.i); add(b, "span", null, tr(c.lab)); if (on) b.style.background = sedHue(c.d); b.onclick = function () { _sed.cat = c.k; sedPaint(); }; }); // Chip.jsx: selected = the FLAT hue (no candy, no colored outline); every other px/hex is in .sed-catchip
     var cat = SED_CATS.filter(function (c) { return c.k === _sed.cat; })[0] || SED_CATS[0];
-    var grid = add(host, "div", "sed-toolgrid");
+    var grid = add(sheetb, "div", "sed-toolgrid");
     cat.tools.forEach(function (t) {
-      var b = add(grid, "button", "sed-tool"); var coin = add(b, "span", "sed-toolcoin"); coin.style.background = "color-mix(in srgb, " + sedHue(cat.d) + " 90%, #160510)"; add(coin, "i", "ti " + t.i);
+      var b = add(grid, "button", "sed-tool"); var coin = add(b, "span", "sed-toolcoin"); coin.style.background = sedHue(cat.d); coin.style.setProperty("--lip", "color-mix(in srgb, " + sedHue(cat.d) + " 45%, #000)"); add(coin, "i", "ti " + t.i);
       add(b, "span", "sed-tooln", tr(t.t)); add(b, "span", "sed-toolm", sedShort(t.m));
       b.onclick = function () {
         var row = { k: t.sk, m: t.m, t: t.t, i: t.i, d: cat.d, f: { voice: true }, desc: t.desc || "" };
@@ -5976,12 +5992,14 @@
   var PK_PRIS = [{ v: 3, l: "Must" }, { v: 2, l: "Should" }, { v: 1, l: "Whenever" }];     // priority shows its VALUE once set; the word "Priority" only when unset (David 2026-07-27)
   var PK_TOPN = 11; // activities shown in a folder before the dashed "More" tile opens the grouped view
   var _pk = null;   // the live picker (null = closed). Nothing here is state until Start.
+  var _pkUse = null; // pkActUse memo for one picker session (cleared in pkOpen) — the 30-day log walk is identical for every folder in a paint
   function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
-  function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
+  function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60) : "")); } // UNPADDED per the artifact's plate bar ("3 things · 3h5"); the zero-pad was ours
   function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
-  function pkCoinLip(hex) { return "0 2px 0 " + mixHex(hex, "#160510", 0.5); } // MEASURED off 18a-picker.view.png (direct export, legal to sample): under a Nourish coin the 2px band reads #21654b against a #2fbe86 face = the coin's OWN hue ~50% toward ink. Not a hard #160510 bar.
-  function pkIgnite(hex) { return "repeating-linear-gradient(45deg," + mixHex(hex, "#ffffff", 0.18) + " 0 9px," + hex + " 9px 18px)"; } // the DS ignition law (45deg/9px candy stripes in the option's own hue) — the picked coin only // FIX PASS 2 A (design 2026-07-28, verbatim): the mini-sheet face = color-mix(hue 82%, #fff) → hue at 60%, on a 100° axis. mixHex(…,0.18) IS the 82% mix; it resolves to rgb() so the design audit can read it.
+  var PK_INK = "#2a1730"; // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. #160510 is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
+  function pkCoinLip(hex) { return "0 2.5px 0 " + mixHex(hex, "#000000", 0.55); } // DS token: 0 2.5px 0 color-mix(in srgb, HUE 45%, #000) — i.e. the hue kept at 45% (mixHex's t is the distance TOWARD black, so 0.55), and toward BLACK, not toward #160510
+  function pkIgnite(hex) { return "repeating-linear-gradient(115deg,rgba(255,255,255,.30) 0 13px,rgba(255,255,255,0) 13px 28px)," + hex; } // THE ignition token (DS source 2026-07-30): a 115°/13px WHITE-VEIL stripe laid OVER the flat hue. The 45°/9px candy pattern was the wrong stripe; every picked surface (coins, sheet cells, rail chips, the focused queue chip) inherits from here.
   function pkDeep(dom) { return mixHex(pkHue(dom), "#160510", 0.45); }
   function pkLip(dom) { return "0 4px 0 " + pkDeep(dom) + ", 0 0 0 2px #160510"; }
   function pkChains() { try { return (S.tools && S.tools.pkChains) || []; } catch (e) { return []; } } // additive store, guarded read — NO SCHEMA bump
@@ -6001,13 +6019,13 @@
   function pkQCount(title) { var n = 0; (_pk ? _pk.queue : []).forEach(function (p) { if (p.title === title) n++; }); return n; }
   function pkClose() { if (_pk && _pk.ov && _pk.ov.parentNode) _pk.ov.parentNode.removeChild(_pk.ov); _pk = null; }
   function pkOpen(cfg) { // THE ENTRY. cfg = { k, at } — the day key + the tapped minute. Nothing is written until Start (so a back-out leaves zero litter, no stub to clean up).
-    cfg = cfg || {}; pkClose();
+    cfg = cfg || {}; pkClose(); _pkUse = null; // fresh session → re-walk the logs once
     var k = cfg.k || todayK(), at = Math.max(0, Math.min(1410, cfg.at || 0)), end = 1440, prev = null;
     blocks(k).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), be = bs + (b.mins || 30);
       if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
     });
-    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, stepFor: null, aOpen: null, aPri: false, aSteps: false };
+    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, savedOpen: false, stepFor: null, aOpen: null, aPri: false, aSteps: false }; // savedOpen = the pinned Saved drawer (collapsed peek by default, like wallMin)
     var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
     pkPaintShell();
   }
@@ -6022,49 +6040,76 @@
     if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
     add(htx, "span", "pk-title", tr("What next?")); // the artifact says "What next?" — the apostrophe form was fix-pass invention
     _pk.wbody = add(wall, "div", "pk-body");
-    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;";
+    var fw = add(wall, "div", "pk-footwrap"); fw.style.cssText = "flex:none;display:flex;flex-direction:column;";
+    _pk.wsaved = add(fw, "div", "pk-savedwrap");                                                            // pinned drawer: label · arcs (or the open cards) · chevron
+    _pk.wfoot = add(fw, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // then the queue tab + panel + plate bar, byte-identical to the sheet's footer
     pkPaint();
   }
-  function pkPaint() { // in-place repaint of everything that can change: the wall body, the shared footer, and (when open) the sheet's head + body
+  function pkPaint() { // in-place repaint of everything that can change: the wall body, the pinned Saved drawer, the shared footer, and (when open) the sheet's head + body
     if (!_pk || _pk.view !== "pick") return;
-    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot, "#130609");
+    pkPaintWall(_pk.wbody); pkPaintSaved(_pk.wsaved); pkFoot(_pk.wfoot, "#130609");
     if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17"); }
   }
   function pkFolder(host, dash) { var b = add(host, "button", "pk-folder" + (dash ? " dash" : "")); return b; }
   function pkPaintWall(host) {
     pkDrain(host);
-    var by = bentoByDomain(), grid = add(host, "div", "pk-fgrid");
+    var grid = add(host, "div", "pk-fgrid");
     DOM_ORDER.forEach(function (d) {
-      var acts = by[d] || []; if (!acts.length) return; var D = DOM[d], hue = D.c;
+      if (d === "drift") return; // the artifact enumerates EXACTLY 8 folders. Drift is tracked honestly when it happens; it is never something you PLAN, so it has no card here.
+      var sh = pkDomShown(d), acts = sh.list; if (!acts.length) return; var D = DOM[d], hue = D.c; // the folder shows the same padded list the sheet opens with, so its count and its coins can never disagree with what's behind the card
       var took = {}, nq = 0; // what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
       (_pk.queue || []).forEach(function (p) { if (p.kind === "act" && p.dom === d) { nq++; took[p.title] = 1; } });
-      var tile = add(grid, "button", "pk-ftile"); tile.style.background = mixHex(hue, "#241022", 0.88); // the shell is NIGHT (#241022) washed 12% with the hue. Border + sticker are ink (CSS).
-      if (nq) tile.classList.add("on"); // >=1 pick from this folder → the edge goes pink (selection is the ONE legal hue border)
+      var tile = add(grid, "button", "pk-ftile"); tile.style.background = mixHex(hue, "#1e0b18", 0.88); // DS: card = color-mix(in srgb, HUE 12%, #1e0b18) — the tile base is the folder wash, not the old #241022 night
+      tile.style.borderColor = nq ? "#ff4fa0" : mixHex(hue, "#160510", 0.70); // DS: 2.5px color-mix(HUE 30%, #160510) at rest; a pick takes the edge pink (selection is the ONE legal hue border). Set inline in BOTH states because an inline colour would otherwise beat .pk-ftile.on.
+      if (nq) tile.classList.add("on");
       var mini = add(tile, "span", "pk-mini");
-      acts.slice(0, 6).forEach(function (a) { // the artifact's 3-col grid of six FLAT tight coins — no shards, NO fan/rotation (FIX PASS 4's fan is contradicted by the artifact and must not come back)
-        var fc = add(mini, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkCoinLip(hue); // FLAT raw hue: the artifact's coin samples identical top-left, centre and bottom-right. FIX PASS 2's 100deg pkCandy gradient never existed in David's design.
-        if (took[a.title]) { fc.classList.add("on"); add(fc, "span", "pk-gloss"); } // the picked activity: pink edge + the diagonal shine
-        add(fc, "i", "ti " + tiClass(a)); });
+      var six = acts.filter(function (a) { return took[a.title]; }).concat(acts.filter(function (a) { return !took[a.title]; })).slice(0, 6); // PICKED-FIRST: what you just picked has to be VISIBLE in the six, even when it ranks ninth in the folder
+      six.forEach(function (a) { // the artifact's 3-col grid of six FLAT tight coins — no shards, NO fan/rotation (FIX PASS 4's fan is contradicted by the artifact and must not come back)
+        var on = !!took[a.title], fc = add(mini, "span", "pk-face");
+        fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? (pkCoinLip(hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(hue); // FLAT raw hue at rest (the artifact's coin samples identical top-left, centre and bottom-right); a PICK wears the same IGNITION as its sheet tile. The old pk-gloss shine was our earlier reading of this pixel.
+        if (on) fc.classList.add("on");
+        var ci = add(fc, "i", "ti " + tiClass(a)); if (on) ci.style.color = PK_INK; }); // ink-on-fill glyph the moment it ignites, white on a flat face — one law with the sheet
       var nrow = add(tile, "span", "pk-fnrow"); // the name row lives INSIDE the tile bottom (artifact): domain glyph in the hue · name · count
       var ni = add(nrow, "i", "ti " + (D.ti || "ti-circle")); ni.style.color = hue;
       add(nrow, "span", "pk-fnm", tr(D.l));
       var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? hue : mixHex(hue, "#160510", 0.45); // COUNTS ARE IN THE ARTIFACT ("1 / 9" on Move): plain total, dimmed, until this folder has given something, then picked-of-total in the live hue. FIX PASS 4 killed these; it was wrong.
       tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
-    var sec = add(host, "div", "pk-sec"); add(sec, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
-    var sg = add(sec, "div", "pk-fgrid");
-    [{ kind: "chains", l: "Chains", s: "your arrangements", ti: "ti-link", c: "#ffc41f", items: pkChains().map(pkChainPick) },
-     { kind: "stacks", l: "Stacks", s: "on your shelf", ti: "ti-stack-2", c: "#ffc41f", items: pkStacks().map(pkStackPick).filter(Boolean) }].forEach(function (F) {
-      var b = pkFolder(sg, true); b.style.borderColor = mixHex(F.c, "#160510", 0.42);
-      var dr = add(b, "div", "pk-deckrow");
-      F.items.slice(0, 3).forEach(function (p) { var w = add(dr, "span", "pk-deck"); var hue = pkHue(p.dom);
-        var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
-        var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var i = add(fc, "i", "ti " + p.ti); i.style.color = "#160510"; });
-      if (!F.items.length) { var e = add(dr, "span", "pk-deck"); e.style.flex = "0 0 calc((100% - 16px) / 3)"; var ef = add(e, "span", "pk-face"); ef.style.border = "2px dashed " + mixHex(F.c, "#160510", 0.42); var ei = add(ef, "i", "ti ti-plus"); ei.style.color = "#8a5f76"; } // one lone placeholder tile, not a full-width box
-      var row = add(b, "div", "pk-frow"); var fi = add(row, "i", "ti " + F.ti); fi.style.color = F.c;
-      var tx = add(row, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", tr(F.s)); s.style.color = F.c; // always the designed phrase — counts are data slop, they're nowhere on this wall
-      b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
-    });
+  }
+  // ===== SAVED & READY-MADE — PINNED above the plate bar (artifact: label · two card arcs · chevron · bar). It is furniture, not a wall row: chains and stacks must stay reachable without scrolling past eight folders. =====
+  function pkSavedFolders() {
+    return [{ kind: "chains", l: "Chains", s: "your arrangements", ti: "ti-link", c: "#ff4fa0", items: pkChains().map(pkChainPick) },              // pink + teal, not gold: the peek arcs and the open cards are ONE object in two states, so they wear one pair of hues
+            { kind: "stacks", l: "Stacks", s: "on your shelf", ti: "ti-stack-2", c: DOM.restore.c, items: pkStacks().map(pkStackPick).filter(Boolean) }];
+  }
+  function pkPaintSaved(host) {
+    if (!host) return; pkDrain(host);
+    // TWO RULES KEEP THIS HONEST. (1) The drawer stands down whenever the QUEUE STRIP IS OPEN — that frame is chips + tune + plate bar, nothing else. (2) Its chevron only exists when the plate is empty (frame A: label · arcs · chevron) or when you have opened the drawer yourself and need a way to shut it. So saved things stay one tap away all the way through a build, and the resting footer never shows two chevrons — only the browse you deliberately opened does. _pk.savedOpen survives every hide.
+    if (_pk.queue.length && !_pk.wallMin) { host.style.display = "none"; return; }
+    host.style.display = "";
+    var F2 = pkSavedFolders(), open = !!_pk.savedOpen;
+    add(host, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
+    function toggle() { _pk.savedOpen = !_pk.savedOpen; pkPaint(); }
+    if (!open) {
+      var row = add(host, "div", "pk-peekrow");
+      F2.forEach(function (F) { var t = add(row, "button", "pk-peek"); t.style.borderColor = mixHex(F.c, "#1e0b18", 0.25); t.setAttribute("aria-label", tr(F.l)); t.onclick = toggle; }); // the top edge of each card, cut off: 2px dashed in color-mix(HUE 75%, #1e0b18) — the frame's arcs sit BACK from the card they belong to, muted, not at full saturation
+    } else {
+      var sg = add(host, "div", "pk-fgrid");
+      F2.forEach(function (F) {
+        var b = pkFolder(sg, true), muted = mixHex(F.c, "#1e0b18", 0.25); b.style.borderColor = muted; // the open card wears the SAME muted edge as its arc — collapsed and expanded are one object in two states, and the raw hue is saved for the deck coins inside
+        var dr = add(b, "div", "pk-deckrow");
+        F.items.slice(0, 3).forEach(function (p) { var w = add(dr, "span", "pk-deck"); var hue = pkHue(p.dom);
+          var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
+          var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var i = add(fc, "i", "ti " + p.ti); i.style.color = "#160510"; });
+        if (!F.items.length) { var e = add(dr, "span", "pk-deck"); e.style.flex = "0 0 calc((100% - 16px) / 3)"; var ef = add(e, "span", "pk-face"); ef.style.border = "2px dashed " + mixHex(F.c, "#160510", 0.42); var ei = add(ef, "i", "ti ti-plus"); ei.style.color = "#8a5f76"; } // one lone placeholder tile, not a full-width box
+        var frow = add(b, "div", "pk-frow"); var fi = add(frow, "i", "ti " + F.ti); fi.style.color = muted; // the folder glyph rides with the edge, not against it
+        var tx = add(frow, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", tr(F.s)); s.style.color = F.c; // always the designed phrase — counts are data slop, they're nowhere on this wall
+        b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+      });
+    }
+    if (!_pk.queue.length || open) { // the chevron belongs to the empty plate (frame A) and to a drawer you opened yourself, which needs a way back down. Collapsed over a loaded plate it would just stack against the queue tab, so the arcs carry the tap alone.
+      var tab = add(host, "button", "pk-tab"); var ti2 = add(tab, "i", "ti ti-chevron-up"); ti2.style.transform = open ? "rotate(180deg)" : "none";
+      tab.setAttribute("aria-label", tr("SAVED & READY-MADE")); tab.onclick = toggle; // same chevron grammar as the queue tab: up = closed, down = open
+    }
   }
   // ===== THE SHARED FOOTER — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
   function pkFoot(host, bg) {
@@ -6076,10 +6121,10 @@
     var kick = add(tx, "span", "pk-bark"), lab = add(tx, "span", "pk-barl");
     // FP4 5 — ONE ActionBar, three states. The kicker never changes WORDS (only its colour), so the bar reads as one instrument instead of three; the label carries the state in plain words; the right verb is disabled-Arrange / Add to today / Arrange.
     kick.textContent = tr("ON YOUR PLATE"); kick.style.color = n ? "#ff8fc0" : "#96637e";
-    if (!n) lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like");
+    if (!n) { lab.classList.add("hint"); lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like"); } // DS: the populated label is 18px on ONE line; the empty-state hint drops to 14px/#c98ca6 so the whole sentence fits at 375px instead of being clipped
     else if (n === 1) lab.textContent = q[0].title + " · " + pkShort(q[0].mins || 0);
     else lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); // never a name → name → name list (David 2026-07-27)
-    var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-layout-list")); add(go, "span", null, n === 1 ? tr("Add to today") : tr("Arrange"));
+    var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-arrows-sort")); add(go, "span", null, n === 1 ? tr("Add to today") : tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list
     if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
     else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
   }
@@ -6087,9 +6132,9 @@
     var qrow = add(host, "div", "pk-queue");
     _pk.queue.forEach(function (p, i) {
       var b = add(qrow, "button", "pk-q"), w = add(b, "span", "pk-qc"), hue = pkHue(p.dom), on = _pk.focus === i;
-      if (p.kind === "chain") { var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28); } // chains render as deck bubbles — 2 peeking cards behind
-      var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = on ? ("0 4px 0 " + pkDeep(p.dom) + ", 0 0 0 3px #ff4fa0") : pkLip(p.dom);
-      var fi = add(fc, "i", "ti " + p.ti); fi.style.color = "#160510";
+      if (p.kind === "chain" || (p.st0 && p.st0.length)) { var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28); } // ANYTHING MADE OF STEPS renders as a deck bubble — 2 peeking cards behind. Stacks already arrive as kind "chain" (pkStackPick), so they deck today; the st0 test keeps that true if a stack ever gets its own kind. The ring + ignition stay on the FRONT face only.
+      var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? (pkCoinLip(hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(hue); // DS: the FOCUSED chip is the one that ignites (stripes + pink ring); the rest stay flat hue. One coin language with the wall and the sheet.
+      var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#fff2f9";
       var x = add(w, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
       var l = add(b, "span", "pk-ql", p.title); l.style.color = on ? "#fff2f9" : "#96637e"; // the NAME under the icon, never the time
       b.onclick = function () { _pk.focus = on ? null : i; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); };
@@ -6098,25 +6143,27 @@
     var tune = add(host, "div", "pk-tune"), hue = pkHue(f.dom), isChain = f.kind === "chain";
     var fh = add(tune, "div", "pk-fh"), ftx = add(fh, "span", "pk-bartx"); // header = name + hint + big time; NO icon coin (the ringed queue icon is the identifier)
     add(ftx, "span", "pk-fht", f.title); add(ftx, "span", "pk-fhs", isChain ? tr("for how long? scales every step") : tr("for how long?"));
-    add(fh, "span", "pk-fhm", pkLong(f.mins));
+    add(fh, "span", "pk-fhm", pkShort(f.mins)); // the frame's big value is COMPACT ("10m"), the same token the rail chips and the plate bar speak — the long "30 min" form was ours
     pkRail(tune, f.mins, hue, function (v) { f.mins = v; pkPaint(); }, bg);
     var btns = add(tune, "div", "pk-btns");
     var pb = add(btns, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (f.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, f.prio ? tr(pkPriLab(f.prio)) : tr("Priority"));
     pkSkin(pb, pbi, hue, !!f.prio); pb.onclick = function () { _pk.priOpen = !_pk.priOpen; _pk.stepsOpen = false; pkPaint(); };
     var sb = add(btns, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
-    pkSkin(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); };
-    add(btns, "span", "pk-spacer");
-    var tr2 = add(btns, "button", "pk-trash"); add(tr2, "i", "ti ti-trash"); tr2.setAttribute("aria-label", tr("Remove")); tr2.onclick = function () { _pk.queue.splice(_pk.focus, 1); _pk.focus = _pk.queue.length ? 0 : null; pkPaint(); };
+    pkSkin(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); }; // Priority + Steps ONLY (the frame): taking a pick back off the plate is the chip's own x badge, so a second delete affordance down here was ours, not David's
     if (_pk.priOpen) pkPriRow(tune, f, hue);
     if (_pk.stepsOpen) { if (isChain) pkStepList(add(tune, "div", "pk-steps"), pkSteps(f)); else pkActSteps(tune, f); }
   }
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
   function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
-  function pkRail(host, cur, hue, onPick, bg) { // bg = the surface the rail sits on, so the right fade dissolves into it exactly (wall #130609 · sheet #1c0a17 · arranger body #2b1220)
+  function pkSkinChip(c, hue, on) { // the LENGTH rail's own skin (borderless, DS 2026-07-30) — deliberately NOT pkSkin, which still dresses the Priority/Steps buttons
+    if (on) { c.style.background = pkIgnite(hue); c.style.color = PK_INK; c.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; }
+    else { c.style.background = "#170811"; c.style.color = "#c98ca6"; c.style.boxShadow = "none"; }
+  }
+  function pkRail(host, cur, hue, onPick, bg) { // bg is kept for the callers; the DS fixes the right-edge fade at #1b0b16 on every surface
     var w = add(host, "div", "pk-railw"), box = add(w, "div", "pk-railb"), rail = add(box, "div", "pk-rail");
-    var lens = PK_LENS.slice(); if (lens.indexOf(cur) < 0) { lens.push(cur); lens.sort(function (a, b) { return a - b; }); } // a stack's own default (e.g. 5 min) joins the ladder so the rail always shows what's actually set
-    lens.forEach(function (v) { var c = add(rail, "button", "pk-lchip", pkShort(v)); pkSkin(c, null, hue, v === cur); if (v === cur) c.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; c.onclick = function () { onPick(v); }; });
-    bg = bg || "#130609"; var fade = add(box, "div", "pk-fade"); fade.style.background = "linear-gradient(90deg, " + hexA(bg, 0) + ", " + bg + " 88%)";
+    var lens = [cur].concat(PK_LENS.filter(function (v) { return v !== cur; })); // WHAT IS SET LEADS (DS: "the app suggests, you overrule") — the current length is chip one, then the standard ladder ascending with the duplicate dropped
+    lens.forEach(function (v) { var c = add(rail, "button", "pk-lchip", pkShort(v)); pkSkinChip(c, hue, v === cur); c.onclick = function () { onPick(v); }; });
+    var fade = add(box, "div", "pk-fade"); fade.style.background = "linear-gradient(90deg, " + hexA("#1b0b16", 0) + ", #1b0b16 88%)";
     var fwd = add(w, "button", "pk-fwd"); add(fwd, "i", "ti ti-chevron-right"); fwd.setAttribute("aria-label", tr("More lengths")); fwd.onclick = function () { try { rail.scrollBy({ left: 150, behavior: "smooth" }); } catch (e) { rail.scrollLeft += 150; } };
   }
   function pkPriRow(host, p, hue) { var row = add(host, "div", "pk-pris");
@@ -6152,7 +6199,7 @@
     var host = _pk.shhead; pkDrain(host); var s = _pk.sheet, M = pkSheetMeta();
     var head = add(host, "div", "pk-shhead");
     if (s.more) { var bk = add(head, "button", "pk-circ"); add(bk, "i", "ti ti-arrow-left"); bk.setAttribute("aria-label", tr("Back")); bk.onclick = function () { s.more = false; s.naming = false; pkPaintSheetHead(); pkPaintSheetBody(); }; }
-    var coin = add(head, "span", "pk-shcoin"); coin.style.background = M.c; coin.style.boxShadow = "0 4px 0 " + mixHex(M.c, "#160510", 0.45) + ", 0 0 0 2.5px #160510"; var ci = add(coin, "i", "ti " + M.ti); ci.style.color = "#160510";
+    var coin = add(head, "span", "pk-shcoin"); coin.style.background = M.c; coin.style.boxShadow = "0 4px 0 " + mixHex(M.c, "#000000", 0.55) + ", 0 0 0 2.5px #160510"; var ci = add(coin, "i", "ti " + M.ti); ci.style.color = PK_INK; // DS: lip = color-mix(HUE 45%, #000) = the hue at 45% toward black, under a 2.5px ink ring; glyph = ink-on-fill
     var tx = add(head, "span", "pk-shtx"); add(tx, "span", "pk-shl", M.l); add(tx, "span", "pk-shs", M.sub);
     var x = add(head, "button", "pk-circ"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Close")); x.onclick = pkCloseSheet;
     if (!s.naming) return;
@@ -6173,14 +6220,16 @@
   }
   function pkTakePick(p) { _pk.queue.push(p); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); }
   function pkActUse() { // THE RANKING SOURCE: the last 30 days of logs, the same signal actCount() reads for badges. (S.tools.use — what TBX_TOP/tbxOrder rank by — is keyed by TOOL id, not activity title, so it cannot rank this grid.)
+    if (_pkUse) return _pkUse; // memo: one wall paint asks all 8 folders for the SAME 30-day walk. Nothing inside the picker writes a log, so it can't go stale before pkOpen clears it.
     var m = {}; try { lastDays(30).forEach(function (k) { (logs(k) || []).forEach(function (e) { var t = (e.title || "").toLowerCase(); if (t) m[t] = (m[t] || 0) + 1; }); }); } catch (e) {}
-    return m;
+    _pkUse = m; return m;
   }
-  function pkDomShown(dom) { // the artifact's "N you actually do": the domain's USED activities, most-logged first. Everything unused waits behind More.
+  function pkDomShown(dom) { // the artifact's "N you actually do": USED activities first (most-logged), then the pool PADS the list out to PK_TOPN — the artifact's folders are FULL, and a folder holding two coins because you only ever logged two things is not a design.
     var acts = (bentoByDomain()[dom] || []).slice(), use = pkActUse();
-    var used = acts.filter(function (a) { return use[(a.title || "").toLowerCase()]; }).sort(function (x, y) { return (use[(y.title || "").toLowerCase()] || 0) - (use[(x.title || "").toLowerCase()] || 0); });
-    if (!used.length) { acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); return { list: acts.slice(0, PK_TOPN), all: acts, fresh: true }; } // FRESH-USER FALLBACK (the artifact is silent on a zero-history user): keep today's full pinned-first grid and the "<total> things" sub-line
-    return { list: used.slice(0, PK_TOPN), all: acts, fresh: false };
+    function hits(a) { return use[(a.title || "").toLowerCase()] || 0; }
+    var used = acts.filter(function (a) { return hits(a); }).sort(function (x, y) { return hits(y) - hits(x); });
+    var rest = acts.filter(function (a) { return !hits(a); }).sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // the unused remainder, pinned first, otherwise the pool's own order
+    return { list: used.concat(rest).slice(0, PK_TOPN), all: acts, fresh: !used.length }; // fresh = zero history in this domain → the head sub-line says "<total> things" instead of "N you actually do"
   }
   function pkJustLabel(dom) { return tr("Just") + " " + tr((DOM[dom] || DOM.focus).l).toLowerCase(); } // the artifact's "Just move" / "Just focus" pattern, generated per domain
   function pkJustCell(host, dom) { // the artifact's FIRST cell: a dashed TIMEBOX that lands a plain block in the domain colour, tunable like any pick
@@ -6195,7 +6244,7 @@
   function pkCell(host, o) { // one squircle cell: face + glyph + (when picked) ignition stripes, pink ring and its tuned duration
     var b = add(host, "button", "pk-cell"), f = add(b, "span", "pk-cellf");
     f.style.background = o.on ? pkIgnite(o.hue) : o.hue; f.style.boxShadow = o.on ? (pkCoinLip(o.hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(o.hue); // IGNITION: a picked activity wears its own hue's candy stripes + the pink ring
-    var i = add(f, "i", "ti " + o.ti); i.style.color = "#fff2f9"; // WHITE per the artifact (the ink glyph came from the original build)
+    var i = add(f, "i", "ti " + o.ti); i.style.color = o.on ? PK_INK : "#fff2f9"; // white on a flat face, ink-on-fill on the ignited one — both artifacts show a dark glyph the moment a tile lights up (the stripes take the contrast a white glyph needs)
     if (o.on && o.dur) add(f, "span", "pk-cbadge", o.dur); // the tuned length, top-right. The xN already-picked badge is GONE: the queue strip + the ignition carry that.
     var l = add(b, "span", "pk-cellt", o.t); l.style.color = o.labC || "#f0dceb";
     b.onclick = o.onTap; return b;
@@ -6209,8 +6258,8 @@
       var g = add(host, "div", "pk-bgrid");
       items.forEach(function (p) { var b = add(g, "button", "pk-bundle"), w = add(b, "span", "pk-bwrap"), hue = pkHue(p.dom);
         var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
-        var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var fi = add(fc, "i", "ti " + p.ti); fi.style.color = "#160510";
-        var n = pkQCount(p.title); if (n) add(fc, "span", "pk-badge", "×" + n);
+        var on = !!pkQCount(p.title); // ALREADY ON THE PLATE reads the same everywhere: the front card IGNITES (stripes + pink ring + ink glyph) and the deck behind it stays flat. The ×N pill is dead — a count was never the point, "this one is in" is. Ring spread is 4.5px, not 2.5px: pkLip already lays a 2px ink ring ON TOP, so 2.5px left a half-pixel sliver — 4.5px is what makes the pink band read the same 2.5px thick as the wall coin and the sheet cell.
+        var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? (pkLip(p.dom) + ", 0 0 0 4.5px #ff4fa0") : pkLip(p.dom); var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#160510";
         var lab = add(b, "span", "pk-blab"); var lt = add(lab, "span", "pk-blt", p.title); lt.style.color = "#fff2f9"; add(lab, "span", "pk-bls", (p.st0 || []).length + " " + tr("steps") + " · " + pkShort(p.mins));
         b.onclick = function () { pkTakePick(s.kind === "chains" ? pkChainPick(pkChains()[items.indexOf(p)]) : p); };
       });
@@ -6221,7 +6270,7 @@
     if (!s.more) {
       var g2 = add(host, "div", "pk-cgrid");
       if (!_pk.stepFor) pkJustCell(g2, s.dom); // the timebox tile leads the grid (never in step-pick mode, where every cell must be a real step)
-      _sh.list.forEach(function (a) { pkCell(g2, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, labC: D.c, on: !!pkQCount(a.title), dur: pkDur(a.title), onTap: function () { pkTake(a); } }); }); // labC = the RAW hue: sampling the export put the Walk/Gym labels at #ff8a3a, the move hue itself, not a lighter tint
+      _sh.list.forEach(function (a) { pkCell(g2, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, on: !!pkQCount(a.title), dur: pkDur(a.title), onTap: function () { pkTake(a); } }); }); // no labC: the frame's activity labels are CREAM (#f0dceb, pkCell's default). The raw-hue reading came from sampling a compressed export; only the Just-<domain> timebox keeps the hue.
       if (acts.length > _sh.list.length) pkDashCell(g2, "ti-dots", tr("More")).onclick = function () { s.more = true; pkPaintSheetHead(); pkPaintSheetBody(); };
       return;
     }
@@ -6229,7 +6278,7 @@
     var wrap = add(host, "div", "pk-groups");
     order.forEach(function (gn) { var G = add(wrap, "div", "pk-group"); add(G, "span", "pk-seclbl", String(gn).toUpperCase());
       var gg = add(G, "div", "pk-ggrid");
-      groups[gn].forEach(function (a) { pkCell(gg, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, labC: D.light, n: pkQCount(a.title), onTap: function () { pkTake(a); } }); });
+      groups[gn].forEach(function (a) { pkCell(gg, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, n: pkQCount(a.title), onTap: function () { pkTake(a); } }); }); // same cream label as the main grid — one type colour across both views
     });
     var own = add(wrap, "div", "pk-group"); add(own, "span", "pk-seclbl", tr("YOUR OWN"));
     var og = add(own, "div", "pk-ggrid");
@@ -8633,7 +8682,7 @@
     var g = (S.game && S.game.garden) || []; if (!g.length) return; var tk = todayK();
     g.forEach(function (p) { if (p.stage != null && p.stage < 2 && p.plantedK != null && p.plantedK !== tk && hasEarnedToday()) p.stage++; });
   }
-  var MOODS = [{ e: "ti-cloud-fog", l: "Foggy", c: "#7f9bc4" }, { e: "ti-cloud", l: "Heavy", c: "#5f8dd6" }, { e: "ti-cloud-sun", l: "Okay", c: "#2ab8c4" }, { e: "ti-sun", l: "Clear", c: "#ffd24a" }, { e: "ti-sparkles", l: "Radiant", c: "#ff5fa8" }]; // AUDIT TOP-7: per-mood jewel hue (canon: blue/blue/teal/gold/pink)
+  var MOODS = [{ e: "ti-cloud-fog", l: "Foggy", c: "#7f9bc4" }, { e: "ti-cloud", l: "Heavy", c: "#5f8dd6" }, { e: "ti-haze", l: "Okay", c: "#2ab8c4" }, { e: "ti-sun", l: "Clear", c: "#ffd24a" }, { e: "ti-sparkles", l: "Radiant", c: "#ff5fa8" }]; // AUDIT TOP-7: per-mood jewel hue (canon: blue/blue/teal/gold/pink)
   function currentMood() { var m = S && S.mood && S.mood[todayK()]; return m ? m.lvl : 2; }
   function drawGuardian() {
     if (!gctx) { requestAnimationFrame(drawGuardian); return; }
@@ -9210,7 +9259,7 @@
     { id: "blocker", q: "What got in the way most today?", opts: [["ti-device-mobile", "#48d0e0", "the phone pulled at me"], ["ti-cloud", "#5ec4f5", "thoughts of another task"], ["ti-battery-2", "#ff8a3a", "just no energy"]] },
     { id: "alive", q: "When did you feel most alive today?", opts: [["ti-brain", "#5ec4f5", "deep in the work"], ["ti-users", "#ff5fa0", "with someone"], ["ti-leaf", "#46e2a4", "moving, outside"]] },
     { id: "tomorrow", q: "What would make tomorrow a win?", opts: [["ti-target", "#ffd24a", "one finished thing"], ["ti-wind", "#48d0e0", "a calmer pace"], ["ti-heart", "#ff5fa0", "time with my people"]] },
-    { id: "avoid", q: "What are you quietly avoiding?", opts: [["ti-briefcase", "#5ec4f5", "a work thing"], ["ti-message-2", "#ff5fa0", "a conversation"], ["ti-mirror", "#9a8cff", "looking at something in me"]] },
+    { id: "avoid", q: "What are you quietly avoiding?", opts: [["ti-briefcase", "#5ec4f5", "a work thing"], ["ti-message-2", "#ff5fa0", "a conversation"], ["ti-user-scan", "#9a8cff", "looking at something in me"]] },
     { id: "energy", q: "What fed your energy today?", opts: [["ti-moon", "#9a8cff", "rest"], ["ti-run", "#ff8a3a", "movement"], ["ti-circle-check", "#46e2a4", "visible progress"]] }
   ];
   function reflectState() { S.reflect = S.reflect || { log: [], lastK: null }; S.reflect.log = S.reflect.log || []; return S.reflect; }
@@ -9319,7 +9368,7 @@
     { e: "ti-sun", l: "Step outside", catK: "energy", mins: 3, sp: 4 },
     { e: "ti-home-2", l: "Tidy one thing", catK: "energy", mins: 3, sp: 3, habitId: "tidy" },
     { e: "ti-device-mobile-off", l: "Phone down 10m", catK: "energy", mins: 10, sp: 5 },
-    { e: "ti-spa", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true },
+    { e: "ti-flower", l: "Relax all muscles", catK: "energy", mins: 2, sp: 5, relax: true },
     { e: "ti-leaf", l: "Meditate", catK: "love", mins: 5, sp: 8, med: true },
     { e: "ti-hand-finger", l: "Tapping (EFT)", catK: "love", mins: 3, sp: 7, tap: true },
     { e: "ti-microphone-2", l: "Rewire", catK: "love", mins: 3, sp: 7, mantra: true }
@@ -10933,7 +10982,7 @@
   // one-line identity+virtue reminder (Johnson "who am I being") then a domain-scoped bento. Picks accumulate across beats → the order/length/importance editor (orderStep).
   // Back/skip per beat, never forced. No ugly white pickerSheet, no instant drop.
   var BIG3 = [
-    { id: "energy", emoji: "ti-zap", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
+    { id: "energy", emoji: "ti-bolt", label: "Energy", domains: ["move", "nourish", "restore"], virtue: "zest" },
     { id: "work", emoji: "ti-briefcase", label: "Work", domains: ["focus", "create"], virtue: "disc" },
     { id: "love", emoji: "ti-heart", label: "Love", domains: ["connect"], virtue: "love" }
   ];
@@ -13629,7 +13678,7 @@
     var wrap = add(ob, "div"); wrap.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
     var pf = {}; try { pf = profile(); } catch (e) {}
     var def = ((S.profile || {}).mlDrift) || (pf.lowEnergy ? "empty" : "cant"); // brother→can't-start, sister→bored routed via profile.mlDrift when set
-    [["cant", "Can't start", "ti-player-play"], ["doubt", "Doubt it'll matter", "ti-help"], ["bored", "It's boring", "ti-mood-flat"], ["empty", "No energy left", "ti-battery-1"]].forEach(function (o) {
+    [["cant", "Can't start", "ti-player-play"], ["doubt", "Doubt it'll matter", "ti-help"], ["bored", "It's boring", "ti-mood-neutral"], ["empty", "No energy left", "ti-battery-1"]].forEach(function (o) {
       var c = add(wrap, "button", "tf-chip"); if (o[0] === def) c.style.borderColor = "#ffd24a";
       c.innerHTML = '<i class="ti ' + o[2] + '"></i> ' + esc(tr(o[1]));
       c.onclick = function () { ob.remove(); mlRoute(o[0], ctx); };
