@@ -5980,7 +5980,8 @@
   function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
   function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
-  function pkCandy(hex) { return "linear-gradient(100deg," + mixHex(hex, "#ffffff", 0.18) + " 0%," + hex + " 60%)"; } // FIX PASS 2 A (design 2026-07-28, verbatim): the mini-sheet face = color-mix(hue 82%, #fff) → hue at 60%, on a 100° axis. mixHex(…,0.18) IS the 82% mix; it resolves to rgb() so the design audit can read it.
+  function pkCoinLip(hex) { return "0 2px 0 " + mixHex(hex, "#160510", 0.5); } // MEASURED off 18a-picker.view.png (direct export, legal to sample): under a Nourish coin the 2px band reads #21654b against a #2fbe86 face = the coin's OWN hue ~50% toward ink. Not a hard #160510 bar.
+  function pkIgnite(hex) { return "repeating-linear-gradient(45deg," + mixHex(hex, "#ffffff", 0.18) + " 0 9px," + hex + " 9px 18px)"; } // the DS ignition law (45deg/9px candy stripes in the option's own hue) — the picked coin only // FIX PASS 2 A (design 2026-07-28, verbatim): the mini-sheet face = color-mix(hue 82%, #fff) → hue at 60%, on a 100° axis. mixHex(…,0.18) IS the 82% mix; it resolves to rgb() so the design audit can read it.
   function pkDeep(dom) { return mixHex(pkHue(dom), "#160510", 0.45); }
   function pkLip(dom) { return "0 4px 0 " + pkDeep(dom) + ", 0 0 0 2px #160510"; }
   function pkChains() { try { return (S.tools && S.tools.pkChains) || []; } catch (e) { return []; } } // additive store, guarded read — NO SCHEMA bump
@@ -6041,7 +6042,7 @@
       if (nq) tile.classList.add("on"); // >=1 pick from this folder → the edge goes pink (selection is the ONE legal hue border)
       var mini = add(tile, "span", "pk-mini");
       acts.slice(0, 6).forEach(function (a) { // the artifact's 3-col grid of six FLAT tight coins — no shards, NO fan/rotation (FIX PASS 4's fan is contradicted by the artifact and must not come back)
-        var fc = add(mini, "span", "pk-face"); fc.style.background = pkCandy(hue); fc.style.boxShadow = "0 3px 0 #160510";
+        var fc = add(mini, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkCoinLip(hue); // FLAT raw hue: the artifact's coin samples identical top-left, centre and bottom-right. FIX PASS 2's 100deg pkCandy gradient never existed in David's design.
         if (took[a.title]) { fc.classList.add("on"); add(fc, "span", "pk-gloss"); } // the picked activity: pink edge + the diagonal shine
         add(fc, "i", "ti " + tiClass(a)); });
       var nrow = add(tile, "span", "pk-fnrow"); // the name row lives INSIDE the tile bottom (artifact): domain glyph in the hue · name · count
@@ -6144,7 +6145,8 @@
   function pkSheetMeta() { var s = _pk.sheet;
     if (s.kind === "chains") return { c: "#ffc41f", ti: "ti-link", l: tr("Chains"), sub: tr("saved arrangements") };
     if (s.kind === "stacks") return { c: "#ffc41f", ti: "ti-stack-2", l: tr("Stacks"), sub: tr("on your shelf") };
-    var D = DOM[s.dom] || DOM.focus; return { c: D.c, ti: D.ti, l: tr(D.l), sub: _pk.stepFor ? tr("pick a step") : ((bentoByDomain()[s.dom] || []).length + " " + tr("things")) };
+    var D = DOM[s.dom] || DOM.focus, sh = pkDomShown(s.dom);
+    return { c: D.c, ti: D.ti, l: tr(D.l), sub: _pk.stepFor ? tr("pick a step") : (sh.fresh ? (sh.all.length + " " + tr("things")) : (sh.list.length + " " + tr("you actually do"))) };
   }
   function pkPaintSheetHead() {
     var host = _pk.shhead; pkDrain(host); var s = _pk.sheet, M = pkSheetMeta();
@@ -6170,10 +6172,31 @@
     _pk.queue.push(pkActPick(a)); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint();
   }
   function pkTakePick(p) { _pk.queue.push(p); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); }
-  function pkCell(host, o) { // one squircle cell: face + glyph + optional already-picked badge
+  function pkActUse() { // THE RANKING SOURCE: the last 30 days of logs, the same signal actCount() reads for badges. (S.tools.use — what TBX_TOP/tbxOrder rank by — is keyed by TOOL id, not activity title, so it cannot rank this grid.)
+    var m = {}; try { lastDays(30).forEach(function (k) { (logs(k) || []).forEach(function (e) { var t = (e.title || "").toLowerCase(); if (t) m[t] = (m[t] || 0) + 1; }); }); } catch (e) {}
+    return m;
+  }
+  function pkDomShown(dom) { // the artifact's "N you actually do": the domain's USED activities, most-logged first. Everything unused waits behind More.
+    var acts = (bentoByDomain()[dom] || []).slice(), use = pkActUse();
+    var used = acts.filter(function (a) { return use[(a.title || "").toLowerCase()]; }).sort(function (x, y) { return (use[(y.title || "").toLowerCase()] || 0) - (use[(x.title || "").toLowerCase()] || 0); });
+    if (!used.length) { acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); return { list: acts.slice(0, PK_TOPN), all: acts, fresh: true }; } // FRESH-USER FALLBACK (the artifact is silent on a zero-history user): keep today's full pinned-first grid and the "<total> things" sub-line
+    return { list: used.slice(0, PK_TOPN), all: acts, fresh: false };
+  }
+  function pkJustLabel(dom) { return tr("Just") + " " + tr((DOM[dom] || DOM.focus).l).toLowerCase(); } // the artifact's "Just move" / "Just focus" pattern, generated per domain
+  function pkJustCell(host, dom) { // the artifact's FIRST cell: a dashed TIMEBOX that lands a plain block in the domain colour, tunable like any pick
+    var hue = (DOM[dom] || DOM.focus).c;
     var b = add(host, "button", "pk-cell"), f = add(b, "span", "pk-cellf");
-    f.style.background = o.hue; f.style.boxShadow = pkLip(o.dom); var i = add(f, "i", "ti " + o.ti); i.style.color = "#160510";
-    if (o.n) add(f, "span", "pk-cbadge", "×" + o.n);
+    f.style.background = mixHex(hue, "#160510", 0.84); f.style.border = "2.5px dashed " + mixHex(hue, "#160510", 0.42); // measured: the artifact's Just-move fill reads #3c1c1c against the #ff8a3a hue = ~84% toward ink
+    var i = add(f, "i", "ti ti-clock"); i.style.color = hue;
+    var l = add(b, "span", "pk-cellt", pkJustLabel(dom)); l.style.color = hue;
+    b.onclick = function () { pkTakePick({ uid: uid(), kind: "act", title: pkJustLabel(dom), dom: dom, ti: "ti-clock", mins: 30, prio: 0, catK: null, subs: [] }); };
+    return b;
+  }
+  function pkCell(host, o) { // one squircle cell: face + glyph + (when picked) ignition stripes, pink ring and its tuned duration
+    var b = add(host, "button", "pk-cell"), f = add(b, "span", "pk-cellf");
+    f.style.background = o.on ? pkIgnite(o.hue) : o.hue; f.style.boxShadow = o.on ? (pkCoinLip(o.hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(o.hue); // IGNITION: a picked activity wears its own hue's candy stripes + the pink ring
+    var i = add(f, "i", "ti " + o.ti); i.style.color = "#fff2f9"; // WHITE per the artifact (the ink glyph came from the original build)
+    if (o.on && o.dur) add(f, "span", "pk-cbadge", o.dur); // the tuned length, top-right. The xN already-picked badge is GONE: the queue strip + the ignition carry that.
     var l = add(b, "span", "pk-cellt", o.t); l.style.color = o.labC || "#f0dceb";
     b.onclick = o.onTap; return b;
   }
@@ -6193,12 +6216,13 @@
       });
       return;
     }
-    var D = DOM[s.dom] || DOM.focus, acts = (bentoByDomain()[s.dom] || []).slice();
-    acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
+    var D = DOM[s.dom] || DOM.focus, _sh = pkDomShown(s.dom), acts = _sh.all;
+    function pkDur(t) { var d = null; (_pk.queue || []).forEach(function (p) { if (p.title === t) d = p.mins; }); return d == null ? null : pkShort(d); } // the MOST RECENT pick of this activity sets the badge (the artifact shows a single pick; one badge, not a count)
     if (!s.more) {
       var g2 = add(host, "div", "pk-cgrid");
-      acts.slice(0, PK_TOPN).forEach(function (a) { pkCell(g2, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, n: pkQCount(a.title), onTap: function () { pkTake(a); } }); });
-      if (acts.length > PK_TOPN) pkDashCell(g2, "ti-dots", tr("More")).onclick = function () { s.more = true; pkPaintSheetHead(); pkPaintSheetBody(); };
+      if (!_pk.stepFor) pkJustCell(g2, s.dom); // the timebox tile leads the grid (never in step-pick mode, where every cell must be a real step)
+      _sh.list.forEach(function (a) { pkCell(g2, { hue: D.c, dom: s.dom, ti: tiClass(a), t: a.title, labC: D.c, on: !!pkQCount(a.title), dur: pkDur(a.title), onTap: function () { pkTake(a); } }); }); // labC = the RAW hue: sampling the export put the Walk/Gym labels at #ff8a3a, the move hue itself, not a lighter tint
+      if (acts.length > _sh.list.length) pkDashCell(g2, "ti-dots", tr("More")).onclick = function () { s.more = true; pkPaintSheetHead(); pkPaintSheetBody(); };
       return;
     }
     var groups = {}, order = []; acts.forEach(function (a) { var gn = a.group || tr("More"); if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); });
@@ -15484,7 +15508,7 @@
   Object.assign(I18N.ru, { "Day taking shape": "День собирается", "Day is set": "День собран", "things. See you at the first.": "дел. Увидимся на первом.", "First one lived: the day is lit.": "Первое дело прожито — день зажёгся." }); // plan-day strip + seal + first-light strings (B4)
   Object.assign(I18N.ru, { "start": "начало", "length": "длина", "More": "Ещё", "Block": "Блок" }); // edge-inspector strings (B4; "delete" already in the dict)
   Object.assign(I18N.ru, { "extend?": "продлить?" }); // on-plan docked chips = EXTEND (B4)
-  Object.assign(I18N.ru, { "starts at": "начало в", "play begins it now": "старт запустит сейчас", "next:": "далее:", "you've got": "у тебя есть", "play opens the picker": "старт откроет выбор", "or start": "или начать", "early": "раньше", "Next:": "Далее:", "Extend": "Продлить", "nothing yet": "пока пусто", "tap what you feel like": "нажми на то, чего хочется", "Welcome back": "С возвращением", "that window is open. was it you?": "это окно открыто. это был ты?" }); // ROUND 3 (2a-player-idle PNG): the idle-with-a-plan sub-line under the disc (B4 law — EN source + RU in the same commit)
+  Object.assign(I18N.ru, { "starts at": "начало в", "play begins it now": "старт запустит сейчас", "next:": "далее:", "you've got": "у тебя есть", "play opens the picker": "старт откроет выбор", "or start": "или начать", "early": "раньше", "Next:": "Далее:", "Extend": "Продлить", "nothing yet": "пока пусто", "you actually do": "ты правда делаешь", "Just": "Просто", "tap what you feel like": "нажми на то, чего хочется", "Welcome back": "С возвращением", "that window is open. was it you?": "это окно открыто. это был ты?" }); // ROUND 3 (2a-player-idle PNG): the idle-with-a-plan sub-line under the disc (B4 law — EN source + RU in the same commit)
   Object.assign(I18N.ru, { "World": "Мир", "soon": "скоро" }); // journey worlds (B4)
   Object.assign(I18N.ru, { "Sound": "Звук", "adjust anytime, even while it plays": "меняй в любой момент — даже во время игры", "Voice": "Голос", "Background": "Фон", "Background sound": "Фоновый звук", "Peaceful": "Спокойный", "Mysterious": "Таинственный", "Peaceful: a warm drifting drone · Mysterious: a deep ambient loop": "Спокойный — тёплый плывущий фон · Таинственный — глубокий эмбиент", "App background music": "Музыка в приложении", "warm, slow chords while you browse": "тёплые медленные аккорды, пока ты листаешь", "Guide's voice": "Голос гида", "the spoken guide during a session": "озвученный гид во время сессии" });
   Object.assign(I18N.ru, { // ONBOARDING V2 (B4) — survey, options, plan, beats
