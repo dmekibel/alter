@@ -2045,15 +2045,14 @@
   .pk-addstep i{ font-size:15px; }
   .pk-bar{ flex:none; padding:10px 22px calc(env(safe-area-inset-bottom,0px) + 28px); display:flex; align-items:center; gap:9px; }
   .pk-bartx{ flex:1; min-width:0; }
-  .pk-bark{ display:block; font-size:10px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; }
+  .pk-bark{ display:block; font-size:10px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* ONE LINE, always. The one-pick button carries its duration now, so the plate slot narrows; David's tiebreak is that the plate text gives way rather than the button wrapping — and a kicker that REFLOWS to two lines breaks the "same level" row exactly the way a wrapped button would. */
   .pk-barl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#fff2f9; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* DS: the populated label holds ONE line */
   .pk-barl.hint{ font-size:14px; color:#c98ca6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; line-height:1.15; } /* DS: the empty state is a HINT (14px #c98ca6), not a title. MEASURED at 375px: the label slot is 190px beside the 131px Arrange, and the sentence needs 220px at 14px — so nowrap clips it to "…you feel li". The DS's stated purpose is the WHOLE hint being readable, so only this state wraps, to two lines. The populated label above keeps its single nowrap line. */
   .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 18px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #662040; color:#2a1730; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: under-shadow is HUE-derived — color-mix(in srgb, #ff4fa0 40%, #000) = #662040 — never plain ink; label is ink-on-fill #2a1730 */
   .pk-go i{ font-size:19px; }
   .pk-go:active{ transform:translateY(4px); box-shadow:0 1px 0 #662040; } /* press ladder: 5px sticker → 4px travel */
   /* THE ONE-PICK PRIMARY (David's reference 2026-07-31, correction: SKIN ONLY). The bar keeps its row — kicker + item label left, the button bottom-right on the same level; it never takes the whole bottom. Only the button's material changes. n==0 (disabled) and n>1 (Arrange) keep their own skin untouched. */
-  .pk-go.one{ padding:14px 20px; border-radius:22px; border:none; background:#ff5fa0; box-shadow:0 6px 0 color-mix(in srgb, #ff5fa0 50%, black); color:#4a1126; font-size:18px; white-space:nowrap; } /* --alter-pink-soft #ff5fa0 (the harder #ff4fa0 stays the RING and the Arrange fill); ink is the plum #4a1126, not #160510 and not PK_INK; the lip is hue-derived at 50%, replacing this button's #662040. nowrap + .pk-go's flex:none is what makes the "· X min" suffix push the PLATE LABEL into its ellipsis instead of breaking the button onto two lines. */
-  .pk-go.one i{ font-size:20px; } /* the 19px glyph carried with the type: 19 x 18/17 */
+  .pk-go.one{ padding:14px 16px; border-radius:22px; border:none; background:#ff5fa0; box-shadow:0 6px 0 color-mix(in srgb, #ff5fa0 50%, black); color:#4a1126; font-size:17px; white-space:nowrap; } /* --alter-pink-soft #ff5fa0 (the harder #ff4fa0 stays the RING and the Arrange fill); ink is the plum #4a1126, not #160510 and not PK_INK; the lip is hue-derived at 50%, replacing this button's #662040. nowrap + .pk-go's flex:none is what makes the "· X min" suffix push the PLATE LABEL into its ellipsis instead of breaking the button onto two lines. MEASURED at 375px: at 18px/14-20 the button ate 239 of the bar's 331 and the fixed "ON YOUR PLATE" kicker (100px) clipped to "ON YOUR P…"; 17px/14-16 gives the plate slot the ~104px it needs, so the kicker reads whole and only the variable item label ever truncates. The glyph stays at .pk-go's 19px with the type back at 17. */
   .pk-go.one:active{ transform:translateY(5px); box-shadow:0 1px 0 color-mix(in srgb, #ff5fa0 50%, black); } /* same press behaviour one step taller: 6px lip → 5px travel → 1px residual, and the pressed shadow is the hue-mix too, never ink */
   /* ---- the folder sheet ---- */
   .pk-sh-ov{ position:absolute; inset:0; }
@@ -3457,6 +3456,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1245"></script>
+  <script src="app.js?v=1246"></script>
 </body>
 </html>
