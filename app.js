@@ -5489,6 +5489,31 @@
     w.innerHTML = '<svg class="ss-mark" viewBox="0 0 120 120" aria-hidden="true"><ellipse class="ss-halo" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#ffd24a" stroke-width="7" stroke-linecap="round"/><ellipse class="ss-glint" cx="60" cy="62" rx="44" ry="16" fill="none" stroke="#fff3c0" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="9 91"/><path class="ss-spark" fill="#ff5fa0" d="M60 22 L66 54 L98 60 L66 66 L60 98 L54 66 L22 60 L54 54 Z"/><path class="ss-spk2" fill="#ffd24a" d="M88 27 L91 33 L97 36 L91 39 L88 45 L85 39 L79 36 L85 33 Z"/><path class="ss-spk3" fill="#36b3f0" d="M30 82 L33 88 L39 91 L33 94 L30 100 L27 94 L21 91 L27 88 Z"/></svg>';
     return w;
   }
+  // ===== THE STACK CARD — the ONE deck primitive (David's two frames + his 2026-07-31 measured correction). Every stack or chain drawn as a card, chip or tile speaks this grammar at any size S: a squircle at 0.35·S, NO ink border and NO black outline ANYWHERE on the deck, a FLAT hue face on a CHUNKY lip of its OWN hue at 50% toward black (0 round(.12·S)px 0 — never ink, whatever StackMark.jsx says), a white #fff2f9 glyph at 0.34·S under a soft drop, and TWO NEAR-FULL-SIZE shard cards fanned UP-LEFT ONLY behind it — never three, never the DS's alternating sides — each in the hue of one of the stack's NEXT STEPS, on its own round(.08·S) hue lip plus a 0 6px 12px rgba(0,0,0,.35) ambient. Selection REPLACES the lip with the pink ring + bloom (the ring-replaces-lip law) and turns the label pink; ignition stripes stay wherever a surface already lit them. The squircle lives in .stk* (index.html) as a percentage; every px that scales with S is computed HERE from the surface's own S, so nothing is eyeballed. The toolbox shelf keeps its own tuner-scaled .tbx-* box but calls stkLip/stkShardShadow, so the two surfaces cannot drift apart.
+  var STK_GEO = [{ d: 4, x: 0.09, y: 0.05 }, { d: 6, x: 0.14, y: 0.086 }]; // [near, far] shard: size S-d, offset (-x·S, -y·S)
+  function stkMix(a, b, t) { a = String(a).replace("#", ""); b = String(b).replace("#", ""); if (a.length !== 6 || b.length !== 6) return "#" + a; function p(h, i) { return parseInt(h.substr(i, 2), 16); } function c(i) { return ("0" + Math.round(p(a, i) * (1 - t) + p(b, i) * t).toString(16)).slice(-2); } return "#" + c(0) + c(2) + c(4); } // mixHex returns rgb(), which can be neither re-mixed nor handed back as a shard hue that then needs its OWN lip — this is the same mix, in hex
+  function stkHexOf(c) { c = String(c || ""); var m = c.match(/#[0-9a-fA-F]{6}/); return m ? m[0] : ""; } // a step colour travels as a raw hex OR as tbxVar's "var(--dom,#hex)"; the card paints in plain hex, so an undeclared var can never paint a transparent shard
+  function stkLip(hex, s) { return "0 " + Math.round((s || 56) * 0.12) + "px 0 " + stkMix(hex, "#000000", 0.5); }
+  function stkShardShadow(hex, s) { return "0 " + Math.round((s || 56) * 0.08) + "px 0 " + stkMix(hex, "#000000", 0.5) + ", 0 6px 12px rgba(0,0,0,.35)"; } // a shard carries a THINNER lip in its own hue + the soft ambient that lifts the fan off the shell
+  function stkRing() { return "0 0 0 3px #ff4fa0, 0 0 22px rgba(255,79,160,.45)"; } // the selected card's ONLY shadow — the lip must not survive under it or the ring breaks along the bottom
+  function stkShards(faceHex, steps) { // the two shards = the first two DISTINCT step hues after the face's own; a chain too short to supply two falls back to the deck's older same-hue depths, so a one-step chain still reads as a deck
+    var out = [], seen = {}; seen[String(faceHex).toLowerCase()] = 1;
+    (steps || []).forEach(function (s) { if (out.length >= 2) return; var h = stkHexOf(s && s.c); if (!h) return; var k = h.toLowerCase(); if (seen[k]) return; seen[k] = 1; out.push(h); });
+    while (out.length < 2) out.push(stkMix(faceHex, "#160510", out.length ? 0.55 : 0.28));
+    return out;
+  }
+  function stkCard(host, o) { // o = { s, hue, ti, shards, on, ignite, glyph, cls } → { wrap, face, icon }. s = the card's size in px on THIS surface (the only thing that can't be read off the CSS); glyph overrides 0.34·S where a frame fixes the glyph instead.
+    var s = o.s || 56, w = add(host, "span", "stk" + (o.cls ? " " + o.cls : "")), sh = o.shards || [];
+    [1, 0].forEach(function (n) { if (!sh[n]) return; var G = STK_GEO[n], d = add(w, "span", "stk-sh stk-sh" + (n + 1)); // the far shard is appended first, so the fan reads outward even where z-index is ignored
+      d.style.width = d.style.height = (s - G.d) + "px"; d.style.left = -(Math.round(s * G.x * 1000) / 1000) + "px"; d.style.top = -(Math.round(s * G.y * 1000) / 1000) + "px";
+      d.style.background = sh[n]; d.style.boxShadow = stkShardShadow(sh[n], s); });
+    var f = add(w, "span", "stk-face");
+    f.style.background = (o.on && o.ignite) ? pkIgnite(o.hue) : o.hue;
+    f.style.boxShadow = o.on ? stkRing() : stkLip(o.hue, s);
+    var i = add(f, "i", "ti " + (o.ti || "ti-stack-2")); i.style.fontSize = (o.glyph || (Math.round(s * 3.4) / 10)) + "px";
+    if (o.on && o.ignite) i.style.color = PK_INK;
+    return { wrap: w, face: f, icon: i };
+  }
   // @SEC:TOOLBOX2 — the home-scroll TOOLBOX (Fable-planned frame 20a + 20c, Opus-built 2026-07-23). REPLACES the 2x4 renderHomeGrid tiles + the renderGroundTools shelf: renders (Plan-my-day now lives on the home face) top-eight grid → 2 hero rows → bento intro → 6 collapsible category squares (all into the GROUND zone #tfWorldGround of the one-page world). ONE grid of 8 (David 2026-07-23 device — the second grid was removed), one continuous native scroll, NO new scroll container / listener / snap. Data-driven (TBX_ITEMS + TBX_CATS). Single-open dose card (openStack) + category panel (openCat), inserted in-flow with grid-column:1/-1 / full-width, --ease-settle ~.3s (M6). Guarded by TBX2 (false = old renderHomeGrid + renderGroundTools byte-identical). Child-drain only — ZERO new innerHTML wipes (ratchet law). Every string via tr() + RU dict in the same commit. See DESIGN-EXTRACT frame 20a/20c.
   var TBX2 = true;             // kill-switch: false restores the old 2x4 home grid + full-tool ground shelf exactly.
   var TBX_PLUS = true;         // BETA: assume the user pays — full access, incl. custom-editing the tools (David 2026-07-23). ONE flag, consulted at every Plus gate (currently the dose-card "Adjust steps & timing" row). true → the row is FUNCTIONAL (opens the composer); the PLUS badge stays visible (it signals the future paywall). Flip to false when shipping to non-payers → the row falls back to the whisper toast.
@@ -5584,12 +5609,13 @@
   function tbxWhisper() { try { toast(tr("You can edit steps and timing in Plus.")); } catch (e) {} } // paid gate tap = WHISPER-tier line, no modal, no payment logic (decision 8)
   function tbxDerivedSteps(track) { return (track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (s.dom ? tbxVar(s.dom) : (m.col || "#63d3c9")), ic: (s.i || m.ti || "ti-circle"), t: (s.t || m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks (and edited/custom stacks) show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines). A step edited in the Session Editor carries its own label/icon/hue, so the preview reads in the editor's words.
   function tbxTm(sec) { sec = Math.max(0, Math.round(sec || 0)); if (sec < 60) return sec + "s"; var m = sec / 60; return (sec % 60 === 0) ? (m + "m") : (Math.floor(m) + ":" + pad(sec % 60)); } // per-step time column (design 21e: 10.5px 800 tabular) — the scaled duration this step will actually run
-  function tbxTile(host, id) { // one grid cell = squircle face + up-to-2 peek coins + domain-hued label; tap → dose card in place
+  var TBX_TILE_S = 54; // the shelf tile's card size in px (× --tun-tbx-tile) — what the STACK CARD's 0.32/0.42/0.08 ratios are taken against here
+  function tbxTile(host, id) { // one grid cell = THE STACK CARD (squircle face + its two up-left shards) + domain-hued label; tap → dose card in place
     var it = tbxItem(id); if (!it) return null;
     var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name)); cell.setAttribute("data-tbxcell", id);
     var wrap = add(cell, "div", "tbx-face-wrap");
-    (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = tbxLip(tbxVar(tok)); });
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = tbxLip(tbxVar(it.dom)); add(face, "i", "ti " + it.ti); // FIX PASS 2 E: hue candy face + hard INK sticker (the borderless soft-shadow card + white glyph was the miss); the peek shards keep their own lip — "shards are right"
+    (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = stkShardShadow(stkHexOf(tbxVar(tok)), TBX_TILE_S); }); // peek stays the SOURCE of the shard hues here: DESIGN-EXTRACT §3 already deduped them by the stack-card rule (first distinct step colours after the face's own), so the shelf needs no re-derivation
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = stkLip(stkHexOf(tbxVar(it.dom)), TBX_TILE_S); add(face, "i", "ti " + it.ti); // flat hue face on its OWN hue lip at 50% toward black (was tbxLip's 45%), white glyph — one card language with the picker
     var lbl = add(cell, "span", "tbx-label", tr(it.name)); lbl.style.color = tbxVar(it.dom);
     cell.onclick = function () { try { tbxOpenDose(id, cell); } catch (e) {} };
     return cell;
@@ -5707,11 +5733,11 @@
     var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
     try { var cr = cell.getBoundingClientRect(), pr = card.getBoundingClientRect(); card.style.transformOrigin = Math.round(cr.left + cr.width / 2 - pr.left) + "px 0"; } catch (e) {} // 21e: the panel springs open OUT OF the tapped tile's column
   }
-  function tbxBuilderTile(host) { // the PINNED 8th tile: same tile mark (54px face / radius 19 / lip) in create-purple with ti-plus + label "Build", no peek coins. Tap → build-a-custom-stack flow.
+  function tbxBuilderTile(host) { // the PINNED 8th tile: the same STACK CARD face in create-purple with ti-plus + label "Build", no shards (it holds no steps yet). Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
     var wrap = add(cell, "div", "tbx-face-wrap");
-    var face = add(wrap, "div", "tbx-face"); face.style.background = "var(--create)"; face.style.boxShadow = tbxLip("var(--create)"); add(face, "i", "ti ti-plus"); // FIX PASS 2 E: the pinned 8th tile wears the same hue candy face + ink sticker as every other deck tile
-    var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = "var(--create)";
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar("create"); face.style.boxShadow = stkLip(stkHexOf(tbxVar("create")), TBX_TILE_S); add(face, "i", "ti ti-plus"); // tbxVar, not a bare var(--create): an undeclared var paints transparent, and this tile also renders inside category panels
+    var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = tbxVar("create");
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
   }
@@ -6002,8 +6028,8 @@
   function pkCoinLip(hex) { return "0 4px 0 " + mixHex(hex, "#000000", 0.55); } // the RESTING coin's lip: 0 4px 0 color-mix(in srgb, HUE 45%, #000) — the hue kept at 45% (mixHex's t is distance TOWARD black) and toward BLACK, never #160510. David 2026-07-31: 2.5px read thin on device, 4px is the frame.
   function pkRing() { return "0 0 0 2.5px #ff4fa0"; } // THE PICKED EDGE, and the ONLY shadow a picked thing wears (David 2026-07-31, on device): the lip must not survive underneath, or the ring breaks along the bottom instead of closing around the shape.
   function pkIgnite(hex) { return "repeating-linear-gradient(65deg,rgba(255,255,255,.30) 0 13px,rgba(255,255,255,0) 13px 28px)," + hex; } // THE ignition token: a 65°/13px WHITE-VEIL stripe over the flat hue. 65°, not 115° — David's frame leans the bands the other way (bottom-left to top-right); every picked surface (coins, sheet cells, rail chips, the focused queue chip, a picked stack card) inherits from here.
-  function pkDeep(dom) { return mixHex(pkHue(dom), "#160510", 0.45); }
-  function pkLip(dom) { return "0 4px 0 " + pkDeep(dom) + ", 0 0 0 2px #160510"; }
+  var PK_DECK_S = 36, PK_Q_S = 48, PK_BUNDLE_S = 56, PK_Q_GLYPH = 20; // the STACK CARD's size on each picker surface (David 2026-07-31, measured off his frames): the folder deck preview (3 across inside a folder, 36px at 375), the queue chip (48, down from an overshot 64, and its glyph is the frame's ~20 rather than 0.34·48), the Stacks/Chains sheet card (56, his reference size, in a compact 4-col grid). stkCard needs the px because the lip, the glyph and the shard fan are all ratios of S.
+  // (pkLip/pkDeep are DELETED — a "0 4px 0 <deep hue>, 0 0 0 2px #160510" lip put an INK RING around every deck card, and the stack card forbids ink anywhere on a deck. Faces now take stkLip, shards take stkShardShadow.)
   function pkChains() { try { return (S.tools && S.tools.pkChains) || []; } catch (e) { return []; } } // additive store, guarded read — NO SCHEMA bump
   function pkTotal() { var t = 0; (_pk ? _pk.queue : []).forEach(function (p) { t += p.mins || 0; }); return t; }
   function pkStacks() { return tbxCustoms().map(function (c) { return c.id; }).concat(TBX_TOP); } // the shelf's stacks + everything the user has built, same pool the top-8 grid draws from
@@ -6090,10 +6116,8 @@
       F2.forEach(function (F) {
         var b = pkFolder(sg, true), muted = mixHex(F.c, "#1e0b18", 0.25); b.style.borderColor = muted; // the muted edge stays: color-mix(HUE 75%, #1e0b18)
         var dr = add(b, "div", "pk-deckrow");
-        F.items.slice(0, 3).forEach(function (p) { var w = add(dr, "span", "pk-deck"); var hue = pkHue(p.dom);
-          var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
-          var fc = add(w, "span", "pk-face"); fc.style.background = hue; fc.style.boxShadow = pkLip(p.dom); var i = add(fc, "i", "ti " + p.ti); i.style.color = "#160510"; });
-        if (!F.items.length) { var e = add(dr, "span", "pk-deck"); e.style.flex = "0 0 calc((100% - 16px) / 3)"; var ef = add(e, "span", "pk-face"); ef.style.border = "2px dashed " + mixHex(F.c, "#160510", 0.42); var ei = add(ef, "i", "ti ti-plus"); ei.style.color = "#8a5f76"; } // one lone placeholder tile, not a full-width box
+        F.items.slice(0, 3).forEach(function (p) { var hue = pkHue(p.dom); stkCard(dr, { s: PK_DECK_S, hue: hue, ti: p.ti, shards: stkShards(hue, p.st0), cls: "pk-deck" }); }); // THE STACK CARD: flat hue face on its own hue lip, white glyph, two shards fanned up-left in the next steps' hues. The ink-ringed face and the darkened same-hue peeks that lived here are dead.
+        if (!F.items.length) { var e = add(dr, "span", "pk-deckph"); e.style.borderColor = stkMix(F.c, "#160510", 0.42); var ei = add(e, "i", "ti ti-plus"); ei.style.color = "#8a5f76"; } // one lone placeholder tile, not a full-width box
         var frow = add(b, "div", "pk-frow"); var fi = add(frow, "i", "ti " + F.ti); fi.style.color = muted; // the folder glyph rides with the edge, not against it
         var tx = add(frow, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", tr(F.s)); s.style.color = F.c; // always the designed phrase — counts are data slop, they're nowhere on this wall
         b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
@@ -6119,12 +6143,11 @@
   function pkPanel(host, bg) { // queue strip + (when a pick is focused) the tune panel
     var qrow = add(host, "div", "pk-queue");
     _pk.queue.forEach(function (p, i) {
-      var b = add(qrow, "button", "pk-q"), w = add(b, "span", "pk-qc"), hue = pkHue(p.dom), on = _pk.focus === i;
-      if (p.kind === "chain" || (p.st0 && p.st0.length)) { var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28); } // ANYTHING MADE OF STEPS renders as a deck bubble — 2 peeking cards behind. Stacks already arrive as kind "chain" (pkStackPick), so they deck today; the st0 test keeps that true if a stack ever gets its own kind. The ring + ignition stay on the FRONT face only.
-      var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? pkRing() : pkCoinLip(hue); // the FOCUSED chip is the one that ignites (stripes + ring only, no lip); the rest stay flat hue on their lip. One coin language with the wall and the sheet.
-      var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#fff2f9";
-      var x = add(w, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
-      var l = add(b, "span", "pk-ql", p.title); l.style.color = on ? "#fff2f9" : "#96637e"; // the NAME under the icon, never the time
+      var b = add(qrow, "button", "pk-q"), hue = pkHue(p.dom), on = _pk.focus === i;
+      var deck = (p.kind === "chain" || (p.st0 && p.st0.length)); // ANYTHING MADE OF STEPS renders as a deck — THE STACK CARD with its two up-left shards. Stacks already arrive as kind "chain" (pkStackPick), so they deck today; the st0 test keeps that true if a stack ever gets its own kind. A plain activity is not a stack and keeps a bare card.
+      var C = stkCard(b, { s: PK_Q_S, glyph: PK_Q_GLYPH, hue: hue, ti: p.ti, shards: deck ? stkShards(hue, p.st0) : null, on: on, ignite: true, cls: "pk-qc" }); // the FOCUSED chip is the one that ignites (stripes + the ring ALONE, no lip under it); the rest stay flat hue on their hue lip
+      var x = add(C.wrap, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
+      var l = add(b, "span", "pk-ql stk-lab", p.title); l.style.color = on ? "#ff4fa0" : hue; // the NAME under the card, never the time: the FACE hue at rest, pink when this is the focused one
       b.onclick = function () { _pk.focus = on ? null : i; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); };
     });
     var f = (_pk.focus != null) ? _pk.queue[_pk.focus] : null; if (!f) return;
@@ -6144,8 +6167,8 @@
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
   function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
   function pkSkinChip(c, hue, on) { // the LENGTH rail's own skin (borderless) — deliberately NOT pkSkin, which dresses the Priority/Steps buttons
-    if (on) { c.style.background = pkIgnite(hue); c.style.color = PK_INK; c.style.boxShadow = pkRing(); } // the chosen length is an ignited thing like any other: stripes + the ring, nothing under it
-    else { c.style.background = "#170811"; c.style.color = "#c98ca6"; c.style.boxShadow = "none"; }
+    if (on) { c.style.background = pkIgnite(hue); c.style.color = PK_INK; c.style.boxShadow = pkRing(); c.style.padding = "8px 22px"; } // the chosen length is an ignited thing like any other: stripes + the ring, nothing under it — and David's footer frame gives it the WIDER chip (8/22 against the resting 8/14)
+    else { c.style.background = "#170811"; c.style.color = "#c98ca6"; c.style.boxShadow = "none"; c.style.padding = ""; }
   }
   function pkSkinTune(el2, ico, hue, on) { // Priority / Steps: DEAD-QUIET at rest (David 2026-07-31) — the CSS carries #170811 on a 2px #4a2338 outline with #c9b8c4 type, and no hue tint touches them until they are actually set
     if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; }
@@ -6247,12 +6270,12 @@
     if (s.kind === "chains" || s.kind === "stacks") {
       var items = s.kind === "chains" ? pkChains().map(pkChainPick) : pkStacks().map(pkStackPick).filter(Boolean);
       if (!items.length) { var e = add(host, "div", "pk-seclbl", tr(s.kind === "chains" ? "Arrange two things and Save keeps it here." : "Nothing here yet.")); e.style.padding = "18px 4px"; return; }
-      var g = add(host, "div", "pk-bgrid");
-      items.forEach(function (p) { var b = add(g, "button", "pk-bundle"), w = add(b, "span", "pk-bwrap"), hue = pkHue(p.dom);
-        var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
-        var on = !!pkQCount(p.title); // ALREADY ON THE PLATE reads the same everywhere: the front card IGNITES (stripes + the ring alone + ink glyph) and the deck behind it stays flat. The ×N pill is dead — a count was never the point, "this one is in" is.
-        var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? pkRing() : pkLip(p.dom); var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#160510";
-        var lab = add(b, "span", "pk-blab"); var lt = add(lab, "span", "pk-blt", p.title); lt.style.color = "#fff2f9"; add(lab, "span", "pk-bls", (p.st0 || []).length + " " + tr("steps") + " · " + pkShort(p.mins));
+      var g = add(host, "div", "pk-bgrid"); // a COMPACT 4-col grid at the folder sheets' own density (David 2026-07-31: the two-up cards were giant) — card + label, exactly the activity cells' structure
+      items.forEach(function (p) { var b = add(g, "button", "pk-bundle"), hue = pkHue(p.dom);
+        var on = !!pkQCount(p.title); // ALREADY ON THE PLATE reads the same everywhere: the front card IGNITES (stripes + the ring alone + ink glyph) and the shards behind it stay flat. The ×N pill is dead — a count was never the point, "this one is in" is.
+        var C = stkCard(b, { s: PK_BUNDLE_S, hue: hue, ti: p.ti, shards: stkShards(hue, p.st0), on: on, ignite: true, cls: "pk-bwrap" }); // THE STACK CARD at David's reference S=56 — no ink ring, white glyph, two shards in the next steps' own hues
+        if (on) add(C.wrap, "span", "pk-cbadge", pkShort(p.mins)); // its length, top-right — the same badge an activity cell wears once it is on the plate (the old "N steps · Xm" line under the card went with the giant two-up layout)
+        var lt = add(b, "span", "pk-blt stk-lab", p.title); lt.style.color = on ? "#ff4fa0" : hue;
         b.onclick = function () { pkTakePick(s.kind === "chains" ? pkChainPick(pkChains()[items.indexOf(p)]) : p); };
       });
       return;
@@ -15824,9 +15847,17 @@
       chk("tile1 face RAW hue (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58) = --move, the tool's own colour");
       chk("tile3 face RAW hue (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160) = --connect, the tool's own colour");
       chk("tile face BORDERLESS (David 2026-07-28: no black outlines on the home tools)", parseFloat(f0.borderTopWidth || 0) === 0, f0.borderTopWidth || "0px", "0px");
-      chk("tile face lip 0 4px 0 (the tile's own colour darkened, v1228 tbxLip)", /0px\s+4px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px 4px 0px in color-mix(hue 45%, #000)");
+      chk("tile face lip 0 6px 0 (the tile's own colour darkened, stkLip)", /0px\s+6px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px 6px 0px in the hue 50% toward black (= round(.12·54))"); // 2026-07-31: the stack card's chunky lip law (was 4px at 45%)
       var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
-      var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54"); chk("tile radius 19px", f0.borderTopLeftRadius === "19px", f0.borderTopLeftRadius, "19px"); var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2"); if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2"); } }
+      var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54");
+      chk("tile radius 0.35·S (the stack card's one squircle)", Math.abs(parseFloat(f0.borderTopLeftRadius) - 54 * 0.35) <= 0.4, f0.borderTopLeftRadius, "18.9px"); // 19px until 2026-07-31; David's measured stack-card correction locks every deck card at 0.35·S, so the shelf tile, the picker's folder decks, its queue chips and its Stacks cards share ONE radius
+      var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2");
+      if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2");
+        var r1 = c1.getBoundingClientRect(), r2 = c2.getBoundingClientRect(); // STACK CARD: the fan is UP-LEFT ONLY (never right, never down) and the far shard sits further out than the near one — the DS's alternating left/right layout is overruled by David's frames
+        chk("shards fan UP-LEFT only", r1.left < fr0.left && r1.top < fr0.top && r2.left < r1.left && r2.top < r1.top, "near " + Math.round(r1.left - fr0.left) + "," + Math.round(r1.top - fr0.top) + " · far " + Math.round(r2.left - fr0.left) + "," + Math.round(r2.top - fr0.top), "both negative, far beyond near");
+        chk("shard sizes S-4 / S-6", Math.round(r1.width) === 50 && Math.round(r2.width) === 48, Math.round(r1.width) + " / " + Math.round(r2.width), "50 / 48 (near-full-size cards, not shrunken peeks)");
+        var s1 = getComputedStyle(c1).boxShadow; chk("shard lip is its OWN hue + ambient (no ink)", /0px\s+4px\s+0px/.test(s1) && s1.indexOf("rgb(22, 5, 16)") < 0, s1.slice(0, 60), "0px 4px 0px <hue 50% toward black> (= round(.08·54)), 0 6px 12px rgba(0,0,0,.35)");
+        var gl = tfaces[0].querySelector("i"); chk("tile glyph 0.34·S", Math.abs(parseFloat(getComputedStyle(gl).fontSize) - 54 * 0.34) <= 0.4, getComputedStyle(gl).fontSize, "18.36px"); } }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");

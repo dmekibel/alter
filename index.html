@@ -1746,12 +1746,12 @@
   .tbx-grid-main{ padding:6px 0; }
   .tbx-cell{ display:flex; flex-direction:column; align-items:center; gap:calc(7px * var(--tun-tbx-tile, 1)); width:calc(64px * var(--tun-tbx-tile, 1)); background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-face-wrap{ position:relative; width:calc(54px * var(--tun-tbx-tile, 1)); height:calc(54px * var(--tun-tbx-tile, 1)); }
-  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(19px * var(--tun-tbx-tile, 1)); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins */ /* RESTORED to v1228 verbatim 2026-07-28. The face is the tool's OWN bright colour with a white glyph and the tbxLip soft extrude (all painted in JS) — borderless, per David's outline verdict. Two fix passes broke this: FIX PASS 2 E put a candy gradient + ink border on it, FIX PASS 3 item 7 put a "deep muted" fill on it fitted by sampling home-idle-ref.jpeg. That jpeg is a PHOTOGRAPH OF A SCREEN, so the fit captured the camera's dim exposure and warm white balance, not the design. FILLS ARE THE TOOL'S OWN COLOUR, NEVER SAMPLED FROM PHOTOS — photos of screens lie about colour (David 2026-07-28). */
-  .tbx-face i{ font-size:calc(23px * var(--tun-tbx-tile, 1)); color:#fff2f9; }
-  .tbx-coin{ position:absolute; border-radius:calc(19px * var(--tun-tbx-tile, 1)); }
-  .tbx-coin1{ width:calc(46px * var(--tun-tbx-tile, 1)); height:calc(46px * var(--tun-tbx-tile, 1)); top:calc(-2px * var(--tun-tbx-tile, 1)); left:calc(-5px * var(--tun-tbx-tile, 1)); z-index:2; } /* the BIGGER peek coin — z2, paints in FRONT of coin2 (canvas telescope) */
-  .tbx-coin2{ width:calc(38px * var(--tun-tbx-tile, 1)); height:calc(38px * var(--tun-tbx-tile, 1)); top:calc(-3px * var(--tun-tbx-tile, 1)); left:calc(-8px * var(--tun-tbx-tile, 1)); z-index:1; } /* the smaller/outer coin — z1, behind coin1 */
-  .tbx-label{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:calc(11px * var(--tun-tbx-tile, 1)); text-align:center; line-height:1.05; }
+  .tbx-face{ position:absolute; inset:0; z-index:3; border-radius:calc(18.9px * var(--tun-tbx-tile, 1)); display:flex; align-items:center; justify-content:center; } /* z3: face on top of both coins. Radius 19→18.9 (2026-07-31): the canonical stack card is 0.35·S at every size, so this tile, the picker's folder decks, its queue chips and its Stacks cards finally share ONE squircle. */ /* RESTORED to v1228 verbatim 2026-07-28. The face is the tool's OWN bright colour with a white glyph and the tbxLip soft extrude (all painted in JS) — borderless, per David's outline verdict. Two fix passes broke this: FIX PASS 2 E put a candy gradient + ink border on it, FIX PASS 3 item 7 put a "deep muted" fill on it fitted by sampling home-idle-ref.jpeg. That jpeg is a PHOTOGRAPH OF A SCREEN, so the fit captured the camera's dim exposure and warm white balance, not the design. FILLS ARE THE TOOL'S OWN COLOUR, NEVER SAMPLED FROM PHOTOS — photos of screens lie about colour (David 2026-07-28). */
+  .tbx-face i{ font-size:calc(18.36px * var(--tun-tbx-tile, 1)); color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); } /* STACK CARD (2026-07-31): glyph = 0.34·S on a 54px face, white, soft drop */
+  .tbx-coin{ position:absolute; border-radius:35%; } /* 0.35 of the shard's own box, the same squircle law as the face */
+  .tbx-coin1{ width:calc(50px * var(--tun-tbx-tile, 1)); height:calc(50px * var(--tun-tbx-tile, 1)); top:calc(-2.7px * var(--tun-tbx-tile, 1)); left:calc(-4.86px * var(--tun-tbx-tile, 1)); z-index:2; } /* the NEAR shard — S-4 at (-0.09·S, -0.05·S); z2, in FRONT of coin2 (canvas telescope) */
+  .tbx-coin2{ width:calc(48px * var(--tun-tbx-tile, 1)); height:calc(48px * var(--tun-tbx-tile, 1)); top:calc(-4.644px * var(--tun-tbx-tile, 1)); left:calc(-7.56px * var(--tun-tbx-tile, 1)); z-index:1; } /* the FAR shard — S-6 at (-0.14·S, -0.086·S); z1, behind coin1. Both fan UP-LEFT only. */
+  .tbx-label{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:calc(12.05px * var(--tun-tbx-tile, 1)); text-align:center; line-height:1.15; } /* STACK CARD label: 12.5px at S=56 → 12.05 on this 54px tile, line-height 1.15, the face hue (set in JS). NOT line-clamped here — three-word shelf names ("Before Deep Work") legitimately take a third line and clipped deck names are a David device complaint (2026-07-27). */
   .tbx-cell:active .tbx-face{ transform:translateY(2px); }
   .tbx-hero{ background:#241019; border-radius:18px; padding:12px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); display:flex; align-items:center; gap:12px; }
   .tbx-hero-coins{ display:flex; gap:6px; flex:0 0 auto; }
@@ -1948,6 +1948,14 @@
   .sed-fstart i{ font-size:19px; }
   .sed-fsave:active,.sed-fgear:active{ transform:translateY(3px); }
   .sed-fstart:active{ transform:translateY(4px); box-shadow:0 1px 0 color-mix(in srgb, #ff4fa0 40%, #000); }
+  /* ===== THE STACK CARD — David's canonical deck grammar (his two 2026-07-31 frames). ONE card language for every stack or chain drawn as a card, chip or tile: a squircle at 35% of the card, NO ink border and NO black outline ANYWHERE on the deck, a FLAT hue face on a chunky lip of its OWN hue (0.12·S, never ink), a white glyph at 0.34·S under a soft drop, and TWO near-full-size shard cards fanned UP-LEFT ONLY — never three, never alternating sides. Where the DS StackMark.jsx says ink lip / left-right fan, the frames overrule it (FRAME-WINS ORDER). Geometry is PROPORTIONAL, so this one rule set serves the 36px folder decks, the 48px queue chips and the 56px sheet cards; the hue fills, both lips and the glyph size are painted by stkCard() in app.js, which knows each surface's size. Selection REPLACES the lip with the pink ring + bloom (ring-replaces-lip law) and turns the label pink. The toolbox shelf keeps its own tuner-scaled .tbx-* box but takes the same numbers and the same two shadow recipes, so the surfaces cannot drift. ===== */
+  .stk{ position:relative; }
+  .stk-sh{ position:absolute; border-radius:35%; } /* size + offset are set in px by stkCard: shard1 = S-4 at (-0.09·S, -0.05·S), shard2 = S-6 at (-0.14·S, -0.086·S) — near-full-size cards, not shrunken peeks */
+  .stk-sh2{ z-index:1; } /* the FAR shard */
+  .stk-sh1{ z-index:2; } /* the NEAR shard */
+  .stk-face{ position:absolute; inset:0; z-index:3; border-radius:35%; display:flex; align-items:center; justify-content:center; }
+  .stk-face i{ color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); } /* white glyph, soft drop — the ink glyph on a deck face is dead everywhere except an IGNITED card, which stkCard sets inline */
+  .stk-lab{ font-family:"Baloo 2",sans-serif; font-weight:800; line-height:1.15; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; } /* the name under the card: the FACE hue (set in JS), centered, wrapping to two lines instead of the old one-line ellipsis */
   /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-panel/.pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
   .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --restore:#2ab8c4; --upkeep:#7f9bc4; } /* the domain vars, mirrored from .tbx: a chain step carried out of the Session Editor stores its hue as var(--dom), and it must resolve here too (an unresolved var painted a transparent coin). --play is deliberately ABSENT: DOM.play.c is now #ffc83d itself, so the picker-scoped copy was the last trace of the old two-golds split. */
   .pk-ov *{ box-sizing:border-box; }
@@ -1984,12 +1992,9 @@
   .pk-sec{ display:flex; flex-direction:column; gap:11px; } /* the saved shelf is the wall's last row and scrolls with it — David 2026-07-31 killed the pinned-drawer experiment outright */
   .pk-sec .pk-seclbl{ font-size:10px; text-transform:uppercase; }
   .pk-folder.dash{ border:2.5px dashed #6b4258; }
-  .pk-deckrow{ display:flex; gap:8px; padding:7px 0 0 7px; }
-  .pk-deck{ flex:1; aspect-ratio:1; position:relative; }
-  .pk-deck .pk-pk2{ position:absolute; left:-6px; top:-6px; right:6px; bottom:6px; border-radius:26%; }
-  .pk-deck .pk-pk1{ position:absolute; left:-3px; top:-3px; right:3px; bottom:3px; border-radius:26%; }
-  .pk-deck .pk-face{ position:absolute; inset:0; border-radius:26%; display:flex; align-items:center; justify-content:center; }
-  .pk-deck .pk-face i{ font-size:14px; }
+  .pk-deckrow{ display:flex; gap:8px; padding:7px 0 0 7px; } /* the canonical shard fans up-left by 0.14·S / 0.086·S (5.0px / 3.1px on a 36px deck) — this padding is the only room it has */
+  .pk-deck{ flex:0 0 36px; height:36px; } /* the deck preview IS a stack card now (.stk) — radius/shards/face come from the .stk block; the ink-bordered pkLip deck that lived here is gone with the law. EXACTLY 36px, not a flex share: every px of the card (lip, glyph, shard sizes and fan) is a ratio of S, so the painted box must equal the S the JS computes against — and a two-item folder must not stretch its cards. Three 36s + two 8px gaps = 124 inside the folder's 126px row. */
+  .pk-deckph{ flex:0 0 36px; height:36px; border:2px dashed; border-radius:35%; display:flex; align-items:center; justify-content:center; } /* the empty folder's lone placeholder tile — same squircle, no face, no shards */
   .pk-ftx{ flex:1; min-width:0; }
   .pk-ftl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; line-height:1.05; }
   .pk-fts{ display:block; font-size:10.5px; font-weight:800; }
@@ -1997,18 +2002,14 @@
   .pk-tab{ flex:none; align-self:center; width:64px; height:24px; margin-bottom:-6px; border:none; background:none; color:#96637e; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
   .pk-tab i{ font-size:17px; transition:transform .25s ease; }
   .pk-panel{ flex:none; padding:11px 22px 0; border-top:2px solid #24101c; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; }
-  /* the plate strip at the frame's size (David 2026-07-31: the chips were miniature) — 64px face, 13px name, everything else scaled off it. The 10px top padding is load-bearing: a deck chip's back card overhangs 9px and .pk-queue clips vertically (overflow-x:auto forces overflow-y). */
-  .pk-queue{ display:flex; gap:18px; padding:10px 4px 2px 10px; overflow-x:auto; touch-action:pan-x; }
+  /* the plate strip at the footer frame's size (David 2026-07-31 correction: 64 was an overshoot) — 48px face, ~20px glyph, 13px name. The top/left padding is load-bearing: a deck chip's shards fan up-LEFT by 0.14·S / 0.086·S (6.7px left, 4.1px up on a 48px card) and .pk-queue clips vertically (overflow-x:auto forces overflow-y). */
+  .pk-queue{ display:flex; gap:18px; padding:6px 4px 2px 9px; overflow-x:auto; touch-action:pan-x; }
   .pk-q{ display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
   .pk-q:active{ transform:translateY(2px); }
-  .pk-qc{ width:64px; height:64px; position:relative; }
-  .pk-qc .pk-pk2{ position:absolute; left:-9px; top:-9px; right:9px; bottom:9px; border-radius:20px; }
-  .pk-qc .pk-pk1{ position:absolute; left:-5px; top:-5px; right:5px; bottom:5px; border-radius:20px; }
-  .pk-qc .pk-face{ position:absolute; inset:0; border-radius:20px; display:flex; align-items:center; justify-content:center; }
-  .pk-qc .pk-face i{ font-size:28px; }
-  .pk-qx{ position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; }
+  .pk-qc{ width:48px; height:48px; } /* the chip IS a stack card (.stk): shards, face and radius all come from the .stk block */
+  .pk-qx{ position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; z-index:4; } /* z4: above the card's z3 face, which now stacks explicitly */
   .pk-qx i{ font-size:11px; }
-  .pk-ql{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; max-width:78px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pk-ql{ font-size:13px; max-width:64px; } /* family/weight/wrap live in .stk-lab; the colour is the face hue (pink when focused), set in JS. 64px, not 78: the chip pitch is 48 + 18 = 66. */
   .pk-tune{ display:flex; flex-direction:column; gap:10px; }
   .pk-fh{ display:flex; align-items:center; gap:9px; }
   .pk-fht{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.05; }
@@ -2017,7 +2018,7 @@
   .pk-railw{ display:flex; gap:4px; align-items:stretch; }
   .pk-railb{ position:relative; flex:1; min-width:0; }
   .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; }
-  .pk-lchip{ flex:none; min-width:64px; min-height:46px; padding:12px 16px; border-radius:14px; border:none; background:#170811; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* the frame's proportions at 375px (David 2026-07-31: the chips were too small to hit): ~46 tall, 15px type, four and a half visible before the right fade eats the fifth. BORDERLESS; pkSkinChip paints rest (#170811) vs ignited (hue + the 65deg veil + ink + ring). */
+  .pk-lchip{ flex:none; min-width:50px; min-height:36px; padding:8px 14px; border-radius:12px; border:none; background:#170811; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* line-height:1 is what makes 8+8 padding on 15px type land ON the stated 36px min-height instead of Baloo's 24px line box pushing it to 40 */ /* the FOOTER FRAME's proportions (David 2026-07-31 correction: 46 tall was an overshoot) — 36 tall, 8/14 padding, 15px type, radius 12, min-width 50. BORDERLESS; pkSkinChip paints rest (#170811) vs ignited (hue + the 65deg veil + ink + ring), and widens the chosen chip to 8px 22px per the frame. */
   .pk-lchip:active{ transform:translateY(2px); }
   .pk-fade{ position:absolute; top:0; right:0; bottom:0; width:30px; pointer-events:none; }
   .pk-fwd{ flex:none; width:34px; border:none; background:none; color:#ff8fc0; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -2075,18 +2076,13 @@
   .pk-nameok{ flex:none; height:44px; padding:0 16px; border-radius:13px; border:2.5px solid #160510; color:#160510; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; cursor:pointer; }
   .pk-nameok:active{ transform:translateY(2px); }
   .pk-shbody{ flex:0 1 auto; min-height:0; overflow-y:auto; padding:0 20px 14px; }
-  .pk-bgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px 18px; padding:8px 6px 4px; }
-  .pk-bundle{ display:flex; flex-direction:column; align-items:center; gap:10px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* the Stacks / Chains sheet: a COMPACT 4-col grid at the folder sheets' own density (David 2026-07-31: the two-up cards were giant) — 56px stack card + one label, exactly like .pk-cgrid's activity cells */
+  .pk-bgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px 9px; padding:8px 2px 4px; }
+  .pk-bundle{ display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .pk-bundle:active{ transform:translateY(3px); }
-  .pk-bwrap{ width:74%; aspect-ratio:1; position:relative; }
-  .pk-bwrap .pk-pk2{ position:absolute; left:-11px; top:-11px; right:11px; bottom:11px; border-radius:26%; }
-  .pk-bwrap .pk-pk1{ position:absolute; left:-5.5px; top:-5.5px; right:5.5px; bottom:5.5px; border-radius:26%; }
-  .pk-bwrap .pk-face{ position:absolute; inset:0; border-radius:26%; display:flex; align-items:center; justify-content:center; }
-  .pk-bwrap .pk-face i{ font-size:34px; filter:drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
+  .pk-bwrap{ width:56px; height:56px; } /* the Stacks/Chains card IS a stack card (.stk) at David's reference S=56 — the ink-ringed pkLip face and the darkened same-hue peeks are gone with the law */
   .pk-badge{ position:absolute; top:-8px; right:-8px; min-width:28px; height:24px; padding:0 6px; border-radius:12px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11.5px; color:#ff8fc0; }
-  .pk-blab{ display:block; text-align:center; }
-  .pk-blt{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15.5px; line-height:1.1; }
-  .pk-bls{ display:block; font-size:10.5px; font-weight:800; letter-spacing:.5px; color:#96637e; margin-top:2px; }
+  .pk-blt{ font-size:12.5px; } /* the canonical label at S=56; family/weight/wrap live in .stk-lab, the colour is the face hue (pink when the card is on the plate), set in JS */
   .pk-cgrid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px 9px; }
   .pk-cell{ display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .pk-cell:active{ transform:translateY(3px); }
@@ -2095,7 +2091,7 @@
   .pk-cellf.dash{ border:2.5px dashed #8a5f76; background:rgba(255,242,249,.04); }
   .pk-cellf.dash i{ color:#c9a3b8; font-size:22px; filter:none; }
   .pk-cellt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; line-height:1.1; text-align:center; } /* the frame's tile labels: 12.5px CREAM (#f0dceb, set by pkCell) — the Just-<domain> timebox keeps the domain hue and More stays muted */
-  .pk-cbadge{ position:absolute; top:-6px; right:-6px; min-width:26px; height:22px; padding:0 5px; border-radius:11px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#ff8fc0; }
+  .pk-cbadge{ position:absolute; top:-6px; right:-6px; min-width:26px; height:22px; padding:0 5px; border-radius:11px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#ff8fc0; z-index:4; } /* z4: above a stack card's z3 face (the activity coins have no stacking context, so this is inert there) */
   .pk-groups{ display:flex; flex-direction:column; gap:16px; animation:edPop .16s ease both; }
   .pk-group{ display:flex; flex-direction:column; gap:10px; }
   .pk-ggrid{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:11px 8px; }
@@ -3457,6 +3453,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1243"></script>
+  <script src="app.js?v=1244"></script>
 </body>
 </html>
