@@ -2001,7 +2001,7 @@
   /* ---- the shared footer (wall + sheet render these IDENTICALLY) ---- */
   .pk-tab{ flex:none; align-self:center; width:64px; height:24px; margin-bottom:-6px; border:none; background:none; color:#96637e; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
   .pk-tab i{ font-size:17px; transition:transform .25s ease; }
-  .pk-panel{ flex:none; padding:11px 22px 0; border-top:2px solid #24101c; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; }
+  .pk-panel{ flex:none; padding:4px 22px 0; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; } /* NO DIVIDER (David 2026-07-31): the 2px #24101c border-top under the chevron read as a berry rule cutting the footer off. Line gone, and the 13px it occupied (2 border + 11 pad) pulled back to 4 so the footer sits tighter under the tab. The chevron stays. */
   /* the plate strip at the footer frame's size (David 2026-07-31 correction: 64 was an overshoot) — 48px face, ~20px glyph, 13px name. The top/left padding is load-bearing: a deck chip's shards fan up-LEFT by 0.14·S / 0.086·S (6.7px left, 4.1px up on a 48px card) and .pk-queue clips vertically (overflow-x:auto forces overflow-y). */
   .pk-queue{ display:flex; gap:18px; padding:6px 4px 2px 9px; overflow-x:auto; touch-action:pan-x; }
   .pk-q{ display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
@@ -2017,7 +2017,7 @@
   .pk-fhm{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:22px; color:#fff2f9; }
   .pk-railw{ display:flex; gap:4px; align-items:stretch; }
   .pk-railb{ position:relative; flex:1; min-width:0; }
-  .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; }
+  .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; padding:4px 0 4px 4px; margin:-4px 0 -4px -4px; } /* RING ROOM (David 2026-07-31, on device: "the ring is cut off"). The picked chip wears pkRing() = a 2.5px box-shadow, and a shadow lives OUTSIDE the border box — an overflow-x:auto scroller whose content box hugged the chip exactly clipped that ring on every straight edge (only the rounded-corner wedges survived), and the picked chip renders FIRST (current-first order), so its left edge clipped too. 4px of interior room (ring 2.5 + 1.5 slack) on top/bottom/left, cancelled by the matching -4px margins so not one pixel of the rail, the chips or the fade moves. The RIGHT stays flush on purpose: a scroller clips at its PADDING edge, so right padding would let a scrolled chip paint 4px past .pk-fade and print an unfaded sliver. Nothing is lost there — the picked chip always sits first, and the right edge is the fade's job. */
   .pk-lchip{ flex:none; min-width:50px; min-height:36px; padding:8px 14px; border-radius:12px; border:none; background:#170811; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* line-height:1 is what makes 8+8 padding on 15px type land ON the stated 36px min-height instead of Baloo's 24px line box pushing it to 40 */ /* the FOOTER FRAME's proportions (David 2026-07-31 correction: 46 tall was an overshoot) — 36 tall, 8/14 padding, 15px type, radius 12, min-width 50. BORDERLESS; pkSkinChip paints rest (#170811) vs ignited (hue + the 65deg veil + ink + ring), and widens the chosen chip to 8px 22px per the frame. */
   .pk-lchip:active{ transform:translateY(2px); }
   .pk-fade{ position:absolute; top:0; right:0; bottom:0; width:30px; pointer-events:none; }
@@ -2051,6 +2051,10 @@
   .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 18px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #662040; color:#2a1730; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: under-shadow is HUE-derived — color-mix(in srgb, #ff4fa0 40%, #000) = #662040 — never plain ink; label is ink-on-fill #2a1730 */
   .pk-go i{ font-size:19px; }
   .pk-go:active{ transform:translateY(4px); box-shadow:0 1px 0 #662040; } /* press ladder: 5px sticker → 4px travel */
+  /* THE ONE-PICK PRIMARY (David's reference 2026-07-31, correction: SKIN ONLY). The bar keeps its row — kicker + item label left, the button bottom-right on the same level; it never takes the whole bottom. Only the button's material changes. n==0 (disabled) and n>1 (Arrange) keep their own skin untouched. */
+  .pk-go.one{ padding:14px 20px; border-radius:22px; border:none; background:#ff5fa0; box-shadow:0 6px 0 color-mix(in srgb, #ff5fa0 50%, black); color:#4a1126; font-size:18px; white-space:nowrap; } /* --alter-pink-soft #ff5fa0 (the harder #ff4fa0 stays the RING and the Arrange fill); ink is the plum #4a1126, not #160510 and not PK_INK; the lip is hue-derived at 50%, replacing this button's #662040. nowrap + .pk-go's flex:none is what makes the "· X min" suffix push the PLATE LABEL into its ellipsis instead of breaking the button onto two lines. */
+  .pk-go.one i{ font-size:20px; } /* the 19px glyph carried with the type: 19 x 18/17 */
+  .pk-go.one:active{ transform:translateY(5px); box-shadow:0 1px 0 color-mix(in srgb, #ff5fa0 50%, black); } /* same press behaviour one step taller: 6px lip → 5px travel → 1px residual, and the pressed shadow is the hue-mix too, never ink */
   /* ---- the folder sheet ---- */
   .pk-sh-ov{ position:absolute; inset:0; }
   .pk-scrim{ position:absolute; inset:0; border:none; background:rgba(7,3,8,.6); cursor:pointer; padding:0; }
@@ -3453,6 +3457,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1244"></script>
+  <script src="app.js?v=1245"></script>
 </body>
 </html>

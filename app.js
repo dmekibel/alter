@@ -6021,7 +6021,7 @@
   var _pkUse = null; // pkActUse memo for one picker session (cleared in pkOpen) — the 30-day log walk is identical for every folder in a paint
   function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
   function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60) : "")); } // UNPADDED per the artifact's plate bar ("3 things · 3h5"); the zero-pad was ours
-  function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
+  function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : pkShort(m); } // the one-pick button's duration: spelled out under an hour ("30 min"), and above it the plate bar's own compact token ("1h5") rather than a second padded form
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
   var PK_INK = "#2a1730"; // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. #160510 is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
   var PK_EDGE = "#34172d"; // THE RESTING FOLDER EDGE (David 2026-07-31, on his frame): ONE neutral plum for all eight cards, a hair lighter than the #241022 shell so the card has a rim without a colour. The per-domain color-mix(HUE 30%, #160510) edge that lived here made Play gold-rimmed and Nourish green-rimmed — the frame shows eight identical edges. Hue on a folder edge is now ONLY the pink pick ring.
@@ -6136,7 +6136,7 @@
     if (!n) { lab.classList.add("hint"); lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like"); } // DS: the populated label is 18px on ONE line; the empty-state hint drops to 14px/#c98ca6 so the whole sentence fits at 375px instead of being clipped
     else if (n === 1) lab.textContent = q[0].title + " · " + pkShort(q[0].mins || 0);
     else lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); // never a name → name → name list (David 2026-07-27)
-    var go = add(bar, "button", "pk-go"); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-arrows-sort")); add(go, "span", null, n === 1 ? tr("Add to today") : tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list
+    var go = add(bar, "button", "pk-go" + (n === 1 ? " one" : "")); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-arrows-sort")); add(go, "span", null, n === 1 ? (tr("Add to today") + " · " + pkLong(q[0].mins || 0)) : tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list. The one-pick primary CARRIES ITS DURATION ("Add to today · 30 min") so the verb states the whole commitment.
     if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
     else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
   }
