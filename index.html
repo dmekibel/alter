@@ -2112,19 +2112,20 @@
   .pk-arow.drag{ z-index:5; }
   .pk-gut{ flex:none; width:38px; padding-top:10px; display:flex; flex-direction:column; align-items:flex-end; }
   .pk-guth{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; line-height:24px; color:#efd7e6; }
-  .pk-gutd{ display:block; height:4px; border-radius:2px; background:#6b4a5e; margin-top:6px; }
+  .pk-gutd{ display:block; width:11px; height:4px; border-radius:2px; background:#6b4a5e; margin-top:10px; } /* canvas 603: rendered ONLY on a same-hour row (no numeral) — gutter pad-top 10 + 10 = the 20px optical seat */
   .pk-acol{ flex:1; min-width:0; position:relative; }
   .pk-apk2{ position:absolute; left:-8px; top:-8px; right:16px; height:54px; border-radius:15px; border:2px solid #160510; }
   .pk-apk1{ position:absolute; left:-4px; top:-4px; right:8px; height:58px; border-radius:16px; border:2.5px solid #160510; }
   .pk-abub{ position:relative; border-radius:19px; border:3px solid #160510; overflow:hidden; box-shadow:0 5px 0 #160510; transition:border-color .3s ease; }
   .pk-abub.open{ border-color:#ff4fa0; }
-  .pk-ahead{ width:100%; position:relative; display:flex; align-items:center; gap:11px; padding:12px 15px; border:none; cursor:pointer; touch-action:none; -webkit-tap-highlight-color:transparent; } /* WHOLE bubble is the drag handle (David 2026-07-27): press + pull >6px reorders, a clean tap toggles the unfold. No grip line. */
+  .pk-ahead{ width:100%; position:relative; display:flex; align-items:center; gap:11px; padding:12px 15px 14px; border:none; cursor:pointer; touch-action:none; -webkit-tap-highlight-color:transparent; } /* WHOLE bubble is the drag handle (David 2026-07-27): press + pull >6px reorders, a clean tap toggles the unfold. The .pk-agrip dash is DECORATIVE only (canvas 521 pads the bottom to 14px so it seats). */
   .pk-ahead > i{ color:#160510; font-size:18px; flex:none; }
   .pk-atx{ flex:1; min-width:0; text-align:left; }
-  .pk-at{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#160510; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pk-at{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#160510; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* canvas 524 */
   .pk-as{ display:block; font-size:9.5px; font-weight:800; letter-spacing:1px; color:rgba(22,5,16,.65); }
   .pk-am{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#160510; }
-  .pk-achev{ color:#160510; font-size:16px; flex:none; transition:transform .3s ease; }
+  .pk-achev{ color:#160510; font-size:16px; flex:none; transition:transform .3s ease; } /* CHAINS ONLY (David's artifact 2026-07-31): collapsed = points down, expanded = rotated up */
+  .pk-agrip{ position:absolute; left:50%; bottom:3px; transform:translateX(-50%); width:34px; height:3.5px; border-radius:2px; background:rgba(22,5,16,.35); pointer-events:none; transition:opacity .3s ease; } /* canvas 512/529/571/599: the grip dash sits on EVERY bubble; decorative, the whole head is still the handle */
   .pk-afold{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .34s cubic-bezier(.22,.9,.3,1); }
   .pk-afold.open{ grid-template-rows:1fr; }
   .pk-afoldi{ min-height:0; overflow:hidden; }
@@ -3456,6 +3457,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1246"></script>
+  <script src="app.js?v=1247"></script>
 </body>
 </html>

@@ -6320,18 +6320,20 @@
       var row = add(host, "div", "pk-arow"); row.dataset.i = String(i);
       var h = Math.floor(times[i] / 60), same = h === prevH; prevH = h;
       var gut = add(row, "div", "pk-gut");
-      add(gut, "span", "pk-guth", same ? "" : String(h)); var d = add(gut, "span", "pk-gutd"); d.style.width = same ? "18px" : "14px"; // big hour numeral; a dash alone when the hour repeats
-      var col = add(row, "div", "pk-acol"), hue = pkHue(p.dom), open = _pk.aOpen === i, isChain = p.kind === "chain";
-      if (isChain) { var k2 = add(col, "span", "pk-apk2"); k2.style.background = mixHex(hue, "#160510", 0.55); k2.style.opacity = open ? "0" : "1";
-                     var k1 = add(col, "span", "pk-apk1"); k1.style.background = mixHex(hue, "#160510", 0.3); k1.style.opacity = open ? "0" : "1"; }
+      add(gut, "span", "pk-guth", same ? "" : String(h)); if (same) add(gut, "span", "pk-gutd"); // big hour numeral; a dash INSTEAD of it when the hour repeats (canvas 603: 11x4, seated at the 20px optical line) — never both
+      var col = add(row, "div", "pk-acol"), hue = pkHue(p.dom), open = _pk.aOpen === i, isChain = p.kind === "chain", st0 = p.st0 || [];
+      if (isChain) { // canvas 16a: the peeks carry the NEXT STEPS' OWN hues (not a muddy same-hue mix) — 3rd step behind, 2nd step in front; no step, no card
+        if (st0.length >= 3 && st0[2] && st0[2].c) { var k2 = add(col, "span", "pk-apk2"); k2.style.background = st0[2].c; k2.style.opacity = open ? "0" : "1"; }
+        if (st0.length >= 2) { var k1 = add(col, "span", "pk-apk1"); k1.style.background = (st0[1] && st0[1].c) || mixHex(hue, "#160510", 0.3); k1.style.opacity = open ? "0" : "1"; } }
       var bub = add(col, "div", "pk-abub" + (open ? " open" : ""));
-      var hd = add(bub, "button", "pk-ahead"); hd.style.background = tbxCandy(hue);
+      var hd = add(bub, "button", "pk-ahead"); hd.style.background = "repeating-linear-gradient(45deg, color-mix(in srgb, " + hue + " 74%, #fff) 0 9px, " + hue + " 9px 18px)"; // arranger-local candy: canvas 508/521/567 mix at 74%, NOT the wall's 82% — tbxCandy itself stays 82%
       add(hd, "i", "ti " + p.ti);
       var tx = add(hd, "span", "pk-atx"); add(tx, "span", "pk-at", p.title);
-      add(tx, "span", "pk-as", (isChain ? ((p.st0 || []).length + " " + tr("steps")) : tr((DOM[p.dom] || DOM.focus).l)).toUpperCase());
+      if (isChain) add(tx, "span", "pk-as", (st0.length + " " + tr("steps") + " · " + tr("chain")).toUpperCase()); // canvas 525 "6 STEPS · CHAIN"; activities are single-line, no domain label (canvas 510)
       if (p.prio >= 2) add(hd, "i", "ti ti-flag-filled pk-am");
       add(hd, "span", "pk-am", pkShort(p.mins));
-      var ch = add(hd, "i", "ti ti-chevron-down pk-achev"); ch.style.transform = open ? "none" : "rotate(180deg)"; // collapsed = up, expanded = down (David 2026-07-27)
+      if (isChain) { var ch = add(hd, "i", "ti ti-chevron-down pk-achev"); ch.style.transform = open ? "rotate(180deg)" : "none"; } // David's artifact 2026-07-31: chevron on chains only; collapsed = down. The prose's "collapsed=up" was design-side invention.
+      var gp = add(hd, "span", "pk-agrip"); gp.style.opacity = (isChain && open) ? "0" : "1"; // decorative grip dash on EVERY bubble (canvas 512/529/571/599); fades with the peeks on an open chain. The WHOLE bubble is still the drag handle.
       pkDragWire(hd, row, i);
       var fold = add(bub, "div", "pk-afold" + (open ? " open" : "")), inner = add(fold, "div", "pk-afoldi");
       if (open) pkArrBody(add(inner, "div", "pk-abody"), p, i, hue, isChain);
@@ -6425,7 +6427,7 @@
   Object.assign(I18N.ru, { // ACTIVITY PICKER strings (B4 law: EN source + RU dict, same commit).
     "What next?": "Что дальше?", "open": "свободно", "after": "после", "SAVED & READY-MADE": "СОХРАНЁННОЕ И ГОТОВОЕ",
     "Chains": "Цепочки", "Stacks": "Стеки", "your arrangements": "твои связки", "on your shelf": "на твоей полке", "saved arrangements": "сохранённые связки", "saved": "сохранено",
-    "Tap what you feel like": "Коснись того, чего хочется", "ONE THING": "ОДНО ДЕЛО", "ON YOUR PLATE": "НА СЕГОДНЯ", "things": "дела", "steps": "шага",
+    "Tap what you feel like": "Коснись того, чего хочется", "ONE THING": "ОДНО ДЕЛО", "ON YOUR PLATE": "НА СЕГОДНЯ", "things": "дела", "steps": "шага", "chain": "цепочка",
     "Add to today": "Добавить в день", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
     "for how long?": "на сколько?", "for how long? scales every step": "на сколько? подстроятся все шаги", "Priority": "Важность", "Must": "Обязательно", "Should": "Желательно", "Whenever": "Когда угодно",
     "Steps": "Шаги", "Add a step": "Добавить шаг", "pick a step": "выбери шаг", "More": "Ещё", "New": "Новое", "YOUR OWN": "СВОИ", "name it": "назови",
