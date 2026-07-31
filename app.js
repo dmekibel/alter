@@ -5998,8 +5998,10 @@
   function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : (Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "")); }
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
   var PK_INK = "#2a1730"; // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. #160510 is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
-  function pkCoinLip(hex) { return "0 2.5px 0 " + mixHex(hex, "#000000", 0.55); } // DS token: 0 2.5px 0 color-mix(in srgb, HUE 45%, #000) — i.e. the hue kept at 45% (mixHex's t is the distance TOWARD black, so 0.55), and toward BLACK, not toward #160510
-  function pkIgnite(hex) { return "repeating-linear-gradient(115deg,rgba(255,255,255,.30) 0 13px,rgba(255,255,255,0) 13px 28px)," + hex; } // THE ignition token (DS source 2026-07-30): a 115°/13px WHITE-VEIL stripe laid OVER the flat hue. The 45°/9px candy pattern was the wrong stripe; every picked surface (coins, sheet cells, rail chips, the focused queue chip) inherits from here.
+  var PK_EDGE = "#34172d"; // THE RESTING FOLDER EDGE (David 2026-07-31, on his frame): ONE neutral plum for all eight cards, a hair lighter than the #241022 shell so the card has a rim without a colour. The per-domain color-mix(HUE 30%, #160510) edge that lived here made Play gold-rimmed and Nourish green-rimmed — the frame shows eight identical edges. Hue on a folder edge is now ONLY the pink pick ring.
+  function pkCoinLip(hex) { return "0 4px 0 " + mixHex(hex, "#000000", 0.55); } // the RESTING coin's lip: 0 4px 0 color-mix(in srgb, HUE 45%, #000) — the hue kept at 45% (mixHex's t is distance TOWARD black) and toward BLACK, never #160510. David 2026-07-31: 2.5px read thin on device, 4px is the frame.
+  function pkRing() { return "0 0 0 2.5px #ff4fa0"; } // THE PICKED EDGE, and the ONLY shadow a picked thing wears (David 2026-07-31, on device): the lip must not survive underneath, or the ring breaks along the bottom instead of closing around the shape.
+  function pkIgnite(hex) { return "repeating-linear-gradient(65deg,rgba(255,255,255,.30) 0 13px,rgba(255,255,255,0) 13px 28px)," + hex; } // THE ignition token: a 65°/13px WHITE-VEIL stripe over the flat hue. 65°, not 115° — David's frame leans the bands the other way (bottom-left to top-right); every picked surface (coins, sheet cells, rail chips, the focused queue chip, a picked stack card) inherits from here.
   function pkDeep(dom) { return mixHex(pkHue(dom), "#160510", 0.45); }
   function pkLip(dom) { return "0 4px 0 " + pkDeep(dom) + ", 0 0 0 2px #160510"; }
   function pkChains() { try { return (S.tools && S.tools.pkChains) || []; } catch (e) { return []; } } // additive store, guarded read — NO SCHEMA bump
@@ -6025,7 +6027,7 @@
       if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
     });
-    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, savedOpen: false, stepFor: null, aOpen: null, aPri: false, aSteps: false }; // savedOpen = the pinned Saved drawer (collapsed peek by default, like wallMin)
+    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, stepFor: null, aOpen: null, aPri: false, aSteps: false };
     var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
     pkPaintShell();
   }
@@ -6040,14 +6042,12 @@
     if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
     add(htx, "span", "pk-title", tr("What next?")); // the artifact says "What next?" — the apostrophe form was fix-pass invention
     _pk.wbody = add(wall, "div", "pk-body");
-    var fw = add(wall, "div", "pk-footwrap"); fw.style.cssText = "flex:none;display:flex;flex-direction:column;";
-    _pk.wsaved = add(fw, "div", "pk-savedwrap");                                                            // pinned drawer: label · arcs (or the open cards) · chevron
-    _pk.wfoot = add(fw, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // then the queue tab + panel + plate bar, byte-identical to the sheet's footer
+    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // the queue tab + panel + plate bar, byte-identical to the sheet's footer
     pkPaint();
   }
-  function pkPaint() { // in-place repaint of everything that can change: the wall body, the pinned Saved drawer, the shared footer, and (when open) the sheet's head + body
+  function pkPaint() { // in-place repaint of everything that can change: the wall body, the shared footer, and (when open) the sheet's head + body
     if (!_pk || _pk.view !== "pick") return;
-    pkPaintWall(_pk.wbody); pkPaintSaved(_pk.wsaved); pkFoot(_pk.wfoot, "#130609");
+    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot, "#130609");
     if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17"); }
   }
   function pkFolder(host, dash) { var b = add(host, "button", "pk-folder" + (dash ? " dash" : "")); return b; }
@@ -6059,43 +6059,36 @@
       var sh = pkDomShown(d), acts = sh.list; if (!acts.length) return; var D = DOM[d], hue = D.c; // the folder shows the same padded list the sheet opens with, so its count and its coins can never disagree with what's behind the card
       var took = {}, nq = 0; // what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
       (_pk.queue || []).forEach(function (p) { if (p.kind === "act" && p.dom === d) { nq++; took[p.title] = 1; } });
-      var tile = add(grid, "button", "pk-ftile"); tile.style.background = mixHex(hue, "#1e0b18", 0.88); // DS: card = color-mix(in srgb, HUE 12%, #1e0b18) — the tile base is the folder wash, not the old #241022 night
-      tile.style.borderColor = nq ? "#ff4fa0" : mixHex(hue, "#160510", 0.70); // DS: 2.5px color-mix(HUE 30%, #160510) at rest; a pick takes the edge pink (selection is the ONE legal hue border). Set inline in BOTH states because an inline colour would otherwise beat .pk-ftile.on.
+      var tile = add(grid, "button", "pk-ftile"); // NO HUE WASH (David 2026-07-31, on device): every shell is the same flat #241022 night. The colour on a card comes from its coins, its glyph and name row, and the ring when it holds a pick — nothing else. The 12%-hue shells made eight cards read as eight different papers.
+      tile.style.borderColor = nq ? "#ff4fa0" : PK_EDGE; // 2.5px NEUTRAL PK_EDGE at rest, identical on all eight; a pick takes the edge pink (selection is the ONE legal hue border). Set inline in BOTH states because an inline colour would otherwise beat .pk-ftile.on.
       if (nq) tile.classList.add("on");
       var mini = add(tile, "span", "pk-mini");
       var six = acts.filter(function (a) { return took[a.title]; }).concat(acts.filter(function (a) { return !took[a.title]; })).slice(0, 6); // PICKED-FIRST: what you just picked has to be VISIBLE in the six, even when it ranks ninth in the folder
       six.forEach(function (a) { // the artifact's 3-col grid of six FLAT tight coins — no shards, NO fan/rotation (FIX PASS 4's fan is contradicted by the artifact and must not come back)
         var on = !!took[a.title], fc = add(mini, "span", "pk-face");
-        fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? (pkCoinLip(hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(hue); // FLAT raw hue at rest (the artifact's coin samples identical top-left, centre and bottom-right); a PICK wears the same IGNITION as its sheet tile. The old pk-gloss shine was our earlier reading of this pixel.
+        fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? pkRing() : pkCoinLip(hue); // resting = flat hue on a 4px lip; PICKED = ignition and the ring ALONE, no lip under it
         if (on) fc.classList.add("on");
         var ci = add(fc, "i", "ti " + tiClass(a)); if (on) ci.style.color = PK_INK; }); // ink-on-fill glyph the moment it ignites, white on a flat face — one law with the sheet
       var nrow = add(tile, "span", "pk-fnrow"); // the name row lives INSIDE the tile bottom (artifact): domain glyph in the hue · name · count
       var ni = add(nrow, "i", "ti " + (D.ti || "ti-circle")); ni.style.color = hue;
       add(nrow, "span", "pk-fnm", tr(D.l));
-      var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? hue : mixHex(hue, "#160510", 0.45); // COUNTS ARE IN THE ARTIFACT ("1 / 9" on Move): plain total, dimmed, until this folder has given something, then picked-of-total in the live hue. FIX PASS 4 killed these; it was wrong.
+      var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? "#ff4fa0" : mixHex(hue, "#160510", 0.45); // COUNTS ARE IN THE ARTIFACT ("1 / 9" on Move): plain dimmed total until this folder has given something, then picked-of-total in PINK — the count belongs to the selection, so it speaks the selection's colour, not the domain's.
       tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
+    pkPaintSaved(host); // …and the saved shelf closes the scroll, right under the eight cards
   }
-  // ===== SAVED & READY-MADE — PINNED above the plate bar (artifact: label · two card arcs · chevron · bar). It is furniture, not a wall row: chains and stacks must stay reachable without scrolling past eight folders. =====
+  // ===== SAVED & READY-MADE — the last row of the WALL, scrolling with it (David 2026-07-31: it is not a drawer, it never was; the peek/collapse/pin machinery is gone). Always rendered, right under the eight domain cards. =====
   function pkSavedFolders() {
-    return [{ kind: "chains", l: "Chains", s: "your arrangements", ti: "ti-link", c: "#ff4fa0", items: pkChains().map(pkChainPick) },              // pink + teal, not gold: the peek arcs and the open cards are ONE object in two states, so they wear one pair of hues
+    return [{ kind: "chains", l: "Chains", s: "your arrangements", ti: "ti-link", c: "#ff4fa0", items: pkChains().map(pkChainPick) },              // pink + teal, not gold
             { kind: "stacks", l: "Stacks", s: "on your shelf", ti: "ti-stack-2", c: DOM.restore.c, items: pkStacks().map(pkStackPick).filter(Boolean) }];
   }
   function pkPaintSaved(host) {
-    if (!host) return; pkDrain(host);
-    // TWO RULES KEEP THIS HONEST. (1) The drawer stands down whenever the QUEUE STRIP IS OPEN — that frame is chips + tune + plate bar, nothing else. (2) Its chevron only exists when the plate is empty (frame A: label · arcs · chevron) or when you have opened the drawer yourself and need a way to shut it. So saved things stay one tap away all the way through a build, and the resting footer never shows two chevrons — only the browse you deliberately opened does. _pk.savedOpen survives every hide.
-    if (_pk.queue.length && !_pk.wallMin) { host.style.display = "none"; return; }
-    host.style.display = "";
-    var F2 = pkSavedFolders(), open = !!_pk.savedOpen;
-    add(host, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
-    function toggle() { _pk.savedOpen = !_pk.savedOpen; pkPaint(); }
-    if (!open) {
-      var row = add(host, "div", "pk-peekrow");
-      F2.forEach(function (F) { var t = add(row, "button", "pk-peek"); t.style.borderColor = mixHex(F.c, "#1e0b18", 0.25); t.setAttribute("aria-label", tr(F.l)); t.onclick = toggle; }); // the top edge of each card, cut off: 2px dashed in color-mix(HUE 75%, #1e0b18) — the frame's arcs sit BACK from the card they belong to, muted, not at full saturation
-    } else {
-      var sg = add(host, "div", "pk-fgrid");
+    if (!host) return;
+    var F2 = pkSavedFolders(), sec = add(host, "div", "pk-sec");
+    add(sec, "span", "pk-seclbl", tr("SAVED & READY-MADE")); // chains + stacks ONLY — whole days are out of the picker entirely (David 2026-07-27: they're absolute-time day templates and belong to Plan-my-day / the week planner / evening review)
+    var sg = add(sec, "div", "pk-fgrid");
       F2.forEach(function (F) {
-        var b = pkFolder(sg, true), muted = mixHex(F.c, "#1e0b18", 0.25); b.style.borderColor = muted; // the open card wears the SAME muted edge as its arc — collapsed and expanded are one object in two states, and the raw hue is saved for the deck coins inside
+        var b = pkFolder(sg, true), muted = mixHex(F.c, "#1e0b18", 0.25); b.style.borderColor = muted; // the muted edge stays: color-mix(HUE 75%, #1e0b18)
         var dr = add(b, "div", "pk-deckrow");
         F.items.slice(0, 3).forEach(function (p) { var w = add(dr, "span", "pk-deck"); var hue = pkHue(p.dom);
           var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
@@ -6105,11 +6098,6 @@
         var tx = add(frow, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", tr(F.s)); s.style.color = F.c; // always the designed phrase — counts are data slop, they're nowhere on this wall
         b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
       });
-    }
-    if (!_pk.queue.length || open) { // the chevron belongs to the empty plate (frame A) and to a drawer you opened yourself, which needs a way back down. Collapsed over a loaded plate it would just stack against the queue tab, so the arcs carry the tap alone.
-      var tab = add(host, "button", "pk-tab"); var ti2 = add(tab, "i", "ti ti-chevron-up"); ti2.style.transform = open ? "rotate(180deg)" : "none";
-      tab.setAttribute("aria-label", tr("SAVED & READY-MADE")); tab.onclick = toggle; // same chevron grammar as the queue tab: up = closed, down = open
-    }
   }
   // ===== THE SHARED FOOTER — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
   function pkFoot(host, bg) {
@@ -6133,7 +6121,7 @@
     _pk.queue.forEach(function (p, i) {
       var b = add(qrow, "button", "pk-q"), w = add(b, "span", "pk-qc"), hue = pkHue(p.dom), on = _pk.focus === i;
       if (p.kind === "chain" || (p.st0 && p.st0.length)) { var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28); } // ANYTHING MADE OF STEPS renders as a deck bubble — 2 peeking cards behind. Stacks already arrive as kind "chain" (pkStackPick), so they deck today; the st0 test keeps that true if a stack ever gets its own kind. The ring + ignition stay on the FRONT face only.
-      var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? (pkCoinLip(hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(hue); // DS: the FOCUSED chip is the one that ignites (stripes + pink ring); the rest stay flat hue. One coin language with the wall and the sheet.
+      var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? pkRing() : pkCoinLip(hue); // the FOCUSED chip is the one that ignites (stripes + ring only, no lip); the rest stay flat hue on their lip. One coin language with the wall and the sheet.
       var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#fff2f9";
       var x = add(w, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
       var l = add(b, "span", "pk-ql", p.title); l.style.color = on ? "#fff2f9" : "#96637e"; // the NAME under the icon, never the time
@@ -6147,17 +6135,21 @@
     pkRail(tune, f.mins, hue, function (v) { f.mins = v; pkPaint(); }, bg);
     var btns = add(tune, "div", "pk-btns");
     var pb = add(btns, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (f.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, f.prio ? tr(pkPriLab(f.prio)) : tr("Priority"));
-    pkSkin(pb, pbi, hue, !!f.prio); pb.onclick = function () { _pk.priOpen = !_pk.priOpen; _pk.stepsOpen = false; pkPaint(); };
+    pkSkinTune(pb, pbi, hue, !!f.prio); pb.onclick = function () { _pk.priOpen = !_pk.priOpen; _pk.stepsOpen = false; pkPaint(); };
     var sb = add(btns, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
-    pkSkin(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); }; // Priority + Steps ONLY (the frame): taking a pick back off the plate is the chip's own x badge, so a second delete affordance down here was ours, not David's
+    pkSkinTune(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); }; // Priority + Steps ONLY (the frame): taking a pick back off the plate is the chip's own x badge, so a second delete affordance down here was ours, not David's
     if (_pk.priOpen) pkPriRow(tune, f, hue);
     if (_pk.stepsOpen) { if (isChain) pkStepList(add(tune, "div", "pk-steps"), pkSteps(f)); else pkActSteps(tune, f); }
   }
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
   function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
-  function pkSkinChip(c, hue, on) { // the LENGTH rail's own skin (borderless, DS 2026-07-30) — deliberately NOT pkSkin, which still dresses the Priority/Steps buttons
-    if (on) { c.style.background = pkIgnite(hue); c.style.color = PK_INK; c.style.boxShadow = "0 3px 0 rgba(0,0,0,.4)"; }
+  function pkSkinChip(c, hue, on) { // the LENGTH rail's own skin (borderless) — deliberately NOT pkSkin, which dresses the Priority/Steps buttons
+    if (on) { c.style.background = pkIgnite(hue); c.style.color = PK_INK; c.style.boxShadow = pkRing(); } // the chosen length is an ignited thing like any other: stripes + the ring, nothing under it
     else { c.style.background = "#170811"; c.style.color = "#c98ca6"; c.style.boxShadow = "none"; }
+  }
+  function pkSkinTune(el2, ico, hue, on) { // Priority / Steps: DEAD-QUIET at rest (David 2026-07-31) — the CSS carries #170811 on a 2px #4a2338 outline with #c9b8c4 type, and no hue tint touches them until they are actually set
+    if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; }
+    else { el2.style.background = ""; el2.style.color = ""; el2.style.borderColor = ""; if (ico) ico.style.color = ""; }
   }
   function pkRail(host, cur, hue, onPick, bg) { // bg is kept for the callers; the DS fixes the right-edge fade at #1b0b16 on every surface
     var w = add(host, "div", "pk-railw"), box = add(w, "div", "pk-railb"), rail = add(box, "div", "pk-rail");
@@ -6243,7 +6235,7 @@
   }
   function pkCell(host, o) { // one squircle cell: face + glyph + (when picked) ignition stripes, pink ring and its tuned duration
     var b = add(host, "button", "pk-cell"), f = add(b, "span", "pk-cellf");
-    f.style.background = o.on ? pkIgnite(o.hue) : o.hue; f.style.boxShadow = o.on ? (pkCoinLip(o.hue) + ", 0 0 0 2.5px #ff4fa0") : pkCoinLip(o.hue); // IGNITION: a picked activity wears its own hue's candy stripes + the pink ring
+    f.style.background = o.on ? pkIgnite(o.hue) : o.hue; f.style.boxShadow = o.on ? pkRing() : pkCoinLip(o.hue); // IGNITION: a picked activity wears its own hue's stripes and the pink ring ALONE — the lip goes, so the ring closes all the way round
     var i = add(f, "i", "ti " + o.ti); i.style.color = o.on ? PK_INK : "#fff2f9"; // white on a flat face, ink-on-fill on the ignited one — both artifacts show a dark glyph the moment a tile lights up (the stripes take the contrast a white glyph needs)
     if (o.on && o.dur) add(f, "span", "pk-cbadge", o.dur); // the tuned length, top-right. The xN already-picked badge is GONE: the queue strip + the ignition carry that.
     var l = add(b, "span", "pk-cellt", o.t); l.style.color = o.labC || "#f0dceb";
@@ -6258,8 +6250,8 @@
       var g = add(host, "div", "pk-bgrid");
       items.forEach(function (p) { var b = add(g, "button", "pk-bundle"), w = add(b, "span", "pk-bwrap"), hue = pkHue(p.dom);
         var p2 = add(w, "span", "pk-pk2"); p2.style.background = mixHex(hue, "#160510", 0.55); var p1 = add(w, "span", "pk-pk1"); p1.style.background = mixHex(hue, "#160510", 0.28);
-        var on = !!pkQCount(p.title); // ALREADY ON THE PLATE reads the same everywhere: the front card IGNITES (stripes + pink ring + ink glyph) and the deck behind it stays flat. The ×N pill is dead — a count was never the point, "this one is in" is. Ring spread is 4.5px, not 2.5px: pkLip already lays a 2px ink ring ON TOP, so 2.5px left a half-pixel sliver — 4.5px is what makes the pink band read the same 2.5px thick as the wall coin and the sheet cell.
-        var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? (pkLip(p.dom) + ", 0 0 0 4.5px #ff4fa0") : pkLip(p.dom); var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#160510";
+        var on = !!pkQCount(p.title); // ALREADY ON THE PLATE reads the same everywhere: the front card IGNITES (stripes + the ring alone + ink glyph) and the deck behind it stays flat. The ×N pill is dead — a count was never the point, "this one is in" is.
+        var fc = add(w, "span", "pk-face"); fc.style.background = on ? pkIgnite(hue) : hue; fc.style.boxShadow = on ? pkRing() : pkLip(p.dom); var fi = add(fc, "i", "ti " + p.ti); fi.style.color = on ? PK_INK : "#160510";
         var lab = add(b, "span", "pk-blab"); var lt = add(lab, "span", "pk-blt", p.title); lt.style.color = "#fff2f9"; add(lab, "span", "pk-bls", (p.st0 || []).length + " " + tr("steps") + " · " + pkShort(p.mins));
         b.onclick = function () { pkTakePick(s.kind === "chains" ? pkChainPick(pkChains()[items.indexOf(p)]) : p); };
       });
@@ -6337,9 +6329,9 @@
     }
     var row2 = add(host, "div", "pk-btns");
     var pb = add(row2, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (p.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, p.prio ? tr(pkPriLab(p.prio)) : tr("Priority"));
-    pkSkin(pb, pbi, hue, !!p.prio); pb.onclick = function () { _pk.aPri = !_pk.aPri; _pk.aSteps = false; pkPaintArr(); };
+    pkSkinTune(pb, pbi, hue, !!p.prio); pb.onclick = function () { _pk.aPri = !_pk.aPri; _pk.aSteps = false; pkPaintArr(); }; // the arranger's Priority/Steps ARE the tune panel's buttons (same .pk-tbtn) — they take the same dead-quiet idle, or one surface contradicts the other
     var sb = add(row2, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
-    pkSkin(sb, sbi, hue, _pk.aSteps); sb.onclick = function () { _pk.aSteps = !_pk.aSteps; _pk.aPri = false; pkPaintArr(); };
+    pkSkinTune(sb, sbi, hue, _pk.aSteps); sb.onclick = function () { _pk.aSteps = !_pk.aSteps; _pk.aPri = false; pkPaintArr(); };
     var t2 = add(row2, "button", "pk-trash"); add(t2, "i", "ti ti-trash"); t2.setAttribute("aria-label", tr("Remove")); t2.onclick = function () { pkDrop(i); };
     if (_pk.aPri) { var pr = add(host, "div", "pk-pris"); PK_PRIS.forEach(function (P) { var b = add(pr, "button", "pk-pri", tr(P.l)); pkSkin(b, null, hue, p.prio === P.v); b.onclick = function () { p.prio = (p.prio === P.v) ? 0 : P.v; _pk.aPri = false; pkPaintArr(); }; }); }
     if (_pk.aSteps) { var box = add(host, "div", "pk-steps");

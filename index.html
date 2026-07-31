@@ -1965,8 +1965,8 @@
   .pk-folder{ display:flex; flex-direction:column; gap:9px; padding:11px 11px 12px; border-radius:20px; background:#1e0b18; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-folder:active{ transform:translateY(2px); }
   /* ===== THE DOMAIN TILE — DESIGN AUTHORITY RESET (2026-07-28). The ONLY truth for this component is David's artifact, 18a-picker.view.png. The HANDOFF fix passes are a lossy middleman that contradicted it repeatedly: FP1 §3/§4/§8, FP2 §A and FP4's fan / no-counts / name-under / ink-glyph structure are ALL contradicted by the artifact and must never be re-applied here. The artifact shows: ONE button per domain; inside it a 3-col grid of six FLAT tight coins (no shards, NO fan, no rotation) in the bright hue with WHITE glyphs; then a row along the tile bottom, domain glyph in the hue · name in #fff2f9 · count on the right. Selection is the only legal hue edge: a tile holding a queued pick turns its border pink, and so does the picked coin, which also IGNITES (the 115deg white-veil stripes + ink glyph of the DS ignition token, identical to its tile in the folder sheet). ===== */
-  /* DS SOURCE VALUES (2026-07-30, supersede the earlier measurements on this component): card 2.5px border in color-mix(HUE 30%, #160510) over color-mix(HUE 12%, #1e0b18) — both set inline per hue — radius 20, hard 0 4px 0 #160510 sticker, padding 11/11/12, gap 9, coin grid gap 5. */
-  .pk-ftile{ display:flex; flex-direction:column; gap:9px; width:100%; padding:11px 11px 12px; border-radius:20px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
+  /* Card: 2.5px border in color-mix(HUE 30%, #160510) set inline per hue, over a UNIFORM #241022 night — David 2026-07-31 killed the per-hue wash outright, all eight shells are the same dark. Radius 20, hard 0 4px 0 #160510 sticker, padding 11/11/12, gap 9, coin grid gap 5. */
+  .pk-ftile{ display:flex; flex-direction:column; gap:9px; width:100%; padding:11px 11px 12px; border-radius:20px; border:2.5px solid #160510; background:#241022; box-shadow:0 4px 0 #160510; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; }
   .pk-ftile:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
   .pk-ftile.on{ border-color:#ff4fa0; } /* SELECTION (artifact: Move + Focus): the ONE place a hue edge is legal. pkPaintWall also sets this inline, since an inline rest-colour would outrank a class. */
   .pk-mini{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
@@ -1981,11 +1981,8 @@
   .pk-frow > i{ font-size:15px; flex:none; }
   .pk-seclbl{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#96637e; }
   /* SAVED & READY-MADE is PINNED above the plate bar (artifact order: label · card arcs · chevron · bar). Collapsed it shows only the top edge of the two cards, so chains and stacks stay one tap away without scrolling past eight folders. */
-  .pk-savedwrap{ flex:none; display:flex; flex-direction:column; gap:9px; padding:10px 22px 0; } /* NO divider rule above the kicker: the frame lets the wall run straight into the drawer */
-  .pk-savedwrap .pk-seclbl{ font-size:10px; text-transform:uppercase; } /* DS: the section label is the 10px/800/uppercase kicker */
-  .pk-peekrow{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
-  .pk-peek{ height:30px; padding:0; border:2px dashed; border-bottom:none; border-radius:20px 20px 0 0; background:#1e0b18; overflow:hidden; cursor:pointer; -webkit-appearance:none; -webkit-tap-highlight-color:transparent; } /* the frame's arcs: 2px dashed, colour muted to color-mix(HUE 75%, #1e0b18) inline (Chains #ff4fa0 · Stacks #2ab8c4 are the source hues), on the #1e0b18 tile base */
-  .pk-peek:active{ transform:translateY(2px); }
+  .pk-sec{ display:flex; flex-direction:column; gap:11px; } /* the saved shelf is the wall's last row and scrolls with it — David 2026-07-31 killed the pinned-drawer experiment outright */
+  .pk-sec .pk-seclbl{ font-size:10px; text-transform:uppercase; }
   .pk-folder.dash{ border:2.5px dashed #6b4258; }
   .pk-deckrow{ display:flex; gap:8px; padding:7px 0 0 7px; }
   .pk-deck{ flex:1; aspect-ratio:1; position:relative; }
@@ -2000,17 +1997,18 @@
   .pk-tab{ flex:none; align-self:center; width:64px; height:24px; margin-bottom:-6px; border:none; background:none; color:#96637e; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
   .pk-tab i{ font-size:17px; transition:transform .25s ease; }
   .pk-panel{ flex:none; padding:11px 22px 0; border-top:2px solid #24101c; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; }
-  .pk-queue{ display:flex; gap:16px; padding:6px 4px 2px 8px; overflow-x:auto; touch-action:pan-x; }
-  .pk-q{ display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
+  /* the plate strip at the frame's size (David 2026-07-31: the chips were miniature) — 64px face, 13px name, everything else scaled off it. The 10px top padding is load-bearing: a deck chip's back card overhangs 9px and .pk-queue clips vertically (overflow-x:auto forces overflow-y). */
+  .pk-queue{ display:flex; gap:18px; padding:10px 4px 2px 10px; overflow-x:auto; touch-action:pan-x; }
+  .pk-q{ display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
   .pk-q:active{ transform:translateY(2px); }
-  .pk-qc{ width:40px; height:40px; position:relative; }
-  .pk-qc .pk-pk2{ position:absolute; left:-6px; top:-6px; right:6px; bottom:6px; border-radius:13px; }
-  .pk-qc .pk-pk1{ position:absolute; left:-3px; top:-3px; right:3px; bottom:3px; border-radius:13px; }
-  .pk-qc .pk-face{ position:absolute; inset:0; border-radius:13px; display:flex; align-items:center; justify-content:center; }
-  .pk-qc .pk-face i{ font-size:18px; }
-  .pk-qx{ position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; }
-  .pk-qx i{ font-size:9px; }
-  .pk-ql{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; max-width:58px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pk-qc{ width:64px; height:64px; position:relative; }
+  .pk-qc .pk-pk2{ position:absolute; left:-9px; top:-9px; right:9px; bottom:9px; border-radius:20px; }
+  .pk-qc .pk-pk1{ position:absolute; left:-5px; top:-5px; right:5px; bottom:5px; border-radius:20px; }
+  .pk-qc .pk-face{ position:absolute; inset:0; border-radius:20px; display:flex; align-items:center; justify-content:center; }
+  .pk-qc .pk-face i{ font-size:28px; }
+  .pk-qx{ position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; }
+  .pk-qx i{ font-size:11px; }
+  .pk-ql{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; max-width:78px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pk-tune{ display:flex; flex-direction:column; gap:10px; }
   .pk-fh{ display:flex; align-items:center; gap:9px; }
   .pk-fht{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.05; }
@@ -2019,13 +2017,14 @@
   .pk-railw{ display:flex; gap:4px; align-items:stretch; }
   .pk-railb{ position:relative; flex:1; min-width:0; }
   .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; }
-  .pk-lchip{ flex:none; min-width:54px; min-height:44px; padding:10px 12px; border-radius:13px; border:none; background:#170811; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: the length chips are BORDERLESS; pkSkinChip paints rest (#170811) vs ignited (hue + the 115deg veil + ink) */
+  .pk-lchip{ flex:none; min-width:64px; min-height:46px; padding:12px 16px; border-radius:14px; border:none; background:#170811; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* the frame's proportions at 375px (David 2026-07-31: the chips were too small to hit): ~46 tall, 15px type, four and a half visible before the right fade eats the fifth. BORDERLESS; pkSkinChip paints rest (#170811) vs ignited (hue + the 65deg veil + ink + ring). */
   .pk-lchip:active{ transform:translateY(2px); }
   .pk-fade{ position:absolute; top:0; right:0; bottom:0; width:30px; pointer-events:none; }
   .pk-fwd{ flex:none; width:34px; border:none; background:none; color:#ff8fc0; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
   .pk-fwd i{ font-size:19px; }
   .pk-btns{ display:flex; gap:8px; align-items:center; }
-  .pk-tbtn{ flex:none; display:flex; align-items:center; gap:7px; min-height:44px; padding:10px 14px; border-radius:12px; border:1.5px solid transparent; background:#241019; color:#c98ca6; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pk-tbtn{ flex:none; display:flex; align-items:center; gap:7px; min-height:44px; padding:10px 14px; border-radius:12px; border:2px solid #4a2338; background:#170811; color:#c9b8c4; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* IDLE IS COLOURLESS (David 2026-07-31): dark fill, pinkish outline, light-grey icon AND text. No domain tint until the option is actually set — pkSkinTune clears its inline styles at rest so this rule wins. */
+  .pk-tbtn i{ color:inherit; }
   .pk-tbtn i{ font-size:16px; }
   .pk-tbtn:active{ transform:translateY(2px); }
   .pk-spacer{ flex:1; }
@@ -3458,6 +3457,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1242"></script>
+  <script src="app.js?v=1243"></script>
 </body>
 </html>
