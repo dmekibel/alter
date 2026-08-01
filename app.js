@@ -15904,6 +15904,7 @@
       if (!_wasOpen) { try { tbxOpenDose("firstLight", fcell); } catch (e) {} }
     }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
+    var _gz = el("tfWorldGround"); if (_gz) { var _gpb = parseFloat(getComputedStyle(_gz).paddingBottom) || 0; chk("ground bottom air", _gpb >= 32, Math.round(_gpb) + "px", "≥32px below the last toolbox row"); } // GROUND BOTTOM AIR (David device 2026-08-01 "the tools on the bottom are too close to the bottom"): the ground zone must always end on a real band of air (plus env(safe-area-inset-bottom) on device) so the last folder-square row never sits under the floating puck / home indicator
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
   };

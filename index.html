@@ -1722,7 +1722,7 @@
   /* ONE-PAGE (David 2026-07-22): the story strip is a normal in-flow part of the HOME zone — it must SCROLL NATURALLY with the content, never animate. Kill any transition on it so a re-render/scroll layout shift can't make it "slide up and disappear". */
   #trackerFull.tf-onepage.tf-onehome #tfHomeBars{ transition:none !important; }
   #trackerFull.tf-onepage.tf-onehome .tf-stage{ touch-action:pan-y !important; } /* SCROLL FIX (David 2026-07-22): the stage carries an inline touch-action:none for drag-to-close — a dead scroll zone dead-center on the one-page home. Force pan-y so the circle area scrolls the column like everything else (tfDrag also bails here). */
-  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -19vh) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px); } /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -19vh) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px + 32px); } /* GROUND BOTTOM AIR (David device 2026-08-01, "the tools on the bottom are too close to the bottom, gotta leave a little space below"): +32px on top of the existing 40 + safe-area. MEASURED at 375x812: the last folder-square row ended 60px above the viewport floor while the fixed #guardPuck occupies y 730-796 — the row sat inside the puck's band, which is what reads as "too close". The band is transparent (neither .tfw-ground nor .tbx paints a fill), so it shows the same night ground as behind the tiles — no dead colour stripe. designAudit's "ground bottom air" gate locks it at ≥32px. */ /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
   /* FIX PASS 2 D (design 2026-07-28) "live mode hides the tool deck": the ground PULL is cancelled while tracking, so the deck starts exactly at the fold instead of rising into the live face. Reconciles the design law with David's 2026-07-22 device law ("when tracking you should still be able to scroll down and see the tools") — the deck is hidden on the live screen, one scroll away, not deleted. */
   #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
@@ -1756,7 +1756,7 @@
   .tbx-hero{ background:#241019; border-radius:18px; padding:12px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); display:flex; align-items:center; gap:12px; }
   .tbx-hero-coins{ display:flex; gap:6px; flex:0 0 auto; }
   .tbx-hcoin{ width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
-  .tbx-hcoin i{ font-size:15px; color:#160510; } /* FIX PASS 2 F: ink-on-hue */
+  .tbx-hcoin i{ font-size:15px; color:#fff2f9; } /* WHITE-GLYPH LAW (David device 2026-08-01, "the tools need white icon inside not black — the first 8 are correct, the rest are wrong"): every tool tile/coin on a hue fill wears the STACK CARD's #fff2f9 glyph, same as .tbx-face. Supersedes FIX PASS 2 F's blanket ink-on-hue, which only ever matched the ignited/striped states. */
   .tbx-hero-mid{ flex:1; min-width:0; }
   .tbx-hkicker{ display:block; font-size:9px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; }
   .tbx-hname{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; }
@@ -1769,7 +1769,7 @@
   .tbx-square:active{ transform:translateY(2px); }
   .tbx-sq-prev{ display:grid; grid-template-columns:repeat(2,20px); gap:5px; }
   .tbx-sq-mini{ width:20px; height:20px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
-  .tbx-sq-mini i{ font-size:10px; color:#160510; } /* FIX PASS 2 F: ink-on-hue */
+  .tbx-sq-mini i{ font-size:10px; color:#fff2f9; } /* WHITE-GLYPH LAW (David device 2026-08-01) — the folder square's 2x2 preview coins speak the same tile language as the top-eight grid. */
   .tbx-sq-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10px; line-height:1; }
   .tbx-panel{ grid-column:1/-1; border-radius:18px; padding:12px 13px; }
   .tbx-panel-head{ display:flex; align-items:center; gap:8px; width:100%; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -1782,7 +1782,7 @@
   .tbx-dose{ background:#241019; border-radius:18px; padding:13px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
   .tbx-dose-head{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
   .tbx-dose-face{ width:44px; height:44px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-  .tbx-dose-face i{ font-size:20px; color:#160510; } /* FIX PASS 2 F: ink-on-hue */
+  .tbx-dose-face i{ font-size:20px; color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); } /* WHITE-GLYPH LAW (David device 2026-08-01) — the dose card's face IS the tapped tile's face at 44px, so it carries .tbx-face's white glyph + soft drop verbatim. */
   .tbx-dose-htx{ min-width:0; }
   .tbx-dose-kicker{ font-size:9px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; }
   .tbx-dose-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; }
@@ -1793,7 +1793,7 @@
   .tbx-dose-steps{ display:flex; flex-direction:column; gap:7px; }
   .tbx-step{ display:flex; align-items:center; gap:10px; }
   .tbx-stepcoin{ width:24px; height:24px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-  .tbx-stepcoin i{ font-size:11px; color:#160510; } /* FIX PASS 2 F: ink-on-hue (the one dark-seal step carries its own gold ink inline) */
+  .tbx-stepcoin i{ font-size:11px; color:#fff2f9; } /* WHITE-GLYPH LAW (David device 2026-08-01) — the dose card's step coins are tool coins on full-hue fills (the one DARK-seal step still carries its own gold ink inline, and an inline colour outranks this). */
   .tbx-step-tx{ flex:1; min-width:0; font-size:12px; font-weight:700; color:#e6cfe0; }
   .tbx-step-tm{ flex:0 0 auto; font-size:10.5px; font-weight:800; color:#9a6a86; font-variant-numeric:tabular-nums; } /* 21e per-step time column — the duration this step actually runs at the chosen dose */
   .tbx-dose-chev{ margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:9px; border:none; background:#180a14; color:#9a6a86; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -3461,6 +3461,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1249"></script>
+  <script src="app.js?v=1250"></script>
 </body>
 </html>
