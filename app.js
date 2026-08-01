@@ -5523,8 +5523,21 @@
   function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + "," + (TBX_HEX[tok] || "#63d3c9") + ")"); } // domain token → CSS var WITH ITS HEX AS THE FALLBACK; literal hex passes through. A step's colour is stored as this string and travels between surfaces (Session Editor → stack → picker), so it must survive landing somewhere that doesn't declare that var — an unresolved var() paints TRANSPARENT, which is how a Play coin went invisible in the picker the moment --play stopped being mirrored there.
   function tbxLip(colExpr) { return "0 4px 0 color-mix(in srgb, " + colExpr + " 45%, #000)"; } // the universal hard-offset lip idiom (DESIGN-EXTRACT §0); color-mix already ships in this app (index.html .obv-gate)
   // Registry: every named item from DESIGN-EXTRACT §3 (16 stacks + 12 plain tools). peek = the deduped coin colors verbatim from §3 (the dedup rule — drop steps whose color equals the face or an earlier coin, max 2 — was applied at design time; "Can't Sleep" legitimately renders ONE coin). track = best-effort map onto STACK_TOOLS ids so Start actually runs; step durations scale to the chosen dose. kicker = the dose-card context line. steps (Caught Scrolling only) = the design's plain-word script; every other stack derives its steps from the track's real tools (reuses already-gated tool copy). def = default dose (minutes).
+  // 2026-08-01 PRACTICE GRID: the seven grid stacks also carry `bands` (structural dose folding, see tbxTrackForDose) and `what`/`why` (the dose card's two gated lines). Both are OPTIONAL — a stack without them keeps the legacy single `track` + no lines.
+  function tbxBand(min) { var t = [], a = arguments; for (var i = 1; i < a.length; i += 2) t.push({ k: a[i], d: a[i + 1] }); return { min: min, track: t }; } // terse band literal: tbxBand(<minutes>, k, secs, k, secs …). Hoisted declaration, so TBX_ITEMS' initializer below can call it.
   var TBX_ITEMS = {
-    firstLight:      { name: "First Light",      dom: "move",    ti: "ti-sunrise",         peek: ["restore", TBX_BOLT], kicker: "START THE DAY",                        def: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "mantra", d: 120 }] },
+    firstLight:      { name: "Morning Stack",    dom: "move",    ti: "ti-sunrise",         peek: ["restore", TBX_BOLT], kicker: "START THE DAY",                        def: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "mantra", d: 120 }],
+                       what: "Wake the body, breathe, settle, sit, then aim the day.", why: "The order is the mechanism: a settled body lets the mind listen.",
+                       bands: [tbxBand(2,  "breathe", 60, "mantra", 60),
+                               tbxBand(5,  "stretch", 60, "breathe", 60, "relax", 45, "meditate", 90, "gratitude", 45),
+                               tbxBand(10, "stretch", 75, "breathe", 75, "relax", 60, "meditate", 150, "v_open", 90, "gratitude", 45, "reprogram", 75, "mantra", 30),
+                               tbxBand(15, "stretch", 90, "breathe", 90, "relax", 75, "meditate", 210, "v_open", 150, "gratitude", 60, "reprogram", 150, "mantra", 75)] },
+    breatheLadder:   { name: "Breathe",          dom: "restore", ti: "ti-lungs",           peek: ["move", "focus"],     kicker: "BREATHE",                              def: 5,
+                       what: "Breathing patterns, easy to hard, one at a time.", why: "A longer exhale than inhale tells the body the danger is over.",
+                       bands: [tbxBand(2,  "v_coherent", 120),
+                               tbxBand(5,  "v_coherent", 150, "v_box", 150),
+                               tbxBand(10, "v_coherent", 150, "v_box", 150, "v_exhale", 150, "v_478", 150),
+                               tbxBand(15, "v_coherent", 180, "v_box", 180, "v_exhale", 180, "v_478", 180, "v_nostril", 180)] }, // bands ONLY (no legacy `track`) — every consumer reads through tbxTrackForDose/tbxTrack, so the 5-min band is its default shape
     beforeDeepWork:  { name: "Before Deep Work", dom: "focus",   ti: "ti-target",          peek: ["move", "restore"],   kicker: "BEFORE YOU FOCUS",                     def: 5, track: [{ k: "breathe", d: 120 }, { k: "mantra", d: 120 }] },
     caughtScrolling: { name: "Caught Scrolling", dom: "connect", ti: "ti-hand-stop",       peek: ["restore", TBX_BOLT], kicker: "WHEN YOU DRIFT · THE CATCH IS THE WIN", def: 2, track: [{ k: "breathe", d: 120 }, { k: "mantra", d: 120 }],
                        steps: [ { c: "connect", ic: "ti-hand-stop", t: "name where you went" }, { c: "restore", ic: "ti-lungs", t: "three slow breaths" }, { c: TBX_BOLT, ic: "ti-bolt", t: "feel why it matters" }, { c: "create", ic: "ti-bulb", t: "choose on purpose, staying counts" }, { c: TBX_SEALBG, ic: "ti-check", t: "log the catch", ink: TBX_SEALINK } ] },
@@ -5532,14 +5545,35 @@
     spunUp:          { name: "Spun Up",          dom: "restore", ti: "ti-wind",            peek: ["move", TBX_BOLT],    kicker: "COME BACK DOWN",                       def: 5, track: [{ k: "breathe", d: 120 }, { k: "relax", d: 60 }] },
     iMessedUp:       { name: "I Messed Up",      dom: "connect", ti: "ti-heart-handshake", peek: ["restore", TBX_BOLT], kicker: "AFTER A SLIP",                         def: 5, track: [{ k: "breathe", d: 90 }, { k: "gratitude", d: 45 }] },
     emptyTank:       { name: "Empty Tank",       dom: "nourish", ti: "ti-battery-2",       peek: ["move", TBX_BOLT],    kicker: "REFILL",                               def: 5, track: [{ k: "relax", d: 60 }, { k: "gratitude", d: 45 }] },
-    shutdown:        { name: "Shutdown",         dom: "focus",   ti: "ti-moon-stars",      peek: ["restore", TBX_BOLT], kicker: "END THE DAY",                          def: 5, track: [{ k: "relax", d: 60 }, { k: "breathe", d: 120 }] },
+    shutdown:        { name: "Night Stack",      dom: "focus",   ti: "ti-moon-stars",      peek: ["restore", TBX_BOLT], kicker: "END THE DAY",                          def: 5, track: [{ k: "relax", d: 60 }, { k: "breathe", d: 120 }],
+                       what: "Put the day down, unwind, seed tomorrow.", why: "Sleep locks in whatever state you hand it. Hand it a calm one.",
+                       bands: [tbxBand(2,  "v_478", 120),
+                               tbxBand(5,  "relax", 90, "v_478", 120, "gratitude", 45),
+                               tbxBand(10, "relax", 120, "v_bodyscan", 180, "v_478", 180, "gratitude", 60, "mantra", 60)] },
     cantSleep:       { name: "Can't Sleep",      dom: "restore", ti: "ti-zzz",             peek: [TBX_BOLT],            kicker: "WHEN SLEEP WON'T COME",                def: 5, track: [{ k: "relax", d: 90 }, { k: "breathe", d: 150 }] },
     lockTheWin:      { name: "Lock the Win",     dom: "create",  ti: "ti-trophy",          peek: ["connect", TBX_BOLT], kicker: "SEAL THE WIN",                         def: 2, track: [{ k: "gratitude", d: 45 }, { k: "reprogram", d: 150 }] },
     feelBetter:      { name: "Feel Better",      dom: "restore", ti: "ti-mood-smile",      peek: ["move", TBX_BOLT],    kicker: "LIFT THE MOOD",                        def: 5, track: [{ k: "breathe", d: 120 }, { k: "gratitude", d: 45 }] },
-    body:            { name: "Body",             dom: "upkeep",  ti: "ti-body-scan",       peek: ["move", "restore"],   kicker: "IN YOUR BODY",                         def: 5, track: [{ k: "stretch", d: 75 }, { k: "relax", d: 60 }] },
-    heart:           { name: "Heart",            dom: "connect", ti: "ti-heart",           peek: ["move", "restore"],   kicker: "OPEN THE HEART",                       def: 5, track: [{ k: "gratitude", d: 45 }, { k: "mantra", d: 120 }] },
-    mind:            { name: "Mind",             dom: "focus",   ti: "ti-moon",            peek: ["move", "restore"],   kicker: "QUIET THE MIND",                       def: 5, track: [{ k: "breathe", d: 120 }, { k: "meditate", d: 180 }] },
-    vision:          { name: "Vision",           dom: "create",  ti: "ti-eye",             peek: ["move", "restore"],   kicker: "SEE IT CLEAR",                         def: 5, track: [{ k: "reprogram", d: 150 }, { k: "mantra", d: 120 }] },
+    body:            { name: "Body",             dom: "upkeep",  ti: "ti-body-scan",       peek: ["move", "restore"],   kicker: "IN YOUR BODY",                         def: 5, track: [{ k: "stretch", d: 75 }, { k: "relax", d: 60 }],
+                       what: "Stretch, release, scan: get back inside your body.", why: "Muscles store the day; a slow fold gives them permission to drop it.",
+                       bands: [tbxBand(2,  "stretch", 120),
+                               tbxBand(5,  "stretch", 120, "relax", 90, "v_bodyscan", 90),
+                               tbxBand(10, "stretch", 150, "relax", 120, "v_bodyscan", 330)] },
+    heart:           { name: "Heart",            dom: "connect", ti: "ti-heart",           peek: ["move", "restore"],   kicker: "OPEN THE HEART",                       def: 5, track: [{ k: "gratitude", d: 45 }, { k: "mantra", d: 120 }],
+                       what: "Gratitude, then kindness, then sending it to someone real.", why: "Worry and gratitude cannot share the body; one always leaves.",
+                       bands: [tbxBand(2,  "gratitude", 60, "v_metta", 60),
+                               tbxBand(5,  "gratitude", 90, "v_metta", 210),
+                               tbxBand(10, "breathe", 60, "gratitude", 120, "v_metta", 300, "mantra", 120)] },
+    mind:            { name: "Meditate",         dom: "focus",   ti: "ti-moon",            peek: ["move", "restore"],   kicker: "QUIET THE MIND",                       def: 5, track: [{ k: "breathe", d: 120 }, { k: "meditate", d: 180 }],
+                       what: "Attention training, from counting breaths to resting as awareness.", why: "Noticing you wandered and coming back is the rep. The return is the muscle.",
+                       bands: [tbxBand(2,  "meditate", 120),
+                               tbxBand(5,  "breathe", 60, "meditate", 240),
+                               tbxBand(10, "breathe", 60, "meditate", 300, "v_noting", 120, "v_open", 120),
+                               tbxBand(15, "breathe", 60, "meditate", 360, "v_noting", 180, "v_open", 300)] },
+    vision:          { name: "Vision",           dom: "create",  ti: "ti-eye",             peek: ["move", "restore"],   kicker: "SEE IT CLEAR",                         def: 5, track: [{ k: "reprogram", d: 150 }, { k: "mantra", d: 120 }],
+                       what: "See the goal done, feel it, then say the line.", why: "The brain rehearses what you vividly picture as if you lived it.",
+                       bands: [tbxBand(2,  "reprogram", 120),
+                               tbxBand(5,  "gratitude", 45, "reprogram", 150, "mantra", 105),
+                               tbxBand(10, "breathe", 60, "gratitude", 60, "reprogram", 300, "mantra", 180)] },
     fullStack:       { name: "Full Stack",       dom: "play",    ti: "ti-stack-2",         peek: ["move", "restore"],   kicker: "THE FULL RESET",                       def: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 120 }, { k: "meditate", d: 240 }, { k: "gratitude", d: 45 }] },
     // plain tools (category members only; no peek coins)
     t_breathe:  { name: "Breathe",   dom: "restore", ti: "ti-lungs",         peek: [], kicker: "BREATHE",        def: 5, track: [{ k: "breathe", d: 120 }] },
@@ -5555,15 +5589,17 @@
     t_meditate: { name: "Meditate",  dom: "focus",   ti: "ti-moon",          peek: [], kicker: "SIT WITH IT",    def: 5, track: [{ k: "meditate", d: 240 }] },
     t_patience: { name: "Patience",  dom: "create",  ti: "ti-hourglass",     peek: [], kicker: "SLOW DOWN",      def: 5, track: [{ k: "meditate", d: 180 }] }
   };
-  var TBX_TOP = ["firstLight", "beforeDeepWork", "caughtScrolling", "urgeWave", "spunUp", "iMessedUp", "emptyTank", "shutdown"]; // top-eight grid, design order (day-1 order; usage reorders over time)
-  var TBX_SECOND = ["cantSleep", "lockTheWin", "feelBetter", "body", "heart", "mind", "vision", "fullStack"];                    // second grid, design order
-  var TBX_CATS = [ // 6 category squares (approved composition). Deepen (create) + Become (move) exist in the design but are EXCLUDED from render.
-    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "urgeWave", "t_breathe", "t_shakeOff"] },
-    { id: "catch",   name: "Catch",   dom: "nourish", ti: "ti-hand-stop",       items: ["caughtScrolling", "emptyTank", "t_journal", "t_climb"] },
-    { id: "begin",   name: "Begin",   dom: "focus",   ti: "ti-flag",            items: ["firstLight", "beforeDeepWork", "t_mantra", "t_stretch"] },
-    { id: "recover", name: "Recover", dom: "connect", ti: "ti-heart-handshake", items: ["iMessedUp", "lockTheWin", "t_tapping", "t_bodyScan"] },
-    { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["shutdown", "cantSleep", "t_evening", "t_relax"] },
-    { id: "settle",  name: "Settle",  dom: "play",    ti: "ti-mood-smile",      items: ["feelBetter", "body", "t_meditate", "t_patience"] }
+  // THE PRACTICE GRID (David 2026-08-01, Option A): the top eight are a FIXED ARC — Morning Stack · Breathe · Body · Meditate · Heart · Vision · Night Stack, then the pinned Build tile. The arc IS the meaning (wake → regulate → body → mind → heart → aim → close), so this list is rendered in DESIGN ORDER and never passed through tbxOrder: the grid teaches the practice order. Folders keep usage ordering.
+  var TBX_TOP = ["firstLight", "breatheLadder", "body", "mind", "heart", "vision", "shutdown"];
+  var TBX_SECOND = ["cantSleep", "lockTheWin", "feelBetter", "body", "heart", "mind", "vision", "fullStack"];                    // DEAD DATA since 2026-08-01 (the second grid was removed 2026-07-23; the practice grid then took the top row). Kept only as a record of the old composition — nothing reads it.
+  // MOMENT-KEYED FOLDERS (David 2026-08-01): the grid is the practice you choose; the folders are the moments that choose you. Every demoted stack lives in exactly the folder whose moment it answers, each alongside the plain tools for that moment. Dom hues are unchanged from the shipped squares (wins inherits Settle's gold).
+  var TBX_CATS = [
+    { id: "catch",   name: "Catch",   dom: "nourish", ti: "ti-hand-stop",       items: ["caughtScrolling", "urgeWave", "t_tapping", "t_breathe"] },
+    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "fullStack", "t_shakeOff", "t_relax"] },
+    { id: "recover", name: "Recover", dom: "connect", ti: "ti-heart-handshake", items: ["iMessedUp", "emptyTank", "feelBetter", "t_journal"] },
+    { id: "begin",   name: "Begin",   dom: "focus",   ti: "ti-flag",            items: ["beforeDeepWork", "t_mantra", "t_stretch", "t_climb"] },
+    { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["cantSleep", "t_evening", "t_bodyScan", "t_patience"] },
+    { id: "wins",    name: "Wins",    dom: "play",    ti: "ti-trophy",          items: ["lockTheWin", "t_journal", "t_meditate"] }
   ];
   var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
   var _tbxMore = false;        // the dose card's "more" minute grid, open/closed. Module-level so an in-place repaint (dose change) keeps it open.
@@ -5571,7 +5607,8 @@
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
   // (The FP3 "deep muted" deck fill and its tbxHexOf helper are DELETED. They were least-squares fitted to home-idle-ref.jpeg, which is a photograph of a screen: the fit captured camera exposure + warm white balance, not the design. Fills are the tool's own colour, never sampled from photos — David 2026-07-28.)
-  function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet)
+  function tbxOrder(ids) { // MOST-USED ordering (decision 6): sort by S.tools.use for TBX ids, stable fallback = the design order (what ships day 1, since no usage exists yet).
+    // CURRENTLY UNREFERENCED (2026-08-01): the practice grid is fixed design order by law, and the folders have always rendered cat.items in their listed order — they never called this. Kept, not deleted: the spec's "folders keep tbxOrder" says where it is meant to land, and tickTool still feeds S.tools.use, so the data it needs stays warm. Flagged for David.
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
   }
@@ -5587,16 +5624,26 @@
   }
   function tbxHasEdit(id) { try { return !!(S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id] && S.tools.tbxEdit[id].length); } catch (e) { return false; } }
   function tbxStep(s) { var o = { k: s.k, d: s.d, med: s.med }; if (s.t) o.t = s.t; if (s.i) o.i = s.i; if (s.dom) o.dom = s.dom; if (s.f) o.f = s.f; return o; } // ONE step-copy idiom: the runner's k/d/med + the Session Editor's ADDITIVE label carriage (t/i/dom/f) when a step has it. runStack ignores the extras.
-  function tbxTrack(id) { // the LIVE track for a stack: the user's per-stack edit if one exists, else the item's default track. All consumers (dose card steps, Start, hero launches) read through here so an edit takes effect everywhere. Dose scaling still applies at launch.
+  function tbxTrackForDose(id, mins) { // STRUCTURAL DOSE FOLDING (David 2026-08-01): a stack is not one shape stretched — at 2 minutes it is two steps, at 15 it is eight. `bands` give the SHAPE per dose; tbxScaleTrack then evens the seconds WITHIN the chosen band. Resolution order, in this order and no other:
+    //   1. the user's own edit (tbxEdit) — a hand-built track is never re-folded, it only scales (the folds are the app's opinion; the edit is the user's)
+    //   2. item.bands — the largest band whose `min` is ≤ the chosen dose (below the smallest band, the smallest band)
+    //   3. item.track — the legacy single track (every stack that carries no bands)
     try { var e = S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id]; if (e && e.length) return e.map(tbxStep); } catch (er) {}
-    var it = tbxItem(id); return (it && it.track) ? it.track.map(tbxStep) : [];
+    var it = tbxItem(id); if (!it) return [];
+    if (it.bands && it.bands.length) {
+      var mn = mins || it.def || 5, pick = it.bands[0];
+      it.bands.forEach(function (b) { if (b.min <= mn && b.min >= pick.min) pick = b; });
+      return (pick.track || []).map(tbxStep);
+    }
+    return it.track ? it.track.map(tbxStep) : [];
   }
+  function tbxTrack(id) { return tbxTrackForDose(id, tbxDose(id)); } // the LIVE track for a stack AT ITS CURRENT DOSE: edit → band → legacy track. All consumers (dose card steps, Start, hero launches, the picker's stack picks, the Session Editor seed) read through here so an edit takes effect everywhere and a banded stack never resolves empty. Dose scaling still applies at launch.
   function tbxSetEdit(id, t) { try { S.tools = S.tools || {}; S.tools.tbxEdit = S.tools.tbxEdit || {}; S.tools.tbxEdit[id] = (t || []).map(tbxStep); save(); } catch (e) {} } // additive; NO SCHEMA bump
   function tbxResetEdit(id) { try { if (S.tools && S.tools.tbxEdit) { delete S.tools.tbxEdit[id]; save(); } } catch (e) {} }
   function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(function (s) { return { k: s.k, d: s.d }; }); var f = target / base; return track.map(function (s) { return { k: s.k, d: Math.max(20, Math.round((s.d || 0) * f)) }; }); } // scale step durations proportionally to the chosen dose (2/5 min); floor 20s/step
   function tbxLaunch(id, mins) { // THE LAUNCH CONTRACT (decision 5): identical to the old tiles + logs the tbx id for most-used ordering (decision 6)
     var it = tbxItem(id); if (!it) return;
-    var track = tbxScaleTrack(tbxTrack(id), mins || tbxDose(id));
+    var m = mins || tbxDose(id), track = tbxScaleTrack(tbxTrackForDose(id, m), m); // fold FIRST (which steps), scale second (how long each) — the dose picks the shape, not just the stretch
     landFromHome(); leaveHomeForPlayer();
     try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
   }
@@ -5622,10 +5669,10 @@
   }
   function tbxHeroes() { // CONTEXTUAL hero picker with the reason ALWAYS in the kicker, using only signals that exist today (decision 7). Phase B plan→journey feeding is OFF-limits.
     var now = new Date(), h = now.getHours(), nowMin = h * 60 + now.getMinutes();
-    var morning = { stackId: "firstLight", name: "Morning stack", kicker: tr("FOR YOU NOW · MORNING"), kcol: "#ff8fc0", playBg: TBX_PINK, playInk: "#2a1730", coins: [{ c: "restore", ic: "ti-lungs" }, { c: "create", ic: "ti-bulb" }, { c: "move", ic: "ti-run" }] };
+    var morning = { stackId: "firstLight", name: "Morning Stack", kicker: tr("FOR YOU NOW · MORNING"), kcol: "#ff8fc0", playBg: TBX_PINK, playInk: "#2a1730", coins: [{ c: "restore", ic: "ti-lungs" }, { c: "create", ic: "ti-bulb" }, { c: "move", ic: "ti-run" }] };
     var deep = { stackId: "beforeDeepWork", name: "Before Deep Work", kicker: tr("NEXT BLOCK · DEEP WORK"), kcol: "#8fc6f0", playBg: TBX_HEX.focus, playInk: "#12283a", coins: [{ c: "create", ic: "ti-notes" }, { c: "restore", ic: "ti-lungs" }, { c: "focus", ic: "ti-target" }] };
     var night = { stackId: "cantSleep", name: "Can't Sleep", kicker: tr("FOR YOU NOW · LATE NIGHT"), kcol: "#8fc6f0", playBg: TBX_HEX.restore, playInk: "#06343a", coins: [{ c: "restore", ic: "ti-flower" }, { c: "restore", ic: "ti-lungs" }, { c: TBX_BOLT, ic: "ti-bolt" }] };
-    var shut = { stackId: "shutdown", name: "Shutdown", kicker: tr("FOR YOU NOW · WINDING DOWN"), kcol: "#c9a6ff", playBg: TBX_HEX.focus, playInk: "#12283a", coins: [{ c: "restore", ic: "ti-flower" }, { c: "focus", ic: "ti-moon-stars" }, { c: "restore", ic: "ti-lungs" }] };
+    var shut = { stackId: "shutdown", name: "Night Stack", kicker: tr("FOR YOU NOW · WINDING DOWN"), kcol: "#c9a6ff", playBg: TBX_HEX.focus, playInk: "#12283a", coins: [{ c: "restore", ic: "ti-flower" }, { c: "focus", ic: "ti-moon-stars" }, { c: "restore", ic: "ti-lungs" }] };
     var out = [];
     if (h >= 1 && h < 5) out.push(night); else if (h >= 20) out.push(shut); else out.push(morning); // slot 1 = the moment (1-5am / evening / else morning-default)
     var nb = null; try { nb = nextUpBlock(nowMin); } catch (e) {} // slot 2 = a planned block within 90 min → Before Deep Work variant with the block name + time in the kicker
@@ -5682,7 +5729,9 @@
     var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = tbxLip(d); add(fc, "i", "ti " + it.ti);
     var htx = add(head, "div", "tbx-dose-htx"); var k = add(htx, "div", "tbx-dose-kicker", tr(it.kicker)); k.style.color = d; add(htx, "div", "tbx-dose-name", tr(it.name));
     var chev = add(head, "button", "tbx-dose-chev"); add(chev, "i", "ti ti-chevron-up"); chev.setAttribute("aria-label", tr("Close")); chev.onclick = function () { var cell = document.querySelector('.tbx [data-tbxcell="' + id + '"]'); if (cell) tbxOpenDose(id, cell); }; // 21e: the chevron folds the preview back into the tile
-    var cur = tbxDose(id), track = tbxTrack(id), scripted = (!tbxHasEdit(id) && it.steps);
+    if (it.what) add(card, "div", "tbx-what", tr(it.what)); // WHY-LINES (David 2026-08-01): what it is, then why it works. Two lines under the kicker/name, before the steps — the card has to teach, not just list.
+    if (it.why) add(card, "div", "tbx-why", tr(it.why));
+    var cur = tbxDose(id), track = tbxTrackForDose(id, cur), scripted = (!tbxHasEdit(id) && it.steps); // the shown steps ARE the band the chosen dose resolves to, so the preview never promises a shape Start won't run
     var steps = scripted ? it.steps : tbxDerivedSteps(track); // a hand-authored step script (Caught Scrolling) shows verbatim UNTIL the user edits the stack; then steps re-derive from the live track
     var times = scripted ? null : tbxScaleTrack(track, cur).map(function (s) { return tbxTm(s.d); }); // ONLY when the rows are the track 1:1 — a 5-line script over a 2-tool track has no honest per-row time
     var sc = add(card, "div", "tbx-dose-steps");
@@ -5742,8 +5791,9 @@
     return cell;
   }
   function tbxBuildCustom() { // BUILD flow (design 4a = the same editor from empty): the SESSION EDITOR with no rows, the "Nothing in it yet" state and the tool tray already open. Start plays it now without persisting; Save names it into S.tools.tbxCustom.
-    sedOpen({
+    sedOpen({ // the Build tile's what/why (spec §5) ride into the editor: the Build tile has NO dose card, so its two lines paint at the top of the empty editor instead — same .tbx-what/.tbx-why type, same job (teach before you tap)
       title: "Build a stack", rows: [], pinTray: true,
+      what: "Your stack, your order, any length.", why: "Start in the body; a braced nervous system ignores instructions.",
       onSave: function (t) { if (t && t.length) tbxSaveCustom(t); }, // the unchanged name → tbxCustom persist path
       onStart: function (t) { if (t && t.length) tbxPlayNow(t); }    // play the composed track now through the Landing Contract, save nothing
     });
@@ -5780,12 +5830,12 @@
     _tbxOpenStack = null; _tbxOpenCat = null;
     var root = add(ground, "div", "tbx");
     // PLAN BUTTON MOVED (David 2026-07-23 device): the Plan-my-day sticker now lives on the HOME FACE (renderHomeFace → #tfCtrls, tbxPlanButton), directly under the circle block, visible at rest. It is NO LONGER the first toolbox-scroll section — the top-eight grid is now the first scroll-in content (verdict #4). It exists ONCE.
-    // TOP-8 = 7 usage-ordered stacks + a PINNED 8th "Build" tile (David 2026-07-23). The 7 are drawn from TBX_TOP + user-built customs, ranked by S.tools.use; day-1/no-usage keeps the design order (First Light … Empty Tank), so shutdown now lives in the Night category + evening hero instead of the grid — flagged in the handoff. Customs join the same usage pool and can rise into the 7.
+    // THE PRACTICE GRID (David 2026-08-01, Option A): the 7 of TBX_TOP in FIXED DESIGN ORDER + the pinned 8th "Build" tile. NOT tbxOrder'd — the arc (wake → regulate → body → mind → heart → aim → close) is the teaching, and a grid that reshuffles itself by usage teaches nothing. Folders keep usage ordering.
     var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop";
-    var pool = tbxCustoms().map(function (c) { return c.id; }).concat(TBX_TOP); // customs FIRST so a freshly-built stack (0 usage) wins the 0-usage tiebreak and surfaces immediately (launchable right after save); usage is the primary sort, so a default that has earned use still keeps its spot over an unused custom.
-    tbxOrder(pool).slice(0, 7).forEach(function (id) { tbxTile(top, id); });
+    TBX_TOP.forEach(function (id) { tbxTile(top, id); });
     tbxBuilderTile(top); // the builder tile is ALWAYS position 8 (pinned last)
-    // ONE GRID OF 8 (David 2026-07-23 device): the SECOND grid is removed. Flow = top-eight grid → hero rows → intro → bento. TBX_SECOND stays in the data (documents heart/mind/vision/fullStack), and cantSleep/lockTheWin/feelBetter/body remain reachable via the category bento; heart/mind/vision/fullStack are now data-only (no UI surface) — flagged in the handoff.
+    // CONSEQUENCE, flagged in the handoff: user-built customs no longer rise into this grid (the grid is exactly these 8 by design). They stay in S.tools.tbxCustom, keep their ids, and remain reachable/launchable through the picker's Stacks sheet (pkStacks) — but they have no shelf tile until David rules on where they live.
+    // Flow = practice grid → hero rows → intro → moment folders. Every demoted stack (beforeDeepWork, caughtScrolling, urgeWave, spunUp, iMessedUp, emptyTank, cantSleep, lockTheWin, feelBetter, fullStack) is reachable in the folders below and/or as a contextual hero. TBX_SECOND is dead data.
     tbxHeroes().forEach(function (hero) { tbxHeroRow(root, hero); });
     add(root, "div", "tbx-intro", tr("For when you need something specific: one box to settle, one to go deeper."));
     var bento = add(root, "div", "tbx-bento"); TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
@@ -5794,7 +5844,25 @@
     "Plan my day": "План на день", "First Light": "Первый свет", "Before Deep Work": "Перед фокусом", "Caught Scrolling": "Залип в ленте", "Urge Wave": "Волна тяги", "Spun Up": "На взводе", "I Messed Up": "Я оступился", "Empty Tank": "Пустой бак", "Shutdown": "Отбой",
     "Can't Sleep": "Не спится", "Lock the Win": "Закрепи победу", "Feel Better": "Полегчает", "Body": "Тело", "Heart": "Сердце", "Mind": "Ум", "Vision": "Образ", "Full Stack": "Полный сброс",
     "Breathe": "Дыхание", "Shake off": "Стряхни", "Journal": "Дневник", "Climb": "Подъём", "Mantra": "Мантра", "Stretch": "Разминка", "Tapping": "Таппинг", "Body scan": "Скан тела", "Evening": "Вечер", "Relax": "Расслабься", "Meditate": "Медитация", "Patience": "Терпение",
-    "Reset": "Сброс", "Catch": "Поймай", "Begin": "Начни", "Recover": "Восстановись", "Night": "Ночь", "Settle": "Осядь",
+    "Reset": "Сброс", "Catch": "Поймай", "Begin": "Начни", "Recover": "Восстановись", "Night": "Ночь", "Settle": "Осядь", "Wins": "Победы",
+    "Morning Stack": "Утренний стек", "Night Stack": "Ночной стек", // the practice grid's two renamed stacks (ids unchanged: firstLight / shutdown). "Morning stack" (lower s) below stays for the old hero key; "Shutdown" / "First Light" / "Mind" are now orphaned entries, harmless.
+    // WHY-LINES (spec §5, gated 2026-08-01): what it is, then why it works. RU in mom-plain register — short sentences, no jargon, no invented terms.
+    "Wake the body, breathe, settle, sit, then aim the day.": "Разбуди тело, подыши, успокойся, посиди, а потом задай день.",
+    "The order is the mechanism: a settled body lets the mind listen.": "Порядок и есть механизм: спокойное тело даёт уму услышать.",
+    "Breathing patterns, easy to hard, one at a time.": "Дыхательные схемы, от простых к сложным, по одной.",
+    "A longer exhale than inhale tells the body the danger is over.": "Выдох длиннее вдоха говорит телу, что опасность прошла.",
+    "Stretch, release, scan: get back inside your body.": "Растяни, отпусти, просканируй: вернись в своё тело.",
+    "Muscles store the day; a slow fold gives them permission to drop it.": "Мышцы держат весь день; медленный наклон разрешает им его отпустить.",
+    "Attention training, from counting breaths to resting as awareness.": "Тренировка внимания: от счёта вдохов до простого присутствия.",
+    "Noticing you wandered and coming back is the rep. The return is the muscle.": "Заметить, что ушёл, и вернуться — это и есть повтор. Возвращение и есть мышца.",
+    "Gratitude, then kindness, then sending it to someone real.": "Сначала благодарность, потом доброта, потом отправь её живому человеку.",
+    "Worry and gratitude cannot share the body; one always leaves.": "Тревога и благодарность не живут в теле вместе; одна всегда уходит.",
+    "See the goal done, feel it, then say the line.": "Увидь цель сделанной, почувствуй это, потом скажи строку.",
+    "The brain rehearses what you vividly picture as if you lived it.": "Мозг репетирует ярко представленное так, будто ты это прожил.",
+    "Put the day down, unwind, seed tomorrow.": "Положи день, размотайся, засей завтра.",
+    "Sleep locks in whatever state you hand it. Hand it a calm one.": "Сон закрепляет то состояние, что ты ему отдал. Отдай спокойное.",
+    "Your stack, your order, any length.": "Твой стек, твой порядок, любая длина.",
+    "Start in the body; a braced nervous system ignores instructions.": "Начни с тела: зажатая нервная система не слышит указаний.",
     "START THE DAY": "НАЧНИ ДЕНЬ", "BEFORE YOU FOCUS": "ПЕРЕД ФОКУСОМ", "WHEN YOU DRIFT · THE CATCH IS THE WIN": "КОГДА ОТВЛЁКСЯ · ПОЙМАТЬ — УЖЕ ПОБЕДА", "RIDE THE URGE": "ОСЕДЛАЙ ТЯГУ", "COME BACK DOWN": "ВЕРНИСЬ ВНИЗ", "AFTER A SLIP": "ПОСЛЕ СРЫВА", "REFILL": "ЗАПРАВЬСЯ", "END THE DAY": "ЗАКРОЙ ДЕНЬ", "WHEN SLEEP WON'T COME": "КОГДА СОН НЕ ИДЁТ", "SEAL THE WIN": "ЗАКРЕПИ ПОБЕДУ", "LIFT THE MOOD": "ПОДНИМИ НАСТРОЕНИЕ", "IN YOUR BODY": "В ТЕЛЕ", "OPEN THE HEART": "ОТКРОЙ СЕРДЦЕ", "QUIET THE MIND": "УСПОКОЙ УМ", "SEE IT CLEAR": "УВИДЬ ЯСНО", "THE FULL RESET": "ПОЛНЫЙ СБРОС",
     "BREATHE": "ДЫШИ", "SHAKE IT OFF": "СТРЯХНИ", "ON THE PAGE": "НА БУМАГЕ", "GET MOVING": "РАЗОМНИСЬ", "ONE LINE": "ОДНА СТРОКА", "LOOSEN UP": "РАССЛАБЬ ТЕЛО", "TAP IT OUT": "ПРОСТУЧИ", "HEAD TO TOE": "С ГОЛОВЫ ДО НОГ", "EASE INTO NIGHT": "ПЛАВНО В НОЧЬ", "LET GO": "ОТПУСТИ", "SIT WITH IT": "ПОБУДЬ С ЭТИМ", "SLOW DOWN": "СБАВЬ ТЕМП",
     "FOR YOU NOW · MORNING": "СЕЙЧАС ДЛЯ ТЕБЯ · УТРО", "NEXT BLOCK · DEEP WORK": "СЛЕДУЮЩИЙ БЛОК · ФОКУС", "FOR YOU NOW · LATE NIGHT": "СЕЙЧАС ДЛЯ ТЕБЯ · ПОЗДНЯЯ НОЧЬ", "FOR YOU NOW · WINDING DOWN": "СЕЙЧАС ДЛЯ ТЕБЯ · ЗАВЕРШЕНИЕ", "NEXT BLOCK": "СЛЕДУЮЩИЙ БЛОК", "Morning stack": "Утренний стек",
@@ -5806,34 +5874,27 @@
   });
   // @SEC:EDITOR — the full-screen SESSION EDITOR (Claude-Design "Session Editor" frame 4a, Opus-built 2026-07-27). ONE overlay shell, two modes: BLOCKS (candy rows; tap = expand in place → desc + duration rail + flag chips + up/down/Swap/Delete) and SETTINGS (the gear; tinted collapsible cards — ONLY the controls the runner honors, no fake switches). A PINNED BOTTOM SHEET (chevron tab → 6 category chips → 4-col tool coins), docked between the scrolling list and the foot, adds a step; BUILD mode = the same editor with an empty list, the striped dashed "Nothing in it yet" WELL and the sheet pinned (it collapses to its tab, never away). 2026-07-30 artifact pass: sheet + well + Chip.jsx chips + two-line tile labels. REPLACES openSessionComposer for stacks (tbxEditSteps) + the Build tile — no third menu system, this IS the composer now. Design px/hex live in .sed-* (index.html); JS sets only hue-derived values. Child-drain only (ratchet). Rows carry their design label/icon/domain/flags through tbxSetEdit ADDITIVELY, so an edited stack keeps its words in the dose card too.
   var SED_DURS = [0.5, 1, 1.5, 2, 3, 5, 8, 10, 15]; // the design's DURS rail (minutes)
-  var SED_CATS = [ // the design's 6-category tool tray. sk = the STACK_TOOLS / TBX_VARIANTS id that actually RUNS (design label stays the row title); desc = the design's own line where it wrote one.
-    { k: "breath", lab: "Breath", i: "ti-lungs", d: "restore", tools: [
-      { i: "ti-lungs", t: "box breath", m: 2, sk: "v_box", desc: "In four, hold four, out four." }, { i: "ti-wind", t: "long sigh", m: 1, sk: "v_exhale" },
-      { i: "ti-arrows-vertical", t: "4-7-8", m: 2, sk: "v_478" }, { i: "ti-hash", t: "count ten", m: 1.5, sk: "breathe" },
-      { i: "ti-arrows-left-right", t: "one nostril", m: 2, sk: "v_nostril" }, { i: "ti-wave-sine", t: "match the wave", m: 3, sk: "v_coherent" }, // ti-nose does not exist in tabler-icons 3.31.0 (empty coin); the v_nostril registry entry already uses this glyph
-      { i: "ti-player-pause", t: "hold at the top", m: 1, sk: "v_box" }, { i: "ti-activity-heartbeat", t: "slow to six", m: 3, sk: "v_coherent" } ] },
-    { k: "body", lab: "Body", i: "ti-run", d: "move", tools: [
-      { i: "ti-stretching", t: "shoulder roll", m: 1, sk: "stretch" }, { i: "ti-walk", t: "step outside", m: 3, sk: "stretch", desc: "Step outside for a minute. Leave your phone behind." },
-      { i: "ti-snowflake", t: "cold splash", m: 0.5, sk: "stretch" }, { i: "ti-stairs-up", t: "one flight", m: 2, sk: "stretch" },
-      { i: "ti-yoga", t: "forward fold", m: 1.5, sk: "stretch" }, { i: "ti-hand-stop", t: "shake it out", m: 1, sk: "stretch" },
-      { i: "ti-scan-eye", t: "body scan", m: 5, sk: "v_bodyscan" }, { i: "ti-glass-full", t: "glass of water", m: 0.5, sk: "relax" } ] },
-    { k: "mind", lab: "Mind", i: "ti-bulb", d: "focus", tools: [
-      { i: "ti-pencil", t: "name the pull", m: 1.5, sk: "mantra", desc: "Say one word for what you were reaching for." }, { i: "ti-target-arrow", t: "the next move", m: 1, sk: "mantra" },
-      { i: "ti-eye", t: "look far away", m: 1, sk: "relax", desc: "Look about twenty feet past the screen and let your eyes rest there." }, { i: "ti-list-check", t: "brain dump", m: 3, sk: "mantra" },
-      { i: "ti-question-mark", t: "ask why once", m: 1, sk: "mantra" }, { i: "ti-clock-hour-3", t: "five-minute start", m: 5, sk: "v_noting" },
-      { i: "ti-eye-off", t: "close the tabs", m: 0.5, sk: "relax" }, { i: "ti-map-pin", t: "where am I", m: 1, sk: "v_open" } ] },
-    { k: "feel", lab: "Feel", i: "ti-heart", d: "connect", tools: [
-      { i: "ti-heart", t: "say thanks", m: 1, sk: "gratitude" }, { i: "ti-hand-love-you", t: "hand on chest", m: 1.5, sk: "relax" },
-      { i: "ti-message-circle", t: "text one person", m: 1, sk: "gratitude" }, { i: "ti-mood-smile", t: "kind sentence", m: 1, sk: "v_metta" },
-      { i: "ti-sparkles", t: "one good thing", m: 1, sk: "gratitude" }, { i: "ti-users", t: "picture a friend", m: 2, sk: "v_metta" } ] },
-    { k: "rest", lab: "Rest", i: "ti-moon", d: "play", tools: [
-      { i: "ti-bell", t: "sit in silence", m: 2, sk: "meditate" }, { i: "ti-music", t: "one song", m: 4, sk: "relax" },
-      { i: "ti-sun", t: "stand in light", m: 2, sk: "relax" }, { i: "ti-coffee", t: "slow drink", m: 3, sk: "relax" },
-      { i: "ti-cloud", t: "watch nothing", m: 5, sk: "v_open" }, { i: "ti-bed", t: "lie flat", m: 8, sk: "v_bodyscan" } ] },
-    { k: "log", lab: "Log", i: "ti-notebook", d: "create", tools: [
-      { i: "ti-notebook", t: "one line down", m: 1, sk: "gratitude", desc: "A single line about where you are now. Tap when it's down." }, { i: "ti-camera", t: "photo of now", m: 0.5, sk: "gratitude" },
-      { i: "ti-mood-heart", t: "rate the mood", m: 0.5, sk: "gratitude" }, { i: "ti-flag", t: "mark the win", m: 0.5, sk: "gratitude" },
-      { i: "ti-microphone", t: "voice memo", m: 1.5, sk: "gratitude" }, { i: "ti-checkbox", t: "check it off", m: 0.5, sk: "gratitude" } ] }
+  // THE SPECIES LAW (David 2026-08-01, "evict the fake tray tools"): this tray offers ONLY steps the app can actually guide — every coin's `sk` runs the engine its label names. A coin that said "step outside", "glass of water" or "one flight" ran the stretch/relax player behind a lie; "mark the win" / "check it off" / "voice memo" are app FEATURES, not guided steps; real-world activities belong in the planner picker (@SEC:PICKER), where they are honest blocks of time. Twenty-four such coins were deleted and the Mind / Feel / Rest / Log chips died with them (their RU dict entries are left behind, harmless).
+  // The six chips are now the practice arc itself — Move · Breathe · Relax · Meditate · Gratitude · Rewire — matching the grid's language, so the tray and the shelf name the same six things. sk = the STACK_TOOLS / TBX_VARIANTS id that actually RUNS; desc = the design's own line where it wrote one; labels are already-shipped copy (STACK_TOOLS / TBX_VARIANTS / t_* names) wherever one existed.
+  var SED_CATS = [
+    { k: "move", lab: "Move", i: "ti-run", d: "move", tools: [
+      { i: "ti-stretching", t: "shoulder roll", m: 1, sk: "stretch" }, { i: "ti-yoga", t: "forward fold", m: 1.5, sk: "stretch" },
+      { i: "ti-hand-stop", t: "shake it out", m: 1, sk: "stretch" }, { i: "ti-stretching", t: "Stretch", m: 5, sk: "stretch" } ] }, // "Stretch" = t_stretch's shipped label (the whole-body version of the same runner); ti-stretching repeats because it is the only stretch glyph this build has proven present
+    { k: "breath", lab: "Breathe", i: "ti-lungs", d: "restore", tools: [
+      { i: "ti-lungs", t: "box breath", m: 2, sk: "v_box", desc: "In four, hold four, out four." }, { i: "ti-arrows-vertical", t: "4-7-8", m: 2, sk: "v_478" },
+      { i: "ti-wind", t: "long sigh", m: 1, sk: "v_exhale" }, { i: "ti-hash", t: "count ten", m: 1.5, sk: "breathe" },
+      { i: "ti-arrows-left-right", t: "one nostril", m: 2, sk: "v_nostril" }, { i: "ti-wave-sine", t: "match the wave", m: 3, sk: "v_coherent" } ] }, // ti-nose does not exist in tabler-icons 3.31.0 (empty coin); the v_nostril registry entry already uses this glyph
+    { k: "relax", lab: "Relax", i: "ti-flower", d: "restore", tools: [
+      { i: "ti-flower", t: "Relax", m: 2, sk: "relax" }, { i: "ti-scan-eye", t: "body scan", m: 5, sk: "v_bodyscan" },
+      { i: "ti-hand-love-you", t: "hand on chest", m: 1.5, sk: "relax" }, { i: "ti-ripple", t: "Tapping", m: 5, sk: "relax" } ] }, // "Relax" / "Tapping" = t_relax's and t_tapping's shipped labels (both run the settle player today, exactly as those tiles always did); ti-ripple over t_tapping's ti-hand-love-you, which "hand on chest" already holds in this same cat
+    { k: "meditate", lab: "Meditate", i: "ti-moon", d: "focus", tools: [
+      { i: "ti-bell", t: "sit in silence", m: 2, sk: "meditate" }, { i: "ti-focus-2", t: "Noting", m: 8, sk: "v_noting" },
+      { i: "ti-windmill", t: "Open awareness", m: 8, sk: "v_open" }, { i: "ti-quote", t: "Mantra repetition", m: 3, sk: "v_mantra" } ] }, // the three variant labels are the TBX_VARIANTS names verbatim — already shipped, already translated
+    { k: "gratitude", lab: "Gratitude", i: "ti-heart", d: "connect", tools: [
+      { i: "ti-heart", t: "say thanks", m: 1, sk: "gratitude" }, { i: "ti-sparkles", t: "one good thing", m: 1, sk: "gratitude" },
+      { i: "ti-mood-smile", t: "kind sentence", m: 1, sk: "v_metta" }, { i: "ti-users", t: "picture a friend", m: 2, sk: "v_metta" } ] },
+    { k: "rewire", lab: "Rewire", i: "ti-quote", d: "create", tools: [
+      { i: "ti-bulb", t: "Mantra", m: 2, sk: "mantra" }, { i: "ti-rotate-2", t: "Visualisation", m: 3, sk: "reprogram" } ] } // t_mantra's + STACK_TOOLS reprogram's shipped labels
   ];
   var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: "Calm pad", i: "ti-wave-saw-tool" }, { k: "music", n: "Music", i: "ti-music" }, { k: "forest", n: "Forest", i: "ti-trees" }, { k: "birds", n: "Birds", i: "ti-feather" }, { k: "floating", n: "Floating", i: "ti-cloud" }]; // the REAL bed keys (bedMode/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
   var SED_VOLLAB = ["off", "faint", "quiet", "there", "up", "loud"];
@@ -5854,7 +5915,7 @@
   function sedClose() { if (_sed && _sed.ov && _sed.ov.parentNode) _sed.ov.parentNode.removeChild(_sed.ov); _sed = null; }
   function sedOpen(cfg) { // THE ENTRY. cfg = { id, title, rows, pinTray, onSave(track), onStart(track) }
     cfg = cfg || {}; sedClose();
-    _sed = { id: cfg.id || null, rows: cfg.rows || [], tab: "blocks", pick: null, swap: null, cat: SED_CATS[0].k, tray: !!cfg.pinTray, pinTray: !!cfg.pinTray, collapse: false, set: null, asNew: false, onSave: cfg.onSave, onStart: cfg.onStart };
+    _sed = { id: cfg.id || null, rows: cfg.rows || [], tab: "blocks", pick: null, swap: null, cat: SED_CATS[0].k, tray: !!cfg.pinTray, pinTray: !!cfg.pinTray, collapse: false, set: null, asNew: false, what: cfg.what || "", why: cfg.why || "", onSave: cfg.onSave, onStart: cfg.onStart };
     var ov = add(document.body, "div", "sed-ov"); _sed.ov = ov; var root = add(ov, "div", "sed");
     var head = add(root, "div", "sed-head");
     var back = add(head, "button", "sed-back"); add(back, "i", "ti ti-chevron-left"); back.setAttribute("aria-label", tr("Back")); back.onclick = function () { sedClose(); };
@@ -5884,6 +5945,8 @@
     _sed.gear.classList.toggle("on", _sed.tab === "set");
   }
   function sedPaintBlocks(host) {
+    if (_sed.what) add(host, "div", "tbx-what sed-what", tr(_sed.what)); // the caller's why-lines (today: the Build tile, spec §5) — same two-line grammar as the dose card
+    if (_sed.why) add(host, "div", "tbx-why sed-what", tr(_sed.why));
     var list = add(host, "div", "sed-list" + (_sed.rows.length ? "" : " empty"));
     _sed.rows.forEach(function (r, i) { sedRow(list, r, i); });
     if (!_sed.rows.length) { // 4a artifact: an empty list is the striped WELL, display-only — the pinned sheet below is the add mechanism. Tapping it just calls the sheet back up when it is collapsed.
@@ -5999,7 +6062,7 @@
     "None": "Нет", "Calm pad": "Спокойный фон", "Music": "Музыка", "Forest": "Лес", "Birds": "Птицы", "Floating": "Парение",
     "off": "выкл", "faint": "еле слышно", "quiet": "тихо", "there": "заметно", "up": "громче", "loud": "громко",
     "Keep it as a new stack": "Сохранить как новый стек", "leaves the original on your shelf": "оригинал останется на полке", "saving as a new stack": "сохраню как новый стек", "replacing this session": "заменю эту сессию",
-    "Breath": "Дыхание", "Feel": "Чувства", "Rest": "Отдых", "Log": "Запись",
+    "Breath": "Дыхание", "Feel": "Чувства", "Rest": "Отдых", "Log": "Запись", // ORPHANED 2026-08-01 (the Breath/Mind/Feel/Rest/Log chips and 24 fake coins were evicted; every label below that no longer has a coin is kept deliberately — a dict entry costs nothing and deleting one has broken a still-live surface before)
     "box breath": "квадратное дыхание", "long sigh": "долгий выдох", "4-7-8": "4-7-8", "count ten": "счёт до десяти", "one nostril": "одна ноздря", "match the wave": "поймай волну", "hold at the top": "задержка вверху", "slow to six": "замедлись до шести",
     "shoulder roll": "круги плечами", "step outside": "выйди на улицу", "cold splash": "холодная вода", "one flight": "один пролёт", "forward fold": "наклон вперёд", "shake it out": "стряхни", "body scan": "скан тела", "glass of water": "стакан воды",
     "name the pull": "назови тягу", "the next move": "следующий шаг", "look far away": "посмотри вдаль", "brain dump": "выгрузи мысли", "ask why once": "спроси почему", "five-minute start": "старт на пять минут", "close the tabs": "закрой вкладки", "where am I": "где я",
@@ -15785,7 +15848,8 @@
     var ring = el("tfRing"), bars = el("tfHomeBars"), tile = document.querySelector("#trackerFull .tf-tile");
     var pd = el("tfDoorPlanner"), gd = el("tfDoorGarden");
     var plan = document.querySelector("#trackerFull .tbx-plan"), topGrid = el("tbxGridTop"), square = document.querySelector("#trackerFull .tbx-square"); // TOOLBOX2 (2026-07-23): the board's tools moved to the scroll-continuation Toolbox — the old 2x4 grid checks are repointed to the top-eight grid below
-    var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the top-eight tile faces (First Light … Shutdown)
+    var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, now in FIXED design order (Morning Stack · Breathe · Body · Meditate · Heart · Vision · Night Stack · Build) — tbxOrder no longer touches this grid, so tfaces[n] is deterministic and the hue gates below can name their tile
+    function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
     chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
@@ -15813,8 +15877,9 @@
     }
     // FIX PASS 2 E (design 2026-07-28): the deck faces are no longer FLAT hue — they're a 100° candy gradient behind an ink outline + a hard ink sticker, with an INK glyph. The old flat-rgb reads would false-FAIL forever, so they're replaced by the new law: gradient carrying the tile's own raw hue, ink border, ink sticker, ink glyph. (Geometry gates below are untouched.)
     if (tfaces.length >= 3) { var f0 = getComputedStyle(tfaces[0]);
-      chk("tile1 face RAW hue (First Light/move)", rgb(tfaces[0]) === "rgb(255, 138, 58)", rgb(tfaces[0]), "rgb(255,138,58) = --move, the tool's own colour");
-      chk("tile3 face RAW hue (Caught Scrolling/connect)", rgb(tfaces[2]) === "rgb(255, 95, 160)", rgb(tfaces[2]), "rgb(255,95,160) = --connect, the tool's own colour");
+      chk("tile1 face RAW hue (Morning Stack/move)", rgb(tfaces[0]) === _rgbOf(TBX_HEX.move), rgb(tfaces[0]), _rgbOf(TBX_HEX.move) + " = --move, the tool's own colour");
+      chk("tile2 face RAW hue (Breathe/restore)", rgb(tfaces[1]) === _rgbOf(TBX_HEX.restore), rgb(tfaces[1]), _rgbOf(TBX_HEX.restore) + " = --restore, the tool's own colour"); // PRACTICE GRID 2026-08-01: position 2 is the new breatheLadder stack
+      chk("tile3 face RAW hue (Body/upkeep)", rgb(tfaces[2]) === _rgbOf(TBX_HEX.upkeep), rgb(tfaces[2]), _rgbOf(TBX_HEX.upkeep) + " = --upkeep, the tool's own colour"); // was Caught Scrolling/connect until 2026-08-01; that stack now lives in the Catch folder
       chk("tile face BORDERLESS (David 2026-07-28: no black outlines on the home tools)", parseFloat(f0.borderTopWidth || 0) === 0, f0.borderTopWidth || "0px", "0px");
       chk("tile face lip 0 6px 0 (the tile's own colour darkened, stkLip)", /0px\s+6px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px 6px 0px in the hue 50% toward black (= round(.12·54))"); // 2026-07-31: the stack card's chunky lip law (was 4px at 45%)
       var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
@@ -15827,6 +15892,17 @@
         chk("shard sizes S-4 / S-6", Math.round(r1.width) === 50 && Math.round(r2.width) === 48, Math.round(r1.width) + " / " + Math.round(r2.width), "50 / 48 (near-full-size cards, not shrunken peeks)");
         var s1 = getComputedStyle(c1).boxShadow; chk("shard lip is its OWN hue + ambient (no ink)", /0px\s+4px\s+0px/.test(s1) && s1.indexOf("rgb(22, 5, 16)") < 0, s1.slice(0, 60), "0px 4px 0px <hue 50% toward black> (= round(.08·54)), 0 6px 12px rgba(0,0,0,.35)");
         var gl = tfaces[0].querySelector("i"); chk("tile glyph 0.34·S", Math.abs(parseFloat(getComputedStyle(gl).fontSize) - 54 * 0.34) <= 0.4, getComputedStyle(gl).fontSize, "18.36px"); } }
+    // WHY-LINES GATE (David 2026-08-01): the dose card must TEACH — open the first tile's card, read its two lines, fold it back so the audit leaves the board exactly as it found it.
+    var fcell = document.querySelector('#tbxGridTop [data-tbxcell="firstLight"]');
+    if (fcell) {
+      var _wasOpen = _tbxOpenStack === "firstLight";
+      if (!_wasOpen) { try { tbxOpenDose("firstLight", fcell); } catch (e) {} }
+      var _dc = document.querySelector('.tbx .tbx-dose[data-tbxdose="firstLight"]');
+      var _wt = _dc && _dc.querySelector(".tbx-what"), _wy = _dc && _dc.querySelector(".tbx-why");
+      var _wtx = _wt ? (_wt.textContent || "").trim() : "", _wyx = _wy ? (_wy.textContent || "").trim() : "";
+      chk("dose card carries what+why lines", !!(_wtx && _wyx), _wtx ? ("what " + _wtx.length + " chars · why " + _wyx.length + " chars") : (_dc ? "lines missing" : "card did not open"), "both non-empty");
+      if (!_wasOpen) { try { tbxOpenDose("firstLight", fcell); } catch (e) {} }
+    }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
