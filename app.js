@@ -1770,7 +1770,7 @@
     try { TTS.unlock(); } catch (e) {} // this Continue/Start tap is a gesture → unlock audio so the app music can begin
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); try { devBtnVisible(); } catch (e) {} }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music; devBtnVisible hides the 🛠 button now that we've left the start screen unless the toggle kept it (David 2026-07-20)
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
-    else { setTimeout(function () { try { if (document.body.classList.contains("journey-open")) cascadeJourney(); else revealTimeline(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} try { openHome(); } catch (e2) {} } }, 470); } // returning → AFTER the start screen clears: the GAUGE reads state first (once/day — low mood routes to the relief door, F0 David 2026-07-02), then the ≥2wk Welcome-Back if due, then LAND ON THE HOME COCKPIT (§10f.7, David 2026-07-13 — the reliable landing seam; the boot-time instant-open behind the start screen was getting lost under this gauge flow)
+    else { try { openHomeInstant(); } catch (e) {} setTimeout(function () { try { if (!TF_OPEN) openHomeInstant(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} } }, 470); } // returning → COLD OPEN LANDS STRAIGHT ON HOME (David 2026-08-01): openHomeInstant fires SYNCHRONOUSLY on the Continue tap, so home is already painted (no morph) under the start screen before it zoom-fades — the journey frame never flashes. The old cascadeJourney()/revealTimeline() reveal is GONE for that reason; the journey pane stays primed underneath (init's openJourney) for the swipe, home just covers it. The 470ms timer now only runs the follow-ups ON TOP of the open home: the gauge seam (popup killed — it just chains the space-check + moment-scan) then the ≥2wk Welcome-Back if due. The guarded re-open is a safety net for the case openHomeInstant bailed on TF_ANIM.
   }
   function openJourney() {
     if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } // if home had adopted the trail into its sky, take it back before the standalone overlay draws into it (single journey DOM)
@@ -5397,7 +5397,7 @@
     try {
       var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return;
       void world.offsetHeight; // force layout current (rAF is throttled in the preview — this repo relies on reflow instead)
-      var peek = 14; // ~14px of real sky shows above HOME
+      var peek = 20; // ~20px of real sky shows above HOME (was 14 — David 2026-08-01: bottom row of the eight-grid sat flush against the screen bottom; a couple px lower gives it breathing room, fold lands just before the FOR YOU NOW hero)
       var target = Math.max(0, home.offsetTop - peek); // home.offsetTop = the sky's laid-out height inside the scroller
       var tf = el("trackerFull"), morphing = tf && tf.classList.contains("tf-morphing");
       var scrollable = world.scrollHeight - world.clientHeight > peek;
@@ -13737,43 +13737,10 @@
     } catch (e) {}
     return false;
   }
-  // F0 — THE GAUGE-ROUTED OPEN (HANDOFF-first-day §1): once per logical day, the guardian reads state FIRST. Low → the relief door. Uses the ob-ov scaffold (already in the pane-swipe guard).
+  // F0 — THE GAUGE-ROUTED OPEN (HANDOFF-first-day §1): the once-a-day mood card that read state before letting you in. POPUP KILLED (David 2026-08-01) — the open must land straight on home, no questionnaire in the doorway. The function SURVIVES as the ORGAN C+D seam: every caller still routes its follow-up through it, the chain just fires immediately now.
   function gaugeOpen(onDone) {
     var fin = function () { var _d = onDone; spaceCheckOnce(function () { if (_d) _d(); try { setTimeout(function () { checkMoments("open"); }, 1200); } catch (e) {} }); }; // ORGAN C+D: chain the one-time space check + a single passive moment-scan onto the first daily gauge completion
-    if (!(S.profile && S.profile.set)) { fin(); return; }
-    if (S.gaugeK === todayK()) { fin(); return; }
-    S.gaugeK = todayK(); save(); // mark immediately — a crash mid-gauge must never loop her into it every open
-    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    var body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
-    function moodRow(onPick) {
-      var row = add(body, "div", "ob-row"); row.style.justifyContent = "center";
-      MOODS.forEach(function (m, i) {
-        var c = add(row, "span", "ob-ch"); c.innerHTML = '<i class="ti ' + m.e + '"></i> ' + m.l;
-        c.onclick = function () { onPick(i); };
-      });
-    }
-    function askToday() {
-      body.innerHTML = ""; foot.innerHTML = "";
-      add(body, "div", "ob-q", "And today?");
-      moodRow(function (i) {
-        try { setMood(i); } catch (e) {}
-        if (i <= 1) { offerRelief(); } else { ov.remove(); fin(); }
-      });
-      add(foot, "button", "ob-skip", "skip").onclick = function () { ov.remove(); fin(); };
-    }
-    function offerRelief() {
-      body.innerHTML = ""; foot.innerHTML = "";
-      add(body, "i", "ti ti-sparkles ob-spk");
-      add(body, "div", "ob-q", "Got 5 minutes? I can make this better.");
-      add(body, "div", "ob-sb", "a tiny reset: stretch, breathe, settle. that's all.");
-      var b5 = add(foot, "button", "ob-btn go", "I have 5 minutes ▶"); b5.onclick = function () { ov.remove(); runRitualReset(5); };
-      var b10 = add(foot, "button", "ob-btn", "I can do 10 ▶"); b10.onclick = function () { ov.remove(); runRitualReset(10); };
-      var nn = add(foot, "button", "ob-skip", "not now · take me in"); nn.onclick = function () { ov.remove(); fin(); };
-    }
-    add(body, "div", "ob-q", "How's this week been?");
-    add(body, "div", "ob-sb", "gut answer: I'm just reading the weather");
-    moodRow(function (i) { S.profile.weekMood = i; save(); askToday(); });
-    add(foot, "button", "ob-skip", "skip").onclick = function () { ov.remove(); fin(); };
+    fin(); return; // no card, no "How's this week been?" — straight through (David 2026-08-01). The old gaugeK once-a-day marker is moot with nothing to gate; S.profile.weekMood simply stops being written, and both readers already guard with typeof.
   }
   // ===== BRAIN GYM — Recall (HANDOFF-brain-gym, David 2026-07-01): a short working-memory game. HONESTY RULE: never "get smarter" — it's a focus/memory-skill warm-up. Personal-best only. Scores in S.tools.games (additive). =====
   function recallGame(onDone) {
