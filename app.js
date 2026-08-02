@@ -5389,7 +5389,22 @@
   }
   // ---- position: land with HOME filling the viewport, a real sliver of sky above + ground below (the true content peek). No animation on boot. ----
   // land with HOME filling the viewport (a real sliver of sky above + ground below) — the true content peek. The SKY (the whole journey trail) isn't laid out until after adoption AND the open-morph settles, and setting scrollTop mid-morph doesn't hold — so we retry (via setTimeout; rAF is throttled in this repo's headless preview, per the tfMorph void-reflow note) until the scroll actually LANDS near the target, only then committing _worldPositioned (so a per-second re-render never yanks the user's scroll back). One attempt runs synchronously (a forced reflow via offsetHeight makes the layout current) so it lands immediately when ready.
+  // SAFE-AREA COMPENSATION (David 2026-08-02 device screenshot): the landing math was pure CSS-viewport math, so the eight-grid's SECOND-row labels still sat flush against the physical screen bottom on a home-indicator iPhone — the ~60px of fold air the preview measures is exactly what the ~34px bottom inset eats. The landing now scrolls FURTHER DOWN by the real inset + an 8px margin, so the same band of air survives on device; the preview (inset 0) shifts by only the 8px.
   var _worldPosTo = 0;
+  var _safeBpx = null, _safeBProbe = null; // env(safe-area-inset-bottom) is CSS-only — JS can't read it without a probe element that declares it.
+  function safeBottomPx() { // real bottom inset in px: 0 in the headless preview, ~34 on David's phone. The probe is created once and hidden; the value is cached once it reads non-zero (a 0 stays re-probed, because early in boot the inset can report 0 before the standalone chrome settles).
+    if (_safeBpx) return _safeBpx;
+    try {
+      if (!_safeBProbe && document.body) {
+        _safeBProbe = document.createElement("div");
+        _safeBProbe.id = "tfSafeProbe";
+        _safeBProbe.setAttribute("style", "position:fixed;left:0;bottom:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px);");
+        document.body.appendChild(_safeBProbe);
+      }
+      if (_safeBProbe) { var v = parseFloat(getComputedStyle(_safeBProbe).paddingBottom); if (isFinite(v) && v > 0) _safeBpx = v; }
+    } catch (e) {}
+    return _safeBpx || 0;
+  }
   function worldScrollHome(tries) {
     if (!ONEPAGE || _worldPositioned) return;
     tries = tries || 0;
@@ -5398,7 +5413,8 @@
       var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return;
       void world.offsetHeight; // force layout current (rAF is throttled in the preview — this repo relies on reflow instead)
       var peek = 20; // ~20px of real sky shows above HOME (was 14 — David 2026-08-01: bottom row of the eight-grid sat flush against the screen bottom; a couple px lower gives it breathing room, fold lands just before the FOR YOU NOW hero)
-      var target = Math.max(0, home.offsetTop - peek); // home.offsetTop = the sky's laid-out height inside the scroller
+      var safeB = safeBottomPx(); // the device's bottom inset (home indicator); 0 in the preview
+      var target = Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - peek + safeB + 8)); // home.offsetTop = the sky's laid-out height inside the scroller; + safeB + 8 pulls the landing down past the home-indicator inset so the deck row keeps its air on device (clamped to the scroller's max scroll so the landed check can always be met)
       var tf = el("trackerFull"), morphing = tf && tf.classList.contains("tf-morphing");
       var scrollable = world.scrollHeight - world.clientHeight > peek;
       // BOOT-EMPTY-SKY FIX (David 2026-07-22 "scroll up = empty screen; only after scrolling to tools does up unlock"): the trail must ACTUALLY be adopted+drawn into the sky before we commit. Without this gate, home.offsetTop is just the ~34px sky-LABEL height (target≈20 > peek, column scrollable via the ground) → the retry committed _worldPositioned on an EMPTY sky, locking the scroll at a wrong spot with only a blank label above → scrolling up showed empty. A later re-render (e.g. after a down-scroll re-adopts) was the only thing that fixed it. Require jpTrail to sit in the sky with real children first.
@@ -15872,7 +15888,7 @@
       var dlabs = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-label")).slice(0, 4), dlb = 0; // the FIRST deck row (4 cells) — the row that peeks above the fold on the idle home; take the lowest label (they wrap to 2-3 lines)
       if (dlabs.length) {
         dlabs.forEach(function (n) { dlb = Math.max(dlb, n.getBoundingClientRect().bottom); });
-        chk("deck row clears the home fold (names not clipped)", (hzr.bottom - dlb) >= 26, Math.round(hzr.bottom - dlb) + "px above the zone bottom · label bottom " + Math.round(dlb) + " / vh " + H, "≥26px (12px of air + the ~14px sky sliver the world lands with; the ground pull also subtracts the device safe-area)");
+        chk("deck row clears the home fold (names not clipped)", (hzr.bottom - dlb) >= 26, Math.round(hzr.bottom - dlb) + "px above the zone bottom · label bottom " + Math.round(dlb) + " / vh " + H, "≥26px (12px of air + the ~14px sky sliver the world lands with; the ground pull also subtracts the device safe-area)"); // LANDING NOW COMPENSATES (David 2026-08-02 device screenshot): the ≥26px threshold is UNCHANGED and still measured against the home-zone slab, but worldScrollHome no longer lands at offsetTop-20 — it lands at offsetTop-20+env(safe-area-inset-bottom)+8, so the air this gate measures in the preview (inset 0, sliver 12px) is the air that actually survives on a home-indicator iPhone instead of being eaten by the inset. Preview measurement is unaffected beyond the 8px margin.
       }
     }
     // FIX PASS 2 E (design 2026-07-28): the deck faces are no longer FLAT hue — they're a 100° candy gradient behind an ink outline + a hard ink sticker, with an INK glyph. The old flat-rgb reads would false-FAIL forever, so they're replaced by the new law: gradient carrying the tile's own raw hue, ink border, ink sticker, ink glyph. (Geometry gates below are untouched.)
