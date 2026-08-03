@@ -1801,7 +1801,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -10736,7 +10736,286 @@
   function dayStats(dk) { var bl = (blocks(dk) || []).filter(function (b) { return b.title; }), done = 0; bl.forEach(function (b) { if (blockStatus(dk, b) === "ok") done++; }); var lg = (logs(dk) || []).length; return { planned: bl.length, done: done, tracked: lg, ratio: bl.length ? done / bl.length : 0, perfect: bl.length > 0 && done >= bl.length, active: lg > 0 || done > 0 }; } // the crown-calendar's read of a day (GRAND BUILD C)
   function dayOnFire(dk) { return dayStats(dk).active && dayStats(keyAdd(dk, -1)).active; } // part of a streak run = this day AND yesterday lived
   function wkAB() { try { return localStorage.getItem("alter_wkab") === "a" ? "a" : "b"; } catch (e) { return "b"; } }
-  function weekGrid(L, baseK, onDay) { // 1:1 calendar.jpg — verdict #9 ships BOTH A (bare blobs) + B (day-track outline) behind a dev toggle
+  // ===== PLAN MODE — WEEKS (8a) + MONTHS (9a): the WHOLE-DAY STACK layer on the planner's existing W/M zooms.
+  // (Claude-Design "Day Planner" frames 8a/9a; spec _specs/BUILD-SPEC-planner-8a9a-2026-08-02.md; Opus-built 2026-08-03.)
+  // WHAT IT IS: pick a day template, place it on days, Save writes it as REAL plan blocks. It replaces the CONTENT of the
+  // two existing zoom renderers (weekGrid / monthGrid) — no third menu system, no new scroll container, no new listener on
+  // the timeline. The DAY zoom is the regression zone and is entered NOWHERE below: buildPull, tickCharge, the pinch/drag
+  // handlers and every calendarView path are untouched. Design px/hex live in .pz-* (index.html); JS sets only hue values.
+  // THE WRITE PATH (the one mutation): pzSave → blocks(dk).push(…) → reflow(dk) → save(). NEVER applyDayPreset — that
+  // REPLACES the day. Existing user blocks are never deleted and never moved: every skeleton row is gap-fitted into the
+  // day's free space BEFORE it is pushed, so reflow finds no overlap to cascade.
+  // FUTURE-ONLY LAW: a past day is never written and never placeable; today starts at the next quarter-hour after now.
+  // STAGING is IN-MEMORY (PZ.stage) — nothing is persisted until Save. The only persisted addition is
+  // S.dayStacks[dayKey] = stackId (+ a stackId tag on the blocks it wrote): purely ADDITIVE, guarded reads, no SCHEMA
+  // bump (the S.mood / S.acts precedent — @SEC:STATE contract). Child-drain everywhere (ratchet: zero new innerHTML wipes).
+  var PZ2 = true; // guard: false = the legacy weekGrid/monthGrid render, byte-identical (the TBX2 precedent)
+  // THE DAY-STACK LIBRARY. Names / kickers are David's picked frame copy. HUE MAPPING LAW: every skeleton block's hue comes
+  // from the app's own 8-domain registry (DOM) — never an artifact approximation — so a placed pill reads the same colour the
+  // block will wear on the timeline. Bookends map to `restore` (the app has no bookend domain; its evening-bookend chip is
+  // already DOM.restore.light) — FLAGGED to David. Skeleton times/durations beyond the ones the spec quotes are composed.
+  var DAY_STACKS = [
+    { id: "masterpiece", n: "Masterpiece day", k: "3 waves · the Big 3", c: "#8a5cf0", ic: "ti-sparkles",
+      sk: [{ h: "06:30", m: 45, t: "Morning bookend", d: "restore", ic: "ti-sun-high" },
+           { h: "07:30", m: 90, t: "Deep work · wave 1", d: "focus", ic: "ti-code" },
+           { h: "09:00", m: 20, t: "Deep rest · walk", d: "restore", ic: "ti-walk", rest: 1 },
+           { h: "09:30", m: 90, t: "Deep work · wave 2", d: "focus", ic: "ti-code" },
+           { h: "11:00", m: 45, t: "Deep rest · lunch + nap", d: "restore", ic: "ti-bed", rest: 1 },
+           { h: "12:00", m: 90, t: "Deep work · wave 3", d: "focus", ic: "ti-code" },
+           { h: "14:00", m: 60, t: "Train", d: "move", ic: "ti-run" },
+           { h: "18:00", m: 60, t: "Time together", d: "connect", ic: "ti-heart" },
+           { h: "21:30", m: 30, t: "Evening bookend", d: "restore", ic: "ti-moon" }],
+      stop: ["phone before the bookend", "inbox till 10", "screens after 10"] }, // stored for the future 4a library card — NO surface in 8a/9a renders it (spec §4)
+    { id: "deepwork", n: "Deep work day", k: "2 waves, protected", c: "#36b3f0", ic: "ti-code",
+      sk: [{ h: "07:30", m: 30, t: "Morning bookend", d: "restore", ic: "ti-sun-high" },
+           { h: "08:00", m: 90, t: "Deep work · wave 1", d: "focus", ic: "ti-code" },
+           { h: "09:30", m: 20, t: "Deep rest · walk", d: "restore", ic: "ti-walk", rest: 1 },
+           { h: "10:00", m: 90, t: "Deep work · wave 2", d: "focus", ic: "ti-code" },
+           { h: "12:00", m: 45, t: "Lunch", d: "nourish", ic: "ti-tools-kitchen-2" },
+           { h: "21:30", m: 30, t: "Evening bookend", d: "restore", ic: "ti-moon" }] },
+    { id: "restday", n: "Rest day", k: "planned rest counts", c: "#2ab8c4", ic: "ti-moon",
+      sk: [{ h: "09:00", m: 60, t: "Slow morning", d: "restore", ic: "ti-coffee", rest: 1 },
+           { h: "10:30", m: 45, t: "Walk", d: "move", ic: "ti-walk" },
+           { h: "12:00", m: 45, t: "Lunch", d: "nourish", ic: "ti-tools-kitchen-2" },
+           { h: "13:30", m: 60, t: "Nap", d: "restore", ic: "ti-bed", rest: 1 },
+           { h: "15:30", m: 60, t: "Read", d: "play", ic: "ti-book" },
+           { h: "18:00", m: 60, t: "Time together", d: "connect", ic: "ti-heart" },
+           { h: "21:30", m: 30, t: "Evening bookend", d: "restore", ic: "ti-moon" }] },
+    { id: "errand", n: "Errand day", k: "yours · 5 things", c: "#7f9bc4", ic: "ti-shirt",
+      sk: [{ h: "09:00", m: 60, t: "Groceries", d: "nourish", ic: "ti-shopping-cart" },
+           { h: "10:30", m: 45, t: "Laundry", d: "upkeep", ic: "ti-wash-machine" },
+           { h: "11:30", m: 45, t: "Clean the space", d: "upkeep", ic: "ti-spray" },
+           { h: "13:00", m: 60, t: "Errands", d: "upkeep", ic: "ti-shopping-bag" },
+           { h: "15:00", m: 60, t: "Admin hour", d: "focus", ic: "ti-clipboard" }] },
+    { id: "studio", n: "Studio Saturday", k: "yours · make all day", c: "#b07aff", ic: "ti-pencil",
+      sk: [{ h: "08:00", m: 30, t: "Morning bookend", d: "restore", ic: "ti-sun-high" },
+           { h: "09:00", m: 120, t: "Studio · wave 1", d: "create", ic: "ti-pencil" },
+           { h: "12:00", m: 45, t: "Deep rest · lunch", d: "restore", ic: "ti-bed", rest: 1 },
+           { h: "13:00", m: 120, t: "Studio · wave 2", d: "create", ic: "ti-pencil" },
+           { h: "18:00", m: 90, t: "Time together", d: "connect", ic: "ti-heart" },
+           { h: "21:30", m: 30, t: "Evening bookend", d: "restore", ic: "ti-moon" }] }
+  ];
+  var PZ = { stage: {}, sel: null, arm: null, dragged: 0 }, pzLandTok = 0; // staging is per-session and in-memory ON PURPOSE: nothing touches David's data until Save
+  function pzById(id) { for (var i = 0; i < DAY_STACKS.length; i++) if (DAY_STACKS[i].id === id) return DAY_STACKS[i]; return null; }
+  function pzDrain(n) { while (n.firstChild) n.removeChild(n.firstChild); } // child-drain, never a wipe-and-rebuild (ratchet law)
+  function pzLip(hex) { return "color-mix(in srgb, " + hex + " 45%, #000)"; } // the app's own coin-lip recipe (@SEC:EDITOR sed-toolcoin)
+  function pzHue(d) { return (DOM[d] || DOM.focus).c; }
+  function pzCoins(s) { // "coins = the skeleton's unique non-rest hues in order" — restore IS the rest teal, so it never coins
+    if (s._coins) return s._coins;
+    var seen = {}, out = [];
+    s.sk.forEach(function (r) { if (r.d === "restore" || r.rest) return; if (seen[r.d]) return; seen[r.d] = 1; out.push({ c: pzHue(r.d), ic: r.ic }); });
+    if (!out.length) out.push({ c: s.c, ic: s.ic }); // an all-restore stack still needs a face
+    s._coins = out.slice(0, 3); return s._coins;
+  }
+  function pzPlaceable(dk) { return dk >= todayK(); }              // future-only law: the past is never planned
+  function pzTagOf(dk) { return (S.dayStacks || {})[dk] || null; } // guarded read — additive field, no SCHEMA bump
+  function pzStackFor(dk) { return PZ.stage[dk] || pzTagOf(dk); }
+  function pzHasPlan(dk) { return !!(PZ.stage[dk] || pzTagOf(dk) || blocks(dk).filter(function (b) { return b.title; }).length); }
+  function pzRowsFor(dk) { // what the column/cell draws: staged skeleton > the day's REAL blocks > a remembered stack
+    var sid = PZ.stage[dk], s = sid && pzById(sid);
+    if (s) return s.sk.map(function (r) { return { m: r.m, c: pzHue(r.d), ic: r.ic, rest: !!(r.rest || r.d === "restore") }; });
+    var bl = blocks(dk).filter(function (b) { return b.title; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
+    if (bl.length) return bl.map(function (b) { var d = domainOf(b); return { m: b.mins || 30, c: pzHue(d), ic: tiClass(b), rest: d === "restore" }; });
+    var s2 = pzTagOf(dk) && pzById(pzTagOf(dk));
+    return s2 ? s2.sk.map(function (r) { return { m: r.m, c: pzHue(r.d), ic: r.ic, rest: !!(r.rest || r.d === "restore") }; }) : [];
+  }
+  function pzFace(dk) { // the ONE candy coin a month cell wears + its shard hues behind it
+    var sid = pzStackFor(dk), s = sid && pzById(sid);
+    if (s) { var co = pzCoins(s); return { c: s.c, ic: s.ic, shards: co.slice(0, 2).map(function (x) { return x.c; }) }; }
+    var rows = pzRowsFor(dk); if (!rows.length) return null;
+    var seen = {}, hues = []; rows.forEach(function (r) { if (seen[r.c]) return; seen[r.c] = 1; hues.push(r.c); });
+    return { c: hues[0], ic: rows[0].ic, shards: hues.slice(1, 3) };
+  }
+  function pzStaged() { var n = 0; for (var k in PZ.stage) if (PZ.stage.hasOwnProperty(k)) n++; return n; }
+  function pzPlace(dk, id) { if (!pzPlaceable(dk)) return; PZ.stage[dk] = id; PZ.sel = null; PZ.arm = null; pzRepaint(); }
+  function pzClearDay(dk) { if (PZ.stage[dk]) { delete PZ.stage[dk]; if (PZ.sel === dk) PZ.sel = null; pzRepaint(); } } // staged-only: Save never deletes real blocks, so neither does the trash
+  function pzRepaint() { var p = document.querySelectorAll(".pz-page"); for (var i = 0; i < p.length; i++) if (p[i]._pzDraw) p[i]._pzDraw(); pzChrome(); }
+  function pzChrome() { // re-skin the EXISTING pull header (§1) + hang Save off it. Rebuilt every buildPull pass, so it re-adds itself.
+    var head = el("pullHead"); if (!head || pullZoom === "day") return;
+    var top = head.querySelector(".pull-top"); if (!top) return;
+    top.classList.add("pz-top");
+    var rt = top.querySelector(".pull-rt"); if (!rt) return;
+    var sv = rt.querySelector(".pz-save"), want = pzStaged() > 0;
+    if (!want) { if (sv) sv.remove(); return; }
+    if (!sv) { sv = document.createElement("button"); sv.className = "pz-save"; sv.textContent = tr("Save"); sv.onclick = pzSave; rt.insertBefore(sv, rt.firstChild); }
+  }
+  // THE SAVE WRITE PATH — the only place this feature mutates David's data.
+  function pzFit(occ, from, mins) { // earliest start ≥ `from` whose [t, t+mins) clears every occupied span; null = the day is full
+    var t = from, moved = true, guard = 0;
+    while (moved && guard++ < 80) { moved = false; for (var i = 0; i < occ.length; i++) { if (t < occ[i].e && t + mins > occ[i].s) { t = occ[i].e; moved = true; } } }
+    return (t + mins > 1440 || t > 1410) ? null : t;
+  }
+  function pzWriteDay(dk, s) {
+    var arr = blocks(dk), skipped = 0;
+    var occ = arr.filter(function (b) { return b.title; }).map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; });
+    var floor = (dk === todayK()) ? Math.ceil(logicalNowMin() / 15) * 15 : 0, cur = floor; // today: only the hours still ahead
+    s.sk.forEach(function (r) {
+      var m = r.m || 30, t = pzFit(occ, Math.max(cur, hm(r.h), floor), m);
+      if (t == null) { skipped++; return; }
+      arr.push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: m, title: r.t, prio: 2, color: pzHue(r.d), domain: r.d, stackId: s.id, done: false });
+      occ.push({ s: t, e: t + m }); cur = t + m;
+    });
+    S.dayStacks = S.dayStacks || {}; S.dayStacks[dk] = s.id; // the day REMEMBERS which stack built it (additive)
+    reflow(dk);
+    return skipped;
+  }
+  function pzSave() {
+    var ks = []; for (var k in PZ.stage) if (PZ.stage.hasOwnProperty(k) && pzPlaceable(k)) ks.push(k);
+    if (!ks.length) { PZ.stage = {}; pzRepaint(); return; }
+    pushUndo();
+    var n = 0, skipped = 0;
+    ks.sort().forEach(function (dk) { var s = pzById(PZ.stage[dk]); if (!s) return; skipped += pzWriteDay(dk, s); n++; });
+    PZ.stage = {}; PZ.sel = null; PZ.arm = null;
+    save();
+    toast(n + " " + tr(n === 1 ? "day planned" : "days planned") + (skipped ? " · " + skipped + " " + tr("steps did not fit") : ""));
+    pzRepaint();
+  }
+  // DRAG-TO-PLACE / DRAG-TO-TRASH. Listeners live on WINDOW (never on the dragged node), so the per-minute rebuild under
+  // the finger can't strand a drag. DEVICE-UNTESTED: synthetic pointer events lie about touch feel (CLAUDE.md verification law).
+  function pzArmDrag(node, getPayload) {
+    node.addEventListener("pointerdown", function (e) {
+      if (e.button != null && e.button !== 0) return;
+      var pl = getPayload(); if (!pl) return;
+      var sx = e.clientX, sy = e.clientY, on = false, ghost = null, trash = null;
+      function end() { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); if (ghost) ghost.remove(); if (trash) trash.remove(); }
+      function mv(ev) {
+        if (!on) {
+          if (Math.abs(ev.clientX - sx) < 8 && Math.abs(ev.clientY - sy) < 8) return;
+          on = true; PZ.dragged = 1;
+          ghost = add(document.body, "div", "pz-ghost"); ghost.style.background = pl.c; add(ghost, "i", "ti " + pl.ic);
+          trash = add(document.body, "div", "pz-trash"); add(trash, "i", "ti ti-trash");
+        }
+        ev.preventDefault();
+        ghost.style.left = (ev.clientX - 23) + "px"; ghost.style.top = (ev.clientY - 23) + "px";
+        trash.classList.toggle("hot", pzHit(trash, ev.clientX, ev.clientY));
+      }
+      function up(ev) {
+        if (!on) { end(); return; }
+        var overTrash = pzHit(trash, ev.clientX, ev.clientY);
+        ghost.style.display = "none"; trash.style.display = "none";
+        var t = document.elementFromPoint(ev.clientX, ev.clientY), cell = t && t.closest && t.closest(".pz-col,.pz-cell");
+        end();
+        if (overTrash) { if (pl.from) pzClearDay(pl.from); }
+        else if (cell && cell.dataset.k && pzPlaceable(cell.dataset.k)) pzPlace(cell.dataset.k, pl.id);
+        else pzRepaint();
+        setTimeout(function () { PZ.dragged = 0; }, 60); // the synthetic click that follows a drag must not also count as a tap
+      }
+      window.addEventListener("pointermove", mv, { passive: false });
+      window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+    });
+  }
+  function pzHit(n, x, y) { if (!n) return false; var r = n.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }
+  function pzTapDay(dk) { // tap a day: place the armed stack, else toggle the pink ring
+    if (PZ.dragged || !pzPlaceable(dk)) return;
+    if (PZ.arm) { pzPlace(dk, PZ.arm); return; }
+    PZ.sel = (PZ.sel === dk) ? null : dk; pzRepaint();
+  }
+  function pzTapCard(s) { // tap a stack: drop it on the selected day, else arm it
+    if (PZ.dragged) return;
+    if (PZ.sel) { pzPlace(PZ.sel, s.id); return; }
+    PZ.arm = (PZ.arm === s.id) ? null : s.id; pzRepaint();
+  }
+  function pzHint(host) {
+    var h = add(host, "div", "pz-hint"); add(h, "i", "ti ti-focus-2");
+    add(h, "span", null, PZ.arm ? tr("now tap its day below") : tr("tap a day, or slide a stack into one"));
+  }
+  function pzPicker(host) {
+    var sec = add(host, "div", "pz-pick");
+    add(sec, "div", "pz-picklab", tr("THE STACK PICKER · WHOLE DAYS"));
+    var g = add(sec, "div", "pz-pickgrid");
+    DAY_STACKS.forEach(function (s) {
+      var b = add(g, "button", "pz-card" + (PZ.arm === s.id ? " arm" : ""));
+      var row = add(b, "div", "pz-coins");
+      pzCoins(s).forEach(function (co) { var c = add(row, "span", "pz-coin"); c.style.background = co.c; c.style.setProperty("--lip", pzLip(co.c)); add(c, "i", "ti " + co.ic); });
+      var kk = add(b, "div", "pz-kick", tr(s.k)); kk.style.color = s.c;
+      add(b, "div", "pz-name", tr(s.n));
+      b.onclick = function () { pzTapCard(s); };
+      pzArmDrag(b, function () { return { id: s.id, c: s.c, ic: s.ic, from: null }; });
+    });
+  }
+  function pzStatus(host, planned, open, total) {
+    add(host, "div", "pz-status", planned + " " + tr("of") + " " + total + " " + tr("planned") + " · " + open + " " + tr("open"));
+  }
+  // ---- WEEKS (8a) ----
+  function pzWeekView(L, baseK, onDay) {
+    var d0 = startOfWeek(baseK || viewK), sw = startOfWeek(todayK()), land = pendingScrollNow && d0 === keyAdd(sw, 7);
+    L.classList.add("pz-page");
+    L._pzDraw = function () { pzDrawWeek(L, d0, onDay); };
+    L._pzDraw(); pzChrome();
+    // the view TARGETS NEXT WEEK (spec §2). buildPull centres the .now page synchronously right after this loop, so the
+    // override rides the next frame — and only on a fresh entry (pendingScrollNow), never on the per-minute rebuild (which
+    // restores the user's own scroll). It repeats once at 460ms because the zoom crossfade (zoomAnim) puts a transform on
+    // #pullBody for ~420ms and the mandatory scroll-snap re-settles when that transform is cleared.
+    if (land) {
+      var wsc = L.parentNode, tok = ++pzLandTok;
+      if (wsc && wsc.classList && wsc.classList.contains("week-scroller")) {
+        var put = function () { if (tok !== pzLandTok || !document.body.contains(L)) return; try { wsc.scrollLeft = L.offsetLeft; } catch (e) {} };
+        requestAnimationFrame(put); setTimeout(put, 460);
+      }
+    }
+  }
+  function pzDrawWeek(L, d0, onDay) {
+    pzDrain(L);
+    var tK = todayK(), sw = startOfWeek(tK), planned = 0, open = 0, i;
+    var ctx = add(L, "div", "pz-ctx");
+    add(ctx, "div", "pz-ctx-l", d0 === sw ? tr("This week") : d0 === keyAdd(sw, 7) ? tr("Next week") : tr("Week of") + " " + relShort(d0));
+    add(ctx, "div", "pz-ctx-c", kd(d0).getDate() + "-" + kd(keyAdd(d0, 6)).getDate()); // artifact "2 – 8": the en dash is a ZERO-tolerance copy tell, so the app's own cal-stat hyphen ships instead
+    for (i = 0; i < 7; i++) { var dki = keyAdd(d0, i); if (pzHasPlan(dki)) planned++; else if (pzPlaceable(dki)) open++; }
+    pzStatus(L, planned, open, 7); pzHint(L);
+    var zone = add(L, "div", "pz-cols"), dow = add(L, "div", "pz-dow"), NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    for (i = 0; i < 7; i++) (function (dk) {
+      var past = !pzPlaceable(dk), col = add(zone, "div", "pz-col" + (past ? " past" : "") + (PZ.sel === dk ? " sel" : ""));
+      col.dataset.k = dk;
+      var rows = pzRowsFor(dk);
+      if (rows.length) { // SOLID CANDY PILLS, stacked top-down: height = max(13, min*0.62), scaled together only if the day overflows its column
+        var AV = 310, GAP = 3, raw = rows.map(function (r) { return Math.max(13, Math.round((r.m || 30) * 0.62)); });
+        var tot = 0; raw.forEach(function (h) { tot += h; }); var gaps = GAP * (raw.length - 1);
+        var f = (tot + gaps > AV) ? Math.max(0.15, (AV - gaps) / tot) : 1;
+        rows.forEach(function (r, j) { var p = add(col, "div", "pz-pill" + (r.rest ? " rest" : "")); p.style.height = Math.max(6, Math.round(raw[j] * f)) + "px"; p.style.background = r.c; });
+      }
+      if (!past) { col.onclick = function () { pzTapDay(dk); }; if (PZ.stage[dk]) { var s = pzById(PZ.stage[dk]); if (s) pzArmDrag(col, function () { return { id: s.id, c: s.c, ic: s.ic, from: dk }; }); } }
+      var sid = pzStackFor(dk), ss = sid && pzById(sid);
+      var lab = add(dow, "div", "pz-d", tr(NAMES[kd(dk).getDay()])); if (ss) lab.style.color = ss.c;
+      lab.onclick = function () { if (!PZ.dragged && onDay) onDay(dk); }; // keeps the retired week-grid affordance alive: the label still folds the week into that day
+    })(keyAdd(d0, i));
+    pzPicker(L);
+  }
+  // ---- MONTHS (9a) ----
+  function pzMonthView(L, baseK, onDay) {
+    if (L.classList.contains("month-page") && !L.classList.contains("now")) { L.style.display = "none"; return; } // 9a is ONE "next 4 weeks" board, not a giant list of calendar months — the other 8 month pages stand down
+    L.classList.add("pz-page");
+    L._pzDraw = function () { pzDrawMonth(L, onDay); };
+    L._pzDraw(); pzChrome();
+  }
+  function pzDrawMonth(L, onDay) {
+    pzDrain(L);
+    var start = startOfWeek(todayK()), planned = 0, open = 0, i, dki;
+    for (i = 0; i < 28; i++) { dki = keyAdd(start, i); if (pzHasPlan(dki)) planned++; else if (pzPlaceable(dki)) open++; }
+    var ctx = add(L, "div", "pz-ctx");
+    add(ctx, "div", "pz-ctx-l", kd(start).toLocaleDateString([], { month: "long" }));
+    add(ctx, "div", "pz-ctx-c", tr("next 4 weeks"));
+    pzStatus(L, planned, open, 28); pzHint(L);
+    var hd = add(L, "div", "pz-mdow"), NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    for (i = 0; i < 7; i++) add(hd, "div", "pz-mw", tr(NAMES[kd(keyAdd(start, i)).getDay()]));
+    var g = add(L, "div", "pz-mgrid");
+    for (i = 0; i < 28; i++) (function (dk) {
+      var past = !pzPlaceable(dk), face = pzFace(dk);
+      var cell = add(g, "div", "pz-cell" + (past ? " past" : "") + (PZ.sel === dk ? " sel" : "") + (face ? " on" : ""));
+      cell.dataset.k = dk;
+      add(cell, "div", "pz-date", "" + kd(dk).getDate());
+      if (face) {
+        var w = add(cell, "div", "pz-stack");
+        face.shards.slice().reverse().forEach(function (c, j) { var sh = add(w, "div", "pz-shard"); sh.style.background = c; sh.style.transform = "translate(" + (-2.5 * (face.shards.length - j)) + "px," + (-2.5 * (face.shards.length - j)) + "px)"; });
+        var co = add(w, "div", "pz-mcoin"); co.style.background = face.c; co.style.setProperty("--lip", pzLip(face.c)); add(co, "i", "ti " + face.ic);
+      }
+      if (!past) { cell.onclick = function () { pzTapDay(dk); }; if (PZ.stage[dk]) { var s = pzById(PZ.stage[dk]); if (s) pzArmDrag(cell, function () { return { id: s.id, c: s.c, ic: s.ic, from: dk }; }); } }
+    })(keyAdd(start, i));
+    pzPicker(L);
+    if (onDay) { /* day-drill lives on the 8a column labels; a month cell tap belongs to placement (artifact 9a) */ }
+  }
+  function weekGrid(L, baseK, onDay) { if (PZ2) return pzWeekView(L, baseK, onDay || function (dk) { pullK = dk; pullZoom = "day"; pendingScrollNow = true; buildPull(); }); return weekGridLegacy(L, baseK, onDay); }
+  function monthGrid(L, baseK, onDay) { if (PZ2) return pzMonthView(L, baseK, onDay); return monthGridLegacy(L, baseK, onDay); }
+  function weekGridLegacy(L, baseK, onDay) { // 1:1 calendar.jpg — verdict #9 ships BOTH A (bare blobs) + B (day-track outline) behind a dev toggle
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
     var d0 = startOfWeek(baseK), variant = "b"; // A/B dev toggle removed (David device: confusing) — keep the containing day-track columns
     var hs = add(L, "div", "cal-stat"), lived = 0, crowns = 0;
@@ -10781,7 +11060,7 @@
     var hint = add(L, "div", "cal-hint"); hint.innerHTML = '<i class="ti ti-zoom-scan"></i> ' + esc(tr("tap: the week folds into a day"));
   }
   var MO_RAMP = ["#5a2440", "#8a2e5c", "#b53d77", "#d04f8f"]; // jewel-step 4 SOLID pinks — verdict #10
-  function monthGrid(L, baseK, onDay) {
+  function monthGridLegacy(L, baseK, onDay) {
     baseK = baseK || viewK; onDay = onDay || function (dk) { viewK = dk; zoomMode = "day"; pendingScrollNow = true; renderToday(); };
     var f = kd(baseK); f.setDate(1); var startDow = f.getDay(), y = f.getFullYear(), mo = f.getMonth(), dim = new Date(y, mo + 1, 0).getDate();
     var lit = 0, crowns = 0, bestRun = 0, curRun = 0;
@@ -15984,6 +16263,22 @@
     "“this tiredness”": "«эта усталость»",
     "“this restlessness”": "«это беспокойство»",
     "“this heaviness”": "«эта тяжесть»"
+  });
+  Object.assign(I18N.ru, { // PLAN MODE 8a/9a (2026-08-03) — the W/M whole-day stack board. Only the keys the dict was still missing; "Save"/"open"/"planned"/"of"/"This week"/"Week of"/Su..Sa/Walk/Read/Lunch/Nap/Laundry/Errands/Groceries/"Slow morning" are already translated above.
+    "Next week": "Следующая неделя", "next 4 weeks": "ближайшие 4 недели",
+    "THE STACK PICKER · WHOLE DAYS": "ВЫБОР СТЕКА · ЦЕЛЫЕ ДНИ",
+    "tap a day, or slide a stack into one": "нажми на день или перетащи в него стек", "now tap its day below": "теперь нажми его день ниже",
+    "day planned": "день запланирован", "days planned": "дней запланировано", "steps did not fit": "шагов не поместилось",
+    "Masterpiece day": "День-шедевр", "3 waves · the Big 3": "3 волны · Большая тройка",
+    "Deep work day": "День глубокой работы", "2 waves, protected": "2 волны, защищённые",
+    "Rest day": "День отдыха", "planned rest counts": "запланированный отдых засчитывается",
+    "Errand day": "День дел", "yours · 5 things": "твоё · 5 дел",
+    "Studio Saturday": "Творческая суббота", "yours · make all day": "твоё · твори весь день",
+    "Morning bookend": "Утренний ритуал", "Evening bookend": "Вечерний ритуал",
+    "Deep work · wave 1": "Глубокая работа · волна 1", "Deep work · wave 2": "Глубокая работа · волна 2", "Deep work · wave 3": "Глубокая работа · волна 3",
+    "Deep rest · walk": "Глубокий отдых · прогулка", "Deep rest · lunch + nap": "Глубокий отдых · обед + сон", "Deep rest · lunch": "Глубокий отдых · обед",
+    "Studio · wave 1": "Студия · волна 1", "Studio · wave 2": "Студия · волна 2",
+    "Train": "Тренировка", "Time together": "Время вместе", "Clean the space": "Уборка", "Admin hour": "Час на дела"
   });
   // @SEC:DEV — dev/test harness (?dev, personas, headless drive). The persona states double as load()-migration fixtures.
   // ===== DEV / TEST HARNESS (David 2026-06-30) — fast full-workflow testing + headless drive (bypasses the cockpit drag-gesture). OFF unless ?dev in the URL or localStorage.alter_dev='1'. window.DEV mirrors every action for console/eval (lets the app be driven + screenshotted without a finger). =====
