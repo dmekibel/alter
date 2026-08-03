@@ -1725,6 +1725,8 @@
   #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -19vh) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px + 32px); } /* GROUND BOTTOM AIR (David device 2026-08-01, "the tools on the bottom are too close to the bottom, gotta leave a little space below"): +32px on top of the existing 40 + safe-area. MEASURED at 375x812: the last folder-square row ended 60px above the viewport floor while the fixed #guardPuck occupies y 730-796 — the row sat inside the puck's band, which is what reads as "too close". The band is transparent (neither .tfw-ground nor .tbx paints a fill), so it shows the same night ground as behind the tiles — no dead colour stripe. designAudit's "ground bottom air" gate locks it at ≥32px. */ /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
   /* FIX PASS 2 D (design 2026-07-28) "live mode hides the tool deck": the ground PULL is cancelled while tracking, so the deck starts exactly at the fold instead of rising into the live face. Reconciles the design law with David's 2026-07-22 device law ("when tracking you should still be able to scroll down and see the tools") — the deck is hidden on the live screen, one scroll away, not deleted. */
   #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
+  /* HOME 2c (David 2026-08-02): the -19vh pull is CANCELLED on the 2c face, by the same idiom the live face already uses. The pull existed to fill the home zone's empty bottom band with the peeking deck; on 2c that band is the HERO ROW + the TOOLS fold hint, and the artifact's chevron-down is an INVITATION — the toolbox is one scroll below, not half-visible on top of the hero row. CONFLICT FLAGGED to David: this retires the deck's above-the-fold peek on the home face (designAudit's fold gate now measures the TOOLS hint, same 26px threshold, same home-zone slab). */
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-ground{ margin-top:0; }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
   /* GROUND section header + the extra tool rows (rendered by renderGroundTools with the same .tf-htool tiles) */
@@ -1825,6 +1827,83 @@
   .tbx-reset:active{ opacity:.6; }
   .tbx-open{ animation:tbxSettle .34s var(--ease-spring); } /* 21e: the preview springs open out of the tapped tile (transform-origin set in JS). NO fan-out — David 2026-07-27 discarded turn 22; the tile keeps its shards. */
   @keyframes tbxSettle{ from{ opacity:0; transform:scaleY(.72) translateY(-8px); } to{ opacity:1; transform:none; } }
+  /* ===== HOME 2c (David's pick 2026-08-02 — artifact "2c Home shipped": "clean edges, garden top-right, chevrons top and bottom"). Every px/hex below is QUOTED from that artifact; hues are never typed here — the tiles, coins and chips read the app's own TBX_HEX/DOM registry through JS. Scoped to #trackerFull.tf-2c, which only the CALM home faces carry, so the tracking face keeps its shipped status row, clock and edge doors. ===== */
+  @keyframes hintFloat{ 0%,100%{ transform:translateY(0); opacity:.55; } 50%{ transform:translateY(5px); opacity:1; } }
+  /* the HUD REPLACES the clock-left + gems-right status row. It floats on .tf-inner at the exact top that row used (env(safe-top) + 11px), so the strip below keeps the place the board gates measure. */
+  #tfHud{ display:none; }
+  #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:calc(env(safe-area-inset-top,0px) + 11px); left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
+  body #trackerFull.tf-2c.tf-2c .tf-clock, body #trackerFull.tf-2c.tf-2c .tf-spark, body #trackerFull.tf-2c.tf-2c #tfGear{ display:none !important; } /* EDGES CLEARED (spec §3): no clock on the home face; the HUD carries the gems, and the sparkle takes the avatar slot the gear was wearing (the Sound panel keeps its own door in Settings). The `body` prefix and the REPEATED .tf-2c are load-bearing, not a typo: `#trackerFull.tf-home.st-idle .tf-clock{display:block !important}` re-shows them at (1,3,0), so this hide has to out-specify it. */
+  .tfh-spark{ flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,242,249,.16); background:#2a1220; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tfh-spark i{ font-size:13px; color:#ff8fc0; line-height:1; }
+  .tfh-spark:active{ transform:translateY(1px); }
+  .tfh-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tfh-hint i{ font-size:20px; color:#c77ea3; line-height:1; animation:hintFloat 2.2s ease-in-out infinite; }
+  .tfh-hint span{ font-family:"Jost",sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; color:#8a6d85; }
+  .tfh-garden{ margin-left:auto; flex:0 0 auto; display:flex; align-items:center; border:2px solid rgba(79,208,138,.4); background:rgba(79,208,138,.1); padding:5px 11px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tfh-garden i{ font-size:15px; color:#4fd08a; line-height:1; }
+  .tfh-garden:active{ transform:translateY(1px); }
+  .tfh-gems{ flex:0 0 auto; display:flex; align-items:center; gap:6px; }
+  .tfh-gems i{ font-size:17px; color:#ffc41f; line-height:1; }
+  .tfh-gems b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:20px; color:#ffc41f; }
+  /* WEEK STRIP v2 (§2): five day pills + the icon row under them. Same flex columns the story strip already used — one column per day, so the icons sit centred under their pill and the trailing chevron keeps its own column. */
+  #trackerFull.tf-2c #tfHomeBars{ gap:9px; align-items:flex-start; }
+  #trackerFull.tf-2c .tf-hb{ gap:11px; }
+  #trackerFull.tf-2c .tf-hb-bar{ height:13px; border-radius:999px; background:#2e1a28; }
+  #trackerFull.tf-2c .tf-hb-fill{ border-radius:999px; }
+  #trackerFull.tf-2c .tf-hb i{ font-size:17px; }
+  #trackerFull.tf-2c .tf-planchev{ align-self:flex-start; font-size:15px; color:#8a6d85; opacity:1; margin-left:0; }
+  /* HERO ROW (§5) + COMPOSITION AMENDMENT (David 2026-08-02): the row is its own block in the home zone, BELOW the .tf-ctrls margin-bottom:auto spacer, so it hugs the bottom band just above the TOOLS hint instead of crowding Plan-my-day. NO selection chrome on a tile, ever. */
+  #tfHeroWrap{ display:none; } /* the hero row is a HOME-face block: it must not linger in the home zone once a live/tracking face takes over (that face drops .tf-2c and keeps its shipped composition) */
+  #trackerFull.tf-2c #tfHeroWrap{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:9px; margin-bottom:10px; }
+  #tfHeroRow{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 34px; width:100%; box-sizing:border-box; justify-items:center; }
+  .tfh-tile{ display:flex; flex-direction:column; align-items:center; gap:8px; background:none; border:none; outline:none; -webkit-appearance:none; appearance:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tfh-facewrap{ position:relative; width:50px; height:50px; }
+  .tfh-sh{ position:absolute; inset:0; border-radius:20px; }
+  .tfh-sh1{ transform:translate(-3px,-3px); z-index:2; }
+  .tfh-sh2{ transform:translate(-6px,-6px); z-index:1; }
+  .tfh-face{ position:absolute; inset:0; z-index:3; border-radius:18px; display:flex; align-items:center; justify-content:center; }
+  .tfh-face i{ font-size:22px; color:#fff2f9; line-height:1; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); }
+  .tfh-lbl{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; line-height:1.1; max-width:80px; text-align:center; }
+  .tfh-tile:active .tfh-face{ transform:translateY(2px); }
+  /* THE FACE DOSE CARD (§5) — the SAME card tbxBuildDose builds for the shelf, re-skinned for the home face. It lives outside .tbx, so it declares its own box-sizing and never leans on a --domain var (every hue arrives from JS with its hex fallback). */
+  #tfHeroDose{ width:100%; }
+  .tbx-dose-2c, .tbx-dose-2c *{ box-sizing:border-box; }
+  .tbx-dose-2c{ display:flex; flex-direction:column; gap:13px; background:#221018; border-radius:26px; border:2px solid #2e1a28; box-shadow:0 8px 24px rgba(0,0,0,.45); padding:17px 17px 15px; font-family:"Jost",sans-serif; }
+  .tbx-dose-2c .tbx-dose-head{ margin-bottom:0; gap:11px; }
+  .tbx-dose-2c .tbx-dose-face{ width:54px; height:54px; border-radius:18px; }
+  .tbx-dose-2c .tbx-dose-face i{ font-size:26px; }
+  .tbx-dose-2c .tbx-dose-kicker{ font-size:10px; letter-spacing:1.8px; }
+  .tbx-dose-2c .tbx-dose-name{ font-size:24px; line-height:1; }
+  .tbx-dose-2c .tbx-dose-chev{ width:38px; height:38px; border-radius:14px; background:#170a12; color:#b596ad; }
+  .tbx-dose-2c .tbx-dose-chev i{ font-size:16px; }
+  .tbx-dose-2c .tbx-what{ font-size:14px; font-weight:700; line-height:1.35; color:#f0dbe8; margin:0; }
+  .tbx-dose-2c .tbx-why{ font-size:13px; font-weight:600; line-height:1.35; color:#9a7a92; margin:0; }
+  .tbx-dose-2c .tbx-dose-steps{ gap:10px; }
+  .tbx-dose-2c .tbx-step{ gap:12px; }
+  .tbx-dose-2c .tbx-stepcoin{ width:34px; height:34px; border-radius:12px; }
+  .tbx-dose-2c .tbx-stepcoin i{ font-size:16px; }
+  .tbx-dose-2c .tbx-step-tx{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; }
+  .tbx-dose-2c .tbx-step-tm{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#b596ad; }
+  .tbx-dose-2c .tbx-dose-foot{ margin-top:0; gap:8px; overflow-x:auto; scrollbar-width:none; }
+  .tbx-dose-2c .tbx-dose-foot::-webkit-scrollbar{ display:none; }
+  .tbx-dose-2c .tbx-chips{ flex:0 0 auto; gap:8px; }
+  .tbx-dose-2c .tbx-chip{ flex:0 0 auto; padding:10px 17px; border-radius:15px; border:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; white-space:nowrap; }
+  .tbx-dose-2c .tbx-more{ flex:0 0 auto; margin-left:0; padding:10px 15px; border-radius:15px; background:#170a12; color:#e8c7d8; font-weight:800; font-size:14px; white-space:nowrap; }
+  .tbx-dose-2c .tbx-more i{ font-size:15px; }
+  .tbx-dose-2c .tbx-start{ margin-top:0; padding:15px 0; border-radius:19px; background:#ff4fa0; box-shadow:0 5px 0 #a41d60; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; color:#2a0d1c; }
+  .tbx-dose-2c .tbx-start i{ font-size:16px; }
+  .tbx-dose-2c .tbx-start:active{ transform:translateY(4px); box-shadow:0 1px 0 #a41d60; }
+  .tbx-dose-2c .tbx-gate{ margin-top:0; padding:12px 14px; border-radius:16px; background:#170a12; }
+  .tbx-dose-2c .tbx-gate i{ font-size:15px; color:#b99cf0; }
+  .tbx-dose-2c .tbx-gate-tx{ font-weight:800; font-size:15px; color:#b99cf0; }
+  .tbx-dose-2c .tbx-gate-badge{ padding:4px 11px; border-radius:999px; background:#8a5cf0; color:#160510; letter-spacing:.8px; font-weight:800; font-size:10.5px; } /* the badge's shelf rule paints var(--create), which is undeclared outside .tbx — the 2c card names its own violet */
+  .tbx-dose-2c .tbx-gate-chev{ color:#7d5fa8; }
+  /* THE FOLD INVITATION (§6): TOOLS above a floating chevron-down, at the bottom of the home zone (the .tf-ctrls margin-bottom:auto floats it there). BOTTOM-EDGE AMENDMENT (David 2026-08-02): the hint sits at the TRUE screen bottom — 8px of its own padding and NO safe-area addition under it; he explicitly accepts the home-indicator overlap because the line fades. The zone's 12px is not arbitrary: it is exactly the landing's overshoot (peek 20 minus the 8px margin worldScrollHome adds), so the hint clears the fold by the same 8px on every device. The landing's own safe-area compensation is untouched. */
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-home{ padding-bottom:12px; }
+  #tfToolsHint{ display:none; }
+  #trackerFull.tf-2c #tfToolsHint{ display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; padding:4px 0 8px; background:none; border:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  #tfToolsHint span{ font-family:"Jost",sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; color:#8a6d85; }
+  #tfToolsHint i{ font-size:20px; color:#c77ea3; line-height:1; animation:hintFloat 2.2s ease-in-out infinite; }
   /* ===== @SEC:EDITOR — the SESSION EDITOR overlay (design "Session Editor" 2b; 4a = 2b from empty). Every px/hex here is ported from the design markup; only hue-derived fills come from JS. Selection follows the DS choice-row v3 law: the option's OWN hue in 45°/9px candy stripes + ink text, never gold (gold = totals only). ===== */
   .sed-ov{ position:fixed; inset:0; z-index:98; animation:ovFade var(--dur-micro) var(--ease-settle) both; }
   .sed{ position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; background:radial-gradient(120% 72% at 50% 0%, #2c1442 0%, #1c0d26 58%, #150a1a 100%); font-family:"Jost",sans-serif; --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --play:#ffc83d; --restore:#2ab8c4; --upkeep:#7f9bc4; }
@@ -3461,6 +3540,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1251"></script>
+  <script src="app.js?v=1252"></script>
 </body>
 </html>

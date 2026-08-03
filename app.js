@@ -3825,7 +3825,7 @@
     var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
     // COCKPIT PRE-BRANCH (CKPT-2): if a guided stage mode is active, corner-pose the ring (CSS .tf-staged) + delegate the freed area to #tfStageBody, then RETURN. With TF_MODE null (default) this is a no-op and the existing 6-state body below runs UNTOUCHED → zero behavior change. (David 2026-06-28)
     tf.classList.toggle("tf-staged", !!TF_MODE);
-    if (TF_MODE) { tf.classList.remove("tf-onehome"); if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class + the one-page scroll so the guided-stage layout is byte-identical to today (#tfWorld falls back to display:contents, its flow children lay out in .tf-inner)
+    if (TF_MODE) { tf.classList.remove("tf-onehome", "tf-2c"); if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class + the one-page scroll so the guided-stage layout is byte-identical to today (#tfWorld falls back to display:contents, its flow children lay out in .tf-inner)
 
       var _ck2 = el("tfClock"); if (_ck2) _ck2.textContent = fmt(nowMin()).toUpperCase();
       var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
@@ -3846,7 +3846,7 @@
     var _catch = null; if (S0.id === "claim") { _catch = S0; S0 = { id: "idle", t: null }; t = null; } // FP3 §3: the catch-up state no longer OWNS a face — it renders the FP3 idle home and layers its trio on top (tfCatchUp)
     tfCatchUpClose(); // any render clears the card first; only the idle branch re-adds it while the claim state holds
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } // reset off-plan border + any prior tap wiring before a state re-paints the disc. removeProperty (not = "") because the idle-with-a-plan disc paints its stripes !important to beat the tf-home pink — a plain reassignment in another face would lose to it.
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "st-upnext", "tf-nextsheet", "tf-home", "tf-onehome"); // ONE-HOME: clear the shared frame class too; each full-screen face re-adds it via renderHomeFrame(). st-upnext (FP3 §2b) is an idle SUB-state and must never survive into another face.
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "st-upnext", "tf-nextsheet", "tf-home", "tf-onehome", "tf-2c"); // ONE-HOME: clear the shared frame class too (HOME 2c rides on tf-2c, re-added by the calm faces only); each full-screen face re-adds it via renderHomeFrame(). st-upnext (FP3 §2b) is an idle SUB-state and must never survive into another face.
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
     renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
@@ -5114,6 +5114,15 @@
     var bars = el("tfHomeBars"); if (!bars) { bars = document.createElement("div"); bars.id = "tfHomeBars"; inner.insertBefore(bars, inner.querySelector(".tf-stage")); }
     while (bars.firstChild) bars.removeChild(bars.firstChild); // targeted rebuild, not an innerHTML wipe (ratchet convention, cf. buildBars)
     bars.style.display = "flex";
+    if (tfh2c()) { // WEEK STRIP v2 (HOME 2c §2): the same five flex columns, but each is a DAY — pill = that day's dominant logged domain hue (unlogged = #2e1a28), icon under it = the activity that carried most of those minutes. The 2c px (13px pill / radius 999 / gap 9 / 11px under / 17px icon) live in the .tf-2c CSS, so the strip block keeps the measured place the board gates read.
+      homeWeek().forEach(function (d) {
+        var col = add(bars, "div", "tf-hb");
+        var bar = add(col, "div", "tf-hb-bar"); bar.style.background = "#2e1a28";
+        var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = d.has ? "100%" : "0"; fl.style.background = d.c;
+        var ic = add(col, "i", "ti " + d.ic); ic.style.color = d.has ? d.c : "#5a3f55";
+      });
+      return;
+    }
     var story = homeStory();
     if (!story.length) { for (var g = 0; g < 5; g++) { var gc = add(bars, "div", "tf-hb ghost"); add(gc, "div", "tf-hb-bar"); } return; } // empty day = quiet ghost PILLS only, NO circle-outline row under them (David 2026-07-22 approved board: the ring placeholders read ugly). The pills alone say "no plan yet".
     story.slice(0, 8).forEach(function (a) { var col = add(bars, "div", "tf-hb"); var bar = add(col, "div", "tf-hb-bar"); bar.style.background = mixHex(a.color, "#160510", 0.64); var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = (a.fill * 100) + "%"; fl.style.background = a.color; var ic = add(col, "i", "ti " + a.icon); ic.style.color = a.color; ic.style.opacity = a.fill > 0 ? "1" : "0.4"; });
@@ -5150,27 +5159,127 @@
     if (!ONEHOME) return;
     var tf = el("trackerFull"); if (!tf) return;
     tf.classList.add("tf-onehome"); // the shared class the frame CSS keys off (works alongside the per-face st-* class)
+    tfhSet2c(!!showGrid);           // HOME 2c rides the CALM faces only (night / break / claim — the same faces that show the grid). The TRACKING face keeps its shipped status row, clock and edge doors: spec §3, "the tracker/live faces keep their own clocks".
     if (ONEPAGE) { try { ensureWorld(); } catch (e) {} } // build the world FIRST so bars/grid land in the HOME zone
-    renderHomeBars();               // story strip on top (planner door)
+    renderHome2cHud();              // the 2c HUD (sparkle · JOURNEY · garden · gems) — self-guards off when the face isn't 2c
+    renderHomeBars();               // story strip on top (planner door) — the week strip v2 under 2c
     var inner = flowParent(); if (!inner) return;
     var host = el("tfHomeGrid"); if (!host) { host = document.createElement("div"); host.id = "tfHomeGrid"; inner.appendChild(host); } else if (ONEPAGE && host.parentNode !== inner) inner.appendChild(host); // dedicated grid host, in the HOME zone under one-page (else after #tfCtrls in .tf-inner)
     if (showGrid && !TBX2) { host.style.display = ""; renderHomeGrid(host); } // TBX2: the 2x4 grid is REPLACED by the scroll-continuation Toolbox (renderToolbox2 in the ground zone) — keep #tfHomeGrid empty on every face
     else { host.style.display = "none"; while (host.firstChild) host.removeChild(host.firstChild); } // tracking face (or TBX2 always): no grid (focus), drain it so nothing lingers
-    if (NAV_V2) wireHomeDoors();     // journey/garden door glyphs + the strip's planner tap (idempotent)
+    if (NAV_V2) wireHomeDoors();     // journey/garden door glyphs + the strip's planner tap (idempotent) — the glyphs stay OFF the 2c faces
+    renderHome2cFoot();              // the TOOLS fold hint at the bottom of the home zone
     if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // sky (journey) above + ground (FULL tool shelf) below, one native scroll — ALWAYS show the ground so you can scroll DOWN to the tools even while tracking (David 2026-07-22 "when tracking you should still be able to scroll down and see the tools"). The inline #tfHomeGrid still hides on the tracking face (above, showGrid) to keep the circle+controls focused; the tools live one scroll below.
   }
   function renderHomeFace(nb) {
     if (ONEPAGE) { try { ensureWorld(); } catch (e) {} } // build the world FIRST so the idle flow (bars + #tfCtrls grid) lands in the HOME zone
+    tfhSet2c(true);      // HOME 2c: the idle home IS the calm home face — set BEFORE the strip draws so it renders as the week strip
+    renderHome2cHud();
     renderHomeBars();
     var lm = el("tfLiveMeta"); if (lm) { while (lm.firstChild) lm.removeChild(lm.firstChild); } // no live meta on the idle home (node drain, keeps the wipe ratchet flat)
     var c = el("tfCtrls"); if (!c) return; while (c.firstChild) c.removeChild(c.firstChild); // node drain (renderHomeGrid refills immediately)
     // "Plan my day" door REMOVED from home (David 2026-07-20): redundant now that Planner is a bottom-nav button, and the What-now mockup has no door between the next-line and the grid — its space lets the circle be the hero. (Planning: the Planner nav → the timeline.)
     // ONE-HOME LAW (David 2026-07-21): the idle grid renders into #tfCtrls exactly as before (its own composition is David-approved, unchanged) — the SHARED #tfHomeGrid host stays empty on idle so the grid never doubles. renderTrackerFull hides #tfHomeGrid on the idle face.
     if (!TBX2) renderHomeGrid(c); // TBX2 (2026-07-23): the idle 2x4 grid is REPLACED by the Toolbox one scroll below (renderToolbox2 in the ground zone) — #tfCtrls stays drained/empty so the board = strip · circle · next-line, then the Toolbox on scroll-down. Board circle/strip/next-line unchanged (only the removed grid).
-    else tbxPlanButton(c); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker sits in #tfCtrls, directly below the circle + What-now + next-line block, visible at rest without scrolling. It was removed from the toolbox scroll section so it exists once. Gap under the circle = --tun-tools-gap (5vh, already tunable).
-    if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors)
+    else { tbxPlanButton(c); tfhHeroRow(flowParent()); } // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker sits in #tfCtrls, directly below the circle + What-now + next-line block, visible at rest without scrolling. It was removed from the toolbox scroll section so it exists once. Gap under the circle = --tun-tools-gap (5vh, already tunable). HOME 2c §5: the four-tile HERO ROW + its inline dose host follow it in the same column (.tf-ctrls gap 9).
+    if (NAV_V2) wireHomeDoors(); // R3 COMPASS ROSE: with the bottom bar dead, home carries its own doors — the story strip = planner, corner glyphs = journey/garden (see wireHomeDoors). Under 2c the edge tabs are gone: garden = the HUD leaf chip, planner = the strip + Plan-my-day.
+    renderHome2cFoot();          // HOME 2c §6: the TOOLS fold invitation, last thing in the home zone
     if (ONEPAGE) { try { renderOnePageWorld(true); } catch (e) {} } // idle is a calm face: sky (journey) above + ground (full tool shelf) below, one native scroll
   }
+  // ===== HOME 2c (David's pick 2026-08-02 — artifact "2c Home shipped": "clean edges, garden top-right, chevrons top and bottom") =====
+  // The CALM home face wears: a HUD row (sparkle · JOURNEY hint · garden chip · gems) in place of the clock-left/gems-right status
+  // row · the WEEK STRIP v2 (five day pills + their icon row, rendered by renderHomeBars) · the untouched board (circle, What now?,
+  // next-line, Plan-my-day) · a four-tile HERO ROW whose dose card opens INLINE through the ground's own tbxBuildDose machinery ·
+  // the TOOLS fold hint at the bottom. Edges are cleared: no side door tabs, no clock. Everything is scoped to #trackerFull.tf-2c,
+  // which only the CALM faces carry, so the tracking face stays byte-identical. Idempotent, child-drain only (ratchet law).
+  // Every px/hex quoted in the build spec lives in the .tfh-* / .tbx-dose-2c CSS (index.html); JS sets only hue-derived values.
+  // HOME2C=false restores the previous home face exactly (HUD/hero/hint never build, the doors and the clock come back).
+  var HOME2C = true;
+  function tfh2c() { var tf = el("trackerFull"); return !!(HOME2C && tf && tf.classList.contains("tf-2c")); }
+  function tfhSet2c(on) { var tf = el("trackerFull"); if (!tf) return false; tf.classList.toggle("tf-2c", !!(HOME2C && on)); return tfh2c(); }
+  function tfhI(cls) { var i = document.createElement("i"); i.className = "ti " + cls; return i; }
+  function tfhDeep(colExpr) { return stkMix(stkHexOf(colExpr) || "#63d3c9", "#000000", 0.5); } // the shipped deck lip colour: the hue 50% toward black (stkLip's law, quoted at the 2c card's own 4px offset)
+  function tfhScrollTo(top) { var w = el("tfWorld"); if (!w) return; var max = Math.max(0, w.scrollHeight - w.clientHeight); top = Math.max(0, Math.min(max, top)); try { magnetHold(1200); } catch (e) {} try { w.scrollTo({ top: top, behavior: "smooth" }); } catch (e) { w.scrollTop = top; } } // native smooth = the --ease-settle idiom for the one-page column (the artifact's ~380ms cubic-out). magnetHold: a deliberate scroll (card reveal, hint tap) must never be yanked back by the HOME MAGNET.
+  function tfhGoJourney() { tfhScrollTo(0); }                                                   // the sky IS the journey trail — the same target the upward drag reaches
+  function tfhGoTools() { var g = el("tfWorldGround"); var w = el("tfWorld"); tfhScrollTo(g ? g.offsetTop - 8 : (w ? w.scrollHeight : 0)); }
+  function renderHome2cHud() { // the HUD row. It floats on .tf-inner at exactly the top the status row it replaces used (env(safe-top)+11), so the strip keeps the place the board gates measure. Built ONCE, then only the gem count updates (a re-append would restart the chevron's float animation every render).
+    if (!tfh2c()) return;
+    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
+    var hud = el("tfHud");
+    if (!hud) {
+      hud = document.createElement("div"); hud.id = "tfHud";
+      var sp = document.createElement("button"); sp.id = "tfHudSpark"; sp.className = "tfh-spark"; sp.setAttribute("aria-label", "Guardian"); sp.appendChild(tfhI("ti-sparkles")); hud.appendChild(sp);
+      var hj = document.createElement("button"); hj.id = "tfHudJourney"; hj.className = "tfh-hint"; hj.appendChild(tfhI("ti-chevron-up")); var hl = document.createElement("span"); hl.textContent = tr("JOURNEY"); hj.appendChild(hl); hud.appendChild(hj);
+      var gc = document.createElement("button"); gc.id = "tfHudGarden"; gc.className = "tfh-garden"; gc.setAttribute("aria-label", "Garden"); gc.appendChild(tfhI("ti-leaf")); hud.appendChild(gc);
+      var gm = document.createElement("div"); gm.id = "tfHudGems"; gm.className = "tfh-gems"; gm.appendChild(tfhI("ti-diamond-filled")); gm.appendChild(document.createElement("b")); hud.appendChild(gm);
+      inner.appendChild(hud);
+      sp.onclick = function (e) { if (e) e.stopPropagation(); try { characterCard(); } catch (e2) {} };                                                              // the guardian mirror's own card (spec §1 — MY inference, David verdicts)
+      hj.onclick = function (e) { if (e) e.stopPropagation(); tfhGoJourney(); };
+      gc.onclick = function (e) { if (e) e.stopPropagation(); if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e2) {} } try { setPaneRest("game"); } catch (e2) {} }; // the app's OWN garden door path (it tears the cockpit down first); a bare openGame() would leave home layered over the world
+    } else if (hud.parentNode !== inner) inner.appendChild(hud);
+    var b = hud.querySelector(".tfh-gems b"); if (b) b.textContent = ((S.game && S.game.spark) || 0).toLocaleString();
+    var ck = el("tfClock"); if (ck) ck.textContent = ""; // the home face shows NO clock (the status bar already does); the CSS hides it, this empties it too
+  }
+  function homeWeek() { // the week strip's five days, oldest → today. A day READS as practiced when it carries logged minutes: the pill wears that day's DOMINANT logged domain hue and the icon is the single activity that carried most of those minutes. No practice at all = a dim ti-circle over an unlit pill (the honest empty state — nothing is invented for a day that never happened).
+    var out = [], now = Date.now();
+    for (var i = 4; i >= 0; i--) {
+      var k = logicalK(new Date(now - i * 864e5)), lg = (S.log && S.log[k]) || [];
+      var mins = {}, dom = null, domM = 0, lead = null, leadM = -1;
+      lg.forEach(function (l) { var dm = domainOf(l); mins[dm] = (mins[dm] || 0) + (l.mins || 0); });
+      Object.keys(mins).forEach(function (dm) { if (mins[dm] > domM) { domM = mins[dm]; dom = dm; } });
+      if (dom) lg.forEach(function (l) { if (domainOf(l) !== dom) return; var m = l.mins || 0; if (m > leadM) { leadM = m; lead = l; } });
+      out.push(dom ? { has: true, c: (DOM[dom] || DOM.focus).c, ic: tiClass(lead), k: k } : { has: false, c: "#2e1a28", ic: "ti-circle", k: k });
+    }
+    return out;
+  }
+  var TFH_HEROES = ["firstLight", "breatheLadder", "mind", "shutdown"]; // 2c §5: Morning Stack · Breathe · Meditate · Night Stack (the artifact's gIdx 0/1/3/6 into the practice grid). Ids, not names — the registry owns the words and the hues.
+  var _tfhOpen = null, _tfhLadder = false;                              // the face card's single-open id + whether its chip row has swapped to the full ladder
+  function tfhHeroRow(host) { // the four tiles + the inline dose host. COMPOSITION AMENDMENT (David 2026-08-02, "too high up, too close to plan my day, too far from tools"): the row is NOT a child of #tfCtrls — it is its own block in the HOME ZONE, placed AFTER the ctrls' margin-bottom:auto spacer, so the order reads Plan-my-day → spacer → hero row → dose card → TOOLS hint, and the row hugs the bottom band just above the fold invitation. NO selection chrome on any tile — no outline, no ring, no highlight; the open card below is the only selection signal.
+    if (!tfh2c() || !host) return;
+    var wrap = el("tfHeroWrap"); if (!wrap) { wrap = document.createElement("div"); wrap.id = "tfHeroWrap"; }
+    var hint = el("tfToolsHint"), before = (hint && hint.parentNode === host) ? hint : null;
+    if (wrap.parentNode !== host || (before && wrap.nextSibling !== before)) { if (before) host.insertBefore(wrap, before); else host.appendChild(wrap); } // always immediately above the TOOLS hint, never after it
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild); // child-drain, never an innerHTML wipe
+    var row = add(wrap, "div"); row.id = "tfHeroRow";
+    TFH_HEROES.forEach(function (id) { tfhTile(row, id); });
+    var dose = add(wrap, "div"); dose.id = "tfHeroDose";
+    if (_tfhOpen) tfhPaintDose(false, false); // a re-render (per-minute board sweep) restores the open card without re-animating or re-scrolling
+  }
+  function tfhTile(row, id) { // THE STACK CARD at the 2c face size: a 50px hue face on its own 4px lip, two near-full shards fanned UP-LEFT in the stack's own peek hues, white glyph, label in the tile's hue
+    var it = tbxItem(id); if (!it) return null;
+    var cell = add(row, "button", "tfh-tile"); cell.setAttribute("data-tfhcell", id); cell.setAttribute("aria-label", tr(it.name));
+    var wrap = add(cell, "div", "tfh-facewrap"), hue = tbxVar(it.dom);
+    (it.peek || []).slice(0, 2).forEach(function (tok, i) { var sh = add(wrap, "div", "tfh-sh tfh-sh" + (i + 1)); sh.style.background = tbxVar(tok); sh.style.boxShadow = stkShardShadow(stkHexOf(tbxVar(tok)), 50); });
+    var face = add(wrap, "div", "tfh-face"); face.style.background = hue; face.style.boxShadow = "0 4px 0 " + tfhDeep(hue); add(face, "i", "ti " + it.ti);
+    var lbl = add(cell, "span", "tfh-lbl", tr(it.name)); lbl.style.color = hue;
+    cell.onclick = function () { tfhOpenDose(id); };
+    return cell;
+  }
+  function tfhOpenDose(id) { // SINGLE-OPEN on the face: another tile swaps the content, the open one (or the card's close chevron) folds it away
+    var was = _tfhOpen === id;
+    _tfhOpen = was ? null : id; _tfhLadder = false;
+    tfhPaintDose(!was, true);
+  }
+  function tfhPaintDose(scroll, animate) {
+    var host = el("tfHeroDose"); if (!host) return;
+    while (host.firstChild) host.removeChild(host.firstChild); // child-drain, never an innerHTML wipe
+    if (!_tfhOpen) return;
+    var card = tbxBuildDose(_tfhOpen, true); if (!animate) card.classList.remove("tbx-open");
+    host.appendChild(card);
+    if (scroll) setTimeout(tfhRevealCard, 20); // let the card lay out, then ease the world down until it is fully in view
+  }
+  function tfhRevealCard() {
+    var w = el("tfWorld"), host = el("tfHeroDose"); if (!w || !host) return;
+    try { var hr = host.getBoundingClientRect(), wr = w.getBoundingClientRect(), over = hr.bottom - (wr.bottom - 16); if (over > 4) tfhScrollTo(w.scrollTop + over); } catch (e) {}
+  }
+  function renderHome2cFoot() { // the fold invitation at the bottom of the home zone: the TOOLS label above a floating chevron-down; tap = ease down into the ground (the toolbox). Built once and left in place — re-appending would restart its float animation on every board sweep.
+    if (!tfh2c()) return;
+    var zone = flowParent(); if (!zone) return;
+    var h = el("tfToolsHint");
+    if (!h) { h = document.createElement("button"); h.id = "tfToolsHint"; h.setAttribute("aria-label", "Tools"); var s = document.createElement("span"); s.textContent = tr("TOOLS"); h.appendChild(s); h.appendChild(tfhI("ti-chevron-down")); h.onclick = function () { tfhGoTools(); }; }
+    if (h.parentNode !== zone || zone.lastChild !== h) zone.appendChild(h); // always the last thing in the home zone (the .tf-ctrls margin-bottom:auto floats it to the fold)
+  }
+  Object.assign(I18N.ru, { "JOURNEY": "ПУТЬ", "TOOLS": "ИНСТРУМЕНТЫ" }); // HOME 2c hint labels (B4 law: EN source + RU dict in the same edit). The only two new strings in this pass.
   // R3 COMPASS ROSE (David 2026-07-21, FINAL composition): home carries its own nav — TWO prominent labeled doors + the tappable strip. Each mirrors a retired #nav handler exactly:
   //   • story strip (#tfHomeBars) → PLANNER (mirrors the data-tab="day" handler: leaveHomeForPlayer + setPaneRest("planner") + renderToday — harmless redundancy with the LEFT door)
   //   • LEFT door → PLANNER (ti-calendar; mirrors data-tab="day": leaveHomeForPlayer + setPaneRest("planner") + renderToday)
@@ -5188,6 +5297,8 @@
       bars.style.cursor = "pointer";
       bars.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab
     }
+    // 2c EDGES CLEARED (spec §3): on the 2c home face the two edge tabs do not render at all — garden lives in the HUD leaf chip, planner in the tappable strip + Plan-my-day. The elements themselves stay in this function for the tracking face (and for HOME2C=false), which still carries them.
+    if (tfh2c()) { ["tfDoorPlanner", "tfDoorGarden", "tfDoorJourney"].forEach(function (id) { var n = el(id); if (n && n.parentNode) n.parentNode.removeChild(n); }); wireHomeAxis(inner); return; }
     // 2) LEFT door = PLANNER (was journey). Prominent labeled button.
     var pd = el("tfDoorPlanner"); if (!pd) { pd = document.createElement("button"); pd.id = "tfDoorPlanner"; pd.className = "tf-homedoor tf-door-planner"; pd.setAttribute("aria-label", "Planner"); var pi = document.createElement("i"); pi.className = "ti ti-calendar"; pd.appendChild(pi); doorHost.appendChild(pd); } else if (pd.parentNode !== doorHost) doorHost.appendChild(pd); // edge-tab: icon only, no label (David 2026-07-22); re-home into the HOME zone under ONEPAGE so it scrolls with home
     pd.onclick = function () { if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } try { setPaneRest("planner"); renderToday(); } catch (e) {} }; // = the retired Planner tab (data-tab="day")
@@ -5324,7 +5435,10 @@
       inner.appendChild(world); // insert the container, then relocate the flow blocks into HOME (each still reachable by id/className — CSS descendant selectors + el() lookups are nesting-agnostic)
       flow.forEach(function (n) { if (n && n.parentNode !== home) home.appendChild(n); });
       // PUCK-AS-RETURN (David 2026-07-22 "whenever you're anywhere that's not home, the home button appears"): a single passive, cheap scroll listener on #tfWorld drives the puck's home-return visibility — faded OUT when parked at home (nothing to return from), faded IN the moment the scroll deviates from the home position by >40% of the viewport (i.e. you've drifted up into the journey sky or down into the tools ground). No rAF loop, no second watcher — one native scroll event, one class toggle. worldScrollHome() owns the landing; this only reads scrollTop.
-      world.addEventListener("scroll", function () { try { onWorldScroll(); } catch (e) {} }, { passive: true });
+      world.addEventListener("scroll", function () { try { onWorldScroll(); } catch (e) {} try { magnetArm(); } catch (e) {} }, { passive: true }); // HOME MAGNET (David 2026-08-02): the same single passive listener arms the settle timer — no second watcher
+      world.addEventListener("touchstart", function () { _magTouch = 1; magnetAbort(); }, { passive: true });   // a finger down always wins: kill any pull in flight and never start one mid-drag
+      world.addEventListener("touchend", function () { _magTouch = 0; magnetArm(); }, { passive: true });        // momentum keeps firing scroll events after this; the settle timer waits them out
+      world.addEventListener("touchcancel", function () { _magTouch = 0; magnetArm(); }, { passive: true });
     }
     return world;
   }
@@ -5405,6 +5519,38 @@
     } catch (e) {}
     return _safeBpx || 0;
   }
+  var WORLD_PEEK = 20; // ~20px of real sky shows above HOME (was 14 — David 2026-08-01: the bottom row of the eight-grid sat flush against the screen bottom; a couple px lower gives it breathing room)
+  function worldHomeTarget() { // THE landing scrollTop, in ONE place: the sky's laid-out height minus the peek, pulled down past the device's bottom inset (+8px margin) and clamped to the scroller's max. worldScrollHome lands on it; the HOME MAGNET settles onto it — they can never drift apart.
+    var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return 0;
+    return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + safeBottomPx() + 8));
+  }
+  // ===== THE HOME MAGNET (David 2026-08-02) — a scroll that ENDS near home settles exactly onto it. =====
+  // Fires ONLY after the gesture is over: no finger down, ~140ms of scroll silence, the landing already committed, and the
+  // resting scrollTop inside a 56px band around worldHomeTarget(). So it never fights the finger, never fights native momentum,
+  // and never touches a scroll genuinely heading for the sky or the ground. Any new touch or scroll aborts it mid-flight; our own
+  // rAF writes can't re-arm it (_magAnim), and a programmatic smooth-scroll (the card reveal, the hint taps) holds it off entirely
+  // so it can never yank a just-revealed dose card back up. DEVICE-UNTESTED: the FEEL of the pull is honest only on David's phone.
+  var _magT = 0, _magRaf = 0, _magTouch = 0, _magAnim = 0, _magHold = 0;
+  var MAG_BAND = 56, MAG_MS = 200, MAG_SETTLE = 140;
+  function magnetAbort() { if (_magRaf) { try { cancelAnimationFrame(_magRaf); } catch (e) {} _magRaf = 0; } _magAnim = 0; if (_magT) { clearTimeout(_magT); _magT = 0; } }
+  function magnetArm() { if (_magAnim) return; if (_magT) clearTimeout(_magT); _magT = setTimeout(magnetSnap, MAG_SETTLE); }
+  function magnetSnap() {
+    _magT = 0;
+    var world = el("tfWorld"), tf = el("trackerFull");
+    if (!ONEPAGE || _magTouch || _magAnim || !world || !_worldPositioned || Date.now() < _magHold) return;
+    if (!tf || !tf.classList.contains("tf-onepage") || !tf.classList.contains("tf-onehome")) return;
+    var from = world.scrollTop, delta = worldHomeTarget() - from, dist = Math.abs(delta);
+    if (dist < 2 || dist > MAG_BAND) return; // already home, or genuinely on the way somewhere else
+    var t0 = 0; _magAnim = 1;
+    _magRaf = requestAnimationFrame(function step(ts) {
+      if (!_magAnim) return;
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / MAG_MS);
+      world.scrollTop = from + delta * (1 - Math.pow(1 - p, 3)); // ease-out cubic
+      if (p < 1) _magRaf = requestAnimationFrame(step); else { _magRaf = 0; _magAnim = 0; }
+    });
+  }
+  function magnetHold(ms) { _magHold = Date.now() + (ms || 1200); magnetAbort(); } // a deliberate programmatic scroll owns the column for a beat
   function worldScrollHome(tries) {
     if (!ONEPAGE || _worldPositioned) return;
     tries = tries || 0;
@@ -5412,9 +5558,8 @@
     try {
       var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return;
       void world.offsetHeight; // force layout current (rAF is throttled in the preview — this repo relies on reflow instead)
-      var peek = 20; // ~20px of real sky shows above HOME (was 14 — David 2026-08-01: bottom row of the eight-grid sat flush against the screen bottom; a couple px lower gives it breathing room, fold lands just before the FOR YOU NOW hero)
-      var safeB = safeBottomPx(); // the device's bottom inset (home indicator); 0 in the preview
-      var target = Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - peek + safeB + 8)); // home.offsetTop = the sky's laid-out height inside the scroller; + safeB + 8 pulls the landing down past the home-indicator inset so the deck row keeps its air on device (clamped to the scroller's max scroll so the landed check can always be met)
+      var peek = WORLD_PEEK; // the sky sliver above HOME
+      var target = worldHomeTarget(); // home.offsetTop - peek + env(safe-area-inset-bottom) + 8, clamped to the scroller's max — computed in ONE place so the HOME MAGNET settles onto exactly the seam the landing chose
       var tf = el("trackerFull"), morphing = tf && tf.classList.contains("tf-morphing");
       var scrollable = world.scrollHeight - world.clientHeight > peek;
       // BOOT-EMPTY-SKY FIX (David 2026-07-22 "scroll up = empty screen; only after scrolling to tools does up unlock"): the trail must ACTUALLY be adopted+drawn into the sky before we commit. Without this gate, home.offsetTop is just the ~34px sky-LABEL height (target≈20 > peek, column scrollable via the ground) → the retry committed _worldPositioned on an EMPTY sky, locking the scroll at a wrong spot with only a blank label above → scrolling up showed empty. A later re-render (e.g. after a down-scroll re-adopts) was the only thing that fixed it. Require jpTrail to sit in the sky with real children first.
@@ -5739,12 +5884,14 @@
     var sq = bento.querySelector('[data-tbxcat="' + catId + '"]'); if (!sq) return;
     var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
   }
-  function tbxBuildDose(id) { // frame 21e: face + hue kicker + name, plain-word steps WITH their scaled times, 2/5 dose chips + "more" minute grid (21a) + pink Start, Plus row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
+  var TBX_FACE_LADDER = [2, 5, 10, 15, 20, 30, 45]; // HOME 2c §5: the FACE card's "More" swaps the two fast chips for this full ladder and hides itself (the ground card keeps its shipped minute-grid panel until David rules — flagged in the report).
+  function tbxBuildDose(id, face) { // frame 21e: face + hue kicker + name, plain-word steps WITH their scaled times, 2/5 dose chips + "more" minute grid (21a) + pink Start, Plus row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
+    // `face` = the HOME 2c placement (spec §5): the SAME card, the same dose / band / edit / Start / Adjust code path — only the placement (the home hero row instead of the toolbox grid), the .tbx-dose-2c skin and the chips-swap ladder differ. One builder, two surfaces; nothing is duplicated.
     var it = tbxItem(id); if (!it) return document.createElement("div"); var d = tbxVar(it.dom);
-    var card = document.createElement("div"); card.className = "tbx-dose tbx-open"; card.setAttribute("data-tbxdose", id);
-    var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = tbxLip(d); add(fc, "i", "ti " + it.ti);
+    var card = document.createElement("div"); card.className = "tbx-dose tbx-open" + (face ? " tbx-dose-2c" : ""); card.setAttribute("data-tbxdose", id);
+    var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = face ? ("0 4px 0 " + tfhDeep(d)) : tbxLip(d); add(fc, "i", "ti " + it.ti);
     var htx = add(head, "div", "tbx-dose-htx"); var k = add(htx, "div", "tbx-dose-kicker", tr(it.kicker)); k.style.color = d; add(htx, "div", "tbx-dose-name", tr(it.name));
-    var chev = add(head, "button", "tbx-dose-chev"); add(chev, "i", "ti ti-chevron-up"); chev.setAttribute("aria-label", tr("Close")); chev.onclick = function () { var cell = document.querySelector('.tbx [data-tbxcell="' + id + '"]'); if (cell) tbxOpenDose(id, cell); }; // 21e: the chevron folds the preview back into the tile
+    var chev = add(head, "button", "tbx-dose-chev"); add(chev, "i", "ti ti-chevron-up"); chev.setAttribute("aria-label", tr("Close")); chev.onclick = face ? function () { tfhOpenDose(id); } : function () { var cell = document.querySelector('.tbx [data-tbxcell="' + id + '"]'); if (cell) tbxOpenDose(id, cell); }; // 21e: the chevron folds the preview back into the tile
     if (it.what) add(card, "div", "tbx-what", tr(it.what)); // WHY-LINES (David 2026-08-01): what it is, then why it works. Two lines under the kicker/name, before the steps — the card has to teach, not just list.
     if (it.why) add(card, "div", "tbx-why", tr(it.why));
     var cur = tbxDose(id), track = tbxTrackForDose(id, cur), scripted = (!tbxHasEdit(id) && it.steps); // the shown steps ARE the band the chosen dose resolves to, so the preview never promises a shape Start won't run
@@ -5753,6 +5900,16 @@
     var sc = add(card, "div", "tbx-dose-steps");
     steps.forEach(function (st, i) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); if (times && times[i]) add(row, "span", "tbx-step-tm", times[i]); });
     var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips");
+    if (face) { // 2c chip row: [2,5] by default, "More" SWAPS the row for the full ladder and disappears. Same tbxSetDose/tbxRepaintDose path as the shelf — only the shape of the picker differs.
+      var _lad = _tfhLadder || (cur !== 2 && cur !== 5); // a dose already chosen OFF the ladder (15, 45…) keeps the ladder OPEN: the collapsed [2,5] row would light nothing while Start silently ran 45 minutes. Same honesty the shelf card buys by tinting its More button when the minute grid is folded.
+      (_lad ? TBX_FACE_LADDER : [2, 5]).forEach(function (m) {
+        var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), _lad ? (m + tr("m")) : (m + " " + tr("min")));
+        if (m === cur) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, #fff) 13px 26px)"; chip.style.border = "2.5px solid #160510"; chip.style.color = "#160510"; chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
+        else { chip.style.border = "2px solid color-mix(in srgb, " + d + " 40%, #1c0b15)"; chip.style.background = "#1c0b15"; chip.style.color = "#d8a9bb"; }
+        chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
+      });
+      if (!_lad) { var mf = add(foot, "button", "tbx-more"); add(mf, "i", "ti ti-adjustments-horizontal"); add(mf, "span", null, tr("More")); mf.onclick = function () { _tfhLadder = true; tbxRepaintDose(id); }; }
+    } else {
     [2, 5].forEach(function (m) { // the two fast-path chips stay first (David's 2/5 grammar); anything else lives in the grid behind "more"
       var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + " " + tr("min"));
       if (m === cur) { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); } else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
@@ -5766,6 +5923,7 @@
       var mg = add(card, "div", "tbx-mgrid"); add(mg, "div", "tbx-mgrid-lbl", tr("YOUR MINUTES · THE STEPS RESIZE ABOVE"));
       var mrow = add(mg, "div", "tbx-mrow");
       TBX_MINS.forEach(function (v) { var c = add(mrow, "button", "tbx-mchip", v + tr("m")); if (v === cur) { c.style.background = tbxCandy(d); c.style.color = "#160510"; c.style.boxShadow = tbxLip(d); } else c.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)"; c.onclick = function () { tbxSetDose(id, v); tbxRepaintDose(id); }; });
+    }
     }
     var start = add(card, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start")); // 21e: Start is the full-width row UNDER the dose row (was inline in the foot)
     start.onclick = function () { try { tbxLaunch(id, tbxDose(id)); } catch (e) {} };
@@ -5783,6 +5941,7 @@
     });
   }
   function tbxRepaintDose(id) { // swap the open dose card for a freshly-built one so an edit/reset shows immediately (single-open; the card carries data-tbxdose)
+    if (HOME2C && _tfhOpen === id) { var fh = el("tfHeroDose"); if (fh) { var old = fh.querySelector(".tbx-dose"), nf = tbxBuildDose(id, true); nf.classList.remove("tbx-open"); if (old) fh.replaceChild(nf, old); else fh.appendChild(nf); } } // the HOME 2c face card lives outside .tbx — repaint it on the same path (dose chips, band folding, edits and resets all land here)
     if (_tbxOpenStack !== id) return;
     var card = document.querySelector('.tbx .tbx-dose[data-tbxdose="' + id + '"]'); if (!card || !card.parentNode) return;
     var fresh = tbxBuildDose(id); fresh.classList.remove("tbx-open"); // no re-animate on an in-place refresh
@@ -15862,7 +16021,7 @@
     function chk(name, pass, got, want) { ok = ok && !!pass; out.push((pass ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); }
     function rgb(el, p) { return el ? getComputedStyle(el)[p || "backgroundColor"] : "?"; }
     var ring = el("tfRing"), bars = el("tfHomeBars"), tile = document.querySelector("#trackerFull .tf-tile");
-    var pd = el("tfDoorPlanner"), gd = el("tfDoorGarden");
+    // HOME 2c (David 2026-08-02): the five DOOR gates (size / border / planner fill / garden fill / top-below-strip) are DELETED with the doors themselves — the edges are cleared, garden lives in the HUD leaf chip and planner in the tappable strip. Their replacements are the 2c gates at the foot of this audit.
     var plan = document.querySelector("#trackerFull .tbx-plan"), topGrid = el("tbxGridTop"), square = document.querySelector("#trackerFull .tbx-square"); // TOOLBOX2 (2026-07-23): the board's tools moved to the scroll-continuation Toolbox — the old 2x4 grid checks are repointed to the top-eight grid below
     var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, now in FIXED design order (Morning Stack · Breathe · Body · Meditate · Heart · Vision · Night Stack · Build) — tbxOrder no longer touches this grid, so tfaces[n] is deterministic and the hue gates below can name their tile
     function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
@@ -15878,14 +16037,19 @@
     if (plan) { var ps = getComputedStyle(plan).boxShadow; chk("plan button lip 0 4px 0 #160510", ps.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), "rgb(22,5,16) 0px 4px 0px"); } // the Plan-my-day sticker lip present (0 4px 0 #160510)
     if (topGrid) { var gc = getComputedStyle(topGrid).gridTemplateColumns; chk("top-eight grid 4×64px tracks", gc === "64px 64px 64px 64px", gc, "64px 64px 64px 64px"); } // TILE-BIGGER (David 2026-07-23): track 54→64 (face 46→54, ×--tun-tbx-tile default 1)
     chk("builder tile present (pinned 8th)", !!document.querySelector("#tbxGridTop .tbx-cell-build"), document.querySelector("#tbxGridTop .tbx-cell-build") ? "present" : "missing", "present"); // BUILD-CUSTOM (David 2026-07-23): the create-purple "Build" tile is always the last top-8 cell
-    if (pd) { var pr = pd.getBoundingClientRect(); chk("door size", Math.round(pr.width) === 18 && Math.round(pr.height) === 80, Math.round(pr.width) + "x" + Math.round(pr.height), "18x80"); chk("door border 0", getComputedStyle(pd).borderTopWidth === "0px" && getComputedStyle(pd).outlineStyle === "none", getComputedStyle(pd).borderTopWidth + "/" + getComputedStyle(pd).outlineStyle, "0px/none"); chk("door planner fill", rgb(pd) === "rgb(55, 34, 84)", rgb(pd), "rgb(55,34,84)"); chk("door top below strip bottom", pr.top >= br.bottom, "door top " + Math.round(pr.top) + " · strip bottom " + Math.round(br.bottom), "door top ≥ strip bottom"); } // DOORS-DOWN (David 2026-07-23 device): the edge-tab top must clear the story strip's bottom edge
-    if (gd) chk("door garden fill", rgb(gd) === "rgb(24, 70, 48)", rgb(gd), "rgb(24,70,48)");
+    chk("edges cleared (no side door tabs on the home face)", !el("tfDoorPlanner") && !el("tfDoorGarden"), (el("tfDoorPlanner") ? "planner tab present " : "") + (el("tfDoorGarden") ? "garden tab present" : "") || "none", "neither tab renders"); // HOME 2c §3
     // FACE-UP + DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the face rides too low… the deck names are clipped"). Both gates measure against the HOME ZONE slab, never against a viewport-absolute Y: #tfWorld's scrollTop varies with the landing retry, so an absolute Y would false-FAIL a correct board.
     var hz = el("tfWorldHome");
     if (hz) {
       var hzr = hz.getBoundingClientRect(), stripOff = br.top - hzr.top;
       chk("strip at the top of the home zone (no dead sky)", stripOff >= 40 && stripOff <= 120, Math.round(stripOff) + "px below zone top", "40-120px (= env(safe-top) + --tun-sky-gap 54px ≈ HUD bottom + 13)"); // the auto-margin dead band above the strip is what "rides too low" was; this is the gate that keeps it dead
-      var dlabs = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-label")).slice(0, 4), dlb = 0; // the FIRST deck row (4 cells) — the row that peeks above the fold on the idle home; take the lowest label (they wrap to 2-3 lines)
+      // HOME 2c: the fold gate is REPOINTED, not retired. On the 2c face the element at the fold is the TOOLS hint (the deck's -19vh peek is cancelled — the artifact's chevron-down is an INVITATION, so the toolbox is one scroll below). BOTTOM-EDGE AMENDMENT (David 2026-08-02): the old "≥26px of air" is inverted — he wants the hint AT the true screen bottom and accepts the home-indicator overlap. The gate now locks the window: never clipped by the zone edge, never floating more than 26px above it. Device-invariant (the 2c zone padding carries no safe-area).
+      var _th = el("tfToolsHint");
+      if (tfh2c() && _th) {
+        var _thAir = hzr.bottom - _th.getBoundingClientRect().bottom;
+        chk("fold hint sits AT the screen bottom", _thAir >= 0 && _thAir <= 26, Math.round(_thAir) + "px above the zone bottom · hint bottom " + Math.round(_th.getBoundingClientRect().bottom) + " / vh " + H, "0-26px (at the edge, never clipped by the zone)");
+      }
+      var dlabs = tfh2c() ? [] : [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-label")).slice(0, 4), dlb = 0; // the FIRST deck row (4 cells) — the row that peeks above the fold on the pre-2c idle home; take the lowest label (they wrap to 2-3 lines)
       if (dlabs.length) {
         dlabs.forEach(function (n) { dlb = Math.max(dlb, n.getBoundingClientRect().bottom); });
         chk("deck row clears the home fold (names not clipped)", (hzr.bottom - dlb) >= 26, Math.round(hzr.bottom - dlb) + "px above the zone bottom · label bottom " + Math.round(dlb) + " / vh " + H, "≥26px (12px of air + the ~14px sky sliver the world lands with; the ground pull also subtracts the device safe-area)"); // LANDING NOW COMPENSATES (David 2026-08-02 device screenshot): the ≥26px threshold is UNCHANGED and still measured against the home-zone slab, but worldScrollHome no longer lands at offsetTop-20 — it lands at offsetTop-20+env(safe-area-inset-bottom)+8, so the air this gate measures in the preview (inset 0, sliver 12px) is the air that actually survives on a home-indicator iPhone instead of being eaten by the inset. Preview measurement is unaffected beyond the 8px margin.
@@ -15908,16 +16072,35 @@
         chk("shard sizes S-4 / S-6", Math.round(r1.width) === 50 && Math.round(r2.width) === 48, Math.round(r1.width) + " / " + Math.round(r2.width), "50 / 48 (near-full-size cards, not shrunken peeks)");
         var s1 = getComputedStyle(c1).boxShadow; chk("shard lip is its OWN hue + ambient (no ink)", /0px\s+4px\s+0px/.test(s1) && s1.indexOf("rgb(22, 5, 16)") < 0, s1.slice(0, 60), "0px 4px 0px <hue 50% toward black> (= round(.08·54)), 0 6px 12px rgba(0,0,0,.35)");
         var gl = tfaces[0].querySelector("i"); chk("tile glyph 0.34·S", Math.abs(parseFloat(getComputedStyle(gl).fontSize) - 54 * 0.34) <= 0.4, getComputedStyle(gl).fontSize, "18.36px"); } }
-    // WHY-LINES GATE (David 2026-08-01): the dose card must TEACH — open the first tile's card, read its two lines, fold it back so the audit leaves the board exactly as it found it.
-    var fcell = document.querySelector('#tbxGridTop [data-tbxcell="firstLight"]');
-    if (fcell) {
-      var _wasOpen = _tbxOpenStack === "firstLight";
-      if (!_wasOpen) { try { tbxOpenDose("firstLight", fcell); } catch (e) {} }
-      var _dc = document.querySelector('.tbx .tbx-dose[data-tbxdose="firstLight"]');
+    // ===== HOME 2c GATES (David's pick 2026-08-02) — the face the doors used to guard =====
+    var _hud = el("tfHud"), _hsp = el("tfHudSpark"), _hgd = el("tfHudGarden"), _hjn = el("tfHudJourney"), _thint = el("tfToolsHint");
+    var _spr = _hsp ? _hsp.getBoundingClientRect() : null;
+    chk("HUD sparkle 28px circle", !!(_hsp && Math.round(_spr.width) === 28 && Math.round(_spr.height) === 28 && parseFloat(getComputedStyle(_hsp).borderTopLeftRadius) >= 14), _hsp ? (Math.round(_spr.width) + "x" + Math.round(_spr.height) + " r" + getComputedStyle(_hsp).borderTopLeftRadius) : "missing", "28x28, fully round");
+    var _gcs = _hgd ? getComputedStyle(_hgd) : null, _gci = _hgd ? _hgd.querySelector("i") : null;
+    chk("HUD garden chip (leaf on the .4 green rim)", !!(_gcs && _gcs.borderTopColor === "rgba(79, 208, 138, 0.4)" && _gci && getComputedStyle(_gci).color === "rgb(79, 208, 138)"), _gcs ? (_gcs.borderTopColor + " · " + (_gci ? getComputedStyle(_gci).color : "no leaf")) : "missing", "rgba(79,208,138,0.4) rim + rgb(79,208,138) leaf");
+    var _jci = _hjn ? _hjn.querySelector("i") : null, _tci = _thint ? _thint.querySelector("i") : null;
+    chk("fold chevrons top (JOURNEY) + bottom (TOOLS)", !!(_jci && _tci && getComputedStyle(_jci).color === "rgb(199, 126, 163)" && getComputedStyle(_tci).color === "rgb(199, 126, 163)" && _hud && _thint.getBoundingClientRect().top > _hud.getBoundingClientRect().bottom), (_jci ? getComputedStyle(_jci).color : "no JOURNEY hint") + " / " + (_tci ? getComputedStyle(_tci).color : "no TOOLS hint"), "rgb(199,126,163) both, TOOLS below the HUD");
+    var _pills = [].slice.call(document.querySelectorAll("#tfHomeBars .tf-hb-bar"));
+    chk("week strip = 5 pills, 13px, radius 999", _pills.length === 5 && _pills.every(function (p) { return Math.round(p.getBoundingClientRect().height) === 13 && parseFloat(getComputedStyle(p).borderTopLeftRadius) >= 99; }), _pills.length + " pills · " + (_pills[0] ? Math.round(_pills[0].getBoundingClientRect().height) + "px r" + getComputedStyle(_pills[0]).borderTopLeftRadius : "-"), "5 × 13px at radius 999px");
+    var _hf = [].slice.call(document.querySelectorAll("#tfHeroRow .tfh-face"));
+    chk("hero row = 4 tiles, 50px face, #fff2f9 glyph", _hf.length === 4 && _hf.every(function (f) { var r = f.getBoundingClientRect(), g = f.querySelector("i"); return Math.round(r.width) === 50 && Math.round(r.height) === 50 && !!g && getComputedStyle(g).color === "rgb(255, 242, 249)"; }), _hf.length + " tiles · " + (_hf[0] ? Math.round(_hf[0].getBoundingClientRect().width) + "x" + Math.round(_hf[0].getBoundingClientRect().height) : "-"), "4 × 50x50 with the white glyph");
+    var _chrome = ""; [].slice.call(document.querySelectorAll("#tfHeroRow *")).forEach(function (n) { var s = getComputedStyle(n); if (parseFloat(s.borderTopWidth || 0) > 0 || (s.outlineStyle && s.outlineStyle !== "none") || /0px\s+0px\s+0px\s+\d/.test(s.boxShadow)) _chrome += (n.className || n.tagName) + " "; });
+    chk("hero tiles carry NO selection chrome", !_chrome, _chrome || "clean", "no outline, ring or border anywhere in the row (David 2026-08-02) — the open card is the only selection signal");
+    var _ckE = el("tfClock");
+    chk("home face shows NO clock", !_ckE || getComputedStyle(_ckE).display === "none" || _ckE.offsetParent === null, _ckE ? (getComputedStyle(_ckE).display + ' · "' + (_ckE.textContent || "") + '"') : "absent", "hidden (the status bar already shows the time)");
+    // FACE DOSE CARD (2c §5): open the first hero tile's card, read its shell + its two teaching lines + the ignited chip, then fold it back so the audit leaves the board exactly as it found it.
+    var _hcell = document.querySelector('#tfHeroRow [data-tfhcell="firstLight"]');
+    if (_hcell) {
+      var _wasOpen = _tfhOpen === "firstLight";
+      if (!_wasOpen) { try { tfhOpenDose("firstLight"); } catch (e) {} }
+      var _dc = document.querySelector('#tfHeroDose .tbx-dose-2c[data-tbxdose="firstLight"]'), _ds = _dc ? getComputedStyle(_dc) : null;
       var _wt = _dc && _dc.querySelector(".tbx-what"), _wy = _dc && _dc.querySelector(".tbx-why");
       var _wtx = _wt ? (_wt.textContent || "").trim() : "", _wyx = _wy ? (_wy.textContent || "").trim() : "";
-      chk("dose card carries what+why lines", !!(_wtx && _wyx), _wtx ? ("what " + _wtx.length + " chars · why " + _wyx.length + " chars") : (_dc ? "lines missing" : "card did not open"), "both non-empty");
-      if (!_wasOpen) { try { tbxOpenDose("firstLight", fcell); } catch (e) {} }
+      chk("face dose card shell #221018 / radius 26", !!(_ds && _ds.backgroundColor === "rgb(34, 16, 24)" && Math.round(parseFloat(_ds.borderTopLeftRadius)) === 26), _ds ? (_ds.backgroundColor + " r" + _ds.borderTopLeftRadius) : "card did not open", "rgb(34,16,24) at r26px");
+      chk("face dose card carries what+why lines", !!(_wtx && _wyx), _wtx ? ("what " + _wtx.length + " chars · why " + _wyx.length + " chars") : (_dc ? "lines missing" : "card did not open"), "both non-empty");
+      var _sel = _dc && _dc.querySelector(".tbx-chip.on"), _si = _sel ? getComputedStyle(_sel).backgroundImage : "";
+      chk("selected dose chip wears the 115deg stripe", _si.indexOf("115deg") >= 0, _si ? _si.slice(0, 52) : (_sel ? "no gradient" : "no selected chip"), 'backgroundImage contains "115deg"');
+      if (!_wasOpen) { try { tfhOpenDose("firstLight"); } catch (e) {} }
     }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     var _gz = el("tfWorldGround"); if (_gz) { var _gpb = parseFloat(getComputedStyle(_gz).paddingBottom) || 0; chk("ground bottom air", _gpb >= 32, Math.round(_gpb) + "px", "≥32px below the last toolbox row"); } // GROUND BOTTOM AIR (David device 2026-08-01 "the tools on the bottom are too close to the bottom"): the ground zone must always end on a real band of air (plus env(safe-area-inset-bottom) on device) so the last folder-square row never sits under the floating puck / home indicator
