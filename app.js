@@ -1801,7 +1801,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -1826,7 +1826,7 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     document.body.classList.remove("home-onepage"); // PUCK FIX (David 2026-07-22 "planner shows no home button"): the home-onepage class fades the puck to opacity:0 (nothing to return from AT home). Only the door path cleared it via teardownWorld — a pane reached any other way left it set, hiding the home button. Clearing it on EVERY pane rest guarantees the puck is lit on planner/journey/game.
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
-    try { groveClose(); vrtClose(); goClose(); } catch (e) {} // THE GARDEN belongs to the world: any pane rest leaves every menu closed, so re-entering the island is always the calm face (the game branch below wakes it again)
+    try { groveClose(); vrtClose(); goClose(); stClose(); } catch (e) {} // THE GARDEN belongs to the world: any pane rest leaves every menu closed, so re-entering the island is always the calm face (the game branch below wakes it again)
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (_jt && jp && !jp.contains(_jt)) jp.appendChild(_jt); if (!_jt || !_jt.children.length || !jp.contains(_jt)) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} try { groveWire(); groveOnWorldOpen(); } catch (e) {} } // THE GROVE wakes on THIS path too: setPaneRest is how the carousel swipe AND the home garden chip reach the world, and openGame() is not on either — without this the entry flower, its coins, the close X, the hold-to-grow listeners and the whole congratulation beat were dead on the app's primary route in
@@ -8574,6 +8574,7 @@
       sanctGroundShade(ctx, sanctScene()); // ref-mood scene shading: moonlight falloff + soft contact shadows UNDER the objects
       sanctClaimGlow(ctx, t); // island expansion: the claimable water tile the guardian faces glows (walk into it to grow)
       try { groveGroundGlow(ctx, t); } catch (e) {} // GF7 planting: the three candidate homes breathe on the grass (only while planting)
+      try { stGroundGlow(ctx, t); } catch (e) {} // light items lay the lantern pool; while placing, the candidate spots breathe
       try { goGroundGlow(ctx, t); } catch (e) {} // R3a: the three candidate homes for a new boulder breathe on the grass
       try { vrtGroundGlow(ctx, t); } catch (e) {} // 15E: a LIT lantern lays a coloured pool on the grass; while hanging, the candidate spots breathe the same way
     } else if (SANCTUARY) {
@@ -8640,6 +8641,7 @@
       var _dl = _scene.objs.map(function (o) { return { y: o.dy, d: function () { drawObj(ctx, o.img, o.dx, o.dy, o.h); } }; });
       _dl.push({ y: py, d: _drawHero });
       try { groveWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {}
+      try { stWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // bought decor joins the SAME base-y sort
       try { goWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // statues, the pond and the living creatures join the SAME base-y sort
       try { vrtWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // lanterns join the SAME base-y sort as the trees and the guardian // planted trees join the SAME base-y sort, so the guardian walks behind and in front of them like every other object
       _dl.sort(function (a, b) { return a.y - b.y; });
@@ -8842,7 +8844,7 @@
     var g = el("gnGame"); if (g) g.onclick = foldMenu; // already in the game → just fold the menu
   }
   function closeGame() {
-    try { groveClose(); vrtClose(); goClose(); } catch (e) {} // leaving the world always leaves the garden closed, so a fresh entry is the calm island
+    try { groveClose(); vrtClose(); goClose(); stClose(); } catch (e) {} // leaving the world always leaves the garden closed, so a fresh entry is the calm island
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
     document.body.classList.remove("gaming");
     gameOn = false; moveX = 0; moveY = 0; // do NOT reset body.overflow here — it must stay locked (this reset was the thing that un-pinned the body and reintroduced the gap) (v640)
@@ -9015,7 +9017,7 @@
     if (!ISLE) buildIsle(); // the same guard sanctScene() uses: the island builds lazily on the first draw, and the congratulation can reach here before that frame has run (a legitimate first planting was answering "walk onto open grass" on an island that did not exist yet)
     var out = [], gx = Math.round(px / TILE), gy = Math.round(py / TILE), sc = null;
     try { sc = sanctScene(); } catch (e) {}
-    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }).concat(vrtState().list.map(function (v) { return v.tx + "," + v.ty; })).concat(goMine().map(function (g) { return g.tx + "," + g.ty; })), rings = [2, 3, 4, 5];
+    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }).concat(vrtState().list.map(function (v) { return v.tx + "," + v.ty; })).concat(goMine().map(function (g) { return g.tx + "," + g.ty; })).concat(stState().owned.map(function (o) { return o.tx + "," + o.ty; })), rings = [2, 3, 4, 5, 6, 7];
     for (var ri = 0; ri < rings.length && out.length < 3; ri++) { var r = rings[ri];
       for (var ai = 0; ai < 8 && out.length < 3; ai++) {
         var tx = gx + Math.round(Math.cos(ai * Math.PI / 4) * r), ty = gy + Math.round(Math.sin(ai * Math.PI / 4) * r);
@@ -9026,6 +9028,14 @@
         if (sc) for (j = 0; j < sc.objs.length; j++) { var o = sc.objs[j]; if (o.fw > 0 && Math.abs(o.dx - tx * TILE) < TILE && Math.abs(o.dy - ty * TILE) < TILE) { near = true; break; } }
         if (near) continue;
         out.push({ tx: tx, ty: ty });
+      }
+    }
+    if (!out.length) { // RELAXED PASS: a full island must never answer "no room" while bare grass exists — drop the 2-tile spread and take any free, prop-clear tile
+      for (var r2 = 1; r2 <= 8 && out.length < 3; r2++) for (var a2 = 0; a2 < 12 && out.length < 3; a2++) {
+        var bx = gx + Math.round(Math.cos(a2 * Math.PI / 6) * r2), by = gy + Math.round(Math.sin(a2 * Math.PI / 6) * r2);
+        if (!isleHas(bx, by) || taken.indexOf(bx + "," + by) >= 0) continue;
+        var dup = false; for (var q = 0; q < out.length; q++) if (out[q].tx === bx && out[q].ty === by) dup = true;
+        if (!dup) out.push({ tx: bx, ty: by });
       }
     }
     return out;
@@ -9093,6 +9103,7 @@
   function groveWorldTap(sx, sy) { // in planting/hanging mode a tap on the grass picks the nearest glowing spot; otherwise the world keeps its own taps
     try { if (vrtWorldTap(sx, sy)) return; } catch (e) {}
     try { if (goWorldTap(sx, sy)) return; } catch (e) {}
+    try { if (stWorldTap(sx, sy)) return; } catch (e) {}
     if (!GV.plant || !GV.plant.spots || !GV.plant.spots.length) return;
     var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
     for (var i = 0; i < GV.plant.spots.length; i++) { var s = GV.plant.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
@@ -9101,7 +9112,7 @@
   // ---- the surfaces ------------------------------------------------------------------------------------------------
   function groveOpen(mode) {
     var sh = el("groveSheet"); if (!sh) return;
-    try { vrtClose(); goClose(); } catch (e) {} // one garden menu at a time
+    try { vrtClose(); goClose(); stClose(); } catch (e) {} // one garden menu at a time
     GV.mode = mode || "list";
     if (GV.mode !== "list") GV.sel = null;
     groveBuild();
@@ -9120,8 +9131,8 @@
   }
   function groveToggle() { // THE FLOWER MINIMIZES (David 2026-08-12): with a menu up it slides that sheet away and hands the
     // world back with the coin column STILL OUT, so the next menu is one tap away. Its fold/unfold job applies only at rest.
-    if (GV.mode || VV.mode || GV3.mode) {
-      try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {}
+    if (GV.mode || VV.mode || GV3.mode || SV.mode) {
+      try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {} try { stClose(); } catch (e) {}
       var cn0 = el("groveCoins"), fl0 = el("groveFlower");
       if (cn0) { cn0.classList.add("on"); cn0.classList.remove("gv-hid"); }
       if (fl0) fl0.classList.add("gv-spun");
@@ -9133,7 +9144,7 @@
   // dragging the grab handle or the header UP past 40px earns the full height, dragging DOWN returns it to partway, and
   // dragging DOWN again from partway closes it. Live finger-follow is a transform on a .gv-drag (transition off) class, so
   // nothing re-renders while the finger moves. DEVICE-UNTESTED: the preview cannot honestly reproduce this feel.
-  function gvSheets() { return ["groveSheet", "virtueSheet", "goalSheet"].map(el).filter(Boolean); }
+  function gvSheets() { return ["groveSheet", "virtueSheet", "goalSheet", "storeSheet"].map(el).filter(Boolean); }
   function gvDragWire() {
     gvSheets().forEach(function (sh) {
       if (sh._gvDrag) return; sh._gvDrag = true;
@@ -9158,7 +9169,7 @@
       });
     });
   }
-  function gvCloseAll() { try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {} }
+  function gvCloseAll() { try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {} try { stClose(); } catch (e) {} }
   function gvSnap(sh, full) { if (sh) sh.classList.toggle("gv-exp", !!full); } // programmatic snap (DEV + the flows that want the full height)
   function groveNeediest() { // the CTA's plant: the one with the quietest week, then the youngest
     var a = groveState().plants.slice(); if (!a.length) return null;
@@ -9332,7 +9343,7 @@
   }
   function renderGrove() { if (GV.mode === "list" && el("groveSheet") && el("groveSheet").classList.contains("on")) groveBuild(); } // idempotent: no-op unless the list is actually up
   function groveWire() {
-    try { vrtWire(); goWire(); gvDragWire(); } catch (e) {} // the virtues + goals coins and the two-snap sheet drag ride the same wiring call, so it wakes on every path into the world
+    try { vrtWire(); goWire(); stWire(); gvDragWire(); } catch (e) {} // the virtues + goals coins and the two-snap sheet drag ride the same wiring call, so it wakes on every path into the world
     if (GV.wired) return; GV.wired = true;
     var fl = el("groveFlower"); if (fl) fl.onclick = function () { groveToggle(); };
     var cn = el("gvCoinHabits"); if (cn) cn.onclick = function () { groveOpen("list"); };
@@ -9614,7 +9625,7 @@
   }
   function vrtOpen(mode) {
     var sh = el("virtueSheet"); if (!sh) return;
-    try { groveClose(); goClose(); } catch (e) {}      // one garden menu at a time
+    try { groveClose(); goClose(); stClose(); } catch (e) {} // one garden menu at a time
     VV.mode = mode || "list"; if (VV.mode !== "list") VV.sel = null;
     vrtBuild(); sh.classList.add("on"); sh.classList.remove("gv-exp"); // partway by default sh.classList.remove("gv-exp"); // every open starts PARTWAY; full height is earned by the pull
     var cn = el("groveCoins"), fl = el("groveFlower");
@@ -9984,7 +9995,7 @@
   }
   function goOpen(mode) {
     var sh = el("goalSheet"); if (!sh) return;
-    try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {}
+    try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { stClose(); } catch (e) {}
     GV3.mode = mode || "list"; goBuild(); sh.classList.add("on"); sh.classList.remove("gv-exp"); // partway by default sh.classList.remove("gv-exp"); // every open starts PARTWAY; full height is earned by the pull
     var cn = el("groveCoins"), fl = el("groveFlower");
     if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); }
@@ -10040,6 +10051,174 @@
     "Place the boulder": "Поставить валун", "Done.": "Готово.",
     "Colour rises from the stone. It steps off the plinth, onto the grass, yours for good.": "Цвет поднимается по камню. Существо сходит с постамента на траву, твоё навсегда.",
     "Go say hi": "Поздороваться"
+  });
+  // ===== THE STORE (garden menu 4 of 4, 2026-08-12) — frame 17a. The column is now complete: habits · virtues · goals · store.
+  // THE LIVING LAW: this shop sells COMFORT and nothing else. Every item is decor. Nothing here buys a stage, a streak, a
+  // creature, a shortcut or an advantage — proof is earned or it isn't, and the tagline says so out loud on the sheet.
+  // NO SECOND PLACEMENT SYSTEM: there is none to extend (`ISLE.objects` is empty and never persisted, and `S.game.garden`
+  // is the retired seed-pip ceremony that only draws when SANCTUARY is off). The garden's ESTABLISHED pattern is that each
+  // menu owns its own array of `{tx,ty}` rows and shares ONE mechanism — gardenSpots() for the free ground, the glowing
+  // candidate spots, and the single base-y depth list. The store follows that pattern exactly.
+  // NO SCHEMA BUMP: `S.store` is a purely-additive field behind a guarded read, which the @SEC:STATE contract explicitly
+  // exempts (the S.mood / S.acts / S.bk precedent). Nothing existing changes shape, so nothing can be silently wiped.
+  var ST_CATS = [{ k: "nature", n: "Nature" }, { k: "light", n: "Light" }, { k: "paths", n: "Paths" }, { k: "water", n: "Water" }];
+  // PRICES. Nature's five are the FRAME'S OWN numbers (17a prints 80/45/60/90/70). The other fifteen are set in that same
+  // 45-90 band by how much room the piece takes: against the app's earn rates (grove stage-up 5, tracked block 8, goal
+  // wakes 12/25/40) the cheapest is a couple of days of ordinary practice and the dearest is about a big goal's wake.
+  var ST_ITEMS = [
+    { id: "nature-boulder",        c: "nature", n: "Boulder",         p: 45, h: 0.8 },
+    { id: "nature-cattails",       c: "nature", n: "Cattails",        p: 60, h: 0.85 },
+    { id: "nature-white-shrub",    c: "nature", n: "White Shrub",     p: 70, h: 0.85 },
+    { id: "nature-berry-bush",     c: "nature", n: "Berry Bush",      p: 80, h: 0.9 },
+    { id: "nature-pink-bush",      c: "nature", n: "Pink Bush",       p: 90, h: 0.9 },
+    { id: "light-mushroom-light",  c: "light",  n: "Mushroom Light",  p: 50, h: 0.6, glow: "#ffd98a" },
+    { id: "light-firefly-jar",     c: "light",  n: "Firefly Jar",     p: 55, h: 0.7, glow: "#ffe27a" },
+    { id: "light-lantern-string",  c: "light",  n: "Lantern String",  p: 75, h: 0.9, glow: "#ffb45e" },
+    { id: "light-zen-lantern",     c: "light",  n: "Zen Lantern",     p: 85, h: 1.0, glow: "#ffd06a" },
+    { id: "light-lamp-post",       c: "light",  n: "Lamp Post",       p: 90, h: 1.5, glow: "#ffe9a8" },
+    { id: "paths-stepping-stones", c: "paths",  n: "Stepping Stones", p: 45, h: 0.5 },
+    { id: "paths-fence",           c: "paths",  n: "Fence",           p: 50, h: 0.7 },
+    { id: "paths-birdbath",        c: "paths",  n: "Birdbath",        p: 80, h: 0.9 },
+    { id: "paths-bench",           c: "paths",  n: "Bench",           p: 85, h: 0.8 },
+    { id: "paths-footbridge",      c: "paths",  n: "Footbridge",      p: 90, h: 0.7 },
+    { id: "water-potted-fern",     c: "water",  n: "Potted Fern",     p: 55, h: 0.8 },
+    { id: "water-wind-chime",      c: "water",  n: "Wind Chime",      p: 60, h: 1.2 },
+    { id: "water-swing",           c: "water",  n: "Swing",           p: 75, h: 1.3 },
+    { id: "water-pond",            c: "water",  n: "Pond",            p: 85, h: 0.9 },
+    { id: "water-fountain",        c: "water",  n: "Fountain",        p: 90, h: 1.2 }
+  ];
+  var SV = { mode: null, cat: "nature", sel: null, place: null, wired: false };
+  function stState() { S.store = S.store || { owned: [] }; S.store.owned = S.store.owned || []; return S.store; } // guarded read, purely additive
+  function stItem(id) { for (var i = 0; i < ST_ITEMS.length; i++) if (ST_ITEMS[i].id === id) return ST_ITEMS[i]; return null; }
+  function stSrc(id) { return "assets/garden/store/" + id + ".png"; }
+  function stOwnedN(id) { var n = 0, a = stState().owned; for (var i = 0; i < a.length; i++) if (a[i].item === id && a[i].tx != null) n++; return n; }
+  function stUnplaced() { var a = stState().owned; for (var i = 0; i < a.length; i++) if (a[i].tx == null) return a[i]; return null; }
+  function stSpark() { return (S.game && S.game.spark) || 0; }
+  function stBuy(it) { // the app's own spend idiom (the island claim + the board/tricks upgrades all do exactly this); there is no shared spend() helper to reuse
+    if (stSpark() < it.p) return false;
+    var spots = gardenSpots();
+    if (!spots.length) { try { toast(tr("walk onto open grass and try again")); } catch (e) {} return false; } // never take gems for something with nowhere to stand
+    S.game.spark -= it.p;
+    var row = { item: it.id, tx: null, ty: null }; stState().owned.push(row); save();  // OWNED THE INSTANT IT IS BOUGHT: backing out of placement can never lose a purchase; an unplaced row simply isn't drawn
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+    SV.place = { item: it.id, row: row, spots: spots, pick: spots[0] || null };
+    SV.mode = "place"; stBuild(); renderGame();
+    return true;
+  }
+  function stDoPlace() {
+    var P = SV.place; if (!P || !P.pick || !P.row) return;
+    P.row.tx = P.pick.tx; P.row.ty = P.pick.ty; save();
+    try { for (var i = 0; i < 12; i++) dust.push({ x: P.pick.tx * TILE + (Math.random() - 0.5) * TILE, y: P.pick.ty * TILE + (Math.random() - 0.5) * TILE * 0.5, vx: (Math.random() - 0.5) * 1.8, vy: -Math.random() * 1.4, life: 22 }); } catch (e) {}
+    SV.place = null; SV.mode = "list"; stBuild(); renderGame();
+  }
+  function stWorldObjs() { var out = [], a = stState().owned;
+    for (var i = 0; i < a.length; i++) { var o = a[i], it = stItem(o.item); if (!it || o.tx == null) continue;
+      var im = goImg(stSrc(o.item)); if (!im.complete || !im.naturalWidth) continue;
+      out.push({ img: im, x: o.tx * TILE, y: o.ty * TILE, h: TILE * it.h });
+    }
+    return out;
+  }
+  function stGroundGlow(ctx, t) { // LIGHT items lay the same warm pool a lit lantern does — one code path, one grammar
+    var a = stState().owned, i, pulse = 0.5 + 0.5 * Math.sin(t * 1.8);
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (i = 0; i < a.length; i++) { var o = a[i], it = stItem(o.item); if (!it || !it.glow || o.tx == null) continue;
+      var cx = o.tx * TILE, cy = o.ty * TILE, r = TILE * 0.8;
+      var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, r);
+      g.addColorStop(0, it.glow + (0.28 + 0.1 * pulse > 0.35 ? "66" : "4d")); g.addColorStop(1, it.glow + "00");
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.4); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
+    }
+    if (SV.place && SV.place.spots) { for (i = 0; i < SV.place.spots.length; i++) { var s = SV.place.spots[i], cx2 = s.tx * TILE, cy2 = s.ty * TILE;
+      var sel = SV.place.pick && SV.place.pick.tx === s.tx && SV.place.pick.ty === s.ty, rr = TILE * (sel ? 1.15 : 0.9);
+      var g2 = ctx.createRadialGradient(cx2, cy2, 2, cx2, cy2, rr);
+      g2.addColorStop(0, "rgba(255,196,31," + ((sel ? 0.62 : 0.34) + 0.16 * pulse).toFixed(3) + ")"); g2.addColorStop(1, "rgba(255,196,31,0)");
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(cx2, cy2, rr, 0, 7); ctx.fill(); } }
+    ctx.restore();
+    if (SV.place && SV.place.spots) { ctx.save();
+      for (i = 0; i < SV.place.spots.length; i++) { var s2 = SV.place.spots[i], sel2 = SV.place.pick && SV.place.pick.tx === s2.tx && SV.place.pick.ty === s2.ty;
+        ctx.strokeStyle = "rgba(255,196,31," + (sel2 ? 0.9 : 0.45) + ")"; ctx.lineWidth = sel2 ? 3 : 2; ctx.setLineDash(sel2 ? [] : [7, 7]);
+        ctx.beginPath(); ctx.arc(s2.tx * TILE, s2.ty * TILE, TILE * 0.42, 0, 7); ctx.stroke(); }
+      ctx.restore();
+    }
+  }
+  function stWorldTap(sx, sy) { if (!SV.place || !SV.place.spots || !SV.place.spots.length) return false;
+    var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
+    for (var i = 0; i < SV.place.spots.length; i++) { var s = SV.place.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
+    if (best && bd < TILE * 2.6) { SV.place.pick = best; stBuild(); }
+    return true;
+  }
+  function stBuild() {
+    var sh = el("storeSheet"); if (!sh) return;
+    var list = sh.querySelector(".gv-list"), foot = sh.querySelector(".gv-foot"), sub = sh.querySelector(".gv-sub"), ttl = sh.querySelector(".gv-title");
+    if (!list || !foot) return;
+    groveDrain(list); groveDrain(foot);
+    sh.classList.toggle("st-place", SV.mode === "place");
+    if (ttl) ttl.textContent = tr("Store");
+    if (SV.mode === "place") {
+      var P = SV.place, itp = stItem(P.item);
+      if (sub) sub.textContent = "";
+      var pr = add(list, "div", "st-placerow"), pi = add(pr, "img"); pi.src = stSrc(P.item); pi.alt = "";
+      var pt = add(pr, "div"); add(pt, "b", null, tr("Where should it go?"));
+      add(pt, "span", null, tr("tap a glow · you can move it later"));
+      var pb = add(foot, "button", "gv-cta", tr("Put it here"));
+      if (!P.pick) pb.style.opacity = ".5";
+      pb.onclick = function () { stDoPlace(); };
+      return;
+    }
+    if (sub) sub.textContent = "";
+    var tabs = add(list, "div", "st-tabs");
+    ST_CATS.forEach(function (c) { var b = add(tabs, "span", "st-tab" + (SV.cat === c.k ? " on" : ""), tr(c.n)); b.onclick = function () { SV.cat = c.k; SV.sel = null; stBuild(); }; });
+    var grid = add(list, "div", "st-grid");
+    ST_ITEMS.filter(function (i) { return i.c === SV.cat; }).forEach(function (it) {
+      var have = stOwnedN(it.id), can = stSpark() >= it.p;
+      var cell = add(grid, "div", "st-item" + (SV.sel === it.id ? " sel" : have ? " owned" : ""));
+      var im = add(cell, "img"); im.src = stSrc(it.id); im.alt = "";
+      add(cell, "span", "st-nm", tr(it.n));
+      var pz = add(cell, "span", "st-price" + (can ? "" : " short")); add(pz, "i", "ti ti-diamond-filled"); add(pz, "span", null, "" + it.p);
+      if (have) add(cell, "span", "st-have", tr("placed") + " " + have);
+      cell.onclick = function () { SV.sel = SV.sel === it.id ? null : it.id; stBuild(); };
+    });
+    add(list, "span", "st-tag", tr("beauty can be bought · proof can't")); // 17a/6a, verbatim: the shop's own honesty line
+    var wait = stUnplaced();
+    if (wait) { var wb = add(foot, "button", "gv-cta", tr("Place") + " " + tr(stItem(wait.item).n));
+      wb.onclick = function () { var sp = gardenSpots(); if (!sp.length) { try { toast(tr("walk onto open grass and try again")); } catch (e) {} return; } SV.place = { item: wait.item, row: wait, spots: sp, pick: sp[0] }; SV.mode = "place"; stBuild(); renderGame(); };
+      return;
+    }
+    var s2 = SV.sel && stItem(SV.sel);
+    if (s2) { var ok = stSpark() >= s2.p;
+      var c = add(foot, "button", "gv-cta", ok ? (tr("Buy") + " " + tr(s2.n) + " · " + s2.p) : (tr("Keep earning") + " · " + (s2.p - stSpark()) + " " + tr("to go")));
+      if (!ok) c.style.opacity = ".55";
+      c.onclick = function () { if (ok) stBuy(s2); };
+    }
+  }
+  function stOpen(mode) {
+    var sh = el("storeSheet"); if (!sh) return;
+    try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {}
+    SV.mode = mode || "list"; stBuild(); sh.classList.add("on"); sh.classList.remove("gv-exp"); // partway by default
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); }
+    if (fl) fl.classList.add("gv-spun");
+  }
+  function stClose() {
+    var sh = el("storeSheet"); if (sh) sh.classList.remove("on", "st-place");
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.remove("on", "gv-hid"); }
+    if (fl && !GV.mode && !VV.mode && !GV3.mode) fl.classList.remove("gv-spun");
+    SV.mode = null; SV.sel = null; SV.place = null;
+  }
+  function renderStore() { if (SV.mode === "list" && el("storeSheet") && el("storeSheet").classList.contains("on")) stBuild(); }
+  function stWire() { if (SV.wired) return; SV.wired = true;
+    var cn = el("gvCoinStore"); if (cn) cn.onclick = function () { stOpen("list"); };
+    var sh = el("storeSheet"); if (sh) { var x = sh.querySelector(".gv-x"); if (x) x.onclick = function () { stClose(); }; }
+  }
+  Object.assign(I18N.ru, { // THE STORE strings (B4 law: EN source + RU dict in the same commit)
+    "Store": "Лавка", "Nature": "Природа", "Light": "Свет", "Paths": "Дорожки", "Water": "Вода",
+    "beauty can be bought · proof can't": "красоту можно купить · доказательство нет",
+    "Buy": "Купить", "Keep earning": "Копи дальше", "to go": "осталось", "placed": "поставлено",
+    "Where should it go?": "Где это поставить?", "Put it here": "Поставить здесь", "Place": "Поставить",
+    "Boulder": "Валун", "Cattails": "Рогоз", "White Shrub": "Белый куст", "Berry Bush": "Ягодный куст", "Pink Bush": "Розовый куст",
+    "Mushroom Light": "Грибной фонарик", "Firefly Jar": "Банка со светляками", "Lantern String": "Гирлянда фонариков", "Zen Lantern": "Дзен-фонарь", "Lamp Post": "Фонарный столб",
+    "Stepping Stones": "Камни для перехода", "Fence": "Изгородь", "Birdbath": "Купальня для птиц", "Bench": "Скамейка", "Footbridge": "Мостик",
+    "Potted Fern": "Папоротник в горшке", "Wind Chime": "Музыка ветра", "Swing": "Качели", "Pond": "Пруд", "Fountain": "Фонтан"
   });
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -12414,7 +12593,7 @@
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
   // @SEC:RENDER — renderAll fan-out: the god-dispatcher over every per-surface renderer. Adding a surface = add its renderer HERE, and make it idempotent (the master tick re-enters, see @SEC:BOOT).
-  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { renderVirtues(); } catch (e) {} try { renderGoals2(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
+  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { renderVirtues(); } catch (e) {} try { renderGoals2(); } catch (e) {} try { renderStore(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
@@ -17524,6 +17703,14 @@
     if (act === "new") { if (!gameOn) openGame(); GV3.draft = { title: m || "", byWhen: null, size: "medium", first: "", lint: null }; goOpen("new"); return "first cut"; }
     if (act === "snap") { var shx = el("goalSheet") || el("virtueSheet") || el("groveSheet"); gvSnap(document.querySelector("#groveSheet.on, #virtueSheet.on, #goalSheet.on") || shx, n !== 0); return "snap " + (n !== 0 ? "full" : "partway"); }
     return { goals: goMine().map(function (g) { return { t: g.title, size: g.size, sp: g.sp, stage: goStage(g), state: g.state, quiet: goQuietDays(g) }; }), view: GV3 };
+  };
+  window.DEV.store = function (act, id, n) { // DEV: drive THE STORE without grinding gems — grant / buy / place / open.
+    if (act === "reset") { S.store = { owned: [] }; save(); try { stClose(); } catch (e) {} return "store reset"; }
+    if (act === "gems") { S.game.spark = n || 500; save(); renderGame(); return S.game.spark; }
+    if (act === "buy") { var it = stItem(id || "light-lamp-post"); if (!it) return "no item"; if (!gameOn) openGame(); if (stSpark() < it.p) { S.game.spark = it.p; } return stBuy(it) ? { bought: it.id, left: stSpark(), spots: SV.place.spots } : "too dear"; }
+    if (act === "place") { stDoPlace(); return stState().owned; }
+    if (act === "open") { if (!gameOn) openGame(); if (id) SV.cat = id; stOpen("list"); return "store"; }
+    return { owned: stState().owned, spark: stSpark(), view: SV };
   };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.

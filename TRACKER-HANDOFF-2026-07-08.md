@@ -398,3 +398,11 @@ Built by Opus agent per _specs/GARDEN-MVP-SPEC-2026-08-08.md (+ build addendum) 
 **Builder calls awaiting veto:** frame's "→" glyph shipped as the word "to" (copy-gate catches arrows); "spunUp" stack mapped to wind-down/peach; flower glyph = ti-flower #12d68f (design file self-contradicted); right pad's tap-jump + manual spin gone with the merge (jump still on hidden #jumpBtn); RESTING threshold eyeballed at 10 quiet days.
 **ONE MOVE, David:** open /alter/fresh.html on the phone, walk the loop (flower → grove → deep card → hold-to-grow on the island) and verdict the gesture feel + the veto list.
 **ONE MOVE, Claude:** on David's verdicts, wire the goals menu build (engine spec + fixed frames are ready and banked).
+
+---
+## 2026-08-12 · v1256-v1259 — THE FULL GARDEN DAY (all four menus live)
+One session, four ships: v1256 home planner door (violet sticker = real planner, was picker-over-home). v1257 VIRTUES (SCHEMA 7, relight ritual, craft tiers 0/25/120/365, island lanterns) + purple flower per frame 6a + legacy #t-day killed (wipes 143->141). v1258 GOALS (SCHEMA 8 extends S.goals in place, statue system, surprise creature, WHY on card, stall/drift, koi+pond) + the three SHEET LAWS (partway default + pull-to-full, flower minimizes, opaque backgrounds, David's words over the frame's .95 alpha). v1259 STORE (no schema bump needed: additive guarded read; frame prices for Nature, 45-90 band; buy-then-place with the no-ground refund guard; gardenSpots rings widened to 7 + fallback, fixing a latent all-menus failure). All copy Gate-1 clean, all ratchets clean, designAudit 37/37 every ship, zero console errors every ship.
+**DEVICE-UNTESTED (the honest list):** the two-snap sheet drag, relight hold, coin bloom stagger, carve/craft strip snaps vs pane swipe, list scrolls inside partial sheets, placement taps, centered-pad feel.
+**DEFERRED with clean seams:** goals engine B2 (practice-link steps, weekly ONE, cap screen, wish tray, creation floors, miss retro), pond build stages, movement/wind-down science content, era-driven island growth tie.
+**ONE MOVE, David:** walk all four menus on the phone (fresh.html), verdict the sheet drag feel first: it gates everything.
+**ONE MOVE, Claude:** on the verdicts, run goals engine phase B2, then the garden onboarding beat (first-seed ceremony wiring).

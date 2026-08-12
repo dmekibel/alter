@@ -3454,7 +3454,9 @@
   .gv-coin i{ font-size:21px; color:#12d68f; }
   #gvCoinVirtues i{ color:#ff3f9e; }
   #gvCoinGoals i{ color:#1fb0f5; }
+  #gvCoinStore i{ color:#ffc41f; }
   #groveCoins.on .gv-coin:nth-child(3){ transition-delay:.1s; }
+  #groveCoins.on .gv-coin:nth-child(4){ transition-delay:.15s; }
   #groveCoins.on .gv-coin:nth-child(2){ transition-delay:.05s; } /* the column blooms with a springy stagger (6a): each coin above the last leaves .05s later */
   .gv-coin:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   #groveSheet{ --gvfull:120px; position:absolute; left:0; right:0; bottom:0; top:38%; border-radius:26px 26px 0 0; background:#160714; border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 16px 0; display:flex; flex-direction:column; gap:9px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1), top .3s cubic-bezier(.2,.9,.3,1); pointer-events:none; }
@@ -3464,8 +3466,8 @@
      EARNED BY THE GESTURE: drag the grab handle or the header up and the sheet takes its frame-height (the grove's 120px,
      the virtues' and goals' 56px). Dragging back down returns it to partway; dragging down from partway closes it.
      The sheets are OPAQUE (#160714, the solid form of the frames' rgba(22,7,20,.95)) — the island never ghosts through. */
-  #groveSheet.gv-exp, #virtueSheet.gv-exp, #goalSheet.gv-exp{ top:var(--gvfull); }
-  #groveSheet.gv-drag, #virtueSheet.gv-drag, #goalSheet.gv-drag{ transition:none; }
+  #groveSheet.gv-exp, #virtueSheet.gv-exp, #goalSheet.gv-exp, #storeSheet.gv-exp{ top:var(--gvfull); }
+  #groveSheet.gv-drag, #virtueSheet.gv-drag, #goalSheet.gv-drag, #storeSheet.gv-drag{ transition:none; }
   .gv-grab{ cursor:grab; touch-action:none; }
   .gv-head{ touch-action:none; }
   #groveSheet.gv-short{ top:auto; height:auto; } /* GF7: the planting sheet is a low strip so the island IS the screen */
@@ -3756,6 +3758,35 @@
   .go-wake img{ width:auto; height:150px; object-fit:contain; image-rendering:pixelated; }
   .go-wake .go-h1{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; color:#fff2f9; line-height:1.25; }
   .go-wake .go-p{ text-align:center; font-size:12px; font-weight:600; color:#e7c6d9; line-height:1.5; padding:0 10px; text-wrap:pretty; }
+  /* ===== THE STORE (garden menu 4 of 4 — frame 17a). Fourth instance of the ONE sheet grammar: every .gv-* shell class
+     reused, only --gvhue moves. The store sells COMFORT and nothing else: no meaning, no shortcut, no advantage is on sale. ===== */
+  #storeSheet{ --gvfull:56px; --gvhue:#ffc41f; position:absolute; left:0; right:0; bottom:0; top:38%; border-radius:26px 26px 0 0; background:#160714; border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 18px 0; display:flex; flex-direction:column; gap:6px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1), top .3s cubic-bezier(.2,.9,.3,1); pointer-events:none; }
+  #storeSheet.on{ transform:none; pointer-events:auto; }
+  #storeSheet.st-place{ top:auto; height:auto; }
+  #storeSheet.st-place .gv-list{ flex:none; padding-bottom:0; overflow:visible; }
+  #storeSheet.st-place .gv-fade{ display:none; }
+  #storeSheet.st-place .gv-foot{ position:static; padding:0 2px calc(96px + env(safe-area-inset-bottom,0px)); }
+  #storeSheet .gv-badge i{ color:#fff2f9; }              /* 17a: the store badge wears a WHITE glyph on its yellow, not the ink */
+  .st-tabs{ display:flex; gap:7px; align-self:stretch; padding-bottom:2px; flex:none; overflow-x:auto; scrollbar-width:none; touch-action:pan-x; }
+  .st-tabs::-webkit-scrollbar{ display:none; }
+  .st-tab{ padding:6px 14px; border-radius:999px; background:rgba(22,5,16,.35); border:2.5px solid #160510; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#f0a9cd; cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap; flex:none; }
+  .st-tab.on{ background-color:#12d68f; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px); box-shadow:0 3px 0 #160510; color:#2a1730; } /* 17a paints the live tab in --alter-green, not the store hue */
+  .st-grid{ display:flex; flex-wrap:wrap; gap:9px; align-self:stretch; align-content:flex-start; }
+  .st-item{ box-sizing:border-box; width:calc(33.33% - 6px); border-radius:20px; background:rgba(22,5,16,.35); border:2.5px solid #160510; display:flex; flex-direction:column; align-items:center; gap:5px; padding:10px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .st-item.owned{ border-color:#ffc41f; }
+  .st-item.sel{ border-color:#ffc41f; background:rgba(255,196,31,.1); }
+  .st-item img{ width:64px; height:58px; object-fit:contain; object-position:bottom; image-rendering:pixelated; flex:none; }
+  .st-nm{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10.5px; color:#fff2f9; text-align:center; line-height:1.2; }
+  .st-price{ display:inline-flex; align-items:center; gap:3px; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#ffc41f; }
+  .st-price i{ font-size:10px; }
+  .st-price.short{ color:#a5718f; }
+  .st-have{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10px; color:#ffc41f; }
+  .st-tag{ font-size:10.5px; font-weight:600; color:#a5718f; line-height:1.45; padding:0 2px; flex:none; text-align:center; }
+  .st-placerow{ display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:15px; background:rgba(22,5,16,.4); border:2.5px solid rgba(240,169,205,.16); flex:none; }
+  .st-placerow img{ width:auto; height:44px; object-fit:contain; image-rendering:pixelated; flex:none; }
+  .st-placerow div{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .st-placerow b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.2; }
+  .st-placerow span{ font-size:10.5px; font-weight:600; color:#a5718f; line-height:1.4; }
 </style>
 </head>
 <body>
@@ -3829,7 +3860,7 @@
     <div id="gameNav"><button class="jpn" id="gnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn" id="gnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn on" id="gnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div>
     <button id="gnToggle" type="button" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
     <!-- THE GROVE (garden MVP): the entry flower mirrors the home door across the bottom edge; its coin column unfolds upward; the sheet slides over the lower screen and NEVER scrims the island. Scaffold is static markup on purpose — JS only pokes these nodes (zero innerHTML wipes, ratchet law). -->
-    <div id="groveCoins"><button class="gv-coin" id="gvCoinHabits" type="button" aria-label="Habits"><i class="ti ti-seeding"></i></button><button class="gv-coin" id="gvCoinVirtues" type="button" aria-label="Virtues"><i class="ti ti-heart"></i></button><button class="gv-coin" id="gvCoinGoals" type="button" aria-label="Goals"><i class="ti ti-mountain"></i></button></div>
+    <div id="groveCoins"><button class="gv-coin" id="gvCoinHabits" type="button" aria-label="Habits"><i class="ti ti-seeding"></i></button><button class="gv-coin" id="gvCoinVirtues" type="button" aria-label="Virtues"><i class="ti ti-heart"></i></button><button class="gv-coin" id="gvCoinGoals" type="button" aria-label="Goals"><i class="ti ti-mountain"></i></button><button class="gv-coin" id="gvCoinStore" type="button" aria-label="Store"><i class="ti ti-building-store"></i></button></div>
     <button id="groveFlower" type="button" aria-label="Garden"><i class="ti ti-flower"></i></button>
     <div id="groveSheet">
       <span class="gv-grab"></span>
@@ -3860,6 +3891,15 @@
     <div id="goalSheet">
       <span class="gv-grab"></span>
       <div class="gv-head"><span class="gv-badge"><i class="ti ti-mountain"></i></span><span class="gv-title">Goals</span><button class="gv-x" type="button" aria-label="Close"><i class="ti ti-x"></i></button></div>
+      <div class="gv-sub"></div>
+      <div class="gv-list"></div>
+      <div class="gv-fade"></div>
+      <div class="gv-foot"></div>
+    </div>
+    <!-- THE STORE (garden menu 4 of 4): the fourth instance of the one sheet shell, re-pointed to the store hue. -->
+    <div id="storeSheet">
+      <span class="gv-grab"></span>
+      <div class="gv-head"><span class="gv-badge"><i class="ti ti-building-store"></i></span><span class="gv-title">Store</span><button class="gv-x" type="button" aria-label="Close"><i class="ti ti-x"></i></button></div>
       <div class="gv-sub"></div>
       <div class="gv-list"></div>
       <div class="gv-fade"></div>
@@ -3931,6 +3971,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1258"></script>
+  <script src="app.js?v=1259"></script>
 </body>
 </html>
