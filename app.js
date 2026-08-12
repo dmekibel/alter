@@ -4484,6 +4484,7 @@
     var b = PM_BEATS.slice();
     if (!pmHasDrift(mr)) b = b.filter(function (x) { return x !== "learn"; });
     if (pmIsSunday()) b.splice(b.indexOf("deal"), 0, "weekseal");
+    if (pmIsSunday() && goWeeklyPool().length) b.splice(b.indexOf("deal"), 0, "weekone"); // THE WEEKLY ONE rides the existing week-seal ritual, and only exists when there is something to ask about
     return b;
   }
   function pmStageStep(sb) { // entry: reset transient state, render beat 0 (called once per open)
@@ -4514,6 +4515,7 @@
     else if (beat === "tomorrow") pmBeatTomorrow(card, sb, mr, k);
     else if (beat === "install") pmBeatInstall(card, sb, mr, k);
     else if (beat === "weekseal") pmBeatWeekSeal(card, sb, mr, k);
+    else if (beat === "weekone") pmBeatWeekOne(card, sb);
     else pmBeatDeal(card, sb, mr, k);
     try { renderTFControls("pm"); } catch (e) {} // refresh the primary label ("Continue" → "Rest now")
   }
@@ -4697,6 +4699,35 @@
     }
   }
   // ---- ORGAN G · WEEK SEAL (DEPTH BUILD WAVE 2): Sunday's close grows one screen. Ceiling = the GOLF CARD (behaviors × 7 days, birdie=kept; "under par is an event, not a verdict") + a "+1 next week?" chip from the biggest-bogey behavior. Floor = the garden grew, no grid ever.
+  // ===== B2 §6 THE WEEKLY ONE — the goals-to-planner bridge ==========================================================
+  // Of every open goal's next step, which is THIS week's best opportunity? The pick is not a note: it becomes a REAL
+  // scheduled block on a real day through the app's own block path, wearing the goal mark. Rohn's one-best-opportunity
+  // plus the 4DX weekly cadence. It asks ONCE, at a ritual the player already opens; it never pushes.
+  function goWeeklyPool() { var out = []; try {
+    goMine().forEach(function (g) { if (g.state !== "carving") return; var nx = goNext(g); if (nx) out.push({ g: g, st: nx }); });
+  } catch (e) {} return out; }
+  function goPlantWeekly(g, st) { // the app's existing block-creation path — same shape blocks() everywhere else pushes
+    var tk = tomK(), t = 0;
+    try { t = nextFreeMin(tk); } catch (e) { t = 540; }
+    var title = goPracticeStep(st) ? tr(GROVE_SPECIES[st.practiceId].name) : st.t;
+    blocks(tk).push({ id: uid(), time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 30, title: title, prio: 2,
+      color: (DOM[g.domain || "focus"] || DOM.focus).c, domain: g.domain || "focus", done: false, goalId: g.id });
+    try { reflow(tk); } catch (e) {}
+    g.lastStepK = todayK(); save();
+    try { renderToday(); } catch (e) {}
+  }
+  function pmBeatWeekOne(card, sb) {
+    add(card, "div", "tfs-h", tr("The week ahead."));
+    add(card, "div", "tfs-sub", tr("Which goal step matters most next week?")).style.cssText = "line-height:1.5;";
+    var pool = goWeeklyPool(), wrap = add(card, "div"); wrap.style.cssText = "display:flex;flex-direction:column;gap:7px;margin-top:10px;";
+    pool.forEach(function (p) {
+      var b = add(wrap, "button", "tf-chip"); b.style.cssText = "text-align:left;padding:10px 12px;line-height:1.4;";
+      b.innerHTML = '<b style="display:block;font-size:12.5px;color:#fff2f9">' + esc(p.g.title) + '</b><span style="font-size:11.5px;color:#c9a3ba">' + esc(goPracticeStep(p.st) ? goPracticeLine(p.st) : p.st.t) + '</span>';
+      if (sb.dataset.weekOne === p.g.id) b.classList.add("on");
+      b.onclick = function () { sb.dataset.weekOne = p.g.id; goPlantWeekly(p.g, p.st); pmRenderBeat(sb); };
+    });
+    if (sb.dataset.weekOne) add(card, "div", "tfs-sub", tr("It is on tomorrow, waiting.")).style.cssText = "margin-top:10px;color:#7fd9a8;";
+  }
   function pmBeatWeekSeal(card, sb, mr, k) {
     add(card, "div", "tfs-h", tr("The week, sealed."));
     if (pmFloor()) { add(card, "div", "tfs-sub", tr("Seven days behind you. The garden grew, quietly, really.")).style.cssText = "line-height:1.5;"; renderDeckCard(card, "week-seal"); return; } // floor: garden line + one week-seal proverb
@@ -4796,6 +4827,13 @@
       if (virtueOf(b) !== am.virtue) return ""; var v = VIRTUES.filter(function (z) { return z.k === am.virtue; })[0]; if (!v) return "";
       return ' <span class="am-vglyph" style="opacity:.5;font-size:.85em" title="today\'s virtue">' + v.e + '</span>';
     } catch (e) { return ""; }
+  }
+  function goalGlyph(b) { // B2 §5b: a planner block whose practice feeds a goal wears the goals mark, subtle. PURE additive
+    // innerHTML in the label concat, exactly the armorGlyph/amVirtueGlyph law: zero geometry, zero timeline logic touched.
+    if (!b.goalId || b.done) return "";
+    var g = null; try { g = goById(b.goalId); } catch (e) {}
+    if (!g || g.state === "done") return "";
+    return ' <i class="ti ti-target" style="opacity:.5;font-size:.85em" title="' + esc(tr("this block also carves") + " " + g.title) + '"></i>';
   }
   function armorGlyph(b) { // WOOP shield-pip (DEPTH §2 Organ B, deferred from v891): PM Close wrote {woop, armor:true} onto tomorrow's block — this makes it visible. Same law as amVirtueGlyph: PURE additive innerHTML in the label concat, zero geometry, drops once the block is done (cele has its own sparkle).
     return (b.armor && !b.done) ? ' <i class="ti ti-shield-check" style="opacity:.55;font-size:.85em" title="armored: it has a plan"></i>' : "";
@@ -9743,7 +9781,7 @@
     var nx = goNext(g), st = goSteps(g);
     if (!nx) { line.textContent = tr("every step is done"); return line; }
     if (goSizeOf(g) !== "small") add(line, "span", null, goDoneN(g) + " " + tr("of") + " " + st.length + " " + tr("steps") + " · ");
-    add(line, "b", null, tr("next") + " · " + (nx.floor ? nx.floor + " " + tr("min") + " · " : "") + nx.t);
+    add(line, "b", null, tr("next") + " · " + (goPracticeStep(nx) ? goPracticeLine(nx) : ((nx.floor ? nx.floor + " " + tr("min") + " · " : "") + nx.t)));
     return line;
   }
   function goRow(host, g) {
@@ -9803,10 +9841,12 @@
     goSteps(g).forEach(function (s, i) {
       var nx = goNext(g) === s, row = add(box, "div", "go-step" + (s.done ? " done" : nx ? " next" : ""));
       add(row, "span", "go-num", "" + (i + 1));
-      add(row, "span", "go-t", (s.floor ? s.floor + " " + tr("min") + " · " : "") + s.t);
+      add(row, "span", "go-t", goPracticeStep(s) ? goPracticeLine(s) : ((s.floor ? s.floor + " " + tr("min") + " · " : "") + s.t));
       if (s.done) add(row, "span", "go-when", goShortWhen(s.doneK)); else if (s.due) add(row, "span", "go-when", goShortWhen(s.due));
       row.onclick = function (e) { e.stopPropagation(); goToggleStep(g, s); };
     });
+    var addPr = add(box, "span", "go-ghost", "+ " + tr("link a practice"));
+    addPr.onclick = function (e) { e.stopPropagation(); goPracticeDialog(g); };
     var addStep = add(box, "span", "go-ghost", "+ " + tr("add a step"));
     addStep.onclick = function (e) { e.stopPropagation(); vrtEditDialog("", function (t) { goSteps(g).push({ t: t, due: null, done: false, doneK: null }); goMirror(g); save(); goBuild(); }, tr("Add a step"), tr("Save")); };
     if (!goIsDone(g)) {
@@ -9853,6 +9893,60 @@
     var own = add(row, "span", "go-chip", tr("write my own"));
     own.onclick = function () { ov.remove(); vrtEditDialog("", function (t) { g.woop.plan = t; save(); goBuild(); }, tr("When that happens, I will"), tr("Save")); };
   }
+  // ===== B2 §5b THE PRACTICE LINK — how a bounded goal harnesses a forever practice ================================
+  // One behaviour, one tap, two meanings: the tracked session grows the TREE exactly as before (a day is a day, forever)
+  // and ALSO ticks this goal's counter for the window of this campaign. No double bookkeeping, no second tracking surface.
+  // BORDER RULE (engine §5b): forever-recurring with no finish line = tree only. A goal is allowed to LINK trees; it can
+  // never replace one. Deliberately de-duped per LOGICAL DAY per step, so two sessions in a day move the statue once.
+  function goPracticeStep(st) { return st && st.practiceId && GROVE_SPECIES[st.practiceId] ? st : null; }
+  function goPracticeLine(st) { return tr(GROVE_SPECIES[st.practiceId].name) + " · " + (st.n || 0) + " " + tr("of") + " " + st.need + " " + tr("sessions"); }
+  function goPracticeTick(pid) { // called from tickTool, right beside the grove credit that grows the tree
+    if (!pid || !GROVE_SPECIES[pid]) return;
+    var k = todayK(), touched = false;
+    goMine().forEach(function (g) {
+      if (g.state !== "carving") return;
+      goSteps(g).forEach(function (st) {
+        if (st.done || st.practiceId !== pid) return;
+        if (st.lastK === k) return;                       // the tree counts days, and so does the statue
+        st.lastK = k; st.n = (st.n || 0) + 1; touched = true;
+        if (st.n >= st.need) { st.done = true; st.doneK = k; }
+        g.lastStepK = k; g.lastK = k;
+      });
+      if (touched) { goMirror(g); if (!goNext(g) && g.state === "carving") goWake(g); }
+    });
+    if (touched) { save(); renderGoals2(); }
+  }
+  function goPracticeDialog(g) { // add a practice-link step: pick the practice, then how many sessions this campaign needs
+    var ov = add(document.body, "div"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(8,4,12,.72);display:flex;align-items:center;justify-content:center;padding:22px;";
+    ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+    var card = add(ov, "div"); card.style.cssText = "width:100%;max-width:320px;background:#1c0e30;border:2.5px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:16px;font-family:'Jost',var(--bub),sans-serif;";
+    add(card, "div", null, tr("Which practice does this use?")).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:10px;";
+    var row = add(card, "div", "go-chips");
+    GROVE_ORDER.forEach(function (pid) {
+      var c = add(row, "span", "go-chip", tr(GROVE_SPECIES[pid].name));
+      c.onclick = function () {
+        ov.remove();
+        if (!grovePlantFor(pid)) { goOfferPlant(g, pid); return; }   // the goal needs a practice that has no tree yet
+        vrtEditDialog("20", function (t) { var n = parseInt(t, 10); if (!(n > 0)) return;
+          goSteps(g).push({ t: tr(GROVE_SPECIES[pid].name), practiceId: pid, need: n, n: 0, lastK: null, due: null, done: false, doneK: null });
+          goMirror(g); save(); goBuild(); }, tr("How many sessions?"), tr("Save"));
+      };
+    });
+  }
+  function goOfferPlant(g, pid) { // engine §5b: the goal may plant the tree it needs — the campaign ends, the practice stays
+    var ov = add(document.body, "div"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(8,4,12,.72);display:flex;align-items:center;justify-content:center;padding:22px;";
+    ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+    var card = add(ov, "div"); card.style.cssText = "width:100%;max-width:320px;background:#1c0e30;border:2.5px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:16px;font-family:'Jost',var(--bub),sans-serif;";
+    add(card, "div", null, tr("This goal uses") + " " + tr(GROVE_SPECIES[pid].name) + ". " + tr("Plant it in the grove?")).style.cssText = "color:#f2ecff;font-weight:800;font-size:15px;line-height:1.4;margin-bottom:12px;";
+    var row = add(card, "div", "go-chips");
+    var yes = add(row, "span", "go-chip on", tr("Plant it"));
+    yes.onclick = function () { ov.remove(); goClose(); try { grovePlantMode(pid); } catch (e) {} };
+    var no = add(row, "span", "go-chip", tr("Not now"));
+    no.onclick = function () { ov.remove(); };
+  }
+  // BORDER RULE lint on the goal's own name: a forever-practice typed into the goal flow gets ONE plain line, one tap either way.
+  var GO_FOREVER = ["every day", "everyday", "daily", "each day", "every morning", "every night", "forever"];
+  function goForeverLint(t) { var s2 = (t || "").toLowerCase(); for (var i = 0; i < GO_FOREVER.length; i++) if (s2.indexOf(GO_FOREVER[i]) >= 0) return true; return false; }
   function goMirror(g) { g.subtasks = goSteps(g).map(function (s) { return { title: s.t, done: !!s.done }; }); } // ONE model: the legacy readers (journey bead, day suggestions, the old goals sheet) keep seeing the same steps
   function goToggleStep(g, s) {
     if (goIsDone(g)) return;
@@ -9971,6 +10065,9 @@
     i3.oninput = function () { d.first = i3.value; var l = goLint(i3.value); if (l !== d.lint) { d.lint = l; goBuild(); } };
     if (d.lint) { var lp = add(f3, "div", "go-lint"); add(lp, "i", "ti ti-bulb"); add(lp, "span", null, d.lint); // ONE chip, never a block (engine §1.2)
       lp.onclick = function () { d.first = d.lint.replace(tr("Try: "), ""); d.lint = null; goBuild(); }; }
+    if (goForeverLint(d.title)) { var bl = add(list, "div", "go-lint"); add(bl, "i", "ti ti-plant-2"); // BORDER RULE, one plain line, one tap either way
+      add(bl, "span", null, tr("This one sounds like a practice. Practices live in the grove. Plant it there?"));
+      bl.onclick = function () { goClose(); try { groveOpen("list"); } catch (e) {} }; }
     add(list, "span", null, tr("One is enough for now. You can add more any time after the boulder is placed.")).style.cssText = "font-size:10.5px;font-weight:600;color:#a5718f;line-height:1.45;";
     var f4 = add(list, "div", "go-field"); add(f4, "b", null, tr("HOW BIG IS THIS ONE?"));
     var sz = add(f4, "div", "go-sizes");
@@ -10050,7 +10147,14 @@
     "Finish this and the boulder becomes a creature for your island. The stone decides what it holds.": "Закончи, и валун станет существом для твоего острова. Камень сам решит, кого он держит.",
     "Place the boulder": "Поставить валун", "Done.": "Готово.",
     "Colour rises from the stone. It steps off the plinth, onto the grass, yours for good.": "Цвет поднимается по камню. Существо сходит с постамента на траву, твоё навсегда.",
-    "Go say hi": "Поздороваться"
+    "Go say hi": "Поздороваться",
+    "sessions": "сессий", "link a practice": "связать с практикой", "Which practice does this use?": "Какая практика тут нужна?",
+    "How many sessions?": "Сколько сессий?", "This goal uses": "Этой цели нужна практика:", "Plant it in the grove?": "Посадить её в роще?",
+    "Plant it": "Посадить", "Not now": "Не сейчас",
+    "This one sounds like a practice. Practices live in the grove. Plant it there?": "Похоже на практику. Практики живут в роще. Посадить её там?",
+    "this block also carves": "этот блок высекает",
+    "The week ahead.": "Неделя впереди.", "Which goal step matters most next week?": "Какой шаг важнее всего на следующей неделе?",
+    "It is on tomorrow, waiting.": "Он уже стоит на завтра и ждёт."
   });
   // ===== THE STORE (garden menu 4 of 4, 2026-08-12) — frame 17a. The column is now complete: habits · virtues · goals · store.
   // THE LIVING LAW: this shop sells COMFORT and nothing else. Every item is decor. Nothing here buys a stage, a streak, a
@@ -11857,7 +11961,7 @@
       var ink = (status === "ok" && !partial) || _straddle ? "#ffffff" : D.light; // striped/done + NOW = WHITE bold label (Gym, Claude code); quiet/outlined = domain-colour label (Lunch, Read) — canon mockup
       var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
-      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + armorGlyph(b) + amVirtueGlyph(b)); /* minimalist (David 2026-07-20): dropped the ✨ sparkle on done titles — the gold ring + stripes already say "done", the mockup has clean icon+name only */
+      cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + armorGlyph(b) + goalGlyph(b) + amVirtueGlyph(b)); /* minimalist (David 2026-07-20): dropped the ✨ sparkle on done titles — the gold ring + stripes already say "done", the mockup has clean icon+name only */
       // minimalist (David 2026-07-20): dropped the "want to log it?" subtitle — the mockup ghost is just icon + name + wayback arrow, no prompt text
       if ((status === "miss" || dark) && b.title) { var wb = add(card, "div", "wayback"); wb.innerHTML = '<i class="ti ti-arrow-back-up"></i>'; } // A-6 wayback: a missed/ghost block is walkable-back (widget's Обед glyph); pointer-events:none so taps fall through
       // ARMED AT PRESENT (David 2026-06-27): a FUTURE plan slid UP until its start bumps the now-line → a round Play affordance appears ON the bubble. Tap = startPlanned(b): tracking begins charging from now, so it "prints in both lanes" (plan stays left, the tracked half flows down the right via the existing straddle/matched render). Shows only when the block sits at/just-after now, is still a plan (not done/matched), isn't the live straddling block, and nothing of its own domain is already tracking. Render-driven (not a transient flag) so it survives the full-DOM rebuild a drop triggers. (regression contract #2: bs >= now means it never crossed into the past)
@@ -13397,6 +13501,7 @@
     S.tools.last[id] = k;
     S.tools.recents = [id].concat(S.tools.recents.filter(function (x) { return x !== id; })).slice(0, 6);
     try { groveCredit(groveToolPractice(id)); } catch (e) {} // THE GROVE rides the app's real session-complete choke point — one practice-day = one growth credit, floor sessions included, no parallel tracker
+    try { goPracticeTick(groveToolPractice(id)); } catch (e) {} // ...and any goal that LINKED that practice ticks off the SAME session (engine §5b: one behaviour, two meanings)
     save();
     try { if (Math.random() < 0.3) { var _q = reflectDue(); if (_q) setTimeout(function () { reflectCard(_q); }, 900); } } catch (e) {} // sometimes, after a tool lands: one worksheet question while the state is warm
   }
@@ -17699,6 +17804,8 @@
     if (act === "step") { var g2 = goMine()[n || 0]; if (!g2) return "none"; var nx = goNext(g2); if (!nx) return "all done"; goToggleStep(g2, nx); return { stage: goStage(g2), done: goDoneN(g2), state: g2.state }; }
     if (act === "finish") { var g3 = goMine()[n || 0]; if (!g3) return "none"; var guard = 0; while (goNext(g3) && guard++ < 40) goToggleStep(g3, goNext(g3)); return { state: g3.state, sp: g3.sp, pond: S.game && S.game.pond }; }
     if (act === "quiet") { var g4 = goMine()[n || 0]; if (!g4) return "none"; g4.lastStepK = keyAdd(todayK(), -(m || GO_QUIET)); g4.stallK = null; save(); renderGoals2(); return { quiet: goQuietDays(g4), drifting: goDrifting(g4) }; }
+    if (act === "tick") { tickTool(n || "meditate"); return goMine().map(function (g) { return goSteps(g).filter(function (x) { return x.practiceId; }).map(function (x) { return x.practiceId + " " + (x.n || 0) + "/" + x.need + (x.done ? " done" : ""); }); }); } // drive the REAL choke point: one tracked session, tree + statue
+    if (act === "weekly") { return goWeeklyPool().map(function (p) { return p.g.title + " -> " + (goPracticeStep(p.st) ? goPracticeLine(p.st) : p.st.t); }); }
     if (act === "open") { if (!gameOn) openGame(); GV3.sel = n ? goMine()[n - 1] && goMine()[n - 1].id : null; goOpen("list"); return "goals"; }
     if (act === "new") { if (!gameOn) openGame(); GV3.draft = { title: m || "", byWhen: null, size: "medium", first: "", lint: null }; goOpen("new"); return "first cut"; }
     if (act === "snap") { var shx = el("goalSheet") || el("virtueSheet") || el("groveSheet"); gvSnap(document.querySelector("#groveSheet.on, #virtueSheet.on, #goalSheet.on") || shx, n !== 0); return "snap " + (n !== 0 ? "full" : "partway"); }
