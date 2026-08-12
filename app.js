@@ -3825,7 +3825,7 @@
     var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
     // COCKPIT PRE-BRANCH (CKPT-2): if a guided stage mode is active, corner-pose the ring (CSS .tf-staged) + delegate the freed area to #tfStageBody, then RETURN. With TF_MODE null (default) this is a no-op and the existing 6-state body below runs UNTOUCHED → zero behavior change. (David 2026-06-28)
     tf.classList.toggle("tf-staged", !!TF_MODE);
-    if (TF_MODE) { tf.classList.remove("tf-onehome", "tf-2c"); if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class + the one-page scroll so the guided-stage layout is byte-identical to today (#tfWorld falls back to display:contents, its flow children lay out in .tf-inner)
+    if (TF_MODE) { tf.classList.remove("tf-onehome", "tf-2c", "tfh-cardopen"); if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } // ONE-HOME: the staged corner mode is NOT a full-screen home face — drop the frame class + the one-page scroll so the guided-stage layout is byte-identical to today (#tfWorld falls back to display:contents, its flow children lay out in .tf-inner)
 
       var _ck2 = el("tfClock"); if (_ck2) _ck2.textContent = fmt(nowMin()).toUpperCase();
       var _say2 = el("tfSay"); if (_say2) _say2.textContent = ""; // during a guided flow the stage IS the guardian's voice — clear the heartbeat line
@@ -3846,7 +3846,7 @@
     var _catch = null; if (S0.id === "claim") { _catch = S0; S0 = { id: "idle", t: null }; t = null; } // FP3 §3: the catch-up state no longer OWNS a face — it renders the FP3 idle home and layers its trio on top (tfCatchUp)
     tfCatchUpClose(); // any render clears the card first; only the idle branch re-adds it while the claim state holds
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } // reset off-plan border + any prior tap wiring before a state re-paints the disc. removeProperty (not = "") because the idle-with-a-plan disc paints its stripes !important to beat the tf-home pink — a plain reassignment in another face would lose to it.
-    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "st-upnext", "tf-nextsheet", "tf-home", "tf-onehome", "tf-2c"); // ONE-HOME: clear the shared frame class too (HOME 2c rides on tf-2c, re-added by the calm faces only); each full-screen face re-adds it via renderHomeFrame(). st-upnext (FP3 §2b) is an idle SUB-state and must never survive into another face.
+    tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "st-upnext", "tf-nextsheet", "tf-home", "tf-onehome", "tf-2c", "tfh-cardopen"); // ONE-HOME: clear the shared frame class too (HOME 2c rides on tf-2c, re-added by the calm faces only); each full-screen face re-adds it via renderHomeFrame(). st-upnext (FP3 §2b) is an idle SUB-state and must never survive into another face.
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
     renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
@@ -5197,6 +5197,7 @@
   var HOME2C = true;
   function tfh2c() { var tf = el("trackerFull"); return !!(HOME2C && tf && tf.classList.contains("tf-2c")); }
   function tfhSet2c(on) { var tf = el("trackerFull"); if (!tf) return false; tf.classList.toggle("tf-2c", !!(HOME2C && on)); return tfh2c(); }
+  function tfhCardOpenClass() { var tf = el("trackerFull"); if (tf) tf.classList.toggle("tfh-cardopen", !!_tfhOpen); } // CARD-OPEN HUD FADE (David's card-open frame 2026-08-11 shows NO HUD): the CSS fades #tfHud to opacity 0 while the face card is open — the frame's top row is the hero tiles, and the fixed HUD's band is exactly where the Plan-my-day sticker parks at the reveal. opacity, never display, so the design audit and tfhRevealCard still read the HUD's rect.
   function tfhI(cls) { var i = document.createElement("i"); i.className = "ti " + cls; return i; }
   function tfhDeep(colExpr) { return stkMix(stkHexOf(colExpr) || "#63d3c9", "#000000", 0.5); } // the shipped deck lip colour: the hue 50% toward black (stkLip's law, quoted at the 2c card's own 4px offset)
   function tfhScrollTo(top) { var w = el("tfWorld"); if (!w) return; var max = Math.max(0, w.scrollHeight - w.clientHeight); top = Math.max(0, Math.min(max, top)); try { magnetHold(1200); } catch (e) {} try { w.scrollTo({ top: top, behavior: "smooth" }); } catch (e) { w.scrollTop = top; } } // native smooth = the --ease-settle idiom for the one-page column (the artifact's ~380ms cubic-out). magnetHold: a deliberate scroll (card reveal, hint tap) must never be yanked back by the HOME MAGNET.
@@ -5244,6 +5245,7 @@
     TFH_HEROES.forEach(function (id) { tfhTile(row, id); });
     var dose = add(wrap, "div"); dose.id = "tfHeroDose";
     if (_tfhOpen) tfhPaintDose(false, false); // a re-render (per-minute board sweep) restores the open card without re-animating or re-scrolling
+    tfhCardOpenClass(); // …and the HUD-fade class rides with it (the face teardown strips it; _tfhOpen persists by design, so a re-opened home restores card AND fade together). Idempotent.
   }
   function tfhTile(row, id) { // THE STACK CARD at the 2c face size: a 50px hue face on its own 4px lip, two near-full shards fanned UP-LEFT in the stack's own peek hues, white glyph, label in the tile's hue
     var it = tbxItem(id); if (!it) return null;
@@ -5258,7 +5260,9 @@
   function tfhOpenDose(id) { // SINGLE-OPEN on the face: another tile swaps the content, the open one (or the card's close chevron) folds it away
     var was = _tfhOpen === id;
     _tfhOpen = was ? null : id; _tfhLadder = false;
+    tfhCardOpenClass(); // BEFORE the paint: opening fades the fixed HUD out as the world eases down, closing fades it back in as the world eases home
     tfhPaintDose(!was, true);
+    if (was) { var w = el("tfWorld"); if (w && w.scrollTop > worldHomeTarget() + 40) tfhScrollTo(worldHomeTarget()); } // FOLD-AWAY RETURN (David 2026-08-11): closing the card used to strand the viewport mid-column with no way back to the calm face (the magnet band is only 56px) — ease back to the landing seam. Covers the card's own collapse chevron too (it calls this). The >40 guard keeps the designAudit's parked open/close probe from ever issuing a scroll.
   }
   function tfhPaintDose(scroll, animate) {
     var host = el("tfHeroDose"); if (!host) return;
@@ -5268,9 +5272,15 @@
     host.appendChild(card);
     if (scroll) setTimeout(tfhRevealCard, 20); // let the card lay out, then ease the world down until it is fully in view
   }
-  function tfhRevealCard() {
-    var w = el("tfWorld"), host = el("tfHeroDose"); if (!w || !host) return;
-    try { var hr = host.getBoundingClientRect(), wr = w.getBoundingClientRect(), over = hr.bottom - (wr.bottom - 16); if (over > 4) tfhScrollTo(w.scrollTop + over); } catch (e) {}
+  function tfhRevealCard() { // TOP-ANCHOR (David's card-open frame 2026-08-11): the frame's first readable row is the HERO TILES, sitting at the very top with the HUD row scrolled away and the pink circle gone. Here the HUD is FIXED chrome, so it can't scroll off — it FADES instead (tfhCardOpenClass → .tfh-cardopen), and the tiles park on the SAFE-AREA LINE the faded HUD still marks: its own top edge is env(safe-area-inset-top)+11, so +1 lands the tiles at env+12. (Two earlier misses: bottom-anchoring the card left the circle half-cut; anchoring under the HUD's BOTTOM parked the Plan-my-day sticker inside the HUD band, painting over the JOURNEY label.)
+    if (!_tfhOpen) return; // the designAudit opens+closes the card synchronously; this 20ms-delayed reveal must no-op after that close (and after any instant user close)
+    var w = el("tfWorld"), row = el("tfHeroRow"), hud = el("tfHud"); if (!w || !row) return;
+    try {
+      var worldTop = w.getBoundingClientRect().top;
+      var topPad = (hud ? hud.getBoundingClientRect().top - worldTop : 40) + 1; // the faded-but-still-laid-out HUD is the env(safe-top)+11 beacon; the tiles take that line
+      var delta = row.getBoundingClientRect().top - worldTop - topPad;
+      if (Math.abs(delta) > 4) tfhScrollTo(w.scrollTop + delta); // tfhScrollTo clamps to the scroller's max and holds the magnet off
+    } catch (e) {}
   }
   function renderHome2cFoot() { // the fold invitation at the bottom of the home zone: the TOOLS label above a floating chevron-down; tap = ease down into the ground (the toolbox). Built once and left in place — re-appending would restart its float animation on every board sweep.
     if (!tfh2c()) return;
@@ -5504,6 +5514,7 @@
   // ---- position: land with HOME filling the viewport, a real sliver of sky above + ground below (the true content peek). No animation on boot. ----
   // land with HOME filling the viewport (a real sliver of sky above + ground below) — the true content peek. The SKY (the whole journey trail) isn't laid out until after adoption AND the open-morph settles, and setting scrollTop mid-morph doesn't hold — so we retry (via setTimeout; rAF is throttled in this repo's headless preview, per the tfMorph void-reflow note) until the scroll actually LANDS near the target, only then committing _worldPositioned (so a per-second re-render never yanks the user's scroll back). One attempt runs synchronously (a forced reflow via offsetHeight makes the layout current) so it lands immediately when ready.
   // SAFE-AREA COMPENSATION (David 2026-08-02 device screenshot): the landing math was pure CSS-viewport math, so the eight-grid's SECOND-row labels still sat flush against the physical screen bottom on a home-indicator iPhone — the ~60px of fold air the preview measures is exactly what the ~34px bottom inset eats. The landing now scrolls FURTHER DOWN by the real inset + an 8px margin, so the same band of air survives on device; the preview (inset 0) shifts by only the 8px.
+  // …EXCEPT ON THE 2c FACE (David 2026-08-11 device screenshot): 2c cancelled the deck's -19vh peek and wants the TOOLS hint AT the true screen bottom, so the compensation this block describes has nothing left to compensate — on device the extra ~34px overshot the home seam. worldHomeTarget() therefore drops the safeBottomPx() term whenever tfh2c() is true; the pre-2c face keeps it byte-identical. Never re-add it to the 2c branch: the preview (inset 0) can never show the regression.
   var _worldPosTo = 0;
   var _safeBpx = null, _safeBProbe = null; // env(safe-area-inset-bottom) is CSS-only — JS can't read it without a probe element that declares it.
   function safeBottomPx() { // real bottom inset in px: 0 in the headless preview, ~34 on David's phone. The probe is created once and hidden; the value is cached once it reads non-zero (a 0 stays re-probed, because early in boot the inset can report 0 before the standalone chrome settles).
@@ -5521,7 +5532,9 @@
   }
   var WORLD_PEEK = 20; // ~20px of real sky shows above HOME (was 14 — David 2026-08-01: the bottom row of the eight-grid sat flush against the screen bottom; a couple px lower gives it breathing room)
   function worldHomeTarget() { // THE landing scrollTop, in ONE place: the sky's laid-out height minus the peek, pulled down past the device's bottom inset (+8px margin) and clamped to the scroller's max. worldScrollHome lands on it; the HOME MAGNET settles onto it — they can never drift apart.
+    // 2c EXCEPTION (David 2026-08-11 device screenshot): on the 2c face there is NO safe-area pull — that term compensated the OLD face's -19vh deck peek, and 2c cancelled the peek so the TOOLS hint sits at the TRUE screen bottom by design (see the audit's "Device-invariant (the 2c zone padding carries no safe-area)" gate). Adding the ~34px inset scrolled the world PAST the home seam on device (week strip riding up into the fixed HUD, toolbox tops peeking over the fold) and is invisible in the preview (inset 0) — do NOT re-add it.
     var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return 0;
+    if (tfh2c()) return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + 8));
     return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + safeBottomPx() + 8));
   }
   // ===== THE HOME MAGNET (David 2026-08-02) — a scroll that ENDS near home settles exactly onto it. =====
@@ -5591,6 +5604,7 @@
     worldScrollHome(); // idempotent + self-guarding: no-ops once positioned
   }
   function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
+    _tfhOpen = null; _tfhLadder = false; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
     var tf = el("trackerFull"); if (tf) tf.classList.remove("tf-onepage");
     releaseTrailFromSky();
     document.body.classList.remove("home-onepage"); // leaving the one-page home → the puck is a plain always-visible return again (panes keep it lit)

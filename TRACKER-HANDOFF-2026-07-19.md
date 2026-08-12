@@ -734,3 +734,22 @@ Ten-iteration Claude Design prompt for the garden surface composed and delivered
 
 - **ONE move — David:** paste the prompt into the "Alter Design System" project, pick from the ten (or name the two to cross-breed).
 - **ONE move — Claude:** on the pick, pull the winning frame + live tokens via DesignSync and write BUILD-SPEC-garden per DESIGN AUTHORITY LAW 6/7 for an Opus builder.
+
+---
+
+## SESSION 2026-08-12 (Fable orchestrating, Opus built) — v1254: HOME 2c SCROLL FIXES (David's two device screenshots vs his frames)
+
+**The two bugs, both scroll-position only (zero paint/layout changes):**
+1. **Landing overshoot on device.** `worldHomeTarget()` added `safeBottomPx()+8` (the v1251 compensation for the OLD face's -19vh deck peek). 2c cancelled that peek and wants the TOOLS hint AT the true bottom, so on device the extra ~34px scrolled PAST the home seam: week strip riding into the fixed HUD, toolbox tops peeking over the fold. Invisible in preview (inset 0), which is why every audit passed while the device drifted. FIX: on `tfh2c()` the target drops the inset term (`home.offsetTop - WORLD_PEEK + 8`); legacy face byte-identical. Landing is now device-invariant: preview = device. Verified: simulated inset 34 lands at the same scrollTop as inset 0 (pre-fix: +34). Magnet inherits (it reads worldHomeTarget).
+2. **Card reveal bottom-anchored.** `tfhRevealCard()` scrolled only until the card BOTTOM was 16px inside the fold: half-cut pink circle on top (David's screenshot 2). FIX per his card-open frame: TOP-anchor, hero row parks at the safe-area line (hud rect top + 1 as the env beacon), circle fully scrolled away, Plan-my-day reduced to a sliver at the top edge exactly like the frame. Plus: **HUD fades while a face card is open** (`tfh-cardopen` class, opacity .2s, pointer-events none): in David's design the HUD row scrolls away with the column; in the build it is fixed chrome, so it fades instead (frame shows NO HUD in this state). **Close returns to the seam** (fold-away eases back to worldHomeTarget; >40px guard keeps the designAudit probe scroll-free). **Leaving home closes the card** (teardownWorld clears `_tfhOpen`): a fresh home entry is always the calm face with its HUD, per the open-home frame; per-minute sweep restore within a visit untouched.
+
+**Gates:** `DEV.designAudit()` ALL PASS (37), run repeatedly across all rounds, audit block untouched. preship green: 26 invariants, ratchets clean (no new wipes), v1253→v1254, server.js regenerated. Zero console errors every checkpoint. `node --check` OK. Landing scrollTop in preview byte-identical pre/post (5195 on the demo profile). Tile-swap while open: 0px jump. Element-by-element screenshot diff vs David's two frames done (landing + card-open).
+
+**DEVICE-UNTESTED (the honest list):** the 200ms HUD fade feel, the reveal/close smooth-scroll easing, the HOME MAGNET interplay, and the real-inset landing on David's phone. The headless pane is visibility:hidden (rAF, CSS transitions, smooth-scroll never advance); all end-states were proven numerically, feel needs the phone.
+
+**OPEN DAVID-CALLS (named, not auto-applied):**
+- HUD at card-open: shipped = FADE (minimal, state-scoped). The design's literal mechanism is the HUD scrolling away in-column (would also change journey/tools scroll states). Flip to in-flow only on his word.
+- The design project's `2g` screen shows a BOTTOM-SHEET dose card over a dimmed home; his posted target frames chose the INLINE card, which is what shipped. 2g stays unbuilt unless he picks it.
+- The guardian puck overlaps the open card's bottom-left (Adjust row), same family as the v1253 planner-picker nit; also: puck-tap at card-open returns home WITHOUT closing the card.
+- **ONE move — David:** open /fresh.html on the phone, check the two states: (1) home opens with HUD above the strip, TOOLS at the true bottom, nothing peeking; (2) tap Morning Stack: tiles park at top, no cut circle, HUD gone until close.
+- **ONE move — Claude:** apply his HUD verdict (keep fade / go in-flow) + the puck-overlap call in one pass.

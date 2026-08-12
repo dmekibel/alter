@@ -1832,6 +1832,9 @@
   /* the HUD REPLACES the clock-left + gems-right status row. It floats on .tf-inner at the exact top that row used (env(safe-top) + 11px), so the strip below keeps the place the board gates measure. */
   #tfHud{ display:none; }
   #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:calc(env(safe-area-inset-top,0px) + 11px); left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
+  /* CARD-OPEN FADE (David's card-open frame 2026-08-11 shows NO HUD — in his design the HUD row scrolls away with the column; here it is fixed chrome, so it FADES instead). opacity, never display: the design audit and the reveal anchor still read its rect and its colours. */
+  #trackerFull.tf-2c #tfHud{ transition:opacity .2s ease; }
+  #trackerFull.tf-2c.tfh-cardopen #tfHud{ opacity:0; pointer-events:none; }
   body #trackerFull.tf-2c.tf-2c .tf-clock, body #trackerFull.tf-2c.tf-2c .tf-spark, body #trackerFull.tf-2c.tf-2c #tfGear{ display:none !important; } /* EDGES CLEARED (spec §3): no clock on the home face; the HUD carries the gems, and the sparkle takes the avatar slot the gear was wearing (the Sound panel keeps its own door in Settings). The `body` prefix and the REPEATED .tf-2c are load-bearing, not a typo: `#trackerFull.tf-home.st-idle .tf-clock{display:block !important}` re-shows them at (1,3,0), so this hide has to out-specify it. */
   .tfh-spark{ flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,242,249,.16); background:#2a1220; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-spark i{ font-size:13px; color:#ff8fc0; line-height:1; }
@@ -3600,6 +3603,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1253"></script>
+  <script src="app.js?v=1254"></script>
 </body>
 </html>
