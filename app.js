@@ -346,7 +346,7 @@
   }
   var el = function (id) { return document.getElementById(id); };
   // @SEC:TIME — KEY/SCHEMA constants + THE 4AM LAW: logicalK() rolls the day at 4am and EVERYTHING keys off it. SCHEMA's migrations live in load() (@SEC:STATE) — bump them TOGETHER.
-  var KEY = "alter_plan2", SCHEMA = 7, lastSaveErr = 0; // 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
+  var KEY = "alter_plan2", SCHEMA = 8, lastSaveErr = 0; // 8 = THE STATUES (S.goals[] EXTENDED in place — garden menu 3 of 4, frames R1b-R9a, engine _specs/GOAL-ENGINE-2026-08-11.md); 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -1801,7 +1801,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -1826,7 +1826,7 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     document.body.classList.remove("home-onepage"); // PUCK FIX (David 2026-07-22 "planner shows no home button"): the home-onepage class fades the puck to opacity:0 (nothing to return from AT home). Only the door path cleared it via teardownWorld — a pane reached any other way left it set, hiding the home button. Clearing it on EVERY pane rest guarantees the puck is lit on planner/journey/game.
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
-    try { groveClose(); vrtClose(); } catch (e) {} // THE GARDEN belongs to the world: any pane rest leaves every menu closed, so re-entering the island is always the calm face (the game branch below wakes it again)
+    try { groveClose(); vrtClose(); goClose(); } catch (e) {} // THE GARDEN belongs to the world: any pane rest leaves every menu closed, so re-entering the island is always the calm face (the game branch below wakes it again)
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (_jt && jp && !jp.contains(_jt)) jp.appendChild(_jt); if (!_jt || !_jt.children.length || !jp.contains(_jt)) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} try { groveWire(); groveOnWorldOpen(); } catch (e) {} } // THE GROVE wakes on THIS path too: setPaneRest is how the carousel swipe AND the home garden chip reach the world, and openGame() is not on either — without this the entry flower, its coins, the close X, the hold-to-grow listeners and the whole congratulation beat were dead on the app's primary route in
@@ -7447,6 +7447,21 @@
         if (!v.carvedK) v.carvedK = todayK();
       });
     }
+    // MIG 7→8 — THE STATUES (garden menu 3 of 4). LAW 0, ONE DATA MODEL: S.goals is EXTENDED, never forked. Every existing
+    // goal keeps its title/domain/active/woop/metric and ADOPTS the statue fields; its `subtasks` become `steps` (which then
+    // mirror back, so the journey bead, the day-suggestions and the legacy goals sheet keep reading the same list).
+    // A goal only grows a stone when the player places one (g.sp) — adoption never puts an unasked-for boulder on the island.
+    S.goals = S.goals || [];
+    S.goals.forEach(function (g) {
+      if (!g.id) g.id = uid();
+      if (!Array.isArray(g.steps)) g.steps = (g.subtasks || []).map(function (t) { return { t: t.title || "", due: null, done: !!t.done, doneK: t.done ? (g.lastK || todayK()) : null }; });
+      g.steps = g.steps.filter(function (x) { return x && x.t; });
+      if (!g.state) g.state = g.active === false ? "paused" : "carving";
+      if (!g.carvedK) g.carvedK = g.lastK || todayK();
+      if (!g.lastStepK) g.lastStepK = g.lastK || g.carvedK;
+      if (typeof g.whyText !== "string") g.whyText = "";
+      if (!g.size) g.size = (g.steps.length >= 6 ? "big" : g.steps.length >= 3 ? "medium" : "small");
+    });
     S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
     } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged · backed up + started fresh"); } // NEVER let load() throw past here: damaged save → _bak + fresh() — David's data survives every crash
   }
@@ -8559,6 +8574,7 @@
       sanctGroundShade(ctx, sanctScene()); // ref-mood scene shading: moonlight falloff + soft contact shadows UNDER the objects
       sanctClaimGlow(ctx, t); // island expansion: the claimable water tile the guardian faces glows (walk into it to grow)
       try { groveGroundGlow(ctx, t); } catch (e) {} // GF7 planting: the three candidate homes breathe on the grass (only while planting)
+      try { goGroundGlow(ctx, t); } catch (e) {} // R3a: the three candidate homes for a new boulder breathe on the grass
       try { vrtGroundGlow(ctx, t); } catch (e) {} // 15E: a LIT lantern lays a coloured pool on the grass; while hanging, the candidate spots breathe the same way
     } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
@@ -8624,6 +8640,7 @@
       var _dl = _scene.objs.map(function (o) { return { y: o.dy, d: function () { drawObj(ctx, o.img, o.dx, o.dy, o.h); } }; });
       _dl.push({ y: py, d: _drawHero });
       try { groveWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {}
+      try { goWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // statues, the pond and the living creatures join the SAME base-y sort
       try { vrtWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // lanterns join the SAME base-y sort as the trees and the guardian // planted trees join the SAME base-y sort, so the guardian walks behind and in front of them like every other object
       _dl.sort(function (a, b) { return a.y - b.y; });
       _dl.forEach(function (e) { e.d(); });
@@ -8825,7 +8842,7 @@
     var g = el("gnGame"); if (g) g.onclick = foldMenu; // already in the game → just fold the menu
   }
   function closeGame() {
-    try { groveClose(); vrtClose(); } catch (e) {} // leaving the world always leaves the garden closed, so a fresh entry is the calm island
+    try { groveClose(); vrtClose(); goClose(); } catch (e) {} // leaving the world always leaves the garden closed, so a fresh entry is the calm island
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
     document.body.classList.remove("gaming");
     gameOn = false; moveX = 0; moveY = 0; // do NOT reset body.overflow here — it must stay locked (this reset was the thing that un-pinned the body and reintroduced the gap) (v640)
@@ -8998,7 +9015,7 @@
     if (!ISLE) buildIsle(); // the same guard sanctScene() uses: the island builds lazily on the first draw, and the congratulation can reach here before that frame has run (a legitimate first planting was answering "walk onto open grass" on an island that did not exist yet)
     var out = [], gx = Math.round(px / TILE), gy = Math.round(py / TILE), sc = null;
     try { sc = sanctScene(); } catch (e) {}
-    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }).concat(vrtState().list.map(function (v) { return v.tx + "," + v.ty; })), rings = [2, 3, 4, 5];
+    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }).concat(vrtState().list.map(function (v) { return v.tx + "," + v.ty; })).concat(goMine().map(function (g) { return g.tx + "," + g.ty; })), rings = [2, 3, 4, 5];
     for (var ri = 0; ri < rings.length && out.length < 3; ri++) { var r = rings[ri];
       for (var ai = 0; ai < 8 && out.length < 3; ai++) {
         var tx = gx + Math.round(Math.cos(ai * Math.PI / 4) * r), ty = gy + Math.round(Math.sin(ai * Math.PI / 4) * r);
@@ -9075,6 +9092,7 @@
   }
   function groveWorldTap(sx, sy) { // in planting/hanging mode a tap on the grass picks the nearest glowing spot; otherwise the world keeps its own taps
     try { if (vrtWorldTap(sx, sy)) return; } catch (e) {}
+    try { if (goWorldTap(sx, sy)) return; } catch (e) {}
     if (!GV.plant || !GV.plant.spots || !GV.plant.spots.length) return;
     var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
     for (var i = 0; i < GV.plant.spots.length; i++) { var s = GV.plant.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
@@ -9083,11 +9101,11 @@
   // ---- the surfaces ------------------------------------------------------------------------------------------------
   function groveOpen(mode) {
     var sh = el("groveSheet"); if (!sh) return;
-    try { vrtClose(); } catch (e) {} // one garden menu at a time: opening the grove folds the virtues away
+    try { vrtClose(); goClose(); } catch (e) {} // one garden menu at a time
     GV.mode = mode || "list";
     if (GV.mode !== "list") GV.sel = null;
     groveBuild();
-    sh.classList.add("on");
+    sh.classList.add("on"); sh.classList.remove("gv-exp"); // every open starts PARTWAY; full height is earned by the pull
     var cn = el("groveCoins"), fl = el("groveFlower");
     if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); } // the column folds away as its menu takes over — one bottom-right control at a time (GF1)
     if (fl) fl.classList.add("gv-spun"); // the 45deg spin runs WITH the sheet slide, never after it
@@ -9100,7 +9118,48 @@
     _groveHold = null; // a hold in flight never survives the surface closing (or the world being left) — the ring would keep filling against a plant nobody is looking at
     GV.mode = null; GV.plant = null; GV.sel = null;
   }
-  function groveToggle() { if (GV.mode) groveClose(); else { var cn = el("groveCoins"), fl = el("groveFlower"); if (cn) cn.classList.toggle("on"); if (fl) fl.classList.toggle("gv-spun"); } } // the flower alone blooms the coins; a coin opens its menu
+  function groveToggle() { // THE FLOWER MINIMIZES (David 2026-08-12): with a menu up it slides that sheet away and hands the
+    // world back with the coin column STILL OUT, so the next menu is one tap away. Its fold/unfold job applies only at rest.
+    if (GV.mode || VV.mode || GV3.mode) {
+      try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {}
+      var cn0 = el("groveCoins"), fl0 = el("groveFlower");
+      if (cn0) { cn0.classList.add("on"); cn0.classList.remove("gv-hid"); }
+      if (fl0) fl0.classList.add("gv-spun");
+      return;
+    }
+    var cn = el("groveCoins"), fl = el("groveFlower"); if (cn) cn.classList.toggle("on"); if (fl) fl.classList.toggle("gv-spun");
+  }
+  // TWO SNAP POINTS, one implementation for every garden sheet (David 2026-08-12). A coin opens PARTWAY (CSS top:38%);
+  // dragging the grab handle or the header UP past 40px earns the full height, dragging DOWN returns it to partway, and
+  // dragging DOWN again from partway closes it. Live finger-follow is a transform on a .gv-drag (transition off) class, so
+  // nothing re-renders while the finger moves. DEVICE-UNTESTED: the preview cannot honestly reproduce this feel.
+  function gvSheets() { return ["groveSheet", "virtueSheet", "goalSheet"].map(el).filter(Boolean); }
+  function gvDragWire() {
+    gvSheets().forEach(function (sh) {
+      if (sh._gvDrag) return; sh._gvDrag = true;
+      var grips = [sh.querySelector(".gv-grab"), sh.querySelector(".gv-head")].filter(Boolean), st = null;
+      function down(y, id) { if (!sh.classList.contains("on")) return; st = { y0: y, id: id, dy: 0, exp: sh.classList.contains("gv-exp") }; sh.classList.add("gv-drag"); }
+      function move(y, id) { if (!st || st.id !== id) return; st.dy = y - st.y0;
+        var d = st.exp ? Math.max(0, st.dy) : st.dy;                       // expanded can only be pulled down; partway moves both ways
+        sh.style.transform = "translateY(" + (st.exp ? d : Math.max(-60, d)) + "px)"; }
+      function up(id) { if (!st || st.id !== id) return; var dy = st.dy, exp = st.exp; st = null;
+        sh.classList.remove("gv-drag"); sh.style.transform = "";
+        if (dy < -40) sh.classList.add("gv-exp");                          // pulled up: earn the full height
+        else if (dy > 40) { if (exp) sh.classList.remove("gv-exp"); else gvCloseAll(); } // pulled down: back to partway, then away
+      }
+      grips.forEach(function (gp) {
+        gp.addEventListener("touchstart", function (e) { var c = e.changedTouches[0]; if (c) down(c.clientY, c.identifier); }, { passive: true });
+        gp.addEventListener("touchmove", function (e) { for (var i = 0; i < e.changedTouches.length; i++) move(e.changedTouches[i].clientY, e.changedTouches[i].identifier); }, { passive: true });
+        gp.addEventListener("touchend", function (e) { for (var i = 0; i < e.changedTouches.length; i++) up(e.changedTouches[i].identifier); });
+        gp.addEventListener("touchcancel", function () { st = null; sh.classList.remove("gv-drag"); sh.style.transform = ""; });
+        gp.addEventListener("pointerdown", function (e) { if (e.pointerType === "touch") return; down(e.clientY, e.pointerId); });
+        gp.addEventListener("pointermove", function (e) { if (e.pointerType === "touch") return; move(e.clientY, e.pointerId); });
+        gp.addEventListener("pointerup", function (e) { if (e.pointerType === "touch") return; up(e.pointerId); });
+      });
+    });
+  }
+  function gvCloseAll() { try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {} try { goClose(); } catch (e) {} }
+  function gvSnap(sh, full) { if (sh) sh.classList.toggle("gv-exp", !!full); } // programmatic snap (DEV + the flows that want the full height)
   function groveNeediest() { // the CTA's plant: the one with the quietest week, then the youngest
     var a = groveState().plants.slice(); if (!a.length) return null;
     a.sort(function (x, y) { var d = groveWeek(x) - groveWeek(y); return d !== 0 ? d : (x.stage || 1) - (y.stage || 1); });
@@ -9273,7 +9332,7 @@
   }
   function renderGrove() { if (GV.mode === "list" && el("groveSheet") && el("groveSheet").classList.contains("on")) groveBuild(); } // idempotent: no-op unless the list is actually up
   function groveWire() {
-    try { vrtWire(); } catch (e) {} // the virtues coin rides the same wiring call, so it wakes on every path into the world
+    try { vrtWire(); goWire(); gvDragWire(); } catch (e) {} // the virtues + goals coins and the two-snap sheet drag ride the same wiring call, so it wakes on every path into the world
     if (GV.wired) return; GV.wired = true;
     var fl = el("groveFlower"); if (fl) fl.onclick = function () { groveToggle(); };
     var cn = el("gvCoinHabits"); if (cn) cn.onclick = function () { groveOpen("list"); };
@@ -9555,9 +9614,9 @@
   }
   function vrtOpen(mode) {
     var sh = el("virtueSheet"); if (!sh) return;
-    try { groveClose(); } catch (e) {}                 // one garden menu at a time
+    try { groveClose(); goClose(); } catch (e) {}      // one garden menu at a time
     VV.mode = mode || "list"; if (VV.mode !== "list") VV.sel = null;
-    vrtBuild(); sh.classList.add("on");
+    vrtBuild(); sh.classList.add("on"); sh.classList.remove("gv-exp"); // partway by default sh.classList.remove("gv-exp"); // every open starts PARTWAY; full height is earned by the pull
     var cn = el("groveCoins"), fl = el("groveFlower");
     if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); }
     if (fl) fl.classList.add("gv-spun");
@@ -9604,6 +9663,383 @@
     "I notice what I'm given": "я замечаю, что мне дано",
     "I show up with energy": "я прихожу с энергией",
     "one": "одно", "two": "два", "three": "три", "four": "четыре", "five": "пять", "six": "шесть", "seven": "семь", "eight": "восемь"
+  });
+  // ===== THE GOALS (garden menu 3 of 4, 2026-08-12) — frames R1b list · R2 card · R3a first cut · R3b after the boulder ·
+  // R5 stall · R6 paused-vs-drifting · R9a the wake. Engine: `_specs/GOAL-ENGINE-2026-08-11.md`.
+  // LAW 0, ONE DATA MODEL: this is a SKIN on the app's existing `S.goals[]` — same array, same `g.title`, `g.domain`,
+  // `g.active`, `g.woop.obstacle`/`g.woop.plan`, `g.subtasks`. Nothing forks. New fields are additive and the migration
+  // adopts every existing goal (its subtasks become steps, and steps mirror back so the journey bead + suggestions keep reading).
+  // THE LIVE LINE LAW (engine §2): a row line and a CTA name the next real-world STEP, never a carve-stage name. The stone
+  // is the picture, life is the text. THE CREATURE IS A SURPRISE (David 2026-08-12): assigned at creation from the size,
+  // stored, and NEVER shown or named until the stone reveals it stage by stage.
+  // BANNED here, all sourced: percent bars · countdown timers · a days-since counter · red · shame · social comparison ·
+  // a supplied WHY · epic language on mundane goals · a second goal model.
+  var GO_STONE = { koi: 1, songbird: 1, squirrel: 1, deer: 1, otter: 1, frog: 1, kingfisher: 1 };
+  var GO_LIVING = { songbird: "songbird-perch", squirrel: "squirrel-sit", deer: "deer-v2", otter: "otter-stand", frog: "frog-pad", kingfisher: "kingfisher-perch" };
+  var GO_KOI = ["koi-calico", "koi-gold", "koi-goldwhite", "koi-ink", "koi-kohaku", "koi-lilac", "koi-orange", "koi-pearl"];
+  var GO_BIG = ["deer", "otter"], GO_MED = ["songbird", "squirrel", "frog", "kingfisher"];
+  var GO_SIZES = [ // R3b, verbatim
+    { k: "big",    n: "Big",    d: "a long carve. months of steps, a full 5-stage statue" },
+    { k: "medium", n: "Medium", d: "a shorter carve. a few weeks of steps" },
+    { k: "small",  n: "Small",  d: "a quick one. done in a day or two" }
+  ];
+  var GO_PLANS = ["do the easy version", "move it to morning", "tell a friend"]; // R3b: the app's PROVEN 3-chips-plus-free-text WOOP pattern, not a blank textarea (Oettingen: obstacle without plan barely beats fantasy)
+  var GO_QUIET = 14, GO_DRIFT = 21; // days of silence before the stall may offer itself (once per quiet spell) / before a goal reads as drifting. Never a push, never a badge.
+  var GO_GEMS = { big: 40, medium: 25, small: 12 }; // the wake pays by weight, on the app's own scale (a grove stage-up is 5, a tracked block 8, the fundamentals worksheet 25)
+  var GV3 = { mode: null, sel: null, draft: null, place: null, stall: null, easier: 0, wake: null, wired: false };
+  var GO_IMG = {};
+  function goState() { S.goals = S.goals || []; return S.goals; }
+  function goImg(src) { if (!GO_IMG[src]) { var im = new Image(); im.src = src; GO_IMG[src] = im; } return GO_IMG[src]; }
+  function goStoneSrc(g, n) { return "assets/garden/goals/stone5-" + (g.sp || "deer") + "-s" + Math.max(1, Math.min(5, n)) + ".png"; }
+  function goLivingSrc(g) { return "assets/garden/goals/" + (g.sp === "koi" ? (g.koi || GO_KOI[0]) : (GO_LIVING[g.sp] || "deer-v2")) + ".png"; }
+  function goPondSrc() { return "assets/garden/goals/pond-s3.png"; } // POND BUILD STAGES DEFERRED (pond-s1/s2 shipped but unused): the pond simply appears full at the first small wake. Flagged.
+  function goPick(a, seed) { var h = 0, s = String(seed || ""); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return a[h % a.length]; }
+  function goSteps(g) { return (g.steps = g.steps || []); }
+  function goDoneN(g) { return goSteps(g).filter(function (s) { return s.done; }).length; }
+  function goStage(g) { var st = goSteps(g), t = st.length; if (!t) return 1; if (goDoneN(g) >= t) return 5; return Math.max(1, Math.min(5, 1 + Math.floor(goDoneN(g) / t * 4))); }
+  function goNext(g) { var st = goSteps(g); for (var i = 0; i < st.length; i++) if (!st[i].done) return st[i]; return null; }
+  function goIsDone(g) { return g.state === "done"; }
+  function goQuietDays(g) { var k = g.lastStepK || g.carvedK || todayK(); return Math.max(0, daysBetweenK(k, todayK())); }
+  function goDrifting(g) { return g.state === "carving" && goQuietDays(g) >= GO_DRIFT; } // DERIVED, never stored: nobody chose it, so nothing is written down about it
+  function goWeek(g) { var w = lastDays(7), n = 0; goSteps(g).forEach(function (s) { if (s.done && w.indexOf(s.doneK) >= 0) n++; }); return n; }
+  function goToNext(g) { var st = goSteps(g), t = st.length; if (!t) return 0; var s = goStage(g); if (s >= 5) return 0; return Math.max(1, Math.ceil(s / 4 * t) - goDoneN(g)); }
+  function goStageK(g, n) { var st = goSteps(g).filter(function (s) { return s.done; }).sort(function (a, b) { return (a.doneK || "") < (b.doneK || "") ? -1 : 1; }); var need = Math.ceil((n - 1) / 4 * goSteps(g).length); return (st[need - 1] && st[need - 1].doneK) || null; }
+  function goStageStep(g, n) { var st = goSteps(g).filter(function (s) { return s.done; }).sort(function (a, b) { return (a.doneK || "") < (b.doneK || "") ? -1 : 1; }); var need = Math.ceil((n - 1) / 4 * goSteps(g).length); return (st[need - 1] && st[need - 1].t) || ""; }
+  function goMine() { return goState().filter(function (g) { return g.sp; }); } // only goals that have been through the statue flow own a stone
+  function goSizeOf(g) { return g.size || "medium"; }
+  function goAssign(g) { // THE SURPRISE: the creature is decided here, at creation, and never spoken of again until the stone says it
+    var sz = goSizeOf(g);
+    if (sz === "small") { g.sp = "koi"; g.koi = goPick(GO_KOI, g.title + g.carvedK); }
+    else g.sp = goPick(sz === "big" ? GO_BIG : GO_MED, g.title + g.carvedK);
+  }
+  function goShortWhen(k) { if (!k) return ""; var d = kd(k); return tr(GROVE_MONTHS[d.getMonth()]).slice(0, 3) + " " + d.getDate(); }
+  function goMonth(k) { if (!k) return ""; return tr(GROVE_MONTHS[kd(k).getMonth()]); }
+  // ---- the concreteness lint (engine §1.2): an outcome-shaped or stop-shaped first step gets ONE chip offering the
+  // lead-measure rewrite. It NEVER blocks, and it never fires twice on the same text. (4DX lead-vs-lag; Harris toward-moves.)
+  var GO_LAG = ["lose", "gain", "reach", "hit", "achieve", "become", "get to", "weigh", "earn"], GO_STOP = ["stop", "quit", "don't", "dont", "no more", "never again", "avoid"];
+  function goLint(t) {
+    var s = (t || "").toLowerCase().trim(); if (!s) return null;
+    for (var i = 0; i < GO_STOP.length; i++) if (s.indexOf(GO_STOP[i]) === 0) return tr("Try: 3 gym sessions this week");
+    for (i = 0; i < GO_LAG.length; i++) if (s.indexOf(GO_LAG[i]) === 0) return tr("Try: 3 gym sessions this week");
+    return null;
+  }
+  // ---- the live line (engine §2): ALWAYS the next real step, never a stage name -------------------------------------
+  function goLine(host, g) {
+    var line = add(host, "span", "go-line");
+    if (goIsDone(g)) { line.className = "go-line done"; line.textContent = (g.retired ? tr("set down") : tr("done")) + " " + goShortWhen(g.doneK) + " · " + (g.retired ? tr("its why still stands") : tr("lives on the island")); return line; }
+    if (g.state === "paused") { line.textContent = tr("paused") + " " + goShortWhen(g.pausedK) + " · " + tr("resumes when you say"); return line; }
+    if (goDrifting(g)) { line.textContent = tr("quiet since") + " " + goMonth(g.lastStepK || g.carvedK); return line; }
+    var nx = goNext(g), st = goSteps(g);
+    if (!nx) { line.textContent = tr("every step is done"); return line; }
+    if (goSizeOf(g) !== "small") add(line, "span", null, goDoneN(g) + " " + tr("of") + " " + st.length + " " + tr("steps") + " · ");
+    add(line, "b", null, tr("next") + " · " + (nx.floor ? nx.floor + " " + tr("min") + " · " : "") + nx.t);
+    return line;
+  }
+  function goRow(host, g) {
+    if (GV3.sel === g.id) { goCard(host, g); return; }
+    var row = add(host, "div", "go-row" + (goDrifting(g) ? " drift" : ""));
+    var sz = goSizeOf(g), well = add(row, "span", "go-well" + (sz === "small" ? " small" : "")), im = add(well, "img");
+    im.src = goIsDone(g) && !g.retired ? goLivingSrc(g) : goStoneSrc(g, goStage(g)); im.alt = "";
+    var tx = add(row, "div", "go-tx");
+    add(tx, "span", "go-nm", g.title);
+    goLine(tx, g);
+    if (goDrifting(g)) { var rs = add(tx, "div", "go-resolve"); // R6: one tap settles it either way, no counter, no red
+      var on = add(rs, "span", null, tr("Still on it")); on.onclick = function (e) { e.stopPropagation(); g.lastStepK = todayK(); save(); goBuild(); };
+      var off = add(rs, "span", null, tr("Set it down for now")); off.onclick = function (e) { e.stopPropagation(); g.state = "paused"; g.pausedK = todayK(); save(); goBuild(); };
+    }
+    add(row, "i", "ti ti-chevron-right").style.cssText = "font-size:14px;color:#a5718f;flex:none;";
+    row.onclick = function () { GV3.sel = g.id; GV3.stall = null; GV3.easier = 0; goMaybeStall(g); goBuild(); };
+  }
+  function goMaybeStall(g) { // PULL, NEVER PUSH: the diagnostic only exists because she opened the goal, and at most once per quiet spell
+    if (goIsDone(g) || g.state === "paused") return;
+    if (goQuietDays(g) < GO_QUIET) return;
+    if (g.stallK && daysBetweenK(g.stallK, todayK()) < GO_QUIET) return;
+    g.stallK = todayK(); GV3.stall = g.id; save();
+  }
+  function goCard(host, g) {
+    var card = add(host, "div", "go-card"), head = add(card, "div", "go-cardhead");
+    add(head, "b", null, g.title); add(head, "i", "ti ti-chevron-up");
+    head.onclick = function () { GV3.sel = null; GV3.stall = null; goBuild(); };
+    if (g.whyText) add(card, "span", "go-why", "“" + g.whyText + "”"); // DAVID'S VERDICT 2026-08-12: THE WHY sits under the name on the card, even though the frame missed it
+    else { var aw = add(card, "span", "go-ghost", tr("What changes for you when this is done?")); aw.onclick = function (e) { e.stopPropagation(); vrtEditDialog("", function (t) { g.whyText = t; save(); goBuild(); }, tr("THE WHY"), tr("Save")); }; }
+    if (GV3.stall === g.id) { goStall(card, g); }
+    // THE CARVE (R2): the stone is the picture. Past stages wear the DATE they were cut and the step that cut them; the
+    // future is dark. No stage NAME ever leaks into a line the player reads as their next move.
+    var cw = add(card, "div", "vr-craftwrap"), ch = add(cw, "div", "vr-blockh");
+    add(ch, "b", null, tr("THE CARVE")); add(ch, "span", null, tr("swipe both ways"));
+    var strip = add(cw, "div", "go-carve"), nowCol = null, cur = goStage(g);
+    for (var i = 1; i <= 5; i++) { (function (n) {
+      var col = add(strip, "div", "go-st " + (n === cur ? "now" : n < cur ? "past" : "future")); if (n === cur) nowCol = col;
+      var hold = add(col, "div", "go-hold"), si = add(hold, "img"); si.src = goStoneSrc(g, n); si.alt = ""; si.style.height = (n === cur ? 80 : n < cur ? 68 : 74) + "px";
+      add(col, "span", "go-sn", n < cur ? (goShortWhen(goStageK(g, n)) || tr("done")) : n === cur ? tr("now") : tr("next"));
+      var sub = add(col, "span", "go-ss");
+      sub.textContent = n < cur ? goStageStep(g, n) : n === cur ? (tr("carved from") + " " + goDoneN(g) + " " + tr("steps")) : (goToNext(g) ? goToNext(g) + " " + tr("more steps") : "");
+    })(i); }
+    if (nowCol) setTimeout(function () { try { strip.scrollLeft = Math.max(0, nowCol.offsetLeft - strip.clientWidth / 2 + nowCol.offsetWidth / 2); } catch (e) {} }, 0);
+    // THE NUMBERS (engine §3): lead · lag · the by-when DATE (a fact, never a countdown). Cold-start rule: with no
+    // by-when the card simply wears two honest numbers rather than inventing a third.
+    var nums = add(card, "div", "gv-nums");
+    function num(v, l) { var b = add(nums, "div", "gv-num"); add(b, "b", null, "" + v); add(b, "span", null, l); }
+    num(goWeek(g), tr("this week")); num(goToNext(g), tr("to next stage"));
+    if (g.byWhen) num(goShortWhen(g.byWhen), tr("by when"));
+    var ob = (g.woop && g.woop.obstacle) || "";
+    if (ob) { var q = add(card, "div", "go-quote"); add(q, "span", null, ob);
+      if (GV3.plan === g.id && g.woop.plan) add(q, "span", "go-plan", tr("When that happens, I will") + " " + g.woop.plan + ".");
+      q.onclick = function (e) { e.stopPropagation(); GV3.plan = GV3.plan === g.id ? null : g.id; goBuild(); };
+    }
+    var box = add(card, "div", "go-steps"), bh = add(box, "div", "vr-blockh");
+    add(bh, "b", null, tr("THE STEPS")); add(bh, "span", null, goDoneN(g) + " " + tr("of") + " " + goSteps(g).length);
+    goSteps(g).forEach(function (s, i) {
+      var nx = goNext(g) === s, row = add(box, "div", "go-step" + (s.done ? " done" : nx ? " next" : ""));
+      add(row, "span", "go-num", "" + (i + 1));
+      add(row, "span", "go-t", (s.floor ? s.floor + " " + tr("min") + " · " : "") + s.t);
+      if (s.done) add(row, "span", "go-when", goShortWhen(s.doneK)); else if (s.due) add(row, "span", "go-when", goShortWhen(s.due));
+      row.onclick = function (e) { e.stopPropagation(); goToggleStep(g, s); };
+    });
+    var addStep = add(box, "span", "go-ghost", "+ " + tr("add a step"));
+    addStep.onclick = function (e) { e.stopPropagation(); vrtEditDialog("", function (t) { goSteps(g).push({ t: t, due: null, done: false, doneK: null }); goMirror(g); save(); goBuild(); }, tr("Add a step"), tr("Save")); };
+    if (!goIsDone(g)) {
+      var pz = add(card, "span", "go-pause", g.state === "paused" ? tr("Pick it back up") : tr("Pause this goal"));
+      pz.onclick = function (e) { e.stopPropagation(); if (g.state === "paused") { g.state = "carving"; g.lastStepK = todayK(); } else { g.state = "paused"; g.pausedK = todayK(); } save(); goBuild(); };
+    }
+  }
+  function goStall(card, g) { // R5: four plain chips, once per quiet spell. Steel's equation as UI; never a character verdict.
+    var box = add(card, "div", "go-stall"), h = add(box, "div", "go-stallh");
+    add(h, "b", null, tr("What's true right now? Pick the closest."));
+    add(h, "span", null, tr("skip")).onclick = function (e) { e.stopPropagation(); GV3.stall = null; goBuild(); };
+    if (GV3.easier) { // THE EASIER VERSION ladder
+      var nx0 = goNext(g); add(box, "b", null, tr("THE EASIER VERSION")).style.cssText = "font-size:9.5px;font-weight:800;letter-spacing:1.6px;color:#1fb0f5;";
+      if (nx0) add(box, "span", null, nx0.t + " · " + tr("too big for now")).style.cssText = "font-size:11px;font-weight:600;color:#a5718f;";
+      add(box, "span", null, tr("How small should it get? I'd say 10 minutes, your call.")).style.cssText = "font-size:11.5px;font-weight:600;color:#e7c6d9;line-height:1.5;";
+      var cr = add(box, "div", "go-chips");
+      [5, 10, 15].forEach(function (m) { var c = add(cr, "span", "go-chip" + (GV3.easier === m ? " on" : ""), m + " " + tr("min")); c.onclick = function (e) { e.stopPropagation(); GV3.easier = m; goBuild(); }; });
+      var cc = add(cr, "span", "go-chip", tr("custom")); cc.onclick = function (e) { e.stopPropagation(); vrtEditDialog("", function (t) { var m = parseInt(t, 10); if (m > 0) { GV3.easier = m; goBuild(); } }, tr("How many minutes?"), tr("Save")); };
+      add(box, "span", null, tr("Same goal, a smaller step for a while. You set the size.")).style.cssText = "font-size:10.5px;font-weight:600;color:#a5718f;line-height:1.45;";
+      var lock = add(box, "button", "gv-cta", tr("Lock it in") + " · " + GV3.easier + " " + tr("min"));
+      lock.onclick = function (e) { e.stopPropagation(); var nx = goNext(g); if (nx) nx.floor = GV3.easier; GV3.easier = 0; GV3.stall = null; save(); goBuild(); };
+      return;
+    }
+    var pick = add(box, "div", "go-pick");
+    function chip(label, fn) { var b = add(pick, "button", null, label); b.onclick = function (e) { e.stopPropagation(); fn(); }; }
+    chip(tr("I don't want this anymore"), function () { // retire with dignity: the WHY stays displayed as true, the word "failed" never appears
+      g.state = "done"; g.doneK = todayK(); g.retired = true; GV3.stall = null; save(); goBuild(); renderGame();
+    });
+    chip(tr("The next step feels too big"), function () { GV3.easier = 10; goBuild(); });
+    chip(tr("Something else is pulling me"), function () {
+      vrtEditDialog("", function (t) { g.woop = g.woop || {}; g.woop.obstacle = t; g.woop.plan = ""; GV3.stall = null; GV3.plan = g.id; save(); goPlanAsk(g); }, tr("Name it"), tr("Save"));
+    });
+    chip(tr("The payoff feels far away"), function () {
+      vrtEditDialog("", function (t) { var st = goSteps(g), i = st.indexOf(goNext(g)); st.splice(i < 0 ? st.length : i, 0, { t: t, due: null, done: false, doneK: null }); goMirror(g); GV3.stall = null; save(); goBuild(); }, tr("A nearer step"), tr("Save"));
+    });
+  }
+  function goPlanAsk(g) { // the WOOP pair stays alive: a new obstacle immediately asks for its plan, via the app's proven chip pattern
+    var ov = add(document.body, "div"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(8,4,12,.72);display:flex;align-items:center;justify-content:center;padding:22px;";
+    ov.onclick = function (e) { if (e.target === ov) { ov.remove(); goBuild(); } };
+    var card = add(ov, "div"); card.style.cssText = "width:100%;max-width:320px;background:#1c0e30;border:2.5px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:16px;font-family:'Jost',var(--bub),sans-serif;";
+    add(card, "div", null, tr("When that happens, I will")).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:10px;";
+    var row = add(card, "div", "go-chips");
+    GO_PLANS.forEach(function (p) { var c = add(row, "span", "go-chip", tr(p)); c.onclick = function () { g.woop.plan = tr(p); save(); ov.remove(); goBuild(); }; });
+    var own = add(row, "span", "go-chip", tr("write my own"));
+    own.onclick = function () { ov.remove(); vrtEditDialog("", function (t) { g.woop.plan = t; save(); goBuild(); }, tr("When that happens, I will"), tr("Save")); };
+  }
+  function goMirror(g) { g.subtasks = goSteps(g).map(function (s) { return { title: s.t, done: !!s.done }; }); } // ONE model: the legacy readers (journey bead, day suggestions, the old goals sheet) keep seeing the same steps
+  function goToggleStep(g, s) {
+    if (goIsDone(g)) return;
+    s.done = !s.done; s.doneK = s.done ? todayK() : null;
+    g.lastStepK = todayK(); g.lastK = todayK(); if (g.state === "paused") g.state = "carving";
+    goMirror(g); save();
+    if (s.done && !goNext(g)) { goWake(g); return; }
+    goBuild(); renderGame();
+  }
+  function goWake(g) { // R9a: the last step lands, the statue completes, and the creature steps off the plinth
+    g.state = "done"; g.doneK = todayK(); g.active = false; save();
+    try { earn(GO_GEMS[goSizeOf(g)] || 25, { label: "goal-wake" }); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(20); } catch (e) {}
+    try { for (var i = 0; i < 20; i++) dust.push({ x: g.tx * TILE + (Math.random() - 0.5) * TILE, y: g.ty * TILE + (Math.random() - 0.5) * TILE * 0.6, vx: (Math.random() - 0.5) * 2.4, vy: -Math.random() * 2, life: 30 }); } catch (e) {}
+    if (goSizeOf(g) === "small") goEnsurePond(g);
+    GV3.wake = g.id; GV3.mode = "wake"; goBuild(); renderGame();
+  }
+  function goEnsurePond(g) { // the first small wake digs the pond; every koi after it swims there
+    S.game = S.game || {}; if (S.game.pond && S.game.pond.tx != null) return;
+    var sp = gardenSpots()[0] || { tx: g.tx, ty: g.ty + 1 };
+    S.game.pond = { tx: sp.tx, ty: sp.ty }; save();
+  }
+  // ---- the island ----------------------------------------------------------------------------------------------------
+  function goIslandH(g) { var sz = goSizeOf(g); return TILE * (sz === "big" ? 1.7 : sz === "medium" ? 1.15 : 0.7); }
+  function goWorldObjs() {
+    var out = [], a = goMine(), pond = S.game && S.game.pond;
+    if (pond && pond.tx != null) { var pi = goImg(goPondSrc()); if (pi.complete && pi.naturalWidth) out.push({ img: pi, x: pond.tx * TILE, y: pond.ty * TILE, h: TILE * 1.1 }); }
+    for (var i = 0; i < a.length; i++) { var g = a[i]; if (g.tx == null || g.ty == null) continue;
+      var done = goIsDone(g) && !g.retired, koi = done && g.sp === "koi";
+      var x = g.tx * TILE, y = g.ty * TILE, h = goIslandH(g);
+      if (koi && pond && pond.tx != null) { x = pond.tx * TILE + ((i % 3) - 1) * TILE * 0.34; y = pond.ty * TILE + ((i % 2) ? 0.18 : -0.14) * TILE; h = TILE * 0.42; } // the koi joins the pond
+      var im = goImg(done ? goLivingSrc(g) : goStoneSrc(g, goStage(g)));
+      if (!im.complete || !im.naturalWidth) continue;
+      out.push({ img: im, x: x, y: y, h: h });
+    }
+    return out;
+  }
+  function goGroundGlow(ctx, t) { if (!GV3.place || !GV3.place.spots) return; // R3a: three glowing homes for the boulder, the planting grammar
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < GV3.place.spots.length; i++) { var s = GV3.place.spots[i], cx = s.tx * TILE, cy = s.ty * TILE;
+      var sel = GV3.place.pick && GV3.place.pick.tx === s.tx && GV3.place.pick.ty === s.ty, r = TILE * (sel ? 1.15 : 0.9);
+      var g2 = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
+      g2.addColorStop(0, "rgba(31,176,245," + ((sel ? 0.62 : 0.34) + 0.16 * pulse).toFixed(3) + ")"); g2.addColorStop(1, "rgba(31,176,245,0)");
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+    }
+    ctx.restore(); ctx.save();
+    for (i = 0; i < GV3.place.spots.length; i++) { var s2 = GV3.place.spots[i], sel2 = GV3.place.pick && GV3.place.pick.tx === s2.tx && GV3.place.pick.ty === s2.ty;
+      ctx.strokeStyle = "rgba(31,176,245," + (sel2 ? 0.9 : 0.45) + ")"; ctx.lineWidth = sel2 ? 3 : 2; ctx.setLineDash(sel2 ? [] : [7, 7]);
+      ctx.beginPath(); ctx.arc(s2.tx * TILE, s2.ty * TILE, TILE * 0.42, 0, 7); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function goWorldTap(sx, sy) { if (!GV3.place || !GV3.place.spots || !GV3.place.spots.length) return false;
+    var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
+    for (var i = 0; i < GV3.place.spots.length; i++) { var s = GV3.place.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
+    if (best && bd < TILE * 2.6) { GV3.place.pick = best; goBuild(); }
+    return true;
+  }
+  // ---- the sheet ------------------------------------------------------------------------------------------------------
+  function goBuild() {
+    var sh = el("goalSheet"); if (!sh) return;
+    var list = sh.querySelector(".gv-list"), foot = sh.querySelector(".gv-foot"), sub = sh.querySelector(".gv-sub"), ttl = sh.querySelector(".gv-title");
+    if (!list || !foot) return;
+    groveDrain(list); groveDrain(foot);
+    sh.classList.toggle("go-place", GV3.mode === "place");
+    if (GV3.mode === "wake") { var gw = goById(GV3.wake); if (!gw) { GV3.mode = "list"; return goBuild(); }
+      if (ttl) ttl.textContent = tr("Done."); if (sub) sub.textContent = "";
+      var wk = add(list, "div", "go-wake"), wi = add(wk, "img"); wi.src = gw.retired ? goStoneSrc(gw, 5) : goLivingSrc(gw); wi.alt = "";
+      add(wk, "div", "go-h1", tr("Done."));
+      add(wk, "div", "go-p", tr("Colour rises from the stone. It steps off the plinth, onto the grass, yours for good."));
+      add(wk, "div", "go-p", tr("done") + " " + goShortWhen(gw.doneK) + " · " + tr("lives on the island")).style.cssText = "font-size:10.5px;color:#a5718f;";
+      var hi = add(foot, "button", "gv-cta", tr("Go say hi"));
+      hi.onclick = function () { GV3.wake = null; GV3.mode = null; goClose(); };
+      return;
+    }
+    if (GV3.mode === "new") { goDraftUI(list, foot, ttl, sub); return; }
+    if (GV3.mode === "place") {
+      var d = GV3.draft;
+      if (ttl) ttl.textContent = tr("New goal"); if (sub) sub.textContent = "";
+      var seed = add(list, "div", "go-seed"), si2 = add(seed, "img"); si2.src = "assets/garden/goals/stone5-" + d.sp + "-s1.png"; si2.alt = "";
+      add(seed, "span", null, tr("Finish this and the boulder becomes a creature for your island. The stone decides what it holds."));
+      var pb = add(foot, "button", "gv-cta", tr("Place the boulder"));
+      if (!GV3.place.pick) pb.style.opacity = ".5";
+      pb.onclick = function () { goCommit(); };
+      return;
+    }
+    if (ttl) ttl.textContent = tr("Goals");
+    var mine = goMine(), live = mine.filter(function (g) { return !goIsDone(g); }), done = mine.filter(goIsDone);
+    if (sub) sub.textContent = mine.length ? tr("What you're building toward.") : tr("Nothing carved yet. Name one thing and place its boulder.");
+    ["big", "medium", "small"].forEach(function (sz) {
+      var rows = live.filter(function (g) { return goSizeOf(g) === sz; }); if (!rows.length) return;
+      add(list, "span", "go-tier", sz === "big" ? tr("BIG CARVES") : sz === "medium" ? tr("MEDIUM · SHORTER CARVES") : tr("SMALL · QUICK ONES"));
+      rows.forEach(function (g) { goRow(list, g); });
+    });
+    if (done.length) { add(list, "div", "gv-rule"); add(list, "span", "go-tier", tr("ON THE ISLAND")); done.forEach(function (g) { goRow(list, g); }); }
+    var ar = add(list, "div", "go-addrow", "+ " + tr("add a goal"));
+    ar.onclick = function () { GV3.sel = null; GV3.draft = { title: "", byWhen: null, size: "medium", first: "", lint: null }; GV3.mode = "new"; goBuild(); };
+    var open = GV3.sel && goById(GV3.sel), tgt = open && !goIsDone(open) ? open : null; // the CTA belongs to the open card; the list at rest keeps its own quiet
+    if (tgt) { var nx = goNext(tgt);
+      if (nx) { var c = add(foot, "button", "gv-cta", tr("Do it") + " · " + (nx.floor ? nx.floor + " " + tr("min") + " · " : "") + nx.t); c.onclick = function () { goToggleStep(tgt, nx); }; }
+    }
+  }
+  function goById(id) { var a = goState(); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+  function goDraftUI(list, foot, ttl, sub) { // R3a THE FIRST CUT — four quick taps; the method arrives after the boulder stands
+    var d = GV3.draft;
+    if (ttl) ttl.textContent = tr("New goal"); if (sub) sub.textContent = tr("Name it, date it, one first step, place the boulder.");
+    var f1 = add(list, "div", "go-field"); add(f1, "b", null, tr("THE GOAL"));
+    var i1 = add(f1, "input", "go-in"); i1.type = "text"; i1.placeholder = tr("Run a 5k"); i1.value = d.title;
+    i1.oninput = function () { d.title = i1.value; };
+    var f2 = add(list, "div", "go-field"); add(f2, "b", null, tr("DONE BY"));
+    var i2 = add(f2, "input", "go-in"); i2.type = "date"; i2.value = d.byWhen || ""; i2.style.fontSize = "14px";
+    i2.onchange = function () { d.byWhen = i2.value || null; };
+    var f3 = add(list, "div", "go-field"); add(f3, "b", null, tr("THE FIRST STEP · GIVE IT A DAY"));
+    var i3 = add(f3, "input", "go-in"); i3.type = "text"; i3.placeholder = tr("Buy running shoes"); i3.value = d.first;
+    i3.oninput = function () { d.first = i3.value; var l = goLint(i3.value); if (l !== d.lint) { d.lint = l; goBuild(); } };
+    if (d.lint) { var lp = add(f3, "div", "go-lint"); add(lp, "i", "ti ti-bulb"); add(lp, "span", null, d.lint); // ONE chip, never a block (engine §1.2)
+      lp.onclick = function () { d.first = d.lint.replace(tr("Try: "), ""); d.lint = null; goBuild(); }; }
+    add(list, "span", null, tr("One is enough for now. You can add more any time after the boulder is placed.")).style.cssText = "font-size:10.5px;font-weight:600;color:#a5718f;line-height:1.45;";
+    var f4 = add(list, "div", "go-field"); add(f4, "b", null, tr("HOW BIG IS THIS ONE?"));
+    var sz = add(f4, "div", "go-sizes");
+    GO_SIZES.forEach(function (S2) { var b = add(sz, "div", "go-size" + (d.size === S2.k ? " on" : "")); add(b, "b", null, tr(S2.n)); add(b, "span", null, tr(S2.d)); b.onclick = function () { d.size = S2.k; goBuild(); }; });
+    var go = add(foot, "button", "gv-cta", tr("Place the boulder"));
+    go.onclick = function () {
+      if (!d.title.trim()) { try { i1.focus(); } catch (e) {} return; }
+      var spots = gardenSpots(); if (!spots.length) { try { toast(tr("walk onto open grass and try again")); } catch (e) {} return; }
+      var probe = { title: d.title.trim(), size: d.size, carvedK: todayK() }; goAssign(probe); d.sp = probe.sp; d.koi = probe.koi; // the creature is decided NOW and stays a secret
+      GV3.place = { spots: spots, pick: spots[0] }; GV3.mode = "place"; goBuild(); renderGame();
+    };
+  }
+  function goCommit() {
+    var d = GV3.draft, pick = GV3.place && GV3.place.pick; if (!d || !pick) return;
+    var g = { id: uid(), title: d.title.trim(), domain: domainOf({ title: d.title }), active: true, subtasks: [], woop: null,
+      size: d.size, steps: [], whyText: "", byWhen: d.byWhen || null, sp: d.sp, koi: d.koi, stage: 1,
+      tx: pick.tx, ty: pick.ty, state: "carving", doneK: null, lastStepK: todayK(), carvedK: todayK() };
+    if (d.first.trim()) g.steps.push({ t: d.first.trim(), due: null, done: false, doneK: null });
+    goMirror(g); goState().push(g); save();
+    try { for (var i = 0; i < 14; i++) dust.push({ x: pick.tx * TILE + (Math.random() - 0.5) * TILE, y: pick.ty * TILE + (Math.random() - 0.5) * TILE * 0.5, vx: (Math.random() - 0.5) * 2, vy: -Math.random() * 1.6, life: 24 }); } catch (e) {}
+    GV3.place = null; GV3.draft = null; GV3.mode = "list"; GV3.sel = g.id; goBuild(); renderGame(); // R3b: the card opens on the fresh boulder with its WHY and obstacle invitations
+  }
+  function goOpen(mode) {
+    var sh = el("goalSheet"); if (!sh) return;
+    try { groveClose(); } catch (e) {} try { vrtClose(); } catch (e) {}
+    GV3.mode = mode || "list"; goBuild(); sh.classList.add("on"); sh.classList.remove("gv-exp"); // partway by default sh.classList.remove("gv-exp"); // every open starts PARTWAY; full height is earned by the pull
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); }
+    if (fl) fl.classList.add("gv-spun");
+  }
+  function goClose() {
+    var sh = el("goalSheet"); if (sh) sh.classList.remove("on", "go-place");
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.remove("on", "gv-hid"); }
+    if (fl && !GV.mode && !VV.mode) fl.classList.remove("gv-spun");
+    GV3.mode = null; GV3.sel = null; GV3.draft = null; GV3.place = null; GV3.stall = null; GV3.easier = 0; GV3.wake = null;
+  }
+  function renderGoals2() { if (GV3.mode === "list" && el("goalSheet") && el("goalSheet").classList.contains("on")) goBuild(); }
+  function goWire() { if (GV3.wired) return; GV3.wired = true;
+    var cn = el("gvCoinGoals"); if (cn) cn.onclick = function () { goOpen("list"); };
+    var sh = el("goalSheet"); if (sh) { var x = sh.querySelector(".gv-x"); if (x) x.onclick = function () { goClose(); }; }
+  }
+  Object.assign(I18N.ru, { // THE GOALS strings (B4 law: EN source + RU dict in the same commit)
+    "Goals": "Цели", "What you're building toward.": "То, что ты строишь.",
+    "Nothing carved yet. Name one thing and place its boulder.": "Пока ничего не высечено. Назови одну вещь и поставь валун.",
+    "BIG CARVES": "БОЛЬШИЕ", "MEDIUM · SHORTER CARVES": "СРЕДНИЕ · КОРОЧЕ", "SMALL · QUICK ONES": "МАЛЫЕ · БЫСТРЫЕ", "ON THE ISLAND": "НА ОСТРОВЕ",
+    "add a goal": "добавить цель", "add a step": "добавить шаг", "Add a step": "Добавить шаг",
+    "steps": "шагов", "next": "дальше", "every step is done": "все шаги сделаны",
+    "lives on the island": "живёт на острове", "its why still stands": "её «зачем» осталось", "set down": "отложено",
+    "paused": "на паузе", "resumes when you say": "продолжится, когда скажешь", "quiet since": "тихо с",
+    "Still on it": "Всё ещё в деле", "Set it down for now": "Отложить пока",
+    "Pause this goal": "Поставить на паузу", "Pick it back up": "Вернуться к ней",
+    "THE CARVE": "РЕЗЬБА", "carved from": "высечено из", "more steps": "шагов ещё",
+    "to next stage": "до следующей ступени", "by when": "к сроку",
+    "THE STEPS": "ШАГИ", "Do it": "Сделать",
+    "What changes for you when this is done?": "Что изменится для тебя, когда это будет сделано?", "THE WHY": "ЗАЧЕМ",
+    "When that happens, I will": "Когда так случится, я", "write my own": "напишу своё",
+    "do the easy version": "сделаю лёгкий вариант", "move it to morning": "перенесу на утро", "tell a friend": "скажу другу",
+    "What's true right now? Pick the closest.": "Что сейчас правда? Выбери ближайшее.", "skip": "пропустить",
+    "I don't want this anymore": "Я больше этого не хочу", "The next step feels too big": "Следующий шаг слишком большой",
+    "Something else is pulling me": "Меня тянет другое", "The payoff feels far away": "Награда кажется далёкой",
+    "THE EASIER VERSION": "ЛЁГКИЙ ВАРИАНТ", "too big for now": "сейчас слишком много",
+    "How small should it get? I'd say 10 minutes, your call.": "Насколько уменьшить? Я бы сказал 10 минут, решать тебе.",
+    "custom": "своё", "How many minutes?": "Сколько минут?",
+    "Same goal, a smaller step for a while. You set the size.": "Та же цель, шаг поменьше на время. Размер выбираешь ты.",
+    "Lock it in": "Закрепить", "Name it": "Назови это", "A nearer step": "Шаг поближе",
+    "New goal": "Новая цель", "Name it, date it, one first step, place the boulder.": "Назови, поставь дату, один первый шаг, поставь валун.",
+    "THE GOAL": "ЦЕЛЬ", "Run a 5k": "Пробежать 5 км", "DONE BY": "СДЕЛАТЬ К",
+    "THE FIRST STEP · GIVE IT A DAY": "ПЕРВЫЙ ШАГ · ДАЙ ЕМУ ДЕНЬ", "Buy running shoes": "Купить беговые кроссовки",
+    "Try: ": "Попробуй: ", "Try: 3 gym sessions this week": "Попробуй: 3 тренировки на этой неделе",
+    "One is enough for now. You can add more any time after the boulder is placed.": "Пока хватит одного. Добавить ещё можно в любой момент после того, как валун встанет.",
+    "HOW BIG IS THIS ONE?": "НАСКОЛЬКО ОНА БОЛЬШАЯ?",
+    "Big": "Большая", "Medium": "Средняя", "Small": "Малая",
+    "a long carve. months of steps, a full 5-stage statue": "долгая резьба. месяцы шагов, полная статуя из 5 ступеней",
+    "a shorter carve. a few weeks of steps": "резьба покороче. пара недель шагов",
+    "a quick one. done in a day or two": "быстрая. за день-другой",
+    "Finish this and the boulder becomes a creature for your island. The stone decides what it holds.": "Закончи, и валун станет существом для твоего острова. Камень сам решит, кого он держит.",
+    "Place the boulder": "Поставить валун", "Done.": "Готово.",
+    "Colour rises from the stone. It steps off the plinth, onto the grass, yours for good.": "Цвет поднимается по камню. Существо сходит с постамента на траву, твоё навсегда.",
+    "Go say hi": "Поздороваться"
   });
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -11978,7 +12414,7 @@
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
   // @SEC:RENDER — renderAll fan-out: the god-dispatcher over every per-surface renderer. Adding a surface = add its renderer HERE, and make it idempotent (the master tick re-enters, see @SEC:BOOT).
-  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { renderVirtues(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
+  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { renderVirtues(); } catch (e) {} try { renderGoals2(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
@@ -17072,6 +17508,22 @@
       VV.sel = n ? id : null; vrtOpen("list"); return "virtues list";
     }
     return { state: vrtState(), view: VV };
+  };
+  window.DEV.goals2 = function (act, n, m) { // DEV: drive THE STATUES without waiting months — make / step / quiet / snap.
+    if (act === "reset") { S.goals = (S.goals || []).filter(function (g) { return !g.sp; }); if (S.game) S.game.pond = null; save(); try { goClose(); } catch (e) {} return "statues reset"; }
+    if (act === "make") { var sz = n || "medium", sp = gardenSpots()[0] || { tx: Math.round(px / TILE) + 2, ty: Math.round(py / TILE) };
+      var g = { id: uid(), title: m || ("Test " + sz + " goal"), domain: "focus", active: true, subtasks: [], woop: { obstacle: "Evenings are where it slips. I book things and don't go.", plan: "book the morning slot instead" },
+        size: sz, steps: [], whyText: "So I can keep up with my kids without getting winded.", byWhen: keyAdd(todayK(), 50), stage: 1, tx: sp.tx, ty: sp.ty, state: "carving", doneK: null, lastStepK: todayK(), carvedK: todayK() };
+      var nSteps = sz === "big" ? 6 : sz === "medium" ? 4 : 1;
+      for (var i = 0; i < nSteps; i++) g.steps.push({ t: ["buy running shoes", "first gym session", "3 gym weeks in a row", "call the clinic", "run the full 5k", "results reviewed with doc"][i] || ("step " + (i + 1)), due: null, done: false, doneK: null });
+      goAssign(g); goMirror(g); goState().push(g); save(); renderGoals2(); return { id: g.id, sp: g.sp, koi: g.koi, steps: g.steps.length }; }
+    if (act === "step") { var g2 = goMine()[n || 0]; if (!g2) return "none"; var nx = goNext(g2); if (!nx) return "all done"; goToggleStep(g2, nx); return { stage: goStage(g2), done: goDoneN(g2), state: g2.state }; }
+    if (act === "finish") { var g3 = goMine()[n || 0]; if (!g3) return "none"; var guard = 0; while (goNext(g3) && guard++ < 40) goToggleStep(g3, goNext(g3)); return { state: g3.state, sp: g3.sp, pond: S.game && S.game.pond }; }
+    if (act === "quiet") { var g4 = goMine()[n || 0]; if (!g4) return "none"; g4.lastStepK = keyAdd(todayK(), -(m || GO_QUIET)); g4.stallK = null; save(); renderGoals2(); return { quiet: goQuietDays(g4), drifting: goDrifting(g4) }; }
+    if (act === "open") { if (!gameOn) openGame(); GV3.sel = n ? goMine()[n - 1] && goMine()[n - 1].id : null; goOpen("list"); return "goals"; }
+    if (act === "new") { if (!gameOn) openGame(); GV3.draft = { title: m || "", byWhen: null, size: "medium", first: "", lint: null }; goOpen("new"); return "first cut"; }
+    if (act === "snap") { var shx = el("goalSheet") || el("virtueSheet") || el("groveSheet"); gvSnap(document.querySelector("#groveSheet.on, #virtueSheet.on, #goalSheet.on") || shx, n !== 0); return "snap " + (n !== 0 ? "full" : "partway"); }
+    return { goals: goMine().map(function (g) { return { t: g.title, size: g.size, sp: g.sp, stage: goStage(g), state: g.state, quiet: goQuietDays(g) }; }), view: GV3 };
   };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.

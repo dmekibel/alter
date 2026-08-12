@@ -3453,10 +3453,21 @@
   #groveCoins.on .gv-coin{ transform:none; opacity:1; pointer-events:auto; }
   .gv-coin i{ font-size:21px; color:#12d68f; }
   #gvCoinVirtues i{ color:#ff3f9e; }
+  #gvCoinGoals i{ color:#1fb0f5; }
+  #groveCoins.on .gv-coin:nth-child(3){ transition-delay:.1s; }
   #groveCoins.on .gv-coin:nth-child(2){ transition-delay:.05s; } /* the column blooms with a springy stagger (6a): each coin above the last leaves .05s later */
   .gv-coin:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
-  #groveSheet{ position:absolute; left:0; right:0; bottom:0; top:120px; border-radius:26px 26px 0 0; background:rgba(22,7,20,.95); border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 16px 0; display:flex; flex-direction:column; gap:9px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1); pointer-events:none; }
+  #groveSheet{ --gvfull:120px; position:absolute; left:0; right:0; bottom:0; top:38%; border-radius:26px 26px 0 0; background:#160714; border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 16px 0; display:flex; flex-direction:column; gap:9px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1), top .3s cubic-bezier(.2,.9,.3,1); pointer-events:none; }
   #groveSheet.on{ transform:none; pointer-events:auto; }
+  /* TWO SNAP POINTS (David 2026-08-12): a coin opens its menu PARTWAY — a bottom sheet at 38% from the top, which is
+     frame GF6's own proportion (its sheet stands at 300 of 844) and leaves a real band of island above it. FULL height is
+     EARNED BY THE GESTURE: drag the grab handle or the header up and the sheet takes its frame-height (the grove's 120px,
+     the virtues' and goals' 56px). Dragging back down returns it to partway; dragging down from partway closes it.
+     The sheets are OPAQUE (#160714, the solid form of the frames' rgba(22,7,20,.95)) — the island never ghosts through. */
+  #groveSheet.gv-exp, #virtueSheet.gv-exp, #goalSheet.gv-exp{ top:var(--gvfull); }
+  #groveSheet.gv-drag, #virtueSheet.gv-drag, #goalSheet.gv-drag{ transition:none; }
+  .gv-grab{ cursor:grab; touch-action:none; }
+  .gv-head{ touch-action:none; }
   #groveSheet.gv-short{ top:auto; height:auto; } /* GF7: the planting sheet is a low strip so the island IS the screen */
   #groveSheet.gv-party{ top:36%; } /* GF6 sits lower (300/844) so the island stays the frame around the good news */
   .gv-grab{ align-self:center; width:42px; height:5px; border-radius:999px; background:rgba(255,242,249,.22); flex:none; }
@@ -3567,7 +3578,7 @@
      so the shell, the rows, the numbers and the CTA are one recipe painted in two colours. The .vr-* rules below are ONLY the
      parts the grove has no equivalent for (the lantern well, the craft strip, the declaration block, the dated record, the
      carving grid and the relight ritual). Every px/hex is the frame's own value. ===== */
-  #virtueSheet{ --gvhue:#ff3f9e; position:absolute; left:0; right:0; bottom:0; top:56px; border-radius:26px 26px 0 0; background:rgba(22,7,20,.95); border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 16px 0; display:flex; flex-direction:column; gap:9px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1); pointer-events:none; } /* top:56 per 15A — the virtues sheet rides higher than the grove's 120 because a lantern list is taller than a tree list */
+  #virtueSheet{ --gvfull:56px; --gvhue:#ff3f9e; position:absolute; left:0; right:0; bottom:0; top:38%; border-radius:26px 26px 0 0; background:#160714; border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 16px 0; display:flex; flex-direction:column; gap:9px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1), top .3s cubic-bezier(.2,.9,.3,1); pointer-events:none; } /* top:56 per 15A — the virtues sheet rides higher than the grove's 120 because a lantern list is taller than a tree list */
   #virtueSheet.on{ transform:none; pointer-events:auto; }
   #virtueSheet.vr-carve{ top:150px; } /* 16A */
   #virtueSheet.vr-hang{ top:auto; height:auto; }  /* 16B: the island IS the screen, the sheet drops to a strip */
@@ -3659,6 +3670,92 @@
   #vrRelight.lit .vrl-lamp{ filter:drop-shadow(0 0 22px rgba(255,150,90,.65)); }
   .vrl-cue{ position:absolute; left:12%; width:76%; bottom:19%; text-align:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:var(--vhue,#ff3f9e); }
   .vrl-sub{ position:absolute; left:12%; width:76%; bottom:15.5%; text-align:center; font-size:10.5px; font-weight:600; color:#a5718f; }
+  /* ===== THE GOALS (garden menu 3 of 4 — frames R1b list / R2 card / R3a first cut / R3b after the boulder / R5 stall /
+     R6 paused-vs-drifting / R9a done). THIRD instance of the ONE sheet grammar: every .gv-* shell class is reused and only
+     --gvhue moves. The .go-* rules are only the parts the grove and the virtues have no equivalent for. ===== */
+  #goalSheet{ --gvfull:56px; --gvhue:#1fb0f5; position:absolute; left:0; right:0; bottom:0; top:38%; border-radius:26px 26px 0 0; background:#160714; border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 16px 0; display:flex; flex-direction:column; gap:9px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1), top .3s cubic-bezier(.2,.9,.3,1); pointer-events:none; }
+  #goalSheet.on{ transform:none; pointer-events:auto; }
+  #goalSheet.go-place{ top:auto; height:auto; }  /* R3a last beat: the island IS the screen while the boulder is placed */
+  #goalSheet.go-place .gv-list{ flex:none; padding-bottom:0; overflow:visible; }
+  #goalSheet.go-place .gv-fade{ display:none; }
+  #goalSheet.go-place .gv-foot{ position:static; padding:0 2px calc(96px + env(safe-area-inset-bottom,0px)); }
+  /* --- R1b the sized list --- */
+  .go-tier{ font-size:9.5px; font-weight:800; letter-spacing:1.6px; color:#a5718f; flex:none; padding-top:2px; }
+  .go-row{ display:flex; align-items:center; gap:12px; padding:11px 13px; border-radius:18px; background:rgba(240,169,205,.06); border:2.5px solid rgba(240,169,205,.16); flex:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-row.drift{ opacity:.62; }                       /* R6: dim, never red, never a counter */
+  .go-row.open{ border-color:#1fb0f5; }
+  .go-well{ width:38px; height:60px; flex:none; display:flex; align-items:flex-end; justify-content:center; }
+  .go-well.small{ height:40px; }
+  .go-well img{ max-width:100%; max-height:100%; object-fit:contain; object-position:bottom; image-rendering:pixelated; }
+  .go-tx{ display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+  .go-nm{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14.5px; color:#fff2f9; line-height:1.25; }
+  .go-line{ font-size:10.5px; font-weight:600; color:#a5718f; line-height:1.45; }
+  .go-line b{ color:#1fb0f5; font-weight:700; }        /* the live line ALWAYS names the real next step */
+  .go-line.done{ color:#7fd9a8; }
+  .go-addrow{ display:flex; align-items:center; gap:12px; padding:12px 13px; border-radius:18px; background:rgba(22,5,16,.25); border:2.5px dashed rgba(240,169,205,.28); flex:none; cursor:pointer; -webkit-tap-highlight-color:transparent; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#f0a9cd; }
+  /* --- R2 the card --- */
+  .go-card{ display:flex; flex-direction:column; gap:10px; padding:13px 14px 12px; border-radius:18px; background:rgba(240,169,205,.07); border:2.5px solid #1fb0f5; flex:none; }
+  .go-cardhead{ display:flex; align-items:center; gap:10px; }
+  .go-cardhead b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; flex:1; line-height:1.25; }
+  .go-cardhead i{ font-size:13px; color:#a5718f; }
+  .go-why{ font-size:11.5px; font-weight:600; color:#c9a3ba; line-height:1.5; text-wrap:pretty; }
+  .go-carve{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; padding:0 14px; -webkit-overflow-scrolling:touch; scrollbar-width:none; touch-action:pan-x; }
+  .go-carve::-webkit-scrollbar{ display:none; }
+  .go-st{ flex:none; width:150px; scroll-snap-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .go-st .go-hold{ height:86px; display:flex; align-items:flex-end; }
+  .go-st img{ width:auto; object-fit:contain; object-position:bottom; image-rendering:pixelated; }
+  .go-st.past img{ filter:brightness(.6) saturate(.8); }
+  .go-st.future img{ filter:brightness(.2) saturate(.7); }
+  .go-sn{ padding:4px 10px; border-radius:999px; background:rgba(22,5,16,.4); border:2px solid rgba(240,169,205,.16); color:#7d5670; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10.5px; line-height:1; }
+  .go-st.now .go-sn{ background-color:#1fb0f5; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px); border-color:#160510; color:#2a1730; }
+  .go-ss{ font-size:9px; font-weight:700; color:#7d5670; line-height:1.35; text-align:center; max-width:138px; }
+  .go-st.now .go-ss{ color:#a5718f; }
+  .go-quote{ display:flex; flex-direction:column; gap:7px; padding:11px 13px; border-radius:15px; background:rgba(22,5,16,.4); border:2.5px solid rgba(240,169,205,.16); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-quote span{ font-size:11.5px; font-weight:600; color:#e7c6d9; line-height:1.5; text-wrap:pretty; }
+  .go-quote .go-plan{ color:#1fb0f5; }
+  .go-steps{ display:flex; flex-direction:column; gap:7px; padding:11px 13px; border-radius:15px; background:rgba(22,5,16,.4); border:2.5px solid rgba(240,169,205,.16); }
+  .go-step{ display:flex; align-items:center; gap:9px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-num{ width:20px; height:20px; border-radius:7px; flex:none; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:9.5px; background:rgba(22,5,16,.5); border:2px solid rgba(240,169,205,.2); color:#7d5670; }
+  .go-step.done .go-num{ background-color:#1fb0f5; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px); border-color:#160510; color:#2a1730; }
+  .go-step .go-t{ flex:1; min-width:0; font-size:11.5px; font-weight:600; color:#e7c6d9; line-height:1.4; }
+  .go-step.done .go-t{ color:#7d5670; text-decoration:line-through; text-decoration-color:rgba(240,169,205,.3); }
+  .go-step.next .go-t{ color:#fff2f9; font-weight:700; }
+  .go-when{ padding:3px 8px; border-radius:8px; background:rgba(22,5,16,.5); border:2px solid rgba(240,169,205,.2); font-family:"Baloo 2",sans-serif; font-weight:800; font-size:9px; color:#f0a9cd; flex:none; }
+  .go-ghost{ align-self:flex-start; padding:5px 11px; border-radius:11px; background:rgba(255,242,249,.05); border:2px solid #4b2a44; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10px; color:#f0a9cd; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-pause{ align-self:center; padding:8px 15px; border-radius:13px; background:rgba(255,242,249,.05); border:2.5px solid #4b2a44; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12px; color:#f0a9cd; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* --- R3a the first cut --- */
+  .go-field{ display:flex; flex-direction:column; gap:6px; flex:none; }
+  .go-field > b{ font-size:9.5px; font-weight:800; letter-spacing:1.6px; color:#1fb0f5; }
+  .go-in{ width:100%; box-sizing:border-box; background:rgba(22,5,16,.5); border:2.5px solid rgba(240,169,205,.2); border-radius:13px; color:#fff2f9; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; padding:11px 12px; outline:none; }
+  .go-in::placeholder{ color:#7d5670; font-weight:700; }
+  .go-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .go-chip{ padding:6px 12px; border-radius:999px; background:rgba(22,5,16,.4); border:2px solid rgba(240,169,205,.25); font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10.5px; color:#f0a9cd; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-chip.on{ background-color:#1fb0f5; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.3) 0 13px, rgba(255,255,255,0) 13px 28px); border-color:#160510; color:#2a1730; }
+  .go-lint{ display:flex; align-items:center; gap:8px; padding:8px 11px; border-radius:13px; background:rgba(31,176,245,.08); border:2px solid rgba(31,176,245,.45); font-size:10.5px; font-weight:700; color:#8fd8ff; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-sizes{ display:flex; flex-direction:column; gap:7px; }
+  .go-size{ display:flex; flex-direction:column; gap:2px; padding:10px 13px; border-radius:15px; background:rgba(22,5,16,.4); border:2.5px solid rgba(240,169,205,.16); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-size.on{ border-color:#1fb0f5; background:rgba(31,176,245,.08); }
+  .go-size b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; color:#fff2f9; }
+  .go-size span{ font-size:10px; font-weight:600; color:#a5718f; line-height:1.4; }
+  .go-seed{ display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:15px; background:rgba(22,5,16,.4); border:2.5px solid rgba(240,169,205,.16); flex:none; }
+  .go-seed img{ width:auto; height:40px; object-fit:contain; image-rendering:pixelated; flex:none; }
+  .go-seed span{ font-size:10.5px; font-weight:600; color:#c9a3ba; line-height:1.45; flex:1; }
+  /* --- R5 the stall --- */
+  .go-stall{ display:flex; flex-direction:column; gap:8px; padding:12px 13px; border-radius:16px; background:rgba(31,176,245,.07); border:2.5px solid rgba(31,176,245,.4); flex:none; }
+  .go-stallh{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .go-stallh b{ font-size:11.5px; font-weight:700; color:#e7c6d9; }
+  .go-stallh span{ font-size:10px; font-weight:700; color:#a5718f; cursor:pointer; }
+  .go-pick{ display:flex; flex-direction:column; gap:6px; }
+  .go-pick button{ text-align:left; padding:9px 12px; border-radius:13px; background:rgba(22,5,16,.45); border:2px solid rgba(240,169,205,.2); font-family:"Jost",sans-serif; font-weight:700; font-size:11.5px; color:#e7c6d9; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-pick button:active{ transform:translateY(1px); }
+  /* --- R6 quiet states --- */
+  .go-resolve{ display:flex; gap:7px; padding-top:3px; }
+  .go-resolve span{ padding:5px 11px; border-radius:11px; background:rgba(255,242,249,.05); border:2px solid #4b2a44; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:10px; color:#f0a9cd; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* --- R9a the wake --- */
+  .go-wake{ display:flex; flex-direction:column; align-items:center; gap:9px; padding:8px 0 2px; flex:none; }
+  .go-wake img{ width:auto; height:150px; object-fit:contain; image-rendering:pixelated; }
+  .go-wake .go-h1{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; color:#fff2f9; line-height:1.25; }
+  .go-wake .go-p{ text-align:center; font-size:12px; font-weight:600; color:#e7c6d9; line-height:1.5; padding:0 10px; text-wrap:pretty; }
 </style>
 </head>
 <body>
@@ -3732,7 +3829,7 @@
     <div id="gameNav"><button class="jpn" id="gnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn" id="gnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn on" id="gnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div>
     <button id="gnToggle" type="button" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
     <!-- THE GROVE (garden MVP): the entry flower mirrors the home door across the bottom edge; its coin column unfolds upward; the sheet slides over the lower screen and NEVER scrims the island. Scaffold is static markup on purpose — JS only pokes these nodes (zero innerHTML wipes, ratchet law). -->
-    <div id="groveCoins"><button class="gv-coin" id="gvCoinHabits" type="button" aria-label="Habits"><i class="ti ti-seeding"></i></button><button class="gv-coin" id="gvCoinVirtues" type="button" aria-label="Virtues"><i class="ti ti-heart"></i></button></div>
+    <div id="groveCoins"><button class="gv-coin" id="gvCoinHabits" type="button" aria-label="Habits"><i class="ti ti-seeding"></i></button><button class="gv-coin" id="gvCoinVirtues" type="button" aria-label="Virtues"><i class="ti ti-heart"></i></button><button class="gv-coin" id="gvCoinGoals" type="button" aria-label="Goals"><i class="ti ti-mountain"></i></button></div>
     <button id="groveFlower" type="button" aria-label="Garden"><i class="ti ti-flower"></i></button>
     <div id="groveSheet">
       <span class="gv-grab"></span>
@@ -3758,6 +3855,15 @@
       <div class="vrl-stage"><span class="vrl-pool"></span><span class="vrl-ring"></span><img class="vrl-lamp" alt=""></div>
       <span class="vrl-cue"></span>
       <span class="vrl-sub"></span>
+    </div>
+    <!-- THE GOALS (garden menu 3 of 4): the statue system. Same sheet shell as the grove and the virtues, re-pointed to the goals hue. -->
+    <div id="goalSheet">
+      <span class="gv-grab"></span>
+      <div class="gv-head"><span class="gv-badge"><i class="ti ti-mountain"></i></span><span class="gv-title">Goals</span><button class="gv-x" type="button" aria-label="Close"><i class="ti ti-x"></i></button></div>
+      <div class="gv-sub"></div>
+      <div class="gv-list"></div>
+      <div class="gv-fade"></div>
+      <div class="gv-foot"></div>
     </div>
   </div>
   <div id="pullBackdrop"></div>
@@ -3825,6 +3931,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1257"></script>
+  <script src="app.js?v=1258"></script>
 </body>
 </html>
