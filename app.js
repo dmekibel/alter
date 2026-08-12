@@ -346,7 +346,7 @@
   }
   var el = function (id) { return document.getElementById(id); };
   // @SEC:TIME — KEY/SCHEMA constants + THE 4AM LAW: logicalK() rolls the day at 4am and EVERYTHING keys off it. SCHEMA's migrations live in load() (@SEC:STATE) — bump them TOGETHER.
-  var KEY = "alter_plan2", SCHEMA = 5, lastSaveErr = 0; // 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
+  var KEY = "alter_plan2", SCHEMA = 6, lastSaveErr = 0; // 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -1801,7 +1801,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#joy2,#gameNav,#gnToggle,#gameExit,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -1826,9 +1826,10 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     document.body.classList.remove("home-onepage"); // PUCK FIX (David 2026-07-22 "planner shows no home button"): the home-onepage class fades the puck to opacity:0 (nothing to return from AT home). Only the door path cleared it via teardownWorld — a pane reached any other way left it set, hiding the home button. Clearing it on EVERY pane rest guarantees the puck is lit on planner/journey/game.
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
+    try { groveClose(); } catch (e) {} // THE GROVE belongs to the world: any pane rest leaves it closed, so re-entering the island is always the calm face (the game branch below wakes it again)
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (_jt && jp && !jp.contains(_jt)) jp.appendChild(_jt); if (!_jt || !_jt.children.length || !jp.contains(_jt)) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
-    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} }
+    else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} try { groveWire(); groveOnWorldOpen(); } catch (e) {} } // THE GROVE wakes on THIS path too: setPaneRest is how the carousel swipe AND the home garden chip reach the world, and openGame() is not on either — without this the entry flower, its coins, the close X, the hold-to-grow listeners and the whole congratulation beat were dead on the app's primary route in
   }
   var _paneAnim = false;
   function initPaneCarousel() {
@@ -3574,7 +3575,7 @@
     p.querySelector(".gpk-text").addEventListener("click", function (e) { e.stopPropagation(); try { puckGoHome(); } catch (err) {} });
   }
   // the puck's "go home" tail (David 2026-07-22): while the ONE-PAGE world is open, home is a SCROLL POSITION, not a separate surface — smooth-scroll the column back to the home seam instead of tearing surfaces down. On any non-home surface (planner/game) worldScrollBackHome() returns false and we fall through to the existing openHome() (opens/returns the home cockpit).
-  function puckGoHome() { try { if (worldScrollBackHome()) return; } catch (e) {} try { openHome(); } catch (e) {} }
+  function puckGoHome() { try { if (worldScrollBackHome()) return; } catch (e) {} try { if (document.body.classList.contains("gaming")) closeGame(); } catch (e) {} try { openHome(); } catch (e) {} } // the puck is now the ONLY door out of the world (the "Exit world" button was retired 2026-08-12), so it must TEAR THE WORLD DOWN the way that button did — otherwise gameOn stayed true and the island kept painting its rAF loop behind the home cockpit
   function renderPuck() {
     var p = el("guardPuck"); if (!p || !PUCK_V2) return; // PUCK_V2=false → the boot wiring left the plain onclick=openHome puck in place; do nothing
     // ONE-LIVE-TIME-OBJECT LAW: a minimized guided player already owns the bottom-left. Hide the puck so the two never coexist (the gp-mini stays as-is this pass).
@@ -7329,7 +7330,7 @@
   // @SEC:STATE — S / fresh() / load() / save() / export-import. TOTAL-DATA-LOSS BLAST RADIUS.
   // @CONTRACT: changing the SHAPE of S requires bumping SCHEMA (@SEC:TIME) + a "MIG n→n+1" block inside load() — the preship ratchet enforces the pairing. Purely-additive fields with guarded reads (S.x || {}) may skip the bump (the S.mood/S.acts/S.bk precedent). load() must NEVER throw past its catch: a damaged save falls through to the _bak backup + fresh() path — David's data survives every crash.
   var S;
-  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] } }; }
+  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] }, grove: { plants: [], seen: {} } }; }
   function load() { // THE MIGRATION LADDER (wave-2 restructure 2026-07-05: exploded from one 10KB line — SAME statements, SAME order; only whitespace + comment placement changed). Structure: base defaults (every load) → gated MIG blocks (prevSchema < n) → S.v stamp → damaged-save catch.
     var _rawLoad = localStorage.getItem(KEY);
     try {
@@ -7421,6 +7422,21 @@
       (S.goals || []).filter(function (g) { return g.active !== false && g.title; }).forEach(function (g) {
         if (_seen5[g.title.toLowerCase()]) return; _seen5[g.title.toLowerCase()] = 1;
         S.range.targets.push({ id: uid(), title: g.title, domain: g.domain || "focus", horizon: "season", placedK: todayK(), arrows: [], woop: g.woop || null });
+      });
+    }
+    // MIG 5→6 — THE GROVE (garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md). S.grove = { plants:[{sp,practiceId,plantedK,days,daysK,lastCreditK,stage,tx,ty}], seen:{practiceId:{daysK:[]}} }.
+    // Shape-only and idempotent: an older save simply gains an empty grove (nobody has planted anything yet, so there is nothing to derive).
+    // The gated half repairs a half-written plant (a crash between push and save) rather than trusting partial rows into the renderer.
+    S.grove = S.grove || { plants: [], seen: {} };
+    S.grove.plants = Array.isArray(S.grove.plants) ? S.grove.plants.filter(function (p) { return p && p.sp && p.practiceId; }) : [];
+    S.grove.seen = S.grove.seen || {};
+    if (prevSchema < 6) {
+      S.grove.plants.forEach(function (p) {
+        if (!Array.isArray(p.daysK)) p.daysK = [];
+        if (typeof p.days !== "number") p.days = p.daysK.length;
+        if (typeof p.stage !== "number" || p.stage < 1) p.stage = 1;
+        if (p.stage > 10) p.stage = 10;
+        if (!p.plantedK) p.plantedK = todayK();
       });
     }
     S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
@@ -7696,24 +7712,11 @@
     if (zi) zi.onclick = function () { zoom = clampZ(zoom * 1.2); };
     if (zo) zo.onclick = function () { zoom = clampZ(zoom / 1.2); };
   }
-  // right thumb (twin-stick, Heaven Inc style): aims the fairy's facing
-  function setupJoy2() {
-    var zone = el("joy2"), stick = el("joyStick2"); if (!zone || !stick) return;
-    var cx2 = 0, cy2 = 0, j2t = 0, j2moved = false;
-    zone.addEventListener("touchstart", function (e) { e.preventDefault(); var tc = e.changedTouches[0]; jid2 = tc.identifier; var r = zone.getBoundingClientRect(); cx2 = r.left + r.width / 2; cy2 = r.top + r.height / 2; j2t = Date.now(); j2moved = false; }, { passive: false });
-    zone.addEventListener("touchmove", function (e) {
-      e.preventDefault();
-      for (var i = 0; i < e.changedTouches.length; i++) {
-        var tc = e.changedTouches[i]; if (tc.identifier !== jid2) continue;
-        var dx = tc.clientX - cx2, dy = tc.clientY - cy2, d = Math.sqrt(dx * dx + dy * dy), cl = Math.min(d, 42), a = Math.atan2(dy, dx);
-        if (d > 12) j2moved = true;
-        stick.style.transform = "translate(" + (Math.cos(a) * cl) + "px," + (Math.sin(a) * cl) + "px)";
-        var mag = Math.max(0, Math.min(1, (d - 5) / 37)); moveX2 = Math.cos(a) * mag; moveY2 = Math.sin(a) * mag;
-      }
-    }, { passive: false });
-    function end(e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === jid2) { if (!j2moved && Date.now() - j2t < 250) doJump(); jid2 = null; moveX2 = 0; moveY2 = 0; stick.style.transform = "translate(0,0)"; } }
-    zone.addEventListener("touchend", end); zone.addEventListener("touchcancel", end);
-  }
+  // THE RIGHT THUMB IS RETIRED (David 2026-08-12, world-screen review): the island had TWO pads, one over each bottom corner,
+  // crowding the home puck and the grove flower. They are now ONE pad centered at the bottom (#joy, see index.html), so both
+  // corners stay clear. setupJoy2() and its element are deleted — no listener is left behind. The aim/steer channel it fed
+  // (moveX2/moveY2) is declared at @SEC:GAME and now stays 0 forever, so the existing fallback in the locomotion + facing code
+  // reads the MOVE pad instead: the guardian faces where he walks, which is what a single-stick island wants.
   // ============ full-screen GAME MODE — top-down island the guardian walks ============
   var wctx, WGW = 0, WGH = 0, hspr = null, hsx = null, gameOn = false, ghudT = 0;
   var HSW = 40, HSH = 58, RG = 240, RS = 286, PXG = 3;
@@ -8265,7 +8268,7 @@
   }
   // real fairy sprite sheets (AI-generated, animated via Kling, sliced to frames)
   var FAIRY = { idle: null, fly: null, face: null, dir: null }, FAIRY_META = { idle: { fw: 201, fh: 300, n: 13 }, fly: { fw: 223, fh: 300, n: 13 }, face: { fw: 210, fh: 300, n: 8 }, dir: { fw: 207, fh: 300, n: 8 } };
-  var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // right thumb (twin-stick) + 8-way facing calibration (down→front)
+  var moveX2 = 0, moveY2 = 0, jid2 = null, FACE_DIR = 1, FACE_OFF = -Math.PI / 2;  // 8-way facing calibration (down→front). moveX2/moveY2/jid2 are the RETIRED right-thumb channel (setupJoy2 deleted 2026-08-12 when the two pads merged into one centered pad): they stay declared and permanently 0 so every "aim from the right stick, else from the move pad" fallback below keeps its exact shape and simply always takes the move pad.
   // FARMHAND (SANCTUARY character): David's 8-direction keyed walk (assets/fh-<DIR>.png, 21-frame strips, transparent). Replaces the fairy in the sanctuary. Locomotion = LOCOMOTION-BUILD-SPEC §2-3: facing decoupled from movement, twin-stick, signed playback (walk-backward).
   var FH = {}, FHSTAND = {}, FHIDLE = {}, FH_DIRNAMES = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"], FH_NF = 21, FH_IDLE_NF = 30, FH_STRIDE = 92; // FH_STRIDE = world px per full 21-frame walk cycle; tune so the feet plant (lower = faster leg cycle)
   var fhFace = Math.PI / 2, fhFrame = 0, fhMoving = false; // facing angle (radians; +y down → PI/2 = south/front), current walk frame (float), moving flag
@@ -8547,6 +8550,7 @@
       drawOceanWaves(ctx, t); // living sea over the flat corners the baked square leaves (skipped within islandR → never touches land)
       sanctGroundShade(ctx, sanctScene()); // ref-mood scene shading: moonlight falloff + soft contact shadows UNDER the objects
       sanctClaimGlow(ctx, t); // island expansion: the claimable water tile the guardian faces glows (walk into it to grow)
+      try { groveGroundGlow(ctx, t); } catch (e) {} // GF7 planting: the three candidate homes breathe on the grass (only while planting)
     } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
@@ -8610,9 +8614,11 @@
       // ONE depth-sorted pass: every object + the hero, ordered by base-y → a nearer thing always draws over (hides) whatever is behind it, and the hero is occluded when he walks behind a tree/house and drawn over when in front.
       var _dl = _scene.objs.map(function (o) { return { y: o.dy, d: function () { drawObj(ctx, o.img, o.dx, o.dy, o.h); } }; });
       _dl.push({ y: py, d: _drawHero });
+      try { groveWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // planted trees join the SAME base-y sort, so the guardian walks behind and in front of them like every other object
       _dl.sort(function (a, b) { return a.y - b.y; });
       _dl.forEach(function (e) { e.d(); });
       sanctGlows(ctx, _scene, t); // warm window pools + the charged bloom's living light, over the scene
+      try { groveTopGlow(ctx, t); } catch (e) {} // a plant at its threshold sparkles (the one allowed glow) and carries the hold ring while it fills
     } else {
       _drawHero();
       OBJS.forEach(function (o) { if (o[2] > py) drawObj(ctx, o[0], o[1], o[2], o[3]); });  // objects in front of the fairy occlude her
@@ -8670,16 +8676,10 @@
       for (var mi = 0; mi < 10; mi++) { var ph = mi * 2.4, mr = (40 + (mi % 5) * 22) * vz, ma = ph + t * (0.25 + (mi % 3) * 0.06), mx2 = GL[0] + Math.cos(ma) * mr, my2 = GL[1] + Math.sin(ma) * mr * 0.7, tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 1.7 + mi)); ctx.fillStyle = "rgba(255,210,150," + (0.5 * tw * _night / 0.64) + ")"; ctx.beginPath(); ctx.arc(mx2, my2, 1.6 * vz * tw, 0, 7); ctx.fill(); }
       ctx.restore();
     }
-    if (gameOn) {
-      var mmR = 42, mcx = 16 + mmR, mcy = 18 + mmR, msc = mmR / RS;
-      ctx.save();
-      ctx.beginPath(); ctx.arc(mcx, mcy, mmR, 0, 7); ctx.fillStyle = "rgba(30,12,30,0.55)"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#3a2540"; ctx.stroke();
-      ctx.save(); ctx.beginPath(); ctx.arc(mcx, mcy, mmR - 1, 0, 7); ctx.clip();
-      ctx.beginPath(); ctx.arc(mcx, mcy, RG * msc, 0, 7); ctx.fillStyle = "#9aae5e"; ctx.fill();
-      if (!SANCTUARY) [[-58, 2, "#caa15a"], [14, 44, "#ffd24a"], [150, 74, "#46c46a"], [-130, 28, "#ffb23a"]].forEach(function (o) { ctx.beginPath(); ctx.arc(mcx + o[0] * msc, mcy + o[1] * msc, 2.6, 0, 7); ctx.fillStyle = o[2]; ctx.fill(); });
-      ctx.beginPath(); ctx.arc(mcx + px * msc, mcy + py * msc, 3.4, 0, 7); ctx.fillStyle = "#ff5fa8"; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = "#fff"; ctx.stroke();
-      ctx.restore(); ctx.restore();
-    }
+    // THE MINIMAP IS GONE (David 2026-08-12, world-screen review): the top-left radar disc — its ground ring, its landmark
+    // dots and the pink you-are-here pip — is deleted. It was pure canvas paint inside this draw pass (no element, no
+    // listener, nothing else read it), so removing the block removes the whole feature. The island fits on one screen; it
+    // never needed a map of itself.
   }
   function drawWorld() {
     if (!gameOn || !wctx) return;
@@ -8795,7 +8795,7 @@
   // @SEC:GAME — the game world (openGame, islands, guardian, joy controls).
   function openGame() {
     var gm = el("gameMode"); if (!gm) return;
-    gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap(); try { playReveal(gm); } catch (e) {} // portal-reveal the game on open (v648)
+    gm.classList.add("on"); worldFit(); updGameHud(); wireWorldTap(); try { groveWire(); groveOnWorldOpen(); } catch (e) {} try { playReveal(gm); } catch (e) {} // portal-reveal the game on open (v648); the grove's entry flower + its pending congratulation belong to the island, so they wake with it
     document.body.classList.add("gaming"); // body scroll locked by CSS (v640)
     if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); }
     gameNavSetup(); gm.classList.add("gn-open"); // start with the bar SHOWN — it folds to the corner button once you actually pan/scroll the world (David 2026-07-02)
@@ -8806,7 +8806,7 @@
     function foldMenu() { gm.classList.remove("gn-open"); }
     var tg = el("gnToggle"); if (tg) tg.onclick = openMenu;
     var _gnSx = 0, _gnSy = 0, _gnTrack = false;
-    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gnToggle, #gameExit")) return; _gnSx = e.clientX; _gnSy = e.clientY; _gnTrack = true; }, true);
+    gm.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest("#gameNav, #gnToggle")) return; _gnSx = e.clientX; _gnSy = e.clientY; _gnTrack = true; }, true);
     gm.addEventListener("pointermove", function (e) { if (!_gnTrack) return; if (Math.abs(e.clientX - _gnSx) > 10 || Math.abs(e.clientY - _gnSy) > 10) { _gnTrack = false; foldMenu(); } }, true); // the bar STAYS until you actually scroll/pan/play — a real DRAG (not a tap) folds it to the corner button (David 2026-07-02)
     gm.addEventListener("pointerup", function () { _gnTrack = false; }, true);
     gm.addEventListener("pointercancel", function () { _gnTrack = false; }, true);
@@ -8815,6 +8815,7 @@
     var g = el("gnGame"); if (g) g.onclick = foldMenu; // already in the game → just fold the menu
   }
   function closeGame() {
+    try { groveClose(); } catch (e) {} // leaving the world always leaves the grove closed, so a fresh entry is the calm island
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
     document.body.classList.remove("gaming");
     gameOn = false; moveX = 0; moveY = 0; // do NOT reset body.overflow here — it must stay locked (this reset was the thing that un-pinned the body and reintroduced the gap) (v640)
@@ -8888,6 +8889,408 @@
       camX = Math.max(-lim, Math.min(lim, camX - dx / zoom)); camY = Math.max(-lim, Math.min(lim, camY - dy / zoom));
     });
   }
+  // ===== THE GROVE (garden MVP, 2026-08-12) — spec `_specs/GARDEN-MVP-SPEC-2026-08-08.md`, frames
+  // `_specs/_newera-build/GARDEN-GROVE-DESIGN-REF-2026-08-12.html` (6a entry · GF1 list · 11A/14A/14B card · GF6 congrats · GF7 planting · GF8 morning after).
+  // WHAT IT IS: three practices grow three real trees on the island. One practice-DAY = one growth credit (a second
+  // session the same day adds nothing; a 1-minute floor session earns the whole day). Stage-up is WITNESSED: at the
+  // threshold the plant goes "ready" and waits for a hold on the island, so growth is something the player does.
+  // THE LAWS (absolute, carried from the spec): zero notifications, ever · no red, no wilt, no decay, no percent bars,
+  // no timers, no shame · dim = invitation, every line forward-only · the island art is NEVER scrimmed under the sheet
+  // (it keeps painting at full brightness behind it) · both bottom corners stay tappable (home door left, flower right)
+  // · Tabler chrome only, sprites only for objects · every card ends in an action.
+  // WIRING: the credit rides `tickTool()` (the app's real session-complete choke point — every timelinePlayer/beatRunner
+  // finish and every stack completion passes through it), NOT a parallel tracker. Stage-up pays +5 through `earn()`.
+  // Child-drain everywhere: this surface adds ZERO innerHTML wipes (ratchet law). Design px/hex live in .gv-* (index.html).
+  var GROVE_TH = [0, 1, 3, 6, 10, 15, 21, 30, 45, 66]; // cumulative practice-DAYS for stage n (index n-1). 66 = the Lally 2010 habit-formation median, so stage 10 IS the science.
+  var GROVE_STAGES = ["seed", "sprout", "seedling", "sapling", "young tree", "slender", "crown", "first buds", "in bloom", "ancient"];
+  var GROVE_SPECIES = { // a plant's NAME is its habit — no pet names (David 2026-08-12). `word` is how a line refers to the tree itself ("Practise the cherry").
+    meditation: { sp: "cherryb", name: "Meditation", word: "cherry", tool: "meditate", mins: 10 },
+    movement:   { sp: "apple",   name: "Movement",   word: "apple",  tool: "stretch",  mins: 5 },
+    winddown:   { sp: "peach",   name: "Wind-down",  word: "peach",  tool: "relax",    mins: 5 }
+  };
+  var GROVE_ORDER = ["movement", "winddown", "meditation"]; // Johnson Big 3 seeding order: energy funds everything, so apple/peach come before the cherry
+  // TOOL → PRACTICE. Explicit ids only (an id that runs the engine its label names); TBX stacks in the `move` domain fall
+  // through to movement below. No guessing: an unmapped tool simply grows nothing.
+  var GROVE_TOOL = { meditate: "meditation", stretch: "movement", body: "movement", firstLight: "movement",
+    relax: "winddown", pmr: "winddown", shutdown: "winddown", cantSleep: "winddown", spunUp: "winddown" };
+  // THE SCIENCE ladder (14B) — meditation only for MVP; movement/wind-down science is a follow-up content pass, and an
+  // empty ladder is never drawn (no empty scaffolding). Every claim is the frame's own verified line + source.
+  var GROVE_SCIENCE = { meditation: [
+    { k: "THE SAME DAY",      l: "One sit already counts: a single short session lowers reported stress for hours after.", s: "Zeidan et al. · 2010" },
+    { k: "THE FIRST WEEKS",   l: "Four sessions in, sustained attention and working memory measurably improve.",           s: "Zeidan et al. · 2010" },
+    { k: "AFTER TWO MONTHS",  l: "Attention steadies under load; brain regions tied to attention and emotion show change.", s: "Hölzel et al. · 2011" },
+    { k: "OVER YEARS",        l: "Daily sits are linked to durable change in attention networks and the stress response.",  s: "Lutz et al. · 2008" }
+  ] };
+  var GROVE_MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  var GV = { mode: null, sel: null, sci: false, rec: false, mo: 0, plant: null, wired: false }; // mode: null=closed | "list" | "congrats" | "plant". All view state, never persisted.
+  var GROVE_IMG = {}, _groveHold = null, GROVE_HOLD_MS = 820; // 820 = the island claim-ring duration, so every world hold feels the same
+  function groveState() { S.grove = S.grove || { plants: [], seen: {} }; S.grove.plants = S.grove.plants || []; S.grove.seen = S.grove.seen || {}; return S.grove; }
+  function groveSrc(sp, n) { return "assets/grove/" + sp + "-s" + Math.max(1, Math.min(10, n)) + ".png"; }
+  function groveImg(sp, n) { var k = sp + "-s" + Math.max(1, Math.min(10, n)); if (!GROVE_IMG[k]) { var im = new Image(); im.src = groveSrc(sp, n); GROVE_IMG[k] = im; } return GROVE_IMG[k]; }
+  function groveDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); } // child-drain, never a wipe-and-rebuild (ratchet law)
+  function groveStageFor(days) { var n = 1; for (var i = 1; i < 10; i++) if ((days || 0) >= GROVE_TH[i]) n = i + 1; return n; }
+  function grovePlantFor(pid) { var a = groveState().plants; for (var i = 0; i < a.length; i++) if (a[i].practiceId === pid) return a[i]; return null; }
+  function groveReady(p) { return groveStageFor(p.days) > (p.stage || 1); } // the threshold is met but the player hasn't witnessed it yet
+  function groveNextNeed(p) { var st = p.stage || 1; return st >= 10 ? 0 : Math.max(0, GROVE_TH[st] - (p.days || 0)); } // days still owed to the stage AFTER the one it wears
+  function groveWeek(p) { var w = lastDays(7), n = 0, dk = p.daysK || []; for (var i = 0; i < dk.length; i++) if (w.indexOf(dk[i]) >= 0) n++; return n; }
+  function groveBestRun(dk) { if (!dk || !dk.length) return 0; var s = dk.slice().sort(), best = 1, run = 1; for (var i = 1; i < s.length; i++) { run = daysBetweenK(s[i - 1], s[i]) === 1 ? run + 1 : 1; if (run > best) best = run; } return best; }
+  function groveResting(p) { if (groveReady(p)) return false; if (daysBetweenK(p.plantedK || todayK(), todayK()) < 10) return false; var last = p.lastCreditK; if (!last) return true; return daysBetweenK(last, todayK()) >= 10; } // quiet, not failing: dim is an invitation. A seed planted this week is never "resting" — it just started (GF8).
+  function groveMenuH(n) { return Math.round(26 + 20 * Math.pow((n - 1) / 9, 0.8)); }         // MENU ramp — compressed, never true scale, never all one size
+  function groveCardH(i) { return Math.round(60 + 90 * Math.pow(i / 9, 0.8)); }               // THE ROAD ramp at card scale (i = stage-1): 60px seed → 150px ancient
+  function groveIslandH(n) { return TILE * (0.22 + 2.28 * Math.pow((n - 1) / 9, 1.3226)); }   // ISLAND = true relative scale: stage 5 lands on exactly 1 tile, stage 10 on 2.5 (the drama IS the point)
+  // ---- the growth engine -------------------------------------------------------------------------------------------
+  function groveToolPractice(id) { if (!id) return null; if (GROVE_TOOL[id]) return GROVE_TOOL[id]; try { var t = TBX_ITEMS[id]; if (t && t.dom === "move") return "movement"; } catch (e) {} return null; }
+  // ONE practice-day = ONE credit. Called from tickTool() (already de-duped per logical day for the tool ladder; this
+  // keeps its OWN per-plant day guard so two different meditation tools in one day still credit the cherry only once).
+  function groveCredit(pid) {
+    if (!pid || !GROVE_SPECIES[pid]) return;
+    var g = groveState(), k = todayK(), p = grovePlantFor(pid);
+    if (!p) { // not planted yet: keep the honest week-window ledger the congratulation reads
+      var sn = g.seen[pid] = g.seen[pid] || { daysK: [], offeredK: null };
+      sn.daysK = sn.daysK || [];
+      if (sn.daysK.indexOf(k) < 0) { sn.daysK.push(k); if (sn.daysK.length > 14) sn.daysK.splice(0, sn.daysK.length - 14); save(); }
+      var wk = lastDays(7), n = 0; for (var i = 0; i < sn.daysK.length; i++) if (wk.indexOf(sn.daysK[i]) >= 0) n++;
+      if (n >= 3 && sn.offeredK !== k) { g.offer = pid; save(); } // the congratulation waits for the island — GF6 is drawn over it, and nothing ever interrupts a session
+      return;
+    }
+    if (p.lastCreditK === k) return; // extra sessions the same day add NOTHING: gardens grow by days, not binges
+    p.lastCreditK = k; p.days = (p.days || 0) + 1;
+    p.daysK = p.daysK || []; if (p.daysK.indexOf(k) < 0) p.daysK.push(k);
+    if (p.daysK.length > 400) p.daysK.splice(0, p.daysK.length - 400);
+    save(); renderGrove();
+  }
+  // Stage-up is WITNESSED: this only ever runs off a completed hold on the island.
+  function groveGrow(p) {
+    if (!p || !groveReady(p)) return false;
+    p.stage = Math.min(10, (p.stage || 1) + 1);
+    save();
+    try { earn(5, { label: "grove" }); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(16); } catch (e) {}
+    try { for (var i = 0; i < 14; i++) dust.push({ x: p.tx * TILE + (Math.random() - 0.5) * TILE, y: p.ty * TILE + (Math.random() - 0.5) * TILE * 0.6, vx: (Math.random() - 0.5) * 2.2, vy: -Math.random() * 1.8, life: 26 }); } catch (e) {}
+    try { toast(tr(GROVE_SPECIES[p.practiceId].name) + " · " + tr(GROVE_STAGES[p.stage - 1])); } catch (e) {}
+    renderGrove();
+    return true;
+  }
+  // ---- the world ---------------------------------------------------------------------------------------------------
+  function groveWorldObjs() { // planted trees as depth-sortable scene entries (base-y = the tile center, same convention as sanctScene objects)
+    var out = [], a = groveState().plants;
+    for (var i = 0; i < a.length; i++) { var p = a[i]; if (p.tx == null || p.ty == null) continue;
+      var im = groveImg(GROVE_SPECIES[p.practiceId] ? GROVE_SPECIES[p.practiceId].sp : p.sp, p.stage || 1);
+      if (!im.complete || !im.naturalWidth) continue;
+      out.push({ img: im, x: p.tx * TILE, y: p.ty * TILE, h: groveIslandH(p.stage || 1), p: p });
+    }
+    return out;
+  }
+  function groveScreenToWorld(sx, sy) { return { x: (sx - WGW / 2) / zoom + (px + camX), y: (sy - WGH * 0.6) / zoom + (py + camY) }; } // inverse of renderWorld's camera transform
+  function groveSpots() { // three candidate homes on real grass, spread apart, clear of props and of anything already planted
+    if (!SANCT_TILES) return [];
+    if (!ISLE) buildIsle(); // the same guard sanctScene() uses: the island builds lazily on the first draw, and the congratulation can reach here before that frame has run (a legitimate first planting was answering "walk onto open grass" on an island that did not exist yet)
+    var out = [], gx = Math.round(px / TILE), gy = Math.round(py / TILE), sc = null;
+    try { sc = sanctScene(); } catch (e) {}
+    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }), rings = [2, 3, 4, 5];
+    for (var ri = 0; ri < rings.length && out.length < 3; ri++) { var r = rings[ri];
+      for (var ai = 0; ai < 8 && out.length < 3; ai++) {
+        var tx = gx + Math.round(Math.cos(ai * Math.PI / 4) * r), ty = gy + Math.round(Math.sin(ai * Math.PI / 4) * r);
+        if (!isleHas(tx, ty) || taken.indexOf(tx + "," + ty) >= 0) continue;
+        var near = false, j;
+        for (j = 0; j < out.length; j++) if (Math.abs(out[j].tx - tx) < 2 && Math.abs(out[j].ty - ty) < 2) { near = true; break; }
+        if (near) continue;
+        if (sc) for (j = 0; j < sc.objs.length; j++) { var o = sc.objs[j]; if (o.fw > 0 && Math.abs(o.dx - tx * TILE) < TILE && Math.abs(o.dy - ty * TILE) < TILE) { near = true; break; } }
+        if (near) continue;
+        out.push({ tx: tx, ty: ty });
+      }
+    }
+    return out;
+  }
+  function groveGroundGlow(ctx, t) { // GF7: the candidate spots breathe on the grass. Drawn UNDER the objects, additive, never a ring around anything living.
+    if (!GV.plant || !GV.plant.spots) return;
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < GV.plant.spots.length; i++) { var s = GV.plant.spots[i], cx = s.tx * TILE, cy = s.ty * TILE;
+      var sel = GV.plant.pick && GV.plant.pick.tx === s.tx && GV.plant.pick.ty === s.ty, r = TILE * (sel ? 1.15 : 0.9);
+      var g = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
+      g.addColorStop(0, "rgba(18,214,143," + ((sel ? 0.62 : 0.34) + 0.16 * pulse).toFixed(3) + ")"); g.addColorStop(1, "rgba(18,214,143,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+    ctx.save(); // a soft ring marks each candidate, solid on the one she is standing over — no cursor, no crosshair
+    for (i = 0; i < GV.plant.spots.length; i++) { var s2 = GV.plant.spots[i], sel2 = GV.plant.pick && GV.plant.pick.tx === s2.tx && GV.plant.pick.ty === s2.ty;
+      ctx.strokeStyle = "rgba(18,214,143," + (sel2 ? (0.75 + 0.2 * pulse) : (0.3 + 0.12 * pulse)).toFixed(3) + ")"; ctx.lineWidth = sel2 ? 3 : 2;
+      ctx.setLineDash(sel2 ? [] : [7, 7]);
+      ctx.beginPath(); ctx.arc(s2.tx * TILE, s2.ty * TILE, TILE * 0.42, 0, 7); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function groveTopGlow(ctx, t) { // the ONE allowed glow: a ready plant sparkles softly, and the hold ring fills on it. Never red, never a badge.
+    var objs = groveWorldObjs(), i;
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (i = 0; i < objs.length; i++) { var o = objs[i]; if (!groveReady(o.p)) continue;
+      var cy = o.y - o.h * 0.55, fl = 0.72 + 0.28 * Math.sin(t * 1.9 + o.x * 0.01), r = Math.max(30, o.h * 0.7) * (0.9 + 0.1 * fl);
+      var g = ctx.createRadialGradient(o.x, cy, 0, o.x, cy, r);
+      g.addColorStop(0, "rgba(255,246,214," + (0.16 * fl).toFixed(3) + ")"); g.addColorStop(0.45, "rgba(18,214,143," + (0.09 * fl).toFixed(3) + ")"); g.addColorStop(1, "rgba(18,214,143,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x, cy, r, 0, 7); ctx.fill();
+      for (var m = 0; m < 3; m++) { var ph = (t * 0.5 + m / 3) % 1, mx = o.x + Math.sin(ph * 6.28 + m * 2.1) * o.h * 0.3, my = o.y - o.h * (0.25 + ph * 0.7), ma = Math.sin(ph * Math.PI) * 0.7;
+        ctx.fillStyle = "rgba(255,246,214," + ma.toFixed(3) + ")"; ctx.beginPath(); ctx.arc(mx, my, 1.9, 0, 7); ctx.fill(); }
+    }
+    ctx.restore();
+    if (_groveHold && gameOn) { // same grammar as the island claim ring: faint track + gold arc filling clockwise
+      var hp = _groveHold.p, prog = Math.min(1, (performance.now() - _groveHold.t0) / GROVE_HOLD_MS);
+      var rr = TILE * 0.4, hx = hp.tx * TILE, hy = hp.ty * TILE;
+      ctx.save(); ctx.lineCap = "round";
+      ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(18,214,143,0.25)"; ctx.beginPath(); ctx.arc(hx, hy, rr, 0, 7); ctx.stroke();
+      ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,226,122,0.92)"; ctx.beginPath(); ctx.arc(hx, hy, rr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog); ctx.stroke();
+      ctx.restore();
+      if (prog >= 1) { var done = _groveHold.p; _groveHold = null; groveGrow(done); }
+    }
+  }
+  function groveHitPlant(sx, sy) { var w = groveScreenToWorld(sx, sy), a = groveState().plants;
+    for (var i = 0; i < a.length; i++) { var p = a[i]; if (p.tx == null) continue; var h = groveIslandH(p.stage || 1);
+      if (Math.abs(w.x - p.tx * TILE) < TILE * 0.7 && w.y < p.ty * TILE + TILE * 0.5 && w.y > p.ty * TILE - h) return p; }
+    return null; }
+  function groveTryHold(sx, sy, id) { var p = groveHitPlant(sx, sy); if (!p || !groveReady(p)) return false; _claimHold = null; _groveHold = { p: p, t0: performance.now(), id: id, sx: sx, sy: sy }; return true; }
+  function groveWireWorld() { // grove's OWN listeners on #world, additive: the existing pan/claim handlers are untouched (they run first; a grove hold clears the claim hold so two rings never charge at once)
+    var w = el("world"); if (!w || w._groveWired) return; w._groveWired = true;
+    var tapS = null;
+    function down(x, y, id) { tapS = { x: x, y: y, id: id, moved: false }; groveTryHold(x, y, id); }
+    function move(x, y, id) { if (tapS && tapS.id === id && Math.hypot(x - tapS.x, y - tapS.y) > 16) tapS.moved = true; if (_groveHold && _groveHold.id === id && Math.hypot(x - _groveHold.sx, y - _groveHold.sy) > 20) _groveHold = null; }
+    function up(x, y, id) { if (_groveHold && _groveHold.id === id) _groveHold = null; if (tapS && tapS.id === id && !tapS.moved) groveWorldTap(x, y); tapS = null; }
+    w.addEventListener("touchstart", function (e) { var c = e.changedTouches[0]; if (c) down(c.clientX, c.clientY, c.identifier); }, { passive: true });
+    w.addEventListener("touchmove", function (e) { for (var i = 0; i < e.changedTouches.length; i++) { var c = e.changedTouches[i]; move(c.clientX, c.clientY, c.identifier); } }, { passive: true });
+    w.addEventListener("touchend", function (e) { for (var i = 0; i < e.changedTouches.length; i++) { var c = e.changedTouches[i]; up(c.clientX, c.clientY, c.identifier); } });
+    w.addEventListener("touchcancel", function () { _groveHold = null; tapS = null; });
+    w.addEventListener("pointerdown", function (e) { if (e.pointerType === "touch") return; down(e.clientX, e.clientY, e.pointerId); }); // mouse/pen parity so the preview can drive it
+    w.addEventListener("pointermove", function (e) { if (e.pointerType === "touch") return; move(e.clientX, e.clientY, e.pointerId); });
+    w.addEventListener("pointerup", function (e) { if (e.pointerType === "touch") return; up(e.clientX, e.clientY, e.pointerId); });
+  }
+  function groveWorldTap(sx, sy) { // in planting mode a tap on the grass picks the nearest glowing spot; otherwise the world keeps its own taps
+    if (!GV.plant || !GV.plant.spots || !GV.plant.spots.length) return;
+    var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
+    for (var i = 0; i < GV.plant.spots.length; i++) { var s = GV.plant.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
+    if (best && bd < TILE * 2.6) { GV.plant.pick = best; groveBuild(); }
+  }
+  // ---- the surfaces ------------------------------------------------------------------------------------------------
+  function groveOpen(mode) {
+    var sh = el("groveSheet"); if (!sh) return;
+    GV.mode = mode || "list";
+    if (GV.mode !== "list") GV.sel = null;
+    groveBuild();
+    sh.classList.add("on");
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); } // the column folds away as its menu takes over — one bottom-right control at a time (GF1)
+    if (fl) fl.classList.add("gv-spun"); // the 45deg spin runs WITH the sheet slide, never after it
+  }
+  function groveClose() {
+    var sh = el("groveSheet"); if (sh) { sh.classList.remove("on"); sh.classList.remove("gv-short"); sh.classList.remove("gv-party"); }
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.remove("on"); cn.classList.remove("gv-hid"); }
+    if (fl) fl.classList.remove("gv-spun"); // counter-clockwise back to rest
+    _groveHold = null; // a hold in flight never survives the surface closing (or the world being left) — the ring would keep filling against a plant nobody is looking at
+    GV.mode = null; GV.plant = null; GV.sel = null;
+  }
+  function groveToggle() { if (GV.mode) groveClose(); else { var cn = el("groveCoins"), fl = el("groveFlower"); if (cn) cn.classList.toggle("on"); if (fl) fl.classList.toggle("gv-spun"); } } // the flower alone blooms the coins; a coin opens its menu
+  function groveNeediest() { // the CTA's plant: the one with the quietest week, then the youngest
+    var a = groveState().plants.slice(); if (!a.length) return null;
+    a.sort(function (x, y) { var d = groveWeek(x) - groveWeek(y); return d !== 0 ? d : (x.stage || 1) - (y.stage || 1); });
+    return a[0];
+  }
+  function grovePractise(p) { var S2 = GROVE_SPECIES[p.practiceId]; if (!S2) return; groveClose();
+    try { var t = stackTool(S2.tool); if (t && t.run) t.run(function () {}, S2.mins * 60); } catch (e) {} }
+  function groveRowLine(p) {
+    var age = daysBetweenK(p.plantedK || todayK(), todayK());
+    if (age <= 1 && (p.days || 0) <= 1) return (age === 0 ? tr("planted today") : tr("planted yesterday")) + " · " + tr("day") + " " + Math.max(1, p.days || 1); // GF8: the seed holds its row from day one
+    if (groveReady(p)) return tr("ready") + " · " + tr("hold it on the island");
+    if ((p.stage || 1) >= 10) return tr("ancient") + " · " + (p.days || 0) + " " + tr("days");
+    if (groveResting(p)) return (p.days || 0) + " " + tr("days") + " · " + tr("resting in the meadow");
+    return groveWeek(p) + " " + tr("this week") + " · " + groveNextNeed(p) + " " + tr("more to") + " " + tr(GROVE_STAGES[Math.min(9, p.stage || 1)]);
+  }
+  function groveFresh(p) { return daysBetweenK(p.plantedK || todayK(), todayK()) <= 1; } // GF8: planted today or yesterday — it still holds its own row, it just also gets the group's kicker
+  function groveRow(host, p) {
+    var sp = GROVE_SPECIES[p.practiceId] || { sp: p.sp, name: p.practiceId }, st = p.stage || 1;
+    var row = add(host, "div", "gv-row" + (GV.sel === p.practiceId ? " open" : ""));
+    var box = add(row, "span", "gv-spr"), im = add(box, "img"); im.src = groveSrc(sp.sp, st); im.alt = ""; im.style.height = groveMenuH(st) + "px";
+    var tx = add(row, "div", "gv-rtx");
+    add(tx, "span", "gv-rn", tr(sp.name));
+    add(tx, "span", "gv-rl", groveRowLine(p));
+    var pips = add(tx, "div", "gv-pips");
+    for (var i = 0; i < 5; i++) add(pips, "i", Math.round(st / 2) > i ? "on" : null);
+    add(row, "i", "ti " + (GV.sel === p.practiceId ? "ti-chevron-up" : "ti-chevron-right") + " gv-chev");
+    row.onclick = function () { GV.sel = (GV.sel === p.practiceId) ? null : p.practiceId; GV.sci = false; GV.rec = false; GV.mo = 0; groveBuild(); };
+    if (GV.sel === p.practiceId) groveCard(host, p);
+  }
+  function groveCard(host, p) { // 11A + 14A/14B folded into ONE card that opens in place: the road, the honest numbers, the science, the record, the action
+    var sp = GROVE_SPECIES[p.practiceId]; if (!sp) return;
+    var st = p.stage || 1, card = add(host, "div", "gv-card");
+    var cap = add(card, "div", "gv-cap"); add(cap, "b", null, tr("THE ROAD")); add(cap, "span", null, tr("swipe both ways"));
+    var road = add(card, "div", "gv-road"), now = null;
+    for (var i = 0; i < 10; i++) { var n = i + 1, past = n < st, cur = n === st;
+      var col = add(road, "div", "gv-stage" + (cur ? " now" : past ? " past dim" : " dim")); if (cur) now = col;
+      var hold = add(col, "div", "gv-hold"), im = add(hold, "img"); im.src = groveSrc(sp.sp, n); im.alt = ""; im.style.height = groveCardH(i) + "px";
+      add(col, "span", "gv-sn", tr(GROVE_STAGES[i]));
+      var sub = add(col, "span", "gv-ss");
+      if (past) { add(sub, "i", "ti ti-check").style.fontSize = "9px"; add(sub, "span", null, " " + tr("done")); }
+      else if (cur) sub.textContent = tr("grown over") + " " + (p.days || 0) + " " + tr("days");
+      else if (n === st + 1) sub.textContent = groveReady(p) ? tr("ready") : (groveNextNeed(p) + " " + tr("more days"));
+      else sub.textContent = tr("at") + " " + GROVE_TH[n - 1] + " " + tr("days");
+    }
+    var dots = add(card, "div", "gv-dots");
+    for (i = 0; i < 10; i++) add(dots, "i", i + 1 === st ? "on" : null);
+    if (now) setTimeout(function () { try { road.scrollLeft = Math.max(0, now.offsetLeft - road.clientWidth / 2 + now.offsetWidth / 2); } catch (e) {} }, 0); // the road opens ON her, both directions in reach
+    var nums = add(card, "div", "gv-nums");
+    function num(v, l) { var b = add(nums, "div", "gv-num"); add(b, "b", null, "" + v); add(b, "span", null, l); }
+    num(p.days || 0, tr("total")); num(groveWeek(p), tr("this week"));
+    var earned = groveStageFor(p.days || 0); // the third number counts toward the next UNEARNED stage, not the one she happens to be wearing — otherwise a plant waiting to be witnessed reads a dead "0 to sapling"
+    num(earned >= 10 ? (p.days || 0) : Math.max(0, GROVE_TH[earned] - (p.days || 0)), earned >= 10 ? tr("days") : tr("to") + " " + tr(GROVE_STAGES[Math.min(9, earned)]));
+    var SCI = GROVE_SCIENCE[p.practiceId];
+    if (SCI) { var bi = (p.days || 0) < 7 ? 0 : (p.days || 0) < 60 ? 1 : (p.days || 0) < 365 ? 2 : 3;
+      var sec = add(card, "div", "gv-sec"), sh = add(sec, "div", "gv-sech"); add(sh, "b", null, tr("THE SCIENCE"));
+      var sr = add(sh, "span", null, tr("same day to years")); add(sr, "i", "ti " + (GV.sci ? "ti-chevron-up" : "ti-chevron-down"));
+      if (!GV.sci) { add(sec, "span", "gv-line", tr(SCI[bi].l)); add(sec, "span", "gv-chip", SCI[bi].s); }
+      else for (var b2 = 0; b2 < SCI.length; b2++) { var beat = add(sec, "div", "gv-beat"), rail = add(beat, "div", "gv-rail");
+        add(rail, "em", b2 === bi ? "on" : null); if (b2 < SCI.length - 1) add(rail, "s");
+        var bx = add(beat, "div", "gv-beatx"), bh = add(bx, "div", "gv-beath");
+        add(bh, "b", b2 === bi ? "on" : null, tr(SCI[b2].k)); if (b2 === bi) add(bh, "span", null, tr("she is here"));
+        add(bx, "span", "gv-line", tr(SCI[b2].l)); add(bx, "span", "gv-chip", SCI[b2].s); }
+      sec.onclick = function () { GV.sci = !GV.sci; groveBuild(); };
+    }
+    groveRecord(card, p); // the card's action is the sheet's ONE floating CTA (14A) — never a second button competing with it
+  }
+  function groveRecord(card, p) { // 14A collapsed (this week + best run) → 14B unfolded (month chips + the day grid). Marks only: a blank day is blank, never red.
+    var sec = add(card, "div", "gv-sec"), h = add(sec, "div", "gv-sech"), dk = p.daysK || [], i;
+    var now = new Date(), moOff = GV.rec ? (GV.mo || 0) : 0, md = new Date(now.getFullYear(), now.getMonth() - moOff, 1);
+    var mKeyPre = md.getFullYear() + "-" + pad(md.getMonth() + 1) + "-", inMo = 0, dim = new Date(md.getFullYear(), md.getMonth() + 1, 0).getDate();
+    for (i = 0; i < dk.length; i++) if (dk[i].indexOf(mKeyPre) === 0) inMo++;
+    var elapsed = (moOff === 0) ? now.getDate() : dim;
+    add(h, "b", null, tr("THE RECORD"));
+    var hr = add(h, "span");
+    if (!GV.rec) add(hr, "span", null, tr(GROVE_MONTHS[md.getMonth()]) + " · " + inMo + " " + tr("of") + " " + elapsed);
+    else { var run = add(hr, "span", "gv-run"); add(run, "i", "ti ti-flame"); add(run, "span", null, tr("best run") + " · " + groveBestRun(dk) + " " + tr("days")); }
+    add(hr, "i", "ti " + (GV.rec ? "ti-chevron-up" : "ti-chevron-down"));
+    if (!GV.rec) {
+      var wk = add(sec, "div", "gv-wk"), days = add(wk, "div", "gv-days"), L = ["m", "t", "w", "t", "f", "s", "s"];
+      var mon = new Date(); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+      for (i = 0; i < 7; i++) { var d2 = new Date(mon); d2.setDate(mon.getDate() + i); var on = dk.indexOf(key(d2)) >= 0; add(days, "u", on ? "on" : null, L[i]); }
+      add(wk, "span", null, groveWeek(p) + " " + tr("of") + " 7 " + tr("this week"));
+      var rr = add(sec, "div", "gv-runrow"), run2 = add(rr, "span", "gv-run"); add(run2, "i", "ti ti-flame"); add(run2, "span", null, tr("best run") + " · " + groveBestRun(dk) + " " + tr("days"));
+      add(rr, "span", null, tr("since") + " " + groveWhen(p.plantedK));
+      rr.style.cssText = "font-size:11px;font-weight:600;color:#a5718f;";
+    } else {
+      var chips = add(sec, "div", "gv-months");
+      for (i = 0; i < 3; i++) (function (off) { var d3 = new Date(now.getFullYear(), now.getMonth() - off, 1);
+        var c = add(chips, "span", "gv-mo" + (off === moOff ? " on" : ""), tr(GROVE_MONTHS[d3.getMonth()]));
+        c.onclick = function (e) { e.stopPropagation(); GV.mo = off; groveBuild(); }; })(i);
+      var grid = add(sec, "div", "gv-grid");
+      for (i = 1; i <= dim; i++) { var kk = mKeyPre + pad(i), on2 = dk.indexOf(kk) >= 0, ahead = (moOff === 0 && i > now.getDate());
+        add(grid, "u", on2 ? "on" : (ahead ? "ahead" : null), "" + i); }
+      add(sec, "span", null, inMo + " " + tr("of") + " " + elapsed + " " + tr("days so far")).style.cssText = "font-size:10.5px;font-weight:600;color:#a5718f;";
+    }
+    sec.onclick = function () { GV.rec = !GV.rec; GV.mo = 0; groveBuild(); };
+  }
+  function groveWhen(k) { if (!k) return ""; var d = kd(k); return d.getDate() + " " + tr(GROVE_MONTHS[d.getMonth()]); }
+  function groveBuild() { // ONE builder for all three sheet modes. Child-drain + rebuild of the two content nodes; the shell is static markup.
+    var sh = el("groveSheet"); if (!sh) return;
+    var list = sh.querySelector(".gv-list"), foot = sh.querySelector(".gv-foot"), sub = sh.querySelector(".gv-sub"), ttl = sh.querySelector(".gv-title"), bic = sh.querySelector(".gv-badge i");
+    if (!list || !foot) return;
+    groveDrain(list); groveDrain(foot);
+    sh.classList.toggle("gv-short", GV.mode === "plant");
+    sh.classList.toggle("gv-party", GV.mode === "congrats");
+    if (bic) bic.className = "ti " + (GV.mode === "congrats" ? "ti-confetti" : "ti-seeding");
+    if (GV.mode === "congrats") {
+      var pid = GV.plant && GV.plant.pid, spc = GROVE_SPECIES[pid]; if (!spc) { groveClose(); return; }
+      if (ttl) ttl.textContent = tr("Well done"); if (sub) sub.textContent = "";
+      var seed = add(list, "div", "gv-seed"); add(seed, "span"); var si = add(seed, "img"); si.src = groveSrc(spc.sp, 1); si.alt = "";
+      add(list, "div", "gv-h1", tr("Time to plant something"));
+      add(list, "div", "gv-p", tr("You've practised three times this week. People who get this far in week one usually keep going, and now the practice gets a place on your island."));
+      add(add(list, "div", "gv-chiprow"), "span", "gv-chip", "Lally et al. · 2010");
+      var go = add(foot, "button", "gv-cta", tr("Plant your") + " " + tr(spc.word));
+      go.onclick = function () { grovePlantMode(pid); };
+      var nope = add(foot, "button", "gv-cta ghost", tr("Not yet"));
+      nope.onclick = function () { var g = groveState(); if (g.seen[pid]) g.seen[pid].offeredK = todayK(); g.offer = null; save(); groveClose(); };
+      return;
+    }
+    if (GV.mode === "plant") {
+      var spc2 = GROVE_SPECIES[GV.plant.pid];
+      if (ttl) ttl.textContent = tr("The grove"); if (sub) sub.textContent = "";
+      var pr = add(list, "div", "gv-plantrow"), pi = add(pr, "img"); pi.src = groveSrc(spc2.sp, 1); pi.alt = "";
+      var pt = add(pr, "div"); add(pt, "b", null, tr("Where should the") + " " + tr(spc2.word) + " " + tr("live?"));
+      add(pt, "span", null, tr("tap where the glow is"));
+      var here = add(foot, "button", "gv-cta", tr("Plant here"));
+      if (!GV.plant.pick) { here.style.opacity = ".5"; }
+      here.onclick = function () { groveDoPlant(); };
+      return;
+    }
+    if (ttl) ttl.textContent = tr("The grove");
+    if (sub) sub.textContent = GV.sel ? tr("Tap a row and its card opens in place. The list stays where it was.") : tr("Everything you practise. Growth pauses when you pause. It never reverses.");
+    var all = groveState().plants.slice().sort(function (a, b) { return GROVE_ORDER.indexOf(a.practiceId) - GROVE_ORDER.indexOf(b.practiceId); });
+    var live = all.filter(function (p) { return !groveResting(p); }), rest = all.filter(groveResting);
+    // GF8: the NEW group is ONE kicker over the seeds planted today/yesterday, then a rule, then the rest — never a kicker
+    // repeated over every row, and never a kicker at all on the first-ever planting (when "new" is the whole list, it says nothing).
+    var fresh = live.filter(groveFresh), older = live.filter(function (p) { return !groveFresh(p); });
+    if (fresh.length && older.length) { add(list, "span", "gv-kick gv-new", tr("NEW")); fresh.forEach(function (p) { groveRow(list, p); }); add(list, "div", "gv-rule"); older.forEach(function (p) { groveRow(list, p); }); }
+    else live.forEach(function (p) { groveRow(list, p); });
+    if (rest.length) { add(list, "div", "gv-rule"); add(list, "span", "gv-kick", tr("RESTING")); rest.forEach(function (p) { groveRow(list, p); }); }
+    if (!all.length) add(list, "span", "gv-rl", tr("Nothing planted yet. Practise three times in a week and a seed is yours."));
+    var nw = add(list, "span", "gv-newrow", "+ " + tr("start something new"));
+    nw.onclick = function () { groveClose(); try { closeGame(); } catch (e) {} try { openHome(); } catch (e) {} }; // the tools are where a practice actually starts; planting stays earned, never bought
+    var open = GV.sel && grovePlantFor(GV.sel), need = open || groveNeediest(); // an open card owns the action (14A); with the list at rest it belongs to the neediest plant (GF1)
+    if (need) { var sp3 = GROVE_SPECIES[need.practiceId];
+      var c = add(foot, "button", "gv-cta", (open ? tr("Practise") : tr("Practise the") + " " + tr(sp3.word)) + " · " + sp3.mins + " " + tr("min"));
+      c.onclick = function () { grovePractise(need); }; }
+  }
+  function grovePlantMode(pid) { // GF7: the island IS the screen — the sheet drops to a strip and three spots glow
+    var spots = groveSpots();
+    if (!spots.length) { try { toast(tr("walk onto open grass and try again")); } catch (e) {} return; }
+    GV.plant = { pid: pid, spots: spots, pick: spots[0] };
+    groveOpen("plant");
+  }
+  function groveDoPlant() {
+    var pid = GV.plant && GV.plant.pid, pick = GV.plant && GV.plant.pick, spc = GROVE_SPECIES[pid];
+    if (!pid || !pick || !spc || grovePlantFor(pid)) { groveClose(); return; }
+    var g = groveState();
+    g.plants.push({ sp: spc.sp, practiceId: pid, plantedK: todayK(), days: 0, daysK: [], lastCreditK: null, stage: 1, tx: pick.tx, ty: pick.ty });
+    g.offer = null; if (g.seen[pid]) g.seen[pid].offeredK = todayK();
+    save();
+    try { for (var i = 0; i < 16; i++) dust.push({ x: pick.tx * TILE + (Math.random() - 0.5) * TILE, y: pick.ty * TILE + (Math.random() - 0.5) * TILE * 0.5, vx: (Math.random() - 0.5) * 2, vy: -Math.random() * 1.5, life: 24 }); } catch (e) {}
+    GV.plant = null; GV.sel = pid; // GF8: the new seed holds its own row from day one, already open on its card
+    groveOpen("list");
+  }
+  function groveOnWorldOpen() { // the congratulation is drawn over the island (GF6), so it waits here rather than interrupting a session
+    groveWireWorld();
+    var g = groveState();
+    if (g.offer && GROVE_SPECIES[g.offer] && !grovePlantFor(g.offer)) { GV.plant = { pid: g.offer }; groveOpen("congrats"); }
+  }
+  function renderGrove() { if (GV.mode === "list" && el("groveSheet") && el("groveSheet").classList.contains("on")) groveBuild(); } // idempotent: no-op unless the list is actually up
+  function groveWire() {
+    if (GV.wired) return; GV.wired = true;
+    var fl = el("groveFlower"); if (fl) fl.onclick = function () { groveToggle(); };
+    var cn = el("gvCoinHabits"); if (cn) cn.onclick = function () { groveOpen("list"); };
+    var sh = el("groveSheet"); if (sh) { var x = sh.querySelector(".gv-x"); if (x) x.onclick = function () { groveClose(); }; }
+  }
+  Object.assign(I18N.ru, { // THE GROVE strings (B4 law: EN source + RU dict in the same commit)
+    "The grove": "Роща", "Everything you practise. Growth pauses when you pause. It never reverses.": "Всё, что ты практикуешь. Рост замирает, когда ты замираешь. Назад он не идёт.",
+    "Tap a row and its card opens in place. The list stays where it was.": "Нажми на строку, и карточка раскроется на месте. Список останется там же.",
+    "RESTING": "ОТДЫХАЕТ", "NEW": "НОВОЕ", "start something new": "начать что-то новое",
+    "Practise the": "Практика:", "Practise": "Практика", "min": "мин",
+    "THE ROAD": "ПУТЬ РОСТА", "swipe both ways": "листай в обе стороны", "done": "пройдено",
+    "grown over": "выросло за", "more days": "дней ещё", "at": "на", "days": "дней", "day": "день",
+    "total": "всего", "this week": "на этой неделе", "to": "до", "of": "из", "days so far": "дней пока",
+    "THE SCIENCE": "НАУКА", "same day to years": "от первого дня до лет", "she is here": "она здесь",
+    "THE SAME DAY": "В ТОТ ЖЕ ДЕНЬ", "THE FIRST WEEKS": "ПЕРВЫЕ НЕДЕЛИ", "AFTER TWO MONTHS": "ПОСЛЕ ДВУХ МЕСЯЦЕВ", "OVER YEARS": "ЧЕРЕЗ ГОДЫ",
+    "THE RECORD": "ЛЕТОПИСЬ", "best run": "лучшая серия", "since": "с",
+    "Well done": "Хорошая работа", "Time to plant something": "Пора что-то посадить",
+    "Plant your": "Посади свою", "Not yet": "Пока нет", "Plant here": "Посадить здесь",
+    "Where should the": "Где будет жить", "live?": "?", "tap where the glow is": "нажми туда, где светится",
+    "planted today": "посажено сегодня", "planted yesterday": "посажено вчера",
+    "ready": "готово", "hold it on the island": "задержи палец на ней",
+    "resting in the meadow": "отдыхает на лугу", "more to": "ещё до",
+    "walk onto open grass and try again": "выйди на открытую траву и попробуй снова",
+    "Nothing planted yet. Practise three times in a week and a seed is yours.": "Пока ничего не посажено. Три практики за неделю, и семя твоё.",
+    "Meditation": "Медитация", "Movement": "Движение", "Wind-down": "Отбой",
+    "cherry": "вишню", "apple": "яблоню", "peach": "персик",
+    "seed": "семя", "sprout": "росток", "seedling": "сеянец", "sapling": "саженец", "young tree": "молодое дерево",
+    "slender": "стройное", "crown": "крона", "first buds": "первые бутоны", "in bloom": "в цвету", "ancient": "древнее",
+    "january": "январь", "february": "февраль", "march": "март", "april": "апрель", "may": "май", "june": "июнь",
+    "july": "июль", "august": "август", "september": "сентябрь", "october": "октябрь", "november": "ноябрь", "december": "декабрь"
+  });
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
     var robe = mix("#4a36a0", st.color, 0.22), robeD = mix("#2c2068", st.color, 0.16), robeH = mix("#7d66da", st.color, 0.22);
@@ -9442,7 +9845,7 @@
     sf = Math.max(10, sf); if (streak < 7) sf = Math.min(99, sf);
     return { sf: sf, e: e, f: f, w: w };
   }
-  function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; logSF(ctx); growGarden(); save(); triggerTLM(ctx);
+  function earn(base, ctx) { var got = Math.max(1, Math.round(base)); S.game.spark += got; S.game.total += got; logSF(ctx); growGarden(); try { if (ctx && ctx.groveId) groveCredit(ctx.groveId); } catch (e) {} save(); triggerTLM(ctx); // ctx.groveId = the explicit escape hatch for a future earn() site that isn't a tool finish; the normal grove credit rides tickTool()
     var jspk = el("jpSpark"); if (jspk) { var jn = jspk.querySelector(".spark-n"); if (jn) jn.textContent = (S.game.spark || 0).toLocaleString(); jspk.classList.remove("bump"); void jspk.offsetWidth; jspk.classList.add("bump"); if (document.body.classList.contains("journey-open")) { try { var jr = jspk.getBoundingClientRect(); var jf = document.createElement("div"); jf.className = "spark-float"; jf.textContent = "+" + got; jf.style.left = (jr.left + jr.width / 2 - 8) + "px"; jf.style.top = (jr.top + 4) + "px"; document.body.appendChild(jf); setTimeout(function () { try { jf.remove(); } catch (e) {} }, 950); } catch (e) {} } } // persistent Spark counter pulses + floats +N (David 2026-07-02)
     var sp = el("spark"); if (sp) { sp.style.transition = "none"; sp.style.transform = "scale(1.14)"; setTimeout(function () { sp.style.transition = "transform .3s"; sp.style.transform = "scale(1)"; renderGame(); }, 30); try { var r0 = sp.getBoundingClientRect(); var fl = document.createElement("div"); fl.className = "spark-float"; fl.textContent = "+" + got; fl.style.left = (r0.left + r0.width / 2 + (Math.random() * 26 - 13)) + "px"; fl.style.top = (r0.top + 2) + "px"; document.body.appendChild(fl); setTimeout(function () { try { fl.remove(); } catch (e) {} }, 950); } catch (e) {} } } // floating +N feedback so earning Spark feels good (David 2026-06-24 night)
   // ===== THE REWARD LANGUAGE (spec: _specs/REWARD-LANGUAGE.md) — rewardFx = the PRESENTATION layer only (tiers: 1 Искра · 2 Совпадение · 3 Серия · 4 Корона · 5 Веха). earn() stays the untouched points ledger; this adds light/sound/touch at the moment, from its cause. =====
@@ -11261,7 +11664,7 @@
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
   // @SEC:RENDER — renderAll fan-out: the god-dispatcher over every per-surface renderer. Adding a surface = add its renderer HERE, and make it idempotent (the master tick re-enters, see @SEC:BOOT).
-  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
+  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
@@ -12064,6 +12467,7 @@
     if (S.tools.last[id] !== k) { S.tools.use[id] = (S.tools.use[id] || 0) + 1; } // one ladder tick per day per tool (the de-dupe); repeated same-day finishes still log+earn (those happen in the runner), just don't inflate the rep count
     S.tools.last[id] = k;
     S.tools.recents = [id].concat(S.tools.recents.filter(function (x) { return x !== id; })).slice(0, 6);
+    try { groveCredit(groveToolPractice(id)); } catch (e) {} // THE GROVE rides the app's real session-complete choke point — one practice-day = one growth credit, floor sessions included, no parallel tracker
     save();
     try { if (Math.random() < 0.3) { var _q = reflectDue(); if (_q) setTimeout(function () { reflectCard(_q); }, 900); } } catch (e) {} // sometimes, after a tool lands: one worksheet question while the state is warm
   }
@@ -16324,6 +16728,22 @@
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
   window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }).slice(1); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } return { depth: +sessionDepth(secs).toFixed(2), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, gaps: cues.slice(0, 6).map(function (s2) { return +s2.gap.toFixed(1); }) }; } };
+  window.DEV.grove = function (act, pid, n) { // DEV: drive THE GROVE without waiting 66 days — plant / set days / witness a stage-up / open any of the three sheet modes.
+    pid = pid || "meditation";
+    if (act === "reset") { S.grove = { plants: [], seen: {} }; save(); try { groveClose(); } catch (e) {} return "grove reset"; }
+    if (act === "plant") { if (grovePlantFor(pid)) return "already planted"; var sp = GROVE_SPECIES[pid], sl = groveSpots()[0] || { tx: Math.round(px / TILE) + 2, ty: Math.round(py / TILE) }; groveState().plants.push({ sp: sp.sp, practiceId: pid, plantedK: todayK(), days: 0, daysK: [], lastCreditK: null, stage: 1, tx: sl.tx, ty: sl.ty }); save(); renderGrove(); return groveState().plants; }
+    if (act === "days") { var p = grovePlantFor(pid); if (!p) return "not planted"; p.days = n || 0; p.daysK = []; for (var i = 0; i < p.days; i++) p.daysK.push(keyAdd(todayK(), -i)); p.lastCreditK = p.daysK[0] || null; save(); renderGrove(); return { days: p.days, stage: p.stage, ready: groveReady(p), next: groveNextNeed(p) }; }
+    if (act === "stage") { var p2 = grovePlantFor(pid); if (!p2) return "not planted"; p2.stage = Math.max(1, Math.min(10, n || 1)); save(); renderGrove(); return p2; }
+    if (act === "grow") { return groveGrow(grovePlantFor(pid)); }
+    if (act === "credit") { groveCredit(pid); return groveState(); }
+    if (act === "open" || act === "congrats" || act === "plantmode") {
+      if (!gameOn) openGame();
+      if (act === "congrats") { GV.plant = { pid: pid }; groveOpen("congrats"); return "congrats"; }
+      if (act === "plantmode") { grovePlantMode(pid); return GV.plant ? GV.plant.spots : "no spots"; }
+      GV.sel = n ? pid : null; groveOpen("list"); return "grove list";
+    }
+    return { state: groveState(), view: GV };
+  };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.
     var W = innerWidth, H = innerHeight, out = [], ok = true;
@@ -16918,7 +17338,7 @@
   }
   // @SEC:BOOT — init(): boot ORDER is a contract (load → world → master tick → nav wiring → renderAll → openJourney → start screen → i18n observe). Appending is safe; reordering is not.
   function init() {
-    load(); try { TTS.applyVoice(); } catch (e) {} loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupJoy2(); setupZoom(); requestAnimationFrame(drawGuardian);
+    load(); try { TTS.applyVoice(); } catch (e) {} loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     try { devInit(); } catch (e) {}
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
     window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
@@ -16949,7 +17369,8 @@
     var gb = el("gameBtn"); if (gb) gb.onclick = openGame;
     var ew = el("enterWorld"); if (ew) ew.onclick = openGame;
     var gcv = el("guardian"); if (gcv) gcv.addEventListener("click", function () { characterCard(); }); // tap the mirror → your character card (David 2026-06-27)
-    var gx = el("gameExit"); if (gx) gx.onclick = function () { closeGame(); try { openHome(); } catch (e) {} }; // EXIT WORLD = go HOME, not fall through to the planner underneath (David 2026-07-22 "exit world takes you to planner"). Home is the hub you return to from any surface.
+    // the "Exit world" button is RETIRED (David 2026-08-12): its job — tear the world down, land on home — moved onto the
+    // guardPuck home door bottom-left (puckGoHome), which was already the app's one way home from every other surface.
     var fc = el("featClose"); if (fc) fc.onclick = closeFeature;
     var fb = el("featBackdrop"); if (fb) fb.onclick = closeFeature;
     var jb = el("jumpBtn"); if (jb) { jb.onclick = doJump; jb.addEventListener("touchstart", function (e) { e.preventDefault(); doJump(); }, { passive: false }); }
