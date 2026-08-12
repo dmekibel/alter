@@ -16,6 +16,8 @@ ZERO = [
     ("negation-contrast", r"(?i)\b(not just|isn't (just |about )?|it'?s not|rather than)\b|,\s*not\s+\w|\bno\s+\w+\.\s+no\s+\w+\.\s+just\b", "the loudest LLM cadence. state the positive thing directly."),
     # the CROSS-SENTENCE switcheroo slipped Gate 1 on 2026-07-10 ("That's not a flaw. That's just the mind running the show." / "Not actual sleep. Just... gone.") — David: "the most heinous AI crime of all, the classic AI switcheroo."
     ("switcheroo",        r"(?i)\b(that|this|it)(?:'s| is| was)\s+not\b[^.!?]{0,60}[.!?]\s+(?:that|this|it)(?:'s| is| was)\b|\bnot\s+(?:a\s+|an\s+|the\s+)?\w+[^.!?]{0,40}[.!?]+\s*(?:\.\.\.\s*)?just\b", "the two-sentence AI switcheroo (\"That's not X. That's Y.\" / \"Not X. Just Y.\"). state the thing itself."),
+    # slipped Gate 1 on 2026-07-27 (Alfred bio drafts, David: "i hate that ur copy sounds like ai") — the causal blame-flip cadence
+    ("not-because flip",  r"(?i)\bnot because\b",                                "the blame-flip cadence (\"not because X, because Y\"). state the real cause once, plainly."),
 ]
 
 # HARD tells: for a terse guardian line, ONE is fatal (the "no idea underneath" family + coercion + jargon).
@@ -26,6 +28,8 @@ HARD = [
     ("template opener",    r"(?i)(in a world|imagine a|let'?s face it|let'?s dive|the secret nobody|let that sink in|picture this)", "canned opener. start on the thing itself."),
     ("wrap-up bow",        r"(?i)(at the end of the day|\bultimately\b|this teaches us|the lesson here|and that'?s the (whole )?(point|game)|remember that)", "moralizing close. end on the sharpest line."),
     ("hype-question CTA",  r"(?i)(let'?s do it|yes[,!]? let'?s|ready to \w|are you ready)",                               "coercive/hype button grammar. plain and honest instead."),
+    # slipped Gate 1 on 2026-07-27 — the sweeping-people claim (the CHEESY anchor, "sweeping everyone/most people")
+    ("sweeping-people",    r"(?i)^\s*most people\b|^\s*every(one|body)\s+(is|has|wants|thinks|does|struggles|fails)\b",   "sweeping everyone/most-people claim. name one person's one concrete moment instead."),
 ]
 # SOFT tells: accumulate. More than two = not ready.
 SOFT = [

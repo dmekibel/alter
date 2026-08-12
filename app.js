@@ -17802,6 +17802,38 @@
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     var _gz = el("tfWorldGround"); if (_gz) { var _gpb = parseFloat(getComputedStyle(_gz).paddingBottom) || 0; chk("ground bottom air", _gpb >= 32, Math.round(_gpb) + "px", "≥32px below the last toolbox row"); } // GROUND BOTTOM AIR (David device 2026-08-01 "the tools on the bottom are too close to the bottom"): the ground zone must always end on a real band of air (plus env(safe-area-inset-bottom) on device) so the last folder-square row never sits under the floating puck / home indicator
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
+    // ===== THE GARDEN GATES (David 2026-08-12, born from the coin column shipping reversed, mis-glyphed and undersized —
+    // "this class of failure should fail a ship, not reach me"). These are LOCKED BOARD NUMBERS: the audit is the contract.
+    // They read COMPUTED STYLE and DOM order, never live rects, so they hold from the idle home while the world is closed.
+    // WHAT IS ASSERTED FOR ORDER: the column renders in a FIXED direction (flex-direction:column), so DOM order IS
+    // top-to-bottom — the gate asserts both the direction and the id sequence, which together pin the visual order.
+    var _gc = el("groveCoins"), _gf = el("groveFlower");
+    var _cids = _gc ? [].slice.call(_gc.querySelectorAll(".gv-coin")).map(function (c) { return c.id; }) : [];
+    var _dir = _gc ? getComputedStyle(_gc).flexDirection : "none";
+    chk("coin column direction (DOM order = top-to-bottom)", _dir === "column", _dir, "column");
+    chk("coin column order top-to-bottom", _cids.join(",") === "gvCoinHabits,gvCoinVirtues,gvCoinGoals,gvCoinStore", _cids.join(",") || "none", "habits,virtues,goals,store (store nearest the flower)");
+    [["gvCoinHabits", "ti-seeding"], ["gvCoinVirtues", "ti-heart"], ["gvCoinGoals", "ti-target"], ["gvCoinStore", "ti-shopping-bag"]].forEach(function (p) {
+      var _i = document.querySelector("#" + p[0] + " i"), _cl = _i ? _i.className : "missing";
+      chk("coin glyph " + p[0].replace("gvCoin", "").toLowerCase(), !!_i && _i.classList.contains(p[1]), _cl, "ti " + p[1]);
+    });
+    var _c1 = el("gvCoinHabits"), _ci = _c1 && _c1.querySelector("i");
+    chk("coin diameter 52px", !!_c1 && getComputedStyle(_c1).width === "52px" && getComputedStyle(_c1).height === "52px", _c1 ? getComputedStyle(_c1).width + " x " + getComputedStyle(_c1).height : "missing", "52px x 52px");
+    chk("coin icon 24px", !!_ci && getComputedStyle(_ci).fontSize === "24px", _ci ? getComputedStyle(_ci).fontSize : "missing", "24px");
+    chk("coin gap 10px", !!_gc && getComputedStyle(_gc).gap === "10px", _gc ? getComputedStyle(_gc).gap : "missing", "10px");
+    var _fi = _gf && _gf.querySelector("i"), _fcol = _fi ? getComputedStyle(_fi).color : "missing";
+    chk("flower glyph + purple", !!_fi && _fi.classList.contains("ti-flower") && _fcol === "rgb(169, 93, 255)", (_fi ? _fi.className : "missing") + " · " + _fcol, "ti ti-flower · rgb(169, 93, 255)");
+    chk("flower 64px (the coins read as its children)", !!_gf && getComputedStyle(_gf).width === "64px", _gf ? getComputedStyle(_gf).width : "missing", "64px");
+    var _sheets = ["groveSheet", "virtueSheet", "goalSheet", "storeSheet"], _alpha = [], _snap = [];
+    _sheets.forEach(function (id) { var s = el(id); if (!s) { _alpha.push(id + ":missing"); _snap.push(id + ":missing"); return; }
+      var bg = getComputedStyle(s).backgroundColor; if (bg.indexOf("rgba") >= 0) _alpha.push(id + ":" + bg);
+      // the world may be CLOSED while the audit runs (it is a home-surface audit), and a hidden #gameMode leaves the
+      // percentage unresolved — so accept the raw 38% as readily as the resolved px, and fail on anything else.
+      var raw = getComputedStyle(s).top, tp = parseFloat(raw), want = Math.round(window.innerHeight * 0.38);
+      var okTop = raw.indexOf("%") >= 0 ? Math.abs(tp - 38) < 0.5 : Math.abs(tp - want) <= 2;
+      if (s.classList.contains("gv-exp") || !okTop) _snap.push(id + ":" + raw);
+    });
+    chk("garden sheets OPAQUE (no alpha)", !_alpha.length, _alpha.length ? _alpha.join(" ") : "all rgb()", "rgb(22, 7, 20) on all four, never rgba");
+    chk("garden sheets rest at the PARTIAL snap", !_snap.length, _snap.length ? _snap.join(" ") : "all " + Math.round(window.innerHeight * 0.38) + "px", "38% of viewport (" + Math.round(window.innerHeight * 0.38) + "px), gv-exp off");
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
   };
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
