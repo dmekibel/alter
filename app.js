@@ -9745,7 +9745,18 @@
   function goPick(a, seed) { var h = 0, s = String(seed || ""); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return a[h % a.length]; }
   function goSteps(g) { return (g.steps = g.steps || []); }
   function goDoneN(g) { return goSteps(g).filter(function (s) { return s.done; }).length; }
-  function goStage(g) { var st = goSteps(g), t = st.length; if (!t) return 1; if (goDoneN(g) >= t) return 5; return Math.max(1, Math.min(5, 1 + Math.floor(goDoneN(g) / t * 4))); }
+  // ===== B2p2 §5 FLOORS — a hard-day version of a step. Either version COUNTS as done (the chain never breaks on a bad
+  // day), but the floor moves the stone a THIN SHIMMER inside the current stage instead of a whole stage: goCarveN counts a
+  // floor-done as half a step, so the stage math lags honestly and the current carve column wears a lit edge. No bar, no percent.
+  function goCarveN(g) { var n = 0; goSteps(g).forEach(function (s2) { if (s2.done) n += s2.floorDone ? 0.5 : 1; }); return n; }
+  function goShimmer(g) { return goCarveN(g) % 1 !== 0; }
+  // ===== B2p2 §6 THE WISH TRAY — an idea that has not been given a first step yet. A wish is the SAME goal object with
+  // wish:true and no stone (`sp` unset), so goMine() already excludes it from the statue list and the island. One model.
+  function goWishes() { return goState().filter(function (g) { return g.wish && !g.sp; }); }
+  // ===== B2p2 §6 THE CARVE CAP — at most three BIG statues carving. Medium and small never consume a slot: booking the
+  // dentist must never compete with getting your health back.
+  function goBigCarving() { return goMine().filter(function (g) { return goSizeOf(g) === "big" && g.state === "carving"; }); }
+  function goStage(g) { var st = goSteps(g), t = st.length; if (!t) return 1; if (goDoneN(g) >= t) return 5; return Math.max(1, Math.min(5, 1 + Math.floor(goCarveN(g) / t * 4))); } // floor-dones count half, so a hard-day run advances the stone slowly rather than not at all
   function goNext(g) { var st = goSteps(g); for (var i = 0; i < st.length; i++) if (!st[i].done) return st[i]; return null; }
   function goIsDone(g) { return g.state === "done"; }
   function goQuietDays(g) { var k = g.lastStepK || g.carvedK || todayK(); return Math.max(0, daysBetweenK(k, todayK())); }
@@ -9818,7 +9829,7 @@
     add(ch, "b", null, tr("THE CARVE")); add(ch, "span", null, tr("swipe both ways"));
     var strip = add(cw, "div", "go-carve"), nowCol = null, cur = goStage(g);
     for (var i = 1; i <= 5; i++) { (function (n) {
-      var col = add(strip, "div", "go-st " + (n === cur ? "now" : n < cur ? "past" : "future")); if (n === cur) nowCol = col;
+      var col = add(strip, "div", "go-st " + (n === cur ? "now" : n < cur ? "past" : "future") + (n === cur && goShimmer(g) ? " shim" : "")); if (n === cur) nowCol = col;
       var hold = add(col, "div", "go-hold"), si = add(hold, "img"); si.src = goStoneSrc(g, n); si.alt = ""; si.style.height = (n === cur ? 80 : n < cur ? 68 : 74) + "px";
       add(col, "span", "go-sn", n < cur ? (goShortWhen(goStageK(g, n)) || tr("done")) : n === cur ? tr("now") : tr("next"));
       var sub = add(col, "span", "go-ss");
@@ -9844,15 +9855,41 @@
       add(row, "span", "go-t", goPracticeStep(s) ? goPracticeLine(s) : ((s.floor ? s.floor + " " + tr("min") + " · " : "") + s.t));
       if (s.done) add(row, "span", "go-when", goShortWhen(s.doneK)); else if (s.due) add(row, "span", "go-when", goShortWhen(s.due));
       row.onclick = function (e) { e.stopPropagation(); goToggleStep(g, s); };
+      if (s.floorT && !s.done) { // the hard-day version, always one tap away and never smaller-looking than the full one
+        var fl = add(box, "div", "go-floor", tr("hard day") + " · " + s.floorT);
+        fl.style.cssText += "cursor:pointer;padding-left:29px;";
+        fl.onclick = function (e) { e.stopPropagation(); goToggleStep(g, s, true); };
+      }
+      if (s.done && s.floorDone) add(box, "div", "go-floor", tr("hard day") + " · " + tr("it still counted")).style.paddingLeft = "29px";
+      if (nx && !s.done) { var ms = add(box, "span", "go-ghost", tr("It didn't happen")); ms.style.marginLeft = "29px";
+        ms.onclick = function (e) { e.stopPropagation(); goRetro(g, s); }; }
     });
     var addPr = add(box, "span", "go-ghost", "+ " + tr("link a practice"));
     addPr.onclick = function (e) { e.stopPropagation(); goPracticeDialog(g); };
     var addStep = add(box, "span", "go-ghost", "+ " + tr("add a step"));
-    addStep.onclick = function (e) { e.stopPropagation(); vrtEditDialog("", function (t) { goSteps(g).push({ t: t, due: null, done: false, doneK: null }); goMirror(g); save(); goBuild(); }, tr("Add a step"), tr("Save")); };
+    addStep.onclick = function (e) { e.stopPropagation(); vrtEditDialog("", function (t) {
+      var st = { t: t, due: null, done: false, doneK: null }; goSteps(g).push(st); goMirror(g); save(); goBuild();
+      vrtEditDialog("", function (f) { st.floorT = f; save(); goBuild(); }, tr("A hard-day version?"), tr("Save")); // §5: baked at creation, always skippable
+    }, tr("Add a step"), tr("Save")); };
     if (!goIsDone(g)) {
       var pz = add(card, "span", "go-pause", g.state === "paused" ? tr("Pick it back up") : tr("Pause this goal"));
       pz.onclick = function (e) { e.stopPropagation(); if (g.state === "paused") { g.state = "carving"; g.lastStepK = todayK(); } else { g.state = "paused"; g.pausedK = todayK(); } save(); goBuild(); };
     }
+  }
+  // ===== B2p2 §5 MISS RETRO — a skipped step opens Win-or-Learn, never a verdict. The third answer makes the if-then plan
+  // SMARTER WITH USE: it overwrites g.woop.plan through goPlanAsk, the exact path the stall's "something pulling" route
+  // already uses, so there is one writer for that field. g.woop.obstacle is never touched here.
+  function goRetro(g, st) {
+    var ov = add(document.body, "div"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(8,4,12,.72);display:flex;align-items:center;justify-content:center;padding:22px;";
+    ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+    var card = add(ov, "div"); card.style.cssText = "width:100%;max-width:320px;background:#1c0e30;border:2.5px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:16px;font-family:'Jost',var(--bub),sans-serif;";
+    add(card, "div", null, esc(st.t)).style.cssText = "color:#f2ecff;font-weight:800;font-size:15px;line-height:1.35;margin-bottom:4px;";
+    add(card, "div", null, tr("What happened with this one?")).style.cssText = "color:#c9a3ba;font-weight:600;font-size:12px;margin-bottom:10px;";
+    var col = add(card, "div"); col.style.cssText = "display:flex;flex-direction:column;gap:7px;";
+    function pick(label, fn) { var b = add(col, "button", "go-chip", label); b.style.cssText += "text-align:left;padding:9px 12px;font-size:11.5px;"; b.onclick = function () { ov.remove(); fn(); }; }
+    pick(tr("It worked"), function () { goToggleStep(g, st); });
+    pick(tr("It needs work"), function () { g.lastStepK = todayK(); save(); goBuild(); });
+    pick(tr("Next time I will"), function () { goPlanAsk(g); }); // the ONE writer of woop.plan
   }
   function goStall(card, g) { // R5: four plain chips, once per quiet spell. Steel's equation as UI; never a character verdict.
     var box = add(card, "div", "go-stall"), h = add(box, "div", "go-stallh");
@@ -9948,9 +9985,10 @@
   var GO_FOREVER = ["every day", "everyday", "daily", "each day", "every morning", "every night", "forever"];
   function goForeverLint(t) { var s2 = (t || "").toLowerCase(); for (var i = 0; i < GO_FOREVER.length; i++) if (s2.indexOf(GO_FOREVER[i]) >= 0) return true; return false; }
   function goMirror(g) { g.subtasks = goSteps(g).map(function (s) { return { title: s.t, done: !!s.done }; }); } // ONE model: the legacy readers (journey bead, day suggestions, the old goals sheet) keep seeing the same steps
-  function goToggleStep(g, s) {
+  function goToggleStep(g, s, viaFloor) {
     if (goIsDone(g)) return;
     s.done = !s.done; s.doneK = s.done ? todayK() : null;
+    s.floorDone = s.done ? !!viaFloor : false;   // either version counts; only the full one carves a whole step worth of stone
     g.lastStepK = todayK(); g.lastK = todayK(); if (g.state === "paused") g.state = "carving";
     goMirror(g); save();
     if (s.done && !goNext(g)) { goWake(g); return; }
@@ -10023,6 +10061,7 @@
       hi.onclick = function () { GV3.wake = null; GV3.mode = null; goClose(); };
       return;
     }
+    if (GV3.mode === "cap") { goCapScreen(list, foot, ttl, sub); return; }
     if (GV3.mode === "new") { goDraftUI(list, foot, ttl, sub); return; }
     if (GV3.mode === "place") {
       var d = GV3.draft;
@@ -10043,6 +10082,13 @@
       rows.forEach(function (g) { goRow(list, g); });
     });
     if (done.length) { add(list, "div", "gv-rule"); add(list, "span", "go-tier", tr("ON THE ISLAND")); done.forEach(function (g) { goRow(list, g); }); }
+    var wishes = goWishes();
+    if (wishes.length) { add(list, "div", "gv-rule"); add(list, "span", "go-tier", tr("WISHES"));
+      add(list, "span", "go-line", tr("Ideas with no first step yet. Give one a step and it becomes a goal."));
+      wishes.forEach(function (w) { var r = add(list, "div", "go-wish");
+        add(r, "span", null, w.title); add(r, "i", "ti ti-chevron-right");
+        r.onclick = function () { goPromoteWish(w); }; });
+    }
     var ar = add(list, "div", "go-addrow", "+ " + tr("add a goal"));
     ar.onclick = function () { GV3.sel = null; GV3.draft = { title: "", byWhen: null, size: "medium", first: "", lint: null }; GV3.mode = "new"; goBuild(); };
     var open = GV3.sel && goById(GV3.sel), tgt = open && !goIsDone(open) ? open : null; // the CTA belongs to the open card; the list at rest keeps its own quiet
@@ -10072,16 +10118,63 @@
     var f4 = add(list, "div", "go-field"); add(f4, "b", null, tr("HOW BIG IS THIS ONE?"));
     var sz = add(f4, "div", "go-sizes");
     GO_SIZES.forEach(function (S2) { var b = add(sz, "div", "go-size" + (d.size === S2.k ? " on" : "")); add(b, "b", null, tr(S2.n)); add(b, "span", null, tr(S2.d)); b.onclick = function () { d.size = S2.k; goBuild(); }; });
-    var go = add(foot, "button", "gv-cta", tr("Place the boulder"));
+    var go = add(foot, "button", "gv-cta", d.first.trim() ? tr("Place the boulder") : tr("Keep it as a wish"));
     go.onclick = function () {
       if (!d.title.trim()) { try { i1.focus(); } catch (e) {} return; }
+      if (!d.first.trim()) { goCommitWish(); return; }                     // §6: no first step = not a goal yet, so it lands in the tray instead of getting a boulder
+      if (d.size === "big" && goBigCarving().length >= 3) { GV3.mode = "cap"; goBuild(); return; } // §6 the carve cap, big goals only
       var spots = gardenSpots(); if (!spots.length) { try { toast(tr("walk onto open grass and try again")); } catch (e) {} return; }
       var probe = { title: d.title.trim(), size: d.size, carvedK: todayK() }; goAssign(probe); d.sp = probe.sp; d.koi = probe.koi; // the creature is decided NOW and stays a secret
       GV3.place = { spots: spots, pick: spots[0] }; GV3.mode = "place"; goBuild(); renderGame();
     };
   }
+  function goCommitWish() { // §6: a wish is the same object, minus a stone. Nothing is placed, nothing is counted, nothing ages.
+    var d = GV3.draft; if (!d || !d.title.trim()) return;
+    goState().push({ id: uid(), title: d.title.trim(), domain: domainOf({ title: d.title }), active: false, subtasks: [], woop: null,
+      wish: true, size: d.size, steps: [], whyText: "", byWhen: d.byWhen || null, state: "carving", carvedK: todayK(), lastStepK: todayK() });
+    save(); GV3.draft = null; GV3.mode = "list"; goBuild();
+  }
+  function goPromoteWish(w) { // a wish becomes a goal the moment it is given a first step; then it takes the normal placement flow
+    vrtEditDialog("", function (t) {
+      w.steps = [{ t: t, due: null, done: false, doneK: null }]; w.wish = false; w.active = true; w.lastStepK = todayK(); goMirror(w); save();
+      if (w.size === "big" && goBigCarving().length >= 3) { GV3.draft = { title: w.title, byWhen: w.byWhen, size: w.size, first: t, lint: null, promote: w.id }; GV3.mode = "cap"; goBuild(); return; }
+      goPlaceFor(w);
+    }, tr("Its first step"), tr("Save"));
+  }
+  function goPlaceFor(g) { // shared: hand an existing goal the boulder-placement beat
+    var spots = gardenSpots(); if (!spots.length) { try { toast(tr("walk onto open grass and try again")); } catch (e) {} return; }
+    goAssign(g); save();
+    GV3.draft = { title: g.title, byWhen: g.byWhen, size: g.size, first: "", lint: null, sp: g.sp, koi: g.koi, existing: g.id };
+    GV3.place = { spots: spots, pick: spots[0] }; GV3.mode = "place"; goBuild(); renderGame();
+  }
+  function goCapScreen(list, foot, ttl, sub) { // §6: one honest question, three statues, and an obvious way to back out
+    if (ttl) ttl.textContent = tr("Three at a time"); if (sub) sub.textContent = "";
+    add(list, "div", "vr-hangttl").appendChild(document.createTextNode(""));
+    var h = list.lastChild; add(h, "b", null, tr("Which statue rests while this one carves?"));
+    add(h, "span", null, tr("It keeps everything it has. You can pick it back up whenever you want."));
+    var box = add(list, "div", "go-cap");
+    goBigCarving().forEach(function (g) {
+      var it = add(box, "div", "go-capitem"), im = add(it, "img"); im.src = goStoneSrc(g, goStage(g)); im.alt = "";
+      var tx = add(it, "div"); add(tx, "b", null, g.title);
+      var nx = goNext(g); add(tx, "span", null, nx ? (tr("next") + " · " + (goPracticeStep(nx) ? goPracticeLine(nx) : nx.t)) : tr("every step is done"));
+      it.onclick = function () {
+        g.state = "paused"; g.pausedK = todayK(); save();
+        var pid = GV3.draft && GV3.draft.promote, w = pid && goById(pid);
+        if (w) { goPlaceFor(w); return; }
+        GV3.mode = "new"; goBuild();
+        var probe = { title: GV3.draft.title.trim(), size: GV3.draft.size, carvedK: todayK() }; goAssign(probe);
+        GV3.draft.sp = probe.sp; GV3.draft.koi = probe.koi;
+        GV3.place = { spots: gardenSpots(), pick: null }; GV3.place.pick = GV3.place.spots[0] || null;
+        GV3.mode = "place"; goBuild(); renderGame();
+      };
+    });
+    var back = add(foot, "button", "gv-cta ghost", tr("Leave it for now"));
+    back.onclick = function () { GV3.mode = "new"; goBuild(); };
+  }
   function goCommit() {
     var d = GV3.draft, pick = GV3.place && GV3.place.pick; if (!d || !pick) return;
+    if (d.existing) { var ex = goById(d.existing); if (ex) { ex.tx = pick.tx; ex.ty = pick.ty; ex.state = "carving"; ex.lastStepK = todayK(); save();
+      GV3.place = null; GV3.draft = null; GV3.mode = "list"; GV3.sel = ex.id; goBuild(); renderGame(); return; } }
     var g = { id: uid(), title: d.title.trim(), domain: domainOf({ title: d.title }), active: true, subtasks: [], woop: null,
       size: d.size, steps: [], whyText: "", byWhen: d.byWhen || null, sp: d.sp, koi: d.koi, stage: 1,
       tx: pick.tx, ty: pick.ty, state: "carving", doneK: null, lastStepK: todayK(), carvedK: todayK() };
@@ -10154,7 +10247,16 @@
     "This one sounds like a practice. Practices live in the grove. Plant it there?": "Похоже на практику. Практики живут в роще. Посадить её там?",
     "this block also carves": "этот блок высекает",
     "The week ahead.": "Неделя впереди.", "Which goal step matters most next week?": "Какой шаг важнее всего на следующей неделе?",
-    "It is on tomorrow, waiting.": "Он уже стоит на завтра и ждёт."
+    "It is on tomorrow, waiting.": "Он уже стоит на завтра и ждёт.",
+    "hard day": "тяжёлый день", "it still counted": "и это засчитано", "A hard-day version?": "Вариант на тяжёлый день?",
+    "It didn't happen": "Не случилось", "What happened with this one?": "Что вышло с этим шагом?",
+    "It worked": "Получилось", "It needs work": "Нужно доработать", "Next time I will": "В следующий раз я",
+    "Keep it as a wish": "Оставить как желание", "WISHES": "ЖЕЛАНИЯ",
+    "Ideas with no first step yet. Give one a step and it becomes a goal.": "Идеи без первого шага. Дай шаг, и это станет целью.",
+    "Its first step": "Её первый шаг",
+    "Three at a time": "По три за раз", "Which statue rests while this one carves?": "Какая статуя отдохнёт, пока высекается эта?",
+    "It keeps everything it has. You can pick it back up whenever you want.": "Она сохранит всё. Вернуться к ней можно в любой момент.",
+    "Leave it for now": "Оставить пока"
   });
   // ===== THE STORE (garden menu 4 of 4, 2026-08-12) — frame 17a. The column is now complete: habits · virtues · goals · store.
   // THE LIVING LAW: this shop sells COMFORT and nothing else. Every item is decor. Nothing here buys a stage, a streak, a

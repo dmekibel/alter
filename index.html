@@ -3761,6 +3761,22 @@
   .go-wake img{ width:auto; height:150px; object-fit:contain; image-rendering:pixelated; }
   .go-wake .go-h1{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; color:#fff2f9; line-height:1.25; }
   .go-wake .go-p{ text-align:center; font-size:12px; font-weight:600; color:#e7c6d9; line-height:1.5; padding:0 10px; text-wrap:pretty; }
+  /* --- B2p2 §5: the FLOOR shimmer. A hard-day version keeps the chain alive and moves the stone a little, so the current
+     carve column wears a thin lit edge instead of advancing a whole stage. Subtle by law: no bar, no percent, no number. --- */
+  .go-st.now.shim .go-hold{ position:relative; }
+  .go-st.now.shim .go-hold::after{ content:""; position:absolute; left:12%; right:12%; bottom:-3px; height:3px; border-radius:999px; background:linear-gradient(90deg, rgba(31,176,245,0), #1fb0f5, rgba(31,176,245,0)); opacity:.85; }
+  .go-floor{ font-size:10px; font-weight:700; color:#8fd8ff; line-height:1.35; }
+  /* --- B2p2 §6: the WISH TRAY. List only, zero new art, no counters, no age. An idea that has not been given a first step. --- */
+  .go-wish{ display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:16px; background:rgba(22,5,16,.3); border:2.5px dashed rgba(240,169,205,.22); flex:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-wish span{ flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#c9a3ba; line-height:1.35; }
+  .go-wish i{ font-size:14px; color:#a5718f; flex:none; }
+  /* --- B2p2 §6: the CARVE CAP screen. One honest question, three statues, an obvious way out. --- */
+  .go-cap{ display:flex; flex-direction:column; gap:9px; flex:none; }
+  .go-capitem{ display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:16px; background:rgba(22,5,16,.4); border:2.5px solid rgba(240,169,205,.16); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .go-capitem img{ width:auto; height:44px; object-fit:contain; image-rendering:pixelated; flex:none; }
+  .go-capitem div{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .go-capitem b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#fff2f9; line-height:1.25; }
+  .go-capitem span{ font-size:10.5px; font-weight:600; color:#a5718f; line-height:1.4; }
   /* ===== THE STORE (garden menu 4 of 4 — frame 17a). Fourth instance of the ONE sheet grammar: every .gv-* shell class
      reused, only --gvhue moves. The store sells COMFORT and nothing else: no meaning, no shortcut, no advantage is on sale. ===== */
   #storeSheet{ --gvfull:56px; --gvhue:#ffc41f; position:absolute; left:0; right:0; bottom:0; top:38%; border-radius:26px 26px 0 0; background:#160714; border:2.5px solid #160510; border-bottom:none; box-shadow:0 -10px 40px rgba(0,0,0,.5); padding:6px 18px 0; display:flex; flex-direction:column; gap:6px; overflow:hidden; z-index:67; box-sizing:border-box; transform:translateY(104%); transition:transform .34s cubic-bezier(.2,.9,.3,1), top .3s cubic-bezier(.2,.9,.3,1); pointer-events:none; }
@@ -3974,6 +3990,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1260"></script>
+  <script src="app.js?v=1262"></script>
 </body>
 </html>
