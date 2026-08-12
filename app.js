@@ -346,7 +346,7 @@
   }
   var el = function (id) { return document.getElementById(id); };
   // @SEC:TIME — KEY/SCHEMA constants + THE 4AM LAW: logicalK() rolls the day at 4am and EVERYTHING keys off it. SCHEMA's migrations live in load() (@SEC:STATE) — bump them TOGETHER.
-  var KEY = "alter_plan2", SCHEMA = 6, lastSaveErr = 0; // 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
+  var KEY = "alter_plan2", SCHEMA = 7, lastSaveErr = 0; // 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -1801,7 +1801,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -1826,7 +1826,7 @@
     document.body.classList.remove("pane-dragging", "nav-collapsed"); // never carry the planner's scrolled corner-pill state into another pane (the persistent menu must stay full there)
     document.body.classList.remove("home-onepage"); // PUCK FIX (David 2026-07-22 "planner shows no home button"): the home-onepage class fades the puck to opacity:0 (nothing to return from AT home). Only the door path cleared it via teardownWorld — a pane reached any other way left it set, hiding the home button. Clearing it on EVERY pane rest guarantees the puck is lit on planner/journey/game.
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
-    try { groveClose(); } catch (e) {} // THE GROVE belongs to the world: any pane rest leaves it closed, so re-entering the island is always the calm face (the game branch below wakes it again)
+    try { groveClose(); vrtClose(); } catch (e) {} // THE GARDEN belongs to the world: any pane rest leaves every menu closed, so re-entering the island is always the calm face (the game branch below wakes it again)
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
     else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (_jt && jp && !jp.contains(_jt)) jp.appendChild(_jt); if (!_jt || !_jt.children.length || !jp.contains(_jt)) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} try { groveWire(); groveOnWorldOpen(); } catch (e) {} } // THE GROVE wakes on THIS path too: setPaneRest is how the carousel swipe AND the home garden chip reach the world, and openGame() is not on either — without this the entry flower, its coins, the close X, the hold-to-grow listeners and the whole congratulation beat were dead on the app's primary route in
@@ -3456,19 +3456,10 @@
   // (wave-3 co-location) timelineIsHome + renderToday moved here from the render region — the per-minute entry point lives WITH the zone it rebuilds:
   function timelineIsHome() { return document.body.classList.contains("tab-day") && !document.body.classList.contains("gaming"); } // Today tab in the normal app = the always-open rich pull-timeline (David 2026-06-24)
   function renderToday() {
-    if (timelineIsHome()) { buildPull(); return; } // the original pull-down timeline IS the Today view now — don't render the retired inline calendar (David 2026-06-24)
-    var dl = el("dnLabel"); if (dl) dl.textContent = zoomMode === "day" ? relLabel(viewK) : zoomMode === "week" ? ("Week of " + relShort(startOfWeek(viewK))) : kd(viewK).toLocaleDateString([], { month: "long", year: "numeric" });
-    document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.classList.toggle("on", z.dataset.z === zoomMode); });
-    var dp = el("planToday"), tt = el("todayTitle"), L = el("todayList");
-    var adh = el("adhereChip"); if (adh) adh.style.display = "none";
-    var sgb0 = el("suggestBar"); // suggestions are tap-triggered now (via + add), not always-on (David 2026-06-23)
-    if (zoomMode === "week") { L.innerHTML = ""; weekGrid(L); tt.textContent = "This week · tap a day"; if (dp) dp.style.display = "none"; if (sgb0) sgb0.style.display = "none"; return; }
-    if (zoomMode === "month") { L.innerHTML = ""; monthGrid(L); tt.textContent = "Tap a day"; if (dp) dp.style.display = "none"; if (sgb0) sgb0.style.display = "none"; return; }
-    if (dp) dp.style.display = ""; tt.textContent = relLabel(viewK);
-    calendarView(L, viewK, viewK === todayK());
-    if (adh) { var _bl = blocks(viewK), _n = 0; _bl.forEach(function (b) { if (blockStatus(viewK, b) === "ok") _n++; }); adh.textContent = "✨ " + _n + " on plan"; adh.style.display = _bl.length ? "" : "none"; }
-    if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull(); // tool-above (pull-down) stays identical to the journal
-    if (pendingScrollNow && nowLineEl) { var _nl = nowLineEl; requestAnimationFrame(function () { if (_nl.offsetParent !== null) { _nl.scrollIntoView({ block: "center" }); pendingScrollNow = false; } }); }
+    if (timelineIsHome()) { buildPull(); return; } // the pull-down timeline IS the Today view (David 2026-06-24)
+    // ...and when it is NOT home (i.e. the world is up) there is nothing else to paint any more: the retired inline calendar
+    // that used to render here was DELETED 2026-08-12 with its markup. Its one surviving live effect is kept verbatim.
+    if (el("pullSheet") && el("pullSheet").classList.contains("on")) buildPull(); // a pull sheet left open still refreshes under the world
   }
   function findToday() { // "find yourself" in week/month: smooth-scroll back to the current page — David 2026-06-24
     var pb = el("pullBody"); if (!pb) return;
@@ -7333,7 +7324,7 @@
   // @SEC:STATE — S / fresh() / load() / save() / export-import. TOTAL-DATA-LOSS BLAST RADIUS.
   // @CONTRACT: changing the SHAPE of S requires bumping SCHEMA (@SEC:TIME) + a "MIG n→n+1" block inside load() — the preship ratchet enforces the pairing. Purely-additive fields with guarded reads (S.x || {}) may skip the bump (the S.mood/S.acts/S.bk precedent). load() must NEVER throw past its catch: a damaged save falls through to the _bak backup + fresh() path — David's data survives every crash.
   var S;
-  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] }, grove: { plants: [], seen: {} } }; }
+  function fresh() { return { habits: DEFAULT_HABITS.slice(), habitDone: {}, blocks: {}, log: {}, lastTidy: null, timers: [], baseline: null, profile: null, game: { spark: 0, total: 0, ups: {}, garden: [] }, grove: { plants: [], seen: {} }, virtues: { list: [] } }; }
   function load() { // THE MIGRATION LADDER (wave-2 restructure 2026-07-05: exploded from one 10KB line — SAME statements, SAME order; only whitespace + comment placement changed). Structure: base defaults (every load) → gated MIG blocks (prevSchema < n) → S.v stamp → damaged-save catch.
     var _rawLoad = localStorage.getItem(KEY);
     try {
@@ -7440,6 +7431,20 @@
         if (typeof p.stage !== "number" || p.stage < 1) p.stage = 1;
         if (p.stage > 10) p.stage = 10;
         if (!p.plantedK) p.plantedK = todayK();
+      });
+    }
+    // MIG 6→7 — THE VIRTUES (garden menu 2 of 4, frames 15A/15B/15C/15E/16A/16B).
+    // S.virtues = { list:[{ id, declaration, tx, ty, litK, moments:[{k,note}], carvedK }] }. id = one of the eight carved names.
+    // Shape-only and idempotent: an older save simply gains an empty rack (nobody has carved anything, so there is nothing to derive).
+    // The gated half repairs a half-written lantern (a crash between push and save) rather than trusting a partial row into the renderer.
+    S.virtues = S.virtues || { list: [] };
+    S.virtues.list = Array.isArray(S.virtues.list) ? S.virtues.list.filter(function (v) { return v && v.id && VRT[v.id]; }) : [];
+    if (prevSchema < 7) {
+      S.virtues.list.forEach(function (v) {
+        if (!Array.isArray(v.moments)) v.moments = [];
+        v.moments = v.moments.filter(function (m) { return m && m.k; });
+        if (!v.declaration) v.declaration = VRT[v.id].dec;
+        if (!v.carvedK) v.carvedK = todayK();
       });
     }
     S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
@@ -8554,6 +8559,7 @@
       sanctGroundShade(ctx, sanctScene()); // ref-mood scene shading: moonlight falloff + soft contact shadows UNDER the objects
       sanctClaimGlow(ctx, t); // island expansion: the claimable water tile the guardian faces glows (walk into it to grow)
       try { groveGroundGlow(ctx, t); } catch (e) {} // GF7 planting: the three candidate homes breathe on the grass (only while planting)
+      try { vrtGroundGlow(ctx, t); } catch (e) {} // 15E: a LIT lantern lays a coloured pool on the grass; while hanging, the candidate spots breathe the same way
     } else if (SANCTUARY) {
       // berry-night SANCTUARY: the designed island art drawn once in world space, centered on the open grass (house sits up-frame). Character walks on top; camera follows.
       var simg = WORLD_IMG.sanct;
@@ -8617,7 +8623,8 @@
       // ONE depth-sorted pass: every object + the hero, ordered by base-y → a nearer thing always draws over (hides) whatever is behind it, and the hero is occluded when he walks behind a tree/house and drawn over when in front.
       var _dl = _scene.objs.map(function (o) { return { y: o.dy, d: function () { drawObj(ctx, o.img, o.dx, o.dy, o.h); } }; });
       _dl.push({ y: py, d: _drawHero });
-      try { groveWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // planted trees join the SAME base-y sort, so the guardian walks behind and in front of them like every other object
+      try { groveWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {}
+      try { vrtWorldObjs().forEach(function (g) { _dl.push({ y: g.y, d: function () { drawObj(ctx, g.img, g.x, g.y, g.h); } }); }); } catch (e) {} // lanterns join the SAME base-y sort as the trees and the guardian // planted trees join the SAME base-y sort, so the guardian walks behind and in front of them like every other object
       _dl.sort(function (a, b) { return a.y - b.y; });
       _dl.forEach(function (e) { e.d(); });
       sanctGlows(ctx, _scene, t); // warm window pools + the charged bloom's living light, over the scene
@@ -8818,7 +8825,7 @@
     var g = el("gnGame"); if (g) g.onclick = foldMenu; // already in the game → just fold the menu
   }
   function closeGame() {
-    try { groveClose(); } catch (e) {} // leaving the world always leaves the grove closed, so a fresh entry is the calm island
+    try { groveClose(); vrtClose(); } catch (e) {} // leaving the world always leaves the garden closed, so a fresh entry is the calm island
     var gm = el("gameMode"); if (gm) gm.classList.remove("on");
     document.body.classList.remove("gaming");
     gameOn = false; moveX = 0; moveY = 0; // do NOT reset body.overflow here — it must stay locked (this reset was the thing that un-pinned the body and reintroduced the gap) (v640)
@@ -8985,12 +8992,13 @@
     return out;
   }
   function groveScreenToWorld(sx, sy) { return { x: (sx - WGW / 2) / zoom + (px + camX), y: (sy - WGH * 0.6) / zoom + (py + camY) }; } // inverse of renderWorld's camera transform
-  function groveSpots() { // three candidate homes on real grass, spread apart, clear of props and of anything already planted
+  function groveSpots() { return gardenSpots(); } // the grove and the virtues share ONE free-ground finder, so a lantern can never hang on top of a tree (or the reverse)
+  function gardenSpots() { // three candidate homes on real grass, spread apart, clear of props and of everything the garden has already placed
     if (!SANCT_TILES) return [];
     if (!ISLE) buildIsle(); // the same guard sanctScene() uses: the island builds lazily on the first draw, and the congratulation can reach here before that frame has run (a legitimate first planting was answering "walk onto open grass" on an island that did not exist yet)
     var out = [], gx = Math.round(px / TILE), gy = Math.round(py / TILE), sc = null;
     try { sc = sanctScene(); } catch (e) {}
-    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }), rings = [2, 3, 4, 5];
+    var taken = groveState().plants.map(function (p) { return p.tx + "," + p.ty; }).concat(vrtState().list.map(function (v) { return v.tx + "," + v.ty; })), rings = [2, 3, 4, 5];
     for (var ri = 0; ri < rings.length && out.length < 3; ri++) { var r = rings[ri];
       for (var ai = 0; ai < 8 && out.length < 3; ai++) {
         var tx = gx + Math.round(Math.cos(ai * Math.PI / 4) * r), ty = gy + Math.round(Math.sin(ai * Math.PI / 4) * r);
@@ -9065,7 +9073,8 @@
     w.addEventListener("pointermove", function (e) { if (e.pointerType === "touch") return; move(e.clientX, e.clientY, e.pointerId); });
     w.addEventListener("pointerup", function (e) { if (e.pointerType === "touch") return; up(e.clientX, e.clientY, e.pointerId); });
   }
-  function groveWorldTap(sx, sy) { // in planting mode a tap on the grass picks the nearest glowing spot; otherwise the world keeps its own taps
+  function groveWorldTap(sx, sy) { // in planting/hanging mode a tap on the grass picks the nearest glowing spot; otherwise the world keeps its own taps
+    try { if (vrtWorldTap(sx, sy)) return; } catch (e) {}
     if (!GV.plant || !GV.plant.spots || !GV.plant.spots.length) return;
     var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
     for (var i = 0; i < GV.plant.spots.length; i++) { var s = GV.plant.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
@@ -9074,6 +9083,7 @@
   // ---- the surfaces ------------------------------------------------------------------------------------------------
   function groveOpen(mode) {
     var sh = el("groveSheet"); if (!sh) return;
+    try { vrtClose(); } catch (e) {} // one garden menu at a time: opening the grove folds the virtues away
     GV.mode = mode || "list";
     if (GV.mode !== "list") GV.sel = null;
     groveBuild();
@@ -9263,6 +9273,7 @@
   }
   function renderGrove() { if (GV.mode === "list" && el("groveSheet") && el("groveSheet").classList.contains("on")) groveBuild(); } // idempotent: no-op unless the list is actually up
   function groveWire() {
+    try { vrtWire(); } catch (e) {} // the virtues coin rides the same wiring call, so it wakes on every path into the world
     if (GV.wired) return; GV.wired = true;
     var fl = el("groveFlower"); if (fl) fl.onclick = function () { groveToggle(); };
     var cn = el("gvCoinHabits"); if (cn) cn.onclick = function () { groveOpen("list"); };
@@ -9293,6 +9304,306 @@
     "slender": "стройное", "crown": "крона", "first buds": "первые бутоны", "in bloom": "в цвету", "ancient": "древнее",
     "january": "январь", "february": "февраль", "march": "март", "april": "апрель", "may": "май", "june": "июнь",
     "july": "июль", "august": "август", "september": "сентябрь", "october": "октябрь", "november": "ноябрь", "december": "декабрь"
+  });
+  // ===== THE VIRTUES (garden menu 2 of 4, 2026-08-12) — frames 15A list · 15B unfolded · 15C relight · 15E island · 16A carving · 16B hanging.
+  // WHAT IT IS: eight lanterns you may carve. A virtue is the player's OWN sentence, and the lantern is lit by saying it back
+  // to yourself once a day (one held breath). Moments are dated evidence lines she writes herself; enough of them and the
+  // lantern is recast in a better material. The off/on sprite pair IS the flame — there is no separate fire effect anywhere.
+  // THE LAWS (absolute): a dark day is NEVER counted, named or shown · relighting after a month is the same single gesture as
+  // relighting after a night · no red, no shame, no streak · zero notifications · the island art is never scrimmed under the
+  // sheet · corners stay tappable (the relight ritual is the one modal that covers them, per frame 15C, and it drops on a tap).
+  // SHELL: #virtueSheet reuses every .gv-* class the grove sheet uses and only re-points --gvhue — one sheet grammar, two menus.
+  var VRT_ORDER = ["courage", "discipline", "love", "wisdom", "hope", "curiosity", "gratitude", "zest"];
+  var VRT = { // hue = the flame colour the frames paint for that virtue; dec = the default declaration (the player rewrites it); hint = the carving-grid line
+    courage:    { name: "Courage",    hue: "#ff8a3a", dec: "I am willing to act in the presence of fear.",        hint: "I am willing to act in the presence of fear" },
+    discipline: { name: "Discipline", hue: "#f2a90f", dec: "I keep my word to myself, especially when it's hard.", hint: "I keep my word to myself" },
+    love:       { name: "Love",       hue: "#ff3f9e", dec: "The people I love hear from me first.",               hint: "the people I love hear from me first" },
+    wisdom:     { name: "Wisdom",     hue: "#b07aff", dec: "I stop and ask what this moment needs.",              hint: "I stop and ask what this moment needs" },
+    hope:       { name: "Hope",       hue: "#f5c95c", dec: "There is a way through.",                             hint: "there is a way through" },
+    curiosity:  { name: "Curiosity",  hue: "#2ab8c4", dec: "I ask one more question.",                            hint: "I ask one more question" },
+    gratitude:  { name: "Gratitude",  hue: "#34d39a", dec: "I say thanks out loud, the same day.",                hint: "I notice what I'm given" },
+    zest:       { name: "Zest",       hue: "#ff8a3a", dec: "I show up with energy.",                              hint: "I show up with energy" }
+  };
+  // THE CRAFT: the lantern is recast as the evidence piles up. Thresholds are the FRAME'S OWN numbers (15B prints "since 25
+  // moments", "at 120 moments", "at 365 moments"), not a guess — the strip only ever counts moments she chose to write.
+  var VRT_CRAFT = [{ k: "tin", n: 0 }, { k: "brass", n: 25 }, { k: "wrought iron", n: 120 }, { k: "stained glass", n: 365 }];
+  var VRT_WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+  var VV = { mode: null, sel: null, carve: null, hang: null, wired: false }; // mode: null=closed | "list" | "carve" | "hang". View state, never persisted.
+  var VRT_IMG = {}, _vrHold = null, VRT_HOLD_MS = 3800; // one slow breath. Longer than the island's 820ms claim ring on purpose: this gesture IS the ritual, not a confirmation.
+  function vrtState() { S.virtues = S.virtues || { list: [] }; S.virtues.list = S.virtues.list || []; return S.virtues; }
+  function vrtSrc(id, lit) { return "assets/garden/virtues/vl10-" + id + "-" + (lit ? "on" : "off") + ".png"; }
+  function vrtImg(id, lit) { var k = id + (lit ? "1" : "0"); if (!VRT_IMG[k]) { var im = new Image(); im.src = vrtSrc(id, lit); VRT_IMG[k] = im; } return VRT_IMG[k]; }
+  function vrtFor(id) { var a = vrtState().list; for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+  function vrtLit(v) { return !!v && v.litK === todayK(); }                                   // lit is a property of TODAY only — yesterday is never asked about
+  function vrtMoments(v) { return (v && v.moments) || []; }
+  function vrtWeek(v) { var w = lastDays(7), m = vrtMoments(v), n = 0; for (var i = 0; i < m.length; i++) if (w.indexOf(m[i].k) >= 0) n++; return n; }
+  function vrtCraft(v) { var n = vrtMoments(v).length, i = 0; for (var j = 1; j < VRT_CRAFT.length; j++) if (n >= VRT_CRAFT[j].n) i = j; return i; }
+  function vrtHeld(v) { return Math.max(1, daysBetweenK(v.carvedK || todayK(), todayK()) + 1); } // the day she carved it counts as day one
+  function vrtUnclaimed() { return VRT_ORDER.filter(function (id) { return !vrtFor(id); }); }
+  function vrtCap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function vrtShortWhen(k) { if (!k) return ""; var d = kd(k); return tr(GROVE_MONTHS[d.getMonth()]).slice(0, 3) + " " + d.getDate(); } // "aug 2" (RU slices to the correct native abbreviation: август -> авг)
+  function vrtIslandH() { return TILE * 1.4; }                                                 // island scale read off frame 15E: the lantern stands about 1.4 tiles, taller than the guardian, shorter than a grown tree
+  function vrtLine(v) { // the row's live line. Forward-only: it says what IS, never how many days went dark.
+    if (vrtLit(v)) { var w = vrtWeek(v); return tr("lit today") + (w > 0 ? " · " + w + " " + (w === 1 ? tr("moment this week") : tr("moments this week")) : ""); }
+    var t = vrtMoments(v).length; return tr("a breath away") + (t > 0 ? " · " + t + " " + (t === 1 ? tr("moment kept") : tr("moments kept")) : "");
+  }
+  function vrtRow(host, v) {
+    var M = VRT[v.id], lit = vrtLit(v), open = VV.sel === v.id;
+    if (open) { vrtCard(host, v); return; }
+    var row = add(host, "div", "vr-row" + (VV.sel ? " compact" : ""));
+    var well = add(row, "span", "vr-well"), im = add(well, "img"); im.src = vrtSrc(v.id, lit); im.alt = "";
+    if (lit) im.style.filter = "drop-shadow(0 0 7px " + M.hue + "8c)"; // the glow is the SPRITE's own flame bleeding out, never a drawn fire
+    var tx = add(row, "div", "vr-tx"), top = add(tx, "div", "vr-top");
+    add(top, "span", "vr-nm", tr(M.name)); add(top, "i", "ti ti-chevron-right").style.cssText = "font-size:14px;color:#a5718f;";
+    if (!VV.sel) add(tx, "span", "vr-dec", "“" + v.declaration + "”"); // 15B: with a card open the siblings drop their declaration and shrink
+    var live = add(tx, "div", "vr-live" + (lit ? " lit" : "")); live.style.setProperty("--vhue", M.hue);
+    add(live, "span", "vr-dot"); add(live, "span", null, vrtLine(v));
+    row.onclick = function () { VV.sel = v.id; vrtBuild(); };
+  }
+  function vrtCard(host, v) { // 15B: opens in place — the craft strip, the three honest numbers, her declaration, the record, the one action
+    var M = VRT[v.id], lit = vrtLit(v), moments = vrtMoments(v), tot = moments.length, ci = vrtCraft(v);
+    var card = add(host, "div", "vr-card"); card.style.borderColor = "#ff3f9e";
+    var head = add(card, "div", "vr-cardhead");
+    var well = add(head, "span", "vr-well"), hi = add(well, "img"); hi.src = vrtSrc(v.id, lit); hi.alt = "";
+    if (lit) hi.style.filter = "drop-shadow(0 0 6px " + M.hue + "8c)";
+    add(head, "b", null, tr(M.name)); add(head, "i", "ti ti-chevron-up");
+    head.onclick = function () { VV.sel = null; vrtBuild(); };
+    var cw = add(card, "div", "vr-craftwrap"), ch = add(cw, "div", "vr-blockh");
+    add(ch, "b", null, tr("THE CRAFT")); add(ch, "span", null, tr("grown from") + " " + tot + " " + (tot === 1 ? tr("moment") : tr("moments")));
+    var strip = add(cw, "div", "vr-craft"), nowCol = null;
+    VRT_CRAFT.forEach(function (T, i) {
+      var col = add(strip, "div", "vr-tier " + (i === ci ? "now" : i < ci ? "past" : "future")); if (i === ci) nowCol = col;
+      var hold = add(col, "div", "vr-hold"), ti = add(hold, "img"); ti.src = vrtSrc(v.id, false); ti.alt = ""; ti.style.height = (i === ci ? 116 : i < ci ? 104 : 108) + "px"; // the strip is about the MATERIAL, so every tier shows the unlit lantern (15B)
+      add(col, "span", "vr-tn", tr(T.k));
+      var sub = add(col, "span", "vr-ts");
+      if (i < ci) { add(sub, "i", "ti ti-check").style.fontSize = "10px"; add(sub, "span", null, " " + tr("earned")); }
+      else if (i === ci) sub.textContent = T.n > 0 ? tr("now") + " · " + tr("since") + " " + T.n + " " + tr("moments") : tr("now");
+      else sub.textContent = tr("at") + " " + T.n + " " + tr("moments");
+    });
+    var dots = add(cw, "div", "gv-dots"); VRT_CRAFT.forEach(function (T, i) { add(dots, "i", i === ci ? "on" : null); });
+    if (nowCol) setTimeout(function () { try { strip.scrollLeft = Math.max(0, nowCol.offsetLeft - strip.clientWidth / 2 + nowCol.offsetWidth / 2); } catch (e) {} }, 0);
+    var nums = add(card, "div", "gv-nums");
+    function num(val, lab) { var b = add(nums, "div", "gv-num"); add(b, "b", null, "" + val); add(b, "span", null, lab); }
+    num(vrtHeld(v), tr("days held")); num(vrtWeek(v), tr("kept this week")); num(tot, tr("moments logged"));
+    var dec = add(card, "div", "vr-block"), dh = add(dec, "div", "vr-blockh");
+    add(dh, "b", null, tr("THE DECLARATION")); add(dh, "span", null, tr("your words") + " · " + tr("carved") + " " + groveWhen(v.carvedK));
+    var q = add(dec, "span", "vr-quote", "“" + v.declaration + "”");
+    q.onclick = function (e) { e.stopPropagation(); vrtEditDialog(v.declaration, function (t) { v.declaration = t; save(); vrtBuild(); }); };
+    var rec = add(card, "div", "vr-block"), rh = add(rec, "div", "vr-blockh");
+    add(rh, "b", null, tr("THE RECORD")); add(rh, "span", null, tot + " " + (tot === 1 ? tr("moment") : tr("moments")));
+    moments.slice().sort(function (a, b) { return a.k < b.k ? 1 : a.k > b.k ? -1 : 0; }).slice(0, 6).forEach(function (m) { // newest first
+      var r = add(rec, "div", "vr-moment"); add(r, "span", "vr-when", vrtShortWhen(m.k)); add(r, "span", "vr-note", m.note);
+    });
+    var addBtn = add(rec, "span", "vr-add", "+ " + tr("add a moment"));
+    addBtn.onclick = function (e) { e.stopPropagation(); vrtAddMoment(v); };
+    if (!lit) { var go = add(add(card, "div"), "button", "gv-cta", tr("Relight") + " · " + tr("one breath")); go.onclick = function (e) { e.stopPropagation(); vrtRelight(v); }; } // lit already? then the record's own "+ add a moment" IS the card's action — nothing to press twice, nothing to shame
+  }
+  function vrtAddMoment(v) {
+    vrtEditDialog("", function (t) { v.moments = v.moments || []; v.moments.push({ k: todayK(), note: t }); save(); vrtBuild(); renderGame(); }, tr("What happened?"), tr("Save the moment"));
+  }
+  function vrtEditDialog(val, cb, title, cta) { // her own words, in the app's existing name-dialog grammar (tbxNameDialog) — one text surface, not a new one
+    var ov = add(document.body, "div"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(8,4,12,.72);display:flex;align-items:center;justify-content:center;padding:22px;";
+    ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+    var card = add(ov, "div"); card.style.cssText = "width:100%;max-width:320px;background:#1c0e30;border:2.5px solid #160510;border-radius:18px;box-shadow:0 5px 0 #160510;padding:16px;font-family:'Jost',var(--bub),sans-serif;";
+    add(card, "div", null, title || tr("Your words")).style.cssText = "color:#f2ecff;font-weight:800;font-size:16px;margin-bottom:10px;";
+    var inp = add(card, "textarea"); inp.value = val || ""; inp.rows = 3;
+    inp.setAttribute("style", "width:100%;box-sizing:border-box;background:#120718;border:2px solid #160510;border-radius:11px;color:#ffe3f1;font-family:inherit;font-size:15px;font-weight:700;padding:11px 12px;outline:none;resize:none;line-height:1.4;");
+    var go = add(card, "button"); go.setAttribute("style", "width:100%;margin-top:12px;background:#ff3f9e;color:#2a1730;border:2.5px solid #160510;border-radius:12px;padding:11px;font-weight:800;font-size:14.5px;box-shadow:0 4px 0 #160510;cursor:pointer;font-family:inherit;");
+    go.textContent = cta || tr("Save");
+    go.onclick = function () { var t = (inp.value || "").trim(); if (!t) { ov.remove(); return; } ov.remove(); cb(t); };
+    setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
+  }
+  function vrtBuild() { // ONE builder for all three sheet modes. Child-drain + rebuild of the two content nodes; the shell is static markup (zero innerHTML wipes).
+    var sh = el("virtueSheet"); if (!sh) return;
+    var list = sh.querySelector(".gv-list"), foot = sh.querySelector(".gv-foot"), sub = sh.querySelector(".gv-sub"), ttl = sh.querySelector(".gv-title"), bic = sh.querySelector(".gv-badge i");
+    if (!list || !foot) return;
+    groveDrain(list); groveDrain(foot);
+    sh.classList.toggle("vr-carve", VV.mode === "carve");
+    sh.classList.toggle("vr-hang", VV.mode === "hang");
+    if (VV.mode === "carve") {
+      var free = vrtUnclaimed(); if (!free.length) { VV.mode = "list"; return vrtBuild(); }
+      if (!VV.carve || free.indexOf(VV.carve) < 0) VV.carve = free[0];
+      var HUE = VRT[VV.carve].hue;
+      if (bic) bic.className = "ti ti-plus";
+      sh.style.setProperty("--gvhue", HUE);
+      if (ttl) ttl.textContent = tr("Carve a virtue"); if (sub) sub.textContent = tr("Which one calls to you?");
+      var grid = add(list, "div", "vr-pick"); list.classList.add("vr-pickhost");
+      free.forEach(function (id) {
+        var M = VRT[id], on = id === VV.carve, o = add(grid, "div", "vr-opt" + (on ? " on" : ""));
+        add(o, "span", "vr-halo").style.background = "radial-gradient(closest-side, " + M.hue + "59, " + M.hue + "00)";
+        var oi = add(o, "img"); oi.src = vrtSrc(id, false); oi.alt = ""; if (on) oi.style.filter = "drop-shadow(0 0 14px " + M.hue + "80)";
+        var b = add(o, "b", null, tr(id)); b.style.color = M.hue; if (on) add(b, "i", "ti ti-check");
+        add(o, "em", null, "“" + tr(M.hint) + "”");
+        o.onclick = function () { VV.carve = id; vrtBuild(); };
+      });
+      var cv = add(foot, "button", "gv-cta", tr("Carve") + " " + tr(VV.carve));
+      cv.onclick = function () { VV.hang = { id: VV.carve, dec: VRT[VV.carve].dec, spots: gardenSpots() }; VV.hang.pick = VV.hang.spots[0] || null; VV.mode = "hang"; vrtBuild(); renderGame(); };
+      return;
+    }
+    if (VV.mode === "hang") {
+      var H = VV.hang, MH = VRT[H.id];
+      sh.style.setProperty("--gvhue", MH.hue);
+      if (ttl) ttl.textContent = tr("Carve a virtue"); if (sub) sub.textContent = "";
+      var kr = add(list, "div", "vr-kickrow"); kr.style.setProperty("--vhue", MH.hue);
+      add(kr, "b", null, tr("CARVE A VIRTUE")); add(kr, "span", null, tr("last step"));
+      var ht = add(list, "div", "vr-hangttl");
+      add(ht, "b", null, tr("Where should") + " " + tr(H.id) + " " + tr("hang?")); add(ht, "span", null, tr("tap a glow · you can move it later"));
+      var hr = add(list, "div", "vr-hangrow"), hi2 = add(hr, "img"); hi2.src = vrtSrc(H.id, false); hi2.alt = "";
+      add(hr, "span", "vr-hdec", "“" + H.dec + "”");
+      var ed = add(hr, "span", "vr-edit", tr("edit"));
+      ed.onclick = function () { vrtEditDialog(H.dec, function (t) { H.dec = t; vrtBuild(); }); };
+      var hang = add(foot, "button", "gv-cta", tr("Hang the lantern"));
+      if (!H.pick) hang.style.opacity = ".5";
+      hang.onclick = function () { vrtDoHang(); };
+      return;
+    }
+    sh.style.setProperty("--gvhue", "#ff3f9e");
+    if (bic) bic.className = "ti ti-heart";
+    if (ttl) ttl.textContent = tr("Virtues");
+    var mine = vrtState().list.slice().sort(function (a, b) { return VRT_ORDER.indexOf(a.id) - VRT_ORDER.indexOf(b.id); }), n = mine.length;
+    if (sub) sub.textContent = n ? vrtCap(tr(VRT_WORDS[n])) + " " + tr("carved") + " · " + tr("your words, kept lit.") : tr("Your words, kept lit.");
+    mine.forEach(function (v) { vrtRow(list, v); });
+    var left = vrtUnclaimed().length;
+    if (left) {
+      var cr = add(list, "div", "vr-carverow");
+      add(add(cr, "span", "vr-plus"), "i", "ti ti-plus");
+      var box = add(cr, "div"); add(box, "b", null, tr("Carve a virtue"));
+      add(box, "em", null, tr(VRT_WORDS[left]) + " " + (left === 1 ? tr("declaration remains") : tr("declarations remain")));
+      add(cr, "i", "ti ti-chevron-right").style.cssText = "font-size:14px;color:#a5718f;";
+      cr.onclick = function () { VV.sel = null; VV.carve = null; VV.mode = "carve"; vrtBuild(); };
+    }
+  }
+  function vrtDoHang() {
+    var H = VV.hang; if (!H || !H.pick || vrtFor(H.id)) { VV.mode = "list"; VV.hang = null; vrtBuild(); return; }
+    vrtState().list.push({ id: H.id, declaration: H.dec, tx: H.pick.tx, ty: H.pick.ty, litK: null, moments: [], carvedK: todayK() });
+    save();
+    try { for (var i = 0; i < 16; i++) dust.push({ x: H.pick.tx * TILE + (Math.random() - 0.5) * TILE, y: H.pick.ty * TILE + (Math.random() - 0.5) * TILE * 0.5, vx: (Math.random() - 0.5) * 2, vy: -Math.random() * 1.5, life: 24 }); } catch (e) {}
+    VV.sel = H.id; VV.hang = null; VV.mode = "list"; vrtBuild(); renderGame(); // the new lantern opens on its own card, dark and waiting for its first breath
+  }
+  function vrtRelight(v) { // 15C: the island dims, her sentence fades in, she holds one breath and the flame catches
+    var ov = el("vrRelight"); if (!ov) return;
+    var M = VRT[v.id];
+    ov.style.setProperty("--vhue", M.hue);
+    ov.querySelector(".vrl-kick").textContent = tr("RELIGHT") + " · " + tr(M.name).toUpperCase();
+    ov.querySelector(".vrl-dec").textContent = "“" + v.declaration + "”";
+    var lamp = ov.querySelector(".vrl-lamp"); lamp.src = vrtSrc(v.id, false);
+    ov.querySelector(".vrl-cue").textContent = tr("one breath");
+    ov.querySelector(".vrl-sub").textContent = tr("let go anytime · no harm done");
+    ov.classList.remove("lit"); ov.style.setProperty("--vrp", "0deg");
+    ov.classList.add("on"); _vrHold = null;
+    var stage = ov.querySelector(".vrl-stage");
+    function paint() { if (!_vrHold) return; var p = Math.min(1, (performance.now() - _vrHold.t0) / VRT_HOLD_MS);
+      ov.style.setProperty("--vrp", (p * 360).toFixed(1) + "deg");
+      if (p >= 1) { _vrHold = null; done(); return; }
+      _vrHold.raf = requestAnimationFrame(paint); }
+    function down(e) { if (ov.classList.contains("lit")) return; try { e.preventDefault(); } catch (e2) {} if (_vrHold) return; _vrHold = { t0: performance.now(), raf: 0 }; paint(); }
+    function up() { if (!_vrHold) return; try { cancelAnimationFrame(_vrHold.raf); } catch (e) {} _vrHold = null; ov.style.setProperty("--vrp", "0deg"); } // let go anytime: the ring simply falls back to nothing, and NOTHING is recorded about the attempt
+    function done() {
+      lamp.src = vrtSrc(v.id, true); ov.classList.add("lit"); ov.style.setProperty("--vrp", "360deg");
+      v.litK = todayK(); save();
+      try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
+      try { renderGame(); } catch (e) {}
+      setTimeout(function () { vrtCloseRelight(); vrtBuild(); }, 1150);
+    }
+    if (!stage._vrWired) { stage._vrWired = true;
+      stage.addEventListener("touchstart", down, { passive: false }); stage.addEventListener("touchend", up); stage.addEventListener("touchcancel", up);
+      stage.addEventListener("pointerdown", function (e) { if (e.pointerType === "touch") return; down(e); });
+      stage.addEventListener("pointerup", function (e) { if (e.pointerType === "touch") return; up(); });
+      stage.addEventListener("pointerleave", function (e) { if (e.pointerType === "touch") return; up(); });
+    }
+    var x = ov.querySelector(".vrl-x"); x.onclick = function () { vrtCloseRelight(); };
+  }
+  function vrtCloseRelight() { var ov = el("vrRelight"); if (!ov) return; if (_vrHold) { try { cancelAnimationFrame(_vrHold.raf); } catch (e) {} _vrHold = null; } ov.classList.remove("on"); }
+  // ---- the island (15E) --------------------------------------------------------------------------------------------
+  function vrtWorldObjs() { var out = [], a = vrtState().list;
+    for (var i = 0; i < a.length; i++) { var v = a[i]; if (v.tx == null || v.ty == null) continue;
+      var im = vrtImg(v.id, vrtLit(v)); if (!im.complete || !im.naturalWidth) continue;
+      out.push({ img: im, x: v.tx * TILE, y: v.ty * TILE, h: vrtIslandH(), v: v });
+    }
+    return out;
+  }
+  function vrtGroundGlow(ctx, t) { // the pool a LIT lantern throws on the grass (15E), plus the candidate glows while hanging. Under the objects, additive.
+    var objs = vrtWorldObjs(), i, pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (i = 0; i < objs.length; i++) { var o = objs[i]; if (!vrtLit(o.v)) continue;
+      var hue = VRT[o.v.id].hue, r = TILE * 0.85, g = ctx.createRadialGradient(o.x, o.y, 1, o.x, o.y, r);
+      g.addColorStop(0, hue + "66"); g.addColorStop(1, hue + "00");
+      ctx.save(); ctx.translate(o.x, o.y); ctx.scale(1, 0.4); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
+    }
+    if (VV.hang && VV.hang.spots) { var HH = VRT[VV.hang.id].hue;
+      for (i = 0; i < VV.hang.spots.length; i++) { var s = VV.hang.spots[i], cx = s.tx * TILE, cy = s.ty * TILE;
+        var sel = VV.hang.pick && VV.hang.pick.tx === s.tx && VV.hang.pick.ty === s.ty, rr = TILE * (sel ? 1.15 : 0.9);
+        var gg = ctx.createRadialGradient(cx, cy, 2, cx, cy, rr);
+        gg.addColorStop(0, HH + (sel ? "8c" : "55")); gg.addColorStop(1, HH + "00");
+        ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.fill();
+      }
+    }
+    ctx.restore();
+    if (VV.hang && VV.hang.spots) { ctx.save(); // the dashed ring marks each candidate, solid on the one she is over (16B)
+      for (i = 0; i < VV.hang.spots.length; i++) { var s2 = VV.hang.spots[i], sel2 = VV.hang.pick && VV.hang.pick.tx === s2.tx && VV.hang.pick.ty === s2.ty, H2 = VRT[VV.hang.id].hue;
+        ctx.strokeStyle = H2 + (sel2 ? "e6" : "80"); ctx.lineWidth = sel2 ? 3 : 2; ctx.setLineDash(sel2 ? [] : [7, 7]);
+        ctx.beginPath(); ctx.arc(s2.tx * TILE, s2.ty * TILE, TILE * 0.42, 0, 7); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+  function vrtWorldTap(sx, sy) { if (!VV.hang || !VV.hang.spots || !VV.hang.spots.length) return false;
+    var w = groveScreenToWorld(sx, sy), best = null, bd = 1e9;
+    for (var i = 0; i < VV.hang.spots.length; i++) { var s = VV.hang.spots[i], d = Math.hypot(w.x - s.tx * TILE, w.y - s.ty * TILE); if (d < bd) { bd = d; best = s; } }
+    if (best && bd < TILE * 2.6) { VV.hang.pick = best; vrtBuild(); }
+    return true;
+  }
+  function vrtOpen(mode) {
+    var sh = el("virtueSheet"); if (!sh) return;
+    try { groveClose(); } catch (e) {}                 // one garden menu at a time
+    VV.mode = mode || "list"; if (VV.mode !== "list") VV.sel = null;
+    vrtBuild(); sh.classList.add("on");
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.add("on"); cn.classList.add("gv-hid"); }
+    if (fl) fl.classList.add("gv-spun");
+  }
+  function vrtClose() {
+    var sh = el("virtueSheet"); if (sh) { sh.classList.remove("on", "vr-carve", "vr-hang"); }
+    vrtCloseRelight();
+    var cn = el("groveCoins"), fl = el("groveFlower");
+    if (cn) { cn.classList.remove("on", "gv-hid"); }
+    if (fl && !GV.mode) fl.classList.remove("gv-spun");
+    VV.mode = null; VV.sel = null; VV.carve = null; VV.hang = null;
+  }
+  function renderVirtues() { if (VV.mode === "list" && el("virtueSheet") && el("virtueSheet").classList.contains("on")) vrtBuild(); }
+  function vrtWire() { if (VV.wired) return; VV.wired = true;
+    var cn = el("gvCoinVirtues"); if (cn) cn.onclick = function () { vrtOpen("list"); };
+    var sh = el("virtueSheet"); if (sh) { var x = sh.querySelector(".gv-x"); if (x) x.onclick = function () { vrtClose(); }; }
+  }
+  Object.assign(I18N.ru, { // THE VIRTUES strings (B4 law: EN source + RU dict in the same commit)
+    "Virtues": "Добродетели", "Your words, kept lit.": "Твои слова, зажжённые.", "your words, kept lit.": "твои слова, зажжённые.",
+    "carved": "вырезано", "Carve a virtue": "Вырезать добродетель", "Carve": "Вырезать",
+    "declaration remains": "объявление осталось", "declarations remain": "объявлений осталось",
+    "Which one calls to you?": "Какая тебя зовёт?", "CARVE A VIRTUE": "ВЫРЕЗАТЬ ДОБРОДЕТЕЛЬ", "last step": "последний шаг",
+    "Where should": "Где будет висеть", "hang?": "?", "tap a glow · you can move it later": "нажми на свечение · перевесить можно позже",
+    "Hang the lantern": "Повесить фонарь", "edit": "правка",
+    "lit today": "зажжено сегодня", "a breath away": "на один вдох",
+    "moment this week": "момент на этой неделе", "moments this week": "моментов на этой неделе",
+    "moment kept": "момент сохранён", "moments kept": "моментов сохранено",
+    "THE CRAFT": "РАБОТА", "grown from": "выросло из", "moment": "момент", "moments": "моментов", "earned": "заслужено", "now": "сейчас",
+    "tin": "жесть", "brass": "латунь", "wrought iron": "кованое железо", "stained glass": "витраж",
+    "days held": "дней держится", "kept this week": "на этой неделе", "moments logged": "моментов записано",
+    "THE DECLARATION": "ОБЪЯВЛЕНИЕ", "your words": "твои слова", "Your words": "Твои слова",
+    "add a moment": "добавить момент", "What happened?": "Что случилось?", "Save the moment": "Сохранить момент",
+    "Relight": "Зажечь снова", "one breath": "один вдох", "RELIGHT": "ЗАЖЕЧЬ СНОВА", "let go anytime · no harm done": "отпусти когда хочешь · ничего не потеряно",
+    "Courage": "Смелость", "Discipline": "Дисциплина", "Love": "Любовь", "Wisdom": "Мудрость",
+    "Hope": "Надежда", "Curiosity": "Любопытство", "Gratitude": "Благодарность", "Zest": "Задор",
+    "courage": "смелость", "discipline": "дисциплина", "love": "любовь", "wisdom": "мудрость",
+    "hope": "надежда", "curiosity": "любопытство", "gratitude": "благодарность", "zest": "задор",
+    "I am willing to act in the presence of fear": "я готов действовать рядом со страхом",
+    "I keep my word to myself": "я держу слово перед собой",
+    "the people I love hear from me first": "близкие слышат меня первыми",
+    "I stop and ask what this moment needs": "я останавливаюсь и спрашиваю, что нужно сейчас",
+    "there is a way through": "выход есть",
+    "I ask one more question": "я задаю ещё один вопрос",
+    "I notice what I'm given": "я замечаю, что мне дано",
+    "I show up with energy": "я прихожу с энергией",
+    "one": "одно", "two": "два", "three": "три", "four": "четыре", "five": "пять", "six": "шесть", "seven": "семь", "eight": "восемь"
   });
   function paintGuardian(t, st) {
     var g = gsx, cxc = 32; g.clearRect(0, 0, SW, SH);
@@ -11667,7 +11978,7 @@
     var sm = add(L, "div", "lbl", "last 7 days: " + dur(tot) + " tracked · best streak " + bestStreak()); sm.style.marginTop = "12px";
   }
   // @SEC:RENDER — renderAll fan-out: the god-dispatcher over every per-surface renderer. Adding a surface = add its renderer HERE, and make it idempotent (the master tick re-enters, see @SEC:BOOT).
-  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
+  function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { renderVirtues(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
   // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
@@ -15582,7 +15893,6 @@
       if (!any && !blocks(k).length) skeletonDay(k, "");
       save(); closeSheet(); viewK = todayK(); zoomMode = "day"; pendingScrollNow = true;
       document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); });
-      document.querySelectorAll(".tab").forEach(function (s) { s.classList.toggle("on", s.id === "t-day"); });
       renderAll();
     }
     function drawRecommit() {
@@ -16747,6 +17057,22 @@
     }
     return { state: groveState(), view: GV };
   };
+  window.DEV.virtues = function (act, id, n) { // DEV: drive THE VIRTUES without waiting a year — carve / add moments / light / open any sheet mode.
+    id = id || "love";
+    if (act === "reset") { S.virtues = { list: [] }; save(); try { vrtClose(); } catch (e) {} return "virtues reset"; }
+    if (act === "carve") { if (vrtFor(id)) return "already carved"; var sl = gardenSpots()[0] || { tx: Math.round(px / TILE) + 2, ty: Math.round(py / TILE) }; vrtState().list.push({ id: id, declaration: VRT[id].dec, tx: sl.tx, ty: sl.ty, litK: null, moments: [], carvedK: todayK() }); save(); renderVirtues(); return vrtState().list; }
+    if (act === "moments") { var v = vrtFor(id); if (!v) return "not carved"; v.moments = []; for (var i = 0; i < (n || 0); i++) v.moments.push({ k: keyAdd(todayK(), -i), note: "moment " + (i + 1) }); save(); renderVirtues(); return { total: v.moments.length, craft: VRT_CRAFT[vrtCraft(v)].k, week: vrtWeek(v) }; }
+    if (act === "carved") { var v4 = vrtFor(id); if (!v4) return "not carved"; v4.carvedK = keyAdd(todayK(), -(n || 0)); save(); renderVirtues(); return { held: vrtHeld(v4) }; }
+    if (act === "lit") { var v2 = vrtFor(id); if (!v2) return "not carved"; v2.litK = n === 0 ? null : todayK(); save(); renderVirtues(); return { lit: vrtLit(v2) }; }
+    if (act === "relight") { var v3 = vrtFor(id); if (!v3) return "not carved"; if (!gameOn) openGame(); vrtRelight(v3); return "relight"; }
+    if (act === "open" || act === "carveui" || act === "hang") {
+      if (!gameOn) openGame();
+      if (act === "carveui") { VV.carve = id; vrtOpen("carve"); return "carve"; }
+      if (act === "hang") { VV.hang = { id: id, dec: VRT[id].dec, spots: gardenSpots() }; VV.hang.pick = VV.hang.spots[0] || null; vrtOpen("hang"); return VV.hang.spots; }
+      VV.sel = n ? id : null; vrtOpen("list"); return "virtues list";
+    }
+    return { state: vrtState(), view: VV };
+  };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.
     var W = innerWidth, H = innerHeight, out = [], ok = true;
@@ -17360,8 +17686,9 @@
       try { tickCharge(); } catch (e) {} // per-second live charge: the now-line + charged stretch + committed future glide together (the battery visibly fills between the per-minute rebuilds)
       var nm = nowMin(); if (nm !== _lastMin) { _lastMin = nm; if (!dragBusy() && !document.querySelector("#pullBody.zooming") && !document.querySelector(".cal .edgeinsp")) { var _pb = el("pullBody"), _sc = _pb ? _pb.scrollTop : 0; renderToday(); if (_pb) _pb.scrollTop = _sc; } } // burning timeline: each minute re-sweep — but never tear down the timeline mid-drag (the _dragLock latch closes the pointerdown→first-move window that the old class-only census left open — grievance A1), mid-zoom, OR while the edge inspector is open (the rebuild would wipe the panel mid-edit)
     }, 1000);
-    el("planToday").onclick = function () { var t = nextFreeMin(viewK), id = uid(); blocks(viewK).push({ id: id, time: pad(Math.floor(t / 60)) + ":" + pad(t % 60), mins: 60, title: "New", prio: 2, color: "#8a5cf0", done: false }); reflow(viewK); save(); renderToday(); var nb = blocks(viewK).filter(function (b) { return b.id === id; })[0]; bentoPicker({ title: "Plan what?", onPick: function (x) { assignBlock(nb, x, viewK); }, onCancel: function () { var a = blocks(viewK), bi = a.indexOf(nb); if (bi >= 0) { a.splice(bi, 1); reflow(viewK); save(); renderToday(); } } }); };
-    var og = el("openGoals"); if (og) og.onclick = goalsSheet;
+    // the retired inline calendar's controls (+ add / Goals / prev / next / Day-Week-Month) are gone with its markup (2026-08-12).
+    // Their live replacements: tap an empty slot on the timeline opens the ACTIVITY PICKER (@SEC:PICKER), the goals sheet is
+    // reached from the journey, and the D/W/M zoom lives on the pull pager's own scope control.
     var _gg = el("goGoals"); if (_gg) _gg.onclick = goalsSheet;                       // Goals tab → goals
     var _gp = el("goPresets"); if (_gp) _gp.onclick = function () { presetsSheet(todayK()); }; // Goals tab → masterpiece days / presets
     var _gh = el("goHabits"); if (_gh) _gh.onclick = habitPathSheet;                     // Goals tab → habits stone path (manager reachable via its pencil)
@@ -17378,9 +17705,6 @@
     var fb = el("featBackdrop"); if (fb) fb.onclick = closeFeature;
     var jb = el("jumpBtn"); if (jb) { jb.onclick = doJump; jb.addEventListener("touchstart", function (e) { e.preventDefault(); doJump(); }, { passive: false }); }
     var nbtn = el("notebookBtn"); if (nbtn) nbtn.onclick = notebookSheet; // the single menu door
-    el("dnPrev").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, -1) : zoomMode === "week" ? keyAdd(viewK, -7) : keyAdd(viewK, -1); renderToday(); };
-    el("dnNext").onclick = function () { viewK = zoomMode === "month" ? monthAdd(viewK, 1) : zoomMode === "week" ? keyAdd(viewK, 7) : keyAdd(viewK, 1); renderToday(); };
-    document.querySelectorAll("#zoomTabs .zt").forEach(function (z) { z.onclick = function () { zoomMode = z.dataset.z; if (zoomMode === "day") pendingScrollNow = true; renderToday(); }; });
     document.querySelectorAll("#growTabs .zt").forEach(function (z) { z.onclick = function () { var g = z.dataset.g; document.querySelectorAll("#growTabs .zt").forEach(function (x) { x.classList.toggle("on", x === z); }); el("habitsPane").style.display = g === "habits" ? "" : "none"; el("statsPane").style.display = g === "stats" ? "" : "none"; }; });
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); }; // tap above the card = exit
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;
