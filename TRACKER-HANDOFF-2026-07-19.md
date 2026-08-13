@@ -753,3 +753,46 @@ Ten-iteration Claude Design prompt for the garden surface composed and delivered
 - The guardian puck overlaps the open card's bottom-left (Adjust row), same family as the v1253 planner-picker nit; also: puck-tap at card-open returns home WITHOUT closing the card.
 - **ONE move — David:** open /fresh.html on the phone, check the two states: (1) home opens with HUD above the strip, TOOLS at the true bottom, nothing peeking; (2) tap Morning Stack: tiles park at top, no cut circle, HUD gone until close.
 - **ONE move — Claude:** apply his HUD verdict (keep fade / go in-flow) + the puck-overlap call in one pass.
+
+---
+
+## v1263 — THE HOME SCROLL + CASCADE CONTRACT (design `Home Screen.dc.html`, frame 2c)
+
+Source: `_design-sync/home-2026-08-14/design_handoff_home_screen/` (GATE A pass, 2 frames, 99,119B — untruncated).
+The home zone's LOOK already shipped (2c face, v1259+). What this build implements is the part of the design that had never been
+built: the **animation + scrolling contract** — the thing David's notes 1-32 are almost entirely about ("consider especially about
+the animation and scrolling since that took the longest").
+
+**Built**
+- `@SEC:WORLD-MOTION` replaces the v1208 band magnet: a damped spring (2ms substeps, design constants) + three-zone intent snapping
+  + fling catch + hold-at-home + slow-drag tie-break. One authority at a time; a finger down kills everything.
+- The home cascade: 6 blocks (`#tfHomeBars`/`#tfDateKick`/`#tfRing`/`#tfTitle`/`#tfVerdict`/`#tfCtrls`) rise bottom-to-top from
+  the tools, drop top-to-bottom from the journey, sink on exit. The week strip never moves as a slab — it sweeps column by column
+  with a z-tilt through its own 520px perspective.
+- The tools cascade (`youRowIn`/`youRowOut`) over the shelf's 17 rows, with the velocity stretch.
+- Overlay scrub by direct style write (never a re-render): puck · JOURNEY↔HOME label crossfade · TOOLS hint · Planner pill.
+
+**Deliberate deviations from the design file** (named per DESIGN AUTHORITY LAW 3 — David's call if he wants them the other way):
+1. **No `_measurePad`.** The design measures a bottom pad to centre a one-screen tools block; the app's shelf already carries
+   David's own device-tuned bottom padding, locked by the "ground bottom air" gate. Adding a measured pad would fight that gate.
+2. **The magnet lets go past one viewport up.** The design's sky is one screen so its snap can own all of it; the app's sky is the
+   whole journey trail. Past one viewport the magnet releases, or reading the trail would be impossible.
+3. **The JOURNEY hint now lands one viewport up** (the trail's live end) instead of scrollTop 0 (the trail's beginning), so the
+   button and the gesture share one destination.
+
+**Verified in preview (mechanical, not feel)**
+- Both arrival directions fire the right keyframes: up = `homeRise` + 6-column `homeSweep`; down = `homeDrop`, strip first.
+- Both land on `d = 0` exactly. `DEV.wIntent()` proves the no-overshoot law across 8 cases, including "a pull up that began in the
+  tools can never reach the journey" (notes 20/25/28).
+- Leaving home mid-cascade and returning restores every block — nothing stranded at opacity 0 (note 6's failure mode).
+- designAudit 47 checks, the same 5 fails as shipped v1262 on the identical night face/profile (A/B by `git stash`). Zero console errors.
+- A real regression was caught and fixed by that A/B: the shelf's hidden state carried a `scale(.9)` that made two locked geometry
+  gates report 52x52 / 49-47. Hidden rows now carry opacity only; the scale lives in the keyframe's `from` where it belongs.
+
+**DEVICE-UNTESTED — the whole point of the build is FEEL, and the preview cannot judge feel.** Confirm on the phone:
+up-glide smoothness, no jitter going down, cascade timing (neither late nor mid-glitch), puck timing, fling thresholds. The preview
+also freezes rAF, so every landing here was proven by state, not by watching.
+Untested for a different reason: the Planner-pill fade (230→300px) — the preview sat on the night face, which renders no Planner pill.
+
+**Knobs if the feel is off:** `WM = false` reverts to the v1208 magnet in one line. Stagger 30ms (home) / 55ms (shelf); spring
+`k` .000055 soft / .00009 firm; snap delay 30ms idle / 260ms touching; fling thresholds .85 down / .55 up / .7 up-at-home.

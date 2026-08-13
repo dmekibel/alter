@@ -5231,8 +5231,11 @@
   function tfhI(cls) { var i = document.createElement("i"); i.className = "ti " + cls; return i; }
   function tfhDeep(colExpr) { return stkMix(stkHexOf(colExpr) || "#63d3c9", "#000000", 0.5); } // the shipped deck lip colour: the hue 50% toward black (stkLip's law, quoted at the 2c card's own 4px offset)
   function tfhScrollTo(top) { var w = el("tfWorld"); if (!w) return; var max = Math.max(0, w.scrollHeight - w.clientHeight); top = Math.max(0, Math.min(max, top)); try { magnetHold(1200); } catch (e) {} try { w.scrollTo({ top: top, behavior: "smooth" }); } catch (e) { w.scrollTop = top; } } // native smooth = the --ease-settle idiom for the one-page column (the artifact's ~380ms cubic-out). magnetHold: a deliberate scroll (card reveal, hint tap) must never be yanked back by the HOME MAGNET.
-  function tfhGoJourney() { tfhScrollTo(0); }                                                   // the sky IS the journey trail — the same target the upward drag reaches
-  function tfhGoTools() { var g = el("tfWorldGround"); var w = el("tfWorld"); tfhScrollTo(g ? g.offsetTop - 8 : (w ? w.scrollHeight : 0)); }
+  // the two HUD doors. Under WM they take the SAME landings the gesture does (one destination per zone — that is what makes the world
+  // read as three places rather than a button set): journey = one viewport up (the trail's live end, then keep scrolling up to read back),
+  // tools = the shelf's bottom. Both arm the arrival cascade instead of playing it. WM=false keeps the pre-v1263 targets exactly.
+  function tfhGoJourney() { if (WM) { wGoJourney(); return; } tfhScrollTo(0); }
+  function tfhGoTools() { if (WM) { wGoTools(); return; } var g = el("tfWorldGround"); var w = el("tfWorld"); tfhScrollTo(g ? g.offsetTop - 8 : (w ? w.scrollHeight : 0)); }
   function renderHome2cHud() { // the HUD row. It floats on .tf-inner at exactly the top the status row it replaces used (env(safe-top)+11), so the strip keeps the place the board gates measure. Built ONCE, then only the gem count updates (a re-append would restart the chevron's float animation every render).
     if (!tfh2c()) return;
     var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return;
@@ -5241,6 +5244,9 @@
       hud = document.createElement("div"); hud.id = "tfHud";
       var sp = document.createElement("button"); sp.id = "tfHudSpark"; sp.className = "tfh-spark"; sp.setAttribute("aria-label", "Guardian"); sp.appendChild(tfhI("ti-sparkles")); hud.appendChild(sp);
       var hj = document.createElement("button"); hj.id = "tfHudJourney"; hj.className = "tfh-hint"; hj.appendChild(tfhI("ti-chevron-up")); var hl = document.createElement("span"); hl.textContent = tr("JOURNEY"); hj.appendChild(hl); hud.appendChild(hj);
+      // …and its twin in the same centre slot: once you're down in the tools the invitation up is HOME, not the journey (design: the two labels swap by scroll). wScrub crossfades them; wGoHome arms the arrival cascade so the board builds as you land, not at the tap.
+      var hh = document.createElement("button"); hh.id = "tfHudHome"; hh.className = "tfh-hint"; hh.appendChild(tfhI("ti-chevron-up")); var hml = document.createElement("span"); hml.textContent = tr("HOME"); hh.appendChild(hml); hud.appendChild(hh);
+      hh.onclick = function (e) { if (e) e.stopPropagation(); if (WM) wGoHome(); else tfhScrollTo(worldHomeTarget()); };
       var gc = document.createElement("button"); gc.id = "tfHudGarden"; gc.className = "tfh-garden"; gc.setAttribute("aria-label", "Garden"); gc.appendChild(tfhI("ti-leaf")); hud.appendChild(gc);
       var gm = document.createElement("div"); gm.id = "tfHudGems"; gm.className = "tfh-gems"; gm.appendChild(tfhI("ti-diamond-filled")); gm.appendChild(document.createElement("b")); hud.appendChild(gm);
       inner.appendChild(hud);
@@ -5319,7 +5325,7 @@
     if (!h) { h = document.createElement("button"); h.id = "tfToolsHint"; h.setAttribute("aria-label", "Tools"); var s = document.createElement("span"); s.textContent = tr("TOOLS"); h.appendChild(s); h.appendChild(tfhI("ti-chevron-down")); h.onclick = function () { tfhGoTools(); }; }
     if (h.parentNode !== zone || zone.lastChild !== h) zone.appendChild(h); // always the last thing in the home zone (the .tf-ctrls margin-bottom:auto floats it to the fold)
   }
-  Object.assign(I18N.ru, { "JOURNEY": "ПУТЬ", "TOOLS": "ИНСТРУМЕНТЫ" }); // HOME 2c hint labels (B4 law: EN source + RU dict in the same edit). The only two new strings in this pass.
+  Object.assign(I18N.ru, { "JOURNEY": "ПУТЬ", "TOOLS": "ИНСТРУМЕНТЫ", "HOME": "ДОМ" }); // HOME 2c hint labels (B4 law: EN source + RU dict in the same edit). "HOME" joined them in v1263 — the label that takes the JOURNEY slot once you're down in the tools.
   // R3 COMPASS ROSE (David 2026-07-21, FINAL composition): home carries its own nav — TWO prominent labeled doors + the tappable strip. Each mirrors a retired #nav handler exactly:
   //   • story strip (#tfHomeBars) → PLANNER (mirrors the data-tab="day" handler: leaveHomeForPlayer + setPaneRest("planner") + renderToday — harmless redundancy with the LEFT door)
   //   • LEFT door → PLANNER (ti-calendar; mirrors data-tab="day": leaveHomeForPlayer + setPaneRest("planner") + renderToday)
@@ -5475,34 +5481,95 @@
       inner.appendChild(world); // insert the container, then relocate the flow blocks into HOME (each still reachable by id/className — CSS descendant selectors + el() lookups are nesting-agnostic)
       flow.forEach(function (n) { if (n && n.parentNode !== home) home.appendChild(n); });
       // PUCK-AS-RETURN (David 2026-07-22 "whenever you're anywhere that's not home, the home button appears"): a single passive, cheap scroll listener on #tfWorld drives the puck's home-return visibility — faded OUT when parked at home (nothing to return from), faded IN the moment the scroll deviates from the home position by >40% of the viewport (i.e. you've drifted up into the journey sky or down into the tools ground). No rAF loop, no second watcher — one native scroll event, one class toggle. worldScrollHome() owns the landing; this only reads scrollTop.
-      world.addEventListener("scroll", function () { try { onWorldScroll(); } catch (e) {} try { magnetArm(); } catch (e) {} }, { passive: true }); // HOME MAGNET (David 2026-08-02): the same single passive listener arms the settle timer — no second watcher
-      world.addEventListener("touchstart", function () { _magTouch = 1; magnetAbort(); }, { passive: true });   // a finger down always wins: kill any pull in flight and never start one mid-drag
-      world.addEventListener("touchend", function () { _magTouch = 0; magnetArm(); }, { passive: true });        // momentum keeps firing scroll events after this; the settle timer waits them out
-      world.addEventListener("touchcancel", function () { _magTouch = 0; magnetArm(); }, { passive: true });
+      world.addEventListener("scroll", function () { try { onWorldScroll(); } catch (e) {} try { magnetArm(); } catch (e) {} }, { passive: true }); // ONE passive listener owns velocity, the fling catch, every scrub and the settle timer — no second watcher (magnetArm no-ops under WM)
+      // A FINGER DOWN ALWAYS WINS (notes 14-18/21/22/26 — the "choppy/stutters" family): kill the spring dead, drop the hold, forget the
+      // last direction, and re-anchor the gesture's start here. Nothing of ours may be moving while the user is moving it themselves.
+      var wTouch = function (on) {
+        if (on) { _wTouch = 1; _wHold = null; _wPk = 0; _wDir = 0; _wFlung = false; _wStop = true; _wAnim = false; _wStartTop = world.scrollTop; clearTimeout(_wSnapT); magnetAbort(); }
+        else { _wTouch = 0; if (WM) wQueueSnap(140); else magnetArm(); }  // momentum keeps firing scroll events after this; the settle timer waits them out
+      };
+      world.addEventListener("touchstart", function () { wTouch(true); }, { passive: true });
+      world.addEventListener("touchend", function () { wTouch(false); }, { passive: true });
+      world.addEventListener("touchcancel", function () { wTouch(false); }, { passive: true });
+      world.addEventListener("pointerdown", function (e) { if (e && e.pointerType !== "mouse") wTouch(true); }, { passive: true }); // Apple Pencil / non-touch pointers land here, not on touchstart
+      world.addEventListener("pointerup", function (e) { if (e && e.pointerType !== "mouse") wTouch(false); }, { passive: true });
     }
     return world;
   }
   // the home-position reference for the puck-return check + the smooth-scroll-home tap. Mirrors worldScrollHome's target (home.offsetTop - peek) but tolerates the pre-adoption case.
   function worldHomeTop() { var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return 0; return Math.max(0, home.offsetTop - 14); }
-  function onWorldScroll() {
+  // ---- THE OVERLAY SCRUB: puck · the two HUD labels · the TOOLS hint · the Planner pill. DIRECT STYLE WRITES ONLY.
+  // (design perf note: the prototype's remaining per-frame cost was re-rendering on a scroll-scrub state — in the real app these are
+  // four opacity assignments on a passive listener, so a scroll never touches the renderer.) ----
+  function wScrub() {
     var world = el("tfWorld"); if (!world) return;
-    var home = worldHomeTop();
+    var home = WM ? wHomeY() : worldHomeTop();
     var vh = world.clientHeight || window.innerHeight || 800;
-    var dev = home - world.scrollTop; // >0 when scrolled UP off the home seam into the sky (the journey)
-    var away = Math.abs(world.scrollTop - home) > vh * 0.4; // drifted >40% of a viewport off the home seam → show the return
+    var d = world.scrollTop - home, dev = -d; // dev > 0 when scrolled UP off the home seam into the sky (the journey)
+    var away;
+    if (WM) {
+      var tp = Math.max(0, Math.min(300, d));                            // the design's 0-300 downward-travel scrub
+      var zn = d < -300 ? "sky" : (d > wSpan() / 2 ? "ground" : "home");
+      // PUCK: shown in the sky always; otherwise shown when you're away from home — but NEVER while moving up, so it is already
+      // gone before you could watch it scale to nothing (note 16). Hidden outright under an open card.
+      away = zn === "sky" ? true : (wBusy() || (_wDir || 0) < 0 ? false : (zn !== "home" || tp > 66));
+      var hj = el("tfHudJourney"); if (hj) { var jo = 1 - Math.min(1, tp / 70); hj.style.opacity = String(jo); hj.style.pointerEvents = jo < 0.05 ? "none" : ""; } // the JOURNEY invitation is spent the moment you head down
+      var hh = el("tfHudHome"); if (hh) { var ho = (_wDir || 0) < 0 ? 0 : Math.max(0, Math.min(1, (tp - 150) / 140)); hh.style.opacity = String(ho); hh.style.pointerEvents = ho > 0.5 ? "auto" : "none"; } // …and HOME takes its place, gone again the instant you turn back
+      var th = el("tfToolsHint"); if (th) th.style.opacity = String(1 - Math.min(1, tp / 110));
+      var pw = document.querySelector(".tbx-planwrap");
+      if (pw) { var po = 1 - Math.max(0, Math.min(1, (tp - 230) / 70)); pw.style.opacity = String(po); pw.style.pointerEvents = tp > 260 ? "none" : ""; } // note 3: the Planner must not still be sitting there once you're in the tools
+    } else {
+      away = Math.abs(world.scrollTop - home) > vh * 0.4; // legacy: drifted >40% of a viewport off the home seam → show the return
+    }
     var p = el("guardPuck"); if (p) p.classList.toggle("puck-away", away); // CSS fades the puck by this class ON the onepage home surface only (elsewhere it's always visible)
     // STRIP FADE (David 2026-07-22 video "the journey appears, the instagram carousel fades away"): the story strip sits between the circle and the sky — as you scroll UP toward the journey, fade + lift it out of the way so the trail takes over cleanly. Scroll-linked (no CSS transition — the strip's transition is disabled under onepage), reset to 1 the instant you're back at/ below home. transform/opacity only → no reflow, cheap on the passive listener.
+    // …RETIRED ON THE 2c FACE: there the strip is cascade block 1 — the exit cascade sinks it and the sweep brings it back, and a
+    // scroll-linked opacity write would fight the animation's own fill for the same property (the strip would flicker back mid-sink).
     var bars = el("tfHomeBars");
-    if (bars) {
+    if (bars && !(WM && tfh2c())) {
       var fp = Math.max(0, Math.min(1, dev / (vh * 0.34))); // 0 at home, fully faded ~1/3 viewport up
       bars.style.opacity = fp > 0 ? String(1 - fp) : "";
       bars.style.transform = fp > 0 ? ("translateY(" + (-10 * fp).toFixed(1) + "px)") : "";
     }
   }
+  // ---- THE ONE SCROLL LISTENER: velocity + direction + the fling catch, then the three scrubs, then the settle timer. ----
+  function onWorldScroll() {
+    var world = el("tfWorld"); if (!world) return;
+    if (!WM || !wLive()) { wScrub(); return; }                           // pre-landing (or WM off): paint the overlays, arm nothing
+    var nw = wNow();
+    // HOLD-AT-HOME: pin against leftover upward momentum; release on a real pull, on any downward move, or when the 450ms is up.
+    if (_wHold && !_wTouch) {
+      if (nw >= _wHold.until || world.scrollTop > _wHold.y + 0.5 || _wHold.y - world.scrollTop > 120) _wHold = null;
+      else if (world.scrollTop < _wHold.y - 0.5) { world.scrollTop = _wHold.y; _wLastSt = _wHold.y; _wLastT = nw; return; }
+    }
+    if (!_wAnim && (!_wLastT || nw - _wLastT > 220)) { _wStartTop = _wLastSt == null ? world.scrollTop : _wLastSt; _wFlung = false; _wPk = 0; } // 220ms of silence = a NEW gesture: re-anchor its start, re-arm the fling catch
+    if (_wLastT) {
+      var dt = Math.max(1, nw - _wLastT);
+      var iv = (world.scrollTop - (_wLastSt == null ? world.scrollTop : _wLastSt)) / dt;
+      _wV = (_wV || 0) * 0.55 + iv * 0.45;                               // smoothed, so one noisy sample can't fling the column
+      if (Math.abs(iv) > 0.07) _wDir = iv < 0 ? -1 : 1;
+      if (!_wAnim) _wPk = Math.max(_wPk || 0, Math.abs(iv));
+      // FLING CATCH: a decisive flick doesn't wait for the settle timer — it commits to the destination immediately. Latched once per gesture.
+      if (!_wAnim && !_wFlung && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
+        var hy = wHomeY(), ty = wToolsY(), st = world.scrollTop;
+        if (iv > 0 && st > hy - 6 && st < ty - 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(ty, false); }
+        else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
+        else if (iv < -0.7 && st <= hy + 6 && st > 6 && !_wHold) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick from home reaches the journey
+      }
+    }
+    _wLastSt = world.scrollTop; _wLastT = nw;
+    var dd = world.scrollTop - wHomeY();
+    try { tcScrub(dd / wSpan()); } catch (e) {}
+    try { hcScrub(dd); } catch (e) {}
+    wScrub();
+    if (_wAnim) return;                                                  // the spring owns the column while it runs — never queue against it
+    wQueueSnap(_wTouch ? 260 : 30);
+  }
   // smooth-scroll the world column back to the home seam (the puck's tap target while the world is open). Returns true if it handled the return here (so the puck's home tap doesn't also tear surfaces down).
   function worldScrollBackHome() {
     var tf = el("trackerFull"), world = el("tfWorld");
     if (!ONEPAGE || !world || !tf || !tf.classList.contains("tf-onepage") || !tf.classList.contains("on")) return false;
+    if (WM) { wGoHome(); return true; } // the puck takes the same road home as everything else: arm the cascade, ease in, board builds on arrival
     try { world.scrollTo({ top: worldHomeTop(), behavior: "smooth" }); } catch (e) { world.scrollTop = worldHomeTop(); }
     return true;
   }
@@ -5567,20 +5634,108 @@
     if (tfh2c()) return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + 8));
     return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + safeBottomPx() + 8));
   }
-  // ===== THE HOME MAGNET (David 2026-08-02) — a scroll that ENDS near home settles exactly onto it. =====
-  // Fires ONLY after the gesture is over: no finger down, ~140ms of scroll silence, the landing already committed, and the
-  // resting scrollTop inside a 56px band around worldHomeTarget(). So it never fights the finger, never fights native momentum,
-  // and never touches a scroll genuinely heading for the sky or the ground. Any new touch or scroll aborts it mid-flight; our own
-  // rAF writes can't re-arm it (_magAnim), and a programmatic smooth-scroll (the card reveal, the hint taps) holds it off entirely
-  // so it can never yank a just-revealed dose card back up. DEVICE-UNTESTED: the FEEL of the pull is honest only on David's phone.
-  var _magT = 0, _magRaf = 0, _magTouch = 0, _magAnim = 0, _magHold = 0;
-  var MAG_BAND = 56, MAG_MS = 200, MAG_SETTLE = 140;
-  function magnetAbort() { if (_magRaf) { try { cancelAnimationFrame(_magRaf); } catch (e) {} _magRaf = 0; } _magAnim = 0; if (_magT) { clearTimeout(_magT); _magT = 0; } }
-  function magnetArm() { if (_magAnim) return; if (_magT) clearTimeout(_magT); _magT = setTimeout(magnetSnap, MAG_SETTLE); }
+  // ===== @SEC:WORLD-MOTION — THE MAGNETIC ZONES + THE CASCADES (design "Home Screen.dc.html" frame 2c, ported 2026-08-14). =====
+  // SUPERSEDES the v1208 HOME MAGNET (a 56px band + a 200ms ease-out). That magnet only knew ONE target; this engine knows THREE
+  // (journey · home · tools) and reads INTENT — direction, velocity, and where the gesture started — which is the whole subject of
+  // David's design notes 1-32. His recurring complaints there are the acceptance criteria, and each maps to a named rule below:
+  //   note 20/25/28 "should not overshoot to journey"  → wMaybeSnap's above-home branch requires the gesture to have STARTED at home
+  //                                                       AND travelled >45% of the viewport before journey is even a candidate.
+  //   note 14-18/21/22/26 "choppy / stutters / jerky"  → ONE authority at a time: while the spring runs it owns scrollTop outright.
+  //                                                       Never re-seeded from native momentum per frame (that fight WAS the jitter).
+  //   note 29/31 "jitters forever going down to tools" → the spring exits the instant it CROSSES its target (not on |x-to| alone), so
+  //                                                       it can never orbit; and a finger down kills it dead (wTouch).
+  //   note 19/23/24/27 "the animation happens too late" → the arrival cascade fires MID-GLIDE (within 260px of home), not on landing.
+  //   note 16 "the puck scaling to zero feels weird"    → moving up hides the puck immediately (wDir < 0), including the click itself.
+  //   note 5 "you see the big pink circle early"        → the exit cascade FLATTENS to inline opacity:0, so nothing rides the glide lit.
+  // The physics constants are the design's, unchanged. The three ANCHORS are the app's own (worldHomeTarget etc.), never the design's
+  // raw offsetTop — the landing, the magnet and the cascade must read one home or they drift apart (the law worldHomeTarget encodes).
+  // DEVICE-UNTESTED: every one of these is a FEEL, and the preview cannot judge feel. Confirm the whole contract on the phone.
+  var WM = true;                      // kill switch: false = the pre-v1263 simple magnet band, byte-identical
+  var MAG_BAND = 56, MAG_MS = 200;    // the legacy band (WM=false path only)
+  var _wV = 0, _wLastSt = null, _wLastT = 0, _wDir = 0, _wPk = 0, _wStartTop = 0, _wFlung = false;
+  var _wAnim = false, _wStop = false, _wUp = false, _wDown = false, _wHold = null, _wTouch = 0, _wSnapT = 0, _wNoSnap = 0, _wLastD = null;
+  var _magT = 0, _magRaf = 0, _magAnim = 0, _magHold = 0;
+  function wNow() { try { return performance.now(); } catch (e) { return Date.now(); } }
+  // THE THREE ANCHORS. Home is worldHomeTarget() (NOT home.offsetTop) so the spring lands exactly where the boot landing did.
+  function wHomeY() { return worldHomeTarget(); }
+  function wToolsY() { var w = el("tfWorld"); return w ? Math.max(0, w.scrollHeight - w.clientHeight) : 0; } // the shelf's own device-tuned bottom padding does the centering the design's _measurePad did (see the "ground bottom air" gate) — do NOT add a measured pad on top of it
+  function wSkyY() { var w = el("tfWorld"); return w ? Math.max(0, wHomeY() - w.clientHeight) : 0; }
+  function wSpan() { return Math.max(1, wToolsY() - wHomeY()); } // home→tools travel: the denominator every threshold below is a fraction OF
+  function wLive() { var tf = el("trackerFull"), w = el("tfWorld"); return !!(WM && ONEPAGE && w && _worldPositioned && tf && tf.classList.contains("tf-onepage") && tf.classList.contains("tf-onehome")); }
+  function wBusy() { return !!(_tbxOpenStack || _tbxOpenCat || _tfhOpen); } // an open dose card / category panel / face card OWNS the column: no snapping, no cascading under it (the design's _stackOpen)
+  // ---- THE SPRING: a damped spring integrated in 2ms substeps. While it runs it is the SINGLE authority on scrollTop. ----
+  function wSpring(to, soft) {
+    var w = el("tfWorld"); if (!w) return;
+    _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
+    if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
+    _wAnim = true; _wStop = false;
+    var x = w.scrollTop, v = Math.max(-0.9, Math.min(0.9, _wV || 0));   // seeded with the LIVE gesture velocity, clamped — a flick carries through
+    var dir = to > x ? 1 : (to < x ? -1 : 0);
+    if ((v > 0 ? 1 : v < 0 ? -1 : 0) !== dir) v *= 0.15;                // pointing the wrong way = mostly discarded, never inverted
+    var k = soft ? 0.000055 : 0.00009, c = 2 * Math.sqrt(k) * (soft ? 1.12 : 1.04);
+    var last = wNow();
+    var tick = function (nw) {
+      if (_wStop) { _wAnim = false; return; }
+      var dt = Math.min(34, nw - last); last = nw;                      // a backgrounded tab can hand us a huge dt; clamp so it can't explode
+      for (var s = 0; s < dt; s += 2) { var h2 = Math.min(2, dt - s); v += (-k * (x - to) - c * v) * h2; x += v * h2; }
+      if ((_wDown && x > to) || (!_wDown && x < to)) { w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // CROSSED the target = done. This is what makes overshoot impossible (notes 20/28)
+      w.scrollTop = x;
+      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 0.02) { w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  // ---- a deliberate, eased travel (the HUD hints + the puck). ARMS the arrival cascade rather than playing it, so it fires on arrival (note 23). ----
+  function wScrollTo(to, dur) {
+    var w = el("tfWorld"); if (!w) return;
+    _wUp = to < w.scrollTop;
+    if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } try { wScrub(); } catch (e) {} } // re-read the puck NOW so a tap on it hides it at the tap, never mid-flight at scale 0 (note 16)
+    _wAnim = true; _wStop = false;
+    var from = w.scrollTop, t0 = wNow();
+    var D = dur || Math.max(380, Math.min(760, 320 + Math.abs(to - from) * 0.55));
+    var tick = function (nw) {
+      if (_wStop) { _wAnim = false; return; }
+      var p = Math.min(1, (nw - t0) / D);
+      var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      w.scrollTop = from + (to - from) * e;
+      if (p < 1) requestAnimationFrame(tick); else { _wAnim = false; hcMaybeIn(); }
+    };
+    requestAnimationFrame(tick);
+  }
+  // ---- HOLD-AT-HOME: a spring that lands exactly on home PINS there for 450ms, so leftover momentum can't drift it up into the sky.
+  //      Breaks instantly on a finger, on any downward move past home, or on a deliberate >120px pull (the design's escape hatches). ----
+  function wHoldAtHome(to) { if (Math.abs(to - wHomeY()) < 2) _wHold = { y: to, until: wNow() + 450 }; }
+  function wQueueSnap(delay) { clearTimeout(_wSnapT); _wSnapT = setTimeout(wMaybeSnap, delay); }
+  // ---- THE INTENT DECISION, pure. Reads direction (velocity, with the last-direction tie-break under 0.25) and where the gesture
+  // STARTED, and returns the scrollTop it would commit to (or null for "leave it alone"). Kept side-effect-free and exposed as
+  // DEV.wIntent so the no-overshoot law can be CHECKED rather than felt — the preview freezes rAF, so a landing-based test proves
+  // nothing, but the decision is exactly the thing David's notes 20/25/28 are about. ----
+  function wSnapIntent(at) {
+    var w = el("tfWorld"); if (!w) return null;
+    var hy = wHomeY(), ty = wToolsY(), st = at == null ? w.scrollTop : at, d = st - hy;
+    // FREE-SCROLL INSIDE THE JOURNEY. The design's sky is one screen, so its snap could own the whole of it; the app's sky is the WHOLE
+    // trail (thousands of px). Past one viewport up you are no longer transitioning between zones, you are READING the journey — the
+    // magnet lets go entirely, or it would drag you back down out of the trail on every pause.
+    if (d < -w.clientHeight) return null;
+    var v = _wV || 0;
+    var down = Math.abs(v) > 0.25 ? v > 0 : (_wDir || 0) >= 0;          // slow-drag tie-break: fall back to the last detected direction, default down
+    if (d > 0 && st < ty - 0.5) return down ? ty : hy;                  // between home and the shelf: commit to whichever way you were going
+    if (d < 0) return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY(); // above home: journey ONLY if this gesture began at home AND cleared 45% of the viewport (notes 20/25/28)
+    return null;
+  }
+  function wMaybeSnap() {
+    var w = el("tfWorld"); if (!w || !wLive() || _wAnim || _wTouch || wBusy() || wNow() < _wNoSnap) return;
+    var to = wSnapIntent();
+    if (to === null || Math.abs(w.scrollTop - to) < 0.5) return;
+    wSpring(to, to === wHomeY());                                       // soft to home/journey, firm to tools
+  }
+  // ---- legacy band magnet (WM=false). Kept whole so the flag is a real one-line revert. ----
+  function magnetAbort() { if (_magRaf) { try { cancelAnimationFrame(_magRaf); } catch (e) {} _magRaf = 0; } _magAnim = 0; if (_magT) { clearTimeout(_magT); _magT = 0; } _wStop = true; clearTimeout(_wSnapT); }
+  function magnetArm() { if (WM) return; if (_magAnim) return; if (_magT) clearTimeout(_magT); _magT = setTimeout(magnetSnap, 140); }
   function magnetSnap() {
     _magT = 0;
     var world = el("tfWorld"), tf = el("trackerFull");
-    if (!ONEPAGE || _magTouch || _magAnim || !world || !_worldPositioned || Date.now() < _magHold) return;
+    if (!ONEPAGE || _wTouch || _magAnim || !world || !_worldPositioned || Date.now() < _magHold) return;
     if (!tf || !tf.classList.contains("tf-onepage") || !tf.classList.contains("tf-onehome")) return;
     var from = world.scrollTop, delta = worldHomeTarget() - from, dist = Math.abs(delta);
     if (dist < 2 || dist > MAG_BAND) return; // already home, or genuinely on the way somewhere else
@@ -5593,7 +5748,135 @@
       if (p < 1) _magRaf = requestAnimationFrame(step); else { _magRaf = 0; _magAnim = 0; }
     });
   }
-  function magnetHold(ms) { _magHold = Date.now() + (ms || 1200); magnetAbort(); } // a deliberate programmatic scroll owns the column for a beat
+  function magnetHold(ms) { _magHold = Date.now() + (ms || 1200); _wNoSnap = wNow() + (ms || 1200); magnetAbort(); } // a deliberate programmatic scroll (a card reveal) owns the column for a beat — under WM this suppresses the snap, never the cascades
+  // ===== THE HOME CASCADE. The board is six blocks; they arrive in sequence and leave in the mirror of it. =====
+  // The strip is block 1 but is never animated AS a block on arrival: it sweeps column by column, left to right (note 12), each column
+  // being its pill AND the icon under it together (the app's .tf-hb already IS that column — the design had to pair two rows by index).
+  var HC_IDS = ["tfHomeBars", "tfDateKick", "tfRing", "tfTitle", "tfVerdict", "tfCtrls"]; // 1..6: strip · date kicker · the stone · What now? · the sub-line · the one control row (which carries the violet Planner pill, tbxPlanButton)
+  var _hcState = null, _hcArmUp = false, _hcArmDown = false, _hcAnimAt = 0, _hcDone = false, _hcT = 0, _hcInT = 0, _hcQ = null;
+  function hcEls() { // the LAID-OUT blocks only, in board order. A face that doesn't paint the date kicker (night) simply has one fewer beat — no empty beat, no gap in the rhythm.
+    var out = [];
+    HC_IDS.forEach(function (id, i) { var n = el(id); if (!n || (!n.offsetHeight && !n.offsetWidth)) return; n.setAttribute("data-hc", i + 1); out.push(n); });
+    return out;
+  }
+  function hcCols(bars) { var out = []; [].slice.call(bars.children).forEach(function (c) { if (c.offsetHeight || c.offsetWidth) { c.setAttribute("data-hcs", "1"); out.push(c); } }); return out; } // five day columns then the chevron, in DOM order = left to right
+  function hcPlay(n, name, dur, delay, ease, keep) { (_hcQ || (_hcQ = [])).push([n, name, dur, delay, ease, !!keep]); }
+  function hcFlush() { // BATCHED: every start state written first, ONE forced reflow, then every animation assigned. Writing them interleaved costs a reflow per element and is what made the header "cut" instead of sweep (note 9).
+    var q = _hcQ; _hcQ = null; if (!q || !q.length) return;
+    q.forEach(function (a) { a[0].style.animation = "none"; a[0].style.opacity = a[5] ? "" : "0"; });
+    var w = el("tfWorld"); if (w) void w.offsetWidth;
+    q.forEach(function (a) {
+      var n = a[0];
+      n.style.animation = a[1] + " " + a[2].toFixed(2) + "s " + a[4] + " " + Math.round(a[3]) + "ms both";
+      n._hcExit = a[5];
+      if (!n._hcClean) { n._hcClean = 1; n.addEventListener("animationend", function (e) {
+        if (e.target !== n) return; // animationend BUBBLES — the strip, the ring and the control row all hold animating children, and an unguarded handler would flatten the whole block on a child's animation ending
+
+        // FLATTEN (design perf note): a finished `both`-filled animation keeps a compositor layer alive for the whole glide. An EXIT
+        // collapses to a plain inline opacity:0 (which is also why the stone can't reappear lit mid-glide, note 5); an ARRIVAL clears out.
+        if (n._hcExit) { n.style.opacity = "0"; n.style.animation = ""; n._hcExit = false; return; }
+        n.style.animation = ""; n.style.opacity = "";
+      }); }
+    });
+  }
+  function hcReset() { // hand every block back to plain CSS. Idempotent (_hcDone), so the per-second tick can't re-run it.
+    if (_hcDone) return; _hcDone = true;
+    var h = el("tfWorldHome"); if (!h) return;
+    [].slice.call(h.querySelectorAll("[data-hc],[data-hcs]")).forEach(function (n) { if (n.style.animation || n.style.opacity === "0") { n.style.animation = ""; n.style.opacity = ""; n._hcExit = false; } });
+  }
+  function hcExit(dirKey) { // leaving home: the mirror of the arrival — down = top-to-bottom (strip first), up = bottom-to-top
+    _hcAnimAt = wNow(); _hcDone = false;
+    var els = hcEls(), order = dirKey === "down" ? els : els.slice().reverse();
+    var name = dirKey === "down" ? "homeSinkDown" : "homeSinkUp";
+    order.forEach(function (n, i) { hcPlay(n, name, 0.3, i * 40, "cubic-bezier(.45,0,.75,.4)", true); });
+    hcFlush();
+  }
+  function hcArrive(from) { // from "up" (out of the tools) = bottom-to-top, Planner first (note 4). from "down" (out of the journey) = the exact opposite (note 10).
+    _hcAnimAt = wNow(); _hcDone = false; _hcState = "in";
+    var els = hcEls(), order = from === "up" ? els.slice().reverse() : els;
+    var name = from === "up" ? "homeRise" : "homeDrop", step = 30, dur = 0.3, t = 0;
+    order.forEach(function (n) {
+      if (n.id === "tfHomeBars") { // the strip sweeps; it never rises as one slab
+        n.style.animation = ""; n.style.opacity = ""; n._hcExit = false;
+        var cols = hcCols(n);
+        cols.forEach(function (c, j) { hcPlay(c, "homeSweep", dur * 1.05, t + j * 26, "cubic-bezier(.2,.85,.28,1)"); });
+        t += step + cols.length * 26 * 0.5; // the sweep overlaps the next block rather than blocking on it — the board reads as ONE arrival
+      } else { hcPlay(n, name, dur * 1.1, t, "cubic-bezier(.2,.85,.28,1)"); t += step; }
+    });
+    hcFlush();
+    clearTimeout(_hcT); _hcT = setTimeout(hcReset, Math.round(t + dur * 1000) + 260);
+  }
+  function hcMaybeIn() { // the settle path: armed, parked within 40px of home, nothing else running
+    var w = el("tfWorld"); if (!w || _wTouch || _wAnim) return;
+    if (!_hcArmUp && !_hcArmDown) return;
+    if (Math.abs(w.scrollTop - wHomeY()) > 40) return;
+    var from = _hcArmUp ? "up" : "down"; _hcArmUp = _hcArmDown = false; hcArrive(from);
+  }
+  function hcScrub(d) { // d = travel from home. ARM deep in a zone, PLAY on the way back — that ordering is why the cascade can fire mid-glide instead of after landing (notes 19/24/27).
+    var w = el("tfWorld"); if (!w) return;
+    if (wBusy()) { _hcArmUp = _hcArmDown = false; return; }
+    var ch = w.clientHeight, span = wSpan();
+    var pd = _wLastD == null ? d : _wLastD; _wLastD = d;
+    var up = d < pd - 0.5, down = d > pd + 0.5;
+    if (d > span * 0.6) _hcArmUp = true;                                 // deep in the tools → the next arrival comes from below
+    if (d < -ch * 0.55) _hcArmDown = true;                               // deep in the journey → it comes from above
+    if (down && d > 150 && _tcShown && _hcState !== "outDown") { _hcState = "outDown"; _hcArmUp = true; hcExit("down"); }
+    else if (up && d < -80 && _hcState !== "outUp") { _hcState = "outUp"; _hcArmDown = true; hcExit("up"); }
+    if (Math.abs(d) < 14 && _hcState !== "outDown" && _hcState !== "outUp" && wNow() - _hcAnimAt > 1900) hcReset(); // parked at home, nothing recent → plain CSS
+    if (_hcArmUp && _wAnim && up && d < 260) { _hcArmUp = _hcArmDown = false; hcArrive("up"); }        // MID-GLIDE: 260px out, while the spring is still flying
+    else if (_hcArmDown && _wAnim && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
+    else if (_hcArmUp || _hcArmDown) { clearTimeout(_hcInT); _hcInT = setTimeout(hcMaybeIn, 20); }     // …or on a 20ms-debounced settle, whichever lands first
+  }
+  // ===== THE TOOLS CASCADE — the shelf's rows, entering bottom-up as you travel down and folding away right-to-left as you leave. =====
+  var _tcShown, _tcHard = false, _tcInAt = 0, _tcInT = 0, _tcEls = null;
+  function tcEls() { // the app's shelf in the design's shape: the eight-grid's tiles · the hero rows + the caption · the six bento squares
+    var g = el("tfWorldGround"); if (!g) return [];
+    var out = [], top = el("tbxGridTop");
+    if (top) out = out.concat([].slice.call(top.children));
+    [].slice.call(g.querySelectorAll(".tbx-hero,.tbx-intro")).forEach(function (n) { out.push(n); });
+    var b = g.querySelector(".tbx-bento"); if (b) out = out.concat([].slice.call(b.children));
+    return out;
+  }
+  // A HIDDEN ROW CARRIES NO TRANSFORM. The design pre-sets `translateY(22px) scale(.9)` as the resting hidden state; at opacity 0 that
+  // is visually identical to opacity alone, but it leaves a paint transform on a tile FOREVER while you sit at home — and designAudit's
+  // locked geometry gates ("tile face 54px", "shard sizes 50 / 48") read getBoundingClientRect, so a .9 scale silently reports 52x52 and
+  // 49/47 and FAILS A SHIP. Every persistent hidden state below is opacity-only; the scale still exists where it belongs, inside the
+  // keyframes' own `from`. (Caught by A/B against shipped v1262: same face, same profile, 2 extra fails that were purely this transform.)
+  function tcFlat(n) { if (!n._tcClean) { n._tcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.transform = ""; n.style.opacity = n._tcExit ? "0" : ""; }); } } // e.target guard: animationend BUBBLES, and these rows are full of animating children (the float chevrons, tbxSettle) — an unguarded handler would clear the row on a child's animation
+  function tcCascade(dir, instant) {
+    var els = _tcEls || []; if (!els.length) return;
+    var f = (_wAnim || !_wPk) ? 1 : Math.max(1, Math.min(2.4, 0.45 / Math.max(0.05, _wPk))); // a slow drag STRETCHES the timing up to 2.4x so the rows keep pace with the finger
+    els.forEach(function (n, i) {
+      if (instant === "below" && i < 6) return;
+      n.style.animation = "none"; n.style.transition = "none"; tcFlat(n);
+      if (dir > 0) { n._tcExit = false; n.style.opacity = "0"; n.style.transform = "translateY(22px) scale(.9)"; void n.offsetWidth; n.style.animation = "youRowIn " + (0.42 * f).toFixed(2) + "s cubic-bezier(.3,1.28,.5,1) " + Math.round(i * 55 * f) + "ms both"; }
+      else if (instant) { n._tcExit = true; n.style.opacity = "0"; n.style.transform = ""; }
+      else if (i > 5) { n._tcExit = false; n.style.opacity = ""; n.style.transform = ""; }
+      else { n._tcExit = true; n.style.opacity = "1"; n.style.transform = ""; void n.offsetWidth; n.style.animation = "youRowOut .38s ease-in-out " + (20 + (i < 4 ? (3 - i) + 2 : 5 - i) * 62) + "ms both"; } // only the first six play the exit; the rest just go — the fold-away reads right-to-left across the top row
+    });
+  }
+  function tcScrub(u) { // u = fraction of the home→tools travel
+    if (!_tcEls || !_tcEls.length || !_tcEls[0].isConnected) _tcEls = tcEls();
+    if (!_tcEls.length) return;
+    if (_tcShown === undefined) { _tcShown = false; tcCascade(-1, true); }
+    var up = (_wDir || 0) < 0;
+    if (u < 0.05) _wPk = 0;
+    if (u < 0.06 && _tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); }
+    if (u < 0.06 && !_tcShown && !_tcHard) { _tcHard = true; tcCascade(-1, "below"); }
+    if (u > 0.08) _tcHard = false;
+    if (u > 0.16 && !_tcShown && !up && !(_wAnim && _wUp)) { _tcShown = true; _tcInAt = wNow(); clearTimeout(_tcInT); _tcInT = setTimeout(function () { tcCascade(1); }, 90); }
+    else if (u < (up ? 0.62 : 0.1) && _tcShown && wNow() - _tcInAt > 600 && !(_wAnim && _wDown)) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); }
+  }
+  // ---- the deliberate doors (the two HUD hints + the puck). Each ARMS the cascade, then travels. ----
+  function wGoJourney() { var w = el("tfWorld"); if (!w) return; _hcArmDown = true; _hcState = "outUp"; wScrollTo(wSkyY()); }
+  function wGoTools() { var w = el("tfWorld"); if (!w) return; wScrollTo(wToolsY()); }
+  function wGoHome() {
+    var w = el("tfWorld"); if (!w) return;
+    var from = w.scrollTop > wHomeY() ? "up" : "down";                   // ARM, never play: the board builds on ARRIVAL, not at the tap (note 23)
+    _hcArmUp = from === "up"; _hcArmDown = from === "down";
+    _hcState = from === "up" ? "outDown" : "outUp";
+    wScrollTo(wHomeY());
+  }
   function worldScrollHome(tries) {
     if (!ONEPAGE || _worldPositioned) return;
     tries = tries || 0;
@@ -5630,8 +5913,19 @@
     if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
     document.body.classList.add("home-onepage"); // puck-return CSS keys on this: at home the puck fades out (nothing to return from); .puck-away fades it back in once the scroll drifts off the home seam
-    try { onWorldScroll(); } catch (e) {} // set the initial away/home puck state for this render (landed = home = hidden)
+    try { wScrub(); } catch (e) {} // set the initial away/home puck + label state for this render (landed = home = hidden). Scrub only: a render must never arm a cascade
     worldScrollHome(); // idempotent + self-guarding: no-ops once positioned
+    wReSettle();
+  }
+  // RE-SETTLE (the design's componentDidUpdate, tightened for this app's per-second tick): a render can change the column's height under
+  // a parked user (the shelf grows a panel, the strip re-lays out) and leave home a few px off. If we are AT home, idle for half a second,
+  // with no finger, no spring, and no open card, ease those px back. Deliberately capped at 180px — beyond that you are somewhere on
+  // purpose and nothing may move you. Never a hard jump: a teleport on a routine tick is exactly the "it jitters" class of bug.
+  function wReSettle() {
+    var w = el("tfWorld"); if (!w || !wLive() || _wAnim || _wTouch || wBusy()) return;
+    if (wNow() - (_wLastT || 0) < 500) return;
+    var d = Math.abs(w.scrollTop - wHomeY());
+    if (d > 2 && d <= 180) wSpring(wHomeY(), true);
   }
   function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
     _tfhOpen = null; _tfhLadder = false; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
@@ -5640,6 +5934,16 @@
     document.body.classList.remove("home-onepage"); // leaving the one-page home → the puck is a plain always-visible return again (panes keep it lit)
     var _p = el("guardPuck"); if (_p) _p.classList.remove("puck-away");
     var _b = el("tfHomeBars"); if (_b) { _b.style.opacity = ""; _b.style.transform = ""; } // clear the scroll-linked strip fade so it never sticks dimmed on the next open
+    // …and hand every cascaded node back to plain CSS. A block left flattened at opacity:0 by an exit that never got its arrival would be
+    // INVISIBLE on the next open (note 6, "the top header is now invisible") — the one failure mode this whole engine must not ship with.
+    _wStop = true; clearTimeout(_wSnapT); clearTimeout(_hcT); clearTimeout(_hcInT); clearTimeout(_tcInT);
+    _wAnim = false; _wHold = null; _wDir = 0; _wV = 0; _wPk = 0; _wLastSt = null; _wLastT = 0; _wLastD = null; _wFlung = false;
+    _hcState = null; _hcArmUp = _hcArmDown = false; _hcAnimAt = 0; _hcDone = false; _hcQ = null;
+    _hcDone = false; try { hcReset(); } catch (e) {}
+    if (_tcEls) { _tcEls.forEach(function (n) { n.style.animation = ""; n.style.transition = ""; n.style.opacity = ""; n.style.transform = ""; }); }
+    _tcEls = null; _tcShown = undefined; _tcHard = false;
+    ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; } });
+    var _pw = document.querySelector(".tbx-planwrap"); if (_pw) { _pw.style.opacity = ""; _pw.style.pointerEvents = ""; }
     _worldPositioned = false;
   }
   // ---- ONBOARDING (mockups 041/043, §8): guardian → vibe → gender+age → life-stage → prefill bento → goals → rhythm → world born ----
@@ -17922,6 +18226,37 @@
     return { owned: stState().owned, spark: stSpark(), view: SV };
   };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
+  // WORLD-MOTION PROBE (@SEC:WORLD-MOTION): the engine's whole state in one object, plus a driver that calls the REAL zone doors.
+  // Exists because the engine is otherwise unobservable — the preview cannot fire real gestures, so without this the only way to
+  // "verify" the cascades is to watch pixels and guess, which is exactly the reporting this repo forbids. DEV.wGo drives the same
+  // wGoHome/wGoJourney/wGoTools the puck and the HUD hints use, so a probe run exercises the shipped path, not a test-only copy.
+  window.DEV.worldMotion = function () {
+    var w = el("tfWorld");
+    return { on: WM, live: wLive(), busy: wBusy(), positioned: _worldPositioned,
+      st: w ? Math.round(w.scrollTop) : null, homeY: Math.round(wHomeY()), toolsY: Math.round(wToolsY()), skyY: Math.round(wSkyY()), span: Math.round(wSpan()),
+      d: w ? Math.round(w.scrollTop - wHomeY()) : null, dir: _wDir, v: +(_wV || 0).toFixed(3), anim: _wAnim, touch: _wTouch, hold: !!_wHold, flung: _wFlung, startTop: Math.round(_wStartTop),
+      homeState: _hcState, armUp: _hcArmUp, armDown: _hcArmDown, toolsShown: !!_tcShown, hcBlocks: hcEls().length, hcCols: (function () { var b = el("tfHomeBars"); return b ? hcCols(b).length : 0; })(), tcRows: tcEls().length };
+  };
+  // THE NO-OVERSHOOT GATE. Feeds wSnapIntent a hypothetical rest position + gesture start and names the zone it would commit to, with
+  // no rAF and no timing involved. `DEV.wIntent(-100, "home")` must say "home"; only a pull past 45% of the viewport may say "journey".
+  window.DEV.wIntent = function (d, startedAt) {
+    var w = el("tfWorld"); if (!w) return null;
+    var hy = wHomeY(), keepS = _wStartTop, keepV = _wV, keepD = _wDir;
+    _wStartTop = startedAt === "tools" ? wToolsY() : (startedAt === "sky" ? wSkyY() : hy);
+    if (arguments.length > 2) { _wV = arguments[2]; _wDir = arguments[2] < 0 ? -1 : 1; }
+    var to = wSnapIntent(hy + d);
+    _wStartTop = keepS; _wV = keepV; _wDir = keepD;
+    return { to: to, zone: to === null ? "free" : (Math.abs(to - hy) < 2 ? "home" : (to === wToolsY() ? "tools" : "journey")) };
+  };
+  window.DEV.wGo = function (where) {
+    if (where === "journey") wGoJourney(); else if (where === "tools") wGoTools(); else wGoHome();
+    return DEV.worldMotion();
+  };
+  window.DEV.wAnims = function () { // what is animating RIGHT NOW, by block — the cascade's own receipt
+    var nm = function (n) { var a = (n && n.style.animation) || "", m = a.match(/\b(homeRise|homeDrop|homeSweep|homeSinkDown|homeSinkUp|youRowIn|youRowOut)\b/); return m ? m[1] : (a ? "?" : ""); };
+    var b = el("tfHomeBars");
+    return { blocks: HC_IDS.map(function (id) { return id + ":" + nm(el(id)); }), cols: b ? [].slice.call(b.children).map(function (c) { return nm(c); }) : [], rows: tcEls().slice(0, 4).map(nm) };
+  };
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.
     var W = innerWidth, H = innerHeight, out = [], ok = true;
     function chk(name, pass, got, want) { ok = ok && !!pass; out.push((pass ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); }

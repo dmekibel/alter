@@ -1818,6 +1818,18 @@
   @keyframes tbxSettle{ from{ opacity:0; transform:scaleY(.72) translateY(-8px); } to{ opacity:1; transform:none; } }
   /* ===== HOME 2c (David's pick 2026-08-02 — artifact "2c Home shipped": "clean edges, garden top-right, chevrons top and bottom"). Every px/hex below is QUOTED from that artifact; hues are never typed here — the tiles, coins and chips read the app's own TBX_HEX/DOM registry through JS. Scoped to #trackerFull.tf-2c, which only the CALM home faces carry, so the tracking face keeps its shipped status row, clock and edge doors. ===== */
   @keyframes hintFloat{ 0%,100%{ transform:translateY(0); opacity:.55; } 50%{ transform:translateY(5px); opacity:1; } }
+  /* ===== THE HOME CASCADE (design "Home Screen.dc.html" frame 2c, David's notes 1-32 — the animation contract that took the whole design session). Arrival: coming UP from tools the board builds BOTTOM-TO-TOP (homeRise), coming DOWN from the journey it builds TOP-TO-BOTTOM (homeDrop); the week strip is never a block — it SWEEPS left-to-right column by column (homeSweep, note 12) with a z-axis tilt through the strip's own 520px perspective (note 8: "a more 3d smooth effect… movement in the z axis"). Exit mirrors it (homeSinkDown/Up).
+     These use the CSS `translate`/`scale`/`rotate` PROPERTIES, never `transform` — the strip and the ring already carry their own inline transforms (the scroll-linked lift, the ring's scale), and a `transform` keyframe would stomp them. NOT a slide from the left (note 9: "i don't want it to look like the things are actually sliding from the left, i just want them to appear in a cascading manner") — the sweep is a stagger, not a translation across x. ===== */
+  @keyframes homeRise{ from{ opacity:0; translate:0 20px; } to{ opacity:1; translate:0 0; } }
+  @keyframes homeDrop{ from{ opacity:0; translate:0 -20px; } to{ opacity:1; translate:0 0; } }
+  @keyframes homeSweep{ from{ opacity:0; translate:0 10px; scale:.9; rotate:x -34deg; } 55%{ opacity:1; } to{ opacity:1; translate:0 0; scale:1; rotate:x 0deg; } }
+  @keyframes homeSinkDown{ from{ opacity:1; translate:0 0; } to{ opacity:0; translate:0 18px; } }
+  @keyframes homeSinkUp{ from{ opacity:1; translate:0 0; } to{ opacity:0; translate:0 -18px; } }
+  /* the TOOLS shelf cascade: rows enter bottom-up as you travel down into the ground, exit right-to-left when you leave upward (the pre-existing grammar the home cascade was built to mirror in reverse — note 4). */
+  @keyframes youRowIn{ from{ opacity:0; transform:translateY(18px) scale(.92); } 60%{ opacity:1; } to{ opacity:1; transform:translateY(0) scale(1); } }
+  @keyframes youRowOut{ from{ opacity:1; transform:translateY(0) scale(1); } to{ opacity:0; transform:translateY(10px) scale(.97); } }
+  /* the strip's own 3D room — the sweep's rotate:x is only visible through a perspective on the COLUMNS' parent. 520px is the design's value. */
+  #trackerFull.tf-2c #tfHomeBars{ perspective:520px; transform-style:preserve-3d; }
   /* the HUD REPLACES the clock-left + gems-right status row. It floats on .tf-inner at the exact top that row used (env(safe-top) + 11px), so the strip below keeps the place the board gates measure. */
   #tfHud{ display:none; }
   #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:calc(env(safe-area-inset-top,0px) + 11px); left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
@@ -1831,6 +1843,8 @@
   .tfh-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-hint i{ font-size:20px; color:#c77ea3; line-height:1; animation:hintFloat 2.2s ease-in-out infinite; }
   .tfh-hint span{ font-family:"Jost",sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; color:#8a6d85; }
+  /* the HOME label shares the JOURNEY label's centre slot and CROSSFADES with it as you travel down (design: JOURNEY fades out over the first 70px, HOME fades in 150->290px and hides the instant you move up). Both are driven by direct style writes on the scroll listener — never by a re-render. */
+  #tfHudHome{ opacity:0; pointer-events:none; }
   .tfh-garden{ margin-left:auto; flex:0 0 auto; display:flex; align-items:center; border:2px solid rgba(79,208,138,.4); background:rgba(79,208,138,.1); padding:5px 11px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-garden i{ font-size:15px; color:#4fd08a; line-height:1; }
   .tfh-garden:active{ transform:translateY(1px); }
@@ -3990,6 +4004,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1262"></script>
+  <script src="app.js?v=1267"></script>
 </body>
 </html>
