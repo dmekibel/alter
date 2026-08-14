@@ -5254,6 +5254,11 @@
       hj.onclick = function (e) { if (e) e.stopPropagation(); tfhGoJourney(); };
       gc.onclick = function (e) { if (e) e.stopPropagation(); if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e2) {} } try { setPaneRest("game"); } catch (e2) {} }; // the app's OWN garden door path (it tears the cockpit down first); a bare openGame() would leave home layered over the world
     } else if (hud.parentNode !== inner) inner.appendChild(hud);
+    // THE YOU DOOR'S GLYPH (David's device review 2026-08-14): the design's top-left is ti-adjustments-horizontal, not the sparkle — an
+    // 18px #ff8fc0 line-glyph on nothing (the .tf-2c CSS strips the circle's border and fill; the 28x28 hit area stays). Written here
+    // rather than at build time so a HUD created before this line existed is corrected on its next render; idempotent, no innerHTML, and
+    // the button's own onclick (the guardian card) is untouched.
+    var _spi = hud.querySelector("#tfHudSpark i"); if (_spi && _spi.className !== "ti ti-adjustments-horizontal") _spi.className = "ti ti-adjustments-horizontal";
     var b = hud.querySelector(".tfh-gems b"); if (b) b.textContent = ((S.game && S.game.spark) || 0).toLocaleString();
     var ck = el("tfClock"); if (ck) ck.textContent = ""; // the home face shows NO clock (the status bar already does); the CSS hides it, this empties it too
   }
@@ -6297,9 +6302,14 @@
   }
   function tbxSquare(host, cat) { // a collapsible mini-bento: 2x2 preview of the category's item coins + the name; NO abstract category icon on the face (the contents preview IS the signifier)
     var sq = add(host, "button", "tbx-square"); sq.setAttribute("aria-label", tr(cat.name)); sq.setAttribute("data-tbxcat", cat.id);
-    sq.style.background = "color-mix(in srgb, " + tbxVar(cat.dom) + " 16%, #14060e)"; sq.style.boxShadow = "0 4px 0 color-mix(in srgb, " + tbxVar(cat.dom) + " 20%, #000)";
+    // THE FOLDER BOX'S WASH + LIP (David's device review 2026-08-14). The frame mixes the folder's own hue at 12% into #120a12 and lips it
+    // at 16% into black; the app's pre-2c recipe was 16% into #14060e over a 20% lip, which read as a lighter, flatter box. Only the two
+    // MIX BASES are design constants — the hue itself still comes from the folder registry, never a typed hex (law 4).
+    var _f2c = tfh2c();
+    sq.style.background = _f2c ? ("color-mix(in srgb, " + tbxVar(cat.dom) + " 12%, #120a12)") : ("color-mix(in srgb, " + tbxVar(cat.dom) + " 16%, #14060e)");
+    sq.style.boxShadow = "0 4px 0 color-mix(in srgb, " + tbxVar(cat.dom) + (_f2c ? " 16%, #000)" : " 20%, #000)");
     var prev = add(sq, "div", "tbx-sq-prev");
-    cat.items.slice(0, 4).forEach(function (iid) { var it = TBX_ITEMS[iid]; if (!it) return; var mc = add(prev, "div", "tbx-sq-mini"); mc.style.background = tbxVar(it.dom); mc.style.boxShadow = tbxLip(tbxVar(it.dom)); add(mc, "i", "ti " + it.ti); });
+    cat.items.slice(0, 4).forEach(function (iid) { var it = TBX_ITEMS[iid]; if (!it) return; var mc = add(prev, "div", "tbx-sq-mini"); mc.style.background = tbxVar(it.dom); mc.style.boxShadow = _f2c ? ("0 3px 0 " + tfhDeep(tbxVar(it.dom))) : tbxLip(tbxVar(it.dom)); add(mc, "i", "ti " + it.ti); }); // the 2c chip takes the frame's 3px offset on the card language's own deep hue (tfhDeep, the deck/grid lip colour) — the 4px color-mix 45% lip is the pre-2c chip
     var nm = add(sq, "span", "tbx-sq-name", tr(cat.name)); nm.style.color = tbxVar(cat.dom);
     sq.onclick = function () { try { tbxOpenCat(cat.id, host); } catch (e) {} };
     return sq;
@@ -18443,7 +18453,15 @@
     // ===== HOME 2c GATES (David's pick 2026-08-02) — the face the doors used to guard =====
     var _hud = el("tfHud"), _hsp = el("tfHudSpark"), _hgd = el("tfHudGarden"), _hjn = el("tfHudJourney"), _thint = el("tfToolsHint");
     var _spr = _hsp ? _hsp.getBoundingClientRect() : null;
-    chk("HUD sparkle 28px circle", !!(_hsp && Math.round(_spr.width) === 28 && Math.round(_spr.height) === 28 && parseFloat(getComputedStyle(_hsp).borderTopLeftRadius) >= 14), _hsp ? (Math.round(_spr.width) + "x" + Math.round(_spr.height) + " r" + getComputedStyle(_hsp).borderTopLeftRadius) : "missing", "28x28, fully round");
+    chk("HUD you-door 28px hit area", !!(_hsp && Math.round(_spr.width) === 28 && Math.round(_spr.height) === 28 && parseFloat(getComputedStyle(_hsp).borderTopLeftRadius) >= 14), _hsp ? (Math.round(_spr.width) + "x" + Math.round(_spr.height) + " r" + getComputedStyle(_hsp).borderTopLeftRadius) : "missing", "28x28, fully round");
+    // …and it is a BARE GLYPH (David's device review 2026-08-14): the frame's you-door has border-style:none over a transparent fill with an
+    // 18px ti-adjustments-horizontal in #ff8fc0. The framed circle + 13px sparkle this replaces is the variant the design's default rejects.
+    var _spcs = _hsp ? getComputedStyle(_hsp) : null, _spi2 = _hsp ? _hsp.querySelector("i") : null, _spis = _spi2 ? getComputedStyle(_spi2) : null;
+    chk("HUD you-door is a bare glyph (no ring, no fill)", !!(_spcs && parseFloat(_spcs.borderTopWidth || 0) === 0 && (_spcs.backgroundColor === "rgba(0, 0, 0, 0)" || _spcs.backgroundColor === "transparent")), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " · bg " + _spcs.backgroundColor) : "missing", "0px border on a transparent fill");
+    chk("HUD you-door glyph ti-adjustments-horizontal 18px", !!(_spi2 && _spi2.classList.contains("ti-adjustments-horizontal") && Math.round(parseFloat(_spis.fontSize)) === 18 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-adjustments-horizontal · 18px · rgb(255,143,192)");
+    var _pwr = document.querySelector("#trackerFull .tbx-planwrap"), _pws = _pwr ? getComputedStyle(_pwr) : null;
+    var _pwsc = _pws ? (_pws.scale !== "none" ? parseFloat(_pws.scale) : NaN) : NaN, _pwty = _pws ? parseFloat(String(_pws.translate).split(/\s+/)[1] || "0") : NaN;
+    chk("planner wrapper drops 12px at 1.06 (frame)", Math.abs(_pwsc - 1.06) <= 0.005 && Math.abs(_pwty - 12) <= 0.5, _pwr ? ("scale " + _pws.scale + " · translate " + _pws.translate) : "missing", "scale 1.06 · translate 0 12px — David's \"the planner looks too high up\""); // properties, not transform: wScrub owns this node's opacity and must not be fighting a transform write
     var _gcs = _hgd ? getComputedStyle(_hgd) : null, _gci = _hgd ? _hgd.querySelector("i") : null;
     chk("HUD garden chip (leaf on the .4 green rim)", !!(_gcs && _gcs.borderTopColor === "rgba(79, 208, 138, 0.4)" && _gci && getComputedStyle(_gci).color === "rgb(79, 208, 138)"), _gcs ? (_gcs.borderTopColor + " · " + (_gci ? getComputedStyle(_gci).color : "no leaf")) : "missing", "rgba(79,208,138,0.4) rim + rgb(79,208,138) leaf");
     var _jci = _hjn ? _hjn.querySelector("i") : null, _tci = _thint ? _thint.querySelector("i") : null;
@@ -18451,7 +18469,11 @@
     var _pills = [].slice.call(document.querySelectorAll("#tfHomeBars .tf-hb-bar"));
     chk("week strip = 5 pills, 13px, radius 999", _pills.length === 5 && _pills.every(function (p) { return Math.round(p.getBoundingClientRect().height) === 13 && parseFloat(getComputedStyle(p).borderTopLeftRadius) >= 99; }), _pills.length + " pills · " + (_pills[0] ? Math.round(_pills[0].getBoundingClientRect().height) + "px r" + getComputedStyle(_pills[0]).borderTopLeftRadius : "-"), "5 × 13px at radius 999px");
     var _hf = [].slice.call(document.querySelectorAll("#tfHeroRow .tfh-face"));
-    chk("hero row = 4 tiles, 50px face, #fff2f9 glyph", _hf.length === 4 && _hf.every(function (f) { var r = f.getBoundingClientRect(), g = f.querySelector("i"); return Math.round(r.width) === 50 && Math.round(r.height) === 50 && !!g && getComputedStyle(g).color === "rgb(255, 242, 249)"; }), _hf.length + " tiles · " + (_hf[0] ? Math.round(_hf[0].getBoundingClientRect().width) + "x" + Math.round(_hf[0].getBoundingClientRect().height) : "-"), "4 × 50x50 with the white glyph");
+    // THE DECK RIDES AT 96% (frame: row one's wrapper carries an authored scale(0.96) — no opacity, no animation beside it, so it is a
+    // size and not a cascade frame): the 50px tile RENDERS at 48. The gate reads the rendered rect, so it locks the scale AND the tile.
+    chk("hero row = 4 tiles, 50px face rendered at 48 (deck scale .96), #fff2f9 glyph", _hf.length === 4 && _hf.every(function (f) { var r = f.getBoundingClientRect(), g = f.querySelector("i"); return Math.abs(r.width - 48) <= 1 && Math.abs(r.height - 48) <= 1 && f.offsetWidth === 50 && !!g && getComputedStyle(g).color === "rgb(255, 242, 249)"; }), _hf.length + " tiles · " + (_hf[0] ? (Math.round(_hf[0].getBoundingClientRect().width * 10) / 10 + " rendered / " + _hf[0].offsetWidth + " laid out") : "-"), "4 × 48±1 rendered on a 50px box, white glyph");
+    var _hrs = el("tfHeroRow") ? getComputedStyle(el("tfHeroRow")) : null, _hrsc = _hrs ? (_hrs.scale !== "none" ? parseFloat(_hrs.scale) : (String(_hrs.transform).match(/matrix\(([\d.]+)/) || [])[1]) : null;
+    chk("deck wrapper scale .96", !!_hrsc && Math.abs(parseFloat(_hrsc) - 0.96) <= 0.005, _hrsc || "none", "0.96 (the frame's own row-one scale)");
     var _chrome = ""; [].slice.call(document.querySelectorAll("#tfHeroRow *")).forEach(function (n) { var s = getComputedStyle(n); if (parseFloat(s.borderTopWidth || 0) > 0 || (s.outlineStyle && s.outlineStyle !== "none") || /0px\s+0px\s+0px\s+\d/.test(s.boxShadow)) _chrome += (n.className || n.tagName) + " "; });
     chk("hero tiles carry NO selection chrome", !_chrome, _chrome || "clean", "no outline, ring or border anywhere in the row (David 2026-08-02) — the open card is the only selection signal");
     var _ckE = el("tfClock");
@@ -18480,7 +18502,14 @@
       chk("selected dose chip wears the 115deg stripe", _si.indexOf("115deg") >= 0, _si ? _si.slice(0, 52) : (_sel ? "no gradient" : "no selected chip"), 'backgroundImage contains "115deg"');
       if (!_wasOpen) { try { tfhOpenDose("firstLight"); } catch (e) {} }
     }
-    if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
+    // THE FOLDER BOX. On the 2c face the frame draws a FIXED 98px card, not a square: height 98 / radius 18 / a 12%-of-its-own-hue wash on
+    // #120a12 under a 16% lip. Measured off the resting markup — the 88px the prototype renders is that same 98 seen mid-cascade
+    // (opacity 0 + translateY(22px) scale(.9) sits on the hidden folder boxes, per-element, never on a wrapper), which is a frame of an
+    // animation and not a size. Everywhere else the shipped aspect-1 square gate stands.
+    if (square) { var sqr = square.getBoundingClientRect(), sqs = getComputedStyle(square);
+      if (_2c) { chk("folder box 98px tall at r18", Math.abs(square.offsetHeight - 98) <= 1 && Math.round(parseFloat(sqs.borderTopLeftRadius)) === 18, square.offsetHeight + "px tall · r" + sqs.borderTopLeftRadius, "98px at r18px (the frame's own card)");
+        chk("folder wash 12% hue on #120a12 + 16% lip", /0px\s+4px\s+0px/.test(sqs.boxShadow) && sqs.backgroundColor !== "rgba(0, 0, 0, 0)", sqs.backgroundColor + " · " + sqs.boxShadow.slice(0, 34), "the folder's own hue mixed 12% into #120a12, lipped 0 4px 0 at 16% into black"); }
+      else chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     var _gz = el("tfWorldGround"); if (_gz) { var _gpb = parseFloat(getComputedStyle(_gz).paddingBottom) || 0; chk("ground bottom air", _gpb >= 32, Math.round(_gpb) + "px", "≥32px below the last toolbox row"); } // GROUND BOTTOM AIR (David device 2026-08-01 "the tools on the bottom are too close to the bottom"): the ground zone must always end on a real band of air (plus env(safe-area-inset-bottom) on device) so the last folder-square row never sits under the floating puck / home indicator
     // THE TOOLS-LANDING GATES. A SCROLL LANDING IS A STATE, so its geometry is locked here rather than left to be eyeballed (the v1267
     // miss). REWRITTEN 2026-08-14 for the DECK-ANCHORED law from David's screen recording: the deck does NOT leave at the tools landing,
@@ -18500,7 +18529,7 @@
         var _seat = _absTop(_deck) - _max2; // where the deck's top sits inside the viewport once the column is parked at the landing
         chk("tools landing seats the deck", isFinite(_seat) && _seat >= 68 && _seat <= _wv.clientHeight / 2, (isFinite(_seat) ? Math.round(_seat) : "unmeasurable") + "px from the screen top", "68px…half a viewport (row one parks under the HUD, never mid-screen)");
         var _gap2 = _absTop(el("tbxGridTop")) - (_absTop(_deck) + _deck.offsetHeight);
-        chk("deck hands straight into the grid", isFinite(_gap2) && _gap2 <= 60, (isFinite(_gap2) ? Math.round(_gap2) : "unmeasurable") + "px between the deck and the grid", "≤60px (one row gap — no home chrome left between two tool rows)");
+        chk("deck hands straight into the grid", isFinite(_gap2) && _gap2 <= 20, (isFinite(_gap2) ? Math.round(_gap2) : "unmeasurable") + "px between the deck and the grid", "≤20px (the frame hands row one into row two at 11; ≤60 was loose enough to ship the 25px gap David caught on device)");
       } else {
         var _tail = (_hz2.offsetTop + _hz2.offsetHeight) - _max2; // px of home still on screen at the tools landing
         chk("tools landing clears home", _tail <= 2, Math.round(_tail) + "px of home visible", "≤2px (with no deck to ride up, home must leave entirely)");

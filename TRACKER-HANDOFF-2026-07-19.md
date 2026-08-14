@@ -877,3 +877,23 @@ stack-card law on the 2c shelf grid (picker/editor keep 54). Night/claim/break i
 
 **DEVICE-UNTESTED:** the board computes ~918px at 430x932 — fits with ~14px slack in the planner→deck gap, the tightest number
 in the build; on a ≤812pt phone the TOOLS hint sits under the fold. Only the phone judges both.
+
+## v1277 — ROUND 3 FIDELITY (David's five: planner height, HUD icon, row gap, scale, folders) + THE MACHINE DIFF
+
+All five, measured off the running prototype and gate-locked (audit 58→63, ALL PASS at 375 AND 430x932):
+- HUD left = the You door as the design's BARE glyph: ti-adjustments-horizontal 18px #ff8fc0, no ring, no fill (the
+  bordered sparkle chip was the exact variant the design's own default rejects). Handler untouched.
+- Planner wrapper translate 0 12px + scale 1.06 (the frame's literal transform — this WAS "the planner looks too high").
+- Deck row scale .96 (renders 48 on the 50 box, the frame's own hierarchy vs the 50 grid).
+- Landing deck→grid gap 25→11 (ground pull -44→-58, derived by measurement; gate tightened ≤60→≤20).
+- Folders = the authored recipe verbatim: 98px tall (David's tuned value, not the 95 default), r18, wash color-mix(hue
+  12%, #120a12), lip 0 4px 0 color-mix(hue 16%, #000), pad 8 6 5, chips 30/r10/0 3px 0 deep/glyph 14, label Baloo 800 12.
+
+**NEW TOOLING: `_dev/design-diff-2c.js`** — the full-surface machine diff (every mapped element, prototype vs app,
+computed styles + rects). Born from David's "why don't you know? fix it so I don't have to tell you": the per-gate
+approach only watches named numbers; the map watches everything. It already earned its keep twice in one hour: caught
+the folder drift, then nearly poisoned the build with the FROZEN-CASCADE TRAP (the prototype's shelf rows report their
+keyframe from-state — translateY(22) scale(.9), opacity 0 — while parked; the Opus builder caught it with the
+authored-vs-animated test now documented in the file header). Read that header before trusting any dump.
+
+DEVICE-UNTESTED: the five fixes' feel on the phone; the deck seat grows with viewport height (168px at 430x932).
