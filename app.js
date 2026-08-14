@@ -5552,7 +5552,7 @@
       // FLING CATCH: a decisive flick doesn't wait for the settle timer — it commits to the destination immediately. Latched once per gesture.
       if (!_wAnim && !_wFlung && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
         var hy = wHomeY(), ty = wToolsY(), st = world.scrollTop;
-        if (iv > 0 && st > hy - 6 && st < ty - 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(ty, false); }
+        if (iv > 0 && st > hy - 6 && st < ty - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
         else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
         else if (iv < -0.7 && st <= hy + 6 && st > 6 && !_wHold) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick from home reaches the journey
       }
@@ -5658,7 +5658,46 @@
   function wNow() { try { return performance.now(); } catch (e) { return Date.now(); } }
   // THE THREE ANCHORS. Home is worldHomeTarget() (NOT home.offsetTop) so the spring lands exactly where the boot landing did.
   function wHomeY() { return worldHomeTarget(); }
-  function wToolsY() { var w = el("tfWorld"); return w ? Math.max(0, w.scrollHeight - w.clientHeight) : 0; } // the shelf's own device-tuned bottom padding does the centering the design's _measurePad did (see the "ground bottom air" gate) — do NOT add a measured pad on top of it
+  function wToolsY() { var w = el("tfWorld"); return w ? Math.max(0, w.scrollHeight - w.clientHeight) : 0; }
+  // THE TOOLS LANDING IS A WHOLE SCREEN (David device frames 2026-08-14 — v1267 shipped broken here, and the break was my own
+  // deviation #1: I read the design's _measurePad as cosmetic centering and skipped it. It is not cosmetic. The shelf (~610px) is
+  // SHORTER than the viewport, so without a measured pad scrollHeight-clientHeight can never carry home off-screen — 163px of the
+  // home zone's tail, the practice deck, stayed pinned OVER the fixed HUD at the tools landing, with a dead band under it. His
+  // reality screenshot is exactly that geometry; the same 163px reproduces in the preview, so this was CATCHABLE before shipping
+  // by diffing the tools-landing state against the frame — the LAW-7 gate this build skipped.)
+  // The scheme, adapted from the design's _measurePad to this app's taller shelf: the ground zone gets a measured TOP inset that
+  // seats the grid below the HUD (the design floors it at 70px inside a frame with no real notch; on device the safe-top rides on
+  // top), and a BOTTOM pad that makes inset+shelf+pad fill the viewport exactly — so at the landing home is FULLY gone (the deck
+  // included: the shelf's eight-grid already carries those four stacks, riding the deck into the tools screen would double them)
+  // and the grid's first row sits at the inset, which is where the frame puts it. The CSS's own safe-area+72 stays the bottom
+  // FLOOR (designAudit's "ground bottom air" gate), so a shelf taller than the viewport keeps David's tuned air untouched.
+  var _safeTpx = null, _safeTProbe = null;
+  function safeTopPx() { // top inset twin of safeBottomPx: 0 in the preview, ~59 on a notched iPhone
+    if (_safeTpx) return _safeTpx;
+    try {
+      if (!_safeTProbe && document.body) {
+        _safeTProbe = document.createElement("div");
+        _safeTProbe.id = "tfSafeTProbe";
+        _safeTProbe.setAttribute("style", "position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);");
+        document.body.appendChild(_safeTProbe);
+      }
+      if (_safeTProbe) { var v = parseFloat(getComputedStyle(_safeTProbe).paddingTop); if (isFinite(v) && v > 0) _safeTpx = v; }
+    } catch (e) {}
+    return _safeTpx || 0;
+  }
+  function wMeasurePad() {
+    var w = el("tfWorld"), g = el("tfWorldGround"); if (!w || !g) return;
+    var tbx = g.querySelector(".tbx"); var C = tbx ? tbx.offsetHeight : 0;
+    if (!C) return;
+    var H = w.clientHeight; if (!H) return;
+    var base = safeBottomPx() + 72;                                              // = the .tfw-ground CSS rule's own padding-bottom
+    var inset = Math.max(safeTopPx() + 70, (H - C) / 2 + 16);                    // grid top at the landing: below the HUD, or centered when the shelf is short
+    var pad = Math.max(base, Math.round(H - inset - C));                         // top + shelf + bottom = one full viewport (floored, never under David's air)
+    var curT = parseFloat(g.style.paddingTop), curB = parseFloat(g.style.paddingBottom);
+    if (!isFinite(curT)) curT = -1; if (!isFinite(curB)) curB = -1;              // unset inline padding parses to NaN, and NaN fails every comparison — the first write would silently never happen (the v1268 bug)
+    if (Math.abs(curT - inset) > 1) g.style.paddingTop = Math.round(inset) + "px";
+    if (Math.abs(curB - pad) > 1) g.style.paddingBottom = pad + "px";            // write only on a real change — this runs before every snap
+  }
   function wSkyY() { var w = el("tfWorld"); return w ? Math.max(0, wHomeY() - w.clientHeight) : 0; }
   function wSpan() { return Math.max(1, wToolsY() - wHomeY()); } // home→tools travel: the denominator every threshold below is a fraction OF
   function wLive() { var tf = el("trackerFull"), w = el("tfWorld"); return !!(WM && ONEPAGE && w && _worldPositioned && tf && tf.classList.contains("tf-onepage") && tf.classList.contains("tf-onehome")); }
@@ -5725,6 +5764,7 @@
   }
   function wMaybeSnap() {
     var w = el("tfWorld"); if (!w || !wLive() || _wAnim || _wTouch || wBusy() || wNow() < _wNoSnap) return;
+    wMeasurePad();                                                    // the tools landing must be a WHOLE screen before we decide to fly to it
     var to = wSnapIntent();
     if (to === null || Math.abs(w.scrollTop - to) < 0.5) return;
     wSpring(to, to === wHomeY());                                       // soft to home/journey, firm to tools
@@ -5869,7 +5909,7 @@
   }
   // ---- the deliberate doors (the two HUD hints + the puck). Each ARMS the cascade, then travels. ----
   function wGoJourney() { var w = el("tfWorld"); if (!w) return; _hcArmDown = true; _hcState = "outUp"; wScrollTo(wSkyY()); }
-  function wGoTools() { var w = el("tfWorld"); if (!w) return; wScrollTo(wToolsY()); }
+  function wGoTools() { var w = el("tfWorld"); if (!w) return; wMeasurePad(); wScrollTo(wToolsY()); }
   function wGoHome() {
     var w = el("tfWorld"); if (!w) return;
     var from = w.scrollTop > wHomeY() ? "up" : "down";                   // ARM, never play: the board builds on ARRIVAL, not at the tap (note 23)
@@ -5883,6 +5923,7 @@
     if (_worldPosTo) { clearTimeout(_worldPosTo); _worldPosTo = 0; } // one loop at a time
     try {
       var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return;
+      try { wMeasurePad(); } catch (e) {} // fit the ground before the landing math — the retry loop makes this the one call guaranteed to run once layout is real
       void world.offsetHeight; // force layout current (rAF is throttled in the preview — this repo relies on reflow instead)
       var peek = WORLD_PEEK; // the sky sliver above HOME
       var target = worldHomeTarget(); // home.offsetTop - peek + env(safe-area-inset-bottom) + 8, clamped to the scroller's max — computed in ONE place so the HOME MAGNET settles onto exactly the seam the landing chose
@@ -5913,6 +5954,7 @@
     if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
     document.body.classList.add("home-onepage"); // puck-return CSS keys on this: at home the puck fades out (nothing to return from); .puck-away fades it back in once the scroll drifts off the home seam
+    try { wMeasurePad(); } catch (e) {} // the shelf just (re)rendered — re-fit the ground to the viewport before anything measures the column
     try { wScrub(); } catch (e) {} // set the initial away/home puck + label state for this render (landed = home = hidden). Scrub only: a render must never arm a cascade
     worldScrollHome(); // idempotent + self-guarding: no-ops once positioned
     wReSettle();
@@ -18345,6 +18387,19 @@
     }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     var _gz = el("tfWorldGround"); if (_gz) { var _gpb = parseFloat(getComputedStyle(_gz).paddingBottom) || 0; chk("ground bottom air", _gpb >= 32, Math.round(_gpb) + "px", "≥32px below the last toolbox row"); } // GROUND BOTTOM AIR (David device 2026-08-01 "the tools on the bottom are too close to the bottom"): the ground zone must always end on a real band of air (plus env(safe-area-inset-bottom) on device) so the last folder-square row never sits under the floating puck / home indicator
+    // THE TOOLS-LANDING GATES (David device frames 2026-08-14 — v1267 shipped with the practice deck pinned OVER the HUD at the tools
+    // landing, a 163px home tail the preview reproduced but no gate measured; his screenshot was the audit. Locked so this class of
+    // drift FAILS A SHIP): at the landing scrollTop (scrollHeight-clientHeight, after wMeasurePad) the HOME ZONE MUST BE FULLY GONE
+    // and the shelf's first row must sit clear of the HUD band. Pure layout math on the resting column — no scrolling, no rAF.
+    if (_gz && el("tfWorldHome") && document.querySelector("#tfWorldGround .tbx")) {
+      try { wMeasurePad(); } catch (e) {}
+      var _wv = el("tfWorld"), _hz2 = el("tfWorldHome");
+      var _max2 = Math.max(0, _wv.scrollHeight - _wv.clientHeight);
+      var _tail = (_hz2.offsetTop + _hz2.offsetHeight) - _max2; // px of home still on screen at the tools landing
+      chk("tools landing clears home", _tail <= 2, Math.round(_tail) + "px of home visible", "≤2px (the deck must never hang over the tools screen)");
+      var _gpt = parseFloat(getComputedStyle(_gz).paddingTop) || 0;
+      chk("tools grid below the HUD band", _gpt >= 70, Math.round(_gpt) + "px top inset", "≥70px (+safe-top on device) so the first row clears the HUD");
+    }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     // ===== THE GARDEN GATES (David 2026-08-12, born from the coin column shipping reversed, mis-glyphed and undersized —
     // "this class of failure should fail a ship, not reach me"). These are LOCKED BOARD NUMBERS: the audit is the contract.

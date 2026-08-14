@@ -796,3 +796,23 @@ Untested for a different reason: the Planner-pill fade (230→300px) — the pre
 
 **Knobs if the feel is off:** `WM = false` reverts to the v1208 magnet in one line. Stagger 30ms (home) / 55ms (shelf); spring
 `k` .000055 soft / .00009 firm; snap delay 30ms idle / 260ms touching; fling thresholds .85 down / .55 up / .7 up-at-home.
+
+## v1271 — TOOLS-LANDING FIX (David's device frames 2026-08-14: "expectation vs reality")
+
+**The bug:** at the tools landing the practice deck hung over the HUD with a dead band under it. **The cause was v1267's
+deviation #1** — I skipped the design's `_measurePad` as "cosmetic centering." It is not: the shelf (~610px) is shorter than the
+viewport, so without a measured pad the column physically cannot scroll home away; 163px of home's tail (the deck) stayed pinned
+at the top. Reproduced exactly in the preview — meaning it was catchable before shipping, and wasn't, because I diffed keyframes
+and landings by STATE but never screenshot-diffed the TOOLS LANDING against the frame (the LAW-7 gate; I treated this as a motion
+build, not a design ship. A scroll landing IS a designed state.)
+
+**The fix (`wMeasurePad`):** ground gets a measured TOP inset (≥70px + safe-top — seats the grid below the HUD, centered when the
+shelf is short) + a BOTTOM pad making inset+shelf+pad exactly one viewport, floored at the CSS's safe-area+72 so a tall shelf keeps
+the tuned air. Home now fully exits (tail 1px); grid top lands at 134px (preview). Deck rides out with home — the eight-grid already
+carries those four stacks, so nothing is doubled on the tools screen.
+
+**The gate:** +2 designAudit checks (audit 47→53 with the motion probes): "tools landing clears home" (≤2px) and "tools grid below
+the HUD band" (≥70px inset). This class of drift now fails a ship mechanically. Screenshot of the tools landing diffed
+element-by-element against David's frame: matches.
+
+DEVICE-UNTESTED: the landing feel with the new ~460px-longer travel; safe-top probe values on the notch.
