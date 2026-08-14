@@ -816,3 +816,39 @@ the HUD band" (≥70px inset). This class of drift now fails a ship mechanically
 element-by-element against David's frame: matches.
 
 DEVICE-UNTESTED: the landing feel with the new ~460px-longer travel; safe-top probe values on the notch.
+
+## v1273 — THE DECK-ANCHORED TOOLS LANDING (David's video + the RUNNING prototype; supersedes v1271's landing)
+
+v1271 was wrong in the opposite direction: it scrolled the deck AWAY with home. David's video (Downloads/animatioinscreen.mov,
+frame-dumped to scratchpad) shows the design truth: **the deck stays** — it rides up and becomes the tools screen's first row,
+and the shelf cascades in below it. The design's `_measurePad` measuring from `row1.top` encodes exactly this; both prior rounds
+"interpreted" that code instead of running it.
+
+**Root-cause law added (CLAUDE.md DESIGN AUTHORITY LAW 8, committed):** a `.dc.html` bundle is a RUNNING PROGRAM. Drive it to
+every rest state and extract each landing's geometry numerically as acceptance targets before porting. The prototype, run live,
+gave: deck parks 139px from frame top, row2 11px below it (its -62px pull), 108px measured pad.
+
+**Built (Opus agents, Fable-orchestrated + audited):**
+- `wMeasurePad` deck-anchored: C = deck top → shelf bottom (client-rect, scale-guarded); inset = max(safe-top+70, centered);
+  padB floored at safe-area+72; padT 0. No-deck faces (night/break/claim wear tf-2c without a deck) keep the v1271 scheme + a
+  measured pull-compensation the builder caught failing (42px hangover) — flagged, verified, kept.
+- 2c grid dedupe: `#tbxGridTop` under 2c excludes the four deck ids → Body/Heart/Vision/Build. Deck 4 + grid 4 = the same
+  8 distinct stacks, split so the first row rides in from home. Off-2c byte-identical.
+- `.tfw-ground` margin-top -44px under 2c closes the deck→grid gap (25px at the landing); the overlapped band is opacity-0 +
+  **pointer-events none** (tap-trap confirmed real by elementFromPoint, then closed; hint taps land on the hint).
+- designAudit gates rewritten face-aware: deck present → "seats the deck" [68px, half-viewport] + "hands straight into the grid"
+  ≤60px; no deck → the v1271 pair. Also the three tile-hue gates made order-agnostic (collateral of the dedupe).
+- Constants audit vs the Component class (exhaustive, agent-run): 2 real port bugs fixed — the JOURNEY hint's tap now dies at
+  tp>40 (was ~66), and `wGoJourney` no longer pre-sets `_hcState` (it was silently SKIPPING the homeSinkUp exit cascade on the
+  button path; scroll now drives it, same as the design). +1 nuance ported: both HUD labels SLIDE as they fade (journey rides up
+  with the scroll, HOME rises in from 14px) via the CSS `translate` property. Deliberate deviations (no teleport re-settle,
+  free-scroll past one viewport, opacity-only hidden rows, safe-area floors) re-confirmed and documented in place.
+
+**Verified (idle face, live):** deck at 125px at the landing, gap 25px, grid Body/Heart/Vision/Build, audit 53/53 PASS, wIntent
+battery all-pass, zero console errors, ratchets clean. Tools-landing + home-rest screenshots diffed against the video frames.
+
+**ONE OPEN CONFLICT for David:** his frame's second row repeats Night Stack (it's in the deck AND row two); the app substitutes
+Body to keep all 8 distinct per the locked "one grid of 8". Say the word if the literal frame should win.
+
+**DEVICE-UNTESTED:** the whole feel — the deck riding continuously, cascade timing below it, the JOURNEY button now playing the
+exit cascade, label slide, landing seat on the real notch.

@@ -5513,8 +5513,9 @@
       // PUCK: shown in the sky always; otherwise shown when you're away from home — but NEVER while moving up, so it is already
       // gone before you could watch it scale to nothing (note 16). Hidden outright under an open card.
       away = zn === "sky" ? true : (wBusy() || (_wDir || 0) < 0 ? false : (zn !== "home" || tp > 66));
-      var hj = el("tfHudJourney"); if (hj) { var jo = 1 - Math.min(1, tp / 70); hj.style.opacity = String(jo); hj.style.pointerEvents = jo < 0.05 ? "none" : ""; } // the JOURNEY invitation is spent the moment you head down
-      var hh = el("tfHudHome"); if (hh) { var ho = (_wDir || 0) < 0 ? 0 : Math.max(0, Math.min(1, (tp - 150) / 140)); hh.style.opacity = String(ho); hh.style.pointerEvents = ho > 0.5 ? "auto" : "none"; } // …and HOME takes its place, gone again the instant you turn back
+      // The two centre labels are tp-LINKED IN BOTH AXES (design values): the JOURNEY hint's TAP dies at 40px of downward travel while its fade only completes at 70, and it rides up with the scroll (jnyOffY = -tp). HOME rises into its seat from 14px below as it fades in. Written to the separate CSS `translate` PROPERTY, never transform, because .tfh-hint's centering lives in transform:translate(-50%,-50%) — same translate-not-transform idiom as the home cascade (see the homeRise keyframes comment in index.html).
+      var hj = el("tfHudJourney"); if (hj) { var jo = 1 - Math.min(1, tp / 70); hj.style.opacity = String(jo); hj.style.translate = "0 " + (-tp) + "px"; hj.style.pointerEvents = tp > 40 ? "none" : ""; } // the JOURNEY invitation is spent the moment you head down
+      var hh = el("tfHudHome"); if (hh) { var ho = (_wDir || 0) < 0 ? 0 : Math.max(0, Math.min(1, (tp - 150) / 140)); hh.style.opacity = String(ho); hh.style.translate = "0 " + (((1 - ho) * 14).toFixed(1)) + "px"; hh.style.pointerEvents = ho > 0.5 ? "auto" : "none"; } // …and HOME takes its place, gone again the instant you turn back
       var th = el("tfToolsHint"); if (th) th.style.opacity = String(1 - Math.min(1, tp / 110));
       var pw = document.querySelector(".tbx-planwrap");
       if (pw) { var po = 1 - Math.max(0, Math.min(1, (tp - 230) / 70)); pw.style.opacity = String(po); pw.style.pointerEvents = tp > 260 ? "none" : ""; } // note 3: the Planner must not still be sitting there once you're in the tools
@@ -5665,12 +5666,21 @@
   // home zone's tail, the practice deck, stayed pinned OVER the fixed HUD at the tools landing, with a dead band under it. His
   // reality screenshot is exactly that geometry; the same 163px reproduces in the preview, so this was CATCHABLE before shipping
   // by diffing the tools-landing state against the frame — the LAW-7 gate this build skipped.)
-  // The scheme, adapted from the design's _measurePad to this app's taller shelf: the ground zone gets a measured TOP inset that
-  // seats the grid below the HUD (the design floors it at 70px inside a frame with no real notch; on device the safe-top rides on
-  // top), and a BOTTOM pad that makes inset+shelf+pad fill the viewport exactly — so at the landing home is FULLY gone (the deck
-  // included: the shelf's eight-grid already carries those four stacks, riding the deck into the tools screen would double them)
-  // and the grid's first row sits at the inset, which is where the frame puts it. The CSS's own safe-area+72 stays the bottom
-  // FLOOR (designAudit's "ground bottom air" gate), so a shelf taller than the viewport keeps David's tuned air untouched.
+  // THE DECK-ANCHORED LAW (David's screen recording 2026-08-14, and this SUPERSEDES v1271's reading above). Watching the real thing
+  // settles what the still frames could not: scrolling down from home the PRACTICE DECK DOES NOT LEAVE. It rides up and BECOMES THE
+  // FIRST ROW of the tools screen, parked at a top inset under the fixed HUD, and the rest of the shelf cascades in BELOW it. That is
+  // exactly what the design file encodes — its _measurePad measures its content block from ROW ONE's top (the deck) down to the
+  // folders' bottom, not from the shelf's own top. v1271 did the opposite: it scrolled the deck away and gave the ground its own
+  // padding-top. Both halves of that were wrong, and the second was what left a HUD-band of dead air above the grid.
+  // The scheme now: measure C from #tfHeroWrap's top to the shelf's bottom (the design's row1.top → folders.bottom), seat that block
+  // at a measured INSET (safe-top+70, or centered when the block is short), and pad the BOTTOM so inset+C+pad is exactly one viewport
+  // — so the landing parks the deck at the inset with the shelf running out beneath it. The ground carries NO top inset in this face:
+  // the deck is the top content, and an inset there would push the grid a whole HUD band below the deck. The eight distinct stacks
+  // are not doubled because the top grid now renders only the four the deck does NOT carry (see renderToolbox2's 2c dedupe).
+  // NIGHT FACE (no deck rendered — #tfHeroWrap absent or zero-height): the v1271 scheme is kept verbatim, C = the shelf alone and the
+  // ground wears the inset itself, because with nothing riding in there is no row one to anchor to.
+  // The CSS's own safe-area+72 stays the bottom FLOOR (designAudit's "ground bottom air" gate) in both faces, so a shelf taller than
+  // the viewport keeps David's tuned air untouched.
   var _safeTpx = null, _safeTProbe = null;
   function safeTopPx() { // top inset twin of safeBottomPx: 0 in the preview, ~59 on a notched iPhone
     if (_safeTpx) return _safeTpx;
@@ -5687,15 +5697,40 @@
   }
   function wMeasurePad() {
     var w = el("tfWorld"), g = el("tfWorldGround"); if (!w || !g) return;
-    var tbx = g.querySelector(".tbx"); var C = tbx ? tbx.offsetHeight : 0;
-    if (!C) return;
+    var tbx = g.querySelector(".tbx"); if (!tbx || !tbx.offsetHeight) return;
     var H = w.clientHeight; if (!H) return;
+    var hero = el("tfHeroWrap");
     var base = safeBottomPx() + 72;                                              // = the .tfw-ground CSS rule's own padding-bottom
-    var inset = Math.max(safeTopPx() + 70, (H - C) / 2 + 16);                    // grid top at the landing: below the HUD, or centered when the shelf is short
-    var pad = Math.max(base, Math.round(H - inset - C));                         // top + shelf + bottom = one full viewport (floored, never under David's air)
+    var C, padT;
+    if (hero && hero.offsetHeight > 0) {
+      // ROW ONE IS THE DECK. Zero the ground's own inset BEFORE measuring, for two reasons: it must not survive into the landing (the
+      // deck is the top content now), and while it is still on the element it sits INSIDE the hero→shelf distance and would inflate C.
+      if (parseFloat(g.style.paddingTop) !== 0) g.style.paddingTop = "0px";
+      var k = 1; try { var wr = w.getBoundingClientRect(); if (wr.height > 0) k = wr.height / H; } catch (e) {} // the design divides its rect deltas by the world's live scale; the app's world is unscaled in practice, but a morph mid-measure would otherwise lie
+      if (!isFinite(k) || k <= 0) k = 1;
+      C = (tbx.getBoundingClientRect().bottom - hero.getBoundingClientRect().top) / k;
+      if (!isFinite(C) || C <= 0) return;
+      padT = 0;
+    } else {
+      C = tbx.offsetHeight;                                                      // no deck on this face (night / break / claim / tracking): the shelf alone is the block, and the ground wears the inset itself
+      padT = null;                                                               // = "the inset (+ the pull)", resolved once inset is known
+    }
+    var inset = Math.max(safeTopPx() + 70, (H - C) / 2 + 16);                    // where row one parks at the landing: below the HUD, or centered when the block is short
+    if (padT === null) {
+      // ADD THE PULL BACK. The v1271 scheme is otherwise kept verbatim here, but it silently assumed the ground starts where the home
+      // zone ends. It does not: .tfw-ground carries a NEGATIVE margin-top that lifts it INTO the home zone (0 while tracking, -44px on
+      // the 2c faces since the deck-anchored pass). The deck branch above absorbs that automatically because it measures ACROSS the
+      // seam (hero top → shelf bottom); this branch has to add it back or exactly `pull` px of home hangs over the tools landing —
+      // which is the night/break/claim faces, where tf-2c is set but tfhHeroRow never runs, so they wear the pull with no deck to
+      // justify it. Measured, never assumed: home's bottom minus the ground's top, both in #tfWorld's own offset space. 0 = no-op.
+      var hz = el("tfWorldHome");
+      var pull = hz ? Math.max(0, (hz.offsetTop + hz.offsetHeight) - g.offsetTop) : 0;
+      padT = Math.round(inset + pull);
+    }
+    var pad = Math.max(base, Math.round(H - inset - C));                         // inset + block + bottom = one full viewport (floored, never under David's air)
     var curT = parseFloat(g.style.paddingTop), curB = parseFloat(g.style.paddingBottom);
     if (!isFinite(curT)) curT = -1; if (!isFinite(curB)) curB = -1;              // unset inline padding parses to NaN, and NaN fails every comparison — the first write would silently never happen (the v1268 bug)
-    if (Math.abs(curT - inset) > 1) g.style.paddingTop = Math.round(inset) + "px";
+    if (Math.abs(curT - padT) > 1) g.style.paddingTop = padT + "px";
     if (Math.abs(curB - pad) > 1) g.style.paddingBottom = pad + "px";            // write only on a real change — this runs before every snap
   }
   function wSkyY() { var w = el("tfWorld"); return w ? Math.max(0, wHomeY() - w.clientHeight) : 0; }
@@ -5882,17 +5917,21 @@
   // locked geometry gates ("tile face 54px", "shard sizes 50 / 48") read getBoundingClientRect, so a .9 scale silently reports 52x52 and
   // 49/47 and FAILS A SHIP. Every persistent hidden state below is opacity-only; the scale still exists where it belongs, inside the
   // keyframes' own `from`. (Caught by A/B against shipped v1262: same face, same profile, 2 extra fails that were purely this transform.)
-  function tcFlat(n) { if (!n._tcClean) { n._tcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.transform = ""; n.style.opacity = n._tcExit ? "0" : ""; }); } } // e.target guard: animationend BUBBLES, and these rows are full of animating children (the float chevrons, tbxSettle) — an unguarded handler would clear the row on a child's animation
+  function tcFlat(n) { if (!n._tcClean) { n._tcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.transform = ""; n.style.opacity = n._tcExit ? "0" : ""; n.style.pointerEvents = n._tcExit ? "none" : ""; }); } } // e.target guard: animationend BUBBLES, and these rows are full of animating children (the float chevrons, tbxSettle) — an unguarded handler would clear the row on a child's animation
   function tcCascade(dir, instant) {
     var els = _tcEls || []; if (!els.length) return;
     var f = (_wAnim || !_wPk) ? 1 : Math.max(1, Math.min(2.4, 0.45 / Math.max(0.05, _wPk))); // a slow drag STRETCHES the timing up to 2.4x so the rows keep pace with the finger
     els.forEach(function (n, i) {
       if (instant === "below" && i < 6) return;
+      // A HIDDEN ROW TAKES NO TAPS. Since the deck-anchored pass the ground is pulled 44px up under the home zone's TOOLS hint (see
+      // index.html), so at home rest the shelf's invisible first rows physically overlap the hint. opacity:0 alone still hit-tests —
+      // it would have eaten David's tap on the one control that opens the tools. Every hidden branch below kills pointer events with
+      // the opacity, every shown branch hands them back, and tcFlat's animationend + teardownWorld mirror the same rule.
       n.style.animation = "none"; n.style.transition = "none"; tcFlat(n);
-      if (dir > 0) { n._tcExit = false; n.style.opacity = "0"; n.style.transform = "translateY(22px) scale(.9)"; void n.offsetWidth; n.style.animation = "youRowIn " + (0.42 * f).toFixed(2) + "s cubic-bezier(.3,1.28,.5,1) " + Math.round(i * 55 * f) + "ms both"; }
-      else if (instant) { n._tcExit = true; n.style.opacity = "0"; n.style.transform = ""; }
-      else if (i > 5) { n._tcExit = false; n.style.opacity = ""; n.style.transform = ""; }
-      else { n._tcExit = true; n.style.opacity = "1"; n.style.transform = ""; void n.offsetWidth; n.style.animation = "youRowOut .38s ease-in-out " + (20 + (i < 4 ? (3 - i) + 2 : 5 - i) * 62) + "ms both"; } // only the first six play the exit; the rest just go — the fold-away reads right-to-left across the top row
+      if (dir > 0) { n._tcExit = false; n.style.opacity = "0"; n.style.pointerEvents = ""; n.style.transform = "translateY(22px) scale(.9)"; void n.offsetWidth; n.style.animation = "youRowIn " + (0.42 * f).toFixed(2) + "s cubic-bezier(.3,1.28,.5,1) " + Math.round(i * 55 * f) + "ms both"; }
+      else if (instant) { n._tcExit = true; n.style.opacity = "0"; n.style.pointerEvents = "none"; n.style.transform = ""; }
+      else if (i > 5) { n._tcExit = false; n.style.opacity = ""; n.style.pointerEvents = ""; n.style.transform = ""; }
+      else { n._tcExit = true; n.style.opacity = "1"; n.style.pointerEvents = "none"; n.style.transform = ""; void n.offsetWidth; n.style.animation = "youRowOut .38s ease-in-out " + (20 + (i < 4 ? (3 - i) + 2 : 5 - i) * 62) + "ms both"; } // only the first six play the exit; the rest just go — the fold-away reads right-to-left across the top row
     });
   }
   function tcScrub(u) { // u = fraction of the home→tools travel
@@ -5908,7 +5947,8 @@
     else if (u < (up ? 0.62 : 0.1) && _tcShown && wNow() - _tcInAt > 600 && !(_wAnim && _wDown)) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); }
   }
   // ---- the deliberate doors (the two HUD hints + the puck). Each ARMS the cascade, then travels. ----
-  function wGoJourney() { var w = el("tfWorld"); if (!w) return; _hcArmDown = true; _hcState = "outUp"; wScrollTo(wSkyY()); }
+  // presetting _hcState here defeats hcScrub's own exit guard and silently skips the homeSinkUp cascade (constants-audit find, 2026-08-14); the scroll drives everything, same as the design's goJourney
+  function wGoJourney() { var w = el("tfWorld"); if (!w) return; wScrollTo(wSkyY()); }
   function wGoTools() { var w = el("tfWorld"); if (!w) return; wMeasurePad(); wScrollTo(wToolsY()); }
   function wGoHome() {
     var w = el("tfWorld"); if (!w) return;
@@ -5982,9 +6022,9 @@
     _wAnim = false; _wHold = null; _wDir = 0; _wV = 0; _wPk = 0; _wLastSt = null; _wLastT = 0; _wLastD = null; _wFlung = false;
     _hcState = null; _hcArmUp = _hcArmDown = false; _hcAnimAt = 0; _hcDone = false; _hcQ = null;
     _hcDone = false; try { hcReset(); } catch (e) {}
-    if (_tcEls) { _tcEls.forEach(function (n) { n.style.animation = ""; n.style.transition = ""; n.style.opacity = ""; n.style.transform = ""; }); }
+    if (_tcEls) { _tcEls.forEach(function (n) { n.style.animation = ""; n.style.transition = ""; n.style.opacity = ""; n.style.transform = ""; n.style.pointerEvents = ""; }); } // pointerEvents rides with opacity here for the same reason it does in tcCascade: a row left at "none" by an exit that never got its arrival would be DEAD to taps on the next open, note 6's failure mode in the tap layer
     _tcEls = null; _tcShown = undefined; _tcHard = false;
-    ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; } });
+    ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; n.style.translate = ""; } }); // translate too, or a label's scrub offset sticks across a teardown
     var _pw = document.querySelector(".tbx-planwrap"); if (_pw) { _pw.style.opacity = ""; _pw.style.pointerEvents = ""; }
     _worldPositioned = false;
   }
@@ -6400,7 +6440,13 @@
     // PLAN BUTTON MOVED (David 2026-07-23 device): the Plan-my-day sticker now lives on the HOME FACE (renderHomeFace → #tfCtrls, tbxPlanButton), directly under the circle block, visible at rest. It is NO LONGER the first toolbox-scroll section — the top-eight grid is now the first scroll-in content (verdict #4). It exists ONCE.
     // THE PRACTICE GRID (David 2026-08-01, Option A): the 7 of TBX_TOP in FIXED DESIGN ORDER + the pinned 8th "Build" tile. NOT tbxOrder'd — the arc (wake → regulate → body → mind → heart → aim → close) is the teaching, and a grid that reshuffles itself by usage teaches nothing. Folders keep usage ordering.
     var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop";
-    TBX_TOP.forEach(function (id) { tbxTile(top, id); });
+    // 2c DEDUPE (David's screen recording 2026-08-14, the deck-anchored law): on the 2c face the practice DECK rides up out of the home
+    // board and becomes row one of the tools screen. The eight stacks are therefore SPLIT, not duplicated — the deck carries its four
+    // (TFH_HEROES) and this grid renders exactly the four it does not. Derived by filtering, never a second hardcoded list, so the arc's
+    // order survives and adding a hero to the deck removes it from the grid in the same breath. Off the 2c face (and with TBX2 false)
+    // nothing changes: the full seven + the pinned builder render exactly as shipped.
+    var gridIds = tfh2c() ? TBX_TOP.filter(function (id) { return TFH_HEROES.indexOf(id) < 0; }) : TBX_TOP;
+    gridIds.forEach(function (id) { tbxTile(top, id); });
     tbxBuilderTile(top); // the builder tile is ALWAYS position 8 (pinned last)
     // CONSEQUENCE, flagged in the handoff: user-built customs no longer rise into this grid (the grid is exactly these 8 by design). They stay in S.tools.tbxCustom, keep their ids, and remain reachable/launchable through the picker's Stacks sheet (pkStacks) — but they have no shelf tile until David rules on where they live.
     // Flow = practice grid → hero rows → intro → moment folders. Every demoted stack (beforeDeepWork, caughtScrolling, urgeWave, spunUp, iMessedUp, emptyTank, cantSleep, lockTheWin, feelBetter, fullStack) is reachable in the folders below and/or as a contextual hero. TBX_SECOND is dead data.
@@ -18306,7 +18352,7 @@
     var ring = el("tfRing"), bars = el("tfHomeBars"), tile = document.querySelector("#trackerFull .tf-tile");
     // HOME 2c (David 2026-08-02): the five DOOR gates (size / border / planner fill / garden fill / top-below-strip) are DELETED with the doors themselves — the edges are cleared, garden lives in the HUD leaf chip and planner in the tappable strip. Their replacements are the 2c gates at the foot of this audit.
     var plan = document.querySelector("#trackerFull .tbx-plan"), topGrid = el("tbxGridTop"), square = document.querySelector("#trackerFull .tbx-square"); // TOOLBOX2 (2026-07-23): the board's tools moved to the scroll-continuation Toolbox — the old 2x4 grid checks are repointed to the top-eight grid below
-    var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, now in FIXED design order (Morning Stack · Breathe · Body · Meditate · Heart · Vision · Night Stack · Build) — tbxOrder no longer touches this grid, so tfaces[n] is deterministic and the hue gates below can name their tile
+    var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, in FIXED design order (the arc, never tbxOrder'd). DECK-ANCHORED 2026-08-14: on the 2c face the four deck stacks are FILTERED OUT of this grid (they ride up as row one of the tools screen), so the sequence is Body · Heart · Vision · Build there and the full seven + Build everywhere else — which is why the hue gates below read each cell's own id instead of naming a fixed position
     function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
@@ -18340,9 +18386,18 @@
     }
     // FIX PASS 2 E (design 2026-07-28): the deck faces are no longer FLAT hue — they're a 100° candy gradient behind an ink outline + a hard ink sticker, with an INK glyph. The old flat-rgb reads would false-FAIL forever, so they're replaced by the new law: gradient carrying the tile's own raw hue, ink border, ink sticker, ink glyph. (Geometry gates below are untouched.)
     if (tfaces.length >= 3) { var f0 = getComputedStyle(tfaces[0]);
-      chk("tile1 face RAW hue (Morning Stack/move)", rgb(tfaces[0]) === _rgbOf(TBX_HEX.move), rgb(tfaces[0]), _rgbOf(TBX_HEX.move) + " = --move, the tool's own colour");
-      chk("tile2 face RAW hue (Breathe/restore)", rgb(tfaces[1]) === _rgbOf(TBX_HEX.restore), rgb(tfaces[1]), _rgbOf(TBX_HEX.restore) + " = --restore, the tool's own colour"); // PRACTICE GRID 2026-08-01: position 2 is the new breatheLadder stack
-      chk("tile3 face RAW hue (Body/upkeep)", rgb(tfaces[2]) === _rgbOf(TBX_HEX.upkeep), rgb(tfaces[2]), _rgbOf(TBX_HEX.upkeep) + " = --upkeep, the tool's own colour"); // was Caught Scrolling/connect until 2026-08-01; that stack now lives in the Catch folder
+      // FACE-AWARE HUE GATES (2026-08-14, the deck-anchored pass). These three used to name a fixed triple (move · restore · upkeep =
+      // Morning Stack · Breathe · Body). The 2c dedupe breaks that arrangement by design: the practice deck now carries its four stacks
+      // up into row one of the tools screen and this grid renders only the four it does not, so position 1 is Body on the 2c face and
+      // Morning Stack on every other. Pinning the arrangement would fail the CORRECT build. The gate therefore asks each cell what tool
+      // it IS and demands the registry hue for THAT tool — which is the actual law ("a tile face is its tool's own raw colour") and now
+      // holds on every face. Still read from TBX_HEX, never a hex typed into the audit.
+      [0, 1, 2].forEach(function (n) {
+        var _cell = tfaces[n].parentNode && tfaces[n].parentNode.parentNode;                 // face → .tbx-face-wrap → .tbx-cell
+        var _id = _cell && _cell.getAttribute ? _cell.getAttribute("data-tbxcell") : null;
+        var _it = _id ? tbxItem(_id) : null, _want = _it ? _rgbOf(TBX_HEX[_it.dom]) : null;
+        chk("tile" + (n + 1) + " face RAW hue", !!_want && rgb(tfaces[n]) === _want, rgb(tfaces[n]) + (_it ? " (" + _id + ")" : " (cell not identifiable)"), (_want || "?") + " = --" + (_it ? _it.dom : "?") + ", the tool's own colour");
+      });
       chk("tile face BORDERLESS (David 2026-07-28: no black outlines on the home tools)", parseFloat(f0.borderTopWidth || 0) === 0, f0.borderTopWidth || "0px", "0px");
       chk("tile face lip 0 6px 0 (the tile's own colour darkened, stkLip)", /0px\s+6px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px 6px 0px in the hue 50% toward black (= round(.12·54))"); // 2026-07-31: the stack card's chunky lip law (was 4px at 45%)
       var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
@@ -18387,18 +18442,31 @@
     }
     if (square) { var sqr = square.getBoundingClientRect(); chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
     var _gz = el("tfWorldGround"); if (_gz) { var _gpb = parseFloat(getComputedStyle(_gz).paddingBottom) || 0; chk("ground bottom air", _gpb >= 32, Math.round(_gpb) + "px", "≥32px below the last toolbox row"); } // GROUND BOTTOM AIR (David device 2026-08-01 "the tools on the bottom are too close to the bottom"): the ground zone must always end on a real band of air (plus env(safe-area-inset-bottom) on device) so the last folder-square row never sits under the floating puck / home indicator
-    // THE TOOLS-LANDING GATES (David device frames 2026-08-14 — v1267 shipped with the practice deck pinned OVER the HUD at the tools
-    // landing, a 163px home tail the preview reproduced but no gate measured; his screenshot was the audit. Locked so this class of
-    // drift FAILS A SHIP): at the landing scrollTop (scrollHeight-clientHeight, after wMeasurePad) the HOME ZONE MUST BE FULLY GONE
-    // and the shelf's first row must sit clear of the HUD band. Pure layout math on the resting column — no scrolling, no rAF.
+    // THE TOOLS-LANDING GATES. A SCROLL LANDING IS A STATE, so its geometry is locked here rather than left to be eyeballed (the v1267
+    // miss). REWRITTEN 2026-08-14 for the DECK-ANCHORED law from David's screen recording: the deck does NOT leave at the tools landing,
+    // it rides up and parks as row one, so the old "home must be fully gone" assertion was pinning the WRONG outcome and would have
+    // failed the correct build. The gates are now face-aware — with a deck rendered they check that it SEATS (below the HUD, not
+    // stranded mid-screen) and that the shelf hands straight off it; with no deck (the night face) the v1271 pair is exactly right and
+    // is kept. Pure layout math on the resting column, after wMeasurePad — no scrolling, no rAF.
     if (_gz && el("tfWorldHome") && document.querySelector("#tfWorldGround .tbx")) {
       try { wMeasurePad(); } catch (e) {}
       var _wv = el("tfWorld"), _hz2 = el("tfWorldHome");
       var _max2 = Math.max(0, _wv.scrollHeight - _wv.clientHeight);
-      var _tail = (_hz2.offsetTop + _hz2.offsetHeight) - _max2; // px of home still on screen at the tools landing
-      chk("tools landing clears home", _tail <= 2, Math.round(_tail) + "px of home visible", "≤2px (the deck must never hang over the tools screen)");
-      var _gpt = parseFloat(getComputedStyle(_gz).paddingTop) || 0;
-      chk("tools grid below the HUD band", _gpt >= 70, Math.round(_gpt) + "px top inset", "≥70px (+safe-top on device) so the first row clears the HUD");
+      var _deck = el("tfHeroWrap");
+      // offsetTop is relative to the offsetParent, and these blocks sit two positioned ancestors deep — sum the chain up to #tfWorld so
+      // the numbers are in the SAME space as scrollTop. NaN (chain never reaches the world) fails the gate rather than passing silently.
+      var _absTop = function (n) { var t = 0, p = n, guard = 0; while (p && p !== _wv && guard++ < 40) { t += p.offsetTop; p = p.offsetParent; } return p === _wv ? t : NaN; };
+      if (_deck && _deck.offsetHeight > 0) {
+        var _seat = _absTop(_deck) - _max2; // where the deck's top sits inside the viewport once the column is parked at the landing
+        chk("tools landing seats the deck", isFinite(_seat) && _seat >= 68 && _seat <= _wv.clientHeight / 2, (isFinite(_seat) ? Math.round(_seat) : "unmeasurable") + "px from the screen top", "68px…half a viewport (row one parks under the HUD, never mid-screen)");
+        var _gap2 = _absTop(el("tbxGridTop")) - (_absTop(_deck) + _deck.offsetHeight);
+        chk("deck hands straight into the grid", isFinite(_gap2) && _gap2 <= 60, (isFinite(_gap2) ? Math.round(_gap2) : "unmeasurable") + "px between the deck and the grid", "≤60px (one row gap — no home chrome left between two tool rows)");
+      } else {
+        var _tail = (_hz2.offsetTop + _hz2.offsetHeight) - _max2; // px of home still on screen at the tools landing
+        chk("tools landing clears home", _tail <= 2, Math.round(_tail) + "px of home visible", "≤2px (with no deck to ride up, home must leave entirely)");
+        var _gpt = parseFloat(getComputedStyle(_gz).paddingTop) || 0;
+        chk("tools grid below the HUD band", _gpt >= 70, Math.round(_gpt) + "px top inset", "≥70px (+safe-top on device) so the first row clears the HUD");
+      }
     }
     chk("next-line plain (no icon)", !document.querySelector("#tfVerdict i"), document.querySelector("#tfVerdict i") ? "icon present" : "plain", "plain");
     // ===== THE GARDEN GATES (David 2026-08-12, born from the coin column shipping reversed, mis-glyphed and undersized —

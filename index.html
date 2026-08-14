@@ -1715,7 +1715,8 @@
   /* FIX PASS 2 D (design 2026-07-28) "live mode hides the tool deck": the ground PULL is cancelled while tracking, so the deck starts exactly at the fold instead of rising into the live face. Reconciles the design law with David's 2026-07-22 device law ("when tracking you should still be able to scroll down and see the tools") — the deck is hidden on the live screen, one scroll away, not deleted. */
   #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
   /* HOME 2c (David 2026-08-02): the -19vh pull is CANCELLED on the 2c face, by the same idiom the live face already uses. The pull existed to fill the home zone's empty bottom band with the peeking deck; on 2c that band is the HERO ROW + the TOOLS fold hint, and the artifact's chevron-down is an INVITATION — the toolbox is one scroll below, not half-visible on top of the hero row. CONFLICT FLAGGED to David: this retires the deck's above-the-fold peek on the home face (designAudit's fold gate now measures the TOOLS hint, same 26px threshold, same home-zone slab). */
-  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-ground{ margin-top:0; }
+  /* DECK-ANCHORED (David's screen recording 2026-08-14): the deck does not leave — it rides up and becomes ROW ONE of the tools screen, and the shelf must hand straight off it the way the design's second row does (its own row2MT is -62). What is being closed here is not design air, it is HOME chrome that has no business between two tool rows: the TOOLS fold hint (~47px) plus the 2c home zone's 12px bottom pad. -44px leaves the grid a normal row gap under the deck at the tools landing. SAFE AT HOME REST: the band this overlaps is the shelf's first rows, which tcCascade holds at opacity 0 (and now pointer-events:none) until you are 16% of the way down — nothing visible moves, and nothing invisible steals the hint's tap. */
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-ground{ margin-top:-44px; }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
   /* GROUND section header + the extra tool rows (rendered by renderGroundTools with the same .tf-htool tiles) */
@@ -4004,6 +4005,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1271"></script>
+  <script src="app.js?v=1273"></script>
 </body>
 </html>
