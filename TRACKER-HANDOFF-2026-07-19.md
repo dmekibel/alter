@@ -926,3 +926,20 @@ test (layout+transform only = authored) separated them from the frozen-cascade a
 wrong because 9 of the 13 excess px lived INSIDE the wrap (measured -54 is right).
 
 DEVICE-UNTESTED: the head zone against the real island; the seat at 145 (design 139, flagged not tuned); all feel.
+
+## v1281 — ROUND 5: THE LAST THREE RESIDUES (±0.3px board, tools chain ±1)
+
+From the tools-landing layout diff + the strip flag: hero cards ported verbatim from the frame (coins 38/r12/lip 3,
+glyph 17, kicker 9/1.5, title Baloo 17, play 46 with ink glyph — card lands EXACTLY 80, height driven by the frame's
+own two-line kicker at 402); grid→hero hand-off 16 (first card mt4, the frame's own asymmetry — card 2 carries none);
+caption 11.5px (the frame's size, found closing the folder chain); strip pills row 15 tall (block 43) → the whole board
+now sits within ±0.3px of the frame; home stays EXACTLY one frame (the +2 came out of the app-only wrap margin, never
+the hint's measured 20); pull re-derived −54→−52 (hand-off 11).
+
+**The gates caught ME this round:** an eyeballed "fix" (kicker nowrap) dropped the card to 72 — the hero-card-80 gate
+failed the ship instantly; the wrap IS the frame at 402. Reverted with the reason in the CSS comment. This is the
+system working: drift cannot ship, including mine.
+
+Audit 74/74 at 402x874 (David's device geometry). Tools chain vs frame: hero1 184/185 · hero2 276/277 · caption
+367/368 · folders 413/414. Residual, named: deck seat 130 vs frame 139 — the same wMeasurePad law applied to our
+24px-taller hero content; gate-inside, David's eye decides. DEVICE-UNTESTED: all feel.

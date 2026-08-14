@@ -6294,12 +6294,13 @@
   function tbxHeroRow(host, hero) {
     var row = add(host, "div", "tbx-hero");
     var coins = add(row, "div", "tbx-hero-coins");
-    (hero.coins || []).slice(0, 3).forEach(function (cc) { var coin = add(coins, "div", "tbx-hcoin"); coin.style.background = tbxVar(cc.c); coin.style.boxShadow = tbxLip(tbxVar(cc.c)); add(coin, "i", "ti " + cc.ic); });
+    var _h2c = tfh2c(); // the 2c hero card speaks the frame's card language: a 3px coin lip on the card grammar's own deep hue (the 4px color-mix lip is the pre-2c chip), and the frame's ink under the play glyph instead of the per-hero tint
+    (hero.coins || []).slice(0, 3).forEach(function (cc) { var coin = add(coins, "div", "tbx-hcoin"); coin.style.background = tbxVar(cc.c); coin.style.boxShadow = _h2c ? ("0 3px 0 " + tfhDeep(tbxVar(cc.c))) : tbxLip(tbxVar(cc.c)); add(coin, "i", "ti " + cc.ic); });
     var mid = add(row, "div", "tbx-hero-mid");
     var kick = add(mid, "div", "tbx-hkicker"); kick.textContent = hero.kicker; kick.style.color = hero.kcol;
     add(mid, "div", "tbx-hname", tr(hero.name));
     var play = add(row, "button", "tbx-hplay"); play.setAttribute("aria-label", tr("Start")); play.style.background = hero.playBg; play.style.boxShadow = tbxLip(hero.playBg);
-    var pg = add(play, "i", "ti ti-player-play-filled"); pg.style.color = hero.playInk;
+    var pg = add(play, "i", "ti ti-player-play-filled"); pg.style.color = _h2c ? TBX_INK : hero.playInk;
     play.onclick = function () { try { tbxLaunch(hero.stackId, tbxDose(hero.stackId)); } catch (e) {} }; // heroes run the default dose directly, NO dose card (decision 5)
     return row;
   }
@@ -18492,6 +18493,9 @@
     chk("HUD garden chip (leaf on the .4 green rim)", !!(_gcs && _gcs.borderTopColor === "rgba(79, 208, 138, 0.4)" && _gci && getComputedStyle(_gci).color === "rgb(79, 208, 138)"), _gcs ? (_gcs.borderTopColor + " · " + (_gci ? getComputedStyle(_gci).color : "no leaf")) : "missing", "rgba(79,208,138,0.4) rim + rgb(79,208,138) leaf");
     var _jci = _hjn ? _hjn.querySelector("i") : null, _tci = _thint ? _thint.querySelector("i") : null;
     chk("fold chevrons top (JOURNEY) + bottom (TOOLS)", !!(_jci && _tci && getComputedStyle(_jci).color === "rgb(199, 126, 163)" && getComputedStyle(_tci).color === "rgb(199, 126, 163)" && _hud && _thint.getBoundingClientRect().top > _hud.getBoundingClientRect().bottom), (_jci ? getComputedStyle(_jci).color : "no JOURNEY hint") + " / " + (_tci ? getComputedStyle(_tci).color : "no TOOLS hint"), "rgb(199,126,163) both, TOOLS below the HUD");
+    // THE STRIP BLOCK IS 43 (frame): a 15px pill row (13px pill + 1px above and below, the row the frame's 15px chevron sets) + 11 + the
+    // 17px icon. At 41 every board element below the strip landed 2px high — the last residue of the head-zone diff.
+    chk("strip block 43px tall (frame's 15px pill row)", !!bars && Math.abs(bars.offsetHeight - 43) <= 1, bars ? bars.offsetHeight + "px" : "missing", "43px = 15 + 11 + 17");
     var _pills = [].slice.call(document.querySelectorAll("#tfHomeBars .tf-hb-bar"));
     chk("week strip = 5 pills, 13px, radius 999", _pills.length === 5 && _pills.every(function (p) { return Math.round(p.getBoundingClientRect().height) === 13 && parseFloat(getComputedStyle(p).borderTopLeftRadius) >= 99; }), _pills.length + " pills · " + (_pills[0] ? Math.round(_pills[0].getBoundingClientRect().height) + "px r" + getComputedStyle(_pills[0]).borderTopLeftRadius : "-"), "5 × 13px at radius 999px");
     var _hf = [].slice.call(document.querySelectorAll("#tfHeroRow .tfh-face"));
@@ -18519,6 +18523,12 @@
     chk("tools column content ≤370px", _gzw > 0 && _gzw <= 370.5, Math.round(_gzw * 10) / 10 + "px", "≤370px — the frame's tools column (402 minus its 16px gutters), which is what makes the grid's 44px padding land on the design's own track width");
     var _hcard = document.querySelector("#tfWorldGround .tbx-hero");
     chk("hero card fills the tools column", !!_hcard && Math.abs(_hcard.getBoundingClientRect().width - _gzw) <= 1, _hcard ? (Math.round(_hcard.getBoundingClientRect().width * 10) / 10 + "px of " + Math.round(_gzw * 10) / 10) : "no hero card", "= the column (370 at the artboard's width — the frame's own hero width)");
+    // …and it is 80 TALL, which is not a padded number: 13+13 of padding around the mid column's own two lines (a 9px/1.5 kicker that
+    // wraps to 26 + a 17px Baloo title at 28). The app shipped 68 because every one of those constants was a size small.
+    chk("hero card 80px tall (frame)", !!_hcard && Math.abs(_hcard.offsetHeight - 80) <= 1, _hcard ? _hcard.offsetHeight + "px" : "no hero card", "80px — the frame's card, height driven by its own type");
+    var _gtop = el("tbxGridTop");
+    if (_gtop && _hcard && _hcard.offsetParent === _gtop.offsetParent) { var _g2h = _hcard.offsetTop - (_gtop.offsetTop + _gtop.offsetHeight);
+      chk("grid→hero hand-off 16px", Math.abs(_g2h - 16) <= 1, Math.round(_g2h) + "px", "16px = the column's own 12px gap + the FIRST card's 4px margin (card two carries none — measured)"); }
     // FACE DOSE CARD (2c §5): open the first hero tile's card, read its shell + its two teaching lines + the ignited chip, then fold it back so the audit leaves the board exactly as it found it.
     var _hcell = document.querySelector('#tfHeroRow [data-tfhcell="firstLight"]');
     if (_hcell) {
