@@ -25,7 +25,7 @@
     if (!n) return null;
     var cs = getComputedStyle(n), o = {};
     PROPS.forEach(function (p) { o[p] = cs[p]; });
-    if (geom !== false) { var r = n.getBoundingClientRect(); o.w = +r.width.toFixed(1); o.h = +r.height.toFixed(1); }
+    if (geom !== false) { var r = n.getBoundingClientRect(); o.w = +r.width.toFixed(1); o.h = +r.height.toFixed(1); o.top = +r.top.toFixed(1); o.left = +r.left.toFixed(1); o.cx = +((r.left + r.right) / 2).toFixed(1); } // POSITIONS TOO (2026-08-14 round 4, David: "the position of the buttons is off"): sizes alone missed the head zone riding ~25pt low — the frame is a 402x874 device drawing its own status bar, so the diff must run with the app AT 402x874 and compare rect.top/cx 1:1
     o.transform = cs.transform; o.translate = cs.translate; o.scale = cs.scale;
     return o;
   }

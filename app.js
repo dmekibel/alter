@@ -5637,7 +5637,10 @@
   function worldHomeTarget() { // THE landing scrollTop, in ONE place: the sky's laid-out height minus the peek, pulled down past the device's bottom inset (+8px margin) and clamped to the scroller's max. worldScrollHome lands on it; the HOME MAGNET settles onto it — they can never drift apart.
     // 2c EXCEPTION (David 2026-08-11 device screenshot): on the 2c face there is NO safe-area pull — that term compensated the OLD face's -19vh deck peek, and 2c cancelled the peek so the TOOLS hint sits at the TRUE screen bottom by design (see the audit's "Device-invariant (the 2c zone padding carries no safe-area)" gate). Adding the ~34px inset scrolled the world PAST the home seam on device (week strip riding up into the fixed HUD, toolbox tops peeking over the fold) and is invisible in the preview (inset 0) — do NOT re-add it.
     var world = el("tfWorld"), home = el("tfWorldHome"); if (!world || !home) return 0;
-    if (tfh2c()) return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + 8));
+    // FLUSH LANDING (David device 2026-08-14, measured against the prototype): the frame parks the home column at home.offsetTop EXACTLY —
+    // no sliver of sky above the board. WORLD_PEEK is the pre-2c face's law (it existed so the old deck peek had somewhere to sit) and its
+    // 12px of overshoot is what pushed the whole head zone down against the frame. The home zone's 12px bottom pad went with it.
+    if (tfh2c()) return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop));
     return Math.min(Math.max(0, world.scrollHeight - world.clientHeight), Math.max(0, home.offsetTop - WORLD_PEEK + safeBottomPx() + 8));
   }
   // ===== @SEC:WORLD-MOTION — THE MAGNETIC ZONES + THE CASCADES (design "Home Screen.dc.html" frame 2c, ported 2026-08-14). =====
@@ -18383,8 +18386,8 @@
     var _2c = tfh2c();
     if (_2c) chk("stone 180px fixed (2c frame)", Math.abs(ring.offsetWidth - 180) <= 2 && Math.abs(ring.offsetHeight - 180) <= 2, ring.offsetWidth + "x" + ring.offsetHeight, "180x180px (the frame's 198px disc at scale .91), the same on every viewport"); // offsetWidth, not the rect: the cascade and the breath can both be mid-transform
     else chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
-    if (_2c) { var _kOn = !!(_dkE && _dkE.offsetParent !== null), _kh = _kOn ? Math.round(_dkE.getBoundingClientRect().height) : 0, _band = rr.top - br.bottom, _wantB = (_kOn ? 56 + _kh : 0) + 72; // the band is now three fixed numbers, not a % of the screen: strip→date 56 · the kicker's own line · date→DISC 72 (the frame's 63 brackets the stone's 198px layout box; the visible air above the 180px disc is 63+9)
-      chk("strip→stone band px (2c frame)", Math.abs(_band - _wantB) <= 4, Math.round(_band) + "px", _wantB + "px = " + (_kOn ? "56 + kicker " + _kh + " + 72" : "72, no kicker on this face"));
+    if (_2c) { var _kOn = !!(_dkE && _dkE.offsetParent !== null), _kh = _kOn ? Math.round(_dkE.getBoundingClientRect().height) : 0, _band = rr.top - br.bottom, _wantB = (_kOn ? 56 + _kh : 0) + 72 - 13; // the band is fixed numbers, not a % of the screen: strip→date 56 · the kicker's own line · date→DISC 72 (the frame's 63 brackets the stone's 198px layout box; the visible air above the 180px disc is 63+9). MINUS 13: the 56 is measured from the strip's LAYOUT bottom and this gate reads its RENDERED rect, which the frame's 13px strip drop puts 13 lower.
+      chk("strip→stone band px (2c frame)", Math.abs(_band - _wantB) <= 4, Math.round(_band) + "px", _wantB + "px = " + (_kOn ? "56 + kicker " + _kh + " + 72 − the strip's 13px drop" : "72 − 13, no kicker on this face"));
     } else chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= (_dkOn ? 0.16 : 0.12), Math.round((rr.top - br.bottom) / H * 100) + "%", _dkOn ? "7-16% (date kicker sits in the band)" : "7-12%");
     if (tile) { var rim = (ring.offsetWidth - tile.offsetWidth) / 2; // offsetWidth: the idle breath (tfBreathe scale) must not flap this gate — getBoundingClientRect returns the TRANSFORMED box, so mid-breath (×1.0346) the disc measured 185px instead of its 179px layout width and the rim read 5 instead of 8 = intermittent FAIL
       if (_2c) chk("stone has NO rim (2c: halo only)", rim <= 0.5, Math.round(rim * 10) / 10, "0 — the disc fills the stone flush; the frame draws no plum bezel");
@@ -18404,7 +18407,11 @@
     var hz = el("tfWorldHome");
     if (hz) {
       var hzr = hz.getBoundingClientRect(), stripOff = br.top - hzr.top;
-      chk("strip at the top of the home zone (no dead sky)", stripOff >= 40 && stripOff <= 120, Math.round(stripOff) + "px below zone top", "40-120px (= env(safe-top) + --tun-sky-gap 54px ≈ HUD bottom + 13)"); // the auto-margin dead band above the strip is what "rides too low" was; this is the gate that keeps it dead
+      // 2c: the head zone is the frame's own three absolute numbers, not a safe-area sum — 42 (column pad) + 40 (its 28px HUD spacer + the
+      // strip block's 12px margin) + 13 (that block's own drop) = 95. Locked exactly, because "somewhere in a 40-120 window" is precisely
+      // how the app drifted 18-43px off David's frame on device while passing here.
+      if (_2c) chk("strip at the frame's line (42 pad + 40 + 13 drop)", Math.abs(stripOff - 95) <= 2, Math.round(stripOff) + "px below zone top", "95px");
+      else chk("strip at the top of the home zone (no dead sky)", stripOff >= 40 && stripOff <= 120, Math.round(stripOff) + "px below zone top", "40-120px (= env(safe-top) + --tun-sky-gap 54px ≈ HUD bottom + 13)"); // the auto-margin dead band above the strip is what "rides too low" was; this is the gate that keeps it dead
       // HOME 2c: the fold gate is REPOINTED, not retired. On the 2c face the element at the fold is the TOOLS hint (the deck's -19vh peek is cancelled — the artifact's chevron-down is an INVITATION, so the toolbox is one scroll below). BOTTOM-EDGE AMENDMENT (David 2026-08-02): the old "≥26px of air" is inverted — he wants the hint AT the true screen bottom and accepts the home-indicator overlap. The gate now locks the window: never clipped by the zone edge, never floating more than 26px above it. Device-invariant (the 2c zone padding carries no safe-area).
       var _th = el("tfToolsHint");
       if (tfh2c() && _th) {
@@ -18453,10 +18460,29 @@
     // ===== HOME 2c GATES (David's pick 2026-08-02) — the face the doors used to guard =====
     var _hud = el("tfHud"), _hsp = el("tfHudSpark"), _hgd = el("tfHudGarden"), _hjn = el("tfHudJourney"), _thint = el("tfToolsHint");
     var _spr = _hsp ? _hsp.getBoundingClientRect() : null;
-    chk("HUD you-door 28px hit area", !!(_hsp && Math.round(_spr.width) === 28 && Math.round(_spr.height) === 28 && parseFloat(getComputedStyle(_hsp).borderTopLeftRadius) >= 14), _hsp ? (Math.round(_spr.width) + "x" + Math.round(_spr.height) + " r" + getComputedStyle(_hsp).borderTopLeftRadius) : "missing", "28x28, fully round");
+    chk("HUD you-door 28px hit area", !!(_hsp && _hsp.offsetWidth === 28 && _hsp.offsetHeight === 28 && parseFloat(getComputedStyle(_hsp).borderTopLeftRadius) >= 14), _hsp ? (_hsp.offsetWidth + "x" + _hsp.offsetHeight + " laid out / " + Math.round(_spr.width) + "x" + Math.round(_spr.height) + " rendered · r" + getComputedStyle(_hsp).borderTopLeftRadius) : "missing", "28x28 laid out, fully round (it RENDERS 42 through the frame's own 1.5 scale — offsetWidth, not the rect, is the hit-area law)");
     // …and it is a BARE GLYPH (David's device review 2026-08-14): the frame's you-door has border-style:none over a transparent fill with an
     // 18px ti-adjustments-horizontal in #ff8fc0. The framed circle + 13px sparkle this replaces is the variant the design's default rejects.
+    // THE HEAD ZONE'S THREE ANCHORS (David device 2026-08-14, "the position of the buttons / streaks / settings is off"). Style-based, so
+    // they hold at any viewport and on any safe-area: the frame's HUD line, the frame's column inset, and David's own slider scale on the
+    // you-door. The app's env(safe-top)+11 anchor is exactly what these replace.
+    var _hudcs = _hud ? getComputedStyle(_hud) : null;
+    chk("HUD at the frame's line (top 42 + 12 drop)", !!(_hudcs && Math.round(parseFloat(_hudcs.top)) === 42 && Math.abs(parseFloat(String(_hudcs.translate).split(/\s+/)[1] || "0") - 12) <= 0.5), _hudcs ? ("top " + _hudcs.top + " · translate " + _hudcs.translate) : "missing", "top 42px · translate 0 12px (no safe-area added: the artboard is an island phone)");
+    var _hzcs = el("tfWorldHome") ? getComputedStyle(el("tfWorldHome")) : null;
+    chk("home column pad-top 42px", !!(_hzcs && Math.round(parseFloat(_hzcs.paddingTop)) === 42), _hzcs ? _hzcs.paddingTop : "missing", "42px — the design column's own `padding: 42px 20px 0`");
+    var _brcs = bars ? getComputedStyle(bars) : null;
+    chk("strip margin-top 40 + 13px drop", !!(_brcs && Math.round(parseFloat(_brcs.marginTop)) === 40 && Math.abs(parseFloat(String(_brcs.translate).split(/\s+/)[1] || "0") - 13) <= 0.5), _brcs ? (_brcs.marginTop + " · translate " + _brcs.translate) : "missing", "40px (28px HUD spacer + 12) with the block's own translate 0 13px");
     var _spcs = _hsp ? getComputedStyle(_hsp) : null, _spi2 = _hsp ? _hsp.querySelector("i") : null, _spis = _spi2 ? getComputedStyle(_spi2) : null;
+    chk("you-door scaled 1.5 from its left edge", !!(_spcs && Math.abs(parseFloat(_spcs.scale) - 1.5) <= 0.005 && /left|^0px/.test(_spcs.transformOrigin)), _spcs ? ("scale " + _spcs.scale + " · origin " + _spcs.transformOrigin) : "missing", "1.5 about left center (David's own slider; 28px hit area renders 42)");
+    var _thcs = _thint ? getComputedStyle(_thint) : null;
+    chk("fold hint padding-bottom 20px", !!(_thcs && Math.round(parseFloat(_thcs.paddingBottom)) === 20), _thcs ? _thcs.paddingBottom : "missing", "20px (the frame's 59px hint block: 4 above, 20 below)");
+    var _wv2 = el("tfWorld"), _hz3 = el("tfWorldHome");
+    if (_wv2 && _hz3) { var _flush = Math.min(Math.max(0, _wv2.scrollHeight - _wv2.clientHeight), Math.max(0, _hz3.offsetTop));
+      chk("landing parks FLUSH on the home seam", Math.abs(worldHomeTarget() - _flush) <= 0.5, Math.round(worldHomeTarget()) + " vs offsetTop " + Math.round(_flush), "equal — the frame shows no sky above the board (WORLD_PEEK is the pre-2c law)");
+      // ONE FRAME TALL. David's phone IS the artboard (402x874, a 16 Pro), so a board even 13px taller than the viewport puts the TOOLS
+      // chevron under his fold — which is exactly what shipped. Viewport-independent by construction: a taller phone opens its slack
+      // above the deck, so the zone tracks the viewport instead of exceeding it.
+      chk("home zone is one frame tall (2c)", _hz3.offsetHeight <= _wv2.clientHeight + 2, _hz3.offsetHeight + "px of " + _wv2.clientHeight, "≤ the viewport (+2) — anything more pushes the fold hint off the screen"); }
     chk("HUD you-door is a bare glyph (no ring, no fill)", !!(_spcs && parseFloat(_spcs.borderTopWidth || 0) === 0 && (_spcs.backgroundColor === "rgba(0, 0, 0, 0)" || _spcs.backgroundColor === "transparent")), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " · bg " + _spcs.backgroundColor) : "missing", "0px border on a transparent fill");
     chk("HUD you-door glyph ti-adjustments-horizontal 18px", !!(_spi2 && _spi2.classList.contains("ti-adjustments-horizontal") && Math.round(parseFloat(_spis.fontSize)) === 18 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-adjustments-horizontal · 18px · rgb(255,143,192)");
     var _pwr = document.querySelector("#trackerFull .tbx-planwrap"), _pws = _pwr ? getComputedStyle(_pwr) : null;
@@ -18485,9 +18511,14 @@
     chk("date kicker 15px / 6px tracking", !!(_dks && Math.round(parseFloat(_dks.fontSize)) === 15 && Math.abs(parseFloat(_dks.letterSpacing) - 6) <= 0.2), _dks ? (_dks.fontSize + " / " + _dks.letterSpacing) : "missing", "15px at 6px letter-spacing");
     var _bt = document.querySelector("#tfWorldGround .tbx-bento"), _btc = _bt ? String(getComputedStyle(_bt).gridTemplateColumns).trim().split(/\s+/) : [];
     chk("folders 3 per row", _btc.length === 3, _btc.length ? _btc.length + " tracks · " + _btc.join(" ") : "no folder grid", "3 tracks (the wider viewport was re-flowing them to 4)");
-    var _hzc = el("tfWorldHome"), _hzw = _hzc ? _hzc.getBoundingClientRect().width : 0, _gzc = el("tfWorldGround"), _gzw = _gzc ? _gzc.getBoundingClientRect().width : 0;
-    chk("home column ≤362px", _hzw > 0 && _hzw <= 362.5, Math.round(_hzw * 10) / 10 + "px", "≤362px — the frame's own CONTENT width (its 402 artboard minus its 20px gutters); a wider phone centers the column instead of stretching the board");
-    chk("tools column ≤370px", _gzw > 0 && _gzw <= 370.5, Math.round(_gzw * 10) / 10 + "px", "≤370px — the frame's tools column (402 minus its 16px gutters), which is what makes the grid's 44px padding land on the design's own track width");
+    // THE TWO COLUMNS, measured on their CONTENT boxes — each zone now carries the frame's own gutter (home 20, ground 16) inside the
+    // shared 402 artboard cap, so the border box is 402 on a wide phone and only the content width tells you the board is right.
+    function _contentW(n) { if (!n) return 0; var s = getComputedStyle(n); return n.clientWidth - (parseFloat(s.paddingLeft) || 0) - (parseFloat(s.paddingRight) || 0); }
+    var _hzc = el("tfWorldHome"), _hzw = _contentW(_hzc), _gzc = el("tfWorldGround"), _gzw = _contentW(_gzc);
+    chk("home column content ≤362px", _hzw > 0 && _hzw <= 362.5, Math.round(_hzw * 10) / 10 + "px", "≤362px — the frame's board width (its 402 artboard minus its own 20px gutters); a wider phone centers the column instead of stretching the board");
+    chk("tools column content ≤370px", _gzw > 0 && _gzw <= 370.5, Math.round(_gzw * 10) / 10 + "px", "≤370px — the frame's tools column (402 minus its 16px gutters), which is what makes the grid's 44px padding land on the design's own track width");
+    var _hcard = document.querySelector("#tfWorldGround .tbx-hero");
+    chk("hero card fills the tools column", !!_hcard && Math.abs(_hcard.getBoundingClientRect().width - _gzw) <= 1, _hcard ? (Math.round(_hcard.getBoundingClientRect().width * 10) / 10 + "px of " + Math.round(_gzw * 10) / 10) : "no hero card", "= the column (370 at the artboard's width — the frame's own hero width)");
     // FACE DOSE CARD (2c §5): open the first hero tile's card, read its shell + its two teaching lines + the ignited chip, then fold it back so the audit leaves the board exactly as it found it.
     var _hcell = document.querySelector('#tfHeroRow [data-tfhcell="firstLight"]');
     if (_hcell) {

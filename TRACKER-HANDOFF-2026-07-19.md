@@ -897,3 +897,32 @@ keyframe from-state — translateY(22) scale(.9), opacity 0 — while parked; th
 authored-vs-animated test now documented in the file header). Read that header before trusting any dump.
 
 DEVICE-UNTESTED: the five fixes' feel on the phone; the deck seat grows with viewport height (168px at 430x932).
+
+## v1279 — ROUND 4: THE HEAD-ZONE ANCHORS + THE 1:1 GEOMETRY LAW (David: "positions off / streaks off / settings off")
+
+**The last systemic hole, closed:** the app had never been verified at the design's own geometry. The frame is a 402x874
+iPhone 16 Pro — WHICH IS DAVID'S ACTUAL PHONE — with the status bar drawn inside it, so its coordinates are safe-area-
+ABSOLUTE. The app was adding real safe-top on top of offsets that already assumed one: the whole head zone rode 18-43px off.
+
+**The machine diff ran at 402x874, both surfaces parked at the home landing, rect.top/cx compared 1:1** (harness now dumps
+positions). Fixes, all frame-measured: HUD row top 42 + its authored translateY(12) (renders 54; no safe-area term under 2c);
+the You button's own slider transform (scale 1.5 from left center, icon renders 27 — "the settings button is off"); leaf
+scale 1.1/+7; home pad-top 42 + strip margin 40 + its authored translateY(13) (bar at ~95 — "the streaks are off"); landing
+parks FLUSH (the 12px sky peek was the pre-2c face's law); TOOLS hint pad-bottom 20; zone-owned side padding (home 20 /
+ground 16 — hero cards 370, deck and grid tiles left-aligned to 0.3px); dose host display:none when empty + wrap margin 6
+(home = EXACTLY one frame, 874/874 — the 887 excess would have put the chevron 13px under David's fold); ground pull
+re-derived -58→-54 (hand-off 11px, the prototype's value).
+
+**Final table at 402x874 (app vs frame):** HUD 54/54 · bar 94.7/96 · date 178.7/181 · stone 272.2/274.4 · title 490.2/492.5 ·
+sub 552.2/554.5 · planner 603.7/606 · deck 723.8/725.7 · hint bottom 873.7 flush. The uniform -2.3 residue has one named
+cause (our strip block is 41 tall vs the frame's 43 — chevron sizing) — David's call if it matters.
+
+**Gates 63→71, ALL PASS. Standing law:** 2c design verification runs AT 402x874 (the frame's and David's shared geometry);
+style-based gates (pad-top 42, margins, scales) hold viewport-independent; "home zone is one frame tall" (<= clientHeight+2)
+catches the under-the-fold class mechanically.
+
+Builder corrections worth recording: my diff read past two AUTHORED translates (HUD +12, strip +13) — the authored-vs-animated
+test (layout+transform only = authored) separated them from the frozen-cascade artifacts again; and my -45 pull estimate was
+wrong because 9 of the 13 excess px lived INSIDE the wrap (measured -54 is right).
+
+DEVICE-UNTESTED: the head zone against the real island; the seat at 145 (design 139, flagged not tuned); all feel.
