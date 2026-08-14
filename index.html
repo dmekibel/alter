@@ -1716,7 +1716,9 @@
   #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
   /* HOME 2c (David 2026-08-02): the -19vh pull is CANCELLED on the 2c face, by the same idiom the live face already uses. The pull existed to fill the home zone's empty bottom band with the peeking deck; on 2c that band is the HERO ROW + the TOOLS fold hint, and the artifact's chevron-down is an INVITATION — the toolbox is one scroll below, not half-visible on top of the hero row. CONFLICT FLAGGED to David: this retires the deck's above-the-fold peek on the home face (designAudit's fold gate now measures the TOOLS hint, same 26px threshold, same home-zone slab). */
   /* DECK-ANCHORED (David's screen recording 2026-08-14): the deck does not leave — it rides up and becomes ROW ONE of the tools screen, and the shelf must hand straight off it the way the design's second row does (its own row2MT is -62). What is being closed here is not design air, it is HOME chrome that has no business between two tool rows: the TOOLS fold hint (~47px) plus the 2c home zone's 12px bottom pad. -44px leaves the grid a normal row gap under the deck at the tools landing. SAFE AT HOME REST: the band this overlaps is the shelf's first rows, which tcCascade holds at opacity 0 (and now pointer-events:none) until you are 16% of the way down — nothing visible moves, and nothing invisible steals the hint's tap. */
-  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-ground{ margin-top:-44px; }
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-ground{ margin:-44px auto 0; max-width:370px; }
+  /* THE DESIGN COLUMN (David's device 2026-08-14, "expectation vs reality" on his 430pt phone; widths corrected to the frame's own the same day). Frame 2c was drawn on a FIXED 402px artboard in absolute pixels; the app rendered it in vw/vh, so the whole board inflated with the screen — the stone came out 208px where the design renders 180, the type and the grids drifted with it, and the folders re-flowed to four columns. The cap is the frame's CONTENT width, not its 402 outer edge: the design's home blocks are 362 wide (402 minus its 20px gutters) and its tools column is 370 (16px gutters), so a 402 cap would still have run 28-40px wide on his phone and left the drift in place. Each zone is now centered at its own measured width, which makes every pinned px below land in the design's proportion on every device ≥ that width. #tfWorld itself stays FULL-WIDTH — it owns the scroll surface and must keep capturing the gesture edge to edge; only the content columns are capped, so nothing about the scroll engine, the landings or wMeasurePad changes. */
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-home{ max-width:362px; margin-left:auto; margin-right:auto; }
   /* the sky (journey) is adopted live; keep it readable inside the column — its own #jpTrail carries the stones + their tap handlers */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky .jp-trail{ position:relative; }
   /* GROUND section header + the extra tool rows (rendered by renderGroundTools with the same .tf-htool tiles) */
@@ -1859,9 +1861,40 @@
   #trackerFull.tf-2c .tf-hb-fill{ border-radius:999px; }
   #trackerFull.tf-2c .tf-hb i{ font-size:17px; }
   #trackerFull.tf-2c .tf-planchev{ align-self:flex-start; font-size:15px; color:#8a6d85; opacity:1; margin-left:0; }
+  /* ===== THE 402 BOARD PIN (David's device frames 2026-08-14). Every number in this section was MEASURED LIVE off the running 2c prototype at its 402px frame width and is written here as an absolute px, inside the centered 402 column above. Nothing here is eyeballed and nothing is re-derived from the app's older vh recipes. FRAME-WINS (DESIGN AUTHORITY LAW 7): where one of these values contradicts a --tun-* default David set on a pre-2c face, the FRAME is the newer verdict and wins ON THIS FACE ONLY — the tuner vars still drive every non-2c face byte-identically, because each rule below is scoped to .tf-2c. Repeated .tf-2c selectors are the file's own load-bearing idiom (see the .tf-clock hide above): they out-specify LATER rules that would otherwise win the cascade, and each one names the rule it is beating. ===== */
+  /* THE STONE — the frame's RENDER, not its markup (David's verdict 2026-08-14). The design's stone block is `margin-top:63px; transform:scale(0.91)` around a 198px disc carrying a 58px glyph and a 12/70 halo — so what David actually SEES is a 180px disc, a 53px glyph and an 11/64 halo, with 72px of air above it and 38px below (the 63/29 margins bracket the 198 LAYOUT box, which is 9px taller than the disc on each side). Every number here is that outcome, built as a plain 180px box so no transform rides on the element the home cascade and the idle breath already animate. NO RIM: the disc fills the ring flush (the plum bezel and the ring's drop/bloom are a pre-2c recipe) and the only light is the halo on the disc itself. The repeated .tf-2c beats #trackerFull.tf-home.st-idle.st-upnext .tf-tile, which pins a 3px ink border + a 7px plum ring with !important and sits later in this file — the up-next sub-state must not re-grow a rim the 2c frame doesn't draw. designAudit's rim + halo gates read this law on the 2c face (they still read the tuner law everywhere else). */
+  #trackerFull.tf-onehome.tf-2c.tf-2c #tfRing{ width:180px; height:180px; margin:72px 0 0; box-shadow:none; }
+  #trackerFull.tf-onehome.tf-2c.tf-2c.tf-2c .tf-tile{ width:100%; border:none !important; box-shadow:0 0 0 11px rgba(255,79,160,.09), 0 0 64px rgba(255,79,160,.28) !important; color:#2a0d1c !important; font-size:53px; }
+  /* TYPE — the frame's three lines, in px. The date kicker also carries the strip→date 56px; the stone's own margin above carries date→disc 72px (see the stone note). */
+  #trackerFull.tf-2c #tfDateKick{ font:800 15px "Jost",sans-serif; letter-spacing:6px; color:#cdb3cf; margin:56px 0 0; }
+  #trackerFull.tf-onehome.tf-2c.tf-2c.tf-2c #tfTitle{ font:800 36px "Baloo 2",sans-serif; color:#fff2f9; letter-spacing:0; margin:38px 0 0; } /* 38, not the markup's 29: the design's 29 is measured from the bottom of the stone's 198px LAYOUT box, and our box IS the 180px disc — 29 + 9 = the 38px of air the frame renders. The third .tf-2c beats #trackerFull.tf-home.st-idle.st-upnext #tfTitle (34px, later in this file): the frame draws ONE title size for the whole calm board */
+  #trackerFull.tf-onehome.tf-2c.tf-2c .tf-verdict{ margin:4px auto 0; font:700 16px "Jost",sans-serif; color:#a487a0; letter-spacing:0; text-transform:none; line-height:1.35; }
+  /* RHYTHM — the strip's own top anchor (safe-top + 54) is DEVICE-APPROVED and untouched; everything below it is now fixed px instead of vh. sub→planner 18. planner→deck 78 is the design's gap and the FLOOR here, not a pin: .tf-ctrls keeps its margin-bottom:auto so the deck and the fold hint stay hugging the bottom of the zone, which is what the DECK-ANCHORED -44px ground pull and the tools landing depend on. Spare viewport height therefore opens in this one gap (on a taller phone) instead of stretching every gap on the board. */
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-home #tfHomeBars{ margin-bottom:0; }
+  #trackerFull.tf-onepage.tf-onehome.tf-2c .tfw-home .tf-ctrls{ margin-top:18px; }
+  /* THE PLANNER PILL — the 2c recipe. It SUPERSEDES the FP3 sticker recipe (ink border + ink lip + r15 + 15px) on this face only; .tbx-plan is untouched everywhere else. The top:-3px nudge is zeroed: the sub→planner gap is a measured 18px now, and a nudge would eat 3 of them. */
+  #trackerFull.tf-2c .tbx-plan{ background-color:#8a5cf0; border:none; border-radius:22px; padding:12px 24px; box-shadow:0 4px 0 #4e2f96; top:0; }
+  #trackerFull.tf-2c .tbx-plan span{ font:800 16.5px "Baloo 2",sans-serif; color:#f3ecff; }
+  #trackerFull.tf-2c .tbx-plan i{ font-size:17px; color:#f3ecff; }
+  #trackerFull.tf-2c .tbx-plan:active{ transform:translateY(3px); box-shadow:0 1px 0 #4e2f96; }
+  /* THE SHELF at the frame's px. THE GRID TILE IS THE DECK CARD (David's verdict 2026-08-14, "the frame's measured pixels win"): the design's top-grid cell and the deck tile riding above it are the SAME card, which is the entire point of the deck anchoring as row one — at the tools landing row one and row two must be indistinguishable. So these are the prototype's own measured values, NOT the 0.35·S / 0.34·S / .12·S / S-4·S-6 stack-card ratios (which is what the shelf tile wears at 54 on every non-2c face, untouched): face 50, radius 18, glyph 22, lip 0 4px 0 (set in JS beside the deck's), two FULL-SIZE 50x50 shards at (-3,-3) and (-6,-6) on a 20px squircle, label 12. The 44px side padding is the frame's; it is capped so it can never squeeze the fixed 64px tracks off a narrow phone (280px = 4 tracks + 3 gaps) — at the design's own 370px tools column it resolves to exactly 44. */
+  #trackerFull.tf-2c #tbxGridTop{ gap:18px 8px; padding:0 min(44px, max(0px, calc((100% - 280px) / 2))); }
+  #trackerFull.tf-2c #tbxGridTop .tbx-face-wrap{ width:50px; height:50px; }
+  #trackerFull.tf-2c #tbxGridTop .tbx-face{ border-radius:18px; }
+  #trackerFull.tf-2c #tbxGridTop .tbx-face i{ font-size:22px; }
+  #trackerFull.tf-2c #tbxGridTop .tbx-coin{ border-radius:20px; }
+  #trackerFull.tf-2c #tbxGridTop .tbx-coin1{ width:50px; height:50px; top:-3px; left:-3px; }
+  #trackerFull.tf-2c #tbxGridTop .tbx-coin2{ width:50px; height:50px; top:-6px; left:-6px; }
+  #trackerFull.tf-2c #tbxGridTop .tbx-label{ font-size:12px; }
+  #trackerFull.tf-2c .tbx-hero{ padding:13px 14px; border-radius:20px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
+  #trackerFull.tf-2c .tbx-bento{ grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:15px; row-gap:17px; padding:0 18px; } /* THREE folders per row, not four — four is what the wider viewport re-flowed them into */
+  /* the folder square's 2x2 preview, at the frame's own chip: 30px coins on a 7px gap with a 10px squircle and a 14px glyph (the app's 20/5/7/10 is a pre-2c size). */
+  #trackerFull.tf-2c .tbx-sq-prev{ grid-template-columns:repeat(2,30px); gap:7px; }
+  #trackerFull.tf-2c .tbx-sq-mini{ width:30px; height:30px; border-radius:10px; }
+  #trackerFull.tf-2c .tbx-sq-mini i{ font-size:14px; }
   /* HERO ROW (§5) + COMPOSITION AMENDMENT (David 2026-08-02): the row is its own block in the home zone, BELOW the .tf-ctrls margin-bottom:auto spacer, so it hugs the bottom band just above the TOOLS hint instead of crowding Plan-my-day. NO selection chrome on a tile, ever. */
   #tfHeroWrap{ display:none; } /* the hero row is a HOME-face block: it must not linger in the home zone once a live/tracking face takes over (that face drops .tf-2c and keeps its shipped composition) */
-  #trackerFull.tf-2c #tfHeroWrap{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:9px; margin-bottom:10px; }
+  #trackerFull.tf-2c #tfHeroWrap{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:9px; margin-top:78px; margin-bottom:10px; } /* 402 BOARD PIN: planner→deck 78px, the frame's gap. It is a FLOOR, not a pin — .tf-ctrls' margin-bottom:auto still parks the deck + hint at the bottom of the zone (the tools landing depends on it), so a taller phone opens this one gap instead of stretching the whole board. */
   #tfHeroRow{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 34px; width:100%; box-sizing:border-box; justify-items:center; }
   .tfh-tile{ display:flex; flex-direction:column; align-items:center; gap:8px; background:none; border:none; outline:none; -webkit-appearance:none; appearance:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-facewrap{ position:relative; width:50px; height:50px; }
@@ -4005,6 +4038,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1273"></script>
+  <script src="app.js?v=1275"></script>
 </body>
 </html>

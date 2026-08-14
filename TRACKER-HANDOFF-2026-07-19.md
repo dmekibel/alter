@@ -852,3 +852,28 @@ Body to keep all 8 distinct per the locked "one grid of 8". Say the word if the 
 
 **DEVICE-UNTESTED:** the whole feel — the deck riding continuously, cascade timing below it, the JOURNEY button now playing the
 exit cascade, label slide, landing seat on the real notch.
+
+## v1275 — THE 402 ARTBOARD PIN (David's "the circle is too big AGAIN" — the recurring class, killed at the root)
+
+**The disease, finally named:** the design is a FIXED 402px artboard (stone 180px, tiles 50px, folders 3 columns — absolute px);
+the app's 2c board mixed viewport-relative sizing and old-era recipes. Preview (375-390) hid the drift; David's 430pt phone
+inflated it (stone 208, folders re-flowed to 4 columns, planner on the old recipe). Every prior screenshot round was this one
+class. Fix: the 2c board + shelf render at the design's own pixels inside centered columns (home content 362, ground 370 — the
+artboard minus its own side paddings), so proportions are identical at every device width.
+
+**Pinned (every value measured LIVE off the running prototype, per LAW 8):** stone 180px, halo 11px/64px, glyph 53px (the
+frame's own scale .91 rendered); date 15px/6px tracking; title 36; sub 16; rhythm 56/72/38/4/18/78 fixed (replaces vh tuners
+under 2c); planner = the 2c recipe (#8a5cf0, r22, 12/24, 0 4px 0 #4e2f96, Baloo 16.5) superseding the old .tbx-plan lock on
+this face; shelf top-grid tiles = the DECK CARD verbatim (50 face, r18, glyph 22, lip 0 4px 0, full-size 50x50 shards at
+-3/-6) so row one and row two read as one card at the landing; folders 3 cols, gaps 15/17, pad 0 18, 30px preview chips gap 7.
+
+**Gates:** audit now 58 checks — stone-180 replaces the 52vw gate on 2c (frame-wins), tile geometry 2c-branched (TBX_S2C=50;
+non-2c keeps 54 byte-identical), planner recipe, folders-3-col, both column caps, halo 11/64, rhythm band. ALL PASS at 375
+AND at 430x932 (verified live at David's width: stone 180, folders 3x101, columns 362/370, deck seats 159, gap 25, 0 fails).
+Both landings screenshot-diffed at 430 against David's expectation frames.
+
+**Superseded locks, named (frame-wins 2026-08-14):** 52vw circle tuner lock; .tbx-plan old recipe ON THE 2c FACE; the 54px
+stack-card law on the 2c shelf grid (picker/editor keep 54). Night/claim/break inherit the pinned board (flag open if ugly).
+
+**DEVICE-UNTESTED:** the board computes ~918px at 430x932 — fits with ~14px slack in the planner→deck gap, the tightest number
+in the build; on a ≤812pt phone the TOOLS hint sits under the fold. Only the phone judges both.

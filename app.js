@@ -6251,12 +6251,20 @@
   function tbxDerivedSteps(track) { return (track || []).map(function (s) { var m = stackTool(s.k) || {}; return { c: (s.dom ? tbxVar(s.dom) : (m.col || "#63d3c9")), ic: (s.i || m.ti || "ti-circle"), t: (s.t || m.name || s.k), lit: true }; }); } // non-Caught-Scrolling stacks (and edited/custom stacks) show their real tools as steps (reuses already-gated STACK_TOOLS copy — zero new lines). A step edited in the Session Editor carries its own label/icon/hue, so the preview reads in the editor's words.
   function tbxTm(sec) { sec = Math.max(0, Math.round(sec || 0)); if (sec < 60) return sec + "s"; var m = sec / 60; return (sec % 60 === 0) ? (m + "m") : (Math.floor(m) + ":" + pad(sec % 60)); } // per-step time column (design 21e: 10.5px 800 tabular) — the scaled duration this step will actually run
   var TBX_TILE_S = 54; // the shelf tile's card size in px (× --tun-tbx-tile) — what the STACK CARD's 0.32/0.42/0.08 ratios are taken against here
+  var TBX_S2C = 50;    // …and the size the SAME tile takes in the top grid on the 2c face, measured off David's 402px frame (BOARD PIN 2026-08-14; FRAME-WINS over the 54 the pre-2c picker law locked). ONE constant: the CSS pins the box (face/radius/glyph/shards) and this feeds the JS-computed lip + shard shadows, so the two halves of the card cannot drift.
+  function tbxTileS(host) { return (tfh2c() && host && host.id === "tbxGridTop") ? TBX_S2C : TBX_TILE_S; } // scoped exactly like the CSS: the 2c size belongs to the TOP grid only, never to the tiles a category panel renders
+  // THE 2c GRID TILE **IS** THE DECK TILE (David's verdict 2026-08-14 on the measured frame). At the tools landing the home deck rides up
+  // and parks as row one with this grid as row two, and the design draws them as one card — so at TBX_S2C the face takes the deck's own
+  // lip (0 4px 0 <hue 50% toward black>, the tfhTile line verbatim) rather than the STACK CARD's round(.12·S) = 6px. Off the 2c grid the
+  // stack-card law is untouched: every other surface still gets stkLip at its own S. The shards need no branch — stkShardShadow(hue, 50)
+  // is already the exact call the deck makes.
+  function tbxCardLip(colExpr, s) { return (s === TBX_S2C) ? ("0 4px 0 " + tfhDeep(colExpr)) : stkLip(stkHexOf(colExpr), s); }
   function tbxTile(host, id) { // one grid cell = THE STACK CARD (squircle face + its two up-left shards) + domain-hued label; tap → dose card in place
     var it = tbxItem(id); if (!it) return null;
     var cell = add(host, "button", "tbx-cell"); cell.setAttribute("aria-label", tr(it.name)); cell.setAttribute("data-tbxcell", id);
-    var wrap = add(cell, "div", "tbx-face-wrap");
-    (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = stkShardShadow(stkHexOf(tbxVar(tok)), TBX_TILE_S); }); // peek stays the SOURCE of the shard hues here: DESIGN-EXTRACT §3 already deduped them by the stack-card rule (first distinct step colours after the face's own), so the shelf needs no re-derivation
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = stkLip(stkHexOf(tbxVar(it.dom)), TBX_TILE_S); add(face, "i", "ti " + it.ti); // flat hue face on its OWN hue lip at 50% toward black (was tbxLip's 45%), white glyph — one card language with the picker
+    var wrap = add(cell, "div", "tbx-face-wrap"), S = tbxTileS(host); // S = the card's size on THIS surface (50 in the 2c top grid, 54 everywhere else) — the ratios below are taken against it, never against a typed number
+    (it.peek || []).slice(0, 2).forEach(function (tok, i) { var coin = add(wrap, "div", "tbx-coin tbx-coin" + (i + 1)); coin.style.background = tbxVar(tok); coin.style.boxShadow = stkShardShadow(stkHexOf(tbxVar(tok)), S); }); // peek stays the SOURCE of the shard hues here: DESIGN-EXTRACT §3 already deduped them by the stack-card rule (first distinct step colours after the face's own), so the shelf needs no re-derivation
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar(it.dom); face.style.boxShadow = tbxCardLip(tbxVar(it.dom), S); add(face, "i", "ti " + it.ti); // flat hue face on its OWN hue lip at 50% toward black (was tbxLip's 45%), white glyph — one card language with the picker
     var lbl = add(cell, "span", "tbx-label", tr(it.name)); lbl.style.color = tbxVar(it.dom);
     cell.onclick = function () { try { tbxOpenDose(id, cell); } catch (e) {} };
     return cell;
@@ -6393,7 +6401,7 @@
   function tbxBuilderTile(host) { // the PINNED 8th tile: the same STACK CARD face in create-purple with ti-plus + label "Build", no shards (it holds no steps yet). Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
     var wrap = add(cell, "div", "tbx-face-wrap");
-    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar("create"); face.style.boxShadow = stkLip(stkHexOf(tbxVar("create")), TBX_TILE_S); add(face, "i", "ti ti-plus"); // tbxVar, not a bare var(--create): an undeclared var paints transparent, and this tile also renders inside category panels
+    var face = add(wrap, "div", "tbx-face"); face.style.background = tbxVar("create"); face.style.boxShadow = tbxCardLip(tbxVar("create"), tbxTileS(host)); add(face, "i", "ti ti-plus"); // tbxVar, not a bare var(--create): an undeclared var paints transparent, and this tile also renders inside category panels
     var lbl = add(cell, "span", "tbx-label", tr("Build")); lbl.style.color = tbxVar("create");
     cell.onclick = function () { try { tbxBuildCustom(); } catch (e) {} };
     return cell;
@@ -18356,14 +18364,29 @@
     function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
     var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
-    chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
     var _dkE = el("tfDateKick"), _dkOn = !!(_dkE && _dkE.offsetParent !== null && _dkE.textContent); // FP3 §1 (2026-07-28): the date kicker now legitimately LIVES in this band — the v2 idle PNG reads strip → date line → circle. The 7-12% window predates it, so it only applies when the kicker is absent; with the kicker rendered the band is 7-16%. Kept as ONE gate (not two segments) so it stays cheap and cannot drift out of sync with the kicker being show/hidden.
-    chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= (_dkOn ? 0.16 : 0.12), Math.round((rr.top - br.bottom) / H * 100) + "%", _dkOn ? "7-16% (date kicker sits in the band)" : "7-12%");
-    if (tile) { var rim = (ring.offsetWidth - tile.offsetWidth) / 2; chk("ring rim px/side", rim >= 5 && rim <= 11, Math.round(rim), "5-11"); } // offsetWidth: the idle breath (tfBreathe scale) must not flap this gate — getBoundingClientRect returns the TRANSFORMED box, so mid-breath (×1.0346) the disc measured 185px instead of its 179px layout width and the rim read 5 instead of 8 = intermittent FAIL
-    var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
-    chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px");
+    // THE 402 BOARD PIN (David's device frames 2026-08-14). On the 2c face the board is now the design's ABSOLUTE pixels inside a 402px
+    // column, so the four gates below stop measuring %vw/%vh — the relative windows are exactly what let the drift through (the stone
+    // rendered 208px on his 430pt phone and still "passed" 52%±3). FRAME-WINS (DESIGN AUTHORITY LAW 7): their old want-text quotes David's
+    // own --tun-ring-vw / --tun-ring-th / --tun-bloom tuner defaults, and the frame is the newer verdict — but only ON THIS FACE, so each
+    // gate keeps its tuner law verbatim on the non-2c branch.
+    var _2c = tfh2c();
+    if (_2c) chk("stone 180px fixed (2c frame)", Math.abs(ring.offsetWidth - 180) <= 2 && Math.abs(ring.offsetHeight - 180) <= 2, ring.offsetWidth + "x" + ring.offsetHeight, "180x180px (the frame's 198px disc at scale .91), the same on every viewport"); // offsetWidth, not the rect: the cascade and the breath can both be mid-transform
+    else chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
+    if (_2c) { var _kOn = !!(_dkE && _dkE.offsetParent !== null), _kh = _kOn ? Math.round(_dkE.getBoundingClientRect().height) : 0, _band = rr.top - br.bottom, _wantB = (_kOn ? 56 + _kh : 0) + 72; // the band is now three fixed numbers, not a % of the screen: strip→date 56 · the kicker's own line · date→DISC 72 (the frame's 63 brackets the stone's 198px layout box; the visible air above the 180px disc is 63+9)
+      chk("strip→stone band px (2c frame)", Math.abs(_band - _wantB) <= 4, Math.round(_band) + "px", _wantB + "px = " + (_kOn ? "56 + kicker " + _kh + " + 72" : "72, no kicker on this face"));
+    } else chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= (_dkOn ? 0.16 : 0.12), Math.round((rr.top - br.bottom) / H * 100) + "%", _dkOn ? "7-16% (date kicker sits in the band)" : "7-12%");
+    if (tile) { var rim = (ring.offsetWidth - tile.offsetWidth) / 2; // offsetWidth: the idle breath (tfBreathe scale) must not flap this gate — getBoundingClientRect returns the TRANSFORMED box, so mid-breath (×1.0346) the disc measured 185px instead of its 179px layout width and the rim read 5 instead of 8 = intermittent FAIL
+      if (_2c) chk("stone has NO rim (2c: halo only)", rim <= 0.5, Math.round(rim * 10) / 10, "0 — the disc fills the stone flush; the frame draws no plum bezel");
+      else chk("ring rim px/side", rim >= 5 && rim <= 11, Math.round(rim), "5-11"); }
+    if (_2c) { var _hl = tile ? getComputedStyle(tile).boxShadow : ""; // the 2c light is a HALO ON THE DISC and nothing else — the ring's own lift + tuner bloom are a pre-2c recipe and are gone on this face
+      chk("stone halo (2c frame)", _hl.indexOf("rgba(255, 79, 160, 0.09)") >= 0 && _hl.indexOf("rgba(255, 79, 160, 0.28)") >= 0 && _hl.indexOf("11px") >= 0 && _hl.indexOf("64px") >= 0, _hl.slice(0, 64) || "none", "0 0 0 11px rgba(255,79,160,.09) + 0 0 64px rgba(255,79,160,.28) on the DISC (the frame's authored 12/70 as it RENDERS through its scale .91)");
+    } else { var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
+      chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px"); }
     chk("plan button present on home face", !!plan, plan ? "present" : "missing", "present"); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker moved to the home face (#tfCtrls, below the circle block); it must exist once
-    if (plan) { var ps = getComputedStyle(plan).boxShadow; chk("plan button lip 0 4px 0 #160510", ps.indexOf("rgb(22, 5, 16)") >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), "rgb(22,5,16) 0px 4px 0px"); } // the Plan-my-day sticker lip present (0 4px 0 #160510)
+    if (plan) { var pcs = getComputedStyle(plan), ps = pcs.boxShadow, _plip = _2c ? "rgb(78, 47, 150)" : "rgb(22, 5, 16)"; // the Plan-my-day sticker lip present (0 4px 0). FRAME-WINS 2026-08-14: on the 2c face the pill's lip is its own violet #4e2f96, not the FP3 sticker's ink — same 4px offset, different shade.
+      chk("plan button lip 0 4px 0 " + (_2c ? "#4e2f96" : "#160510"), ps.indexOf(_plip) >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), _plip + " 0px 4px 0px");
+      if (_2c) chk("planner pill 2c recipe (violet, r22, borderless)", pcs.backgroundColor === "rgb(138, 92, 240)" && Math.round(parseFloat(pcs.borderTopLeftRadius)) === 22 && parseFloat(pcs.borderTopWidth || 0) === 0, pcs.backgroundColor + " r" + pcs.borderTopLeftRadius + " b" + (pcs.borderTopWidth || "0px"), "rgb(138,92,240) at r22px, no border"); }
     if (topGrid) { var gc = getComputedStyle(topGrid).gridTemplateColumns; chk("top-eight grid 4×64px tracks", gc === "64px 64px 64px 64px", gc, "64px 64px 64px 64px"); } // TILE-BIGGER (David 2026-07-23): track 54→64 (face 46→54, ×--tun-tbx-tile default 1)
     chk("builder tile present (pinned 8th)", !!document.querySelector("#tbxGridTop .tbx-cell-build"), document.querySelector("#tbxGridTop .tbx-cell-build") ? "present" : "missing", "present"); // BUILD-CUSTOM (David 2026-07-23): the create-purple "Build" tile is always the last top-8 cell
     chk("edges cleared (no side door tabs on the home face)", !el("tfDoorPlanner") && !el("tfDoorGarden"), (el("tfDoorPlanner") ? "planner tab present " : "") + (el("tfDoorGarden") ? "garden tab present" : "") || "none", "neither tab renders"); // HOME 2c §3
@@ -18399,17 +18422,24 @@
         chk("tile" + (n + 1) + " face RAW hue", !!_want && rgb(tfaces[n]) === _want, rgb(tfaces[n]) + (_it ? " (" + _id + ")" : " (cell not identifiable)"), (_want || "?") + " = --" + (_it ? _it.dom : "?") + ", the tool's own colour");
       });
       chk("tile face BORDERLESS (David 2026-07-28: no black outlines on the home tools)", parseFloat(f0.borderTopWidth || 0) === 0, f0.borderTopWidth || "0px", "0px");
-      chk("tile face lip 0 6px 0 (the tile's own colour darkened, stkLip)", /0px\s+6px\s+0px/.test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px 6px 0px in the hue 50% toward black (= round(.12·54))"); // 2026-07-31: the stack card's chunky lip law (was 4px at 45%)
+      // THE BOARD PIN (2026-08-14): the tile's size is no longer a constant typed into this audit — it is read from the SAME constant the
+      // tiles are painted from (tbxTileS → 50 in the 2c top grid, 54 everywhere else). And on the 2c grid the card's SHAPE is the DECK's,
+      // measured off the prototype (radius 18 · glyph 22 · lip 4 · two full-size shards), not the stack card's 0.35/0.34/.12/S-4·S-6
+      // ratios — David's verdict on the frame conflict: "the frame's measured pixels win", because row one (the deck riding up) and row
+      // two must be the same card at the tools landing. The non-2c 54px branch keeps the derived law verbatim.
+      var _S = tbxTileS(topGrid), _deck2c = (_S === TBX_S2C), _lipPx = _deck2c ? 4 : Math.round(_S * 0.12), _radW = _deck2c ? 18 : _S * 0.35, _glyW = _deck2c ? 22 : Math.round(_S * 3.4) / 10;
+      chk("tile face lip 0 " + _lipPx + "px 0 (the tile's own colour darkened)", new RegExp("0px\\s+" + _lipPx + "px\\s+0px").test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px " + _lipPx + "px 0px in the hue 50% toward black (" + (_deck2c ? "the deck card's own lip, measured" : "= round(.12·" + _S + ")") + ")"); // 2026-07-31: the stack card's chunky lip law (was 4px at 45%)
       var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
-      var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face 54px", Math.round(fr0.width) === 54 && Math.round(fr0.height) === 54, Math.round(fr0.width) + "x" + Math.round(fr0.height), "54x54");
-      chk("tile radius 0.35·S (the stack card's one squircle)", Math.abs(parseFloat(f0.borderTopLeftRadius) - 54 * 0.35) <= 0.4, f0.borderTopLeftRadius, "18.9px"); // 19px until 2026-07-31; David's measured stack-card correction locks every deck card at 0.35·S, so the shelf tile, the picker's folder decks, its queue chips and its Stacks cards share ONE radius
+      var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face " + _S + "px", Math.round(fr0.width) === _S && Math.round(fr0.height) === _S, Math.round(fr0.width) + "x" + Math.round(fr0.height), _S + "x" + _S);
+      chk("tile radius " + (_deck2c ? "18px (the deck card)" : "0.35·S (the stack card's one squircle)"), Math.abs(parseFloat(f0.borderTopLeftRadius) - _radW) <= 0.4, f0.borderTopLeftRadius, _radW + "px"); // 19px until 2026-07-31; David's measured stack-card correction locks every deck card at 0.35·S, so the shelf tile, the picker's folder decks, its queue chips and its Stacks cards share ONE radius — and the 2c grid instead shares the DECK's 18
       var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2");
       if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2");
         var r1 = c1.getBoundingClientRect(), r2 = c2.getBoundingClientRect(); // STACK CARD: the fan is UP-LEFT ONLY (never right, never down) and the far shard sits further out than the near one — the DS's alternating left/right layout is overruled by David's frames
         chk("shards fan UP-LEFT only", r1.left < fr0.left && r1.top < fr0.top && r2.left < r1.left && r2.top < r1.top, "near " + Math.round(r1.left - fr0.left) + "," + Math.round(r1.top - fr0.top) + " · far " + Math.round(r2.left - fr0.left) + "," + Math.round(r2.top - fr0.top), "both negative, far beyond near");
-        chk("shard sizes S-4 / S-6", Math.round(r1.width) === 50 && Math.round(r2.width) === 48, Math.round(r1.width) + " / " + Math.round(r2.width), "50 / 48 (near-full-size cards, not shrunken peeks)");
-        var s1 = getComputedStyle(c1).boxShadow; chk("shard lip is its OWN hue + ambient (no ink)", /0px\s+4px\s+0px/.test(s1) && s1.indexOf("rgb(22, 5, 16)") < 0, s1.slice(0, 60), "0px 4px 0px <hue 50% toward black> (= round(.08·54)), 0 6px 12px rgba(0,0,0,.35)");
-        var gl = tfaces[0].querySelector("i"); chk("tile glyph 0.34·S", Math.abs(parseFloat(getComputedStyle(gl).fontSize) - 54 * 0.34) <= 0.4, getComputedStyle(gl).fontSize, "18.36px"); } }
+        var _sh1 = _deck2c ? _S : _S - 4, _sh2 = _deck2c ? _S : _S - 6; // the 2c grid's shards are FULL-SIZE cards at (-3,-3) / (-6,-6), exactly the deck's; the stack-card law's S-4 / S-6 stays on every other surface
+        chk("shard sizes " + (_deck2c ? "full-size (deck)" : "S-4 / S-6"), Math.round(r1.width) === _sh1 && Math.round(r2.width) === _sh2, Math.round(r1.width) + " / " + Math.round(r2.width), _sh1 + " / " + _sh2 + " (near-full-size cards, not shrunken peeks)");
+        var s1 = getComputedStyle(c1).boxShadow, _shPx = Math.round(_S * 0.08); chk("shard lip is its OWN hue + ambient (no ink)", new RegExp("0px\\s+" + _shPx + "px\\s+0px").test(s1) && s1.indexOf("rgb(22, 5, 16)") < 0, s1.slice(0, 60), "0px " + _shPx + "px 0px <hue 50% toward black> (= round(.08·" + _S + ")), 0 6px 12px rgba(0,0,0,.35)");
+        var gl = tfaces[0].querySelector("i"); chk("tile glyph " + (_deck2c ? "22px (the deck card)" : "0.34·S"), Math.abs(parseFloat(getComputedStyle(gl).fontSize) - _glyW) <= 0.4, getComputedStyle(gl).fontSize, _glyW + "px"); } }
     // ===== HOME 2c GATES (David's pick 2026-08-02) — the face the doors used to guard =====
     var _hud = el("tfHud"), _hsp = el("tfHudSpark"), _hgd = el("tfHudGarden"), _hjn = el("tfHudJourney"), _thint = el("tfToolsHint");
     var _spr = _hsp ? _hsp.getBoundingClientRect() : null;
@@ -18426,6 +18456,16 @@
     chk("hero tiles carry NO selection chrome", !_chrome, _chrome || "clean", "no outline, ring or border anywhere in the row (David 2026-08-02) — the open card is the only selection signal");
     var _ckE = el("tfClock");
     chk("home face shows NO clock", !_ckE || getComputedStyle(_ckE).display === "none" || _ckE.offsetParent === null, _ckE ? (getComputedStyle(_ckE).display + ' · "' + (_ckE.textContent || "") + '"') : "absent", "hidden (the status bar already shows the time)");
+    // ===== THE 402 BOARD PIN GATES (2026-08-14) — the drift David photographed, locked mechanically. The board was authored on a fixed
+    // 402px artboard in absolute px and rendered here in vw/vh, so it inflated with the screen: these four check the values that carry
+    // the frame's proportion (the column itself, the kicker's type, the pill's recipe, the folder count) rather than a ratio of viewport.
+    var _dk2 = el("tfDateKick"), _dks = _dk2 ? getComputedStyle(_dk2) : null;
+    chk("date kicker 15px / 6px tracking", !!(_dks && Math.round(parseFloat(_dks.fontSize)) === 15 && Math.abs(parseFloat(_dks.letterSpacing) - 6) <= 0.2), _dks ? (_dks.fontSize + " / " + _dks.letterSpacing) : "missing", "15px at 6px letter-spacing");
+    var _bt = document.querySelector("#tfWorldGround .tbx-bento"), _btc = _bt ? String(getComputedStyle(_bt).gridTemplateColumns).trim().split(/\s+/) : [];
+    chk("folders 3 per row", _btc.length === 3, _btc.length ? _btc.length + " tracks · " + _btc.join(" ") : "no folder grid", "3 tracks (the wider viewport was re-flowing them to 4)");
+    var _hzc = el("tfWorldHome"), _hzw = _hzc ? _hzc.getBoundingClientRect().width : 0, _gzc = el("tfWorldGround"), _gzw = _gzc ? _gzc.getBoundingClientRect().width : 0;
+    chk("home column ≤362px", _hzw > 0 && _hzw <= 362.5, Math.round(_hzw * 10) / 10 + "px", "≤362px — the frame's own CONTENT width (its 402 artboard minus its 20px gutters); a wider phone centers the column instead of stretching the board");
+    chk("tools column ≤370px", _gzw > 0 && _gzw <= 370.5, Math.round(_gzw * 10) / 10 + "px", "≤370px — the frame's tools column (402 minus its 16px gutters), which is what makes the grid's 44px padding land on the design's own track width");
     // FACE DOSE CARD (2c §5): open the first hero tile's card, read its shell + its two teaching lines + the ignited chip, then fold it back so the audit leaves the board exactly as it found it.
     var _hcell = document.querySelector('#tfHeroRow [data-tfhcell="firstLight"]');
     if (_hcell) {
