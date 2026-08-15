@@ -204,7 +204,15 @@ notes. **This is a DEPTH roadmap, not a launch roadmap — see the tension named
 5. **The meditation story-bar.** In a stack the IG-story bar is right; a multi-part meditation expands its own bar and
    reads as confusing. Proposal: always ONE bar per top-level step, express the meditation's parts somewhere secondary.
 
-Root causes, anchors and costs: five parallel investigations were run this session; their findings fill this section.
+6. **The pause / timing engine.** *"Regardless of which tool, the pauses are all identical and kind of too slow."* His
+   diagnosis is not that one number is mis-tuned but that the app has ONE pause model where it needs several, and that the
+   GRANULARITY is wrong: instructional/somatic cues want a short beat after EVERY line ("relax your eyebrows, pause, relax
+   your eyes, pause"), while contemplative and visualization prompts want a real dwell. Today it appears to batch lines and
+   then insert one long gap, which reads as out of place in the stretch stack. His words: *"pausing and timing is a very
+   important aspect of tools that has to be very thought out."* Likely BOTH engine work (a pause-context model) and content
+   work (authoring which line gets which context).
+
+Root causes, anchors and costs: six parallel investigations were run this session; their findings fill this section.
 **Sequencing note:** popups first — they are the only category that BREAKS the app, and they can fire during any other
 test, so fixing them makes every later verification trustworthy. Then the two contained bugs (voice, journey landing).
 Breathing earns its own session (it is a phase engine + a sound design, with real product choices inside).
