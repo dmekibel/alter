@@ -742,93 +742,19 @@
     } else {
       a.stateAge=(a.stateAge||0)+1;
       var waitUp=a.level==='floor'?3:5;
-      if (a.stateAge>=waitUp){
-        var canInvite=!a.lastInviteSentK||lastDays(14).indexOf(a.lastInviteSentK)<0;
-        if (canInvite){g.cache.appetiteInvite={to:suggested,copy:"You’ve been showing up. Want to take on one more thing?"};a.lastInviteSentK=k;a.inviteDeclineCount=0;}
-      }
+      if (a.stateAge>=waitUp){a.level=suggested;a.stateAge=0;} // THE CULL (David 2026-08-15 "I want them ALL REMOVED"): the escalation used to ASK first — g.cache.appetiteInvite seeded a card that returned every day until tapped. The invite surface is gone, so the dial simply climbs the way it already descends (silently, symmetric with the down-branch); leaving the seed here would have written a field nothing reads and stranded the dial at its floor.
     }
     a.nodeCap=_appCap(a.level);
     a.modeTarget={dormant:'off',floor:'guided',low:'light',medium:'guided',high:'guided'}[a.level]||'guided';
   }
-  // ===== APPETITE INVITE SURFACE (Decision C, Synthesis §VIII): shown once-per-offer when appetiteUpdate seeds g.cache.appetiteInvite. Accept = escalates level; Decline = increments counter + permanent-locks only if two declines within same 7-day window. =====
-  function showAppetiteInvite(inv) {
-    var old = document.getElementById("appetite-inv"); if (old) old.remove(); // prevent stacking
-    var ob = add(document.body, "div", "hs-ov"); ob.id = "appetite-inv";
-    ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
-    add(ob,"div","","Ready to go deeper?").style.cssText="font-size:15px;font-weight:800;color:#e6cfe0;margin-bottom:6px;font-family:'Jost',sans-serif;";
-    add(ob,"div","",inv.copy||"You've been showing up consistently.").style.cssText="font-size:13px;color:#c89ab4;margin-bottom:13px;font-family:'Jost',sans-serif;";
-    var row=add(ob,"div",""); row.style.cssText="display:flex;gap:8px;";
-    var yes=add(row,"button","jp-durchip"); yes.innerHTML='<i class="ti ti-star"></i> Yes, one more layer'; yes.style.cssText="background:"+DOM.focus.c+";color:#fff;flex:1;";
-    yes.onclick=function(){ob.remove();try{appetiteAccept(inv.to);}catch(e){}};
-    var no=add(row,"button","jp-hmbtn skip"); no.innerHTML='<i class="ti ti-x"></i> Not yet'; no.style.cssText="flex:none;";
-    no.onclick=function(){ob.remove();try{appetiteDecline();}catch(e){}};
-    setTimeout(function(){if(ob.parentNode)ob.remove();},9000);
-  }
-  function appetiteAccept(newLevel) {
-    var g=S.guide; if(!g) return;
-    var a=g.appetiteState=g.appetiteState||{}; a.level=newLevel; a.stateAge=0; a.inviteDeclineCount=0; a.nodeCap=_appCap(newLevel);
-    g.cache=g.cache||{}; delete g.cache.appetiteInvite;
-    save(); try{toast("Let's go · one more layer.");drawJourney(true);}catch(e){}
-  }
-  function appetiteDecline() {
-    var g=S.guide; if(!g) return;
-    var a=g.appetiteState=g.appetiteState||{}; var k=todayK(); var prev=a.lastDeclineK;
-    a.inviteDeclineCount=(a.inviteDeclineCount||0)+1; a.lastDeclineK=k;
-    if(a.inviteDeclineCount>=2&&prev&&daysSince(prev)<=7) a.stateLockedByUser=true; // permanent lock only when both declines within same 7-day window (SYNTHESIS §I fix)
-    g.cache=g.cache||{}; delete g.cache.appetiteInvite;
-    save(); try{drawJourney(true);}catch(e){}
-  }
+  // APPETITE INVITE SURFACE REMOVED (David 2026-08-15, THE CULL: "referring back to the pop ups, I want them ALL REMOVED"). showAppetiteInvite/appetiteAccept/appetiteDecline dealt a bottom card on a 1400ms timer at the tail of drawJourney; its cache only cleared on an explicit tap, so an ignored card came back EVERY DAY forever — the strongest suspect for the "random pop ups" report. appetiteUpdate keeps the dial itself (level/nodeCap), it just no longer asks.
   // ===== TEST-OUT (Path B): preSurfaceCheck — if skill already evidenced, replace teaching node with "already there?" card (evidence-grounded, two-choice). Synthesis §IV Step 8. =====
   function preSurfaceCheck(nodeKey, skillN, evidenceLine, todayDone, label) {
     if (!chapterMastered(skillN)) return null; // skill not yet mastered → surface the teaching node
     return { key:'already:'+nodeKey, icon:'ti-circle-check', title: label || 'Already there?', line:evidenceLine,
       color:'#2d6e3a', done:!!todayDone, _alreadyThere:true, _claimKey:'sk'+skillN+'-claimed', _teachKey:nodeKey };
   }
-  // ===== HERO SANDWICH (tool-surfacing trigger, Synthesis §VI): fires on drift when Chapter 2+ unlocked. Shows a 4-chip obstacle picker inline — "what got in the way?" → earn(15) + nodeHistory. =====
-  function heroSandwich() {
-    var ob = add(document.body, "div", "hs-ov");
-    ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
-    add(ob, "div", "", "What got in the way?").style.cssText = "font-size:13px;font-weight:700;color:#e6cfe0;margin-bottom:10px;font-family:'Jost',sans-serif;";
-    var chips = add(ob, "div", ""); chips.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;";
-    ["Low energy","Short on time","Not sure how","Felt hard"].forEach(function(txt) {
-      var c = add(chips, "button", "jp-durchip"); c.textContent = txt;
-      c.onclick = function() {
-        S.guide = S.guide||{}; S.guide.nodeHistory = S.guide.nodeHistory||{};
-        var key = 'obstacle-named'; S.guide.nodeHistory[key] = S.guide.nodeHistory[key]||[];
-        S.guide.nodeHistory[key].push({k:todayK(), obs:txt}); save();
-        try{earn(15,{label:'obstacle named'});}catch(e){}
-        ob.remove(); try{toast("Named it. That’s the real work.");}catch(e){} drawJourney(true);
-      };
-    });
-    var skip = add(ob, "button", "jp-hmbtn skip"); skip.innerHTML = '<i class="ti ti-x"></i> Not now'; skip.onclick = function(){ob.remove();};
-    setTimeout(function(){if(ob.parentNode)ob.remove();},8000);
-  }
-  // ===== +3 CATALYST (tool-surfacing trigger, Synthesis §VI, Landmark 5): fires when a vice/quit timer stops — Chapter 5+ gate. Names the urge, converts it to a redirect. =====
-  function catalystCard(title, mins) {
-    var ob = add(document.body, "div", "hs-ov");
-    ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
-    add(ob, "div", "", mins + " min of " + title).style.cssText = "font-size:11px;font-weight:700;color:#9a7090;margin-bottom:5px;font-family:'Jost',sans-serif;letter-spacing:.4px;text-transform:uppercase;";
-    add(ob, "div", "", "What was it for you?").style.cssText = "font-size:14px;font-weight:800;color:#e6cfe0;margin-bottom:11px;font-family:'Jost',sans-serif;";
-    var chips = add(ob, "div", ""); chips.style.cssText = "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;";
-    [["Resting","ti-sofa"],["Coping","ti-cloud-rain"],["Distracted","ti-arrows-shuffle"]].forEach(function(pair) {
-      var c = add(chips, "button", "jp-durchip"); c.innerHTML = '<i class="ti ' + pair[1] + '"></i> ' + pair[0];
-      c.onclick = function() {
-        S.guide = S.guide||{}; S.guide.nodeHistory = S.guide.nodeHistory||{};
-        (S.guide.nodeHistory["catalyst-named"] = S.guide.nodeHistory["catalyst-named"]||[]).push({k:todayK(),type:pair[0],title:title,mins:mins}); save();
-        ob.remove();
-        var conv = add(document.body, "div", "hs-ov"); conv.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:14px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;";
-        add(conv, "div", "", "Turn that energy into something?").style.cssText = "font-size:14px;font-weight:800;color:#e6cfe0;margin-bottom:11px;font-family:'Jost',sans-serif;";
-        var yr = add(conv, "div", ""); yr.style.cssText = "display:flex;gap:8px;";
-        var yes = add(yr, "button", "jp-durchip"); yes.innerHTML = '<i class="ti ti-arrow-right"></i> Name it'; yes.style.cssText = "background:" + DOM.focus.c + ";color:#fff;";
-        yes.onclick = function() { conv.remove(); try { closeTrackerFull(); nowSheet(); } catch(e) {} };
-        var nope = add(yr, "button", "jp-hmbtn skip"); nope.innerHTML = '<i class="ti ti-x"></i> Not now'; nope.onclick = function() { conv.remove(); };
-        setTimeout(function(){if(conv.parentNode)conv.remove();},5000);
-        try { earn(15, {label:"catalyst-named"}); } catch(e) {} try { drawJourney(true); } catch(e) {}
-      };
-    });
-    var skip2 = add(ob, "button", "jp-hmbtn skip"); skip2.innerHTML = '<i class="ti ti-x"></i> Skip'; skip2.onclick = function(){ob.remove();};
-    setTimeout(function(){if(ob.parentNode)ob.remove();},7000);
-  }
+  // HERO SANDWICH + "+3 CATALYST" CARDS REMOVED (David 2026-08-15, THE CULL). heroSandwich() dealt a "What got in the way?" chip card straight after a Drift tap; catalystCard() dealt "What was it for you?" 350ms after any vice timer stopped, then a SECOND card on top of it. Both arrived unasked on top of whatever the user was doing. fundRxCard below SURVIVES: its only door is the weekly trail node the user taps.
   // ===== FUNDAMENTALS RX CARD (Synthesis §VI, Landmark 6): weekly 7-pillar check. Opened from the weekly trail node. Writes to S.course.rx.fundamental; chapterMastered(6) keys off that. =====
   function fundRxCard() {
     var ob = add(document.body, "div", "hs-ov");
@@ -1800,7 +1726,7 @@
     try { TTS.unlock(); } catch (e) {} // this Continue/Start tap is a gesture → unlock audio so the app music can begin
     if (ss) { ss.classList.add("leaving"); setTimeout(function () { ss.classList.remove("on"); ss.classList.remove("leaving"); appMusicSync(); try { devBtnVisible(); } catch (e) {} }, 470); } // zoom-fade out → reveal the app underneath, then start the subtle app music; devBtnVisible hides the 🛠 button now that we've left the start screen unless the toggle kept it (David 2026-07-20)
     if (!has) { try { onboard(); } catch (e) {} } // new user → onboarding
-    else { try { openHomeInstant(); } catch (e) {} setTimeout(function () { try { if (!TF_OPEN) openHomeInstant(); } catch (e) {} try { gaugeOpen(function () { try { maybeWelcomeBack(); } catch (e2) {} }); } catch (e) { try { maybeWelcomeBack(); } catch (e2) {} } }, 470); } // returning → COLD OPEN LANDS STRAIGHT ON HOME (David 2026-08-01): openHomeInstant fires SYNCHRONOUSLY on the Continue tap, so home is already painted (no morph) under the start screen before it zoom-fades — the journey frame never flashes. The old cascadeJourney()/revealTimeline() reveal is GONE for that reason; the journey pane stays primed underneath (init's openJourney) for the swipe, home just covers it. The 470ms timer now only runs the follow-ups ON TOP of the open home: the gauge seam (popup killed — it just chains the space-check + moment-scan) then the ≥2wk Welcome-Back if due. The guarded re-open is a safety net for the case openHomeInstant bailed on TF_ANIM.
+    else { try { openHomeInstant(); } catch (e) {} setTimeout(function () { try { if (!TF_OPEN) openHomeInstant(); } catch (e) {} }, 470); } // THE CULL (David 2026-08-15): the cold open runs NOTHING on top of home any more — the gaugeOpen seam (which chained the space-check questionnaire + the moment-scan) and the ≥2wk Welcome-Back sheet are both gone. // returning → COLD OPEN LANDS STRAIGHT ON HOME (David 2026-08-01): openHomeInstant fires SYNCHRONOUSLY on the Continue tap, so home is already painted (no morph) under the start screen before it zoom-fades — the journey frame never flashes. The old cascadeJourney()/revealTimeline() reveal is GONE for that reason; the journey pane stays primed underneath (init's openJourney) for the swipe, home just covers it. The 470ms timer now only runs the follow-ups ON TOP of the open home: the gauge seam (popup killed — it just chains the space-check + moment-scan) then the ≥2wk Welcome-Back if due. The guarded re-open is a safety net for the case openHomeInstant bailed on TF_ANIM.
   }
   function openJourney() {
     if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } // if home had adopted the trail into its sky, take it back before the standalone overlay draws into it (single journey DOM)
@@ -1858,7 +1784,7 @@
     var jp = el("journeyPath"), gm = el("gameMode"), b = document.body.classList;
     try { groveClose(); vrtClose(); goClose(); stClose(); } catch (e) {} // THE GARDEN belongs to the world: any pane rest leaves every menu closed, so re-entering the island is always the calm face (the game branch below wakes it again)
     if (n === "planner") { b.remove("journey-open", "gaming"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "day"); }); try { revealTimeline(); } catch (e) {} }
-    else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"); if (_jt && jp && !jp.contains(_jt)) jp.appendChild(_jt); if (!_jt || !_jt.children.length || !jp.contains(_jt)) drawJourney(true); } catch (e) {} } // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
+    else if (n === "journey") { if (ONEPAGE) { try { releaseTrailFromSky(); } catch (e) {} } b.remove("gaming"); if (gm) gm.classList.remove("on", "gn-open"); gameOn = false; b.add("journey-open"); if (jp) jp.classList.add("on"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.id === "navJourney"); }); try { var _jt = el("jpTrail"), _js = el("jpScroll"); if (_jt && _js && !_js.contains(_jt)) _js.appendChild(_jt); if (!_jt || !_jt.children.length || !(_js && _js.contains(_jt))) drawJourney(true); else jpFocusCur(); } catch (e) {} } // re-home the trail into the SCROLLER, never bare into #journeyPath: a trail parented to the pane itself can never be scrolled to its live node (David 2026-08-15). And when the trail IS already rendered we still jpFocusCur() — the no-redraw shortcut below is exactly how every post-home landing ended up parked at scrollTop 0, the very top of a ~5000px trail. Focusing is not redrawing: nothing re-animates, the view just sits on the current node. // only redraw+recenter if the journey isn't already rendered — landing via a swipe must NOT re-run the auto-scroll (that was the "lands scrolled away a little" glitch). David 2026-07-01
     else { b.remove("journey-open"); if (jp) jp.classList.remove("on", "jp-leaving", "jp-sliding"); if (gm) gm.classList.add("on"); b.add("gaming"); document.querySelectorAll("#nav .nb").forEach(function (x) { x.classList.toggle("on", x.dataset.tab === "self"); }); try { worldFit(); } catch (e) {} if (!gameOn) { gameOn = true; requestAnimationFrame(drawWorld); } try { gameNavSetup(); } catch (e) {} try { groveWire(); groveOnWorldOpen(); } catch (e) {} } // THE GROVE wakes on THIS path too: setPaneRest is how the carousel swipe AND the home garden chip reach the world, and openGame() is not on either — without this the entry flower, its coins, the close X, the hold-to-grow listeners and the whole congratulation beat were dead on the app's primary route in
   }
   var _paneAnim = false;
@@ -1920,32 +1846,8 @@
     });
     document.addEventListener("pointercancel", function () { cancelDrag(); });
   }
-  // ===== WELCOME-BACK RE-ASSESSMENT (David 2026-06-29): David drifts off-path for weeks then returns — the journey must NOT resume stale. Detect a lapse (≥14d since last activity) → a gentle, anti-shame re-gauge: energy now? · which goals still matter? · ease back gentle. Recalibrate (lowStart gate, prune paused goals) without demoting progress. =====
+  // WELCOME-BACK SHEET REMOVED (David 2026-08-15, THE CULL). maybeWelcomeBack()/welcomeBackSheet() threw a full-screen ob-ov re-gauge ("HOW IS YOUR ENERGY NOW?" + a goal cull) over the cold open after any ≥14d gap — the single most jarring unprompted surface in the app. daysSinceK survives (the vault + install-age readouts use it); lastActiveK went with the sheet, it had no other caller. S.lastWelcomeBackK is simply never written again; nothing reads it.
   function daysSinceK(k) { try { var a = (k || "").split("-"), d = new Date(+a[0], +a[1] - 1, +a[2]); var t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - d) / 86400000)); } catch (e) { return 0; } }
-  function lastActiveK() { var tk = todayK(), ks = {}; Object.keys(S.log || {}).forEach(function (k) { if ((S.log[k] || []).length) ks[k] = 1; }); Object.keys(S.bk || {}).forEach(function (k) { var e = S.bk[k] || {}; if ((e.am && e.am.done) || (e.pm && e.pm.done) || ((e.journal || []).length)) ks[k] = 1; }); Object.keys(S.blocks || {}).forEach(function (k) { if ((S.blocks[k] || []).some(function (b) { return b.done; })) ks[k] = 1; }); return Object.keys(ks).filter(function (k) { return k < tk; }).sort().pop() || null; }
-  function maybeWelcomeBack() { try { if (!(S.profile && S.profile.set)) return; if (S.lastWelcomeBackK === todayK()) return; var last = lastActiveK(); if (!last) return; var gap = daysSinceK(last); if (gap < 14) return; welcomeBackSheet(gap); } catch (e) {} }
-  function welcomeBackSheet(gap) {
-    S.lastWelcomeBackK = todayK(); save(); // once per return
-    var weeks = Math.floor(gap / 7), human = weeks >= 1 ? (weeks + " week" + (weeks > 1 ? "s" : "")) : (gap + " days");
-    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
-    var body = add(card, "div", "ob-body"), foot = add(card, "div", "ob-foot");
-    add(body, "i", "ti ti-sparkles ob-spk");
-    add(body, "div", "ob-q", "Welcome back");
-    add(body, "div", "ob-sb", "It's been " + human + ". No guilt: seasons happen, and that you came back is the whole skill.");
-    add(body, "div", "ob-lbl", "HOW'S YOUR ENERGY NOW?");
-    var er = add(body, "div", "ob-row"), pick = { v: "" };
-    VIBES2.forEach(function (v) { var c = add(er, "span", "ob-ch"); c.innerHTML = '<i class="ti ' + v.ti + '"></i> ' + v.l; c.onclick = function () { pick.v = v.k; Array.prototype.forEach.call(er.children, function (x) { x.classList.remove("on"); }); c.classList.add("on"); c.style.background = v.c; c.style.color = "#160510"; }; });
-    var act = activeGoals();
-    if (act.length) { add(body, "div", "ob-lbl", "WHICH GOALS STILL MATTER?"); var gr = add(body, "div", "ob-row"); act.forEach(function (g) { g._wbKeep = true; var c = add(gr, "span", "ob-ch on"); c.textContent = g.title; c.onclick = function () { g._wbKeep = !g._wbKeep; c.classList.toggle("on", g._wbKeep); }; }); }
-    var b = add(foot, "button", "ob-btn go", "Ease me back in ▸");
-    b.onclick = function () {
-      if (pick.v) { S.profile.vibe = pick.v; S.profile.lowStart = (pick.v === "overwhelmed" || pick.v === "stuck"); } else { S.profile.lowStart = true; } // default: gentle re-entry (body-first gate leads)
-      (S.goals || []).forEach(function (g) { if ("_wbKeep" in g) { g.active = g._wbKeep; delete g._wbKeep; } }); // paused goals quietly go on-hold; kept goals stay (rotation resurfaces the stalest)
-      save(); ov.remove(); renderAll();
-      try { if (document.body.classList.contains("journey-open")) { drawJourney(true); cascadeJourney(); } else openJourney(); } catch (e) {}
-      toast("fresh start · one gentle step at a time");
-    };
-  }
   function appVer() { try { var s = document.querySelector('script[src*="app.js"]'); var m = s && s.src.match(/v=(\d+)/); return "v" + (m ? m[1] : "?"); } catch (e) { return "v?"; } } // reads the live cache-buster → the actual build loaded
   // NOTE (David 2026-07-02): this function has no caller yet anywhere in app.js — it's scaffolding, not wired into the live tracking flow. Day 4 fixed its CONTENT per spec (30s/1m floor, always-visible X); wiring it to an actual duration-commit call site is a separate, undone product decision.
   function timeCommit(n, onGo) { // commit a time to an activity → that's how ALTER tracks. First-ever use is a gentle tutorial that walks you to 5 minutes. (David 2026-07-02)
@@ -2188,8 +2090,38 @@
     beat("");
   }
   // @SEC:JOURNEY-TRAIL — the visible Duolingo-style trail (drawJourney + node UI).
+  // THE JOURNEY NEVER LANDS AT ITS TOP (David 2026-08-15: "sometimes when you go from the garden to home, or if you swipe from the garden
+  // leftwards, it takes you to the journey — but it takes you to the very top of journey. I don't want the app ever to take you to the very
+  // top of journey."). WHY it happened: home's sky ADOPTS #jpTrail out of #jpScroll (adoptTrailToSky), and an EMPTY scroller has its
+  // scrollTop clamped to 0 by the browser; releaseTrailFromSky put the trail back and restored nothing. setPaneRest("journey") then refused
+  // to redraw (the trail already has children — the 2026-07-01 no-double-recenter rule), so the ONLY code that ever focused the live node —
+  // an anonymous doScroll closure at the tail of drawJourney, reachable only through a full redraw — never ran. That closure is now THIS
+  // named function, math byte-identical, callable from every landing path. David's standing call: ALWAYS snap to the current node. We do not
+  // restore "where you were reading" — the live end of the trail is the honest landing, and it is never 0.
+  function jpFocusCur() {
+    try {
+      var sc = el("jpScroll"), trail = el("jpTrail");
+      if (!sc || !trail || !sc.contains(trail)) return false; // while the trail lives in home's SKY, #jpScroll owns nothing — never fight the world column
+      var pick = function () {
+        var t = trail.querySelector(".jp-node.cur"); if (t) return t;
+        t = trail.querySelector(".jp-trophy.jp-summit"); if (t) return t; // today's summit chest = drawJourney's own fallback (`if (!curEl) curEl = endT`)
+        var dn = trail.querySelectorAll(".jp-node.done"); if (dn.length) return dn[dn.length - 1];
+        var tr2 = trail.querySelectorAll(".jp-trophy"); return tr2[tr2.length - 1] || null; // weakest: past-chapter trophies sit at the BOTTOM of the trail
+      };
+      var doScroll = function () { try { var s2 = el("jpScroll"), t2 = pick(); if (s2 && t2 && s2.contains(trail)) s2.scrollTop = Math.max(0, t2.offsetTop - s2.clientHeight * 0.42); } catch (e) {} };
+      setTimeout(doScroll, 60); setTimeout(doScroll, 320); // run twice — once early, once after the icon font settles layout (else it lands short)
+      return true;
+    } catch (e) { return false; }
+  }
   function drawJourney(autoScroll) {
-    var trail = el("jpTrail"); if (!trail) return; trail.innerHTML = "";
+    var trail = el("jpTrail"); if (!trail) return;
+    // KEEP THE PLACE ACROSS THE WIPE (David 2026-08-15, the same report): innerHTML="" collapses #jpScroll's scrollHeight, the browser clamps
+    // scrollTop to 0, and the rebuilt trail is left parked at its head. So EVERY no-autoScroll redraw (renderAll while the journey is open, a
+    // stop/switch, the live pill) also yanked the trail to the top — the exact thing he never wants. Re-apply the pre-wipe scrollTop; the
+    // autoScroll branch at the tail overrides it with jpFocusCur() when a real LANDING is what asked for the redraw. This honors G4 (a pick
+    // must not yank the trail) more faithfully than the clamp did.
+    var _jpSc = el("jpScroll"), _jpKeep = (_jpSc && _jpSc.contains(trail)) ? _jpSc.scrollTop : -1;
+    trail.innerHTML = "";
     var jn = Math.max(0, Math.min(JP_CHAPTERS.length - 1, journeyNode()));
     var nodes = jpNodes(), real = nodes.filter(function (n) { return !!n.title; });
     // #5: seed the done-set on first call so bursts only fire for completions that happen THIS session
@@ -2285,7 +2217,7 @@
           // FOLLOW / REPLAN / DRIFT matrix — the live triad next to Done (reward-never-shame; David 2026-06-28)
           var fl = add(mx, "button", "jp-ckbtn follow small"); fl.innerHTML = '<i class="ti ti-player-play"></i> Follow'; fl.onclick = function () { try { toast("on plan · keep going"); } catch (e) {} };
           var rp = add(mx, "button", "jp-ckbtn replan small"); rp.innerHTML = '<i class="ti ti-calendar-event"></i> Replan'; rp.onclick = function () { if (n.key.indexOf("blk:") === 0) { var bid = n.key.slice(4), bb = (blocks(todayK()) || []).filter(function (b) { return b.id === bid; })[0]; if (bb) { closeJourney(); blockEdit(bb, todayK()); return; } } planBreak("Replan: what, for how long?"); };
-          var dr = add(mx, "button", "jp-ckbtn drift small"); dr.innerHTML = '<i class="ti ti-wind"></i> Drift'; dr.onclick = function () { stopTimer(runT.id); coolStreak(); try { toast("you stepped away · no shame"); } catch (e) {} if ((S.guide&&(S.guide.unlocked||[]).indexOf(2)>=0)) { try{heroSandwich();}catch(e){} } drawJourney(true); };
+          var dr = add(mx, "button", "jp-ckbtn drift small"); dr.innerHTML = '<i class="ti ti-wind"></i> Drift'; dr.onclick = function () { stopTimer(runT.id); coolStreak(); try { toast("you stepped away · no shame"); } catch (e) {} drawJourney(true); }; // THE CULL (David 2026-08-15): the Drift tap no longer deals heroSandwich's obstacle card on top of the trail — the toast IS the whole acknowledgement now.
           var tl = add(mx, "button", "jp-ckbtn small"); tl.style.background = "#3a1226"; tl.style.color = "#ffd9ea"; tl.innerHTML = '<i class="ti ti-briefcase"></i> Tools'; tl.onclick = function () { try { openToolbox(); } catch (e) {} }; // the grimoire, from the cockpit (David 2026-06-29)
         } else if (n.key && n.key.indexOf("hab:") === 0 && jpHabMenuKey === n.key) {
           // HABIT 3-way inline menu — opened by tapping START on a habit circle (David 2026-06-28)
@@ -2368,7 +2300,7 @@
       add(_ln, "div", "jp-cap", tr("Lesson") + ": " + tr(_wsA.title));
       _ln.onclick = function () { runWorksheet(_wsA); };
     }
-    var endT = trophy(allDone ? "done" : "locked", allDone ? "ti-trophy" : "ti-gift"); // today's reward summit
+    var endT = trophy(allDone ? "done" : "locked", allDone ? "ti-trophy" : "ti-gift"); endT.classList.add("jp-summit"); // today's reward summit. The marker class is jpFocusCur's second-choice target (David 2026-08-15) — the trail holds several .jp-trophy elements and the PAST-chapter ones sit at the bottom, so "the last trophy" would land nowhere near the live end. No CSS keys on jp-summit.
     if (!allDone) { var _sb = endT.querySelector(".jt-b"); if (_sb) _sb.style.cssText = "background:" + mixHex(_wA.c, "#160510", 0.6) + ";border-color:" + mixHex(_wA.c, "#160510", 0.2) + ";color:" + _wA.c + ";box-shadow:0 5px 0 #160510,0 0 16px " + _wA.c + "3a;"; } // today's summit chest glows in the world hue — attainable, not gray
     for (var r = real.length - 1; r >= 0; r--) { var rn = real[r]; coin(rn.done ? "done" : (r === curIdx ? "cur" : "up"), rn, gi++); }
     if (!curEl) curEl = endT;
@@ -2398,7 +2330,8 @@
       pill.innerHTML = '<span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:' + tfStripe(_d.c) + ';color:' + (_d.ink || "#160510") + ';border:2px solid #160510;flex:none;">' + tiIcon(_t) + '</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px;color:#ffe3f1;">' + esc(_t.title || "Tracking") + '</span><span class="live-elapsed" data-tid="' + _t.id + '" style="font-weight:800;font-size:14px;color:' + _d.light + ';">' + elapsedStr(_t) + '</span><i class="ti ti-chevron-up" style="color:#b28ba6;font-size:15px;"></i>';
       pill.onclick = function () { openTrackerFull(); };
     })();
-    if (autoScroll && curEl) { var doScroll = function () { try { var sc = el("jpScroll"); if (sc) sc.scrollTop = Math.max(0, curEl.offsetTop - sc.clientHeight * 0.42); } catch (e) {} }; setTimeout(doScroll, 60); setTimeout(doScroll, 320); } // run twice — once early, once after the icon font settles layout (else it lands short)
+    if (_jpKeep > 0 && _jpSc && _jpSc.contains(trail)) { try { _jpSc.scrollTop = _jpKeep; } catch (e) {} } // restore across the wipe (see the head of this function)
+    if (autoScroll) jpFocusCur(); // the old inline doScroll closure, now a named module function every landing path can call (David 2026-08-15)
     // #5: fire completion bursts after layout settles (DEVICE-UNTESTED feel — the pop + float animate on the node after it scrolls into view)
     if (_burstQueue.length) { var _bq = _burstQueue.slice(); setTimeout(function () { _bq.forEach(function (b) { try { jpNodeCompletionBurst(b.el, b.pts); rewardFx(2, { srcEl: b.el }); } catch (e) {} }); }, 380);
       // FIRST LIGHT (David device 2026-07-03: "first activity should have a clever reward"): the day's FIRST done-node gets a distinguished ignition — gold ring flare + one guardian seal line, then silence. Once per logical day; consistent with the battery language (ignition = the moment of completion, never a nag).
@@ -2413,8 +2346,7 @@
         } catch (e1) {} }, 500); })(_bq[0]);
       }
     }
-    // Appetite invite: auto-surface once per offer when appetiteUpdate seeds the invite (shown once per day until accepted/declined)
-    try { var _g = S.guide; if (_g&&_g.cache&&_g.cache.appetiteInvite) { var _inv=_g.cache.appetiteInvite; if (_inv.shownK!==todayK()) { _inv.shownK=todayK(); save(); (function(ii){setTimeout(function(){try{if(ii===((S.guide||{}).cache||{}).appetiteInvite)showAppetiteInvite(ii);}catch(e){}},1400);})(S.guide.cache.appetiteInvite); } } } catch(e) {}
+    // THE CULL (David 2026-08-15): drawJourney no longer arms a 1400ms timer that deals the appetite invite over the trail. A stale g.cache.appetiteInvite left in an existing save is now simply ignored (nothing reads it).
   }
   // ===== CHAPTER SHEET — lesson guide overlay (Duolingo-style). Opens when user taps any chapter banner in the trail. Shows the chapter concept + milestone progress + a continue button. =====
   function chapterSheet(ci) {
@@ -2928,26 +2860,7 @@
     }
     drawHabitsSheet();
   }
-  // ---- THE NOTEBOOK (David 2026-06-23): the single menu door (bottom-left, above the stick). Every menu roots from here, each X-able. No more top-drag / scattered taps. ----
-  function notebookSheet() {
-    var ov = add(document.body, "div", "nb-ov"); var card = add(ov, "div", "nb-card");
-    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    var head = add(card, "div", "goal-head"); var h = add(head, "div", "goal-q"); h.innerHTML = '<i class="ti ti-notebook"></i> Notebook'; var x = add(head, "button", "goal-x"); x.innerHTML = '<i class="ti ti-x"></i>'; x.onclick = function () { ov.remove(); };
-    var body = add(card, "div", "nb-body");
-    var run = activeTimers(), cur = run[run.length - 1];
-    var items = [
-      { ic: "ti-calendar", l: "Today", sub: "plan & track your day", c: "#36b3f0", fn: function () { ov.remove(); openPull(); } },
-      { ic: "ti-player-play-filled", l: cur ? "Switch activity" : "Start tracking", sub: cur ? ("now: " + esc(cur.title || "tracking")) : "what are you doing?", c: "#ff5fa0", fn: function () { ov.remove(); startOrSwitch(); } },
-      { ic: "ti-checkup-list", l: "Habits", sub: "your daily thread", c: "#ff8a3d", fn: function () { ov.remove(); habitPathSheet(); } },
-      { ic: "ti-stack-2", l: "Habit stacks", sub: "build & apply day presets", c: "#ff5fa0", fn: function () { ov.remove(); presetsSheet(todayK()); } },
-      { ic: "ti-target", l: "Goals", sub: "break down & schedule", c: "#34d39a", fn: function () { ov.remove(); goalsSheet(); } },
-      { ic: "ti-affiliate", l: "Your life", sub: "see who you're being", c: "#b07aff", fn: function () { ov.remove(); mindmapSheet(); } },
-      { ic: "ti-brain", l: "Brain", sub: "free AI (optional)", c: "#7f9bc4", fn: function () { ov.remove(); brainSheet(); } },
-      { ic: "ti-sun", l: "Wake & bedtime", sub: wakeBedSub(), c: "#ffb02e", fn: function () { ov.remove(); wakeBedSheet(); } },
-      { ic: "ti-sparkles", l: "Redo setup", sub: "re-run onboarding", c: "#ffc83d", fn: function () { ov.remove(); onboard(); } }
-    ];
-    items.forEach(function (it) { var b = add(body, "button", "nb-item"); var ico = add(b, "span", "nb-ic"); ico.style.background = it.c; ico.innerHTML = '<i class="ti ' + it.ic + '"></i>'; var tx = add(b, "div", "nb-tx"); add(tx, "div", "nb-l", it.l); var s = add(tx, "div", "nb-sub"); s.innerHTML = it.sub; b.onclick = it.fn; });
-  }
+  // THE NOTEBOOK MENU DELETED (David 2026-08-15, this pass). notebookSheet() was the second, dead menu system CLAUDE.md has warned about for months: its ONE door (#notebookBtn) has been display:none !important since the nav rebuild, so nothing could open it. Verified by grep before deleting — the only other reference was its own wiring line in init. The live doors it duplicated all still exist (Planner, the tracker, Habits, Goals, Brain, Wake & bedtime, Redo setup). .nb-ov/.nb-item CSS STAYS: wakeBedSheet below and the #youJourney rows in index.html use it.
   // 1-tap wake/bed re-set — same ranges as onboarding step 6, but standalone; live-rebuilds the timeline window so you SEE the day reframe (David 2026-06-26)
   var WAKE_OPTS = ["before 6", "6–7", "7–8", "8–9", "9–10", "later", "varies"];
   var BED_OPTS = ["before 10", "10–11", "11–12", "12–1", "1–2", "later", "varies"];
@@ -5628,7 +5541,13 @@
   }
   function releaseTrailFromSky() { // return #jpTrail to #jpScroll (the standalone journey overlay owns it again). Guard: only move if it currently sits in the sky.
     var trail = el("jpTrail"), scroll = el("jpScroll"); if (!trail || !scroll) return;
-    if (trail.parentNode && trail.parentNode.id === "tfWorldSky") scroll.appendChild(trail);
+    if (trail.parentNode && trail.parentNode.id === "tfWorldSky") {
+      scroll.appendChild(trail);
+      // LOSSLESS ROUND-TRIP (David 2026-08-15 "it takes you to the very top of journey"): the adoption emptied #jpScroll, so the browser
+      // clamped its scrollTop to 0 and this release handed the journey back parked at its head. The release now RE-FOCUSES the live node,
+      // so the trail is honest again the moment it comes home — whichever surface asked for it, and even on the paths that never redraw.
+      try { jpFocusCur(); } catch (e) {}
+    }
   }
   // ---- GROUND: the full tool library as more .tf-htool tiles below the 2x4 grid (one page: scrolling down flows into the whole shelf). Same renderer/skin as the home grid. Targeted drain, no innerHTML wipe. ----
   var LAYER2DOM = { "Steady the body": "restore", "Clear the mind": "focus", "Feel it through": "connect", "Become who you're being": "create", "Lift the lens": "play" };
@@ -6079,11 +5998,24 @@
       // NOT ready to land = sky not yet holding the drawn trail, still morphing, or the column can't scroll. Leave _worldPositioned FALSE so a later render/kick retries — never commit on an empty/hidden home (the boot-under-startscreen premature-commit trap).
       if (skyReady && target > peek && !morphing && scrollable) {
         world.scrollTop = target;
-        if (Math.abs(world.scrollTop - target) < 4) { _worldPositioned = true; try { onWorldScroll(); } catch (e) {} return; } // landed + held → commit (locks it; re-renders won't yank it). Re-read the puck-return state now that we're parked AT home so it hides (the pre-land onWorldScroll saw scrollTop 0 = "away" and lit it).
+        if (Math.abs(world.scrollTop - target) < 4) { _worldPositioned = true; _worldPosHeals = 0; try { onWorldScroll(); } catch (e) {} return; } // landed + held → commit (locks it; re-renders won't yank it). Re-read the puck-return state now that we're parked AT home so it hides (the pre-land onWorldScroll saw scrollTop 0 = "away" and lit it).
       }
     } catch (e) {}
-    if (tries < 60) _worldPosTo = setTimeout(function () { worldScrollHome(tries + 1); }, 16); // ~1s of retries, outliving the ~460ms open-morph
+    if (tries < 60) { _worldPosTo = setTimeout(function () { worldScrollHome(tries + 1); }, 16); return; } // ~1s of retries, outliving the ~460ms open-morph
+    // THE SILENT GIVE-UP (David 2026-08-15, found while chasing "it takes you to the very top of journey"): after 60 tries this simply
+    // RETURNED. _worldPositioned stayed false, which silently disables wLive() — and with it the home magnet, the re-settle and every
+    // arrival cascade — while #tfWorld sits wherever it was, typically near the TOP OF THE SKY, i.e. the top of the journey trail. The
+    // successful path above is untouched (same timing, same target); only this branch is. It now (a) says so out loud, and (b) repairs the
+    // usual cause — a sky that never received a DRAWN trail — then re-runs the normal loop. Bounded at 3 heals so a genuinely un-scrollable
+    // column (a phone shorter than the artboard, a hidden home) can never spin forever; the counter resets on a real landing and on teardown.
+    if (_worldPosHeals < 3) {
+      _worldPosHeals++;
+      try { console.warn("[alter] worldScrollHome: home landing unreached after " + tries + " tries — repairing the sky, heal " + _worldPosHeals + "/3"); } catch (e) {}
+      try { adoptTrailToSky(); var _ht = el("jpTrail"); if (_ht && !_ht.children.length) drawJourney(false); } catch (e) {}
+      _worldPosTo = setTimeout(function () { worldScrollHome(0); }, 240);
+    } else { try { console.warn("[alter] worldScrollHome: giving up after 3 heals — the one-page world stays unpositioned (wLive off)"); } catch (e) {} }
   }
+  var _worldPosHeals = 0; // heal attempts for the current stranding; cleared on a committed landing and in teardownWorld
   // ---- the orchestrator: called by renderTrackerFull on every calm full-screen home face. Builds/reuses the world, adopts the trail, renders the ground shelf, positions on first open. ----
   var _worldPositioned = false;
   function renderOnePageWorld(showGround) {
@@ -6139,7 +6071,7 @@
     _hcState = null; _hcArmUp = _hcArmDown = false; _hcAnimAt = 0; _hcDone = false; _hcQ = null;
     _hcDone = false; try { hcReset(); } catch (e) {}
     if (_tcEls) { _tcEls.forEach(function (n) { n.style.animation = ""; n.style.transition = ""; n.style.opacity = ""; n.style.transform = ""; n.style.pointerEvents = ""; }); } // pointerEvents rides with opacity here for the same reason it does in tcCascade: a row left at "none" by an exit that never got its arrival would be DEAD to taps on the next open, note 6's failure mode in the tap layer
-    _tcEls = null; _tcShown = undefined; _tcHard = false;
+    _tcEls = null; _tcShown = undefined; _tcHard = false; _worldPosHeals = 0; // fresh stranding budget for the next open (David 2026-08-15)
     ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; n.style.translate = ""; } }); // translate too, or a label's scrub offset sticks across a teardown
     var _pw = document.querySelector(".tbx-planwrap"); if (_pw) { _pw.style.opacity = ""; _pw.style.pointerEvents = ""; }
     _worldPositioned = false;
@@ -7266,7 +7198,7 @@
         reply: { thriving: "Good. Let's spend some of that, right now.", coasting: "Steady. One real thing on purpose. that changes a day.", stuck: "I know that one. Knowing was never the hard part. we'll move one small thing.", overwhelmed: "Okay. Then we go small today. I'll carry the rest." } },
       // CUT (David 2026-07-09): 'how easy to get out of bed' + 'what's in your good days' trimmed as unnecessary. NOTE the good-days question fed the starter-plan personalization ("made of what your good days are made of"); the plan now builds from friction + vibe only (planItems' ingredient branches simply don't fire). Restore this one question if the plan feels thin.
       { sec: 2, key: "challenges", q: "Where do you want the most help?", rows: 1, multi: true, opts: [["focus", "Focus", "ti-target", "#36b3f0", "I lose the thread and drift to my phone"], ["sleep", "Sleep", "ti-moon", "#5fa8ff", "I wake up tired, or wake at 3am"], ["stress", "Stress", "ti-urgent", "#ff5fa8", "shoulders and jaw stay tight all day"], ["energy", "Energy", "ti-battery-1", "#ffd24a", "I run out of steam by the afternoon"], ["mood", "Mood", "ti-mood-neutral", "#b07aff", "flat, or on edge, for no clear reason"], ["consistency", "Consistency", "ti-repeat", "#46e2a4", "I start strong, then fade by day three"]] }, // BLUEPRINT: where they want help. Short label + specific-moment sub (the vibe-question pattern, both copy-gates passed 2026-07-09). Sits before the friction question; dispatches which tools/lessons surface first.
-      // THE FRICTION QUESTION: concrete, true for everyone, and it SETS the Motivation Dial's default route (P.mlDrift). Every answer teaches an engine.
+      // THE FRICTION QUESTION: concrete, true for everyone. (It used to set the Motivation Dial's default route; the dial was culled 2026-08-15 — the answer now only feeds P.overwhelm/P.overwhelms.) Every answer teaches an engine.
       { sec: 2, key: "overwhelm", q: "When something needs doing and you don't do it, what's usually true?", rows: 1, multi: true, opts: [["cant", "I can't get started", "ti-player-pause", "#ff8a3a"], ["doubt", "I doubt it'll matter", "ti-help-circle", "#48b8e0"], ["bored", "It bores me", "ti-mood-neutral", "#b07aff"], ["empty", "I'm out of fuel", "ti-battery-1", "#7f9bc4"], ["forget", "I just forget", "ti-bulb-off", "#ffd24a"], ["none", "I mostly just do it", "ti-circle-check", "#46e2a4"]] }
     ];
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
@@ -7327,8 +7259,7 @@
       P.vibe = d2.vibe || P.vibe || ""; P.lowStart = (d2.vibe === "overwhelmed" || d2.vibe === "stuck") || !!P.lowStart;
       if (d2.bed) P.bed = d2.bed; if (d2.peak) { P.peak = d2.peak === "am" ? "lark" : d2.peak === "night" ? "owl" : "mixed"; P.peakBand = d2.peak; }
       if (d2.struggles.length) P.struggles = d2.struggles.slice();
-      if (d2.overwhelm.length) { P.overwhelm = d2.overwhelm[0]; P.overwhelms = d2.overwhelm.slice();
-        var _dial = d2.overwhelm.filter(function (x) { return ["cant", "doubt", "bored", "empty"].indexOf(x) >= 0; })[0]; if (_dial) P.mlDrift = _dial; } // the friction answer pre-routes the Motivation Dial (moment-listener) — the app knows your wall before you hit it
+      if (d2.overwhelm.length) { P.overwhelm = d2.overwhelm[0]; P.overwhelms = d2.overwhelm.slice(); } // P.mlDrift write DELETED (David 2026-08-15, THE CULL): its only reader was the Motivation Dial's default route, and the dial is gone. The friction answer still lands in P.overwhelm/P.overwhelms, which the rest of the app reads.
       if (d2.wants.length) P.wants = d2.wants.slice();
       if (d2.words && d2.words.length) P.words = d2.words.slice();               // ORGAN A → TLM pings + comeback vocabulary
       if (d2.ingredients && d2.ingredients.length) P.ingredients = d2.ingredients.slice(); // ORGAN A → comeback offers built from these
@@ -9432,7 +9363,7 @@
   function compassBloom() { document.body.classList.remove("compass"); if (_compassFoldT) clearTimeout(_compassFoldT); _compassFoldT = setTimeout(compassFold, 2500); }
   function compassInit() { compassFace(); document.body.classList.add("compass"); } // rest state = folded
   function closeFeature() { document.body.classList.remove("overworld"); if (!gameOn) openGame(); }
-  function heroMenu() { mindmapSheet(); } // tap the fairy → identity "see your life" mindmap (§13: center = who am I; the pull-down day-hub lives on the top tracker strip).
+  // heroMenu() DELETED (David 2026-08-15): it wrapped mindmapSheet() for a fairy tap that was never wired — zero callers in the file. mindmapSheet itself SURVIVES: the "See your life" button on the Character panel opens it.
   var worldTapWired = false;
   // diegetic access points — walk up to a building and tap it to open its menu (Sims-style)
   var WORLD_SPOTS = [
@@ -12638,7 +12569,7 @@
           }
           else if (fling && dxEnd > 0) { var dmv = domainOf(b), tnow = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60); logs(k).push({ id: uid(), time: tnow, mins: b.mins || 30, title: b.title, domain: dmv, color: b.color || (DOM[dmv] || DOM.focus).c, catK: b.catK || null, prio: b.prio || 2 }); var a3 = blocks(k), bi3 = a3.indexOf(b); if (bi3 >= 0) a3.splice(bi3, 1); reflow(k); reflowLogs(k); save(); renderToday(); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e2) {} toast("moved to real"); } // a plan flung all the way RIGHT RELOCATES into the real lane (it doesn't fuse to the middle — fusing is a side-stretch) (David 2026-06-25)
           else if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60);
-            if (k === todayK() && !b.done && b.title && dragMin >= sm0 + 15) notePostpone(b); // ORGAN D drag choke point (the deferred timeline-safe pass): a same-day forward push ≥15min counts exactly like the editor's ＋nudge — mutation before the save below; the dial itself arrives on a 300ms delay, after this drop's renderToday
+            // ORGAN D drag choke point REMOVED (David 2026-08-15, THE CULL): a same-day forward push ≥15min used to call notePostpone(b), which counted to 3 and then threw the Motivation Dial over the timeline 300ms after the drop. Dragging a block is not a request for a card.
             // FREE DRAG INTO THE FUTURE (David device 2026-07-03): the dropped block OWNS its window — any other undone block overlapping it (pin or not) gets pushed forward past its end, cascading via reflow. Past blocks never move backward; same-title neighbours then fuse in reflow's merge pass.
             (function () { var ds = dragMin, de = dragMin + (b.mins || 30), arr = blocks(k), g3 = 0, moved3 = true;
               while (moved3 && g3++ < 40) { moved3 = false;
@@ -13209,7 +13140,7 @@
     function setStart(ns) { ns = Math.max(_floorS, Math.min(_ceilS, Math.round(ns / 5) * 5)); o.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); }
     tdn.onclick = function () { setStart(hm(o.time) - 5); layout(); commit(); };
     tup.onclick = function () { setStart(hm(o.time) + 5); layout(); commit();
-      if (!isLog && k === todayK() && !o.done) notePostpone(o); // ORGAN D: pushing a today-block later (3 nudges) = an avoidance signal → the Motivation Dial (shared choke point with the drag path)
+      // ORGAN D nudge choke point REMOVED (David 2026-08-15, THE CULL): the editor's ＋step no longer counts postponements toward the Motivation Dial card.
     };
     add(B, "div", "ed-hint", "length · slide, step ＋, or tap a chip");
     var sld = document.createElement("input"); sld.type = "range"; sld.min = "0"; sld.max = "1000"; sld.step = "1"; sld.value = minToPos(o.mins || DEF); sld.className = "ed-slider"; B.appendChild(sld);
@@ -14276,6 +14207,7 @@
   }
   // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
+  var ORB_AMB_W = 0.5712; // 2π/11 → the calm ~11s resting breath the orb keeps under any non-breath segment, on the session clock (see ORB DRIVE below)
   function timelinePlayer(opts) {
     TTS.unlock(); // gesture-bound: schedule while the context is awake
     var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
@@ -14296,9 +14228,12 @@
     function paintMap(e) { for (var mi = 0; mi < mapPips.length; mi++) { var on = opts.segments[mi] && opts.segments[mi].start != null && opts.segments[mi].start <= e; mapPips[mi].className = on ? "on" : ""; } }
     // ACT-LEVEL STORY PAGES (David 2026-07-07): for the stack, the TOP shows one page per activity (Instagram-story style) that fills as you move through it — the whole plan's progress, not per-cue pips. Gated by opts.acts so daily rituals keep the per-segment map.
     var acts = opts.acts || null, actFills = [], actLabels = [], curAct = 0, _prevAct = -1, actResume = [], pages = null, track = null;
-    var zoom = false, curSec = 0, secFills = [], secIcons = [], secWrap = null; // PLAYER ZOOM (David 2026-07-15): a meditation act expands into its sections — the act bar splits into section bars, siblings shrink to stubs, the scrub scopes to the current section; collapses when you leave the act
-    function medAct(ai) { return !!(acts && acts[ai] && acts[ai]._isMed && acts[ai]._sections && acts[ai]._sections.length > 1); }
-    function secListOf(ai) { return (acts && acts[ai] && acts[ai]._secList) || []; }
+    // PLAYER ZOOM REMOVED (David 2026-08-15: "when it comes to the meditation part we set it up so it expands... maybe
+    // that's too confusing. Bring it back so it's just a single Instagram story thing like the rest, so it stays the
+    // same consistent thing above"). The 2026-07-15 zoom swapped the act bars for a section row mid-run — a 5-step pack
+    // became 4 stubs + 3 bars, unanimated; navBy dropped out of zoom at a section edge and never came back; and the
+    // remaining-time readout silently re-scoped to the section. ONE BAR PER TOP-LEVEL STEP, ALWAYS. The section
+    // boundaries survive as the transport's tick marks (_secTimes) — the split lives in the timeline below, not up top.
     if (acts) {
       mapWrap.style.display = "none";
       var _gt = ov.querySelector(".gp-title"); if (_gt) _gt.style.display = "none"; // the section labels are the header now — drop the centered title so they don't collide
@@ -14310,20 +14245,7 @@
       pages = [];
       acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); pages.push({ orb: porb, lab: plab, sub: psub }); });
       orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; // live refs point at the current page
-      secWrap = add(ov, "div", "gp-story"); secWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:none;gap:6px;z-index:6;pointer-events:none;"; // the section bars for an expanded meditation act; replaces the act bars while zoomed
     }
-    // ZOOM helpers: build the section bar row for meditation act `ai` (sibling acts become thin stubs on the sides), and enter/exit the zoom
-    function buildSecBars(ai) {
-      if (!secWrap) return; while (secWrap.firstChild) secWrap.removeChild(secWrap.firstChild); secFills = []; secIcons = [];
-      var secs = acts[ai]._sections || [];
-      function stub(a2, past) { var s = add(secWrap, "div"); s.style.cssText = "flex:0 0 11px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var b = add(s, "div"); b.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + (a2.color || col) + ";opacity:" + (past ? "0.9" : "0.3") + ";"; add(s, "i", "ti " + (a2.icon || "ti-circle-filled")).style.cssText = "font-size:12px;color:" + (a2.color || col) + ";opacity:" + (past ? "0.7" : "0.28") + ";"; }
-      for (var b = 0; b < ai; b++) stub(acts[b], true); // sections BEFORE this act -> done stubs
-      secs.forEach(function (sm) { var colx = add(secWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(sm.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + (sm.color || col) + ";transition:width .2s linear;"; secFills.push(fl); var ic = add(colx, "i", "ti " + (sm.icon || "ti-circle-filled")); ic.style.cssText = "font-size:20px;line-height:1;color:" + (sm.color || col) + ";opacity:.34;transition:opacity .3s;"; secIcons.push(ic); });
-      for (var a2 = ai + 1; a2 < acts.length; a2++) stub(acts[a2], false); // sections AFTER -> upcoming stubs
-    }
-    function enterZoom(ai) { if (!medAct(ai) || !secWrap) return; zoom = true; buildSecBars(ai); secWrap.style.display = "flex"; if (typeof storyWrap !== "undefined" && storyWrap) storyWrap.style.display = "none"; }
-    function exitZoom() { if (!zoom) return; zoom = false; if (secWrap) secWrap.style.display = "none"; try { if (storyWrap) storyWrap.style.display = "flex"; } catch (e) {} }
-    function curSecIdx(e) { var L = secListOf(curAct); for (var i = L.length - 1; i >= 0; i--) if (e >= L[i].start) return i; return 0; }
     // F5 · ACT-BARS (David 2026-07-13): a bars-ONLY sequence indicator (meditation blocks) — the same top story-bars as the stack, but with the single continuous orb below (no page-slide, no block-nav). Independent of `acts`, so it touches none of the acts/pages/nav machinery.
     var actBars = (!acts && opts.actBars && opts.actBars.length > 1) ? opts.actBars : null, abFills = [], abIcons = [];
     if (acts || actBars) ov.classList.add("gp-bars"); // the ✕ / gear drop below the bars only when bars are present (fixes v1035: no-bar players keep the ✕ at the top)
@@ -14341,7 +14263,7 @@
       if (seg && seg._act === ai) { lab.textContent = seg.label || ""; sub.textContent = seg.sub || ""; } else { lab.textContent = acts[ai].name; sub.textContent = ""; }
       for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.opacity = (li <= ai) ? "1" : "0.34"; // done + current activities light up to full color; upcoming stay dim
       if (ticks) { while (ticks.firstChild) ticks.removeChild(ticks.firstChild); var _st = acts[ai]._secTimes || [], _as = acts[ai]._start || 0, _ad = ((acts[ai]._end != null ? acts[ai]._end : total) - _as) || 1; if (_st.length) { _st.forEach(function (x) { var tk = add(ticks, "i"); tk.style.left = ((x - _as) / _ad * 100) + "%"; }); ticks.style.display = ""; } else { ticks.style.display = "none"; } } // section-ticks on THIS activity's local timeline — only where it has real sections (meditation); clean bar everywhere else
-      if (medAct(ai)) { enterZoom(ai); curSec = curSecIdx(e2); if (ticks) ticks.style.display = "none"; } else exitZoom(); // ZOOM: entering a meditation act expands it into its sections (scrub becomes per-section, so the whole-act ticks are dropped); leaving collapses it
+      // (the meditation act used to expand here and hide those ticks — removed 2026-08-15; the ticks now stand, which is where its sections show)
     }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { if (playing) pause(); openVolumePanel(); }; // opening Sound pauses the player so you can preview beds freely (David 2026-07-10)
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
@@ -14383,6 +14305,7 @@
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
+    var _fitK = 1; // the dose re-fit factor (≤1), computed once at open in relayoutFrom(0) and held across a live voice swap so re-voicing a running session never re-negotiates its pacing mid-flight
     var myVoiceGen = TTS.voiceGen(), revoicing = false; // THE VOICE THIS SESSION'S BUFFERS CAME FROM. Captured HERE, above the decode below, so a switch made WHILE the session is still decoding is caught too (capturing it inside layout() would have swallowed exactly that case). `revoicing` is the lock: two fast chip taps must never interleave two re-layouts.
     function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
 
@@ -14392,11 +14315,35 @@
     // comes out UNCHANGED — re-laying out mid-session never moves the past, the seam, or the transport position.
     // Only the tail re-times, which it must: the same line is a different number of seconds in Dave's mouth than in
     // Millie's. from === 0 is the original open-the-session path, verbatim.
+    // THE PAUSE RESOLVES HERE, NOT AT COMPOSE TIME (David 2026-08-15). Two of the pause kinds need the line's REAL spoken
+    // length, and that is only known once the clip is decoded — which is exactly here. `_pk` = the context the composer
+    // tagged; `_pkAdd` = a boundary beat that rides on top of whatever the kind resolves to.
+    function segGap(sg) { // the KIND's own seconds. The boundary beat (_pkAdd) is added by the caller AFTER the dose re-fit — a transition is near-fixed by law and must not be squeezed with the elastic silences.
+      var g = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur);
+      if (sg._pk) g = pkGap(sg._pk, g, sg.dur);
+      return g;
+    }
+    function segGapFit(sg) { var g = segGap(sg); if (PK_ELASTIC[sg._pk] && _fitK < 1) g = Math.max(2.5, g * _fitK); return g + (sg._pkAdd || 0); }
     function relayoutFrom(from) {
-      var t = 0;
-      segs.forEach(function (sg, i) { if (i >= from) { sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; } var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
+      var t = 0, i;
+      for (i = from; i < segs.length; i++) segs[i].dur = segs[i].buf ? segs[i].buf.duration : 0.6;
+      // THE DOSE IS A PROMISE (David 2026-08-15). The composer budgets a spoken line at PK.speechEst while the real decoded
+      // clips run 3.5-7.9s, so a "5 min" Body stack used to come out ~6:04 (+21%). Now that every real duration is known,
+      // squeeze ONLY the elastic silences (contemplative / inquiry / visualization / held / rest) until the session lands on
+      // the requested dose. Somatic beats, affirmations, transitions and breath phases are load-bearing and never move — a
+      // muscle cue's beat is not the app's slack. Only ever SHRINKS (floor 2.5s, never below 55% of the authored silence);
+      // an under-full session is already padded to the dose by the max() below, so both directions land honest.
+      if (from === 0) {
+        _fitK = 1;
+        if (opts.totalSec > 0 && opts.doseFit !== false) {
+          var fixed = 0, elas = 0;
+          segs.forEach(function (sg) { var g = segGap(sg); fixed += (sg._pkAdd || 0); if (PK_ELASTIC[sg._pk]) { fixed += sg.dur; elas += g; } else { fixed += sg.dur + g; } });
+          if (elas > 0 && fixed + elas > opts.totalSec) _fitK = Math.max(0.55, (opts.totalSec - fixed) / elas);
+        }
+      }
+      segs.forEach(function (sg, ix) { if (ix >= from) { sg.start = t; sg._g = segGapFit(sg); } t += sg.dur + (sg._g != null ? sg._g : segGapFit(sg)); });
       total = Math.max(t, opts.totalSec || 0);
-      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { acts[_ai]._start = null; acts[_ai]._secTimes = []; acts[_ai]._secList = []; } segs.forEach(function (sg) { if (sg._act != null && acts[sg._act]) { if (acts[sg._act]._start == null) acts[sg._act]._start = sg.start; if (sg._sectionStart) acts[sg._act]._secTimes.push(sg.start); if (sg._secIdx != null && acts[sg._act]._sections && acts[sg._act]._sections[sg._secIdx]) acts[sg._act]._secList.push({ start: sg.start, idx: sg._secIdx }); } }); for (var _aj = 0; _aj < acts.length; _aj++) { acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; var _sl = acts[_aj]._secList; for (var _si = 0; _si < _sl.length; _si++) _sl[_si].end = (_si + 1 < _sl.length) ? _sl[_si + 1].start : acts[_aj]._end; } } // ZOOM: _secList = each meditation section's real-time [start,end] window, so the player can scope the scrub to one section
+      if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { acts[_ai]._start = null; acts[_ai]._secTimes = []; acts[_ai]._secList = []; } segs.forEach(function (sg) { if (sg._act != null && acts[sg._act]) { if (acts[sg._act]._start == null) acts[sg._act]._start = sg.start; if (sg._sectionStart) acts[sg._act]._secTimes.push(sg.start); if (sg._secIdx != null && acts[sg._act]._sections && acts[sg._act]._sections[sg._secIdx]) acts[sg._act]._secList.push({ start: sg.start, idx: sg._secIdx }); } }); for (var _aj = 0; _aj < acts.length; _aj++) { acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; var _sl = acts[_aj]._secList; for (var _si = 0; _si < _sl.length; _si++) _sl[_si].end = (_si + 1 < _sl.length) ? _sl[_si + 1].start : acts[_aj]._end; } } // _secTimes = the section boundaries the transport draws ticks at; _secList = each section's real-time [start,end] window, KEPT as data after the 2026-08-15 zoom removal so a future in-timeline split has the boundaries ready without re-deriving them
       if (actBars) { for (var _bi = 0; _bi < actBars.length; _bi++) actBars[_bi]._start = null; segs.forEach(function (sg) { if (sg._ab != null && actBars[sg._ab] && actBars[sg._ab]._start == null) actBars[sg._ab]._start = sg.start; }); for (var _bj = 0; _bj < actBars.length; _bj++) actBars[_bj]._end = (_bj + 1 < actBars.length && actBars[_bj + 1]._start != null) ? actBars[_bj + 1]._start : total; } // F5: each block's real-time window, from its tagged segments
       ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
       paintTicks();
@@ -14457,7 +14404,7 @@
     function paintNow(e) { paintMap(e); paintBars(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
       var pct, curTxt, totTxt;
-      if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total); if (zoom && _ci === curAct) { var _L = secListOf(curAct), _sIx = curSecIdx(e); if (_L[_sIx]) { _as = _L[_sIx].start; _ae = (_L[_sIx].end != null ? _L[_sIx].end : _ae); curSec = _sIx; } } var _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); } // ZOOM: the scrub scopes to the current SECTION, not the whole meditation act
+      if (acts) { var _a0 = acts[_ci], _as = _a0._start || 0, _ae = (_a0._end != null ? _a0._end : total); var _adur = Math.max(0.01, _ae - _as), _le = Math.max(0, Math.min(_adur, e - _as)); pct = _le / _adur * 100; curTxt = fmtT(_le); totTxt = "\u2212" + fmtT(Math.max(0, _adur - _le)); } // the transport is scoped to the ACT \u2014 one step, one clock (the zoom used to re-scope it to a section mid-meditation, so "-2:41" became "-0:54"; removed 2026-08-15)
       else { pct = total ? e / total * 100 : 0; curTxt = fmtT(e); totTxt = "\u2212" + fmtT(Math.max(0, total - e)); var _tks = ticks.children; for (var _ti = 0; _ti < _tks.length; _ti++) { _tks[_ti].style.display = (parseFloat(_tks[_ti].style.left) <= pct) ? "" : "none"; } }
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; }
@@ -14475,11 +14422,10 @@
           else if (_ph === "hold") { _sc = 1.14; _op = 1; }
           else if (_ph === "out") { _sc = 1.14 - 0.30 * _es; _op = 1 - 0.40 * _es; }
           else { _sc = 0.84; _op = 0.60; }
-        } else { var _amb = 0.5 - 0.5 * Math.cos(e * 0.5712); _sc = 0.90 + 0.15 * _amb; _op = 0.76 + 0.22 * _amb; } // 2π/11 ≈ 0.5712 → a calm ~11s resting breath
+        } else { var _amb = 0.5 - 0.5 * Math.cos(e * ORB_AMB_W); _sc = 0.90 + 0.15 * _amb; _op = 0.76 + 0.22 * _amb; } // AMBIENT BREATH — DELIBERATELY DECOUPLED from the segment span (re-checked 2026-08-15 when somatic gaps dropped to 2s): it runs off the session's ABSOLUTE elapsed clock at a fixed ~11s period, so shortening a cue's pause can never make the orb pant. Only true breath-phase segs (above) are driven by their own span, and those carry physiological ms from BREATH_PATTERNS.
         orb.style.transform = "scale(" + _sc.toFixed(3) + ")"; orb.style.opacity = _op.toFixed(3);
       }
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; }
-        if (zoom) { var _L2 = secListOf(curAct); for (var _s2 = 0; _s2 < _L2.length; _s2++) { var _sd = _L2[_s2], _sf = (_sd.end > _sd.start) ? (e - _sd.start) / (_sd.end - _sd.start) : (e >= _sd.start ? 1 : 0); _sf = _sf < 0 ? 0 : _sf > 1 ? 1 : _sf; if (secFills[_s2]) secFills[_s2].style.width = (_sf * 100) + "%"; if (secIcons[_s2]) secIcons[_s2].style.opacity = (e >= _sd.start) ? "1" : "0.34"; } } // ZOOM: fill the section bars + light section icons up to the current one
         curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
     function paintBars(e) { if (!actBars) return; var cur = 0; for (var qb = 0; qb < actBars.length; qb++) { var a = actBars[qb], f = (a._end > a._start) ? (e - a._start) / (a._end - a._start) : (e >= a._start ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (abFills[qb]) abFills[qb].style.width = (f * 100) + "%"; if (e >= (a._start || 0)) cur = qb; } for (var qi = 0; qi < abIcons.length; qi++) if (abIcons[qi]) abIcons[qi].style.opacity = (qi <= cur) ? "1" : "0.34"; } // F5: fill the block bars + light the icons up to the current block (no slide, no orb-swap)
     // THE LIVE VOICE SWAP (David 2026-08-15 on device: "switching from the male voice to the female voice breaks —
@@ -14519,12 +14465,12 @@
       raf = requestAnimationFrame(tick);
     }
     bPlay.onclick = function () { if (!ready || done) return; if (playing) pause(); else startFrom(offset); };
-    function _clampAct(sec) { if (!acts) return sec; var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); if (zoom) { var _L = secListOf(curAct), _s = _L[curSec]; if (_s) { lo = _s.start; hi = (_s.end != null ? _s.end : hi); } } return Math.max(lo, Math.min(hi - 0.15, sec)); } // ±15 + scrub stay INSIDE the current activity — or the current SECTION when zoomed
+    function _clampAct(sec) { if (!acts) return sec; var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); return Math.max(lo, Math.min(hi - 0.15, sec)); } // ±15 + scrub stay INSIDE the current activity (2026-08-15: no section sub-clamp — the whole meditation is one step again)
     bBack.onclick = function () { if (ready) seek(_clampAct(curElapsed() - 15)); };
     bFwd.onclick = function () { if (ready) seek(_clampAct(curElapsed() + 15)); };
     (function () { var dragging = false; function frac(x) { var r = scrub.getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)); }
       function down(ev) { if (!ready) return; dragging = true; ev.preventDefault(); var wasP = playing; if (wasP) pause(); scrub._wasP = wasP; move(ev); }
-      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); if (acts) { var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); if (zoom) { var _L = secListOf(curAct), _s = _L[curSec]; if (_s) { lo = _s.start; hi = (_s.end != null ? _s.end : hi); } } offset = lo + frac(x) * (hi - lo); } else { offset = frac(x) * total; } paintNow(offset); }
+      function move(ev) { if (!dragging) return; var x = (ev.touches ? ev.touches[0].clientX : ev.clientX); if (acts) { var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); offset = lo + frac(x) * (hi - lo); } else { offset = frac(x) * total; } paintNow(offset); }
       function up() { if (!dragging) return; dragging = false; if (scrub._wasP) startFrom(offset); }
       scrub.addEventListener("pointerdown", down); window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
     })();
@@ -14532,10 +14478,8 @@
     if (acts) { // STORY-NAV (David 2026-07-07): tap left/right or swipe to move between activities. The voice CROSSFADES (fadeStopSources) instead of hard-cutting, and each act remembers where you left off so a slip is recoverable.
       function gotoAct(j) { if (!ready || done || j < 0 || j >= acts.length || j === curAct) return; actResume[curAct] = curElapsed(); var target = (actResume[j] != null) ? actResume[j] : (acts[j]._start || 0);
         if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } curAct = j; paintNow(target); }
-      function gotoSec(j) { var L = secListOf(curAct); if (!L.length || j < 0 || j >= L.length || j === curSec) return; curSec = j; var target = L[j].start; if (playing) { fadeStopSources(350); offset = target; startFrom(target, true); } else { offset = target; } paintNow(target); } // ZOOM: jump between sections of the expanded meditation act (voice crossfades, same as act nav)
       // EDGE-AWARE NAV (David 2026-07-10, increment 3): taps AND swipes share this so the boundaries behave identically — past the last tool completes -> post-gauge -> outro; before the first returns to the review (both opt-in via opts, so daily rituals just clamp). Gesture feel DEVICE-UNTESTED.
-      function navBy(dir) { if (!ready || done) return;
-        if (zoom) { var _L = secListOf(curAct), nj = curSec + dir; if (nj >= 0 && nj < _L.length) { gotoSec(nj); return; } exitZoom(); } // ZOOM: step SECTIONS first; only at a section edge does it leave the meditation act to a neighbor
+      function navBy(dir) { if (!ready || done) return; // one tap = one STEP, meditation included (2026-08-15: the zoom used to eat the first taps as section-steps, then fall out of zoom permanently at the section edge)
         var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
         if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
@@ -15505,7 +15449,8 @@
     var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || "#9a7cff", secs: t.d || m.dur || 60, med: t.med, pat: t.pat, rawSegs: t.rawSegs, intro: t.intro }; }); // med = meditation editor sections (for section-ticks); pat = a breathing-variant pattern key (David 2026-07-23); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages)
     var built = composeStackSegs(list);
     try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
-    timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || "#9a7cff", spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, autostart: true, onFinish: function () { if (onAll) onAll(track.length); else stackComplete(track.length); } });
+    timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || "#9a7cff", spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, totalSec: built.dose, autostart: true, // totalSec (2026-08-15): the dose the user picked, handed to the player as the PROMISE it re-fits the elastic silences to — a "5 min" session ran ~6:04 without it
+      onFinish: function () { if (onAll) onAll(track.length); else stackComplete(track.length); } });
   }
   function runStack(track, i, onAll) { // onAll (R0, David 2026-07-02): optional completion override so a wrapper (the relief-door ritual) can add its own close — e.g. the post 0-10 gauge — without forking the runner
     if (i === 0) track = tbxExpandTrack(track); // variant ids -> base tool steps (pat/med) ONCE, before the carousel/chained split (David 2026-07-23)
@@ -15563,7 +15508,11 @@
     secs = Math.max(30, secs || 75);
     var n = Math.max(3, Math.min(STRETCH_MOVES.length, Math.round(secs / 13))); // ~13s per held move
     var dwell = Math.max(11, secs / n); // if time exceeds the whole pool, holds lengthen to fill instead of looping
-    return STRETCH_MOVES.slice(0, n).map(function (p) { var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: Math.max(7, dwell - 3.5) }; if (tag != null) o._act = tag; return o; });
+    // HOLD CAP (David 2026-08-15: "in the stretching stack a line is said, then a long pause… the long pause feels out of
+    // place"). `max(7, dwell - 3.5)` had no ceiling, so a long dose bought SILENCE instead of moves: 120s -> 9.8s holds,
+    // 300s -> 17.9s. A held position past PK.held stops being a stretch and becomes waiting. Tagged `held` so the player
+    // clamps it again after the real clip length is known, and so the dose re-fit may squeeze it (it never stretches it).
+    return STRETCH_MOVES.slice(0, n).map(function (p) { var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: Math.max(7, Math.min(PK.held, dwell - 3.5)), _pk: "held" }; if (tag != null) o._act = tag; return o; });
   }
   // Body floor: a slow head-to-toe stretch flow, on the reliable Web-Audio player (David 2026-07-13: replaced the fixed-3-pose + timer-speak overlay — the long-pause / only-3-moves / iOS-silent bug). The highest-ROI reset for a screen-slumped body.
   function stretchFloor(onDone, secs) {
@@ -15741,13 +15690,49 @@
     gratitude: { intro: "Now, gratitude.", lines: ["Something small from today", "Someone who makes life warmer", "This body, it carried you here", "A door that opened without you pushing", "Something you'd miss if tomorrow forgot it", "One thing that just works, that you never notice"] },
     reprogram: { intro: "Now, rewire one belief.", lines: ["Picture the version of you who already lives this", "See the scene in detail, make it vivid", "Feel it in your body, as if it's already true", "Say your line in the present tense", "A vivid rehearsal gets filed as real evidence"] }
   };
+  // ===== THE PAUSE GRAMMAR (David 2026-08-15: "regardless of which tool, the pauses are all identical and kind of too slow…
+  // Pauses should make sense depending on CONTEXT. In meditation the pauses matter most… but if it's simply telling you to
+  // relax certain muscles, a long pause between two verbal cues makes no sense"). Before today the gap was chosen ONCE PER
+  // TOOL BRANCH in composeStackSegs and stamped on every line of that act — and in the somatic branch it was dose-derived,
+  // so DOUBLING the dose DOUBLED the silence between "soften your forehead" and "drop your shoulders" (relax@300s = 37.5s
+  // between two muscle cues). Now every seg carries a PAUSE KIND (`_pk`) chosen from what the line ASKS OF YOU, and the
+  // player resolves that kind to seconds in relayoutFrom(), where the REAL spoken length (sg.dur) is finally known.
+  // The reference implementation is PMR_BEATS -> beatRunner: it authors a per-beat hold (≈5s squeeze / 15-20s release) and
+  // it is the one tool nobody complains about. THESE NUMBERS ARE THE TUNING DIAL — David edits PK, nothing else.
+  var PK = {
+    somatic: 2.0,      // muscle-to-muscle beat: one breath's worth, fixed. NEVER dose-derived, NEVER depth-scaled.
+    somaticRest: 12,   // the rest at a body-group boundary (face · shoulders+chest · arms+legs)
+    somaticRelease: 45, // the rest AFTER the last cue — the PMR rebound, and the only place a somatic act is allowed a long silence, because by then there is nothing left to cue
+    held: 12,          // ceiling on a stretch hold — a held position past ~12s stops being a stretch and becomes waiting
+    transition: 2.0,   // act / section boundary: a beat to register the shift (it was literally 0 until today)
+    affirmMul: 1.15, affirmMin: 3.0, affirmMax: 7.0, // say-it-back: anchored to the line's OWN spoken length, not the dose
+    visualBase: 8, visualSpan: 7,                    // picture-a-scene: 8s guided → 15s spacious (was "cue" = 3.3s, far too short to picture anything)
+    speechEst: 4.2     // compose-time estimate of a spoken line. Was 3.5, which is why a "5 min" Body stack came out ~6:04
+                       // (+21%): the composer laid down more lines than the clips had room for. 4.2 = the MEASURED mean of
+                       // the decoded stack clips in the preview on 2026-08-15 (meditation 2.0-6.9s, mantra 1.9-2.8s). It is
+                       // only an estimate — relayoutFrom does the exact fit against the real durations at open.
+  };
+  var PK_ELASTIC = { absorb: 1, inquiry: 1, visual: 1, held: 1, settle: 1, release: 1, cue: 1 }; // the kinds the dose re-fit may squeeze. somatic / affirm / transition / breath are NEVER squeezed — that is the whole point of the grammar.
+  function pkGap(pk, g, dur) { // KIND -> SECONDS, resolved at layout time because two of these need the real spoken length
+    switch (pk) {
+      case "somatic": return PK.somatic;                                                              // hard floor AND hard ceiling: a somatic gap can never grow with the dose again
+      case "settle": return Math.max(PK.somatic, Math.min(PK.somaticRest, g));
+      case "release": return Math.max(PK.somatic, Math.min(PK.somaticRelease, g));
+      case "held": return Math.max(4, Math.min(PK.held, g));
+      case "affirm": return Math.max(PK.affirmMin, Math.min(PK.affirmMax, (dur || 3) * PK.affirmMul)); // a line you say back sits for about as long as it took to say
+      default: return g;                                                                              // absorb / inquiry / visual / cue keep the composed, guidance-scaled value
+    }
+  }
   function pauseFor(kind, depth) { // INTELLIGENT PAUSE (David 2026-07-08; depth-aware 2026-07-11): every silence has a reason. A caller can pass an explicit session DEPTH (0 = guided/dense, 1 = spacious/advanced); otherwise it falls back to the user's MEASURED attention (the drift-tap learns S.tools.medFocus.rate).
     var mf = (S.tools && S.tools.medFocus) || {}, drift = mf.n ? (mf.rate || 0) : 0.9; // drifts per minute; ~0.9 default until tested, ~3+ = very scattered
     var att = (depth != null) ? depth : Math.max(0, Math.min(1, 1 - drift / 3)); // explicit session depth wins; else 1 = steady (long silences ok), 0 = scattered (re-anchor sooner)
     switch (kind) {
       case "in": return 4; case "hold": return 4; case "out": return 6; case "rest": return 2; // breath = physiological, set by the body, not the mind
       case "settle": return 2.4;
-      case "transition": return 2.6;        // the act-change card: brief, just enough to register the shift
+      case "transition": return PK.transition; // the act/section boundary: brief, just enough to register the shift
+      case "somatic": return PK.somatic;    // "relax your eyebrows, [beat], relax your eyes" — near-fixed, guidance NEVER scales it (David 2026-08-15)
+      case "held": return PK.held;          // a held position (stretch): capped, or it stops being a stretch
+      case "visual": return PK.visualBase + att * PK.visualSpan; // picture the scene: 8s (guided) to 15s (spacious)
       case "cue": return 2.5 + att * 5;     // a guidance line to hold: 2.5s (guided) to 7.5s (spacious)
       case "absorb": return 4 + att * 15;   // a contemplative line to sit with: 4s (guided, re-anchor often) to 19s (spacious, deep silence) — this is what makes a long session have FEWER reminders, not looped ones
       default: return 4;
@@ -15781,23 +15766,25 @@
     return rows;
   }
   function composeStackSegs(list) { // ONE unified session for the whole stack: transition card + timed cues per act, each seg tagged with its _act so the player can draw act-level story pages + nav. Fed to timelinePlayer (shared orb/voice/transport) so the stack is one continuous surface, not 5 jarring overlays.
-    var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false, medRI = 0; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" in both relax AND meditation); medRI cycles the sparse re-anchor cues across sections
+    var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false, medRI = 0, dose = 0; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" in both relax AND meditation); medRI cycles the sparse re-anchor cues across sections; dose = the time the user actually ASKED for (the promise the player re-fits to)
 
     list.forEach(function (t) {
       var C = STACK_CONTENT[t.id]; if (!C && !(t.rawSegs && t.rawSegs.length)) return;
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
+      dose += (t.secs || 60);
+      if (ai > 0 && segs.length) { var _pv = segs[segs.length - 1]; _pv._pkAdd = (_pv._pkAdd || 0) + PK.transition; } // TRANSITION BEAT (David 2026-08-15): the act boundary got exactly 0s when the spoken transition card was removed on 2026-07-22, so one act's last line ran straight into the next act's first. `_pkAdd` rides ON TOP of the resolved kind, so a somatic line still keeps its own 2.0s beat and simply gets the boundary added after it.
       function P(s) { s._act = ai; segs.push(s); }
       // TRANSITION card REMOVED (David 2026-07-22): the spoken intro ("Now, the breath." / "Now, relax the muscles.")
       // was (a) an "okay/now let's" filler he wants gone, (b) spoken from `text` while the screen showed only `label`
       // (the tool name) = voice≠text, and (c) a separate un-tracked gap that paused before the act's own time began.
       // Each act now starts directly on its FIRST REAL cue (tracked immediately); the act name still shows via the
       // act page / story bars (acts[] metadata), so the boundary is announced visually without a floating voice line.
-      if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")) }); }); } // a tool that supplies its own cue segments (charge, love & embodiment)
+      if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")), _pk: s._pk || "cue" }); }); } // a tool that supplies its own cue segments (charge, love & embodiment) — it may name its own pause kind; otherwise the generic guidance cue
       else if (t.id === "stretch") { stretchMoveSegs(t.secs || 60, ai).forEach(function (s) { segs.push(s); }); } // STRETCH (David 2026-07-13): real held moves that fill the tool's time, never looped — same pool as the solo tool, sane holds instead of 3 cues stretched over 2 min
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
         var msecs = (t.med && t.med.length) ? t.med.slice() : (sawBodyPrep ? [{ k: "breath" }, { k: "aware" }, { k: "rest" }] : [{ k: "settle" }, { k: "aware" }, { k: "rest" }]); // if the stack already ran relax/stretch, DROP the redundant body-settle section (that was the doubled "soften / unclench" — David 2026-07-13)
         var depth = sessionDepth(t.secs || 90); // length/preset -> how spacious: long/advanced = long silence, few reminders; short/beginner = dense
-        var secMeta = []; // PLAYER ZOOM (David 2026-07-15): per-section metadata so the player can expand this ONE meditation act into its sections (bars split, scrub scopes to the section), then collapse back when you leave it
+        var secMeta = []; // per-section metadata (name/color/icon). It NO LONGER expands the act into section bars (David 2026-08-15 killed that zoom — one story bar per step); it stays because _secList pairs it with each section's real-time window and the section's first cue drives the transport ticks
         msecs.forEach(function (sc, si) {
           var def = MED_SEC[sc.k]; if (!def) return;
           secMeta.push({ name: def.name, color: def.col || t.c, icon: def.ti || t.ic }); var _sx = secMeta.length - 1;
@@ -15808,33 +15795,51 @@
             var ln, cad;
             if (idx < order.length) { ln = order[idx++]; usedTxt[_normLine(ln)] = 1; cad = pauseFor("absorb", depth); }
             else { ln = MED_RETURN[medRI++ % MED_RETURN.length]; cad = pauseFor("absorb", depth) + 9; } // pool spent: keep a sparse re-anchor cue going rather than going silent for the rest of the section (David 2026-07-15: "voice over stops" mid-meditation)
-            var seg2 = medSeg(ln, cad, first ? def.name : ""); if (first) seg2._secIdx = _sx; if (si > 0 && first) seg2._sectionStart = true; P(seg2);
-            tt += cad + 3.5; first = false;
+            var seg2 = medSeg(ln, cad, first ? def.name : ""); seg2._pk = "absorb"; if (first) seg2._secIdx = _sx; if (si > 0 && first) { seg2._sectionStart = true; if (segs.length) { var _pv2 = segs[segs.length - 1]; _pv2._pkAdd = (_pv2._pkAdd || 0) + PK.transition; } } P(seg2); // meditation is the one place a long silence is the POINT (David 2026-08-15) — `absorb` keeps the full 4 + 15·depth reach; the section boundary gets the same registering beat an act boundary gets
+            tt += cad + PK.speechEst; first = false;
           }
         });
-        acts[ai]._sections = secMeta; acts[ai]._isMed = secMeta.length > 1; // the act carries its sections; the player expands it when it becomes current
+        acts[ai]._sections = secMeta; // the act carries its sections as DATA only — the player draws them as ticks under one bar, never as extra bars (2026-08-15; _isMed dropped with the zoom that read it)
       } else if (t.id === "gratitude") { // STUTZ GRATEFUL FLOW (David 2026-07-15): a structured arc, not a looping pool — N named items each held in a silent feel-pause, then the build beat + a short close. Item count + pause length scale to the slot; always lands on the build beat, never mid-loop.
-        var gd = sessionDepth(t.secs || 60), gPause = 15 + gd * 11, gBuild = 24 + gd * 16, gBud = t.secs || 60, gCost = 3.5 + gPause;
-        var gN = Math.max(2, Math.min(GRAT_FLOW.prompts.length, Math.round((gBud - (3.5 + gBuild) - 6) / gCost)));
-        for (var gi = 0; gi < gN; gi++) { var gp = GRAT_FLOW.prompts[gi]; usedTxt[_normLine(gp)] = 1; P({ text: gp, label: gp, sub: GRAT_FLOW.subs[gi % GRAT_FLOW.subs.length], gap: gPause }); }
-        P({ text: GRAT_FLOW.build, label: GRAT_FLOW.build, sub: "", gap: gBuild });
-        P({ text: GRAT_FLOW.close, label: GRAT_FLOW.close, sub: "", gap: 4 });
+        var gd = sessionDepth(t.secs || 60), gPause = 15 + gd * 11, gBuild = 24 + gd * 16, gBud = t.secs || 60, gCost = PK.speechEst + gPause;
+        var gN = Math.max(2, Math.min(GRAT_FLOW.prompts.length, Math.round((gBud - (PK.speechEst + gBuild) - 6) / gCost)));
+        for (var gi = 0; gi < gN; gi++) { var gp = GRAT_FLOW.prompts[gi]; usedTxt[_normLine(gp)] = 1; P({ text: gp, label: gp, sub: GRAT_FLOW.subs[gi % GRAT_FLOW.subs.length], gap: gPause, _pk: "absorb" }); }
+        P({ text: GRAT_FLOW.build, label: GRAT_FLOW.build, sub: "", gap: gBuild, _pk: "absorb" });
+        P({ text: GRAT_FLOW.close, label: GRAT_FLOW.close, sub: "", gap: 4, _pk: "transition" }); // the close hands over to the next act — a beat, not a silence
       } else if (C.breath) {
         // VOICELESS in a stack (David 2026-07-23: guided breath talks only if opted in, exactly like the standalone tool — this kills the "ok/um/breathe in" spoken-clip artifacts inside a session). The `breath` tag still paces the orb; the label shows the phase on screen. `t.pat` = a breathing-variant pattern (Box / 4-7-8 / Coherent / Extended exhale / Wim Hof / Alternate nostril); default = the calming resonance breath.
         breathFlowRows(t.pat, t.secs).forEach(function (r) { P({ text: "", label: r.label, sub: "", gap: r.ms / 1000, breath: r.kind }); });
       } else if (C.cues) {
-        var per = Math.max(3.5, t.secs / C.cues.length); // body cues fill the tool's own time (the pose IS the pause), so time-driven not attention-driven
-        C.cues.forEach(function (q) { P({ text: q[1] ? (q[0] + ", " + q[1]) : q[0], label: q[0], sub: q[1] || "", gap: per }); }); // SPEAK the whole cue (label + sub), not just the top line — matches the already-recorded relaxMoment clips by hash (David 2026-07-15: "voice only reads the top line")
+        // THE SOMATIC CHAIN — THE BUG DAVID FELT (2026-08-15). `per = max(3.5, t.secs / cues.length)` is a per-cue BUDGET
+        // and it was handed over as the GAP, so the silence between two muscle cues grew with the dose: relax@90s = 11.3s,
+        // relax@300s = 37.5s between "soften your forehead" and "drop your shoulders". Nothing about a muscle cue asks you
+        // to sit for 37 seconds. Every cue now gets ONE fixed short beat (PK.somatic), identical at every dose and under
+        // every Guided/Balanced/Spacious preset. Spare act time is NOT smeared back across the chain: it lands as a REST at
+        // the body-group boundaries and a longer RELEASE on the last cue — the PMR_BEATS shape (squeeze, let go, rest in
+        // the rebound), which is the one tool nobody complains about. No new coaching lines, so no new voice clips.
+        var cN = C.cues.length, cGrpN = Math.max(1, Math.floor((cN - 1) / 3)); // a rest every 3rd cue = the natural body groups (face · shoulders+chest · arms+legs)
+        var cSpare = Math.max(0, (t.secs || 60) - cN * (PK.somatic + PK.speechEst));
+        var cRest = Math.min(PK.somaticRest, cSpare / (cGrpN + 1)), cLast = Math.min(PK.somaticRelease, Math.max(PK.somatic, cSpare - cRest * cGrpN)); // a big dose does NOT buy longer beats between muscle cues; it buys a longer lie-there-and-feel-it at the end, exactly like PMR's release
+        C.cues.forEach(function (q, qi) {
+          var last = qi === cN - 1, grp = !last && qi > 0 && (qi + 1) % 3 === 0 && cRest > 1.5;
+          P({ text: q[1] ? (q[0] + ", " + q[1]) : q[0], label: q[0], sub: q[1] || "",
+              gap: last ? cLast : (grp ? cRest : PK.somatic), _pk: last ? "release" : (grp ? "settle" : "somatic") });
+        }); // SPEAK the whole cue (label + sub), not just the top line — matches the already-recorded relaxMoment clips by hash (David 2026-07-15: "voice only reads the top line")
       } else if (C.lines) {
         var depthL = sessionDepth(t.secs || 60), order2 = _shuffled(C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order2.length) order2 = C.lines.slice(); // same no-loop fill for line-pool tools (mantra / gratitude / rewire), starting from lines not already said this session
+        // WHAT THE LINE ASKS OF YOU decides the pause (David 2026-08-15), not the tool's slot: a MANTRA line is said back,
+        // so it sits for about as long as it took to say (`affirm`, anchored to the clip, guidance does not scale it); a
+        // REWIRE line asks you to build a scene, which the old 3.3s "cue" never gave you time to do (`visual`, 8→15s).
+        var lKind = (t.id === "mantra") ? "affirm" : (t.id === "reprogram") ? "visual" : "cue";
+        var lFix = Math.max(PK.affirmMin, Math.min(PK.affirmMax, PK.speechEst * PK.affirmMul));
         var t2 = 0, li = 0, passL = 0, prevL = null;
-        while (t2 < t.secs - 1) { var lcad = pauseFor("cue", depthL) + passL * 2; var ln = order2[li]; if (ln === prevL && order2.length > 1) { li = (li + 1) % order2.length; ln = order2[li]; }
+        while (t2 < t.secs - 1) { var lcad = (lKind === "affirm") ? lFix : (pauseFor(lKind, depthL) + passL * 2); var ln = order2[li]; if (ln === prevL && order2.length > 1) { li = (li + 1) % order2.length; ln = order2[li]; }
           usedTxt[_normLine(ln)] = 1;
-          P({ text: ln, label: ln, sub: "", gap: lcad }); t2 += lcad + 3; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
+          P({ text: ln, label: ln, sub: "", gap: lcad, _pk: lKind }); t2 += lcad + PK.speechEst; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
       }
       if (t.id === "relax" || t.id === "stretch") sawBodyPrep = true; // a later meditation act drops its redundant body-settle section
     });
-    return { segs: segs, acts: acts };
+    return { segs: segs, acts: acts, dose: dose }; // dose = the sum of the steps' chosen times. THE DOSE IS A PROMISE (2026-08-15): the player takes it as totalSec and re-fits the elastic silences to land on it.
   }
   // ===== SOLO MEDITATION on the STACK CAROUSEL (David 2026-07-13): every meditation SECTION becomes one ACT/page, so a solo sit gets the SAME smooth surface as the stack — swipe between sections, the whole page slides, each section re-tints the orb + transport, and the timeline resets per section. Fed to timelinePlayer with `acts` (not the passive actBars header). Fill is no-loop + session-wide dedup + depth-aware silence, so a longer/advanced sit reaches MORE distinct content with more space, never a tight loop. blocks = [{key, weight}]; resolve(key) -> {name,color,icon,entry,pool,weave}. =====
   function composeMeditationSegs(blocks, totalSec, resolve, depthOverride) {
@@ -15847,17 +15852,18 @@
       var ai = acts.length - 1, pool = (def.pool || []).filter(Boolean);
       function P(s) { s._act = ai; segs.push(s); }
       var bEnd = t + totalSec * ((b.weight || 1) / (sumW || 1)), entryGap = pauseFor("cue", depth);
-      P(medSeg(def.entry, entryGap, def.name)); // entry TAUGHT ONCE, its section name as the subtitle
-      used[_normLine(def.entry)] = 1; t += entryGap + 3.5;
+      if (ai > 0 && segs.length) { var _pvm = segs[segs.length - 1]; _pvm._pkAdd = (_pvm._pkAdd || 0) + PK.transition; } // block boundary gets its registering beat (David 2026-08-15) — it had none
+      var _e0 = medSeg(def.entry, entryGap, def.name); _e0._pk = "cue"; P(_e0); // entry TAUGHT ONCE, its section name as the subtitle
+      used[_normLine(def.entry)] = 1; t += entryGap + PK.speechEst;
       if (!pool.length) return;
       // ONE-SHOT FILL (David 2026-07-13: "still see repetition in stuff made longer"): each distinct teaching line plays EXACTLY ONCE. When the pool is spent, the rest of the section is silence + (for working blocks) SPARSE "come back" re-anchors — a teaching line is NEVER re-delivered.
       var order = pool.filter(function (l) { return !used[_normLine(l)]; }); if (!order.length) order = pool.slice(); // AUTHORED ORDER (David 2026-07-14): pools are tiered basic->subtle, so a longer sit reaches the deeper lines in sequence, never a shuffle
       var idx = 0;
       while (t < bEnd - 1) {
-        var ln, gap;
-        if (idx < order.length) { ln = order[idx++]; used[_normLine(ln)] = 1; gap = def.deep ? Math.max(25, Math.min(45, 30 + depth * 15)) : pauseFor("absorb", depth); } // still have a fresh, never-said line. DEEP (self-inquiry) prompts get a 25-45s silence to actually investigate (Harris: the longest silences fire only after the deepest prompts); normal lines keep the ~11s working pace.
-        else { ln = MED_RETURN[ri++ % MED_RETURN.length]; gap = pauseFor("absorb", depth) + 9; } // pool spent: keep a sparse re-anchor cue going rather than going silent for the rest of the block (David 2026-07-15: a spacious/long sit could exhaust a small block's pool and then go voiceless for minutes — every block now falls back to MED_RETURN, not just the "working" ones)
-        P(medSeg(ln, gap, "")); t += gap + 3.5;
+        var ln, gap, gk;
+        if (idx < order.length) { ln = order[idx++]; used[_normLine(ln)] = 1; gk = def.deep ? "inquiry" : "absorb"; gap = def.deep ? Math.max(25, Math.min(45, 30 + depth * 15)) : pauseFor("absorb", depth); } // still have a fresh, never-said line. DEEP (self-inquiry) prompts get a 25-45s silence to actually investigate (Harris: the longest silences fire only after the deepest prompts); normal lines keep the ~11s working pace.
+        else { ln = MED_RETURN[ri++ % MED_RETURN.length]; gk = "absorb"; gap = pauseFor("absorb", depth) + 9; } // pool spent: keep a sparse re-anchor cue going rather than going silent for the rest of the block (David 2026-07-15: a spacious/long sit could exhaust a small block's pool and then go voiceless for minutes — every block now falls back to MED_RETURN, not just the "working" ones)
+        var _ms = medSeg(ln, gap, ""); _ms._pk = gk; P(_ms); t += gap + PK.speechEst;
       }
     });
     if (!acts.length) return { segs: [{ text: MED_BLOCKS.settle.entry, label: MED_BLOCKS.settle.entry, sub: "", _act: 0 }], acts: [{ name: "Settle", color: "#63e6d6", icon: "ti-armchair" }] };
@@ -16135,13 +16141,13 @@
     gauge010(tr("Where's the tension right now?"), tr("gut answer, no wrong number"), function (pre) {
       var built = composeStackSegs(list), segs = built.segs;
       try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
-      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, autostart: true, edgeNextFinish: true, onEdgePrev: onBack || null, onFinish: function (skip) {
+      timelinePlayer({ id: "firststack", title: tr("Your first minute"), logTitle: "First stack", catK: "energy", color: "#9a5cf0", spark: 8, vol: VPROF.relax.volume, drone: true, segments: segs, acts: built.acts, totalSec: built.dose, autostart: true, edgeNextFinish: true, onEdgePrev: onBack || null, onFinish: function (skip) {
         if (skip) { save(); if (onDone) onDone(pre, null); return; }
         gauge010(tr("And now?"), tr("same scale, just notice"), function (post) {
           S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
           S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "firststack", pre: pre, post: post });
           if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
-          try { var _d = new Date(); logs(todayK()).push({ id: uid(), time: pad(_d.getHours()) + ":" + pad(_d.getMinutes()), title: "First stack", mins: Math.max(1, Math.round(segs.reduce(function (a, s) { return a + (s.gap || 5); }, 0) / 60)), catK: "energy", color: "#9a5cf0" }); } catch (e) {}
+          try { var _d = new Date(); logs(todayK()).push({ id: uid(), time: pad(_d.getHours()) + ":" + pad(_d.getMinutes()), title: "First stack", mins: Math.max(1, Math.round((built.dose || segs.reduce(function (a, s) { return a + (s.gap || 5); }, 0)) / 60)), catK: "energy", color: "#9a5cf0" }); } catch (e) {}
           save(); try { renderAll(); } catch (e) {}
           if (onDone) onDone(pre, post);
         });
@@ -16282,117 +16288,19 @@
     S.chains = S.chains || []; S.chains.push({ id: uid(), title: o.title, step1Id: o.id, step2title: step2title, step2delayMin: delayMin, step2Id: blk.id, dayK: k, armedAt: Date.now() });
     save(); renderToday();
   }
-  // ORGAN C · one-time space profiling: after the very first gauge, ask "your space right now?" once ever. Full chaos → a single gentle Reset offer (never nagging). Sets S.profile.spaceState for later routing.
-  function spaceCheckOnce(cb) {
-    cb = cb || function () {};
-    S.profile = S.profile || {}; if (S.profile.spaceAsked) { cb(); return; }
-    S.profile.spaceAsked = 1; save();
-    var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card"), body = add(card, "div", "ob-body center"), foot = add(card, "div", "ob-foot");
-    add(body, "div", "ob-q", tr("Your space right now?"));
-    add(body, "div", "ob-sb", tr("no judgment: it just helps me help you")).style.cssText = "text-align:center;margin-top:6px;";
-    var w = add(body, "div", "obv-tiles"); w.style.marginTop = "14px";
-    [["clear", "All tidy", "ti-sparkles", "#46e2a4"], ["lived", "Lived-in", "ti-home", "#48b8e0"], ["chaos", "Full chaos", "ti-tornado", "#ff8a3a"]].forEach(function (o) {
-      var t = add(w, "button", "obv-tile"); t.style.setProperty("--oc", o[3]); t.style.setProperty("--ost", tfStripeDoor(o[3])); t.innerHTML = '<i class="ti ' + o[2] + ' oi"></i><span class="ol">' + esc(tr(o[1])) + '</span>';
-      t.onclick = function () { S.profile.spaceState = o[0]; save();
-        if (o[0] === "chaos") { S.profile.spaceOfferK = todayK(); body.innerHTML = ""; foot.innerHTML = "";
-          add(body, "i", "ti ti-sparkles ob-spk"); add(body, "div", "ob-q", tr("Full chaos is fine.")); add(body, "div", "ob-sb", tr("want ten minutes of Reset? I'll pick one small zone with you.")).style.cssText = "text-align:center;margin-top:6px;";
-          add(foot, "button", "ob-btn go", tr("Reset now ▶")).onclick = function () { ov.remove(); resetSprint(); cb(); };
-          add(foot, "button", "ob-skip", tr("not now")).onclick = function () { ov.remove(); cb(); };
-          save();
-        } else { ov.remove(); cb(); }
-      };
-    });
-    add(foot, "button", "ob-skip", tr("skip")).onclick = function () { ov.remove(); cb(); };
-  }
-  // ===== ORGAN D · MOMENT-LISTENER v1 (DEPTH BUILD WAVE 1): a READ-ONLY rules table over already-logged state (zero timeline regression surface). LAWS: at most ONE nudge/day (S.nudge), respect mutes, NEVER during a wide-day, hand ONE tool never a menu. After a tool WORKS, deal its theory card (theoryMode-gated). =====
-  function nudgeMuted() { var k = todayK(), m1 = (S.profile && S.profile.muteNudgeUntilK) || null, m2 = (S.nudge && S.nudge.muteUntilK) || null; return !!((m1 && k <= m1) || (m2 && k <= m2)); }
-  function wideDayNow() { try { var k = todayK(), nm = logicalNowMin(); return (blocks(k) || []).some(function (b) { return b.wide && hm(b.time) <= nm && hm(b.time) + (b.mins || 0) > nm; }); } catch (e) { return false; } } // wide-day silence law — the guardian's absence is the trust (b.wide lands with Wave-2 recovery blocks; structurally honored now)
-  function canNudge() { var k = todayK(); S.nudge = S.nudge || { lastK: null, muteUntilK: null }; return S.nudge.lastK !== k && !nudgeMuted() && !wideDayNow(); }
-  function markNudge() { S.nudge = S.nudge || {}; S.nudge.lastK = todayK(); save(); }
+  // ORGAN C SPACE-CHECK REMOVED (David 2026-08-15, THE CULL). spaceCheckOnce() fired a full-screen ob-ov questionnaire ("Your space right now?") on the first open after onboarding, chained off the cold-open gauge seam — a modal nobody asked for, in the doorway. S.profile.spaceAsked/spaceState are no longer written; every reader of them already guards.
+  // ===== ORGAN D · MOMENT-LISTENER v1 — GUTTED (David 2026-08-15, THE CULL: "I want them ALL REMOVED"). The whole unprompted half is gone: checkMoments() (the passive open-scan), offRamp() (drift), tranquilityOffer() (pre-sleep), comebackLadder(), motivationDial()/mlRoute() (fired 300ms after a timeline drag), notePostpone() (their choke point), and the nudge gates that existed only to ration them (nudgeMuted/wideDayNow/canNudge/markNudge/preSleepWindow). S.nudge and S.profile.muteNudgeUntilK are no longer written or read; both readers were inside this organ. What SURVIVES is the card SHELL — mlCard/mlKick/mlBtn — because the user-initiated flows still use it (the am-open + catch cards inside the lessons/ritual the user opened, and the Urge chip). Re-add the moments only when David approves them one by one. =====
   function mlCard(host) { var ob = add(host || document.body, "div", "hs-ov"); ob.style.cssText = "position:fixed;bottom:96px;left:14px;right:14px;background:#1c0f20;border:1.5px solid #3a1730;border-radius:16px;padding:15px 16px;z-index:9999;box-shadow:0 8px 32px #0a0008;font-family:var(--bub);"; return ob; } // the ONE-tool arrival surface — a calm bottom card, never a full modal
   function mlKick(ob, txt) { add(ob, "div", null, tr(txt)).style.cssText = "font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#9a7090;margin-bottom:5px;"; }
   function mlBtn(ob, label, primary, fn) { var b = add(ob, "button", primary ? "ob-btn go" : "tf-chip", tr(label)); b.style.cssText = primary ? "margin-top:6px;" : "margin:6px 6px 0 0;"; b.onclick = fn; return b; }
-  // ---- the tools (each hands ONE move; deals its theory card after it works) ----
-  function offRamp() { // drift → 90s: Withers gap-interrupt + one breath; deals SN-227 (the catch)
-    var ob = mlCard(); mlKick(ob, "a soft off-ramp");
-    add(ob, "div", null, tr("You drifted, and you noticed. That noticing IS the gap.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
-    add(ob, "div", null, tr("Wouldn't it be nice if the next few minutes went a little differently?")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
-    mlBtn(ob, "One breath, then choose ▶", true, function () { ob.remove(); try { breathwork(2); } catch (e) {} setTimeout(function () { var c = mlCard(); renderDeckCard(c, "catch"); mlBtn(c, "Got it", false, function () { c.remove(); }); }, 400); });
-    mlBtn(ob, "not now", false, function () { ob.remove(); });
-  }
-  function comebackLadder() { // return-after-gap → ONE rung up, built from P.ingredients; deals SN-007
-    var ing = ((S.profile || {}).ingredients) || [], ILBL = { slept: "a real night's sleep", moved: "moving your body", quiet: "a quiet morning", plan: "one small plan", people: "one good person", music: "some music", early: "an early start", alone: "a little time alone" };
-    var pick = ing.length ? (ILBL[ing[Math.floor(Date.now() / 3600000) % ing.length]] || null) : null;
-    var ob = mlCard(); mlKick(ob, "welcome back");
-    add(ob, "div", null, tr("You came back. That bounce (not the streak) is the skill.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
-    add(ob, "div", null, pick ? (tr("One small thing from your good days") + ": " + tr(pick) + "?") : tr("One small thing on purpose today?")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
-    mlBtn(ob, "I'm in ▶", true, function () { ob.remove(); var c = mlCard(); renderDeckCard(c, "comeback"); mlBtn(c, "Let's go", false, function () { c.remove(); try { openJourney(); } catch (e) {} }); });
-    mlBtn(ob, "not today", false, function () { ob.remove(); S.profile.muteNudgeUntilK = keyAdd(todayK(), 2); save(); }); // "needed a break" → 2 nudge-free days (ladder: never scold a no)
-  }
-  function tranquilityOffer() { // pre-sleep window → a wind-down offer (never if wide-day/mute)
-    var ob = mlCard(); mlKick(ob, "winding toward sleep");
-    add(ob, "div", null, tr("Getting close to your bedtime.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
-    add(ob, "div", null, tr("A short wind-down? It sets tonight's sleep, and tomorrow's you.")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
-    mlBtn(ob, "Wind down ▶", true, function () { ob.remove(); try { selfHypnosis(); } catch (e) { try { breathwork(4); } catch (e2) {} } });
-    mlBtn(ob, "not now", false, function () { ob.remove(); });
-  }
-  function notePostpone(b) { // ORGAN D choke point, shared by the editor's ＋nudge AND the drag-commit path (the deferred timeline-safe pass): a counter + a deferred overlay — zero paint, zero geometry, runs only after the move already committed
-    b.postponed = (b.postponed || 0) + 1;
-    if (b.postponed >= 3 && !b.dialFired && canNudge()) { b.dialFired = 1; markNudge(); save(); setTimeout(function () { try { motivationDial({ block: b }); } catch (e) {} }, 300); }
-  }
-  function motivationDial(ctx) { // task postponed 2× → hand ONE of four moves; default route by profile
-    var ob = mlCard(); mlKick(ob, "hard to start?");
-    add(ob, "div", null, tr("What's in the way, honestly?")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:9px;";
-    var wrap = add(ob, "div"); wrap.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;";
-    var pf = {}; try { pf = profile(); } catch (e) {}
-    var def = ((S.profile || {}).mlDrift) || (pf.lowEnergy ? "empty" : "cant"); // brother→can't-start, sister→bored routed via profile.mlDrift when set
-    [["cant", "Can't start", "ti-player-play"], ["doubt", "Doubt it'll matter", "ti-help"], ["bored", "It's boring", "ti-mood-neutral"], ["empty", "No energy left", "ti-battery-1"]].forEach(function (o) {
-      var c = add(wrap, "button", "tf-chip"); if (o[0] === def) c.style.borderColor = "#ffd24a";
-      c.innerHTML = '<i class="ti ' + o[2] + '"></i> ' + esc(tr(o[1]));
-      c.onclick = function () { ob.remove(); mlRoute(o[0], ctx); };
-    });
-  }
-  function mlRoute(kind, ctx) {
-    if (kind === "cant") { try { reversalOfDesire(null); } catch (e) {} return; } // shrink-to-first-action / move toward the discomfort
-    if (kind === "empty") { try { relaxMoment(); } catch (e) { try { breathwork(4); } catch (e2) {} } return; } // rest ritual — regulate first
-    var ob = mlCard();
-    if (kind === "doubt") { mlKick(ob, "here's your evidence");
-      var best = null; try { best = pmBestCharge(todayK()) || pmBestCharge(keyAdd(todayK(), -1)); } catch (e) {}
-      add(ob, "div", null, best ? (tr("You already proved you can. you did") + " “" + esc(best) + "”.") : tr("You've shown up before. The doubt is a feeling, not a fact.")).style.cssText = "font-size:14px;font-weight:700;color:#e6cfe0;line-height:1.5;margin-bottom:9px;";
-      mlBtn(ob, "one small step ▶", true, function () { ob.remove(); try { openJourney(); } catch (e) {} });
-    } else { mlKick(ob, "make it new"); // bored → novelty swap
-      add(ob, "div", null, tr("Boredom's a signal, not a verdict. Swap the shape, keep the aim.")).style.cssText = "font-size:14px;font-weight:700;color:#e6cfe0;line-height:1.5;margin-bottom:9px;";
-      mlBtn(ob, "pick a fresh way ▶", true, function () { ob.remove(); try { bentoPicker({ title: tr("Switch to…"), onPick: function () { try { renderAll(); } catch (e) {} } }); } catch (e) {} });
-    }
-    mlBtn(ob, "close", false, function () { ob.remove(); });
-  }
   function logUrge() { // +3 CATALYST: logging the urge IS the highest-scoring single move (the inversion). Bypasses the daily nudge gate — it's a user action, not a guardian nudge.
     var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: tr("Caught an urge"), mins: 1, catK: "love", domain: "restore", color: DOM.restore.c });
     try { earn(3, { label: "catalyst-urge", force: true }); } catch (e) {} save(); renderAll();
     try { celebrateGated(DOM.restore.c, 1); } catch (e) {}
-    var ob = mlCard(); mlKick(ob, "+3 · best move of the day");
-    add(ob, "div", null, tr("You logged the urge instead of feeding it. That's the whole skill.")).style.cssText = "font-size:14.5px;font-weight:800;color:#e6cfe0;margin-bottom:4px;";
-    add(ob, "div", null, tr("Want to spend that energy on something instead?")).style.cssText = "font-size:13px;color:#c8b8c8;line-height:1.5;margin-bottom:10px;";
-    mlBtn(ob, "Swap it ▶", true, function () { ob.remove(); try { catalystCard(tr("that urge"), 1); } catch (e) {} });
-    mlBtn(ob, "just noting it", false, function () { ob.remove(); });
+    try { toast(tr("You logged the urge instead of feeding it. That's the whole skill.")); } catch (e) {} // THE CULL (David 2026-08-15): the Urge chip is a REAL user tap, so the feedback stays — but as a toast, not as a two-button card that then dealt a SECOND card (catalystCard, now deleted). Same already-translated line, no new string.
   }
-  function preSleepWindow() { try { var sm = (S.course && S.course.sleepMath) || {}; var bed = sm.wake ? (smMin(sm.wake) - (sm.hours || 8) * 60 + 1440) % 1440 : 1350; var nm = nowMin(); var diff = (bed - nm + 1440) % 1440; return diff <= 45 || diff >= (1440 - 10); } catch (e) { return false; } } // within ~45min before estimated bedtime
-  function checkMoments(trigger) { // passive scan — fires the FIRST matching trigger that passes the gate, ONE tool only
-    try {
-      if (!canNudge()) return false;
-      var k = todayK(), pf = {}; try { pf = profile(); } catch (e) {}
-      // COMEBACK-CARD REMOVED from the home surface (David 2026-07-23 "remove the WELCOME BACK popup card that covers the Home Screen"). The bouncedBack trigger no longer deals comebackLadder() over home. bouncedBack is a DERIVED property (roughY && goodT, recomputed each open) and comebackLadder wrote no persistent flag anything waited on (only the local muteNudgeUntilK on its own "not today"), so removing the trigger leaves no stuck state. comebackLadder()/mlCard machinery is shared by the drift + pre-sleep moments below and by DEV.moment — left intact.
-      var driftNow = (logs(k) || []).some(function (l) { return domainOf(l) === "drift"; }) || activeTimers().some(function (t) { return domainOf(t) === "drift"; });
-      if (driftNow) { markNudge(); offRamp(); return true; }
-      if (preSleepWindow()) { markNudge(); tranquilityOffer(); return true; }
-    } catch (e) {}
-    return false;
-  }
-  // F0 — THE GAUGE-ROUTED OPEN (HANDOFF-first-day §1): the once-a-day mood card that read state before letting you in. POPUP KILLED (David 2026-08-01) — the open must land straight on home, no questionnaire in the doorway. The function SURVIVES as the ORGAN C+D seam: every caller still routes its follow-up through it, the chain just fires immediately now.
-  function gaugeOpen(onDone) {
-    var fin = function () { var _d = onDone; spaceCheckOnce(function () { if (_d) _d(); try { setTimeout(function () { checkMoments("open"); }, 1200); } catch (e) {} }); }; // ORGAN C+D: chain the one-time space check + a single passive moment-scan onto the first daily gauge completion
-    fin(); return; // no card, no "How's this week been?" — straight through (David 2026-08-01). The old gaugeK once-a-day marker is moot with nothing to gate; S.profile.weekMood simply stops being written, and both readers already guard with typeof.
-  }
+  // F0 — THE GAUGE-ROUTED OPEN (HANDOFF-first-day §1): the once-a-day mood card that read state before letting you in. POPUP KILLED (David 2026-08-01) — the open must land straight on home, no questionnaire in the doorway. THE CULL (David 2026-08-15) emptied the seam too: it used to chain spaceCheckOnce + a 1200ms checkMoments scan, which is exactly how an unprompted card reached the doorway. Now it is a pure pass-through, kept ONLY so its several callers keep their onDone chain (renaming them out is a bigger, riskier edit than this cull).
+  function gaugeOpen(onDone) { if (onDone) onDone(); }
   // ===== BRAIN GYM — Recall (HANDOFF-brain-gym, David 2026-07-01): a short working-memory game. HONESTY RULE: never "get smarter" — it's a focus/memory-skill warm-up. Personal-best only. Scores in S.tools.games (additive). =====
   function recallGame(onDone) {
     S.tools = S.tools || {}; S.tools.games = S.tools.games || {};
@@ -17349,7 +17257,7 @@
         try { if (!S.combo || S.combo.dayK !== dk) S.combo = { dayK: dk, n: 0 }; S.combo.n++; if (S.combo.n >= 2) { rewardFx(3, { step: S.combo.n }); earn(3 * S.combo.n, { label: "combo" }); toast("\u00d7" + S.combo.n + " " + tr("combo · in a row on plan")); } } catch (e) {}
         try { if (Math.random() < 0.05) { earn(7, { label: "shiny" }); rewardFx(5, { n: 7, srcEl: el("liveDock"), color: "#7ac8ff" }); toast(tr("SHINY: a rare one, just for this moment")); } } catch (e) {}
         try { var _ds = dayStats(dk); if (_ds.perfect) { S.crowns = S.crowns || {}; if (!S.crowns[dk]) { S.crowns[dk] = Date.now(); rewardFx(4, { n: 25, srcEl: el("liveDock"), color: "#ffd24a" }); earn(25, { label: "crown" }); toast(tr("CROWN: every planned block, lived. Today is yours.")); } } } catch (e) {}
-        try { badgeTick(); } catch (e) {} if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus + 2, srcEl: el("liveDock") }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } try { rewardFx(1, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); try { var _isVice = t.catK==='vice' || (S.habits||[]).some(function(h){return h.id===t.habitId&&h.type==='quit';}); if (_isVice && (S.guide&&(S.guide.unlocked||[]).indexOf(5)>=0)) { (function(_t,_m){setTimeout(function(){catalystCard(_t.title,_m);},350);})(t,mins);}  } catch(e) {} } // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
+        try { badgeTick(); } catch (e) {} if (opb.plannedAhead) { /* planned-then-done (the big tier): block was planted before today → full celebrate + guardian mirror line */ try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus + 2, srcEl: el("liveDock") }); } catch (e) {} toast("✦ You planned it. You showed up. That's the game. +" + (bonus + 2) + " Spark"); try { earn(2, { label: "planned-then-done" }); } catch (e) {} } else { try { celebrate((DOM[domainOf(t)] || DOM.focus).c, bumpStreak()); } catch (e) {} try { rewardFx(2, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✨ completed your plan · +" + bonus + " Spark"); } } else { /* partial on-plan coverage — Tracking tier mirror (not pre-announced) */ if (mins >= 3 && !opb.plannedAhead) { try { earn(8, { label: "tracking" }); } catch (e) {} } try { rewardFx(1, { n: bonus, srcEl: el("liveDock") }); } catch (e) {} toast("✓ on-plan stretch tracked · +" + bonus + " Spark"); } } else if (mins >= 3) { /* Tracking tier: any timer > 3 min with no matching plan block — quiet earn, mirror-only */ try { earn(8, { label: "tracking" }); } catch (e) {} } S.timers.splice(i, 1); save(); renderAll(); } // THE CULL (David 2026-08-15): stopping a vice timer no longer fires catalystCard 350ms later — the stop is the stop, the reward toasts above are the feedback. // reward completing a PLANNED activity: light it gold + bonus Spark + a streak (David 2026-06-24 night) + Tracking tier earn(8) for any >3min timer (SCHEMA 3, mirror-not-price: points appear AFTER, never pre-announced)
   function elapsedStr(t) { var s = Math.floor((Date.now() - t.start) / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(ss); }
   function renderNow() {
     var C = el("nowCard"); if (!C) return; C.innerHTML = ""; // legacy "Tracking now" card removed — the live timer lives in the timeline (David 2026-06-23)
@@ -18467,7 +18375,24 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }).slice(1); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } return { depth: +sessionDepth(secs).toFixed(2), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, gaps: cues.slice(0, 6).map(function (s2) { return +s2.gap.toFixed(1); }) }; } };
+  window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, medStack: function (secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: 32 }, { k: { id: "meditate", name: "Attention", ti: "ti-moon", col: "#9a5cf0" }, d: secs || 150, med: [{ k: "settle" }, { k: "aware" }, { k: "rest" }] }, { k: { id: "mantra", name: "Rewire", ti: "ti-quote", col: "#ffc83d" }, d: 40 }]); return "medStack (3-section meditation in the middle)"; }, storyBars: function () { var w = document.querySelector(".gp-ov .gp-story"); return w ? { rows: document.querySelectorAll(".gp-ov .gp-story").length, bars: w.children.length } : "no player"; }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } var _g = function (s2) { return pkGap(s2._pk, s2.gap != null ? s2.gap : 0, PK.speechEst) + (s2._pkAdd || 0); }; var est = 0; r.segs.forEach(function (s2) { est += (s2.text ? PK.speechEst : 0) + _g(s2); }); return { depth: +sessionDepth(secs).toFixed(2), dose: r.dose, composedEst: +est.toFixed(1), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, kinds: cues.slice(0, 8).map(function (s2) { return s2._pk || "-"; }), gaps: cues.slice(0, 8).map(function (s2) { return +_g(s2).toFixed(1); }) }; }, // 2026-08-15: the `.slice(1)` that used to sit on `cues` was a leftover from the spoken transition card removed on 2026-07-22 — it silently dropped the FIRST cue of every act, so every cueLines/gaps reading taken since has been short by one. `kinds` + the pkGap-resolved `gaps` make the new pause grammar inspectable; composedEst uses PK.speechEst (the player does the exact fit against real clip lengths).
+    pauseAudit: function () { // REGRESSION GUARD (David 2026-08-15): no somatic beat may ever grow with the dose or the guidance preset again, and no held position may pass its ceiling. Lives on DEV rather than designAudit — that audit's shape is board geometry, this is session time.
+      var bad = [], checked = 0, keep = (S.tools || {}).guidance;
+      ["guided", "balanced", "spacious"].forEach(function (pre) {
+        S.tools = S.tools || {}; S.tools.guidance = pre;
+        ["stretch", "relax", "meditate", "mantra", "reprogram", "gratitude"].forEach(function (id) {
+          [60, 120, 300].forEach(function (sc) {
+            var med = (id === "meditate") ? [{ k: "settle" }] : undefined, r;
+            try { r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: sc, med: med }]); } catch (e) { bad.push(id + "@" + sc + "/" + pre + " threw: " + e.message); return; }
+            r.segs.forEach(function (s2) { var g = pkGap(s2._pk, s2.gap != null ? s2.gap : 0, PK.speechEst); checked++;
+              if (s2._pk === "somatic" && g > PK.somatic + 0.001) bad.push(id + "@" + sc + "/" + pre + " somatic gap " + g.toFixed(1) + "s > " + PK.somatic);
+              if (s2._pk === "held" && g > PK.held + 0.001) bad.push(id + "@" + sc + "/" + pre + " held gap " + g.toFixed(1) + "s > " + PK.held); });
+          });
+        });
+      });
+      S.tools.guidance = keep;
+      return { pass: !bad.length, checked: checked, fails: bad };
+    } };
   // DEV.voice() — the receipt for the 2026-08-15 live voice swap. No args = the running player's state (which bank
   // its buffers came from, each line's start/dur and a length@rate fingerprint of its decoded clip, whether the
   // transport moved). DEV.voice("millie") flips the pick through the REAL setter, so a session open in front of you
@@ -19440,7 +19365,7 @@
     var fc = el("featClose"); if (fc) fc.onclick = closeFeature;
     var fb = el("featBackdrop"); if (fb) fb.onclick = closeFeature;
     var jb = el("jumpBtn"); if (jb) { jb.onclick = doJump; jb.addEventListener("touchstart", function (e) { e.preventDefault(); doJump(); }, { passive: false }); }
-    var nbtn = el("notebookBtn"); if (nbtn) nbtn.onclick = notebookSheet; // the single menu door
+    // #notebookBtn wiring DELETED with notebookSheet (David 2026-08-15) — the button was display:none, the sheet unreachable.
     document.querySelectorAll("#growTabs .zt").forEach(function (z) { z.onclick = function () { var g = z.dataset.g; document.querySelectorAll("#growTabs .zt").forEach(function (x) { x.classList.toggle("on", x === z); }); el("habitsPane").style.display = g === "habits" ? "" : "none"; el("statsPane").style.display = g === "stats" ? "" : "none"; }; });
     el("sheet").onclick = function (e) { if (e.target === el("sheet")) closeSheet(); }; // tap above the card = exit
     var sx = el("sheetX"); if (sx) sx.onclick = closeSheet; var sh = document.querySelector(".shandle"); if (sh) sh.onclick = closeSheet;

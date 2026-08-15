@@ -1370,7 +1370,7 @@
   .binder-card .b-prog{ position:relative; z-index:3; color:#b596ad; font-family:"Jost",sans-serif; font-weight:600; font-size:11px; margin-top:2px; }
   .b-total{ text-align:center; color:#8a7898; font-family:"Jost",sans-serif; font-weight:800; font-size:13px; padding:10px 0 4px; }
   /* ===== PLANTING CEREMONY (canon game.jpg left) — night garden ===== */
-  .pc-ov{ position:fixed; inset:0; z-index:80; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; background:radial-gradient(120% 62% at 50% 128%, #0e3a6e 0%, #0e3a6e 30%, transparent 31%), radial-gradient(150% 70% at 50% 96%, #1f6a3a 0%, #1f6a3a 44%, transparent 45%), linear-gradient(180deg, #1a0a24 0%, #2a0f38 58%, #34123f 100%); animation:ovFade .28s cubic-bezier(.2,.8,.25,1) both; overflow:hidden; }
+  .pc-ov{ position:fixed; inset:0; z-index:95; /* Z-BAND FIX (2026-08-15): was 80 — the planting ceremony could open UNDER an open #trackerFull (90) and just eat taps. */ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; background:radial-gradient(120% 62% at 50% 128%, #0e3a6e 0%, #0e3a6e 30%, transparent 31%), radial-gradient(150% 70% at 50% 96%, #1f6a3a 0%, #1f6a3a 44%, transparent 45%), linear-gradient(180deg, #1a0a24 0%, #2a0f38 58%, #34123f 100%); animation:ovFade .28s cubic-bezier(.2,.8,.25,1) both; overflow:hidden; }
   @keyframes ovFade{ from{ opacity:0; } to{ opacity:1; } }
   .pc-moon{ position:absolute; top:11%; right:19%; width:74px; height:74px; border-radius:50%; background:radial-gradient(circle at 38% 34%, #fff 0%, #ffe9f4 46%, #f6b8dd 100%); box-shadow:0 0 34px 10px rgba(255,210,236,.32); }
   .pc-star{ position:absolute; width:3px; height:3px; border-radius:50%; background:#fff; opacity:.85; animation:pcTwinkle 3.4s ease-in-out infinite; }
@@ -2647,7 +2647,7 @@
   .dur-chip:active{ transform:translateY(1px); box-shadow:0 2px 0 #160510; }
   .dur-x{ display:block; margin:13px auto 0; background:transparent; border:none; color:#c79ab4; font-family:"Jost",sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
   /* ============ GOALS pillar (§16, mockups 009/010) ============ */
-  .goal-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
+  .goal-ov{ position:fixed; inset:0; z-index:95; /* Z-BAND FIX (2026-08-15): was 71 — UNDER #journeyPath (75) and #trackerFull (90), so this overlay could scrim/blank a pane while painting behind the surface it blocked: an invisible modal with no dismiss target ("sometimes it breaks the app"). 95 matches .bento-ov, which already carried the above-the-tracker rule. */ background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
   .goal-card{ width:min(460px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
   .goal-head{ display:flex; align-items:center; gap:8px; padding:13px 14px 10px; flex:none; border-bottom:2px solid #160510; background:#1c0512; }
   .goal-q{ color:#ffe3f1; font-size:17px; font-weight:700; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:7px; }
@@ -2726,7 +2726,7 @@
   .preset-meta{ color:#c79ab4; font-size:11.5px; font-weight:600; flex:none; }
   .preset-del{ flex:none; width:28px; height:28px; border-radius:8px; background:#48122f; border:2px solid #160510; color:#ffd0e6; display:flex; align-items:center; justify-content:center; font-size:12px; }
   /* ============ IDENTITY MINDMAP (§21, mockups 017/018) ============ */
-  .mind-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.66); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
+  .mind-ov{ position:fixed; inset:0; z-index:95; /* Z-BAND FIX (2026-08-15): was 71, under #journeyPath (75) and #trackerFull (90) — see .goal-ov. */ background:rgba(15,4,12,.66); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
   .mind-card{ width:min(420px,96vw); max-height:90vh; max-height:90dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
   .mind-body{ overflow:auto; padding:10px 14px 16px; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; }
   .mind-sub{ color:#c79ab4; font-size:12px; font-weight:600; text-align:center; margin:2px 0 4px; }
@@ -2758,9 +2758,8 @@
   .char-vbar i{ display:block; height:100%; border-radius:5px; }
   .char-vchev{ color:#7a5c6e; font-size:16px; flex:0 0 auto; }
   /* ============ NOTEBOOK — the single menu door (David 2026-06-23) ============ */
-  #notebookBtn{ position:absolute; left:22px; bottom:116px; z-index:6; width:56px; height:56px; border-radius:16px; background:#ff5fa0; border:3px solid #160510; box-shadow:0 4px 0 #160510; color:#4a1126; font-size:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  #notebookBtn:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
-  .nb-ov{ position:fixed; inset:0; z-index:71; background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
+  /* #notebookBtn styles DELETED with the notebook menu (David 2026-08-15): the button was display:none and its sheet unreachable. */
+  .nb-ov{ position:fixed; inset:0; z-index:95; /* Z-BAND FIX (2026-08-15): was 71, under #journeyPath (75) and #trackerFull (90) — see .goal-ov. Still live for wakeBedSheet after the notebook menu was deleted. */ background:rgba(15,4,12,.62); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:max(22px,env(safe-area-inset-top)) 12px 12px; }
   .nb-card{ width:min(420px,96vw); max-height:88vh; max-height:88dvh; background:#2c081a; border:4px solid #160510; border-radius:22px; box-shadow:0 22px 60px rgba(0,0,0,.6); display:flex; flex-direction:column; overflow:hidden; font-family:"Jost",sans-serif; animation:bentoIn .4s var(--ease-spring) both; }
   .nb-body{ overflow:auto; padding:12px; display:flex; flex-direction:column; gap:9px; -webkit-overflow-scrolling:touch; }
   .nb-item{ display:flex; align-items:center; gap:12px; width:100%; background:#3a1226; border:2px solid #160510; border-radius:15px; padding:12px; cursor:pointer; box-shadow:0 3px 0 #160510; text-align:left; font-family:"Jost",sans-serif; transition:transform .1s; }
@@ -3132,7 +3131,6 @@
   body.gaming #nav, body.journey-open #nav{ display:flex !important; z-index:80; }
   body.pane-dragging #nav{ z-index:360; } /* during a carousel slide, sit above the sliding panes (z~300) so the menu stays put + visible while pages move under it */
   #jpNav, #gameNav, #gnToggle{ display:none !important; } /* retired — the persistent #nav replaces these per-pane bars */
-  #notebookBtn{ display:none !important; }
   /* the live-tracker strip is retired — the timeline is the Today tab now; hiding it everywhere also stops it covering the garden's Exit button (David 2026-06-24) */
   #liveTracker{ display:none !important; }
   body:not(.gaming) #screen{ padding-top:14px !important; }
@@ -3966,7 +3964,6 @@
     <div id="zoomCtl"><button id="zoomIn" type="button">＋</button><button id="zoomOut" type="button">－</button></div>
     <div id="joy"><div id="joyStick"></div></div>
     <button id="jumpBtn" type="button" aria-label="Jump">⤴</button>
-    <button id="notebookBtn" type="button" aria-label="Notebook"><i class="ti ti-notebook"></i></button>
     <div id="gameNav"><button class="jpn" id="gnPlanner"><i class="ti ti-calendar-month"></i><span>Planner</span></button><button class="jpn" id="gnJourney"><i class="ti ti-route"></i><span>Journey</span></button><button class="jpn on" id="gnGame"><i class="ti ti-device-gamepad-2"></i><span>Game</span></button></div>
     <button id="gnToggle" type="button" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
     <!-- THE GROVE (garden MVP): the entry flower mirrors the home door across the bottom edge; its coin column unfolds upward; the sheet slides over the lower screen and NEVER scrims the island. Scaffold is static markup on purpose — JS only pokes these nodes (zero innerHTML wipes, ratchet law). -->
@@ -4081,6 +4078,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1302"></script>
+  <script src="app.js?v=1304"></script>
 </body>
 </html>
