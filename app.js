@@ -5976,8 +5976,30 @@
     var w = el("tfWorld"); if (w) void w.offsetWidth;          // THE one forced reflow for the whole cascade (was one per row)
     q.forEach(function (a) { a[0].style.animation = a[1]; });
   }
+  // THE STALE-SHELF BUG (David device 2026-08-15, "the home screen was broken"): renderToolbox2 REBUILDS the shelf's rows on
+  // every render, so the nodes tcCascade hid are replaced by fresh ones with no inline state — visible. Re-reading _tcEls was
+  // not enough: _tcHard/_tcShown stayed LATCHED from before the rebuild, so neither hide branch below could fire and the shelf
+  // stayed lit at home until you scrolled past 8% and back. The master tick re-renders every minute, so home grew a tools
+  // shelf over its own board once a minute, on every face and every hour. Re-reading now also re-arms the latches.
+  // DEFERRED + COALESCED, and that is the whole point: renderToolbox2 runs INSIDE a render pass that may not have set the world's
+  // classes yet (wLive() false → the hook skips) and may rebuild the shelf again before the pass ends. A 0ms timer runs after the
+  // entire pass, once, whatever order the renderers took — the only place the re-arm cannot be out-ordered.
+  var _tcSyncT = 0;
+  function tcResyncSoon() {
+    if (_tcSyncT) return;
+    _tcSyncT = setTimeout(function () {
+      _tcSyncT = 0;
+      try { if (!wLive()) return; tcResync(true); var w = el("tfWorld"); tcScrub((w.scrollTop - wHomeY()) / wSpan()); } catch (e) {}
+    }, 0);
+  }
+  function tcResync(force) { // force = re-read unconditionally (the render path). Returns true if the list was re-armed.
+    if (!force && _tcEls && _tcEls.length && _tcEls[0].isConnected) return false;
+    _tcEls = tcEls(); _tcHard = false;
+    if (!_tcShown) _tcShown = undefined; // hidden before the rebuild → let the resting-hide re-apply to the FRESH nodes; shown stays shown (new nodes are visible, which is already correct)
+    return true;
+  }
   function tcScrub(u) { // u = fraction of the home→tools travel
-    if (!_tcEls || !_tcEls.length || !_tcEls[0].isConnected) _tcEls = tcEls();
+    tcResync();
     if (!_tcEls.length) return;
     if (_tcShown === undefined) { _tcShown = false; tcCascade(-1, true); }
     var up = (_wDir || 0) < 0;
@@ -6045,6 +6067,12 @@
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
     document.body.classList.add("home-onepage"); // puck-return CSS keys on this: at home the puck fades out (nothing to return from); .puck-away fades it back in once the scroll drifts off the home seam
     try { wMeasurePad(); } catch (e) {} // the shelf just (re)rendered — re-fit the ground to the viewport before anything measures the column
+    // …and re-apply the shelf cascade's resting state to the rows that render just replaced. Driven from the render, not from a
+    // scroll: parked at home there IS no scroll, which is exactly how the stale shelf stayed lit for a whole minute at a time.
+    // UNCONDITIONAL, not staleness-gated: a single user action can run this render twice (renderAll then renderTrackerFull), and a
+    // staleness check passes on the first pass then finds "fresh" nodes on the second — leaving the LAST rebuild's rows lit. Re-read
+    // and re-apply every time; it is ~17 idempotent style writes on a surface that re-renders once a minute.
+    try { if (wLive()) { tcResync(true); var _tw = el("tfWorld"); tcScrub((_tw.scrollTop - wHomeY()) / wSpan()); } } catch (e) {}
     try { wScrub(); } catch (e) {} // set the initial away/home puck + label state for this render (landed = home = hidden). Scrub only: a render must never arm a cascade
     worldScrollHome(); // idempotent + self-guarding: no-ops once positioned
     wReSettle();
@@ -6517,6 +6545,12 @@
     tbxHeroes().forEach(function (hero) { tbxHeroRow(root, hero); });
     add(root, "div", "tbx-intro", tr("For when you need something specific: one box to settle, one to go deeper."));
     var bento = add(root, "div", "tbx-bento"); TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
+    // THE SHELF'S RESTING STATE BELONGS HERE, with the nodes that were just created (David device 2026-08-15, "the home screen
+    // was broken"). Every row above is a BRAND NEW element with no inline state = visible, while the scroll cascade still holds
+    // the old ones; at home rest the shelf therefore lit up over the board and stayed lit (the master tick re-renders once a
+    // minute, so this fired on every face, every hour — not an evening bug). Hooking renderOnePageWorld was not enough: one user
+    // action can run this renderer again AFTER that hook. Re-arming at the end of the renderer itself cannot be out-ordered.
+    try { tcResyncSoon(); } catch (e) {}
   }
   Object.assign(I18N.ru, { // TOOLBOX strings (B4 law: EN source + RU dict in the same commit). RU тире kept where native. Keys duplicated with the low I18N-DICT block keep their canonical value (this assign runs earlier → the later block wins on conflict).
     "Plan my day": "План на день", "First Light": "Первый свет", "Before Deep Work": "Перед фокусом", "Caught Scrolling": "Залип в ленте", "Urge Wave": "Волна тяги", "Spun Up": "На взводе", "I Messed Up": "Я оступился", "Empty Tank": "Пустой бак", "Shutdown": "Отбой",
@@ -18408,6 +18442,20 @@
     try { renderAll(); } catch (e) {} try { if (TF_OPEN) renderTrackerFull(); } catch (e) {}
     return cur == null ? "sim time OFF · real clock" : "sim time " + fmt(cur);
   };
+  // DEV UP-NEXT SIM (David 2026-08-15, "the circle was blue and I wanted to troubleshoot that screen"): the blue disc is the
+  // UP-NEXT face — a PLANNED BLOCK due within TF_UPNEXT_MIN makes the stone wear that block's domain hue + the 115deg stripes
+  // ("Next: <block>"). It is data-driven, so the time-sim alone can never reach it: you also need a block near the simulated
+  // clock. This plants one (removable, its own id, clearly named) so the face is one tap away. Domain optional: DEV.upnext()
+  // = focus/BLUE (what David saw), DEV.upnext("move") = orange, DEV.upnext("off") = remove it and go back to the pink disc.
+  window.DEV.upnext = function (dom) {
+    var k = todayK(), list = blocks(k), i;
+    for (i = list.length - 1; i >= 0; i--) if (list[i] && list[i].id === "devupnext") list.splice(i, 1); // idempotent: never stack copies
+    if (dom === "off" || dom === false) { try { save(); renderAll(); if (TF_OPEN) renderTrackerFull(); } catch (e) {} return "up-next sim OFF (the planted block is gone)"; }
+    var D = DOM[dom || "focus"] || DOM.focus, at = logicalNowMin() + 5; // 5 min out = inside the 10-min TF_UPNEXT_MIN window, sim-aware via logicalNowMin
+    list.push({ id: "devupnext", title: (dom ? D.l : "Deep Work") + " (dev)", time: pad(Math.floor((at % 1440) / 60)) + ":" + pad(at % 60), mins: 60, domain: dom || "focus", color: D.c });
+    try { save(); renderAll(); if (TF_OPEN) renderTrackerFull(); } catch (e) {}
+    return "up-next sim ON · " + D.l + " block due in 5 min · DEV.upnext('off') to remove";
+  };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
   // WORLD-MOTION PROBE (@SEC:WORLD-MOTION): the engine's whole state in one object, plus a driver that calls the REAL zone doors.
   // Exists because the engine is otherwise unobservable — the preview cannot fire real gestures, so without this the only way to
@@ -18418,7 +18466,8 @@
     return { on: WM, live: wLive(), busy: wBusy(), positioned: _worldPositioned,
       st: w ? Math.round(w.scrollTop) : null, homeY: Math.round(wHomeY()), toolsY: Math.round(wToolsY()), skyY: Math.round(wSkyY()), span: Math.round(wSpan()),
       d: w ? Math.round(w.scrollTop - wHomeY()) : null, dir: _wDir, v: +(_wV || 0).toFixed(3), anim: _wAnim, touch: _wTouch, hold: !!_wHold, flung: _wFlung, startTop: Math.round(_wStartTop),
-      homeState: _hcState, armUp: _hcArmUp, armDown: _hcArmDown, toolsShown: !!_tcShown, hcBlocks: hcEls().length, hcCols: (function () { var b = el("tfHomeBars"); return b ? hcCols(b).length : 0; })(), tcRows: tcEls().length };
+      homeState: _hcState, armUp: _hcArmUp, armDown: _hcArmDown, toolsShown: !!_tcShown, hcBlocks: hcEls().length, hcCols: (function () { var b = el("tfHomeBars"); return b ? hcCols(b).length : 0; })(), tcRows: tcEls().length,
+      tcListLive: !!(_tcEls && _tcEls.length && _tcEls[0] === document.querySelector("#tbxGridTop > *")), tcHard: !!_tcHard }; // tcListLive false = the cascade is holding nodes the DOM has since replaced (the stale-shelf class)
   };
   // THE NO-OVERSHOOT GATE. Feeds wSnapIntent a hypothetical rest position + gesture start and names the zone it would commit to, with
   // no rAF and no timing involved. `DEV.wIntent(-100, "home")` must say "home"; only a pull past 45% of the viewport may say "journey".
@@ -18499,7 +18548,7 @@
       var _th = el("tfToolsHint");
       if (tfh2c() && _th) {
         var _thAir = hzr.bottom - _nr(_th).bottom;
-        chk("fold hint sits AT the screen bottom", _thAir >= 0 && _thAir <= 26, Math.round(_thAir) + "px above the zone bottom · hint bottom " + Math.round(_nr(_th).bottom) + " / vh " + H, "0-26px (at the edge, never clipped by the zone)");
+        chk("fold hint sits AT the screen bottom", _thAir >= -1.5 && _thAir <= 26, Math.round(_thAir * 10) / 10 + "px above the zone bottom · hint bottom " + Math.round(_nr(_th).bottom) + " / vh " + H, "-1.5…26px (at the edge, never clipped by the zone)"); // the floor is -1.5, not 0: under the artboard fill-scale a rect ÷ 1.0945 carries sub-pixel error, and the up-next face's board is 1px shorter than idle's — a 1px difference is not a clipped hint, and gating on exact 0 failed a ship for it (2026-08-15)
       }
       var dlabs = tfh2c() ? [] : [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-label")).slice(0, 4), dlb = 0; // the FIRST deck row (4 cells) — the row that peeks above the fold on the pre-2c idle home; take the lowest label (they wrap to 2-3 lines)
       if (dlabs.length) {
@@ -19175,7 +19224,9 @@
       ["🏝 Copy island data", devCopyIsleData], // David 2026-07-16: no console on his phone — this is the only way for him to hand me his real island's exact tile data when a coast bug shows up, instead of me guessing at synthetic shapes
       [(window._jsBlur ? "⚡ Fast coast: ON (tap=off)" : "⚡ Fast coast: OFF (tap=try)"), function () { window._jsBlur = !window._jsBlur; if (ISLE) ISLE._stamp = (ISLE._stamp || 1) + 1; window._isleBakeCache = null; try { toast("Fast coast (JS blur) " + (window._jsBlur ? "ON · claim a tile; should feel snappier. Coast is a touch tighter/blockier." : "OFF · back to the approved look.")); } catch (e) {} }], // David 2026-07-17: JS-blur coast bake skips the GPU getImageData readbacks (the measured per-claim bottleneck) → faster, but slightly tighter/blockier. Device-test toggle: flip it, claim tiles, compare speed + look on the real phone (can't measure either from the headless Mac).
       ["· · · · · · ·", function () {}],
-      ["📐 Design audit (this phone)", devDesignAuditOverlay], // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
+      ["📐 Design audit (this phone)", devDesignAuditOverlay],
+      [(function () { var k = todayK(), on = blocks(k).some(function (b) { return b && b.id === "devupnext"; }); return on ? "🔵 Up-next face: ON (tap to clear)" : "🔵 Sim: next block due (blue disc)"; })(), function () { var k = todayK(), on = blocks(k).some(function (b) { return b && b.id === "devupnext"; }); try { toast("dev: " + window.DEV.upnext(on ? "off" : undefined)); } catch (e) {} }], // the OTHER half of "simulate evening": the blue stone is the UP-NEXT face (a planned block due within 10 min wearing its domain hue), which is data-driven — the clock sim alone can never reach it
+ // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
       [(devSimMin() == null ? "🌆 Sim time: OFF (real clock)" : "🌆 Sim time: " + fmt(devSimMin())), function () { var cur = devSimMin(); var v = window.prompt("Simulate time of day, 24h (e.g. 20 or 22:30). Empty or 'off' = real clock.", cur == null ? "20" : fmt(cur)); if (v === null) return; try { toast("dev: " + window.DEV.hour(v.trim())); } catch (e) {} }], // DEV TIME-SIM (David 2026-08-15): see the evening/night home without waiting for the evening — heroes flip at 20:00, the night face at bedHour() (his profile's bedtime, default 24:00) or before 05:00
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], [" · persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], [" · persona: early (day 3)", function () { devLoadPersona("early"); }], [" · persona: building (week 2)", function () { devLoadPersona("building"); }], [" · persona: established (month 1)", function () { devLoadPersona("established"); }], [" · persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });

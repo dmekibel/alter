@@ -1010,3 +1010,30 @@ good). Audit 75/75 both viewports, zero console errors.
 
 DEVICE-UNTESTED: descent feel, whether the batching kills the chop, and the stone scaling under its halo during
 arrival (if it janks: drop scale from homeRise/homeDrop for #tfRing alone — one line).
+
+## v1298 — THE STALE-SHELF BUG (the real "home screen was broken") + the blue-disc explanation
+
+David asked why the disc was BLUE last evening and why simming evening didn't reproduce it. Answer: the blue stone is the
+UP-NEXT face — a PLANNED BLOCK due within TF_UPNEXT_MIN (10 min) makes the disc wear that block's DOMAIN hue + the 115deg
+stripes ("Next: <block>", "starts at HH:MM · play begins it now"). Focus = #36b3f0 = blue. It is DATA-driven, so the clock
+sim alone can never reach it. Evening's own adaptations are separate: 17:00 phase→evening (guardian close-the-day, journey
+pm node, "evening · one gentle thing?"), 18-21 island dusk, 20:00 heroes→WINDING DOWN·Night Stack, bedHour()→the NIGHT face
+(VIOLET moon disc — the only evening thing that recolours the stone, and it is violet, never blue).
+NEW: DEV.upnext() + dev-menu row "🔵 Sim: next block due (blue disc)" — plants a removable focus block 5 min out (sim-aware
+via logicalNowMin) so the up-next face is one tap away; tap again / DEV.upnext('off') removes it. Optional domain arg.
+
+**THE REAL BUG, found while reproducing it (not evening-specific — it fires on EVERY face, EVERY hour, once a minute):**
+renderToolbox2 rebuilds the shelf's rows on every render, so the nodes tcCascade had hidden were replaced by fresh ones with
+no inline state = VISIBLE, while _tcShown/_tcHard stayed latched so no hide branch could re-fire. At home rest the tools
+shelf lit up over the board (it is pulled -52px under the TOOLS hint) and stayed lit — and the master tick re-renders every
+minute. FIX: tcResync(force) re-reads the list and re-arms the latches, driven by tcResyncSoon() — a 0ms coalesced timer
+fired at the END of renderToolbox2. Deferred deliberately: hooking renderOnePageWorld and even the renderer's own tail both
+FAILED verification (one action can run the renderer again afterwards, and the world's classes aren't set yet mid-pass, so
+wLive() was false) — the timer runs after the whole pass, whatever order the renderers took. That debugging chain is the
+lesson: an invariant that must hold AFTER a render pass belongs on a deferred tick, not inside the pass.
+Verified by STATE (opacity readings lie in a hidden pane — the frozen-cascade law): home = shown false + pointer-events
+none + inline opacity 0 through repeated re-renders; tools = shown true + events restored; return to home re-hides. Audit
+75/75 at 402x874 AND 440x956, idle AND up-next faces, zero console errors, ratchets clean.
+Also: the fold-hint gate floor is now -1.5px (was exact 0) — under the artboard scale a rect ÷1.0945 carries sub-pixel error
+and the up-next board is 1px shorter than idle's, which failed a ship for a hint that is not clipped. Flagged as a widened gate.
+DEVICE-UNTESTED: whether the once-a-minute shelf pop is the "broken" David remembers (very likely), and all feel.
