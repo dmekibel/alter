@@ -14208,6 +14208,18 @@
   // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
   var ORB_AMB_W = 0.5712; // 2π/11 → the calm ~11s resting breath the orb keeps under any non-breath segment, on the session clock (see ORB DRIVE below)
+  // THE MID-LINE VOICE SWAP — the two numbers David tunes on the phone. v1302 re-voiced only the lines that had not
+  // begun, and he came back with: "the line being said is still finished in the original voice… can we make it so the
+  // actual line being said continues being said in the new voice, so we don't even hear the ending of the original
+  // line?" Told that the two voices read the same words at different speeds, so a straight proportional splice lands
+  // mid-syllable as often as not, he designed the answer himself (2026-08-15): "what if it doesn't restart the line
+  // completely, but it just goes back a little bit in time — to account for the potential change in timing — but it
+  // doesn't go all the way back to the beginning of the line. And we add a crossfade." The rewind absorbs the drift
+  // between two readings AND raises the odds of landing on a word boundary instead of a syllable. If the seam sounds
+  // wrong on device the fallback order is: raise REWIND (0.5→0.8), then lengthen XFADE (0.09→0.15), and only then
+  // fall back to restarting the line from zero (a one-line change in revoice: st = 0).
+  var VOICE_SWAP_REWIND = 0.5; // seconds to step BACK from the proportionally-mapped position in the new recording
+  var VOICE_SWAP_XFADE = 0.09; // seconds of old→new gain crossfade at the seam
   function timelinePlayer(opts) {
     TTS.unlock(); // gesture-bound: schedule while the context is awake
     var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
@@ -14301,11 +14313,12 @@
     _activeBed = function (m) { bedM = m; if (BG_FILES[m]) BGBED.load(m); bedStop(); bedOn = false; if (playing) bedStart(); }; // Sound panel live-swap of the running bed (David 2026-07-10)
     bedStart();
     _gpRevoice = function () { if (!done) revoice(TTS.voiceGen()); }; // the live door TTS.setVoice knocks on
-    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording)
+    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
     var _fitK = 1; // the dose re-fit factor (≤1), computed once at open in relayoutFrom(0) and held across a live voice swap so re-voicing a running session never re-negotiates its pacing mid-flight
+    var _lastSwap = null; // the last re-voice's receipt (bank, transport second, tail-vs-midline, the splice numbers) — read only by _gpProbe/DEV.voice, never by the engine
     var myVoiceGen = TTS.voiceGen(), revoicing = false; // THE VOICE THIS SESSION'S BUFFERS CAME FROM. Captured HERE, above the decode below, so a switch made WHILE the session is still decoding is caught too (capturing it inside layout() would have swallowed exactly that case). `revoicing` is the lock: two fast chip taps must never interleave two re-layouts.
     function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
 
@@ -14326,7 +14339,7 @@
     function segGapFit(sg) { var g = segGap(sg); if (PK_ELASTIC[sg._pk] && _fitK < 1) g = Math.max(2.5, g * _fitK); return g + (sg._pkAdd || 0); }
     function relayoutFrom(from) {
       var t = 0, i;
-      for (i = from; i < segs.length; i++) segs[i].dur = segs[i].buf ? segs[i].buf.duration : 0.6;
+      for (i = from; i < segs.length; i++) { segs[i].dur = segs[i].buf ? segs[i].buf.duration : 0.6; segs[i]._clipShift = 0; } // _clipShift (2026-08-15) = the offset between a segment's TIMELINE SLOT and its decoded CLIP. Zero for every ordinary segment; non-zero only on a seam segment a mid-line voice swap spliced, whose slot holds "what was already heard in the old voice" + "what is left of the new recording". Re-laying a segment out re-times it from a whole clip again, so the splice dies with it, here, and can never leak into a later layout.
       // THE DOSE IS A PROMISE (David 2026-08-15). The composer budgets a spoken line at PK.speechEst while the real decoded
       // clips run 3.5-7.9s, so a "5 min" Body stack used to come out ~6:04 (+21%). Now that every real duration is known,
       // squeeze ONLY the elastic silences (contemplative / inquiry / visualization / held / rest) until the session lands on
@@ -14386,15 +14399,37 @@
       }
       sources = ks; sourceGains = kg;
     }
-    function startFrom(sec, keepOld, fromIdx) { // schedule every remaining clip up front, relative to now. fromIdx (2026-08-15) = schedule only segments at/after this index, so the live voice swap can re-schedule the TAIL while the line still in the air keeps its own already-scheduled source.
+    function xfadeOutSeg(idx, secs) { // the CROSSFADE partner of stopSourcesFrom (2026-08-15). stopSourcesFrom cuts, which is right for clips that have not been heard yet; this one is for the clip that is literally in the air when the voice changes — ramp it down over `secs` and stop it just after, so the old mouth leaves under the new one instead of being guillotined.
+      if (!ctx) return; var now = ctx.currentTime, ks = [], kg = [], dead = [];
+      for (var i = 0; i < sources.length; i++) {
+        if (sources[i] && sources[i]._seg === idx) {
+          var g = sourceGains[i];
+          try { if (g) { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0.0001, now + secs); } } catch (e) {} // ANCHORED: cancel → plant the value the param holds RIGHT NOW → ramp. Same law as the fade-in above; an un-anchored ramp clicks.
+          dead.push(sources[i]);
+        } else { ks.push(sources[i]); kg.push(sourceGains[i]); }
+      }
+      sources = ks; sourceGains = kg; // dropped from the live arrays the instant the ramp is scheduled: they are already dying, and a pause() or a second swap landing inside those 90ms must not try to stop them again (that is how you stack sources)
+      dead.forEach(function (s) { try { s.onended = null; s.stop(now + secs + 0.03); } catch (e) { try { s.stop(0); } catch (e2) {} } });
+    }
+    function segBufPos(i, at) { var sg = segs[i]; return (at - sg.start) - (sg._clipShift || 0); } // where `at` falls inside segment i's decoded CLIP — not inside its timeline slot, which a splice makes longer than the clip
+    function liveSegAt(at) { // the line that is IN THE AIR at `at`, or -1 if we are in one of the silences between lines
+      var i = -1, q; for (q = 0; q < segs.length; q++) { if (segs[q].start <= at) i = q; else break; }
+      if (i < 0 || !segs[i].buf) return -1;
+      var pos = segBufPos(i, at);
+      return (pos >= 0 && pos < segs[i].buf.duration - VOICE_SWAP_XFADE) ? i : -1; // inside the final crossfade-width of a clip there is nothing left worth swapping into — let it land and start the new voice on the next line
+    }
+    function startFrom(sec, keepOld, fromIdx, fadeSec) { // schedule every remaining clip up front, relative to now. fromIdx (2026-08-15) = schedule only segments at/after this index, so the live voice swap can re-schedule the TAIL while the line still in the air keeps its own already-scheduled source. fadeSec = how long a clip entered MID-WAY takes to rise (default 0.35, the act-jump crossfade); the mid-line voice swap passes VOICE_SWAP_XFADE so the incoming voice rises over exactly the window the outgoing one falls in.
       if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
       if (!keepOld) stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bedStart(); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade); bedStart resumes the music on play. It is ALSO the app's honest "this session is audible" flag — voiceSessionAudible() (@SEC:TTS) reads it so a paused/minimized player stops swallowing the voice-pick preview.
+      var _fin = fadeSec != null ? fadeSec : 0.35;
       segs.forEach(function (sg, _i) {
         if (fromIdx != null && _i < fromIdx) return; // already scheduled (and possibly still sounding) — re-scheduling it here would double the line
         if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
-        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); var _v = opts.vol != null ? opts.vol : 1; g.gain.value = _v; if (keepOld && sg.start <= sec + 0.05) { g.gain.setValueAtTime(0.0001, baseCtx); g.gain.linearRampToValueAtTime(_v, baseCtx + 0.35); } src.connect(g); g.connect(voiceBus() || ctx.destination);
-          if (sg.start >= sec) src.start(baseCtx + (sg.start - sec)); else src.start(baseCtx, sec - sg.start); // future clip, or mid-clip resume
-          src._seg = _i; sources.push(src); sourceGains.push(g); // _seg: which line this source is speaking — stopSourcesFrom needs it to kill the future without touching the present
+        try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); var _v = opts.vol != null ? opts.vol : 1; g.gain.value = _v;
+          if (keepOld && sg.start <= sec + 0.05) { g.gain.cancelScheduledValues(baseCtx); g.gain.setValueAtTime(0.0001, baseCtx); g.gain.linearRampToValueAtTime(_v, baseCtx + _fin); } // ANCHORED RAMP: cancel, plant an explicit value at a known time, THEN ramp. An un-anchored linearRampToValueAtTime interpolates from whatever event came before it and CLICKS — the same bug that cracks the breathing flute glide. Never ramp a param here without anchoring it first (2026-08-15).
+          src.connect(g); g.connect(voiceBus() || ctx.destination);
+          if (sg.start >= sec) src.start(baseCtx + (sg.start - sec)); else src.start(baseCtx, Math.max(0, sec - sg.start - (sg._clipShift || 0))); // future clip, or mid-clip resume. _clipShift is 0 for every ordinary segment, so this is the arithmetic it always was; on a spliced seam segment it is what maps "this second of the SESSION" onto "that second of the NEW recording".
+          src._seg = _i; sources.push(src); sourceGains.push(g); // _seg: which line this source is speaking — stopSourcesFrom / xfadeOutSeg need it to reach the present and the future separately
         } catch (e) {}
       });
       dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
@@ -14436,24 +14471,54 @@
     // remaining timeline legitimately moves), and re-schedule only that tail. The line already in the air keeps its
     // old-voice source to its natural end — no cut word; and because relayoutFrom leaves segs[k].start untouched,
     // the next line still begins on the same second: no gap at the seam, no restart, no jump in the transport.
+    //
+    // …AND THE LINE IN THE AIR TOO (David 2026-08-15, after testing v1302): "the line being said is still finished in
+    // the original voice, and then the next line is already the new voice. Can we make it so the actual line being
+    // said continues being said in the new voice, so we don't even hear the ending of the original line?" A straight
+    // splice at the same second is wrong — Dave and Millie read the same words at different speeds — so his own fix:
+    // map the position PROPORTIONALLY into the new recording, then step VOICE_SWAP_REWIND back from it, and crossfade.
+    // The rewind absorbs the drift between the two readings and buys a word boundary; max(0, …) is what keeps it a
+    // rewind instead of a restart. The seam segment's SLOT then holds what was already heard (in the old voice) plus
+    // what is left of the new recording — segs[seam].dur below — so the next line begins exactly when the new clip
+    // really ends, never over it and never after a hole. Everything after re-times from there.
     function revoice(gen) {
       if (done || !ready || revoicing) return;
-      var at = curElapsed(), k = 0;
+      var at = curElapsed(), live = liveSegAt(at), k = 0;
       while (k < segs.length && segs[k].start < at) k++; // the first line that has NOT begun; everything before it already spoke, in the old voice, and stays exactly as it was
+      if (live >= 0) k = live;                           // …unless a line is sounding, in which case IT is the first line to re-voice
       if (k >= segs.length) { myVoiceGen = gen; return; } // nothing left to re-voice (we're in the closing silence)
       revoicing = true;
       Promise.all(segs.slice(k).map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (nb) { // getBuffer resolves through the LIVE bank (ckey/vpath), so these are the new voice's files and genuinely new buffer objects
         revoicing = false; if (done) return;
-        myVoiceGen = gen;
-        var at2 = curElapsed(), wasPlaying = playing, k2 = 0;
+        var at2 = curElapsed(), wasPlaying = playing, live2 = liveSegAt(at2), k2 = 0;
         while (k2 < segs.length && segs[k2].start < at2) k2++; // playback moved on while the clips downloaded — re-find the frontier so we never swap a line that started speaking in the meantime
+        if (k2 < k) { dbg2("revoice re-run (moved back)"); return; } // …or moved BACK behind the frontier we fetched (a −15 / a scrub landed mid-download). Those earlier lines' clips are not in this batch, so drop the whole result and leave myVoiceGen unmatched: the rAF poll re-runs revoice from where we actually are now, one frame later, and the lines are cached by then.
+        myVoiceGen = gen;
+        var seam = (live2 >= k && nb[live2 - k]) ? live2 : -1; // the sounding line — but only if we actually fetched it AND the new bank has a recording of it. No recording → seam stays -1, the old buffer plays to its natural end and the switch happens at the next line: never a silent hole (David's rule, kept from v1302).
+        if (seam >= 0) k2 = seam;
         if (k2 >= segs.length) return;
-        for (var i = k2; i < segs.length; i++) { var nbuf = nb[i - k]; if (nbuf) segs[i].buf = nbuf; } // where the new bank has no recording for a line, KEEP the old buffer: one line in the previous voice beats a silent gap
-        relayoutFrom(k2);
+        var spl = null;
+        if (seam >= 0) { // THE SPLICE — computed BEFORE the buffer is replaced, because Dold has to be the recording that is sounding right now (which, after an earlier mid-line swap, is itself a new-bank clip)
+          var _sg = segs[seam], Dold = _sg.buf.duration, Dnew = nb[seam - k].duration;
+          var pos = segBufPos(seam, at2);            // where we are inside the OLD recording
+          var p = Dold > 0 ? (pos / Dold) * Dnew : 0; // the same PLACE in the new reading — a proportion, because the two voices don't take the same number of seconds to say it
+          var st = Math.max(0, p - VOICE_SWAP_REWIND); // …then go back a little. THE CLAMP IS LOAD-BEARING: it is the whole difference between a rewind and a restart.
+          var into = at2 - _sg.start;                 // how far into the segment's SLOT the session is
+          spl = { i: seam, t: +pos.toFixed(3), Dold: +Dold.toFixed(3), Dnew: +Dnew.toFixed(3), p: +p.toFixed(3), start: +st.toFixed(3) };
+          _sg.buf = nb[seam - k];
+          _sg._clipShift = into - st;                 // slot second → clip second, for every later resume/seek/±15 inside this line
+          _sg.dur = into + (Dnew - st);               // the slot ends when the NEW audio ends. (Its cached _g is deliberately left alone: the pause after the line was sized from the old reading and re-deriving it from this inflated dur would distort it. Caption chunks stretch over the same inflated span, which matches the words we just replayed.)
+        }
+        for (var i = k2; i < segs.length; i++) { if (i === seam) continue; var nbuf = nb[i - k]; if (nbuf) segs[i].buf = nbuf; } // where the new bank has no recording for a line, KEEP the old buffer: one line in the previous voice beats a silent gap
+        relayoutFrom(seam >= 0 ? seam + 1 : k2); // from the seam's own dur forward — the walk over everything before it is byte-identical, so no start before this point moves
         if (acts) { for (var r = 0; r < actResume.length; r++) if (acts[r] && acts[r]._start != null && acts[r]._start >= at2) actResume[r] = null; } // those acts' windows just moved under the new clip lengths — resume at the act's new start, never at a stale absolute second
-        if (wasPlaying) { stopSourcesFrom(k2); startFrom(at2, true, k2); } // keepOld = don't touch the sounding line; fromIdx = only schedule the re-voiced tail. baseCtx/offset are re-based to (now, at2) so curElapsed is continuous.
+        if (wasPlaying) {
+          if (seam >= 0) { stopSourcesFrom(seam + 1); xfadeOutSeg(seam, VOICE_SWAP_XFADE); startFrom(at2, true, seam, VOICE_SWAP_XFADE); } // kill the unheard future outright, ramp the sounding line out, and re-enter at the SAME transport second — the new clip starts at its rewound offset (via _clipShift) and rises as the old one falls
+          else { stopSourcesFrom(k2); startFrom(at2, true, k2); } // keepOld = don't touch the sounding line; fromIdx = only schedule the re-voiced tail
+        } // paused mid-line: no source is in the air, so there is nothing to crossfade — the splice above is still recorded, so pressing play resumes the line in the NEW voice from the rewound point instead of the old one
+        _lastSwap = { bank: TTS.bank(), at: +at2.toFixed(2), mode: seam >= 0 ? "midline" : "tail", from: k2, n: segs.length - k2, splice: spl }; // the receipt DEV.voice() reads: baseCtx/offset are re-based to (now, at2), so curElapsed stays continuous across all of it
         paintNow(at2);
-        dbg2("revoice " + TTS.bank() + " n:" + (segs.length - k2));
+        dbg2("revoice " + TTS.bank() + " " + (seam >= 0 ? "midline@" + spl.start.toFixed(2) : "tail") + " n:" + (segs.length - k2));
       }, function () { revoicing = false; }); // a failed fetch leaves the old voice running and the gen unmatched, so the next frame simply tries again
     }
     function tick() {
@@ -18397,7 +18462,10 @@
   // its buffers came from, each line's start/dur and a length@rate fingerprint of its decoded clip, whether the
   // transport moved). DEV.voice("millie") flips the pick through the REAL setter, so a session open in front of you
   // must re-voice within a frame: the fingerprints of every line that has not started change, the earlier ones do
-  // not, and `elapsed` keeps climbing from where it was. Audio FEEL is still device-only — this proves the wiring.
+  // not, and `elapsed` keeps climbing from where it was. Since 2026-08-15 the SOUNDING line changes too, and
+  // `player.swap.splice` is that seam's arithmetic in full — t (where we were inside the old recording), Dold, Dnew,
+  // p (the proportional position in the new one) and start (p minus the rewind, clamped at 0). Audio FEEL — whether
+  // that seam is inaudible — is still device-only. This proves the wiring and the numbers, never the sound.
   window.DEV.voice = function (pick) {
     if (pick) { try { TTS.unlock(); if (pick === "izo" || pick === "aida") TTS.setRuVoice(pick); else TTS.setVoice(pick); } catch (e) { return "ERR " + e.message; } }
     return { bank: TTS.bank(), gen: TTS.voiceGen(), voiceOn: voiceOn(), audible: voiceSessionAudible(), player: _gpProbe ? _gpProbe() : null };
