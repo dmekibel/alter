@@ -112,6 +112,8 @@
     return { load: load, start: start, stop: stop };
   })();
   var _activeBed = null; // the running timelinePlayer registers a (mode)=>switch fn here so the Sound panel can live-swap its bed
+  var _gpRevoice = null; // …and its "the voice just changed, re-cut your remaining lines" door, called straight from TTS.setVoice/setRuVoice. Same idiom as _activeBed, and for the same reason: a running session has to be told, not left to notice. (The player ALSO polls TTS.voiceGen() in its rAF loop as a safety net for changes that skip the setters — a language switch — but rAF is frozen whenever the page is hidden, so it can never be the primary trigger.)
+  var _gpProbe = null;   // …and a read-only state dump here, for DEV.voice(). The preview cannot judge audio FEEL, but it CAN prove the buffers were genuinely re-decoded from the new bank and the transport did not jump — which is the whole 2026-08-15 voice-swap fix. Cleared on both teardown paths, same as _activeBed.
   // ===== APP BACKGROUND MUSIC (David 2026-07-01): the SAME peaceful pad, at a very low level, drifting under the whole app. Auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
   var APPMUSIC = (function () {
     var ctl = null, running = false;
@@ -203,11 +205,25 @@
       try { fetch("assets/voice/" + name + "/manifest.json" + cacheBust(), { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) { if (a && a.length) { var s = {}; a.forEach(function (k) { s[k] = 1; }); banks[name] = s; } }).catch(function () {}); } catch (e) {}
     }
     function applyVoice() { loadBank("dave"); loadBank("millie"); if (curLangRu()) { loadBank("izo"); loadBank("aida"); } } // preload BOTH EN banks (instant Millie tap) + BOTH RU banks in RU (instant izo↔aida)
-    function setRuVoice(name) { name = (name === "aida") ? "aida" : "izo"; try { if (typeof S !== "undefined" && S) S.ruVoice = name; } catch (e) {} loadBank(name); } // RU pick (izo | aida) from the settings chips
+    // THE VOICE GENERATION (David 2026-08-15 on device: "changing voices doesn't work. Switching from the male voice
+    // to the female voice breaks — it just doesn't even work. You have to close it and reopen it for that to work.")
+    // The bank layer was NOT the bug: curBank()/vpath()/ckey() already resolve live, so the very next fetch after a
+    // pick is the new voice. What broke was downstream — the composed timelinePlayer decodes every line ONCE at
+    // session open and re-schedules those same AudioBuffer objects on every play/seek/act-jump, so a running session
+    // stayed frozen in the bank it was born in until it was closed and reopened. This counter is the ONE signal such
+    // a surface can watch. It is DERIVED, not hand-bumped: it reconciles against the live curBank() on every read, so
+    // EVERY cause of a change is caught (a Sound-panel chip, the session editor's voice card, a language switch), and
+    // re-picking the voice you already have is a no-op — no bump, so nothing re-decodes mid-line for nothing.
+    var _vgN = 0, _vgBank = null;
+    function voiceGen() { var b = curBank(); if (b !== _vgBank) { _vgBank = b; _vgN++; } return _vgN; } // NO window event: the only subscriber (timelinePlayer) polls inside its own rAF loop, which dies with the player on BOTH its teardown paths — a listener would have to be unregistered twice and leaks the day someone adds a third exit
+    function pushLive() { try { if (typeof _gpRevoice === "function" && _gpRevoice) _gpRevoice(); } catch (e) {} } // tell a RUNNING session immediately (its rAF poll is only the safety net — rAF is dead while the page is hidden). Sits in the setters, not in the chip handlers, so every voice-pick surface present and future is covered: the Sound panel, the session editor's voice card, anything added later.
+    function setRuVoice(name) { name = (name === "aida") ? "aida" : "izo"; try { if (typeof S !== "undefined" && S) S.ruVoice = name; } catch (e) {} loadBank(name); voiceGen(); pushLive(); } // RU pick (izo | aida) from the settings chips
     function setVoice(name) { // EN pick from the settings chips (dave | millie); RU uses setRuVoice
       name = (name === "millie") ? "millie" : "dave"; VOICE_PICK = name;
       try { if (typeof S !== "undefined" && S) S.voicePick = name; } catch (e) {}
       loadBank(curBank());
+      voiceGen(); // fold the change in AT the pick, so the counter is deterministic the instant the chip is tapped
+      pushLive();
     }
     function isEn(v) { return v && v.lang && v.lang.toLowerCase().indexOf("en") === 0; }
     function resolve() {
@@ -325,7 +341,7 @@
     }
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
-    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, setRuVoice: setRuVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; } };
+    return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, setRuVoice: setRuVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; }, voiceGen: voiceGen, bank: curBank };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
   var VPROF = {
@@ -335,6 +351,19 @@
   };
   function voiceOn() { return typeof S === "undefined" || !S || S.voice !== false; } // default ON
   function say(text, prof) { if (voiceOn()) TTS.speak(text, prof); }
+  // CAN A VOICE PREVIEW COLLIDE WITH SOMETHING RIGHT NOW? (David 2026-08-15: half of "switching voices doesn't even
+  // work" was that it made NO SOUND. The voice chips suppressed their confirmation preview whenever the selector
+  // "#breatheOv, .gp-ov, #playerOv" matched anything — and that matches far more than a sounding session: a player
+  // overlay outlives its audio (minimize() only adds .gp-min; opening Sound from the player's cog PAUSES it without
+  // removing anything), and #breatheOv is also the plain full-screen SHELL for silent surfaces like the session
+  // builders. So after a minimize, behind the Sound sheet, or with a builder open, tapping a voice was silent — which
+  // is most of why the switch read as broken. "#playerOv" is created NOWHERE in this file; it was always dead.)
+  // The honest test is not "is an overlay present" but "could two voices sound at once", and only ONE surface can do
+  // that: the composed timelinePlayer, whose clips are scheduled straight onto the audio context where TTS.stop()
+  // cannot reach them. It publishes its own answer — .gp-playing goes on at startFrom, off at pause. Every other
+  // guided tool speaks through TTS.speak(), which stops whatever was sounding before it starts, so a preview there
+  // can never double up by construction.
+  function voiceSessionAudible() { var gp = document.querySelector(".gp-ov"); return !!(gp && gp.classList.contains("gp-playing")); }
   // 🔊/🔇 toggle for guided overlays — top-left, mirrors the skip button. Lets David mute mid-session.
   function addVoiceToggle(ov) {
     if (!TTS.supported) return null;
@@ -14201,9 +14230,8 @@
       [["izo", "izo"], ["aida", "Aida"]].forEach(function (o) {
         var b = add(ruRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
         ruChips.push(b);
-        b.onclick = function () { S.ruVoice = o[0]; save(); try { TTS.unlock(); TTS.setRuVoice(o[0]); TTS.stop(); } catch (e) {} ruPaint();
-          var sessionLive = document.querySelector("#breatheOv, .gp-ov, #playerOv"); // don't preview over a running session — the switch still applies to its next line
-          if (!sessionLive) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } };
+        b.onclick = function () { S.ruVoice = o[0]; S.voice = true; save(); try { TTS.unlock(); TTS.setRuVoice(o[0]); TTS.stop(); } catch (e) {} ruPaint(); vxPaint(); // S.voice = true: picking a REAL voice must switch the guide back on. The session editor's "No voice" card writes S.voice=false (sedSetVoiceKey), and these chips never wrote it back — so after one "No voice" the chip lit up, the preview played (TTS.speak bypasses voiceOn()) and every session stayed silent forever. (David 2026-08-15 pass.)
+          if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } }; // confirm the pick unless a session is actually SOUNDING (that overlap was the "two voices at once"); a live session takes the new voice from its next line instead
       });
       ruPaint();
     } else {
@@ -14213,9 +14241,8 @@
       [["dave", tr("Dave")], ["millie", tr("Millie")]].forEach(function (o) {
         var b = add(gvRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
         gvChips.push(b);
-        b.onclick = function () { S.voicePick = o[0]; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.stop(); } catch (e) {} gvPaint(); // NO warmAll (David 2026-07-19: decoding 500 clips on every tap janked/broke the app); the live curBank() resolve applies the switch, cold clips decode lazily. TTS.stop() cuts any prior preview.
-          var sessionLive = document.querySelector("#breatheOv, .gp-ov, #playerOv"); // don't preview OVER a running guided session (that was the "two voices at once") — the switch still applies to its next line
-          if (!sessionLive) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } };
+        b.onclick = function () { S.voicePick = o[0]; S.voice = true; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.stop(); } catch (e) {} gvPaint(); vxPaint(); // NO warmAll (David 2026-07-19: decoding 500 clips on every tap janked/broke the app); the live curBank() resolve applies the switch, cold clips decode lazily. TTS.stop() cuts any prior preview. S.voice = true (2026-08-15): picking a REAL voice must switch the guide back on — the editor's "No voice" card sets S.voice=false and these chips never wrote it back, so after one "No voice" the chip lit, the preview played (TTS.speak bypasses voiceOn()) and every session stayed silent.
+          if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } }; // confirm the pick unless a session is actually SOUNDING; a minimized or paused player no longer swallows the confirmation, and a LIVE one takes the new voice from its next line (revoice)
       });
       gvPaint();
     }
@@ -14351,25 +14378,40 @@
     function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} try { if (padCtl) padCtl.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} padCtl = null; bedOn = false; }
     _activeBed = function (m) { bedM = m; if (BG_FILES[m]) BGBED.load(m); bedStop(); bedOn = false; if (playing) bedStart(); }; // Sound panel live-swap of the running bed (David 2026-07-10)
     bedStart();
+    _gpRevoice = function () { if (!done) revoice(TTS.voiceGen()); }; // the live door TTS.setVoice knocks on
+    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording)
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
+    var myVoiceGen = TTS.voiceGen(), revoicing = false; // THE VOICE THIS SESSION'S BUFFERS CAME FROM. Captured HERE, above the decode below, so a switch made WHILE the session is still decoding is caught too (capturing it inside layout() would have swallowed exactly that case). `revoicing` is the lock: two fast chip taps must never interleave two re-layouts.
     function curElapsed() { return playing ? offset + (ctx.currentTime - baseCtx) : offset; }
 
-    function layout(bufs, autoplay) {
+    // THE TIMELINE MATH — extracted from layout() 2026-08-15 so a LIVE VOICE SWAP can re-run it from one segment
+    // forward. `from` = the first segment whose clip may have been replaced; every segment before it keeps the exact
+    // start/dur it already played at, and the cumulative walk over [0,from) is byte-identical, so segs[from].start
+    // comes out UNCHANGED — re-laying out mid-session never moves the past, the seam, or the transport position.
+    // Only the tail re-times, which it must: the same line is a different number of seconds in Dave's mouth than in
+    // Millie's. from === 0 is the original open-the-session path, verbatim.
+    function relayoutFrom(from) {
       var t = 0;
-      segs.forEach(function (sg, i) { sg.buf = bufs[i]; sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
+      segs.forEach(function (sg, i) { if (i >= from) { sg.start = t; sg.dur = sg.buf ? sg.buf.duration : 0.6; } var gap = sg.gap != null ? sg.gap : Math.max(1.2, (opts.cadenceSec || 6) - sg.dur); t += sg.dur + gap; });
       total = Math.max(t, opts.totalSec || 0);
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { acts[_ai]._start = null; acts[_ai]._secTimes = []; acts[_ai]._secList = []; } segs.forEach(function (sg) { if (sg._act != null && acts[sg._act]) { if (acts[sg._act]._start == null) acts[sg._act]._start = sg.start; if (sg._sectionStart) acts[sg._act]._secTimes.push(sg.start); if (sg._secIdx != null && acts[sg._act]._sections && acts[sg._act]._sections[sg._secIdx]) acts[sg._act]._secList.push({ start: sg.start, idx: sg._secIdx }); } }); for (var _aj = 0; _aj < acts.length; _aj++) { acts[_aj]._end = (_aj + 1 < acts.length && acts[_aj + 1]._start != null) ? acts[_aj + 1]._start : total; var _sl = acts[_aj]._secList; for (var _si = 0; _si < _sl.length; _si++) _sl[_si].end = (_si + 1 < _sl.length) ? _sl[_si + 1].start : acts[_aj]._end; } } // ZOOM: _secList = each meditation section's real-time [start,end] window, so the player can scope the scrub to one section
       if (actBars) { for (var _bi = 0; _bi < actBars.length; _bi++) actBars[_bi]._start = null; segs.forEach(function (sg) { if (sg._ab != null && actBars[sg._ab] && actBars[sg._ab]._start == null) actBars[sg._ab]._start = sg.start; }); for (var _bj = 0; _bj < actBars.length; _bj++) actBars[_bj]._end = (_bj + 1 < actBars.length && actBars[_bj + 1]._start != null) ? actBars[_bj + 1]._start : total; } // F5: each block's real-time window, from its tagged segments
       ready = true; lab.textContent = ""; tTot.textContent = "\u2212" + fmtT(total); bar.style.visibility = "";
-      // battery cue ticks (one per segment start) + silence tail sized to silenceSec
+      paintTicks();
+    }
+    function paintTicks() { // battery cue ticks (one per segment start) + the silence tail sized to silenceSec — split out 2026-08-15 because a live voice swap re-times the tail and these have to follow it. Same node-drain layout() always did; no new wipe surface.
       ticks.innerHTML = "";
       if (!acts) { // no cue ticks or silence-tail in acts mode — they read as messy random lines, and each activity has its own local timeline (David 2026-07-08)
         segs.forEach(function (sg) { if (sg.start <= 0 || sg.start >= total) return; var tk = add(ticks, "i"); tk.style.left = (sg.start / total * 100) + "%"; });
         if (silenceSec > 0 && total > silenceSec) { tailEl.style.left = ((total - silenceSec) / total * 100) + "%"; tailEl.style.display = ""; silCap.style.visibility = ""; }
         else { tailEl.style.display = "none"; }
       } else { ticks.style.display = "none"; tailEl.style.display = "none"; silCap.style.visibility = "hidden"; }
+    }
+    function layout(bufs, autoplay) {
+      segs.forEach(function (sg, i) { sg.buf = bufs[i]; });
+      relayoutFrom(0);
       paintMap(0); paintNow(0);
       if (acts) { onActEnter(0, 1); _prevAct = 0; } // tint the orb to the FIRST activity's color right away (the opening page)
       if (autoplay) { startFrom(0); } // clips were pre-warmed → we're still inside the Begin tap, so we can start right now
@@ -14389,14 +14431,23 @@
       sources = []; sourceGains = [];
       setTimeout(function () { dead.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); }, (ms || 350) + 60);
     }
-    function startFrom(sec, keepOld) { // schedule every remaining clip up front, relative to now
+    function stopSourcesFrom(idx) { // kill ONLY the clips scheduled for segments at/after idx. Whatever is sounding right now belongs to an earlier segment and is left alone to finish — a voice swap must never cut a line mid-word (David 2026-08-15).
+      var ks = [], kg = [];
+      for (var i = 0; i < sources.length; i++) {
+        if (sources[i] && sources[i]._seg != null && sources[i]._seg >= idx) { try { sources[i].onended = null; sources[i].stop(0); } catch (e) {} }
+        else { ks.push(sources[i]); kg.push(sourceGains[i]); }
+      }
+      sources = ks; sourceGains = kg;
+    }
+    function startFrom(sec, keepOld, fromIdx) { // schedule every remaining clip up front, relative to now. fromIdx (2026-08-15) = schedule only segments at/after this index, so the live voice swap can re-schedule the TAIL while the line still in the air keeps its own already-scheduled source.
       if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
-      if (!keepOld) stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bedStart(); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade); bedStart resumes the music on play
-      segs.forEach(function (sg) {
+      if (!keepOld) stopSources(); baseCtx = ctx.currentTime; offset = sec; playing = true; ov.classList.add("gp-playing"); bedStart(); bPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; // gp-playing = chrome leaves the room (title+cog fade); bedStart resumes the music on play. It is ALSO the app's honest "this session is audible" flag — voiceSessionAudible() (@SEC:TTS) reads it so a paused/minimized player stops swallowing the voice-pick preview.
+      segs.forEach(function (sg, _i) {
+        if (fromIdx != null && _i < fromIdx) return; // already scheduled (and possibly still sounding) — re-scheduling it here would double the line
         if (!sg.buf) return; var end = sg.start + sg.dur; if (end <= sec) return; // already past
         try { var src = ctx.createBufferSource(); src.buffer = sg.buf; var g = ctx.createGain(); var _v = opts.vol != null ? opts.vol : 1; g.gain.value = _v; if (keepOld && sg.start <= sec + 0.05) { g.gain.setValueAtTime(0.0001, baseCtx); g.gain.linearRampToValueAtTime(_v, baseCtx + 0.35); } src.connect(g); g.connect(voiceBus() || ctx.destination);
           if (sg.start >= sec) src.start(baseCtx + (sg.start - sec)); else src.start(baseCtx, sec - sg.start); // future clip, or mid-clip resume
-          sources.push(src); sourceGains.push(g);
+          src._seg = _i; sources.push(src); sourceGains.push(g); // _seg: which line this source is speaking — stopSourcesFrom needs it to kill the future without touching the present
         } catch (e) {}
       });
       dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
@@ -14431,8 +14482,38 @@
         if (zoom) { var _L2 = secListOf(curAct); for (var _s2 = 0; _s2 < _L2.length; _s2++) { var _sd = _L2[_s2], _sf = (_sd.end > _sd.start) ? (e - _sd.start) / (_sd.end - _sd.start) : (e >= _sd.start ? 1 : 0); _sf = _sf < 0 ? 0 : _sf > 1 ? 1 : _sf; if (secFills[_s2]) secFills[_s2].style.width = (_sf * 100) + "%"; if (secIcons[_s2]) secIcons[_s2].style.opacity = (e >= _sd.start) ? "1" : "0.34"; } } // ZOOM: fill the section bars + light section icons up to the current one
         curAct = _ci; if (_ci !== _prevAct) { onActEnter(_ci); _prevAct = _ci; } } } // per-activity LOCAL transport + fill the act story-pages; on an act change, slide to the new page
     function paintBars(e) { if (!actBars) return; var cur = 0; for (var qb = 0; qb < actBars.length; qb++) { var a = actBars[qb], f = (a._end > a._start) ? (e - a._start) / (a._end - a._start) : (e >= a._start ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (abFills[qb]) abFills[qb].style.width = (f * 100) + "%"; if (e >= (a._start || 0)) cur = qb; } for (var qi = 0; qi < abIcons.length; qi++) if (abIcons[qi]) abIcons[qi].style.opacity = (qi <= cur) ? "1" : "0.34"; } // F5: fill the block bars + light the icons up to the current block (no slide, no orb-swap)
+    // THE LIVE VOICE SWAP (David 2026-08-15 on device: "switching from the male voice to the female voice breaks —
+    // it just doesn't even work. You have to close it and reopen it for that to work."). This player decodes each
+    // line ONCE at open (layout) and re-schedules those same AudioBuffer objects from every play / seek / ±15 /
+    // act-jump / mini-dock press, so a running session was frozen in the bank it was born in. Now: re-fetch the clips
+    // that HAVE NOT SOUNDED YET, re-time the tail from where we are (clip lengths differ between voices, so the
+    // remaining timeline legitimately moves), and re-schedule only that tail. The line already in the air keeps its
+    // old-voice source to its natural end — no cut word; and because relayoutFrom leaves segs[k].start untouched,
+    // the next line still begins on the same second: no gap at the seam, no restart, no jump in the transport.
+    function revoice(gen) {
+      if (done || !ready || revoicing) return;
+      var at = curElapsed(), k = 0;
+      while (k < segs.length && segs[k].start < at) k++; // the first line that has NOT begun; everything before it already spoke, in the old voice, and stays exactly as it was
+      if (k >= segs.length) { myVoiceGen = gen; return; } // nothing left to re-voice (we're in the closing silence)
+      revoicing = true;
+      Promise.all(segs.slice(k).map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (nb) { // getBuffer resolves through the LIVE bank (ckey/vpath), so these are the new voice's files and genuinely new buffer objects
+        revoicing = false; if (done) return;
+        myVoiceGen = gen;
+        var at2 = curElapsed(), wasPlaying = playing, k2 = 0;
+        while (k2 < segs.length && segs[k2].start < at2) k2++; // playback moved on while the clips downloaded — re-find the frontier so we never swap a line that started speaking in the meantime
+        if (k2 >= segs.length) return;
+        for (var i = k2; i < segs.length; i++) { var nbuf = nb[i - k]; if (nbuf) segs[i].buf = nbuf; } // where the new bank has no recording for a line, KEEP the old buffer: one line in the previous voice beats a silent gap
+        relayoutFrom(k2);
+        if (acts) { for (var r = 0; r < actResume.length; r++) if (acts[r] && acts[r]._start != null && acts[r]._start >= at2) actResume[r] = null; } // those acts' windows just moved under the new clip lengths — resume at the act's new start, never at a stale absolute second
+        if (wasPlaying) { stopSourcesFrom(k2); startFrom(at2, true, k2); } // keepOld = don't touch the sounding line; fromIdx = only schedule the re-voiced tail. baseCtx/offset are re-based to (now, at2) so curElapsed is continuous.
+        paintNow(at2);
+        dbg2("revoice " + TTS.bank() + " n:" + (segs.length - k2));
+      }, function () { revoicing = false; }); // a failed fetch leaves the old voice running and the gen unmatched, so the next frame simply tries again
+    }
     function tick() {
-      if (done) return; var e = curElapsed();
+      if (done) return;
+      if (ready && !revoicing) { var _vg = TTS.voiceGen(); if (_vg !== myVoiceGen) revoice(_vg); } // POLL, not a listener: this loop already dies with the player on BOTH its teardown paths (finish() and the onEdgePrev bail), so there is nothing left registered behind a closed session. One integer compare per frame.
+      var e = curElapsed();
       if (e >= total) { finish(false); return; }
       if (playing) paintNow(e);
       raf = requestAnimationFrame(tick);
@@ -14457,7 +14538,7 @@
         if (zoom) { var _L = secListOf(curAct), nj = curSec + dir; if (nj >= 0 && nj < _L.length) { gotoSec(nj); return; } exitZoom(); } // ZOOM: step SECTIONS first; only at a section edge does it leave the meditation act to a neighbor
         var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
-        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); try { TTS.stop(); } catch (er) {} _activeBed = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
+        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
       // SIDE-CLICK NAV (David 2026-07-10): left third = back, right third = forward. Zones start BELOW the story bars / ✕ / gear and stop ABOVE the transport.
       var _tzTop = "top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);z-index:5;";
@@ -14494,7 +14575,7 @@
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop();
-      _activeBed = null; try { BGBED.stop(); } catch (e) {}
+      _activeBed = null; _gpRevoice = null; _gpProbe = null; try { BGBED.stop(); } catch (e) {}
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
       if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
@@ -18387,6 +18468,15 @@
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
   window.DEV = { open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, spaceCheck: function () { S.profile = S.profile || {}; S.profile.spaceAsked = 0; spaceCheckOnce(); return "space check"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, moment: function (which) { S.nudge = { lastK: null, muteUntilK: null }; if (which === "drift") return offRamp(); if (which === "comeback") return comebackLadder(); if (which === "sleep") return tranquilityOffer(); if (which === "dial") return motivationDial({}); return checkMoments("dev"); }, canNudge: function () { return canNudge(); }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }).slice(1); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } return { depth: +sessionDepth(secs).toFixed(2), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, gaps: cues.slice(0, 6).map(function (s2) { return +s2.gap.toFixed(1); }) }; } };
+  // DEV.voice() — the receipt for the 2026-08-15 live voice swap. No args = the running player's state (which bank
+  // its buffers came from, each line's start/dur and a length@rate fingerprint of its decoded clip, whether the
+  // transport moved). DEV.voice("millie") flips the pick through the REAL setter, so a session open in front of you
+  // must re-voice within a frame: the fingerprints of every line that has not started change, the earlier ones do
+  // not, and `elapsed` keeps climbing from where it was. Audio FEEL is still device-only — this proves the wiring.
+  window.DEV.voice = function (pick) {
+    if (pick) { try { TTS.unlock(); if (pick === "izo" || pick === "aida") TTS.setRuVoice(pick); else TTS.setVoice(pick); } catch (e) { return "ERR " + e.message; } }
+    return { bank: TTS.bank(), gen: TTS.voiceGen(), voiceOn: voiceOn(), audible: voiceSessionAudible(), player: _gpProbe ? _gpProbe() : null };
+  };
   window.DEV.grove = function (act, pid, n) { // DEV: drive THE GROVE without waiting 66 days — plant / set days / witness a stage-up / open any of the three sheet modes.
     pid = pid || "meditation";
     if (act === "reset") { S.grove = { plants: [], seen: {} }; save(); try { groveClose(); } catch (e) {} return "grove reset"; }
