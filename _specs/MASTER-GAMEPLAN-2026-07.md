@@ -242,7 +242,14 @@ Headlines, because several are not what they looked like from outside:
   3 bars, unanimated), the zoom exits PERMANENTLY when a section hits a stack edge, and the transport's remaining-time
   readout silently re-scopes from tool to section. **SIZE S — one switch in `onActEnter` gives David exactly what he
   asked for**, because meditation is already one act/one bar; the expansion was bolted on.
-- **Pauses: investigation running** (spawned after the other five).
+- **Pauses: no per-line pause concept exists.** Gap is chosen ONCE PER TOOL BRANCH and applied to every line in that act.
+  Measured live: **stretch and relax are identical under all three guidance presets** (9.8s and 11.3-37.5s respectively) -
+  the pacing setting is inert for exactly the two tools he named, because their gap is `dose / line-count`, so doubling
+  the dose doubles the SILENCE. `pauseFor()` already has a 9-kind taxonomy of which **only 2 kinds are ever used**, and
+  `PMR_BEATS` already authors per-beat holds - David's model already exists in the one tool nobody complains about.
+  **Secondary bug: the chosen dose is a lie** - speech is budgeted at a hardcoded 3.5s/line against real 3.5-7.9s clips,
+  so a "5 min" Body stack runs ~6:04 (+21%). **S for the engine fix; L only if lines get re-authored (that costs voice
+  regeneration across 5 banks).**
 **Sequencing note:** popups first — they are the only category that BREAKS the app, and they can fire during any other
 test, so fixing them makes every later verification trustworthy. Then the two contained bugs (voice, journey landing).
 Breathing earns its own session (it is a phase engine + a sound design, with real product choices inside).

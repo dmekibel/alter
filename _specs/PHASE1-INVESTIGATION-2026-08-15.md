@@ -394,3 +394,78 @@ VERIFICATION: the deterministic harness I used is the right ship gate and is wor
 - Which extra visual do you want first — a ring/arc that fills and empties, or a horizon line that rises and falls — and should the wave show one whole cycle at a time or keep scrolling?
 - The phase indicator: a countdown number ("3, 2, 1"), a thin arc emptying under the word, or both?
 - Should the toolbox "Breathe" tile keep running through the stack player (one continuous session surface), or should it open the standalone breath tool with its picker so the pattern/visual/sound choices are right there?
+
+
+---
+
+## AREA 6 — THE PAUSE / TIMING ENGINE
+
+**VERDICT:** David is right, and the cause is more specific than "one pause length." **There is no per-line pause concept
+anywhere.** Gap length is chosen ONCE PER TOOL BRANCH inside `composeStackSegs`, by a different formula per branch, then
+applied identically to every line in that act. For the two SOMATIC tools (stretch, relax) the gap is derived purely from
+`dose / line-count`, so it **ignores Guided/Balanced/Spacious entirely** and **grows without bound with the dose**.
+
+### The evidence table (DEV.compose, live)
+
+| tool | dose | guided | balanced | spacious |
+|---|---|---|---|---|
+| stretch | 120s | 9.8 x9 | **9.8** | **9.8** |
+| stretch | 300s | 17.9 x14 | **17.9** | **17.9** |
+| relax | 120s | 15.0 x8 | **15.0** | **15.0** |
+| relax | 300s | 37.5 x8 | **37.5** | **37.5** |
+| meditate | 120s | 6.4 | 11.5 | 16.9 |
+| reprogram | 150s | 3.3 | 5.0 | 6.8 |
+
+Stretch and relax are **identical under all three presets** — the setting is inert for exactly the two tools he
+complained about. `relax` has 8 cues forever, so doubling the dose doubles the SILENCE rather than adding content.
+
+### The repro, traced (the "Body" stack, `TBX_ITEMS.body`)
+stretch 120s: n=9, dwell 13.3, `gap = max(7, dwell-3.5)` = **9.8s after every line, at every guidance setting**.
+relax 90s: `per = max(3.5, 90/8)` = **11.3s** between "soften your forehead, and unclench your jaw" and "drop your
+shoulders". Exactly his description.
+
+Two extra mechanisms produce the "this and this and this THEN a long pause" phrasing: (1) multi-instruction lines are ONE
+clip with ONE gap (`"Forehead, jaw, shoulders. Notice each part..."` = 7.92s naming three regions, then one pause, with
+the caption FROZEN on the last chunk); (2) `label + ", " + sub` is spoken as a single clip — two beats in one breath.
+
+### Secondary bug found: the chosen dose is a lie
+`composeStackSegs` budgets speech at a hardcoded **3.5s/line**; real decoded clips are **3.5-7.9s**. The Body stack at
+"5 min" runs **~6:04 (+21%)**; relax alone overruns ~50%.
+
+### What already works (the reference implementation)
+`PMR_BEATS = [{lab, sub, orb, hold}]` -> `beatRunner` **already authors a per-beat hold** (5s tense / 15-20s release).
+That is exactly David's model, and it is the tool nobody complains about. `pauseFor()` already has a 9-kind taxonomy;
+**only 2 of the 9 kinds are ever requested**, and never per line.
+
+### The 8 pause contexts the code needs (grounded in real tools)
+1. **somatic chain** (relax cues, body scan) - short FIXED beat 1.5-3s, not dose-derived, not depth-scaled. **This is the fix.**
+2. **held position** (stretch) - a named hold ON THE MOVE, capped; past the cap add a mid-hold line, not silence.
+3. **tense/release** (PMR) - already correct; use as reference.
+4. **contemplative prompt** (meditation pools, gratitude) - keep `4 + 15*depth`. This is where Spacious SHOULD reach.
+5. **inquiry** (`deep:true`) - keep 25-45s.
+6. **visualization** (reprogram, ritual futures) - ~8-15s; today mis-served by `cue` (3.3s at Guided, far too short to picture anything).
+7. **affirmation / say-it-back** (mantra) - anchored to the LINE'S OWN spoken length (~1.0-1.3x `sg.dur`).
+8. **transition** (act/section boundaries) - currently **0s**; needs 1.5-2.5s so an act change registers.
+
+Mechanism: tag each seg `_pk` at compose time, resolve `_pk -> seconds` inside `layout()` **where `sg.dur` is already
+known** - that gives contexts 2/6/7 the real spoken length for free.
+
+### Fix plan
+- **S (engine only, zero content, zero clips, biggest felt win):** fix the `C.cues` gap bug (per-cue budget assigned as
+  the gap); cap stretch holds; add `_pk` tagging + resolve in `layout()`; scope guidance to contexts 4/5/6 only; fix the
+  3.5s speech assumption so a dose is a real dose; restore a transition beat; fix `DEV.compose`'s stale `slice(1)` and
+  add a regression gate (no somatic seg with gap > N).
+- **M (content tags, no new strings, no clips):** per-move `hold` on `STRETCH_MOVES`, a `pk` token per stack/med block.
+- **L (only where David names them):** split multi-instruction lines - each split string is a NEW user-facing line and
+  costs the copy gates + **voice regeneration across root + dave/millie/izo/aida** + RU dict.
+
+**RISK TO FLAG TO THE BUILDER:** the ORB DRIVE (`paintNow`) derives orb scale from the current segment's span
+(`dur + gap`). Shortening somatic gaps to ~2s will make the orb pulse fast unless the ambient breath is decoupled from
+the segment span.
+
+### Open questions for David
+- The actual seconds per context, especially the somatic beat (1.5s? 2.5s? 3s?).
+- Stretch: is a long hold SILENCE, or does the guardian talk through it (a mid-hold cue, a breath count)?
+- Should Guided/Balanced/Spacious be renamed + scoped to contemplative content only, and surfaced in a stack's own
+  settings? (Today it is buried in the meditation editor and shares its name with the unrelated `guidanceSheet`.)
+- Is the chosen dose a **promise** (session equals 5:00, content trims to fit) or a **suggestion** (today, ~21% over)?
