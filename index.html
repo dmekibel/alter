@@ -1902,7 +1902,8 @@
   #trackerFull.tf-2c #tbxGridTop + .tbx-hero{ margin-top:4px; }
   #trackerFull.tf-2c .tbx-hcoin{ width:38px; height:38px; border-radius:12px; }
   #trackerFull.tf-2c .tbx-hcoin i{ font-size:17px; }
-  #trackerFull.tf-2c .tbx-hkicker{ letter-spacing:1.5px; } /* NO nowrap: at 402 the FRAME's own kicker wraps to two lines — that is where its 80px card height comes from (26 kicker + 28 title inside 13+13). A nowrap "fix" was attempted 2026-08-14 and the hero-card-80 gate caught it dropping the card to 72; the wrap IS the design. (On wider phones the kicker fits one line and the card stays 80 via min-height? No — height follows content; the frame only defines 402.) */
+  #trackerFull.tf-2c .tbx-hkicker{ letter-spacing:1.5px; white-space:nowrap; } /* THE KICKER RIDES A FONT-RASTER RAZOR EDGE (David's device screenshots 2026-08-14): the same 9px/1.5 line fits in one line in Claude Design on his Mac and WRAPS on his iPhone by ~2px — per-renderer text metrics, invisible to every geometry diff. His design view is the truth: ONE line (nowrap; a long kicker overflows a few px into the card's padding, never doubles). The card's 80px height is then pinned by min-height below, not by the wrap — so the phone, the Mac and the preview all land the same card regardless of whose font metrics win. */
+  #trackerFull.tf-2c .tbx-hero{ min-height:80px; box-sizing:border-box; } /* the frame's card height, held constant across renderers now that the kicker can't wrap */
   #trackerFull.tf-2c .tbx-hname{ font-size:17px; }
   #trackerFull.tf-2c .tbx-hplay{ width:46px; height:46px; }
   #trackerFull.tf-2c .tbx-hplay i{ font-size:17px; }
@@ -4063,6 +4064,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1281"></script>
+  <script src="app.js?v=1283"></script>
 </body>
 </html>

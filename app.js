@@ -19038,6 +19038,24 @@
       navigator.clipboard.writeText(json).then(function () { try { toast("island copied (" + a.length + " tiles) · paste it to me"); } catch (e) {} }).catch(showFallback);
     } else { showFallback(); }
   }
+  function devDesignAuditOverlay() { // the 74-gate design audit rendered ON-SCREEN (dev menu → screenshot → done): David's phone reports its own numbers, so a preview-passes/device-fails split names its drifting elements without him describing anything. FAIL lines lifted to the top and tinted. Dev-only surface: no tr(), no copy gates (dev-toast precedent).
+    var old = el("devAuditOv"); if (old) { old.remove(); return "closed"; }
+    var txt = "";
+    try { txt = String(DEV.designAudit()); } catch (e) { txt = "audit crashed: " + e.message; }
+    var vp = innerWidth + "x" + innerHeight, st = safeTopPx(), sb = safeBottomPx();
+    var ver = ""; try { ver = (document.querySelector('script[src*="app.js"]').getAttribute("src").match(/v=(\d+)/) || [])[1] || ""; } catch (e) {}
+    var lines = txt.split("\n"), fails = lines.filter(function (l) { return l.indexOf("FAIL") === 0 || l.indexOf("FAIL ·") >= 0; }), rest = lines.filter(function (l) { return fails.indexOf(l) < 0; });
+    var ov = document.createElement("div"); ov.id = "devAuditOv";
+    ov.setAttribute("style", "position:fixed;inset:0;z-index:9999;background:rgba(16,4,12,.97);color:#ffe3f1;font:600 11px/1.5 -apple-system,monospace;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px calc(env(safe-area-inset-bottom,0px) + 14px);overflow-y:auto;-webkit-overflow-scrolling:touch;white-space:pre-wrap;word-break:break-word;");
+    var head = document.createElement("div"); head.textContent = "DESIGN AUDIT · v" + ver + " · " + vp + " · safe " + st + "/" + sb + " · " + fails.length + " FAIL / " + lines.length + " lines · tap to close";
+    head.setAttribute("style", "font-weight:800;color:#ffc41f;margin-bottom:10px;");
+    ov.appendChild(head);
+    if (fails.length) { var fd = document.createElement("div"); fd.textContent = fails.join("\n"); fd.setAttribute("style", "color:#ff6d6d;margin-bottom:10px;"); ov.appendChild(fd); }
+    var rd = document.createElement("div"); rd.textContent = rest.join("\n"); ov.appendChild(rd);
+    ov.onclick = function () { ov.remove(); };
+    document.body.appendChild(ov);
+    return fails.length + " fails on this device";
+  }
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
@@ -19058,6 +19076,7 @@
       ["🏝 Copy island data", devCopyIsleData], // David 2026-07-16: no console on his phone — this is the only way for him to hand me his real island's exact tile data when a coast bug shows up, instead of me guessing at synthetic shapes
       [(window._jsBlur ? "⚡ Fast coast: ON (tap=off)" : "⚡ Fast coast: OFF (tap=try)"), function () { window._jsBlur = !window._jsBlur; if (ISLE) ISLE._stamp = (ISLE._stamp || 1) + 1; window._isleBakeCache = null; try { toast("Fast coast (JS blur) " + (window._jsBlur ? "ON · claim a tile; should feel snappier. Coast is a touch tighter/blockier." : "OFF · back to the approved look.")); } catch (e) {} }], // David 2026-07-17: JS-blur coast bake skips the GPU getImageData readbacks (the measured per-claim bottleneck) → faster, but slightly tighter/blockier. Device-test toggle: flip it, claim tiles, compare speed + look on the real phone (can't measure either from the headless Mac).
       ["· · · · · · ·", function () {}],
+      ["📐 Design audit (this phone)", devDesignAuditOverlay], // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], [" · persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], [" · persona: early (day 3)", function () { devLoadPersona("early"); }], [" · persona: building (week 2)", function () { devLoadPersona("building"); }], [" · persona: established (month 1)", function () { devLoadPersona("established"); }], [" · persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);

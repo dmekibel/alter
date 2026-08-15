@@ -943,3 +943,20 @@ system working: drift cannot ship, including mine.
 Audit 74/74 at 402x874 (David's device geometry). Tools chain vs frame: hero1 184/185 · hero2 276/277 · caption
 367/368 · folders 413/414. Residual, named: deck seat 130 vs frame 139 — the same wMeasurePad law applied to our
 24px-taller hero content; gate-inside, David's eye decides. DEVICE-UNTESTED: all feel.
+
+## v1283 — THE RENDERER RAZOR EDGE + THE PHONE MEASURES ITSELF
+
+David's 6:41 device screenshots vs his Claude Design view exposed a class no geometry diff can catch: PER-RENDERER FONT
+METRICS. The hero kickers ("FOR YOU NOW · MORNING") fit one line in Claude Design on his Mac and WRAP on his iPhone —
+the same 9px/1.5 text differs by ~2px between renderers. His design view is the truth: kicker nowrap + the card pinned
+min-height 80, so phone/Mac/preview all land the same card no matter whose rasterizer wins. (This same edge bit twice
+today in opposite directions — the earlier nowrap revert was Chromium wrapping where the frame seemed to; the gates
+held 80 both times.)
+
+NEW DEV TOOL: "📐 Design audit (this phone)" in the dev menu — runs all 74 gates ON THE DEVICE and renders the report
+full-screen (version · viewport · safe-areas · FAILs lifted to the top in red). David's phone now reports its own
+numbers: two taps + a screenshot replaces "spell out every mistake." The remaining preview-vs-device gap is exactly
+what this measures.
+
+Audit 74/74 at 402x874, kicker 13px one-line, hero 80, home 874/874, ratchets clean. DEVICE-UNTESTED: the overlay
+itself on iOS (scroll/safe-areas) and whether his phone's gates agree with the preview's — that is the point of it.
