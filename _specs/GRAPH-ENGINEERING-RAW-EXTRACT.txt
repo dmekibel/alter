@@ -1,0 +1,649 @@
+people always rerject our offes lately in te last year cuz they claim they were expecting a cheaper budget maybe cuz there arer russian somewhere who offer to do it for cheaper cuz of thee agge of ai. so do extrra research and giive me some extra feedback usiing clever graph  engeneariing and rresearch [# tactiq.io free youtube transcript
+# Why Graph Engineering will 10x your Claude/Codex
+# https://www.youtube.com/watch/JWhICz1QR8M
+
+00:00:00.000 I came on here to talk about a term I
+00:00:01.920 keep seeing going viral on Twitter. It's
+00:00:05.000 graph engineering. You've seen it. I've
+00:00:07.360 seen it, too. And I'll be honest, the
+00:00:09.360 first time I saw it, my reaction was,
+00:00:11.920 &quot;Okay, is this a real thing, or did we
+00:00:14.160 just invent another phrase to make
+00:00:16.760 everyone feel behind?&quot; Because AI has
+00:00:19.880 this funny habit where every few weeks,
+00:00:22.720 there's this new term that goes viral.
+00:00:25.120 Prompt engineering, context engineering,
+00:00:27.600 agent engineering, vibe coding, uh loop
+00:00:31.080 engineering, and now graph engineering.
+00:00:33.800 Some of these phrases are hype. Some of
+00:00:36.080 them are actually useful. And graph
+00:00:38.640 engineering is one of the useful ones,
+00:00:41.000 because it gives you a much better way
+00:00:42.960 to think about how AI actually gets
+00:00:45.880 done. So, in this episode, I'm going to
+00:00:48.240 explain graph engineering in plain
+00:00:50.920 English. By the end of this episode, I
+00:00:53.640 want you to be able to take one AI
+00:00:56.160 workflow you already run, like customer
+00:00:59.200 research, port triage, content
+00:01:01.520 production, or startup idea validation,
+00:01:04.400 and turn it into a simple map of steps,
+00:01:07.080 checks, handoffs, loops, and human
+00:01:09.160 approvals. So, we're going to talk about
+00:01:11.320 all that and how you can do it. It's
+00:01:12.840 going to be clearly explained. So, let's
+00:01:15.480 get into it.
+00:01:19.255 >> [music]
+00:01:24.320 >> The simplest way to think about graph
+00:01:26.800 engineering is like this.
+00:01:29.320 Prompt engineering is how you ask the AI
+00:01:32.840 for a better question, and context
+00:01:35.600 engineering is how you give AI better
+00:01:38.440 information. But graph engineering is
+00:01:41.120 how you design the work around the AI,
+00:01:44.520 so the whole thing stops living inside
+00:01:46.800 inside one messy, giant AI chat.
+00:01:51.800 I'll give you an example. Imagine you're
+00:01:54.000 researching a new new idea. The normal
+00:01:56.800 way most people use AI is they open up a
+00:01:59.600 chat and they say, &quot;Should I build this
+00:02:02.200 idea?&quot;
+00:02:03.320 The model will give you a confident
+00:02:05.040 answer.
+00:02:06.120 It probably sounds pretty smart. It
+00:02:08.479 might give you the market size, a few
+00:02:10.240 competitors, maybe a go-to-market plan,
+00:02:13.000 and you feel like you did the research.
+00:02:15.800 But if you actually slow down, you
+00:02:18.200 realize something a little uncomfortable
+00:02:20.760 happened.
+00:02:22.200 One model in one pass decided what
+00:02:25.080 mattered, researched the market,
+00:02:27.400 interpreted the evidence, wrote the
+00:02:29.480 recommendation, and graded it in its own
+00:02:32.400 confidence. That's a lot of trust
+00:02:35.600 to put into one blob of text. In some
+00:02:39.160 cases, you might spend years of your
+00:02:41.080 life based on this one question that you
+00:02:43.600 asked, and you might be working on the
+00:02:45.360 wrong thing.
+00:02:46.800 The graph version looks a lot different.
+00:02:51.000 So, a planner first breaks the question
+00:02:54.440 into angles. One research One researcher
+00:02:57.959 looks at the customer,
+00:02:59.959 another looks at competitors, another
+00:03:02.120 looks at distribution, another looks at
+00:03:04.239 pricing, another looks at risks. Then a
+00:03:06.920 skeptic will try to kill the weak
+00:03:09.160 findings. Then a merger turns the
+00:03:11.440 surviving evidence into a one-page
+00:03:13.800 recommendation. And then you approve the
+00:03:16.720 decision before you act on it. The
+00:03:19.160 output might still be this written
+00:03:20.760 report, but the work behind it is just
+00:03:23.519 designed so much better. And that at its
+00:03:26.040 core is graph engineering. You're taking
+00:03:29.120 a messy AI task and turning it into a
+00:03:32.280 workflow that you can actually manage.
+00:03:35.800 Now, let's define the basic vocabulary
+00:03:38.720 without making this feel like a computer
+00:03:40.560 science lecture. By the way, I remember
+00:03:42.840 learning about One of my first classes
+00:03:44.840 in university was
+00:03:46.600 graph theory and and and so it's a real
+00:03:49.239 throwback for me. I will explain it to
+00:03:50.920 you in the clearest way possible. When
+00:03:53.120 people say graph, they basically mean
+00:03:56.560 jobs connected by arrows. Each job is a
+00:04:00.360 step in the workflow. The arrows show
+00:04:03.760 what happens next. And the shared notes
+00:04:06.440 moving through the workflow are the
+00:04:07.880 state, which is just a fancy way of
+00:04:10.200 saying what does the system know so far?
+00:04:13.600 So, that sounds technical for about 5
+00:04:16.358 seconds and then you realize that's
+00:04:18.600 actually how work gets done in the real
+00:04:20.959 world in in in reality.
+00:04:23.320 You know, think about customer support.
+00:04:25.560 When a customer writes in, the work is
+00:04:27.680 rarely just answer the ticket. First,
+00:04:30.560 you need to understand what kind of
+00:04:31.760 issue it is. Then you need to check the
+00:04:34.400 customer's account history. Maybe you
+00:04:36.720 need to search for the docs for the
+00:04:38.240 right policy. Then you draft a response.
+00:04:41.160 Then you decide whether this is risky
+00:04:43.440 enough that a human should review it
+00:04:45.960 before going out. When you draw those
+00:04:48.240 steps out and connect them in an order,
+00:04:50.840 they actually depend on each other and
+00:04:52.880 that is a graph.
+00:04:54.960 Take content for example. If I'm making
+00:04:57.240 a YouTube episode, the work isn't just
+00:04:59.320 write a script. A good episode might
+00:05:02.560 start with research, a thesis, examples,
+00:05:07.120 a hook, maybe a script,
+00:05:10.240 then title ideas, then
+00:05:13.040 thumbnail uh directions, then I you
+00:05:15.480 know, an Excalidraw, and then a final
+00:05:17.800 pass where I ask, &quot;Does this sound like
+00:05:19.680 a human being or does this sound like
+00:05:21.280 someone trapped inside a SaaS onboarding
+00:05:23.640 flow?&quot;
+00:05:24.680 Some of those steps have to happen in
+00:05:26.760 order.
+00:05:27.919 Some of those steps have have to happen
+00:05:29.880 in order. You probably want the thesis
+00:05:32.520 before the script. You probably want the
+00:05:34.480 script before the Excalidraw. But other
+00:05:37.080 pieces can happen at the same time. One
+00:05:40.440 re- One researcher can look for examples
+00:05:43.360 while another looks for
+00:05:44.640 counterarguments. One could study the
+00:05:46.840 audience angle, while another looks for
+00:05:49.360 practical workflows. Then, those outputs
+00:05:52.880 merge back into the script. And that's
+00:05:55.200 where the graph starts paying because
+00:05:57.400 most people use AI in a straight line
+00:06:00.560 because chat
+00:06:02.240 makes everything kind of feel
+00:06:03.880 sequential. You ask for research, then
+00:06:06.440 you ask for summary,
+00:06:08.160 then you ask for a draft, and then you
+00:06:09.880 ask for edits, then you ask for titles.
+00:06:12.320 That works for really simple things, but
+00:06:14.400 when the work has multiple pieces, the
+00:06:16.760 straight-line chat starts to get slow
+00:06:19.640 and fuzzy and actually hard to trust.
+00:06:23.200 What's cool about a graph is it lets you
+00:06:25.800 design the work more like a small team.
+00:06:29.360 One part plans, a few work in parallel,
+00:06:32.960 another checks the work, another merges
+00:06:35.800 it, and then the human approves the
+00:06:38.120 final step. And once that clicks in your
+00:06:40.560 head, uh it just gets a lot less
+00:06:43.240 mysterious because there's two different
+00:06:45.800 things people mean when they say graph
+00:06:48.840 in AI. And this is actually where a lot
+00:06:51.280 of the confusion comes from. The first
+00:06:53.640 is what's called a knowledge graph.
+00:06:56.160 A knowledge graph helps AI reason over
+00:06:58.840 relationships over things.
+00:07:01.919 For example, this customer works at this
+00:07:04.160 company, this company uses this product,
+00:07:07.360 this product connects to this tool, this
+00:07:09.760 support issue relates to this feature,
+00:07:12.040 and this feature is owned by this team.
+00:07:15.680 Knowledge graphs help because AI reason
+00:07:19.720 across relationships in messy data. This
+00:07:22.680 matters because normal rag often
+00:07:25.160 retrieve chunks of text that looks
+00:07:27.360 similar to the question, but it can
+00:07:29.240 struggle when the answer actually
+00:07:31.919 requires connecting different people
+00:07:34.720 across companies and topics and claims
+00:07:37.520 and events.
+00:07:38.880 You know, there's tools like you might
+00:07:40.280 have heard of Microsoft graph rag,
+00:07:42.720 because sometimes you just need AI to
+00:07:44.880 understand relationships inside a body
+00:07:47.600 of knowledge, not just to retrieve the
+00:07:50.440 nearest paragraph. That is one version
+00:07:53.560 of graph engineering. The second version
+00:07:56.400 is what's called an agent graph. An
+00:07:58.720 agent graph is about how work moves. So,
+00:08:01.680 a planner hands work to researchers, the
+00:08:04.320 researchers work in parallel, a skeptic
+00:08:07.000 checks the findings, a synthesizer might
+00:08:09.360 merge the parts,
+00:08:10.640 and a human will, you know, approve the
+00:08:12.760 final answer.
+00:08:14.240 This episode is mostly about agent
+00:08:16.240 graphs, actually, because that is the
+00:08:17.840 version you can start using today as a
+00:08:20.400 founder, as a creator, as an operator,
+00:08:22.760 as a small team. So, I figured I'd do an
+00:08:24.840 episode focusing on that. Um the easiest
+00:08:27.640 way to remember the difference, though,
+00:08:30.120 is is kind of like this. Knowledge
+00:08:32.400 graphs help AI understand how
+00:08:34.760 information connects,
+00:08:36.919 whereas agent graphs help AI understand
+00:08:40.960 how work should move. And eventually,
+00:08:44.120 the truth is the best systems use both.
+00:08:47.440 The AI will understand relationships
+00:08:49.880 inside your business, and it will also
+00:08:52.000 know how to move through the right
+00:08:53.920 steps.
+00:08:55.160 Um but how can we make this tactical?
+00:08:57.560 When should you use graph engineering?
+00:08:59.520 Well, use it when the work has multiple
+00:09:02.280 steps, multiple sources, maybe multiple
+00:09:04.880 paths, checks, risk, or approvals.
+00:09:08.360 Honestly, if you're asking AI to
+00:09:10.920 brainstorm 10 names for a new project,
+00:09:13.720 you probably don't need a graph. If
+00:09:15.760 you're asking AI to summarize a short
+00:09:17.520 email, you probably don't need a graph.
+00:09:20.440 But if you're using AI to do deep
+00:09:23.120 research, create a go-to-market plan,
+00:09:25.839 triage support tickets, review code,
+00:09:29.360 prepare for sales calls, synthesize
+00:09:31.760 customer feedback, or produce recurring
+00:09:34.240 content workflow, that's when graph
+00:09:36.760 thinking actually starts to matter a
+00:09:38.680 lot. And the rule is pretty simple. Use
+00:09:41.480 a graph when the work has multiple
+00:09:44.000 steps, some steps can happen at the same
+00:09:46.640 time, and the final output needs
+00:09:49.360 checking before it matters. A diamond
+00:09:52.200 starts with one question, splits into
+00:09:54.440 multiple parallel paths, checks the
+00:09:56.960 work, and then merges everything into
+00:09:59.440 back into one answer. So, here's a
+00:10:02.160 here's the startup idea version. Let's
+00:10:04.720 say the question is, &quot;Should I launch an
+00:10:07.240 AI bookkeeping product for Shopify
+00:10:10.680 merchants?&quot; The messy chat version is
+00:10:13.600 one big question and one big answer.
+00:10:17.000 The graph version starts with a planner.
+00:10:19.840 So, the planner would say something
+00:10:21.320 like, &quot;To answer this well, we need to
+00:10:23.920 understand the customer pain, the
+00:10:25.920 competitive landscape, the go-to-market
+00:10:28.400 wedge, the pricing pressure, and the
+00:10:30.560 risks.&quot; And then the work splits. You
+00:10:33.720 have one researcher who studies Shopify
+00:10:36.440 merchants and tries to understand the
+00:10:39.160 bookkeeping pain. Are they using
+00:10:41.360 QuickBooks? Are they using spreadsheets?
+00:10:44.160 Are they hiring bookkeepers? Are they
+00:10:46.600 annoyed at tax time? Are they looking
+00:10:48.800 for automation or do they just want
+00:10:51.200 someone to clean up the mess once a
+00:10:53.560 month? You'll have another researcher
+00:10:55.880 who's studying competitors.
+00:10:57.960 Are there already Shopify bookkeeping
+00:11:00.080 tools? Are there accounting firms
+00:11:01.920 building this manually? Are App Store
+00:11:04.000 products solving this at all? Are
+00:11:06.240 freelancers on Upwork or Fiverr doing
+00:11:09.080 the work in a way that software could
+00:11:11.400 partially replace?
+00:11:13.400 Maybe you have another researcher who's
+00:11:15.240 studying the distribution. Where do
+00:11:17.360 Shopify merchants actually hang out?
+00:11:20.000 What newsletters do they read? What
+00:11:22.280 agencies already have trust with them?
+00:11:24.160 What Shopify app categories do they
+00:11:26.320 search? What search terms reveal buying
+00:11:29.440 intent? Those three jobs can happen at
+00:11:32.240 the same time because they don't depend
+00:11:35.800 on each other. Then comes the skeptic.
+00:11:39.160 The skeptic asks, what claims are
+00:11:41.280 actually supported? Which evidence is
+00:11:43.400 stale because you're going to have data
+00:11:44.880 that is just old. Which competitor is
+00:11:47.040 being ignored? Where are we confusing
+00:11:49.640 pain with willingness to pay? Where did
+00:11:52.440 the AI sound confident without proving
+00:11:56.200 anything? And this step matters more
+00:11:59.360 than people think. A lot of AI research
+00:12:02.640 fails because the same model that writes
+00:12:05.560 the answer also grades the answer.
+00:12:10.680 That is like asking someone to write
+00:12:12.960 their own performance review and then
+00:12:15.240 being shocked when they describe
+00:12:17.400 themselves as a vision- a visionary.
+00:12:19.600 Come on. In a good graph, checking is
+00:12:23.560 its own job. Then comes the merge. The
+00:12:27.440 merge step takes the surviving evidence
+00:12:30.440 and turns it into a recommendation.
+00:12:33.200 Should we pursue this? Should we pause
+00:12:35.000 it? Should we kill it? What is the
+00:12:37.280 wedge? Who's the first customer? What
+00:12:40.560 should we test this week? And what
+00:12:43.480 evidence would actually change our mind?
+00:12:45.960 And finally, you have the human gate.
+00:12:48.200 That's where you decide what to do next.
+00:12:50.360 You might decide to record a landing
+00:12:52.200 page teardown of a Shopify merchants.
+00:12:55.400 You might decide to interview 10 Shopify
+00:12:58.600 uh agency owners. You might decide to
+00:13:01.080 build a tiny calculator that estimates
+00:13:04.040 bookkeeping cleanup costs. Or hey, you
+00:13:06.720 might decide the idea is way too crowded
+00:13:09.120 and you just want to move on. But that
+00:13:11.240 is the point. Graph engineering does not
+00:13:14.080 magically make the decision for you. It
+00:13:17.000 gives you a better way to produce the
+00:13:19.160 evidence you use to make the decision.
+00:13:22.680 Now, this is where I think people get
+00:13:24.880 too fancy too quickly.
+00:13:27.760 I would start way simpler than you see
+00:13:30.360 on on Twitter people using LangGraph,
+00:13:32.440 you see people using AutoGen, or some
+00:13:34.600 custom agent framework on day one. For
+00:13:37.960 your first graph, you can actually run
+00:13:40.600 it manually behind the scenes. I don't
+00:13:42.600 know why more people don't do this. I
+00:13:44.520 could show you exactly how to do it, but
+00:13:47.320 that just might be boring. The important
+00:13:49.200 thing is the structure. Give each job
+00:13:52.200 its own lane. One lane does customer
+00:13:54.960 research, another lane does competitor
+00:13:57.720 research, another lane does distribution
+00:13:59.920 research. Then the checker lane attacks
+00:14:02.440 the evidence, then the merge lane turns
+00:14:05.080 the surviving evidence into a
+00:14:07.400 recommendation. That is already graph
+00:14:10.120 engineering. It's like level one of
+00:14:11.760 graph engineering. Yes, it's slower than
+00:14:14.640 a fully automated system, but it's way
+00:14:17.360 easier to understand. And if the manual
+00:14:19.760 version doesn't produce way better work,
+00:14:22.720 automating it, honestly, will just
+00:14:24.600 produce mediocre work way faster.
+00:14:28.200 The first rep is to draw the graph
+00:14:30.960 before you automate the graph.
+00:14:33.320 For me,
+00:14:34.640 I would do this with a blank Excalidraw
+00:14:36.880 or TLDraw a TLDraw board.
+00:14:40.040 I would write the final outcome at the
+00:14:41.920 top.
+00:14:43.320 Then I would draw the jobs,
+00:14:45.560 planner, customer researcher,
+00:14:48.440 competitor researcher, distribution
+00:14:51.040 researcher, skeptic, merge, human
+00:14:54.640 approval.
+00:14:56.040 Then I would draw the arrows. The
+00:14:58.000 planner feeds the three researchers. The
+00:15:01.000 researchers feed the skeptic. The
+00:15:03.280 skeptic feeds the merge.
+00:15:05.640 The merge feeds the human decision.
+00:15:08.760 And that's enough.
+00:15:11.120 Now, once that works three times
+00:15:13.080 manually, then I would think about all
+00:15:15.200 the tools. The beginner version is a
+00:15:17.640 manual run with with separate lanes. But
+00:15:21.040 the intermediate version is Claude code,
+00:15:23.400 code acts, or repo where each step
+00:15:26.560 writes files. The planner writes
+00:15:29.200 plan.md,
+00:15:30.840 the researcher writes customer.md,
+00:15:34.040 competitors.md,
+00:15:35.920 and distribution.md,
+00:15:37.880 and the skeptic writes review.md. The
+00:15:40.400 merge step writes recommendation.md.
+00:15:43.440 What's cool about that is it leaves a
+00:15:45.840 paper trail and that's that's really
+00:15:47.600 nice. You can see what happened. You can
+00:15:50.480 compare versions and you can actually
+00:15:52.240 and you can actually reuse the structure
+00:15:53.920 next week or a few weeks later. Now, the
+00:15:56.480 advanced version is when you do use
+00:15:58.800 something like LangGraph,
+00:16:01.880 AutoGen Graph Flow, n8n, make.com, or
+00:16:06.160 your own small scripts to actually
+00:16:08.320 orchestrate the graph.
+00:16:10.440 So, LangGraph is actually really useful
+00:16:12.400 when you want state checkpoints,
+00:16:14.840 persistence, human-in-the-loop
+00:16:16.960 approvals, and more reliable control
+00:16:20.000 over how an agent workflow runs.
+00:16:22.760 Then you have something like AutoGen
+00:16:24.920 Graph Flow, and that's useful when you
+00:16:27.480 want directed workflow with sequential
+00:16:29.920 steps, parallel steps, conditional
+00:16:32.520 branches, and loops.
+00:16:34.480 Tools like n8n, make.com are are useful
+00:16:38.680 when the graph touches everyday business
+00:16:41.080 systems like Slack, email, airtable, or
+00:16:44.040 your CRM.
+00:16:46.080 But again, the tool is not the point. Uh
+00:16:49.280 the tool should come after the workflow.
+00:16:51.320 If you automate a workflow you do not
+00:16:53.400 understand, you get a mess. If you
+00:16:56.040 understand the workflow first,
+00:16:58.000 automation then becomes super obvious,
+00:17:00.360 and I can do a graph engineering
+00:17:02.240 advanced tutorial if people are
+00:17:04.560 interested uh using things like
+00:17:06.839 LangGraph LangGraph or Claude code.
+00:17:09.959 Uh but for the purpose of this episode,
+00:17:11.920 I think we just want to get to level one
+00:17:13.439 and level two. Okay, so you now
+00:17:17.040 hopefully understand what graph
+00:17:19.480 engineering is at a high level. But, how
+00:17:22.160 can you actually integrate this into
+00:17:24.599 your startup, into your business
+00:17:26.800 to start making more money, or creating
+00:17:29.160 better products, or
+00:17:31.200 just generating a lot of value.
+00:17:33.800 Uh the one that comes to mind uh first
+00:17:37.200 is customer support. So, a simple
+00:17:39.920 support graph
+00:17:41.520 might start by classifying the issue.
+00:17:44.440 Is it billing? Is it product confusing?
+00:17:46.560 Maybe it's a bug, or cancellation risk,
+00:17:48.920 or maybe it's something else.
+00:17:51.080 Then the graph checks account context.
+00:17:54.720 So, is it a new customer? Are they high
+00:17:56.960 value? Have they written in before? Are
+00:18:00.080 they frustrated?
+00:18:01.800 Then it searches the docs, or internal
+00:18:04.240 policies. You might have like a whole
+00:18:06.560 wiki for your company, maybe a notion
+00:18:08.600 board, maybe it goes and explores that.
+00:18:10.880 Then it drafts a reply. Then a checker
+00:18:14.160 reviews the reply for accuracy, tone,
+00:18:17.000 and risk. Then a human approves anything
+00:18:20.320 involving refunds, account changes,
+00:18:22.960 angry customers, legal risk, or promises
+00:18:26.960 that a company just might regret later.
+00:18:29.480 And that's the graph. And it's better
+00:18:31.760 than saying AI answered the support
+00:18:33.760 ticket, because the support ticket is
+00:18:35.760 not the real workflow. The real workflow
+00:18:38.120 is understanding, and researching, and
+00:18:40.280 drafting, and checking, and approving.
+00:18:43.400 It's probably starting to click now.
+00:18:45.760 Content Content creation is just another
+00:18:49.160 uh example that comes top of mind. A
+00:18:51.360 content graph might start with research,
+00:18:54.000 then it creates a thesis, then it finds
+00:18:56.280 examples, then it writes a hook, then it
+00:18:58.480 drafts a script, then a checker asks
+00:19:00.400 whether the examples are specific,
+00:19:02.720 whether the pacing works, whether the
+00:19:04.720 hook earns attention based on what's,
+00:19:07.680 you know, formats that are working, and
+00:19:09.880 whether the writing sounds like a person
+00:19:12.120 something like the person actually would
+00:19:14.240 say. Then the graph can branch into
+00:19:16.480 title ideas, thumbnail concepts,
+00:19:18.400 captions,
+00:19:20.040 B-roll, things like that. And that's
+00:19:22.440 also closer to how a content lead, a
+00:19:25.360 real content lead that you would hire to
+00:19:27.280 help you create content, would actually
+00:19:29.520 do. Another great example is coding. A
+00:19:33.040 coding graph might start with a plan,
+00:19:35.080 then one agent edits the code, another
+00:19:37.760 reviews the diff, another runs tests,
+00:19:40.560 another checks the UI in a browser,
+00:19:42.920 another looks for edge cases, and then
+00:19:44.640 you have a human being actually
+00:19:46.600 approving the final pull request. And
+00:19:49.480 that's basically where all these AI
+00:19:51.160 coding tools are going. The model
+00:19:53.520 writing the code is only one part of the
+00:19:55.440 workflow, and there's leverage in all
+00:19:57.760 the planning and testing and reviewing
+00:20:00.400 and inspecting and deciding what is
+00:20:02.840 actually safe to ship. And that's
+00:20:05.080 actually an important point. Like a big
+00:20:06.760 reason why graph engineering matters is
+00:20:10.680 it makes quality less dependent on
+00:20:13.360 summer someone remembering a perfect
+00:20:15.840 prompt to ask their LLM. It makes
+00:20:18.240 reviews way more consistent. It makes
+00:20:20.840 delegation in general way cleaner. It
+00:20:23.680 makes approval way more explicit. It
+00:20:26.840 gives you a place to add tools and
+00:20:29.240 memory and checks and permissions over
+00:20:31.560 time, and it turns AI work from just
+00:20:35.080 like chat into this operating system.
+00:20:38.040 And that that really does feel like
+00:20:39.680 you're living in the future once you get
+00:20:41.160 to that place. Now there is one mistake
+00:20:43.880 that I want to warn against, which is
+00:20:46.480 more agents don't automatically mean
+00:20:49.640 better output. Sometimes actually more
+00:20:52.320 agents mean more noise.
+00:20:55.200 Sometimes it means five AI workers
+00:20:57.760 confidently repeating the same wrong
+00:21:00.600 idea. Sometimes it means the system
+00:21:03.360 spends more time coordinating than
+00:21:05.520 thinking. So the goal is not to make the
+00:21:07.480 biggest graph possible. I've seen people
+00:21:09.440 on X,
+00:21:10.560 you know, go viral with these big big
+00:21:12.360 graphs, but that's not the goal. The
+00:21:14.920 goal is actually to make the smallest
+00:21:16.440 graph that improves the quality of work.
+00:21:19.400 And that's a really important
+00:21:20.360 distinction because a good graph should
+00:21:22.760 remove fake waiting and it should
+00:21:25.280 separate workers from checkers. And
+00:21:27.920 really it should be human approval where
+00:21:30.040 mistakes are expensive. And it should
+00:21:33.040 stop when the answer is good enough.
+00:21:35.840 Shouldn't need to continue. And it
+00:21:37.480 should leave behind the useful state,
+00:21:40.000 the meeting notes, the evidence, the
+00:21:41.760 drafts, the sources, and the decision so
+00:21:44.200 that you can use it later. And the And
+00:21:46.360 that By the way, the last point is
+00:21:47.600 underrated because the real compounding
+00:21:50.120 value of gra- graph engineering isn't
+00:21:53.600 just that one task gets better. It's
+00:21:55.680 that your work starts producing memory.
+00:21:58.640 What do I mean by that? I mean that
+00:22:00.400 every customer research graph creates
+00:22:02.800 better customer notes. Every content
+00:22:05.240 graph creates better examples and
+00:22:07.200 audience insights. Every support graph
+00:22:09.960 creates better product feedback. And
+00:22:12.080 that's where the context becomes the
+00:22:13.960 moat because the graph produces the
+00:22:16.320 work, but it also produces the memory
+00:22:18.920 that makes the next graph smarter. So,
+00:22:20.840 it becomes this like asset for you. So,
+00:22:23.360 if you want to get into graph
+00:22:24.520 engineering and you're like, &quot;How do I
+00:22:26.160 start?&quot; Here's Here's a way to think
+00:22:28.080 about it.
+00:22:29.240 Um I would pick one workflow I already
+00:22:31.560 run with AI every week. Maybe it's
+00:22:34.360 researching ideas or preparing podcast
+00:22:37.680 episodes, uh reviewing landing pages,
+00:22:40.880 analyzing customer feedback.
+00:22:43.280 Then I would write the final output in
+00:22:45.400 one sentence. For example, I want a
+00:22:47.760 one-page recommendation on whether this
+00:22:50.080 startup idea is worth testing.
+00:22:52.600 And then I would list the jobs a great
+00:22:55.400 human would do.
+00:22:57.320 They would clarify the question. They
+00:22:59.840 would research the customers. They would
+00:23:02.400 research competitors. They would look
+00:23:04.680 for distribution. They would look for
+00:23:06.680 risks. They would check the evidence.
+00:23:09.320 They would make the recommendation. And
+00:23:11.680 then I would draw arrows where the work
+00:23:14.400 actually depends on another step.
+00:23:17.040 So, what do I mean by that? Customer
+00:23:19.680 customer research and competitor
+00:23:22.000 research could happen at the same time.
+00:23:24.880 The skeptic needs the research before it
+00:23:26.960 can check it. And the final
+00:23:28.720 recommendation needs the skeptic pass
+00:23:31.640 before it can merge the evidence. Then I
+00:23:34.440 would add one human gate before the
+00:23:36.440 expensive decision. If the output is a
+00:23:39.080 private memo, maybe the human gate is
+00:23:42.120 light. If the output is a customer
+00:23:44.560 email, a public post, code deploys, a
+00:23:48.000 refund, or anything touching production
+00:23:50.080 data, you got to have a human gate
+00:23:52.200 that's stricter. Then I would run it
+00:23:54.680 manually once. This is the whole first
+00:23:58.440 rep that we want to get good at. You
+00:24:00.680 don't have to create this giant
+00:24:01.960 automation project.
+00:24:04.280 Just create the jobs and the arrows. And
+00:24:07.120 after you do this once, you start seeing
+00:24:09.480 AI work differently.
+00:24:11.920 Cuz you're not thinking about like,
+00:24:13.240 &quot;Okay, I need to do the most perfect
+00:24:14.960 prompt ever. What What is that What is
+00:24:16.840 the perfect prompt for this task I'm
+00:24:18.520 trying to do?&quot; You start thinking about,
+00:24:20.200 &quot;Okay, what's the most perfect workflow
+00:24:22.560 for this?&quot; And then uh you start
+00:24:25.240 designing a path that produces that
+00:24:28.200 answer. And that's why I think graph
+00:24:30.720 engineering in general is a a concept
+00:24:33.320 that is worth paying uh attention to.
+00:24:35.960 It's really like the next logical step
+00:24:38.240 after prompting. And I think the people
+00:24:40.680 who get the most out of AI will be the
+00:24:43.360 people who know how to break down work
+00:24:46.000 into the right pieces, give each piece
+00:24:48.240 the right context, check the output, and
+00:24:50.880 keep the human in the right place. So,
+00:24:53.960 now that, you know, we're towards the
+00:24:55.440 end of the episode, here's what I would
+00:24:57.640 do to try to learn this. I would pick
+00:25:00.040 one workflow you already run, draw those
+00:25:02.400 jobs and arrows, delete the fake
+00:25:04.680 waiting, run the independent jobs in
+00:25:06.760 parallel, add a skeptic, merge the
+00:25:08.920 survivors, approve the final step
+00:25:10.920 yourself, and there you have it. That'll
+00:25:12.880 be your first graph.
+00:25:14.600 And once you have one graph that works,
+00:25:16.480 you're not just prompting AI anymore,
+00:25:18.400 you're managing AI work. It's sort of
+00:25:20.200 this like next level in uh
+00:25:23.680 being an agent manager and and really
+00:25:26.400 just like stepping yourself into this
+00:25:28.720 new world uh deep into this new world
+00:25:32.040 where
+00:25:33.120 uh you're getting the most out of AI to
+00:25:34.760 build out your dreams, to take ideas and
+00:25:37.680 put them out there, and getting, you
+00:25:39.360 know, something I just think a lot about
+00:25:40.960 now is just like how do I get the most
+00:25:42.520 out of these platforms?
+00:25:44.240 Um and graph engineering is just a
+00:25:46.920 concept that helps you think about that.
+00:25:50.000 So, there you have it, folks.
+00:25:52.520 Uh graph engineering clearly explained.
+00:25:55.360 Um hope that it got your creative juices
+00:25:57.960 flowing. Hope it's been helpful. Um
+00:26:01.400 My name's Greg Eisenberg. I'm the host
+00:26:03.800 of the Startup Ideas podcast. For more,
+00:26:06.840 uh you know, like, comment, and
+00:26:08.720 subscribe. Follow on on uh Spotify and
+00:26:11.960 Apple. And uh
+00:26:14.480 you know, I feel grateful that you're
+00:26:16.200 here. Um that I I'm able to teach you,
+00:26:19.880 give you these concepts.
+00:26:22.080 Um
+00:26:22.800 and I just can't wait to see what you
+00:26:24.360 build. I'm rooting for you. Have a
+00:26:26.200 creative day, and I'll see you next
+00:26:27.720 time.
+]

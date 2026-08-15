@@ -1,0 +1,23 @@
+{
+  "_howToLoad": "Settings (gear icon) → scroll to the backup/restore panel → paste this whole JSON → Merge (or set it directly via localStorage.setItem('alter_plan2', JSON.stringify(<this object's contents merged into a fresh S>)) from a desktop console the first time you open the installed PWA). Fill in the ___ fields below before loading.",
+  "profile": {
+    "name": "___",
+    "gender": "f",
+    "vibe": "overwhelmed",
+    "lowStart": true,
+    "messRoom": "___ (her messiest room, e.g. Bedroom/Kitchen/Desk)",
+    "pact": { "ts": 0 },
+    "simpleMode": true,
+    "set": true
+  },
+  "langCode": "ru",
+  "habits": [
+    { "id": "h1", "e": "🧹", "l": "___ real habit 1 (e.g. Tidy space)", "type": "build", "per": 0, "color": "#ff8a1e" },
+    { "id": "h2", "e": "💧", "l": "___ real habit 2 (e.g. Drink water)", "type": "build", "per": 0, "color": "#48d0e0" },
+    { "id": "h3", "e": "🚶", "l": "___ real habit 3 (e.g. Walk)", "type": "build", "per": 0, "color": "#ff8a1e" }
+  ],
+  "acts": [
+    { "title": "Clean my room", "catK": null, "domain": "upkeep" }
+  ],
+  "guide": { "mode": "guided", "seedTier": 0, "unlocked": [0] }
+}

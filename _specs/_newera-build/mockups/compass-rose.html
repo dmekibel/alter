@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ALTER — compass rose navigation (approved 2026-07-21)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Jost:wght@500;600;700&display=swap');
+body{background:#141018;margin:0;padding:24px 0;font-family:Jost,sans-serif;}
+.cr-phone{width:320px;height:640px;background:#0a0308;border-radius:44px;padding:12px;margin:0 auto;box-shadow:0 0 0 2px #241019;position:relative;}
+.cr-screen{width:296px;height:616px;border-radius:34px;overflow:hidden;position:relative;background:#1c0814;}
+.cr-island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:88px;height:22px;background:#000;border-radius:14px;z-index:40;}
+.cr-world{position:absolute;top:0;left:0;width:888px;height:1848px;display:grid;grid-template-columns:repeat(3,296px);grid-template-rows:repeat(3,616px);transform:translate(-296px,-616px);transition:transform .5s cubic-bezier(.42,.85,.3,1);}
+.cr-cell{width:296px;height:616px;position:relative;overflow:hidden;font-family:'Baloo 2',system-ui,sans-serif;}
+.cr-home{background:linear-gradient(180deg,#2a0d1c 0%,#1c0814 46%,#160510 100%);}
+.cr-corner{background:#120409;}
+.cr-up{background:linear-gradient(180deg,#180a22 0%,#1c0916 100%);}
+.cr-down{background:linear-gradient(180deg,#1a0714 0%,#12060f 100%);}
+.cr-left{background:linear-gradient(180deg,#241033 0%,#180a1e 100%);}
+.cr-right{background:linear-gradient(180deg,#0e2226 0%,#0a1a1e 100%);}
+.cr-h{font-family:'Baloo 2';font-weight:800;color:#fff2f9;}
+.cr-stripe{background-image:repeating-linear-gradient(45deg,var(--c),var(--c) 9px,var(--d) 9px,var(--d) 18px);}
+.cr-door{cursor:pointer;transition:transform .15s,filter .15s;}
+.cr-door:hover{transform:scale(1.06);filter:brightness(1.15);}
+.cr-tile{border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;box-shadow:0 4px 0 #160510;}
+.cr-puck{position:absolute;left:16px;bottom:18px;z-index:60;cursor:pointer;display:flex;align-items:center;gap:9px;background:#2a0f22;border:2px solid #160510;border-radius:26px;height:52px;box-shadow:0 5px 0 #160510;transition:width .4s cubic-bezier(.4,.85,.3,1),padding .4s;overflow:hidden;width:52px;padding:0;}
+.cr-puck.session{width:210px;padding:0 12px 0 6px;}
+.cr-puckdial{min-width:40px;width:40px;height:40px;border-radius:50%;background:#36b3f0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;}
+.cr-puckdial.idle{background:#ff5fa8;}
+.cr-puckmeta{display:flex;flex-direction:column;line-height:1.15;white-space:nowrap;opacity:0;transition:opacity .3s;}
+.cr-puck.session .cr-puckmeta{opacity:1;}
+.cr-compass{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:6px;justify-content:center;margin:18px auto 0;}
+.cr-cbtn{border:1px solid #3a2a3a;background:#221826;border-radius:9px;font-size:17px;color:#c9a6bf;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
+.cr-cbtn:hover{background:#2e2033;color:#fff;}
+.cr-cbtn.here{background:#3a2044;color:#ffb0d4;border-color:#7a4a8a;}
+.cr-legend{max-width:340px;margin:14px auto 0;font-size:12.5px;color:#9a86a6;line-height:1.6;text-align:center;}
+label{display:flex;align-items:center;gap:8px;justify-content:center;color:#c9a6bf;font-size:13px;margin-top:14px;}
+</style>
+</head>
+<body>
+<!-- APPROVED 2026-07-21 (David: "1 yes. 2 shape shifter. 3 up by the gems. 4 battery. ...") — the compass-rose nav + living-puck visualization, preserved from the chat session 6f669baa. This is the DESIGN RECORD; door styling since refined to edge-tabs (2026-07-22 tuner values), but the world model + puck grammar shown here are the approved laws. -->
+<div class="cr-phone">
+  <div class="cr-island"></div>
+  <div class="cr-screen">
+    <div class="cr-world" id="crWorld">
+      <div class="cr-cell cr-corner"></div>
+      <div class="cr-cell cr-up">
+        <div style="position:absolute;top:26px;left:0;right:0;text-align:center;">
+          <div class="cr-h" style="font-size:19px;">Journey</div>
+          <div style="color:#b39ab0;font-size:11px;">the sky above home</div>
+        </div>
+        <div style="position:absolute;top:96px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:34px;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#2ab8c4;box-shadow:0 0 0 3px #160510;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;"><i class="ti ti-flame"></i></div>
+          <div style="width:56px;height:56px;border-radius:50%;background:#ff8a3a;box-shadow:0 0 0 3px #160510;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;"><i class="ti ti-shield"></i></div>
+          <div style="width:66px;height:66px;border-radius:50%;background:#b07aff;box-shadow:0 0 0 2px #ff5fa8,0 0 20px rgba(255,95,168,.45);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;"><i class="ti ti-cards"></i></div>
+        </div>
+      </div>
+      <div class="cr-cell cr-corner"></div>
+      <div class="cr-cell cr-left">
+        <div style="position:absolute;top:26px;left:20px;">
+          <div class="cr-h" style="font-size:19px;">Planner</div>
+          <div style="color:#b39ab0;font-size:11px;">your day, to the left</div>
+        </div>
+        <div style="position:absolute;top:80px;left:16px;right:16px;display:flex;flex-direction:column;gap:9px;">
+          <div class="cr-stripe" style="--c:#36b3f0;--d:#1e5e80;height:44px;border-radius:13px;display:flex;align-items:center;padding-left:12px;color:#fff;font-weight:700;font-size:13px;"><i class="ti ti-run" style="margin-right:7px;"></i>Gym</div>
+          <div style="height:40px;border-radius:13px;border:2px solid #d99f30;display:flex;align-items:center;padding-left:12px;color:#d99f30;font-weight:700;font-size:13px;"><i class="ti ti-coffee" style="margin-right:7px;"></i>Lunch</div>
+          <div class="cr-stripe" style="--c:#ff5fa8;--d:#8a2f5a;height:60px;border-radius:13px;display:flex;align-items:center;padding-left:12px;color:#fff;font-weight:700;font-size:13px;box-shadow:0 0 0 2px #ff5fa8,0 0 16px rgba(255,95,168,.4);position:relative;"><i class="ti ti-code" style="margin-right:7px;"></i>Claude code<span style="position:absolute;right:10px;bottom:8px;background:#ff5fa8;font-size:9px;padding:2px 7px;border-radius:9px;">NOW</span></div>
+          <div style="height:40px;border-radius:13px;border:2px solid #b07aff;display:flex;align-items:center;padding-left:12px;color:#b07aff;font-weight:700;font-size:13px;"><i class="ti ti-book" style="margin-right:7px;"></i>Read</div>
+        </div>
+      </div>
+      <div class="cr-cell cr-home">
+        <div style="position:absolute;top:34px;left:16px;display:flex;align-items:center;gap:6px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:#2a1436;border:2px solid #7f5aa8;display:flex;align-items:center;justify-content:center;color:#b07aff;font-size:16px;"><i class="ti ti-tool"></i></div>
+        </div>
+        <div style="position:absolute;top:38px;right:14px;display:flex;align-items:center;gap:10px;">
+          <span style="color:#ffd24a;font-weight:700;font-size:15px;"><i class="ti ti-diamond" style="font-size:14px;"></i> 1,240</span>
+          <div class="cr-door" data-go="home" title="You / settings" style="width:30px;height:30px;border-radius:50%;background:#2a0f22;border:2px solid #ff5fa8;display:flex;align-items:center;justify-content:center;color:#ff5fa8;font-size:15px;"><i class="ti ti-sparkles"></i></div>
+        </div>
+        <div class="cr-door" data-go="planner" title="Tap your day → Planner" style="position:absolute;top:80px;left:14px;right:14px;display:flex;align-items:center;gap:5px;">
+          <i class="ti ti-calendar" style="color:#7d6486;font-size:14px;"></i>
+          <div style="flex:1;display:flex;gap:5px;">
+            <div style="flex:1.1;height:12px;border-radius:7px;background:#ff8a3a;"></div>
+            <div style="flex:1;height:12px;border-radius:7px;background:#34d39a;"></div>
+            <div style="flex:1.4;height:12px;border-radius:7px;background:#36b3f0;"></div>
+            <div style="flex:1;height:12px;border-radius:7px;background:#ff5fa8;"></div>
+            <div style="flex:.8;height:12px;border-radius:7px;background:#b07aff;"></div>
+          </div>
+          <i class="ti ti-chevron-right" style="color:#7d6486;font-size:13px;"></i>
+        </div>
+        <div class="cr-door" data-go="garden" title="Garden" style="position:absolute;top:112px;right:14px;width:34px;height:34px;border-radius:50%;background:#0e2830;border:2px solid #2ab8c4;display:flex;align-items:center;justify-content:center;color:#2ab8c4;font-size:16px;z-index:25;"><i class="ti ti-plant-2"></i></div>
+        <div class="cr-door" data-go="journey" title="Journey" style="position:absolute;top:112px;left:14px;width:34px;height:34px;border-radius:50%;background:#20142e;border:2px solid #b07aff;display:flex;align-items:center;justify-content:center;color:#b07aff;font-size:16px;z-index:25;"><i class="ti ti-route"></i></div>
+        <div style="position:absolute;top:168px;left:50%;transform:translateX(-50%);width:150px;height:150px;border-radius:50%;background:#241120;display:flex;align-items:center;justify-content:center;">
+          <div style="width:128px;height:128px;border-radius:50%;background:#ff5fa8;display:flex;align-items:center;justify-content:center;color:#160510;font-size:40px;box-shadow:0 6px 0 #b83a6e;"><i class="ti ti-player-play-filled" style="margin-left:5px;"></i></div>
+        </div>
+        <div class="cr-h" style="position:absolute;top:330px;left:0;right:0;text-align:center;font-size:26px;">What now?</div>
+        <div style="position:absolute;top:372px;left:50%;transform:translateX(-50%);background:#241726;border:1px solid #3a2438;border-radius:13px;padding:6px 13px;display:flex;align-items:center;gap:7px;color:#fff2f9;font-weight:700;font-size:12px;"><i class="ti ti-brain" style="color:#36b3f0;"></i>Focus block<span style="color:#ff5fa8;">· now</span></div>
+        <div style="position:absolute;top:430px;left:14px;right:14px;">
+          <div style="text-align:center;color:#7d6486;font-size:10px;font-weight:700;letter-spacing:.5px;margin-bottom:6px;">↓ TOOLS · THE GROUND</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;">
+            <div class="cr-tile" style="background:#ff8a3a;height:52px;"><i class="ti ti-run"></i></div>
+            <div class="cr-tile" style="background:#b07aff;height:52px;"><i class="ti ti-wind"></i></div>
+            <div class="cr-tile" style="background:#2ab8c4;height:52px;"><i class="ti ti-lungs"></i></div>
+            <div class="cr-tile" style="background:#ff5fa8;height:52px;"><i class="ti ti-moon"></i></div>
+          </div>
+          <div class="cr-door" data-go="tools" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:9px;opacity:.5;">
+            <div class="cr-tile" style="background:#d99f30;height:34px;"><i class="ti ti-refresh"></i></div>
+            <div class="cr-tile" style="background:#ff8a3a;height:34px;"><i class="ti ti-quote"></i></div>
+            <div class="cr-tile" style="background:#ff5fa8;height:34px;"><i class="ti ti-heart"></i></div>
+            <div class="cr-tile" style="background:#2ab8c4;height:34px;"><i class="ti ti-dots"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="cr-cell cr-right">
+        <div style="position:absolute;top:26px;left:0;right:0;text-align:center;">
+          <div class="cr-h" style="font-size:19px;">Garden</div>
+          <div style="color:#b39ab0;font-size:11px;">a place, to the right</div>
+        </div>
+        <div style="position:absolute;bottom:90px;left:50%;transform:translateX(-50%);width:180px;height:120px;border-radius:50% 50% 46% 46%;background:#12403a;box-shadow:inset 0 6px 14px rgba(0,0,0,.4);"></div>
+        <div style="position:absolute;bottom:150px;left:96px;width:16px;height:16px;border-radius:50%;background:#46e2a4;box-shadow:0 0 14px rgba(70,226,164,.7);"></div>
+        <div style="position:absolute;bottom:132px;left:150px;width:12px;height:12px;border-radius:50%;background:#ffd24a;box-shadow:0 0 14px rgba(255,210,74,.7);"></div>
+        <div style="position:absolute;bottom:160px;left:190px;width:10px;height:10px;border-radius:50%;background:#ff5fa8;box-shadow:0 0 12px rgba(255,95,168,.7);"></div>
+      </div>
+      <div class="cr-cell cr-corner"></div>
+      <div class="cr-cell cr-down">
+        <div style="position:absolute;top:26px;left:20px;">
+          <div class="cr-h" style="font-size:19px;">Tools</div>
+          <div style="color:#b39ab0;font-size:11px;">the ground below home</div>
+        </div>
+        <div style="position:absolute;top:82px;left:16px;right:16px;">
+          <div style="background:#2a1120;border:2px solid #160510;border-radius:16px;padding:12px;box-shadow:0 5px 0 #160510;">
+            <div style="color:#ff5fa8;font-size:10px;font-weight:700;letter-spacing:.4px;">FOR RIGHT NOW</div>
+            <div class="cr-h" style="font-size:16px;margin-top:2px;">Quick reset</div>
+            <div style="color:#b39ab0;font-size:11px;">drop the day's tension · 5 min</div>
+          </div>
+          <div style="display:flex;gap:9px;margin-top:12px;">
+            <div style="flex:1;background:#35142a;border:2px solid #160510;border-radius:14px;padding:11px 6px;text-align:center;box-shadow:0 4px 0 #160510;"><div class="cr-h" style="font-size:19px;color:#34d39a;">5</div><div style="color:#b39ab0;font-size:10px;">min</div></div>
+            <div style="flex:1;background:#35142a;border:2px solid #160510;border-radius:14px;padding:11px 6px;text-align:center;box-shadow:0 4px 0 #160510;"><div class="cr-h" style="font-size:19px;color:#36b3f0;">10</div><div style="color:#b39ab0;font-size:10px;">min</div></div>
+            <div style="flex:1;background:#35142a;border:2px solid #160510;border-radius:14px;padding:11px 6px;text-align:center;box-shadow:0 4px 0 #160510;"><div class="cr-h" style="font-size:19px;color:#b07aff;">20</div><div style="color:#b39ab0;font-size:10px;">min</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cr-cell cr-corner"></div>
+    </div>
+    <div class="cr-puck" id="crPuck" title="Guardian puck — tap for home">
+      <div class="cr-puckdial idle" id="crPuckDial"><i class="ti ti-home"></i></div>
+      <div class="cr-puckmeta"><span style="color:#fff2f9;font-weight:700;font-size:12px;font-family:'Baloo 2';">Breathe</span><span style="color:#b39ab0;font-size:11px;">1:12 left</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="cr-compass" id="crCompass">
+  <div></div><div class="cr-cbtn" data-go="journey"><i class="ti ti-chevron-up"></i></div><div></div>
+  <div class="cr-cbtn" data-go="planner"><i class="ti ti-chevron-left"></i></div>
+  <div class="cr-cbtn here" data-go="home"><i class="ti ti-home"></i></div>
+  <div class="cr-cbtn" data-go="garden"><i class="ti ti-chevron-right"></i></div>
+  <div></div><div class="cr-cbtn" data-go="tools"><i class="ti ti-chevron-down"></i></div><div></div>
+</div>
+
+<div class="cr-legend">↑ Journey · ↓ Tools · ← Planner · → Garden — no tab bar. Tap the doors, edges, or this pad. The puck (bottom-left) is home from anywhere.</div>
+<label><input type="checkbox" id="crSess"> Session running (watch the puck)</label>
+
+<script>
+(function(){
+  var world=document.getElementById('crWorld');
+  var T={home:'translate(-296px,-616px)',journey:'translate(-296px,0)',tools:'translate(-296px,-1232px)',planner:'translate(0,-616px)',garden:'translate(-592px,-616px)'};
+  function go(p){ if(!T[p])return; world.style.transform=T[p];
+    document.querySelectorAll('#crCompass .cr-cbtn').forEach(function(b){ b.classList.toggle('here', b.getAttribute('data-go')===p); });
+  }
+  document.querySelectorAll('[data-go]').forEach(function(el){ el.addEventListener('click', function(e){ e.stopPropagation(); go(el.getAttribute('data-go')); }); });
+  document.getElementById('crPuck').addEventListener('click',function(){ go('home'); });
+  var sess=document.getElementById('crSess'), puck=document.getElementById('crPuck'), dial=document.getElementById('crPuckDial');
+  sess.addEventListener('change',function(){
+    if(sess.checked){ puck.classList.add('session'); dial.classList.remove('idle'); dial.innerHTML='<i class="ti ti-lungs"></i>'; }
+    else{ puck.classList.remove('session'); dial.classList.add('idle'); dial.innerHTML='<i class="ti ti-home"></i>'; }
+  });
+})();
+</script>
+</body>
+</html>

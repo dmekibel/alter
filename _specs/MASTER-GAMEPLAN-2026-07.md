@@ -212,7 +212,37 @@ notes. **This is a DEPTH roadmap, not a launch roadmap — see the tension named
    important aspect of tools that has to be very thought out."* Likely BOTH engine work (a pause-context model) and content
    work (authoring which line gets which context).
 
-Root causes, anchors and costs: six parallel investigations were run this session; their findings fill this section.
+**ROOT CAUSES — all six investigated 2026-08-15, evidence in `_specs/PHASE1-INVESTIGATION-2026-08-15.md`.**
+Headlines, because several are not what they looked like from outside:
+
+- **Popups: there is no popup SYSTEM.** 19 independent overlay families, 5 incompatible dismiss idioms, zero back/Escape
+  handling in 19.4k lines. Four families (`.goal-ov`/`.nb-ov`/`.mind-ov` z71, `.pc-ov` z80) paint BEHIND the journey (z75)
+  and home (z90) — verified live — while still disabling the pane swipe: an invisible modal with no dismiss target. THAT
+  is "sometimes break the app". Strongest single candidate for "random": the **appetite invite** self-removes after 9s
+  and only clears its cache on an explicit tap, so an untapped card returns every day forever. Several cards yank
+  themselves out from under the finger on 5-9s timers. **The "two clashing menu systems" resolves by DELETION** —
+  `notebookSheet`/`mindmapSheet` are unreachable dead code (their only door is `display:none`).
+- **Journey-top: root cause found and reproduced.** `adoptTrailToSky()` moves `#jpTrail` out of `#jpScroll`, so the
+  browser clamps that scrollTop to 0; `setPaneRest("journey")` then refuses to redraw because the trail already has
+  children. Compounding it, the only "focus the live node" code is an anonymous closure inside `drawJourney`, callable by
+  no landing path. Fix = extract it + make the adopt/release round-trip lossless. **S-M, touches no timeline code.**
+- **Breathing: the visual is NOT broken** (driven deterministically, orb tracks the schedule). The real faults: **two
+  independent engines** — the toolbox "Breathe" door runs `timelinePlayer`, which has NO cue sounds and NO guiding tone
+  at all, while the engine that HAS them (`breathwork`) is only reachable via `breathPicker`. And the tone he remembers
+  is genuinely defective: "Flute glide" animates its octave partial with no `cancelScheduledValues` anchor, so the pitch
+  cracks 120-260 cents at every phase turn; the DEFAULT "Breathing chord" never targets ×1.0 and sits permanently ±85
+  cents out of tune. Cue-set and tone are also **mutually exclusive by data shape**, so "bells + tone" cannot be
+  expressed. **L — one phase-clock spine, then layers.**
+- **Voice: the TTS bank layer works** (verified: tapping Millie fetches her asset immediately). One stale link downstream:
+  `timelinePlayer` decodes clips ONCE into `segs[].buf` and never re-decodes, so a running session keeps the old voice
+  until closed. Compounding it, the confirmation preview is suppressed whenever a player overlay exists **including a
+  minimized one**, so the tap makes no sound at all — which is exactly why it reads as "it doesn't even work".
+  **SMALL: three edits, zero regression-contract items, zero designAudit gates.**
+- **Meditation bar: real defects, not just comprehension.** The bar row is SWAPPED mid-run (5 flex bars become 4 stubs +
+  3 bars, unanimated), the zoom exits PERMANENTLY when a section hits a stack edge, and the transport's remaining-time
+  readout silently re-scopes from tool to section. **SIZE S — one switch in `onActEnter` gives David exactly what he
+  asked for**, because meditation is already one act/one bar; the expansion was bolted on.
+- **Pauses: investigation running** (spawned after the other five).
 **Sequencing note:** popups first — they are the only category that BREAKS the app, and they can fire during any other
 test, so fixing them makes every later verification trustworthy. Then the two contained bugs (voice, journey landing).
 Breathing earns its own session (it is a phase engine + a sound design, with real product choices inside).
