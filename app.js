@@ -356,7 +356,8 @@
   function todayK() { return logicalK(new Date()); }
   function tomK() { var d = new Date(); if (d.getHours() * 60 + d.getMinutes() < DAYSTART) d.setDate(d.getDate() - 1); d.setDate(d.getDate() + 1); return key(d); }
   function uid() { return "x" + Math.random().toString(36).slice(2, 8); }
-  function nowMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); } // wall-clock minutes (0–1439) — for elapsed/timers
+  function nowMin() { var o = devSimMin(); if (o != null) return o; var d = new Date(); return d.getHours() * 60 + d.getMinutes(); } // wall-clock minutes (0–1439) — for elapsed/timers. devSimMin (@SEC:DEV time-sim) overrides it for dev "simulate evening"; null (always, for normal users) = the real clock, unchanged
+  function hourNow() { var o = devSimHour(); return o != null ? o : new Date().getHours(); } // the RENDER-read hour — every "what does the surface look like at hour H" read goes here so the dev time-sim covers them all; WRITE paths (log stamps, openBand, day keys) keep new Date().getHours() deliberately
   function logicalNowMin() { var m = nowMin(); return m < DAYSTART ? m + 1440 : m; } // minutes within the 4am→4am window — the timeline's notion of "now"
   function toWin(m) { return m < DAYSTART ? m + 1440 : m; } // map a 0–1439 clock minute into the 4am-start window
   // YOUR day = wake → bedtime (from onboarding) — top of the timeline ≈ when you wake, bottom ≈ when you sleep (David 2026-06-26)
@@ -962,7 +963,7 @@
     var pmB = (S.bk || {})[k] ? (S.bk[k].pm || {}) : {};
     var s4 = !!fd.s4 || !!pmB.done; // L6 · the Close (PM Close v2, floor dose — taps only)
     if (s4 && !fd.done) { fd.s4 = 1; fd.done = true; try { save(); } catch (e) {} } // the close ends day one; tomorrow the adaptive path takes over — same voice, no ceremony
-    var evening = new Date().getHours() >= 17;
+    var evening = hourNow() >= 17;
     var _leadSet = false; function lead(done, locked) { if (done || locked || _leadSet) return false; _leadSet = true; return true; }
     function gate(ok, fn) { return function () { if (!ok) { toast(tr("one lesson at a time · the glowing one first")); return; } fn(); }; } // sequential Duolingo locks
     nodes.push({ key: "fd0", icon: "ti-sun", title: tr("Intro"), _lead: lead(s0, false),
@@ -1345,7 +1346,7 @@
       var _stTracked = (S.sf && S.sf.actions && S.sf.actions[k] && S.sf.actions[k].length) > 0;
       nodes.push({ key: "now", emoji: "\u25b6", title: tr("What are you doing right now?"), line: tr("We hold the fort. Nothing else."), color: DOM.focus.c, done: _stTracked, act: jpTrackNow });
       var _stPm = (((S.bk || {})[k] || {}).pm || {}).done;
-      if (new Date().getHours() >= 17 || _stPm) nodes.push({ key: "pm", emoji: "\ud83c\udf19", title: tr("Close the day"), line: tr("One honest line. A line is enough."), color: DOM.restore.c, done: !!_stPm, act: function () { closeJourney(); try { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } catch (e) {} } });
+      if (hourNow() >= 17 || _stPm) nodes.push({ key: "pm", emoji: "\ud83c\udf19", title: tr("Close the day"), line: tr("One honest line. A line is enough."), color: DOM.restore.c, done: !!_stPm, act: function () { closeJourney(); try { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } catch (e) {} } });
       return nodes;
     }
     // GAP-TIER RETURN (Day 4, David 2026-07-02 — the core inversion): a real absence (3-13 days since her last logged activity) becomes ONE warm return-stone with an instant micro-win, not a dump back into whatever chapter she left off in. Mirrors journeyTick()'s matching toast.
@@ -1441,7 +1442,7 @@
     }
 
     // REFLECTION STONE (GRAND BUILD E): one evening micro-reflection, worksheet-DNA — from 17:00 when today's card hasn't been answered; one tap, skippable, never a wall
-    if (new Date().getHours() >= 17 && !dormant) { var _rq = reflectDue(); if (_rq) {
+    if (hourNow() >= 17 && !dormant) { var _rq = reflectDue(); if (_rq) {
       nodes.push({ key: "reflect", icon: "ti-message-circle", title: "One small reflection", line: "A question, three taps: I learn you, you learn you.",
         color: "#9a8cff", done: false, act: function () { reflectCard(_rq, function () { try { drawJourney(false); } catch (e) {} }); } });
     } }
@@ -1561,7 +1562,7 @@
 
     // SELF-HELP ADAPT 3 — the REFLECT node closes the trail once it's unlocked (journeyNode >= 3). LITURGY SHELL (§0 law 2): every day has a CLOSE from day 2 — the skeleton kills the day-2 cliff structurally, so a fresh user past the stones gets the pm node too (evening-gated as ever).
     var _litPastDay1 = !!((S.guide || {}).fd && S.guide.fd.done);
-    if ((jn >= 3 || (_litOn && _litPastDay1)) && !dormant && (!!am.done || new Date().getHours() >= 17)) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
+    if ((jn >= 3 || (_litOn && _litPastDay1)) && !dormant && (!!am.done || hourNow() >= 17)) { var e = (S.bk || {})[k] || {}, pmDone = !!(e.pm && e.pm.done) || !!(e.pm && e.pm.reflect) || ((e.journal || []).length > 0);
       var pmNode = { key:"pm", emoji:"🌙", title:"Close the day", line:"One honest line. A line is enough.", color:DOM.restore.c, done:pmDone, act:function(){ closeJourney(); try{enterStage("pm",{trackTitle:"Reflection",byTap:true});}catch(e){} } };
       var atPm = preSurfaceCheck('pm', 4, "You've done full bookends 3 of the last 7 days · already there?", pmDone, "Day closed");
       nodes.push(atPm || pmNode);
@@ -1710,7 +1711,7 @@
     var vEl = el("ssVer"); if (vEl) vEl.textContent = appVer(); // show the live build number (auto-synced from the app.js?v= tag preship bumps) — David 2026-07-01
     ss.classList.add("on");
     // DEV-TOOLS TOGGLE (David 2026-07-20): a quiet switch on the start screen, OFF by default. ON = the 🛠 dev button stays available inside the app after Start; OFF = it vanishes on Start (but is always here on the start screen). Reuses the alter_dev flag that devOn() gates.
-    (function () { var actions = ss.querySelector(".ss-actions"); if (actions && !el("ssDevToggle")) { var row = document.createElement("button"); row.id = "ssDevToggle"; row.type = "button"; row.setAttribute("style", "align-self:center;margin-top:14px;background:none;border:none;color:#8a6f9a;font-family:var(--bub);font-weight:700;font-size:12px;display:flex;align-items:center;gap:7px;cursor:pointer;opacity:.65;"); var _on = function () { try { return localStorage.getItem("alter_dev") === "1"; } catch (e) { return false; } }; var paint = function () { var v = _on(); row.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;background:' + (v ? "#46e2a4" : "#5a4a6a") + ';display:inline-block"></span> dev tools ' + (v ? "on" : "off"); }; row.onclick = function (e) { e.stopPropagation(); try { localStorage.setItem("alter_dev", _on() ? "0" : "1"); } catch (er) {} paint(); try { devBtnVisible(); } catch (er) {} }; paint(); actions.appendChild(row); } })();
+    (function () { var actions = ss.querySelector(".ss-actions"); if (actions && !el("ssDevToggle")) { var row = document.createElement("button"); row.id = "ssDevToggle"; row.type = "button"; row.setAttribute("style", "align-self:center;margin-top:14px;background:none;border:none;color:#8a6f9a;font-family:var(--bub);font-weight:700;font-size:12px;display:flex;align-items:center;gap:7px;cursor:pointer;opacity:.65;"); var _on = function () { try { return localStorage.getItem("alter_dev") === "1"; } catch (e) { return false; } }; var paint = function () { var v = _on(); row.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;background:' + (v ? "#46e2a4" : "#5a4a6a") + ';display:inline-block"></span> dev tools ' + (v ? "on" : "off"); }; row.onclick = function (e) { e.stopPropagation(); try { localStorage.setItem("alter_dev", _on() ? "0" : "1"); } catch (er) {} try { _devSimMin = undefined; } catch (er2) {} paint(); try { devBtnVisible(); } catch (er) {} }; paint(); actions.appendChild(row); } })();
     try { devInit(); devBtnVisible(); } catch (e) {}
     if (prim) prim.onclick = function () { ssEnter(has); };
     if (lb) lb.onclick = function (e) { if (e) e.stopPropagation(); showLangMenu(); }; // flag picker (incl. Русский)
@@ -2183,7 +2184,7 @@
       if (n.key === "litaim") return 92;                                         // the liturgy's AIM — one arrow, right after the open
       if (n.key === "am") return 90;                                             // open the day on purpose, first
       if (n._aimed) return 85;                                                   // last night's aim
-      if (n.key === "pm") return (new Date().getHours() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
+      if (n.key === "pm") return (hourNow() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
       if (n.key === "onething") return 70;                                       // your one thing
       if (n.key && (n.key.indexOf("goalst:") === 0 || n.key.indexOf("goalm:") === 0 || n.key.indexOf("goalhit:") === 0)) return 60; // a goal's next move
       if (n.key === "plan") return 50;                                           // plan your day
@@ -3791,7 +3792,7 @@
   }
   function tfSwitchTo(item) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); if (item.block) { startPlanned(item.block); } else { startTimer({ title: item.title, catK: (item.act && item.act.catK) || null, color: (DOM[item.dom] || DOM.focus).c }); var r = activeTimers(); if (r.length) maybeCelebrateTrack(r[r.length - 1]); renderLiveTracker(); renderToday(); } renderTrackerFull(); }
   function renderSwitchChips(curTitle) { var w = el("tfSwitch"); if (!w) return; w.innerHTML = ""; var tg = tfSwitchTargets(curTitle); if (!tg.length) { w.style.display = "none"; return; } w.style.display = ""; add(w, "span", "tf-swlab", "SWITCH TO"); tg.forEach(function (o) { var D = DOM[o.dom] || DOM.focus, c = add(w, "button", "tf-chip"); c.innerHTML = '<i class="ti ' + (o.block ? tiClass(o.block) : (o.act ? tiClass(o.act) : D.ti)) + '" style="color:' + D.light + '"></i> ' + esc(o.title); c.onclick = (function (it) { return function () { tfSwitchTo(it); }; })(o); }); }
-  function tfIdleInvite() { var h = new Date().getHours(); // RUN-1 mock 2: one warm time-of-day invitation line for the empty day
+  function tfIdleInvite() { var h = hourNow(); // RUN-1 mock 2: one warm time-of-day invitation line for the empty day
     if (h < 5) return { ti: "ti-moon", t: "late · one small win, then rest" };
     if (h < 11) return { ti: "ti-sunrise", t: "clean slate · where do we start?" };
     if (h < 17) return { ti: "ti-sun", t: "open afternoon · pick a thread" };
@@ -3800,7 +3801,7 @@
   }
   function tfYesterdayEcho() { // RUN-1 mock 2: "ВЧЕРА СЕЙЧАС" — what were you doing around this hour yesterday? one-tap replan+track
     var yk = logicalK(new Date(Date.now() - 864e5)), L = (S.log && S.log[yk]) || []; if (!L.length) return null;
-    var nowH = new Date().getHours(), best = null, bestD = 999;
+    var nowH = hourNow(), best = null, bestD = 999;
     L.forEach(function (l) { if (!l.title || !l.start) return; var d = Math.abs(new Date(l.start).getHours() - nowH); if (d < bestD || (d === bestD && best && (l.mins || 0) > (best.mins || 0))) { best = l; bestD = d; } });
     if (!best || bestD > 3) return null;
     var dom = domainOf(best); return { title: best.title, dom: dom, mins: best.mins || 30, catK: best.catK || null, color: best.color || (DOM[dom] || DOM.focus).c };
@@ -6319,7 +6320,7 @@
     return cell;
   }
   function tbxHeroes() { // CONTEXTUAL hero picker with the reason ALWAYS in the kicker, using only signals that exist today (decision 7). Phase B plan→journey feeding is OFF-limits.
-    var now = new Date(), h = now.getHours(), nowMin = h * 60 + now.getMinutes();
+    var now = new Date(), _sim = devSimMin(), h = _sim != null ? Math.floor(_sim / 60) : now.getHours(), nowMin = _sim != null ? _sim : h * 60 + now.getMinutes(); // dev time-sim aware (the local nowMin shadows the global — keep it consistent with the sim too)
     var morning = { stackId: "firstLight", name: "Morning Stack", kicker: tr("FOR YOU NOW · MORNING"), kcol: "#ff8fc0", playBg: TBX_PINK, playInk: "#2a1730", coins: [{ c: "restore", ic: "ti-lungs" }, { c: "create", ic: "ti-bulb" }, { c: "move", ic: "ti-run" }] };
     var deep = { stackId: "beforeDeepWork", name: "Before Deep Work", kicker: tr("NEXT BLOCK · DEEP WORK"), kcol: "#8fc6f0", playBg: TBX_HEX.focus, playInk: "#12283a", coins: [{ c: "create", ic: "ti-notes" }, { c: "restore", ic: "ti-lungs" }, { c: "focus", ic: "ti-target" }] };
     var night = { stackId: "cantSleep", name: "Can't Sleep", kicker: tr("FOR YOU NOW · LATE NIGHT"), kcol: "#8fc6f0", playBg: TBX_HEX.restore, playInk: "#06343a", coins: [{ c: "restore", ic: "ti-flower" }, { c: "restore", ic: "ti-lungs" }, { c: TBX_BOLT, ic: "ti-bolt" }] };
@@ -8019,7 +8020,7 @@
   function blocks(k) { return (S.blocks[k] = S.blocks[k] || []); }
   function logs(k) { return (S.log[k] = S.log[k] || []); }
   function doneMap(k) { return (S.habitDone[k] = S.habitDone[k] || {}); }
-  function phase() { var h = new Date().getHours(); return h < 5 ? "night" : h < 11 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night"; }
+  function phase() { var h = hourNow(); return h < 5 ? "night" : h < 11 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night"; }
   function undone() { var dm = doneMap(todayK()); return S.habits.filter(function (h) { return !dm[h.id]; }); }
   function messy() { return daysSince(S.lastTidy) >= 2; }
   function streak(id) { var d = new Date(); if (!(S.habitDone[key(d)] || {})[id]) d.setDate(d.getDate() - 1); var n = 0; for (;;) { if ((S.habitDone[key(d)] || {})[id]) { n++; d.setDate(d.getDate() - 1); } else break; } return n; }
@@ -9041,7 +9042,7 @@
   }
   // ---- one shared world renderer: drives BOTH the You-tab preview and full-screen game ----
   function nightAmt() { // 0 = full day, ~0.58 = deep night — smooth dusk/dawn ramps (drives the island's dynamic lighting)
-    var h = new Date().getHours() + new Date().getMinutes() / 60, MAX = 0.64;
+    var _sim = devSimMin(), h = _sim != null ? _sim / 60 : (new Date().getHours() + new Date().getMinutes() / 60), MAX = 0.64; // dev time-sim aware — the island's dusk follows the simulated evening too
     if (h >= 7 && h < 18) return 0;                          // day
     if (h >= 18 && h < 21) return MAX * (h - 18) / 3;        // dusk ramp up
     if (h >= 5 && h < 7) return MAX * (7 - h) / 2;           // dawn ramp down
@@ -13690,7 +13691,7 @@
     function push(m) { if (!m) return; var t = (m.title || "").toLowerCase(); if (!t || seen[t] || have[t]) return; seen[t] = 1; out.push(m); }
     if (k === todayK()) S.habits.forEach(function (h) { if (!dm[h.id] && h.type !== "quit") push(TITLE2META[h.l.toLowerCase()] || { title: h.l, catK: HABIT2CAT[h.id] || "work", emoji: h.e, color: h.color, habitId: h.id }); });
     (CONTEXT[phase()] || []).forEach(function (t) { push(TITLE2META[t.toLowerCase()]); });
-    var hr = new Date().getHours(); if (hr >= 9 && hr < 18) { var o = OCC_BY_K[(S.profile && S.profile.occ)], wg = (o && o.work) ? o.work : CATS[1].groups; if (wg[0]) wg[0].tasks.slice(0, 2).forEach(function (t) { push(TITLE2META[t.l.toLowerCase()] || { title: t.l, catK: "work", emoji: t.e, color: "#2a9fe0", habitId: null }); }); }
+    var hr = hourNow(); if (hr >= 9 && hr < 18) { var o = OCC_BY_K[(S.profile && S.profile.occ)], wg = (o && o.work) ? o.work : CATS[1].groups; if (wg[0]) wg[0].tasks.slice(0, 2).forEach(function (t) { push(TITLE2META[t.l.toLowerCase()] || { title: t.l, catK: "work", emoji: t.e, color: "#2a9fe0", habitId: null }); }); }
     frequent(6).forEach(push);
     return out.slice(0, 6);
   }
@@ -13879,13 +13880,13 @@
     drawToolFlow();
   }
   function suggestTool() { // the right tool for your state RIGHT NOW — so the toolbox leads with one pick, never a wall (David 2026-07-01)
-    var m = currentMood(), hr = new Date().getHours();
+    var m = currentMood(), hr = hourNow();
     var id = (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate"; // low/spiky → steady the body · night → install/wind-down · morning → identity · else → clear the mind
     return TOOLS.filter(function (t) { return t.id === id; })[0] || TOOLS[0];
   }
   // REAL contextual surfacing (David 2026-07-01): read the user's actual state → the states a tool's `when` can match. Drift log today = craving; low mood = low+anxious; morning hours = morning; night = night. Drives both the FOR-RIGHT-NOW pick and which CUSTOM tool auto-surfaces.
   function nowStates() {
-    var s = [], hr = new Date().getHours(), m = currentMood(), k = todayK();
+    var s = [], hr = hourNow(), m = currentMood(), k = todayK();
     if ((logs(k) || []).some(function (l) { return domainOf(l) === "drift"; })) s.push("craving");
     if (m <= 1) { s.push("low"); s.push("anxious"); }
     if (hr < 10) s.push("morning");
@@ -13897,7 +13898,7 @@
     var states = nowStates(), mine = customTools();
     var matches = mine.filter(function (t) { return states.indexOf(t.when) >= 0; });
     if (matches.length) { var _u = (S.tools && S.tools.use) || {}; matches.sort(function (a, b) { return (_u[b.id] || 0) - (_u[a.id] || 0); }); return { custom: matches[0], state: matches[0].when }; } // learn-your-kit: among your matching custom tools, the one you actually use most wins (David 2026-07-01)
-    var hr = new Date().getHours(), m = currentMood(), craving = states.indexOf("craving") >= 0;
+    var hr = hourNow(), m = currentMood(), craving = states.indexOf("craving") >= 0;
     var id = craving ? "blacksun" : (m <= 1) ? "breathe" : (hr >= 21 || hr < 5) ? "selfhyp" : (hr < 10) ? "mantra" : "meditate";
     return { tool: TOOLS.filter(function (t) { return t.id === id; })[0] || TOOLS[0] };
   }
@@ -18291,6 +18292,31 @@
   // @SEC:DEV — dev/test harness (?dev, personas, headless drive). The persona states double as load()-migration fixtures.
   // ===== DEV / TEST HARNESS (David 2026-06-30) — fast full-workflow testing + headless drive (bypasses the cockpit drag-gesture). OFF unless ?dev in the URL or localStorage.alter_dev='1'. window.DEV mirrors every action for console/eval (lets the app be driven + screenshotted without a finger). =====
   function devOn() { try { if (/[?&]dev\b/.test(location.search)) localStorage.setItem("alter_dev", "1"); return localStorage.getItem("alter_dev") === "1"; } catch (e) { return false; } }
+  // ─── DEV TIME-SIM (David 2026-08-15: "simulate evening — the evening home screen changes and I remember it was broken") ───
+  // Simulated time-of-day for RENDER reads only. Set via DEV.hour(20) / DEV.hour("22:30") / the dev-menu row / ?dev&devHour=20.
+  // Double-gated: honored ONLY when devOn() AND alter_devhour is set — a normal user gets null on every call, and every consumer
+  // falls back to the real clock on null, so the OFF path is behavior-identical. Data WRITES (log time stamps, openBand, day keys,
+  // logicalK/todayK) deliberately stay on the real clock: the sim changes what the app LOOKS like, never what it records.
+  var _devSimMin; // undefined = not read yet · null = OFF · 0-1439 = simulated minutes-of-day (lazy cache: zero localStorage I/O on the per-second render ticks)
+  var _devHourUrl; // the ?devHour= URL ingest runs ONCE per page load — without this flag a later DEV.hour()/menu set is clobbered by the URL value on every cache rebuild
+  function devSimMin() {
+    if (_devSimMin === undefined) {
+      _devSimMin = null;
+      try {
+        if (!_devHourUrl) {
+          _devHourUrl = 1;
+          var u = location.search.match(/[?&]devHour=([^&]*)/);
+          if (u && devOn()) { var uv = decodeURIComponent(u[1] || ""); if (uv === "" || uv === "off") localStorage.removeItem("alter_devhour"); else localStorage.setItem("alter_devhour", uv); }
+        }
+        if (devOn()) {
+          var v = localStorage.getItem("alter_devhour");
+          if (v != null && v !== "") { var p = String(v).split(":"), h = parseInt(p[0], 10), m = parseInt(p[1] || "0", 10); if (isNaN(m)) m = 0; if (!isNaN(h)) _devSimMin = (((h % 24) + 24) % 24) * 60 + Math.max(0, Math.min(59, m)); }
+        }
+      } catch (e) { _devSimMin = null; }
+    }
+    return _devSimMin;
+  }
+  function devSimHour() { var o = devSimMin(); return o == null ? null : Math.floor(o / 60); }
   function devOpenStage(mode) { mode = mode || "sleepmath"; if (!TF_OPEN) openTrackerFull(); TF_MODE_USERSET = true; enterStage(mode, { byTap: true }); return "stage:" + mode; }
   function devDemoProfile() { S.profile = S.profile || {}; var p = S.profile; p.gender = p.gender || "m"; p.age = p.age || "30s"; p.vibe = p.vibe || "thriving"; p.stages = (p.stages && p.stages.length) ? p.stages : ["founder"]; p.occ = p.occ || "founder"; p.goals = p.goals || []; p.wake = p.wake || "07:00"; p.sleep = p.sleep || "7-8"; if (p.lark == null) p.lark = true; if (p.lowStart == null) p.lowStart = false; p.todayIdentity = (p.todayIdentity && p.todayIdentity.length) ? p.todayIdentity : ["Creator"]; p.todayVirtues = (p.todayVirtues && p.todayVirtues.length) ? p.todayVirtues : ["zest"]; p.set = true; save(); try { renderAll(); } catch (e) {} return "demo profile set"; }
   function devGuided(on) { S.guide = S.guide || {}; S.guide.mode = on ? "guided" : "off"; save(); try { renderAll(); } catch (e) {} return "guided=" + S.guide.mode; }
@@ -18375,6 +18401,12 @@
     if (act === "place") { stDoPlace(); return stState().owned; }
     if (act === "open") { if (!gameOn) openGame(); if (id) SV.cat = id; stOpen("list"); return "store"; }
     return { owned: stState().owned, spark: stSpark(), view: SV };
+  };
+  window.DEV.hour = function (v) { // DEV TIME-SIM setter: DEV.hour(20) / DEV.hour("22:30") / DEV.hour(null|"off") to clear. Repaints the time-of-day surfaces immediately (the per-minute master tick would catch up anyway).
+    try { if (v == null || v === "" || v === "off") localStorage.removeItem("alter_devhour"); else localStorage.setItem("alter_devhour", String(v)); } catch (e) {}
+    _devSimMin = undefined; var cur = devSimMin();
+    try { renderAll(); } catch (e) {} try { if (TF_OPEN) renderTrackerFull(); } catch (e) {}
+    return cur == null ? "sim time OFF · real clock" : "sim time " + fmt(cur);
   };
   window.DEV.adjSnap = function (s, dur, edges, floor, ceil) { return adjacentSnap(s, dur, edges, floor, ceil == null ? 1740 : ceil); }; // DEV: unit-test the timeline adjacency magnet (flush-after / flush-before / threshold / floor-clamp)
   // WORLD-MOTION PROBE (@SEC:WORLD-MOTION): the engine's whole state in one object, plus a driver that calls the REAL zone doors.
@@ -19144,6 +19176,7 @@
       [(window._jsBlur ? "⚡ Fast coast: ON (tap=off)" : "⚡ Fast coast: OFF (tap=try)"), function () { window._jsBlur = !window._jsBlur; if (ISLE) ISLE._stamp = (ISLE._stamp || 1) + 1; window._isleBakeCache = null; try { toast("Fast coast (JS blur) " + (window._jsBlur ? "ON · claim a tile; should feel snappier. Coast is a touch tighter/blockier." : "OFF · back to the approved look.")); } catch (e) {} }], // David 2026-07-17: JS-blur coast bake skips the GPU getImageData readbacks (the measured per-claim bottleneck) → faster, but slightly tighter/blockier. Device-test toggle: flip it, claim tiles, compare speed + look on the real phone (can't measure either from the headless Mac).
       ["· · · · · · ·", function () {}],
       ["📐 Design audit (this phone)", devDesignAuditOverlay], // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
+      [(devSimMin() == null ? "🌆 Sim time: OFF (real clock)" : "🌆 Sim time: " + fmt(devSimMin())), function () { var cur = devSimMin(); var v = window.prompt("Simulate time of day, 24h (e.g. 20 or 22:30). Empty or 'off' = real clock.", cur == null ? "20" : fmt(cur)); if (v === null) return; try { toast("dev: " + window.DEV.hour(v.trim())); } catch (e) {} }], // DEV TIME-SIM (David 2026-08-15): see the evening/night home without waiting for the evening — heroes flip at 20:00, the night face at bedHour() (his profile's bedtime, default 24:00) or before 05:00
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], [" · persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], [" · persona: early (day 3)", function () { devLoadPersona("early"); }], [" · persona: building (week 2)", function () { devLoadPersona("building"); }], [" · persona: established (month 1)", function () { devLoadPersona("established"); }], [" · persona: power (all chapters)", function () { devLoadPersona("power"); }]];
     acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
