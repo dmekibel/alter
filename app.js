@@ -5226,6 +5226,10 @@
   // HOME2C=false restores the previous home face exactly (HUD/hero/hint never build, the doors and the clock come back).
   var HOME2C = true;
   function tfh2c() { var tf = el("trackerFull"); return !!(HOME2C && tf && tf.classList.contains("tf-2c")); }
+  // THE ARTBOARD SCALE, read back. The 2c face is laid out at the artboard's own px and transform-scaled to fill a wider phone, so
+  // getBoundingClientRect returns VISUAL px while scrollTop / offsetTop / clientHeight stay LAYOUT px. Anywhere the two meet, the rect
+  // side is divided by this. 1 whenever the face is unscaled, so every pre-scale code path is arithmetically untouched.
+  function tfScale() { var tf = el("trackerFull"); if (!tf) return 1; var v = parseFloat(getComputedStyle(tf).getPropertyValue("--tfscale")); return (isFinite(v) && v > 0) ? v : 1; }
   function tfhSet2c(on) { var tf = el("trackerFull"); if (!tf) return false; tf.classList.toggle("tf-2c", !!(HOME2C && on)); return tfh2c(); }
   function tfhCardOpenClass() { var tf = el("trackerFull"); if (tf) tf.classList.toggle("tfh-cardopen", !!_tfhOpen); } // CARD-OPEN HUD FADE (David's card-open frame 2026-08-11 shows NO HUD): the CSS fades #tfHud to opacity 0 while the face card is open — the frame's top row is the hero tiles, and the fixed HUD's band is exactly where the Plan-my-day sticker parks at the reveal. opacity, never display, so the design audit and tfhRevealCard still read the HUD's rect.
   function tfhI(cls) { var i = document.createElement("i"); i.className = "ti " + cls; return i; }
@@ -5317,9 +5321,9 @@
     if (!_tfhOpen) return; // the designAudit opens+closes the card synchronously; this 20ms-delayed reveal must no-op after that close (and after any instant user close)
     var w = el("tfWorld"), row = el("tfHeroRow"), hud = el("tfHud"); if (!w || !row) return;
     try {
-      var worldTop = w.getBoundingClientRect().top;
-      var topPad = (hud ? hud.getBoundingClientRect().top - worldTop : 40) + 1; // the faded-but-still-laid-out HUD is the env(safe-top)+11 beacon; the tiles take that line
-      var delta = row.getBoundingClientRect().top - worldTop - topPad;
+      var worldTop = w.getBoundingClientRect().top, _k = tfScale(); // rects are VISUAL px on a scaled face; scrollTop is LAYOUT px, so the travel is converted before it is added (the artboard-scale law)
+      var topPad = (hud ? hud.getBoundingClientRect().top - worldTop : 40 * _k) + _k; // the faded-but-still-laid-out HUD is the top beacon; the tiles take that line
+      var delta = (row.getBoundingClientRect().top - worldTop - topPad) / _k;
       if (Math.abs(delta) > 4) tfhScrollTo(w.scrollTop + delta); // tfhScrollTo clamps to the scroller's max and holds the magnet off
     } catch (e) {}
   }
@@ -5708,7 +5712,8 @@
     var tbx = g.querySelector(".tbx"); if (!tbx || !tbx.offsetHeight) return;
     var H = w.clientHeight; if (!H) return;
     var hero = el("tfHeroWrap");
-    var base = safeBottomPx() + 72;                                              // = the .tfw-ground CSS rule's own padding-bottom
+    var _sc = tfScale();                                                        // the artboard scale (1 unless the face is filling a wider phone)
+    var base = safeBottomPx() / _sc + 72;                                       // = the .tfw-ground CSS rule's own padding-bottom. The device inset is REAL px landing inside a scaled frame, so it is divided to stay visually true; the 72 is a design px and scales with the board.
     var C, padT;
     if (hero && hero.offsetHeight > 0) {
       // ROW ONE IS THE DECK. Zero the ground's own inset BEFORE measuring, for two reasons: it must not survive into the landing (the
@@ -5723,7 +5728,7 @@
       C = tbx.offsetHeight;                                                      // no deck on this face (night / break / claim / tracking): the shelf alone is the block, and the ground wears the inset itself
       padT = null;                                                               // = "the inset (+ the pull)", resolved once inset is known
     }
-    var inset = Math.max(safeTopPx() + 70, (H - C) / 2 + 16);                    // where row one parks at the landing: below the HUD, or centered when the block is short
+    var inset = Math.max(safeTopPx() / _sc + 70, (H - C) / 2 + 16);             // where row one parks at the landing: below the HUD, or centered when the block is short (the device inset divided by the artboard scale, same law as `base`)
     if (padT === null) {
       // ADD THE PULL BACK. The v1271 scheme is otherwise kept verbatim here, but it silently assumed the ground starts where the home
       // zone ends. It does not: .tfw-ground carries a NEGATIVE margin-top that lifts it INTO the home zone (0 while tracking, -44px on
@@ -5994,6 +5999,14 @@
     if (!ONEPAGE) return;
     var tf = el("trackerFull"); if (!tf) return;
     tf.classList.add("tf-onepage");
+    // THE ARTBOARD SCALE (see the index.html comment at .tf-inner): on a phone wider than the 402 artboard the whole face is
+    // laid out at the artboard's own px and TRANSFORM-scaled to fill the screen, the way Claude Design's frame fills its phone
+    // mock (the Max is the Pro scaled: 440/402 = 956/874 = 1.0945). Layout stays frame-true, so every gate and every landing
+    // law still reads the design's numbers; only the pixel ratio changes. Capped at 1.15 so a tablet-width window cannot blow
+    // the board up past a phone's worth of it. 402-or-narrower → exactly 1 and the class is off (v1283 rendering, untouched).
+    try { var _tfs = tfh2c() ? Math.min(Math.max(window.innerWidth / 402, 1), 1.15) : 1;
+      tf.style.setProperty("--tfscale", _tfs.toFixed(4));
+      tf.classList.toggle("tf-scaled", _tfs > 1.001); } catch (e) {}
     // DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): #tfBackdrop is a fixed z97 pointer-catcher for the OLD sheet-mode calendar-peek-close. On the full-screen ONE-PAGE home it covers the top 200px — exactly where the door tabs sit (y≈92-172) — and swallows every door tap. The onepage home is a PLACE, not a peel-back sheet: it has no calendar peek to close. Neutralise the backdrop so door taps reach the doors (#tfWorld owns the scroll; you leave via the doors/nav, not by tapping a peek).
     try { var _bd = el("tfBackdrop"); if (_bd) _bd.classList.remove("on"); } catch (e) {}
     ensureWorld();
@@ -18377,7 +18390,13 @@
     var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, in FIXED design order (the arc, never tbxOrder'd). DECK-ANCHORED 2026-08-14: on the 2c face the four deck stacks are FILTERED OUT of this grid (they ride up as row one of the tools screen), so the sequence is Body · Heart · Vision · Build there and the full seven + Build everywhere else — which is why the hue gates below read each cell's own id instead of naming a fixed position
     function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
-    var rr = ring.getBoundingClientRect(), br = bars.getBoundingClientRect();
+    // THE ARTBOARD SCALE NORMALIZER. Every locked number in this audit is a LAYOUT px off David's 402x874 frame, but on a wider phone the
+    // face is transform-scaled to fill the screen, so getBoundingClientRect answers in VISUAL px. _nr() divides a rect back into frame px,
+    // which is what makes the SAME gates pass at 402x874 (scale 1) and at 440x956 (scale 1.0945) — the alternative was 8 gates that only
+    // held on one phone. offsetWidth/offsetTop/clientHeight reads need no help: the transform never touches layout.
+    var _AS = tfScale();
+    function _nr(n) { var b = n.getBoundingClientRect(); return { top: b.top / _AS, bottom: b.bottom / _AS, left: b.left / _AS, right: b.right / _AS, width: b.width / _AS, height: b.height / _AS }; }
+    var rr = _nr(ring), br = _nr(bars);
     var _dkE = el("tfDateKick"), _dkOn = !!(_dkE && _dkE.offsetParent !== null && _dkE.textContent); // FP3 §1 (2026-07-28): the date kicker now legitimately LIVES in this band — the v2 idle PNG reads strip → date line → circle. The 7-12% window predates it, so it only applies when the kicker is absent; with the kicker rendered the band is 7-16%. Kept as ONE gate (not two segments) so it stays cheap and cannot drift out of sync with the kicker being show/hidden.
     // THE 402 BOARD PIN (David's device frames 2026-08-14). On the 2c face the board is now the design's ABSOLUTE pixels inside a 402px
     // column, so the four gates below stop measuring %vw/%vh — the relative windows are exactly what let the drift through (the stone
@@ -18387,7 +18406,7 @@
     var _2c = tfh2c();
     if (_2c) chk("stone 180px fixed (2c frame)", Math.abs(ring.offsetWidth - 180) <= 2 && Math.abs(ring.offsetHeight - 180) <= 2, ring.offsetWidth + "x" + ring.offsetHeight, "180x180px (the frame's 198px disc at scale .91), the same on every viewport"); // offsetWidth, not the rect: the cascade and the breath can both be mid-transform
     else chk("circle width %vw", Math.abs(rr.width / W - 0.52) <= 0.03, Math.round(rr.width / W * 100) + "%", "52%±3"); // CIRCLE-DOWN v2 (David 2026-07-23 device "way too giant even at 64"): 64→52; default --tun-ring-vw is 52vw
-    if (_2c) { var _kOn = !!(_dkE && _dkE.offsetParent !== null), _kh = _kOn ? Math.round(_dkE.getBoundingClientRect().height) : 0, _band = rr.top - br.bottom, _wantB = (_kOn ? 56 + _kh : 0) + 72 - 13; // the band is fixed numbers, not a % of the screen: strip→date 56 · the kicker's own line · date→DISC 72 (the frame's 63 brackets the stone's 198px layout box; the visible air above the 180px disc is 63+9). MINUS 13: the 56 is measured from the strip's LAYOUT bottom and this gate reads its RENDERED rect, which the frame's 13px strip drop puts 13 lower.
+    if (_2c) { var _kOn = !!(_dkE && _dkE.offsetParent !== null), _kh = _kOn ? Math.round(_nr(_dkE).height) : 0, _band = rr.top - br.bottom, _wantB = (_kOn ? 56 + _kh : 0) + 72 - 13; // the band is fixed numbers, not a % of the screen: strip→date 56 · the kicker's own line · date→DISC 72 (the frame's 63 brackets the stone's 198px layout box; the visible air above the 180px disc is 63+9). MINUS 13: the 56 is measured from the strip's LAYOUT bottom and this gate reads its RENDERED rect, which the frame's 13px strip drop puts 13 lower.
       chk("strip→stone band px (2c frame)", Math.abs(_band - _wantB) <= 4, Math.round(_band) + "px", _wantB + "px = " + (_kOn ? "56 + kicker " + _kh + " + 72 − the strip's 13px drop" : "72 − 13, no kicker on this face"));
     } else chk("strip→circle gap %vh", (rr.top - br.bottom) / H >= 0.07 && (rr.top - br.bottom) / H <= (_dkOn ? 0.16 : 0.12), Math.round((rr.top - br.bottom) / H * 100) + "%", _dkOn ? "7-16% (date kicker sits in the band)" : "7-12%");
     if (tile) { var rim = (ring.offsetWidth - tile.offsetWidth) / 2; // offsetWidth: the idle breath (tfBreathe scale) must not flap this gate — getBoundingClientRect returns the TRANSFORMED box, so mid-breath (×1.0346) the disc measured 185px instead of its 179px layout width and the rim read 5 instead of 8 = intermittent FAIL
@@ -18407,7 +18426,7 @@
     // FACE-UP + DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the face rides too low… the deck names are clipped"). Both gates measure against the HOME ZONE slab, never against a viewport-absolute Y: #tfWorld's scrollTop varies with the landing retry, so an absolute Y would false-FAIL a correct board.
     var hz = el("tfWorldHome");
     if (hz) {
-      var hzr = hz.getBoundingClientRect(), stripOff = br.top - hzr.top;
+      var hzr = _nr(hz), stripOff = br.top - hzr.top;
       // 2c: the head zone is the frame's own three absolute numbers, not a safe-area sum — 42 (column pad) + 40 (its 28px HUD spacer + the
       // strip block's 12px margin) + 13 (that block's own drop) = 95. Locked exactly, because "somewhere in a 40-120 window" is precisely
       // how the app drifted 18-43px off David's frame on device while passing here.
@@ -18416,8 +18435,8 @@
       // HOME 2c: the fold gate is REPOINTED, not retired. On the 2c face the element at the fold is the TOOLS hint (the deck's -19vh peek is cancelled — the artifact's chevron-down is an INVITATION, so the toolbox is one scroll below). BOTTOM-EDGE AMENDMENT (David 2026-08-02): the old "≥26px of air" is inverted — he wants the hint AT the true screen bottom and accepts the home-indicator overlap. The gate now locks the window: never clipped by the zone edge, never floating more than 26px above it. Device-invariant (the 2c zone padding carries no safe-area).
       var _th = el("tfToolsHint");
       if (tfh2c() && _th) {
-        var _thAir = hzr.bottom - _th.getBoundingClientRect().bottom;
-        chk("fold hint sits AT the screen bottom", _thAir >= 0 && _thAir <= 26, Math.round(_thAir) + "px above the zone bottom · hint bottom " + Math.round(_th.getBoundingClientRect().bottom) + " / vh " + H, "0-26px (at the edge, never clipped by the zone)");
+        var _thAir = hzr.bottom - _nr(_th).bottom;
+        chk("fold hint sits AT the screen bottom", _thAir >= 0 && _thAir <= 26, Math.round(_thAir) + "px above the zone bottom · hint bottom " + Math.round(_nr(_th).bottom) + " / vh " + H, "0-26px (at the edge, never clipped by the zone)");
       }
       var dlabs = tfh2c() ? [] : [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-label")).slice(0, 4), dlb = 0; // the FIRST deck row (4 cells) — the row that peeks above the fold on the pre-2c idle home; take the lowest label (they wrap to 2-3 lines)
       if (dlabs.length) {
@@ -18448,11 +18467,11 @@
       var _S = tbxTileS(topGrid), _deck2c = (_S === TBX_S2C), _lipPx = _deck2c ? 4 : Math.round(_S * 0.12), _radW = _deck2c ? 18 : _S * 0.35, _glyW = _deck2c ? 22 : Math.round(_S * 3.4) / 10;
       chk("tile face lip 0 " + _lipPx + "px 0 (the tile's own colour darkened)", new RegExp("0px\\s+" + _lipPx + "px\\s+0px").test(f0.boxShadow) && f0.boxShadow.indexOf("rgba(0, 0, 0, 0.4)") < 0, f0.boxShadow.slice(0, 46), "0px " + _lipPx + "px 0px in the hue 50% toward black (" + (_deck2c ? "the deck card's own lip, measured" : "= round(.12·" + _S + ")") + ")"); // 2026-07-31: the stack card's chunky lip law (was 4px at 45%)
       var g0 = tfaces[0].querySelector("i"); chk("tile glyph #fff2f9 on the deep fill", !!g0 && getComputedStyle(g0).color === "rgb(255, 242, 249)", g0 ? getComputedStyle(g0).color : "no glyph", "rgb(255,242,249)");
-      var fr0 = tfaces[0].getBoundingClientRect(); chk("tile face " + _S + "px", Math.round(fr0.width) === _S && Math.round(fr0.height) === _S, Math.round(fr0.width) + "x" + Math.round(fr0.height), _S + "x" + _S);
+      var fr0 = _nr(tfaces[0]); chk("tile face " + _S + "px", Math.round(fr0.width) === _S && Math.round(fr0.height) === _S, Math.round(fr0.width) + "x" + Math.round(fr0.height), _S + "x" + _S);
       chk("tile radius " + (_deck2c ? "18px (the deck card)" : "0.35·S (the stack card's one squircle)"), Math.abs(parseFloat(f0.borderTopLeftRadius) - _radW) <= 0.4, f0.borderTopLeftRadius, _radW + "px"); // 19px until 2026-07-31; David's measured stack-card correction locks every deck card at 0.35·S, so the shelf tile, the picker's folder decks, its queue chips and its Stacks cards share ONE radius — and the 2c grid instead shares the DECK's 18
       var c1 = tfaces[0].parentNode.querySelector(".tbx-coin1"), c2 = tfaces[0].parentNode.querySelector(".tbx-coin2");
       if (c1 && c2) { var z1 = +getComputedStyle(c1).zIndex, z2 = +getComputedStyle(c2).zIndex, zf = +f0.zIndex; chk("peek-coin telescope z-order (face>coin1>coin2)", zf > z1 && z1 > z2, "face " + zf + " · coin1 " + z1 + " · coin2 " + z2, "face>coin1>coin2");
-        var r1 = c1.getBoundingClientRect(), r2 = c2.getBoundingClientRect(); // STACK CARD: the fan is UP-LEFT ONLY (never right, never down) and the far shard sits further out than the near one — the DS's alternating left/right layout is overruled by David's frames
+        var r1 = _nr(c1), r2 = _nr(c2); // STACK CARD: the fan is UP-LEFT ONLY (never right, never down) and the far shard sits further out than the near one — the DS's alternating left/right layout is overruled by David's frames
         chk("shards fan UP-LEFT only", r1.left < fr0.left && r1.top < fr0.top && r2.left < r1.left && r2.top < r1.top, "near " + Math.round(r1.left - fr0.left) + "," + Math.round(r1.top - fr0.top) + " · far " + Math.round(r2.left - fr0.left) + "," + Math.round(r2.top - fr0.top), "both negative, far beyond near");
         var _sh1 = _deck2c ? _S : _S - 4, _sh2 = _deck2c ? _S : _S - 6; // the 2c grid's shards are FULL-SIZE cards at (-3,-3) / (-6,-6), exactly the deck's; the stack-card law's S-4 / S-6 stays on every other surface
         chk("shard sizes " + (_deck2c ? "full-size (deck)" : "S-4 / S-6"), Math.round(r1.width) === _sh1 && Math.round(r2.width) === _sh2, Math.round(r1.width) + " / " + Math.round(r2.width), _sh1 + " / " + _sh2 + " (near-full-size cards, not shrunken peeks)");
@@ -18460,7 +18479,7 @@
         var gl = tfaces[0].querySelector("i"); chk("tile glyph " + (_deck2c ? "22px (the deck card)" : "0.34·S"), Math.abs(parseFloat(getComputedStyle(gl).fontSize) - _glyW) <= 0.4, getComputedStyle(gl).fontSize, _glyW + "px"); } }
     // ===== HOME 2c GATES (David's pick 2026-08-02) — the face the doors used to guard =====
     var _hud = el("tfHud"), _hsp = el("tfHudSpark"), _hgd = el("tfHudGarden"), _hjn = el("tfHudJourney"), _thint = el("tfToolsHint");
-    var _spr = _hsp ? _hsp.getBoundingClientRect() : null;
+    var _spr = _hsp ? _nr(_hsp) : null;
     chk("HUD you-door 28px hit area", !!(_hsp && _hsp.offsetWidth === 28 && _hsp.offsetHeight === 28 && parseFloat(getComputedStyle(_hsp).borderTopLeftRadius) >= 14), _hsp ? (_hsp.offsetWidth + "x" + _hsp.offsetHeight + " laid out / " + Math.round(_spr.width) + "x" + Math.round(_spr.height) + " rendered · r" + getComputedStyle(_hsp).borderTopLeftRadius) : "missing", "28x28 laid out, fully round (it RENDERS 42 through the frame's own 1.5 scale — offsetWidth, not the rect, is the hit-area law)");
     // …and it is a BARE GLYPH (David's device review 2026-08-14): the frame's you-door has border-style:none over a transparent fill with an
     // 18px ti-adjustments-horizontal in #ff8fc0. The framed circle + 13px sparkle this replaces is the variant the design's default rejects.
@@ -18483,7 +18502,12 @@
       // ONE FRAME TALL. David's phone IS the artboard (402x874, a 16 Pro), so a board even 13px taller than the viewport puts the TOOLS
       // chevron under his fold — which is exactly what shipped. Viewport-independent by construction: a taller phone opens its slack
       // above the deck, so the zone tracks the viewport instead of exceeding it.
-      chk("home zone is one frame tall (2c)", _hz3.offsetHeight <= _wv2.clientHeight + 2, _hz3.offsetHeight + "px of " + _wv2.clientHeight, "≤ the viewport (+2) — anything more pushes the fold hint off the screen"); }
+      // …measured against the ARTBOARD's own 874 or the viewport, whichever is larger. The board is pinned to the frame's px, so on a phone
+      // SHORTER than the artboard (a 812pt SE) it is legitimately taller than the screen — a device fact, not a build defect, and gating it
+      // against the viewport alone would report a permanent false failure there. What this still catches is the bug it was written for: the
+      // 887px board that pushed David's TOOLS chevron under his own fold, which exceeds BOTH bounds.
+      var _frameH = Math.max(874, _wv2.clientHeight);
+      chk("home zone is one frame tall (2c)", _hz3.offsetHeight <= _frameH + 2, _hz3.offsetHeight + "px of " + _frameH + " (viewport " + _wv2.clientHeight + ")", "≤ the artboard's 874 or the viewport, whichever is larger (+2) — anything more pushes the fold hint off the screen"); }
     chk("HUD you-door is a bare glyph (no ring, no fill)", !!(_spcs && parseFloat(_spcs.borderTopWidth || 0) === 0 && (_spcs.backgroundColor === "rgba(0, 0, 0, 0)" || _spcs.backgroundColor === "transparent")), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " · bg " + _spcs.backgroundColor) : "missing", "0px border on a transparent fill");
     chk("HUD you-door glyph ti-adjustments-horizontal 18px", !!(_spi2 && _spi2.classList.contains("ti-adjustments-horizontal") && Math.round(parseFloat(_spis.fontSize)) === 18 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-adjustments-horizontal · 18px · rgb(255,143,192)");
     var _pwr = document.querySelector("#trackerFull .tbx-planwrap"), _pws = _pwr ? getComputedStyle(_pwr) : null;
@@ -18497,11 +18521,11 @@
     // 17px icon. At 41 every board element below the strip landed 2px high — the last residue of the head-zone diff.
     chk("strip block 43px tall (frame's 15px pill row)", !!bars && Math.abs(bars.offsetHeight - 43) <= 1, bars ? bars.offsetHeight + "px" : "missing", "43px = 15 + 11 + 17");
     var _pills = [].slice.call(document.querySelectorAll("#tfHomeBars .tf-hb-bar"));
-    chk("week strip = 5 pills, 13px, radius 999", _pills.length === 5 && _pills.every(function (p) { return Math.round(p.getBoundingClientRect().height) === 13 && parseFloat(getComputedStyle(p).borderTopLeftRadius) >= 99; }), _pills.length + " pills · " + (_pills[0] ? Math.round(_pills[0].getBoundingClientRect().height) + "px r" + getComputedStyle(_pills[0]).borderTopLeftRadius : "-"), "5 × 13px at radius 999px");
+    chk("week strip = 5 pills, 13px, radius 999", _pills.length === 5 && _pills.every(function (p) { return Math.round(_nr(p).height) === 13 && parseFloat(getComputedStyle(p).borderTopLeftRadius) >= 99; }), _pills.length + " pills · " + (_pills[0] ? Math.round(_nr(_pills[0]).height) + "px r" + getComputedStyle(_pills[0]).borderTopLeftRadius : "-"), "5 × 13px at radius 999px");
     var _hf = [].slice.call(document.querySelectorAll("#tfHeroRow .tfh-face"));
     // THE DECK RIDES AT 96% (frame: row one's wrapper carries an authored scale(0.96) — no opacity, no animation beside it, so it is a
     // size and not a cascade frame): the 50px tile RENDERS at 48. The gate reads the rendered rect, so it locks the scale AND the tile.
-    chk("hero row = 4 tiles, 50px face rendered at 48 (deck scale .96), #fff2f9 glyph", _hf.length === 4 && _hf.every(function (f) { var r = f.getBoundingClientRect(), g = f.querySelector("i"); return Math.abs(r.width - 48) <= 1 && Math.abs(r.height - 48) <= 1 && f.offsetWidth === 50 && !!g && getComputedStyle(g).color === "rgb(255, 242, 249)"; }), _hf.length + " tiles · " + (_hf[0] ? (Math.round(_hf[0].getBoundingClientRect().width * 10) / 10 + " rendered / " + _hf[0].offsetWidth + " laid out") : "-"), "4 × 48±1 rendered on a 50px box, white glyph");
+    chk("hero row = 4 tiles, 50px face rendered at 48 (deck scale .96), #fff2f9 glyph", _hf.length === 4 && _hf.every(function (f) { var r = _nr(f), g = f.querySelector("i"); return Math.abs(r.width - 48) <= 1 && Math.abs(r.height - 48) <= 1 && f.offsetWidth === 50 && !!g && getComputedStyle(g).color === "rgb(255, 242, 249)"; }), _hf.length + " tiles · " + (_hf[0] ? (Math.round(_nr(_hf[0]).width * 10) / 10 + " rendered / " + _hf[0].offsetWidth + " laid out") : "-"), "4 × 48±1 rendered on a 50px box, white glyph");
     var _hrs = el("tfHeroRow") ? getComputedStyle(el("tfHeroRow")) : null, _hrsc = _hrs ? (_hrs.scale !== "none" ? parseFloat(_hrs.scale) : (String(_hrs.transform).match(/matrix\(([\d.]+)/) || [])[1]) : null;
     chk("deck wrapper scale .96", !!_hrsc && Math.abs(parseFloat(_hrsc) - 0.96) <= 0.005, _hrsc || "none", "0.96 (the frame's own row-one scale)");
     var _chrome = ""; [].slice.call(document.querySelectorAll("#tfHeroRow *")).forEach(function (n) { var s = getComputedStyle(n); if (parseFloat(s.borderTopWidth || 0) > 0 || (s.outlineStyle && s.outlineStyle !== "none") || /0px\s+0px\s+0px\s+\d/.test(s.boxShadow)) _chrome += (n.className || n.tagName) + " "; });
@@ -18521,8 +18545,14 @@
     var _hzc = el("tfWorldHome"), _hzw = _contentW(_hzc), _gzc = el("tfWorldGround"), _gzw = _contentW(_gzc);
     chk("home column content ≤362px", _hzw > 0 && _hzw <= 362.5, Math.round(_hzw * 10) / 10 + "px", "≤362px — the frame's board width (its 402 artboard minus its own 20px gutters); a wider phone centers the column instead of stretching the board");
     chk("tools column content ≤370px", _gzw > 0 && _gzw <= 370.5, Math.round(_gzw * 10) / 10 + "px", "≤370px — the frame's tools column (402 minus its 16px gutters), which is what makes the grid's 44px padding land on the design's own track width");
+    (function () { // THE ARTBOARD SCALE gate: above 402 wide the face must be transform-scaled to fill the phone (clamp(vw/402, 1, 1.15)) and wear .tf-scaled; at 402-or-narrower it must be exactly 1 with the class OFF. The rendered board width is the proof — every other gate reads layout px, which the transform leaves alone.
+      var _tfE = el("trackerFull"), _tz = tfScale(), _want = Math.min(Math.max(window.innerWidth / 402, 1), 1.15);
+      var _cls = _tfE.classList.contains("tf-scaled"), _wantCls = window.innerWidth > 402.5;
+      var _bw = el("tfWorldHome") ? el("tfWorldHome").getBoundingClientRect().width : 0, _wantBw = Math.min(window.innerWidth, 402 * 1.15);
+      chk("board fills the phone (2c)", Math.abs(_tz - _want) < 0.011 && _cls === _wantCls && Math.abs(_bw - _wantBw) <= 2, "scale " + _tz + (_cls ? " (scaled)" : " (1:1)") + " · board renders " + Math.round(_bw) + "px at vw " + window.innerWidth, _want.toFixed(4) + " = clamp(vw/402, 1, 1.15), class " + (_wantCls ? "on" : "off") + ", board " + Math.round(_wantBw) + "px wide");
+    })();
     var _hcard = document.querySelector("#tfWorldGround .tbx-hero");
-    chk("hero card fills the tools column", !!_hcard && Math.abs(_hcard.getBoundingClientRect().width - _gzw) <= 1, _hcard ? (Math.round(_hcard.getBoundingClientRect().width * 10) / 10 + "px of " + Math.round(_gzw * 10) / 10) : "no hero card", "= the column (370 at the artboard's width — the frame's own hero width)");
+    chk("hero card fills the tools column", !!_hcard && Math.abs(_nr(_hcard).width - _gzw) <= 1, _hcard ? (Math.round(_nr(_hcard).width * 10) / 10 + "px of " + Math.round(_gzw * 10) / 10) : "no hero card", "= the column (370 at the artboard's width — the frame's own hero width)");
     // …and it is 80 TALL, which is not a padded number: 13+13 of padding around the mid column's own two lines (a 9px/1.5 kicker that
     // wraps to 26 + a 17px Baloo title at 28). The app shipped 68 because every one of those constants was a size small.
     chk("hero card 80px tall (frame)", !!_hcard && Math.abs(_hcard.offsetHeight - 80) <= 1, _hcard ? _hcard.offsetHeight + "px" : "no hero card", "80px — the frame's card, height driven by its own type");
@@ -18547,7 +18577,7 @@
     // #120a12 under a 16% lip. Measured off the resting markup — the 88px the prototype renders is that same 98 seen mid-cascade
     // (opacity 0 + translateY(22px) scale(.9) sits on the hidden folder boxes, per-element, never on a wrapper), which is a frame of an
     // animation and not a size. Everywhere else the shipped aspect-1 square gate stands.
-    if (square) { var sqr = square.getBoundingClientRect(), sqs = getComputedStyle(square);
+    if (square) { var sqr = _nr(square), sqs = getComputedStyle(square);
       if (_2c) { chk("folder box 98px tall at r18", Math.abs(square.offsetHeight - 98) <= 1 && Math.round(parseFloat(sqs.borderTopLeftRadius)) === 18, square.offsetHeight + "px tall · r" + sqs.borderTopLeftRadius, "98px at r18px (the frame's own card)");
         chk("folder wash 12% hue on #120a12 + 16% lip", /0px\s+4px\s+0px/.test(sqs.boxShadow) && sqs.backgroundColor !== "rgba(0, 0, 0, 0)", sqs.backgroundColor + " · " + sqs.boxShadow.slice(0, 34), "the folder's own hue mixed 12% into #120a12, lipped 0 4px 0 at 16% into black"); }
       else chk("bento square aspect 1", Math.abs(sqr.width - sqr.height) <= 2, Math.round(sqr.width) + "x" + Math.round(sqr.height), "square (±2)"); }
@@ -19050,6 +19080,12 @@
     var head = document.createElement("div"); head.textContent = "DESIGN AUDIT · v" + ver + " · " + vp + " · safe " + st + "/" + sb + " · " + fails.length + " FAIL / " + lines.length + " lines · tap to close";
     head.setAttribute("style", "font-weight:800;color:#ffc41f;margin-bottom:10px;");
     ov.appendChild(head);
+    var cp = document.createElement("button"); cp.textContent = "COPY REPORT"; // David 2026-08-14 "make it automatically copy pastable" — one tap puts the whole report on the clipboard, so a paste replaces the screenshot
+    cp.setAttribute("style", "display:block;margin:0 0 12px;padding:10px 16px;border:none;border-radius:12px;background:#ff4fa0;color:#2a0d1c;font:800 13px 'Baloo 2',sans-serif;");
+    cp.onclick = function (e) { e.stopPropagation(); var full = head.textContent + "\n" + txt;
+      var done = function () { cp.textContent = "COPIED"; };
+      try { navigator.clipboard.writeText(full).then(done, function () { try { window.prompt("copy:", full.slice(0, 2000)); } catch (e2) {} }); } catch (e1) { try { window.prompt("copy:", full.slice(0, 2000)); } catch (e2) {} } };
+    ov.appendChild(cp);
     if (fails.length) { var fd = document.createElement("div"); fd.textContent = fails.join("\n"); fd.setAttribute("style", "color:#ff6d6d;margin-bottom:10px;"); ov.appendChild(fd); }
     var rd = document.createElement("div"); rd.textContent = rest.join("\n"); ov.appendChild(rd);
     ov.onclick = function () { ov.remove(); };

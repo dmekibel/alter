@@ -1839,6 +1839,10 @@
   /* the HUD REPLACES the clock-left + gems-right status row. It floats on .tf-inner at the exact top that row used (env(safe-top) + 11px), so the strip below keeps the place the board gates measure. */
   #tfHud{ display:none; }
   /* THE HUD SITS AT THE FRAME'S OWN LINE (David's device review 2026-08-14, "the position of the buttons is off"). The design's HUD row is `position:absolute; left:0; right:0; top:42px; padding:0 20px; gap:14px; transform:translateY(12px)` — an ABSOLUTE 42 with a 12px drop, i.e. it RENDERS at 54, on a 402x874 island phone whose island David already accounted for. The app was adding env(safe-area-inset-top) on top of its own 11, which is exactly the 18-43px the head zone was off by on his phone. Both of the design's numbers are kept literally (top 42 + the drop as the translate PROPERTY) so the render and the markup can both be read off this line. */
+  /* THE ARTBOARD SCALE (David's device audit 2026-08-14: 74/74 PASS at 440x956 — his iPhone 16 Pro MAX renders the 402x874 artboard PERFECTLY, centered and letterboxed. The months of "different on my phone" ended as: nothing drifts, the board is just design-size on a bigger screen, while Claude Design shows the frame FILLING its phone. The Max is the Pro scaled — 440/402 = 956/874 = 1.0945 exactly — so ONE uniform scale fills width and height with every proportion intact.)
+     MECHANISM, deliberately NOT `zoom`: the frame is laid out at a literal 402 x (100dvh/scale) px and then TRANSFORM-scaled. `zoom` was tried first and rejected — under zoom, 100dvh and position:fixed resolve against the unzoomed viewport while everything else resolves zoomed, so the home zone measured 956 layout px inside a 402-wide frame, and that inconsistency is engine-specific (the exact razor-edge class that passes Chromium and breaks iOS Safari). A transform is deterministic: layout is untouched, so every locked px, every landing law and every gate still reads the frame's own numbers, and the only thing that changes is the pixel ratio it is painted at. --tfscale is written per render by renderOnePageWorld; tf-scaled is only set above 402 wide, so a 402-or-narrower phone renders byte-identically to v1283. */
+  #trackerFull.tf-2c.tf-scaled .tf-inner{ width:402px; left:50%; right:auto; top:0; bottom:auto; height:calc(100dvh / var(--tfscale, 1)); transform:translateX(-50%) scale(var(--tfscale, 1)); transform-origin:top center; }
+  #trackerFull.tf-onepage.tf-onehome.tf-2c.tf-scaled .tfw-home{ min-height:100%; } /* THE dvh TRAP: the shipped min-height:100dvh is the REAL viewport (956), but inside a scaled frame the board's own height is 100dvh/scale (873.5). 100% of #tfWorld — which is inset:0 of the sized .tf-inner — resolves to exactly that, with no second place for the scale to be spelled. Scoped to .tf-scaled so the unscaled path keeps the shipped dvh rule verbatim. */
   #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:42px; translate:0 12px; left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
   /* CARD-OPEN FADE (David's card-open frame 2026-08-11 shows NO HUD — in his design the HUD row scrolls away with the column; here it is fixed chrome, so it FADES instead). opacity, never display: the design audit and the reveal anchor still read its rect and its colours. */
   #trackerFull.tf-2c #tfHud{ transition:opacity .2s ease; }
@@ -4064,6 +4068,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1283"></script>
+  <script src="app.js?v=1286"></script>
 </body>
 </html>

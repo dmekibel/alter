@@ -960,3 +960,24 @@ what this measures.
 
 Audit 74/74 at 402x874, kicker 13px one-line, hero 80, home 874/874, ratchets clean. DEVICE-UNTESTED: the overlay
 itself on iOS (scroll/safe-areas) and whether his phone's gates agree with the preview's — that is the point of it.
+
+## v1286 — THE ARTBOARD FILL (the saga's closing move) + COPY REPORT
+
+David's on-device audit ended the mystery: his phone is an iPhone 16 Pro MAX (440x956) and every gate PASSED on it —
+the app rendered the 402x874 artboard design-exactly but LETTERBOXED, while Claude Design fills its phone mock. The Max
+is the Pro scaled exactly (440/402 = 956/874 = 1.0945), so the fix is ONE uniform scale of the whole 2c face.
+
+Mechanism (builder round 6; my zoom attempt was replaced — dvh/fixed resolve inconsistently under `zoom`, the exact
+cross-engine razor edge): `--tfscale` = clamp(vw/402, 1, 1.15) + `.tf-scaled` on #trackerFull; .tf-inner pinned to
+402 x (100dvh/scale), transform translateX(-50%) scale(s), origin top center; .tfw-home min-height:100% under scale;
+wMeasurePad safe-area terms /s (its k divisor was already scale-true); tfhRevealCard's rect/layout mixer fixed; 13
+rect-based gates normalized by one helper; new "board fills the phone" gate; the one-frame gate widened to
+max(874, clientHeight)+2 (a shorter phone than the artboard is a device fact, not a build failure — still catches 887).
+
+VERIFIED at 440x956 / 402x874 / 375x812: scale 1.0945/1/1, board renders 440/402/375 wide, home layout 874 at all
+three, board tops IDENTICAL at scaled and unscaled within 0.4px of the frame, landing flush/seat 129/gap 11, audit
+ALL PASS x3, zero console errors. Also shipped: COPY REPORT button on the on-device audit overlay (David: "make it
+automatically copy pastable") — clipboard first, prompt fallback.
+
+DEVICE-UNTESTED: the scaled face on real iOS (text sharpness under transform, scroll feel through the scaled world,
+the audit overlay's copy button), the puck (body-level, deliberately unscaled app chrome).
