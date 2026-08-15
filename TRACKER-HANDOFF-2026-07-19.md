@@ -981,3 +981,7 @@ automatically copy pastable") — clipboard first, prompt fallback.
 
 DEVICE-UNTESTED: the scaled face on real iOS (text sharpness under transform, scroll feel through the scaled world,
 the audit overlay's copy button), the puck (body-level, deliberately unscaled app chrome).
+
+## ONE MOVE (per COFOUNDER.md, session close 2026-08-15)
+- **David:** open v1286 on the phone — it should finally match Claude Design edge-to-edge. Two words if anything's off: "soft" (scaled text) or "scroll" (feel through the scaled world). Standing verdicts when rested: Night-Stack-vs-Body in row two; the $99 Apple enrollment (decided, just needs doing + LEDGER line).
+- **Claude:** on David's verdict, close the 2c surface for good; then the next design work is the JOURNEY ZONE ("ill fix the journrey after" — the deferred half of the handoff), which now runs through _dev/DESIGN-PORT-CHECKLIST.md from step one.
