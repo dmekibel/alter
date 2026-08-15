@@ -5708,6 +5708,17 @@
     } catch (e) {}
     return _safeTpx || 0;
   }
+  // THE SCALE MUST FOLLOW THE VIEWPORT, NOT THE RENDER (found while adding the portrait lock, 2026-08-15): --tfscale was computed
+  // only inside renderOnePageWorld, so any viewport change — a rotation, the keyboard, iOS's URL bar — left the board wearing the
+  // OLD phone's scale until the next render (up to a full minute on the master tick). Rotating out of the portrait guard and back
+  // is exactly that path. Extracted here and also driven from the resize/orientationchange listener at @SEC:BOOT.
+  function wApplyScale() {
+    var tf = el("trackerFull"); if (!tf) return 1;
+    var s = tfh2c() ? Math.min(Math.max(window.innerWidth / 402, 1), 1.15) : 1;
+    tf.style.setProperty("--tfscale", s.toFixed(4));
+    tf.classList.toggle("tf-scaled", s > 1.001);
+    return s;
+  }
   function wMeasurePad() {
     var w = el("tfWorld"), g = el("tfWorldGround"); if (!w || !g) return;
     var tbx = g.querySelector(".tbx"); if (!tbx || !tbx.offsetHeight) return;
@@ -6055,9 +6066,7 @@
     // mock (the Max is the Pro scaled: 440/402 = 956/874 = 1.0945). Layout stays frame-true, so every gate and every landing
     // law still reads the design's numbers; only the pixel ratio changes. Capped at 1.15 so a tablet-width window cannot blow
     // the board up past a phone's worth of it. 402-or-narrower → exactly 1 and the class is off (v1283 rendering, untouched).
-    try { var _tfs = tfh2c() ? Math.min(Math.max(window.innerWidth / 402, 1), 1.15) : 1;
-      tf.style.setProperty("--tfscale", _tfs.toFixed(4));
-      tf.classList.toggle("tf-scaled", _tfs > 1.001); } catch (e) {}
+    try { wApplyScale(); } catch (e) {}
     // DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): #tfBackdrop is a fixed z97 pointer-catcher for the OLD sheet-mode calendar-peek-close. On the full-screen ONE-PAGE home it covers the top 200px — exactly where the door tabs sit (y≈92-172) — and swallows every door tap. The onepage home is a PLACE, not a peel-back sheet: it has no calendar peek to close. Neutralise the backdrop so door taps reach the doors (#tfWorld owns the scroll; you leave via the doors/nav, not by tapping a peek).
     try { var _bd = el("tfBackdrop"); if (_bd) _bd.classList.remove("on"); } catch (e) {}
     ensureWorld();
@@ -19283,12 +19292,31 @@
     s.appendChild(btnRow);
     document.body.appendChild(s);
   }
+  // PORTRAIT LOCK (David 2026-08-15 "can we prevent the app from going landscape"). manifest.json has declared
+  // "orientation":"portrait" all along — iOS ignores it for home-screen PWAs, which is why the app still rotates. There is no
+  // API fix either: screen.orientation.lock() throws on iOS Safari outside true fullscreen. So the lock is a CSS one — a guard
+  // panel that owns the screen while the phone is sideways, shown purely by media query (@media (orientation:landscape) and
+  // (max-height:520px) in index.html), so it costs nothing in portrait and cannot desync from a JS state. Built here rather
+  // than written into index.html so the line goes through tr() like every other user-visible string (the I18N contract).
+  // The height bound keeps it OFF desktop/tablet-shaped windows, where a wide viewport is legitimate (the dev preview included).
+  function buildRotGuard() {
+    if (el("rotGuard")) return;
+    var g = document.createElement("div"); g.id = "rotGuard";
+    var mark = document.createElement("i"); mark.className = "ti ti-rotate-rectangle"; g.appendChild(mark);
+    var t = document.createElement("span"); t.textContent = tr("Turn me upright"); g.appendChild(t);
+    document.body.appendChild(g);
+  }
+  Object.assign(I18N.ru, { "Turn me upright": "Поверни меня вертикально" }); // the portrait-lock line (B4 law: EN source + RU dict in the same edit)
   // @SEC:BOOT — init(): boot ORDER is a contract (load → world → master tick → nav wiring → renderAll → openJourney → start screen → i18n observe). Appending is safe; reordering is not.
   function init() {
     load(); try { TTS.applyVoice(); } catch (e) {} loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     try { devInit(); } catch (e) {}
+    try { buildRotGuard(); } catch (e) {}
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
-    window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit(); });
+    window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit();
+      // …and the 2c board's artboard scale + the shelf's measured pad, which are both viewport-derived: without this a rotation
+      // (or the keyboard, or iOS's URL bar) leaves the board at the old phone's scale until the next render (2026-08-15).
+      try { wApplyScale(); wMeasurePad(); } catch (e) {} });
     // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)
     // @CONTRACT — THE MASTER 1s TICK: re-renders per second (tickCharge) and per minute (renderToday). ANY surface with inputs must be built ONCE + idempotent (the renderStage dataset.mode guard pattern) or this tick wipes what the user is typing. Never tear down the timeline mid-drag / mid-zoom / while the edge inspector is open (guards below).
     var _lastMin = nowMin();

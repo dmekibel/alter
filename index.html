@@ -48,6 +48,18 @@
   .bchip:active, .tile:active, .pchip:active, .preset-row:active, .qopt:active, .subitem:active, .feat-row:active, .tool-row:active{ transform:scale(.94); }
   @media (prefers-reduced-motion: reduce) and (max-width: 1px){ .dur-card, .goal-card, .mind-card, .nb-card, .ob-card, .sheetcard, .dur-ov, .goal-ov, .mind-ov, .nb-ov, .cele-ov{ animation:none !important; } }
   /* ===== START SCREEN (v652): the animated launch screen — living guardian (13-frame idle sprite) + title + language + Continue/New, Duolingo/Tuber-sim feel ===== */
+  /* PORTRAIT LOCK (David 2026-08-15). manifest.json has said "orientation":"portrait" since day one and iOS ignores it for
+     home-screen PWAs; screen.orientation.lock() throws on iOS Safari outside real fullscreen. So the lock is this: a guard that
+     owns the screen while the phone is sideways. z-index above every surface INCLUDING the start screen (200) and the dev audit
+     overlay, because a sideways phone should show one thing. The max-height bound is what keeps it off desktop and tablet-shaped
+     windows — a wide viewport there is legitimate, and the dev preview must stay usable. Pure media query: nothing to desync. */
+  #rotGuard{ display:none; }
+  @media (orientation:landscape) and (max-height:520px){
+    #rotGuard{ position:fixed; inset:0; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      background:linear-gradient(180deg,#201022 0%,#190b18 60%,#150912 100%); font-family:"Jost",sans-serif; }
+    #rotGuard i{ font-size:38px; color:#ff4fa0; line-height:1; }
+    #rotGuard span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; color:#fff2f9; }
+  }
   #startScreen{ position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:space-between; background:linear-gradient(170deg,#3a0f24 0%,#24091c 46%,#1e0a16 78%,#241019 100%); padding:max(env(safe-area-inset-top,0px),26px) 22px calc(env(safe-area-inset-bottom,0px) + 30px); font-family:"Jost",sans-serif; overflow:hidden; }
   #startScreen.on{ display:flex; }
   #startScreen.leaving{ animation:ssLeave .42s var(--ease-settle) forwards; }
@@ -4069,6 +4081,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1298"></script>
+  <script src="app.js?v=1301"></script>
 </body>
 </html>

@@ -1037,3 +1037,23 @@ none + inline opacity 0 through repeated re-renders; tools = shown true + events
 Also: the fold-hint gate floor is now -1.5px (was exact 0) — under the artboard scale a rect ÷1.0945 carries sub-pixel error
 and the up-next board is 1px shorter than idle's, which failed a ship for a hint that is not clipped. Flagged as a widened gate.
 DEVICE-UNTESTED: whether the once-a-minute shelf pop is the "broken" David remembers (very likely), and all feel.
+
+## v1301 — PORTRAIT LOCK + the stale-scale bug it exposed
+
+David: "can we prevent the app from going landscape". manifest.json has declared "orientation":"portrait" since day one —
+iOS IGNORES it for home-screen PWAs, and screen.orientation.lock() throws on iOS Safari outside true fullscreen, so neither
+standard path works. The lock is therefore CSS: #rotGuard, a full-screen panel (ti-rotate-rectangle + "Turn me upright",
+Gate-1 clean + RU) shown purely by `@media (orientation:landscape) and (max-height:520px)`, z-index above every surface
+including the start screen and the dev overlay. The max-height bound keeps it off desktop/tablet windows (and the preview).
+Built in JS at boot rather than written into index.html so the line passes tr() like every other string.
+
+**Bug it exposed (would have read as "broken" on device):** --tfscale was computed ONLY inside renderOnePageWorld, so any
+viewport change — rotation, the keyboard, iOS's URL bar — left the board at the OLD viewport's scale until the next render
+(up to a minute on the master tick). Rotating into the guard and back is exactly that path; measured 1.15 stuck at vw 440
+(board 462 wide on a 440 screen) before the fix. Extracted wApplyScale() and drove it + wMeasurePad() from the resize
+listener at @SEC:BOOT.
+
+Verified: landscape 874x402 and 956x440 → guard covers the screen; portrait 440x956 → display:none; full rotate round-trip
+returns scale 1.0945, board 440 full-bleed, audit 75/75, zero console errors, ratchets clean.
+DEVICE-UNTESTED: the guard on real iOS rotation (incl. the standalone home-screen PWA, where iOS may still rotate the
+chrome), and whether 520px is the right height bound for his phone's landscape.
