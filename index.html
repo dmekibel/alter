@@ -670,7 +670,7 @@
   .breathorb{width:124px;height:124px;border-radius:50%;margin:26px auto;background:radial-gradient(circle,rgba(255,150,200,.55),rgba(255,79,160,0) 70%);box-shadow:0 0 42px rgba(255,120,190,.4);animation:breathe 6s ease-in-out infinite;}
   .breathorb--slow{animation-duration:11s;background:radial-gradient(circle,rgba(255,220,120,.55),rgba(255,200,80,0) 70%);box-shadow:0 0 52px rgba(255,210,110,.4);}
   @keyframes breathe{0%,100%{transform:scale(.68);opacity:.55;}50%{transform:scale(1.12);opacity:1;}}
-  @keyframes breatheReal{0%{transform:scale(.84);opacity:.6;}25%{transform:scale(1.12);opacity:1;}50%{transform:scale(1.12);opacity:1;}87.5%{transform:scale(.84);opacity:.6;}100%{transform:scale(.84);opacity:.6;}} /* 16s = 4s inhale (0-25%) + 4s hold (25-50%) + 6s exhale (50-87.5%) + 2s rest (87.5-100%) — matches the breath-cue cadence so the player orb expands with the inhale (David 2026-07-09) */
+  /* @keyframes breatheReal DELETED 2026-08-15 — dead since the ORB DRIVE landed: zero references in app.js, both engines set orb.style.animation="none" and compute the scale per frame from makeBreathClock. It hard-coded ONE pattern's 16s timing (4/4/6/2) and was a standing trap for the next reader assuming CSS drives the orb. */
   /* guided breathwork overlay (first self-help module) */
   #breatheOv{position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
   @keyframes toolIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
@@ -687,6 +687,16 @@
   #breatheOv .bw-label{font-family:var(--bub);font-size:28px;font-weight:800;color:#efeaff;margin-top:34px;letter-spacing:.5px;}
   #breatheOv .bw-sub{font-size:13px;color:#bcb0e8;font-weight:600;margin-top:4px;}
   /* THE ORB STAYS PERFECTLY STILL (David 2026-07-12): the cue text lives in .bw-cap, pulled OUT of the centered flex flow and hung from a fixed line below the orb, so cue lines of any length grow DOWNWARD and can never push the orb up or down. The orb is now the only centered flow child. */
+  /* THE EXPLICIT PHASE INDICATOR (David 2026-08-15: "an explicit indicator of whether I should be inhaling, holding or exhaling"). Canonical word + seconds left + a line that empties over the phase. Same type family, same purple, sized well under .bw-label so it reads as a status line, not a second headline. The line is driven by transform:scaleX so it never reflows the cue above it. */
+  #breatheOv .bw-phase{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;z-index:2;}
+  #breatheOv .bw-phrow{display:flex;align-items:baseline;gap:8px;font-family:var(--bub);}
+  #breatheOv .bw-phw{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#bda8ee;}
+  #breatheOv .bw-phn{font-size:15px;font-weight:800;color:#f2ecff;font-variant-numeric:tabular-nums;letter-spacing:0;}
+  #breatheOv .bw-phbar{width:96px;height:3px;border-radius:2px;background:rgba(255,255,255,.13);overflow:hidden;}
+  #breatheOv .bw-phbar i{display:block;height:100%;width:100%;border-radius:2px;background:#9a7cff;transform-origin:left center;}
+  #breatheOv.gp-ov .bw-phw{color:#e0c6ea;}
+  #breatheOv.gp-ov .bw-phn{color:#fff2f9;}
+  #breatheOv.gp-ov .bw-phbar i{background:var(--gp-c,#9a7cff);}
   #breatheOv .bw-cap{position:absolute;left:0;right:0;top:calc(50% + 72px);z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 18px;pointer-events:none;}
   #breatheOv .bw-cap .bw-label{margin-top:0;}
   #breatheOv .bw-cap .bw-next{pointer-events:auto;}
@@ -4078,6 +4088,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1305"></script>
+  <script src="app.js?v=1306"></script>
 </body>
 </html>
