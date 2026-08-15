@@ -5807,7 +5807,18 @@
     var v = _wV || 0;
     var down = Math.abs(v) > 0.25 ? v > 0 : (_wDir || 0) >= 0;          // slow-drag tie-break: fall back to the last detected direction, default down
     if (d > 0 && st < ty - 0.5) return down ? ty : hy;                  // between home and the shelf: commit to whichever way you were going
-    if (d < 0) return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY(); // above home: journey ONLY if this gesture began at home AND cleared 45% of the viewport (notes 20/25/28)
+    if (d < 0) {
+      // DESCENDING OUT OF THE JOURNEY WINS (David device 2026-08-15: "when you're in journey and try to scroll back down to home it
+      // doesn't let you"). The rule below reads where the gesture STARTED but not which way it is going. In the design that was
+      // harmless — its sky is one screen, so wSkyY() was always about where you paused. Here the sky is the whole trail: coming down
+      // from deep in it, the moment you entered the band between one viewport and 45% of one, any pause or velocity dip snapped you
+      // straight back UP to wSkyY(), so home could only be reached by blowing through the entire band in one uninterrupted flick.
+      // Below home there is nothing to land on but home, so an explicit downward gesture commits to it. EXPLICIT only: the `down`
+      // tie-break above defaults an UNKNOWN direction to down, and inheriting that here would start yanking people to home while they
+      // are reading the trail. The free-scroll guard above (past one viewport = the magnet lets go) is untouched.
+      if (v > 0.25 || (Math.abs(v) <= 0.25 && _wDir === 1)) return hy;
+      return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY(); // above home: journey ONLY if this gesture began at home AND cleared 45% of the viewport (notes 20/25/28)
+    }
     return null;
   }
   function wMaybeSnap() {
@@ -5882,14 +5893,22 @@
   function hcArrive(from) { // from "up" (out of the tools) = bottom-to-top, Planner first (note 4). from "down" (out of the journey) = the exact opposite (note 10).
     _hcAnimAt = wNow(); _hcDone = false; _hcState = "in";
     var els = hcEls(), order = from === "up" ? els.slice().reverse() : els;
-    var name = from === "up" ? "homeRise" : "homeDrop", step = 30, dur = 0.3, t = 0;
+    // THE ARRIVAL IS THE TOOLS CASCADE IN REVERSE (David device 2026-08-15). Timing and easing are youRowIn's own — .42s at
+    // cubic-bezier(.3,1.28,.5,1) on a 55ms stagger, where this used to be .3s/30ms on a flat-out ease — and the keyframes now carry its
+    // 22px + scale .92 spring-pop (index.html). Order is unchanged: from the tools the board builds BOTTOM-UP (the Planner row first, the
+    // strip last), from the journey TOP-DOWN. No slow-drag stretch on home (design law), unlike the shelf's velocity factor.
+    var name = from === "up" ? "homeRise" : "homeDrop", step = 55, dur = 0.42, t = 0;
+    var EASE = "cubic-bezier(.3,1.28,.5,1)";                     // the tools' spring-pop, now the home board's too
+    var SWEEP_EASE = "cubic-bezier(.2,.85,.28,1)";               // …except the strip's sweep, which David approved as it is: its keyframe rotates the columns through a 3D perspective, and an overshoot ease on that reads as a wobble rather than a pop
     order.forEach(function (n) {
       if (n.id === "tfHomeBars") { // the strip sweeps; it never rises as one slab
         n.style.animation = ""; n.style.opacity = ""; n._hcExit = false;
         var cols = hcCols(n);
-        cols.forEach(function (c, j) { hcPlay(c, "homeSweep", dur * 1.05, t + j * 26, "cubic-bezier(.2,.85,.28,1)"); });
+        // the sweep's own texture is untouched — 26ms per column, its own ease — only its DURATION follows the new dur (0.44s, so the
+        // longer travel overlaps its neighbours instead of finishing early) and the flow advances by the new 55ms step.
+        cols.forEach(function (c, j) { hcPlay(c, "homeSweep", dur * 1.05, t + j * 26, SWEEP_EASE); });
         t += step + cols.length * 26 * 0.5; // the sweep overlaps the next block rather than blocking on it — the board reads as ONE arrival
-      } else { hcPlay(n, name, dur * 1.1, t, "cubic-bezier(.2,.85,.28,1)"); t += step; }
+      } else { hcPlay(n, name, dur * 1.1, t, EASE); t += step; }
     });
     hcFlush();
     clearTimeout(_hcT); _hcT = setTimeout(hcReset, Math.round(t + dur * 1000) + 260);
@@ -5931,9 +5950,15 @@
   // 49/47 and FAILS A SHIP. Every persistent hidden state below is opacity-only; the scale still exists where it belongs, inside the
   // keyframes' own `from`. (Caught by A/B against shipped v1262: same face, same profile, 2 extra fails that were purely this transform.)
   function tcFlat(n) { if (!n._tcClean) { n._tcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.transform = ""; n.style.opacity = n._tcExit ? "0" : ""; n.style.pointerEvents = n._tcExit ? "none" : ""; }); } } // e.target guard: animationend BUBBLES, and these rows are full of animating children (the float chevrons, tbxSettle) — an unguarded handler would clear the row on a child's animation
+  // BATCHED, exactly like hcFlush (David device 2026-08-15: "a tiny bit choppy" travelling to the tools and back). This used to force a
+  // reflow PER ROW — `void n.offsetWidth` inside the loop, seventeen times, while the column was actively scrolling — which is the
+  // interleaved write→read→write the design's perf notes ban and the reason the home cascade was batched in the first place. Pass one
+  // writes every row's start state, ONE forced reflow on the world, pass two assigns every animation. Same visuals, same velocity
+  // stretch, same below-mode, same exit delays — only the write/read ordering changed.
   function tcCascade(dir, instant) {
     var els = _tcEls || []; if (!els.length) return;
     var f = (_wAnim || !_wPk) ? 1 : Math.max(1, Math.min(2.4, 0.45 / Math.max(0.05, _wPk))); // a slow drag STRETCHES the timing up to 2.4x so the rows keep pace with the finger
+    var q = [];
     els.forEach(function (n, i) {
       if (instant === "below" && i < 6) return;
       // A HIDDEN ROW TAKES NO TAPS. Since the deck-anchored pass the ground is pulled 44px up under the home zone's TOOLS hint (see
@@ -5941,11 +5966,14 @@
       // it would have eaten David's tap on the one control that opens the tools. Every hidden branch below kills pointer events with
       // the opacity, every shown branch hands them back, and tcFlat's animationend + teardownWorld mirror the same rule.
       n.style.animation = "none"; n.style.transition = "none"; tcFlat(n);
-      if (dir > 0) { n._tcExit = false; n.style.opacity = "0"; n.style.pointerEvents = ""; n.style.transform = "translateY(22px) scale(.9)"; void n.offsetWidth; n.style.animation = "youRowIn " + (0.42 * f).toFixed(2) + "s cubic-bezier(.3,1.28,.5,1) " + Math.round(i * 55 * f) + "ms both"; }
+      if (dir > 0) { n._tcExit = false; n.style.opacity = "0"; n.style.pointerEvents = ""; n.style.transform = "translateY(22px) scale(.9)"; q.push([n, "youRowIn " + (0.42 * f).toFixed(2) + "s cubic-bezier(.3,1.28,.5,1) " + Math.round(i * 55 * f) + "ms both"]); }
       else if (instant) { n._tcExit = true; n.style.opacity = "0"; n.style.pointerEvents = "none"; n.style.transform = ""; }
       else if (i > 5) { n._tcExit = false; n.style.opacity = ""; n.style.pointerEvents = ""; n.style.transform = ""; }
-      else { n._tcExit = true; n.style.opacity = "1"; n.style.pointerEvents = "none"; n.style.transform = ""; void n.offsetWidth; n.style.animation = "youRowOut .38s ease-in-out " + (20 + (i < 4 ? (3 - i) + 2 : 5 - i) * 62) + "ms both"; } // only the first six play the exit; the rest just go — the fold-away reads right-to-left across the top row
+      else { n._tcExit = true; n.style.opacity = "1"; n.style.pointerEvents = "none"; n.style.transform = ""; q.push([n, "youRowOut .38s ease-in-out " + (20 + (i < 4 ? (3 - i) + 2 : 5 - i) * 62) + "ms both"]); } // only the first six play the exit; the rest just go — the fold-away reads right-to-left across the top row
     });
+    if (!q.length) return;                                    // the instant/hidden branches write no animation at all — nothing to flush, and no reason to touch layout
+    var w = el("tfWorld"); if (w) void w.offsetWidth;          // THE one forced reflow for the whole cascade (was one per row)
+    q.forEach(function (a) { a[0].style.animation = a[1]; });
   }
   function tcScrub(u) { // u = fraction of the home→tools travel
     if (!_tcEls || !_tcEls.length || !_tcEls[0].isConnected) _tcEls = tcEls();
@@ -18362,11 +18390,14 @@
   };
   // THE NO-OVERSHOOT GATE. Feeds wSnapIntent a hypothetical rest position + gesture start and names the zone it would commit to, with
   // no rAF and no timing involved. `DEV.wIntent(-100, "home")` must say "home"; only a pull past 45% of the viewport may say "journey".
-  window.DEV.wIntent = function (d, startedAt) {
+  window.DEV.wIntent = function (d, startedAt, v, dir) {
     var w = el("tfWorld"); if (!w) return null;
     var hy = wHomeY(), keepS = _wStartTop, keepV = _wV, keepD = _wDir;
     _wStartTop = startedAt === "tools" ? wToolsY() : (startedAt === "sky" ? wSkyY() : hy);
-    if (arguments.length > 2) { _wV = arguments[2]; _wDir = arguments[2] < 0 ? -1 : 1; }
+    // DIRECTION IS NOW PART OF THE DECISION (the descend-out-of-the-journey fix), so the probe has to be able to state it: velocity
+    // drives _wDir by its sign, a ZERO velocity means genuinely unknown (dir 0, the tie-break's own case — it used to be forced to
+    // down, which could never exercise the rule it is meant to test), and an explicit 4th argument pins _wDir outright.
+    if (arguments.length > 2) { _wV = v || 0; _wDir = (arguments.length > 3) ? dir : (v > 0.0001 ? 1 : (v < -0.0001 ? -1 : 0)); }
     var to = wSnapIntent(hy + d);
     _wStartTop = keepS; _wV = keepV; _wDir = keepD;
     return { to: to, zone: to === null ? "free" : (Math.abs(to - hy) < 2 ? "home" : (to === wToolsY() ? "tools" : "journey")) };

@@ -985,3 +985,20 @@ the audit overlay's copy button), the puck (body-level, deliberately unscaled ap
 ## ONE MOVE (per COFOUNDER.md, session close 2026-08-15)
 - **David:** open v1286 on the phone — it should finally match Claude Design edge-to-edge. Two words if anything's off: "soft" (scaled text) or "scroll" (feel through the scaled world). Standing verdicts when rested: Night-Stack-vs-Body in row two; the $99 Apple enrollment (decided, just needs doing + LEDGER line).
 - **Claude:** on David's verdict, close the 2c surface for good; then the next design work is the JOURNEY ZONE ("ill fix the journrey after" — the deferred half of the handoff), which now runs through _dev/DESIGN-PORT-CHECKLIST.md from step one.
+
+## v1288 — ROUNDS 7+7b: THE DESCENT FIX + THE CHOP + HOME ARRIVES LIKE THE TOOLS
+
+David's three device notes on v1286, one round: (1) DESCENT — coming down from the journey bounced back up:
+wSnapIntent's above-home branch never read direction (harmless in the design's one-screen sky, a trap in our tall
+trail — any pause in the (-vh, -0.45vh) band snapped BACK to the sky seat). Now an explicitly-descending gesture
+targets home; unknown direction keeps the old rule so trail-readers are never yanked. 9-case wIntent battery PASS at
+both viewports, notes 20/25/28 intact, armDown reasoning verified (the fix is what lets the mid-glide arrival fire).
+(2) CHOP — tcCascade forced 17 per-row reflows mid-scroll; rebuilt on the hcFlush batch pattern (1 reflow), emitted
+animations byte-identical. Remaining live-path reads named in the builder report, none added. (3) HOME ARRIVAL = the
+tools recipe in reverse (David: "similar to the way tools appears except in reverse order"): homeRise/homeDrop now
+pop (22px + scale .92→1, 0.42s, spring bezier, 55ms stagger), bottom-up from tools / top-down from journey; the strip
+keeps its sweep (own ease — overshoot there reads as wobble) retimed to the new step; EXITS UNTOUCHED (he called them
+good). Audit 75/75 both viewports, zero console errors.
+
+DEVICE-UNTESTED: descent feel, whether the batching kills the chop, and the stone scaling under its halo during
+arrival (if it janks: drop scale from homeRise/homeDrop for #tfRing alone — one line).
