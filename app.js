@@ -5092,7 +5092,7 @@
         var col = add(bars, "div", "tf-hb");
         var bar = add(col, "div", "tf-hb-bar"); bar.style.background = "#2e1a28";
         var fl = add(bar, "div", "tf-hb-fill"); fl.style.width = d.has ? "100%" : "0"; fl.style.background = d.c;
-        var ic = add(col, "i", "ti " + d.ic); ic.style.color = d.has ? d.c : "#5a3f55";
+        if (d.has) { var ic = add(col, "i", "ti " + d.ic); ic.style.color = d.c; } else { add(col, "i", "tf-hb-nic"); } // EMPTY DAY DRAWS NO RING (David's video 2026-08-16: day one showed five identical grey bars over five identical grey circle-outlines and read as a failed render). His 2026-07-22 verdict on the previous board is the law here — "the ring placeholders read ugly ... the pills alone say no plan yet" — and the 2c strip had quietly reintroduced them via d.ic's ti-circle fallback. A spacer keeps the column's height so the strip never changes size as days fill in.
       });
       return;
     }
@@ -6794,6 +6794,10 @@
   function pkOpen(cfg) { // THE ENTRY. cfg = { k, at } — the day key + the tapped minute. Nothing is written until Start (so a back-out leaves zero litter, no stub to clean up).
     cfg = cfg || {}; pkClose(); _pkUse = null; // fresh session → re-walk the logs once
     var k = cfg.k || todayK(), at = Math.max(0, Math.min(1410, cfg.at || 0)), end = 1440, prev = null;
+    for (var _sg = 0; _sg < 48; _sg++) { // SNAP OUT OF AN OCCUPIED MINUTE (David's video 2026-08-16). Tapping a slot that an existing block already covers gave gapStart == that block's start AND gapEnd == the same minute, so the pick landed a second block directly on top of the first — the pile-up of five blocks on one minute in his recording. Walk forward to the first minute nothing covers; 48 hops is a guard, the day cannot hold more.
+      var _e = 0; blocks(k).forEach(function (b) { if (!b.title) return; var _bs = hm(b.time), _be = _bs + (b.mins || 30); if (at >= _bs && at < _be && _be > _e) _e = _be; });
+      if (!_e || _e >= 1410) break; at = _e;
+    }
     blocks(k).forEach(function (b) { if (!b.title) return; var bs = hm(b.time), be = bs + (b.mins || 30);
       if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
@@ -12561,7 +12565,7 @@
     var _lastHrNumY = -999; // LESS CRAMMED (David 2026-07-21): skip an hour numeral if it's within ~64px of the last one drawn — in empty stretches the hours thin out (every 2nd/3rd), near blocks (flow-pushed apart) they stay
     for (var mm = startH * 60; mm <= endH * 60; mm += 15) { var _t = topFor(mm), _hh = Math.floor(mm / 60), _mn = mm % 60;
       if (mm === endH * 60) continue; // BOUNDARY HOUR (David 2026-06-28): the bottom tick == startH (e.g. 28:00 == 4am) repeats the SAME hour the NEXT stacked day-section draws at its top → drawing it here printed "4am" twice + doubled the hour-line. Skip it; tiling stays seamless because the next day-section provides that row. (also fixes the reported 2–4am background break.)
-      if (_mn === 0 && _t - _lastHrNumY >= 92) { _lastHrNumY = _t; var _hl = add(cal, "div", "calhrl", "" + ((_hh % 12) || 12)); _hl.style.top = (_t - 13) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -13; } // -13 recenters the BIG numeral on the hour; the ≥64px gate thins crammed empty stretches (David 2026-07-21)
+      if (_mn === 0 && _t - _lastHrNumY >= 92) { _lastHrNumY = _t; var _hl = add(cal, "div", "calhrl", "" + (_hh % 24)); _hl.style.top = (_t - 13) + "px"; _hl.dataset.mn = mm; _hl.dataset.off = -13; } // -13 recenters the BIG numeral on the hour; the ≥64px gate thins crammed empty stretches (David 2026-07-21)
       else if (_mn === 30) { if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf half30"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // :30 = a MEDIUM dash (never "7:30" text) — just signifies between the two hours (David 2026-07-21)
       else { if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf half15"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } } // :15/:45 = a THINNER dash, deeper zoom only
     }

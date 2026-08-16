@@ -1896,6 +1896,7 @@
   #trackerFull.tf-2c .tf-hb-bar{ height:13px; margin:1px 0; border-radius:999px; background:#2e1a28; } /* the 1px above and below is the frame's PILL ROW: there the 13px pills share a 15px-tall row with the 15px chevron that rides in it, so the strip block is 43 and the pill sits at +1. Our chevron is a sibling column and never grew the row, which is the 2px every board element below the strip was landing short by. */
   #trackerFull.tf-2c .tf-hb-fill{ border-radius:999px; }
   #trackerFull.tf-2c .tf-hb i{ font-size:17px; }
+  .tf-hb i.tf-hb-nic{ visibility:hidden; display:inline-block; width:1em; height:1em; } /* an unlogged day draws NO ring under its pill (David 2026-07-22: "the ring placeholders read ugly"); this invisible twin of the icon holds the column's height so the strip cannot resize as days fill in — an empty <i> collapses to 0 and shrank the strip 43px→26px */
   #trackerFull.tf-2c .tf-planchev{ align-self:flex-start; font-size:15px; color:#8a6d85; opacity:1; margin-left:0; }
   /* ===== THE 402 BOARD PIN (David's device frames 2026-08-14). Every number in this section was MEASURED LIVE off the running 2c prototype at its 402px frame width and is written here as an absolute px, inside the centered 402 column above. Nothing here is eyeballed and nothing is re-derived from the app's older vh recipes. FRAME-WINS (DESIGN AUTHORITY LAW 7): where one of these values contradicts a --tun-* default David set on a pre-2c face, the FRAME is the newer verdict and wins ON THIS FACE ONLY — the tuner vars still drive every non-2c face byte-identically, because each rule below is scoped to .tf-2c. Repeated .tf-2c selectors are the file's own load-bearing idiom (see the .tf-clock hide above): they out-specify LATER rules that would otherwise win the cascade, and each one names the rule it is beating. ===== */
   /* THE STONE — the frame's RENDER, not its markup (David's verdict 2026-08-14). The design's stone block is `margin-top:63px; transform:scale(0.91)` around a 198px disc carrying a 58px glyph and a 12/70 halo — so what David actually SEES is a 180px disc, a 53px glyph and an 11/64 halo, with 72px of air above it and 38px below (the 63/29 margins bracket the 198 LAYOUT box, which is 9px taller than the disc on each side). Every number here is that outcome, built as a plain 180px box so no transform rides on the element the home cascade and the idle breath already animate. NO RIM: the disc fills the ring flush (the plum bezel and the ring's drop/bloom are a pre-2c recipe) and the only light is the halo on the disc itself. The repeated .tf-2c beats #trackerFull.tf-home.st-idle.st-upnext .tf-tile, which pins a 3px ink border + a 7px plum ring with !important and sits later in this file — the up-next sub-state must not re-grow a rim the 2c frame doesn't draw. designAudit's rim + halo gates read this law on the 2c face (they still read the tuner law everywhere else). */
@@ -4088,6 +4089,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1306"></script>
+  <script src="app.js?v=1308"></script>
 </body>
 </html>
