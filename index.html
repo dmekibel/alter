@@ -960,7 +960,8 @@
   .calhalf{ display:none; }
   .calhalf.half30{ display:block; position:absolute; left:5px; width:17px; height:0; border-top:2.5px solid rgba(168,140,196,.4); border-radius:2px; } /* :30 = a MEDIUM dash in the gutter (David 2026-07-21) */
   .calhalf.half15{ display:block; position:absolute; left:9px; width:9px; height:0; border-top:1.5px solid rgba(168,140,196,.24); border-radius:2px; } /* :15/:45 = a THINNER dash */
-  .calhrl{ position:absolute; left:0; width:30px; text-align:left; font-weight:800; font-size:22px; color:#6f6382; letter-spacing:-.5px; } /* BIG hour numerals on the side — the mockup's large muted numbers (David 2026-07-20) */
+  .calhrl{ position:absolute; left:0; width:30px; text-align:left; font-family:"Baloo 2",sans-serif; font-weight:700; font-size:17px; line-height:20px; color:#c9a2c4; letter-spacing:-.5px; white-space:nowrap; } /* HOUR NUMERALS, design R21 gutter (2026-08-16): Baloo 2 / 700 / 17px / #c9a2c4. line-height is EXPLICIT because the JS recenter offset is -line-height/2 (HRL_OFF at @SEC:TIMELINE) — change one and you must change the other. Was 22px/800/#6f6382 (David 2026-07-20). */
+  .calhrl .calmer{ font-size:10px; font-weight:700; margin-left:1px; opacity:.72; } /* the meridiem, printed ONLY where the 12-hour clock flips (see HRL_OFF / the flip marker at @SEC:TIMELINE) — small so "12pm" still lives inside the 30px gutter */
   .calhalfl{ position:absolute; left:0; width:23px; text-align:right; font-weight:700; font-size:12px; color:#7a4a62; }
   .calsub{ position:absolute; left:0; width:34px; text-align:right; font-weight:700; font-size:12px; color:#9a6a82; } /* AUDIT P1: 12px floor */
   .calblk{ position:absolute; box-sizing:border-box; border:2px solid #160510; border-radius:16px; padding:9px 17px; overflow:hidden; cursor:grab; touch-action:none; box-shadow:none;
@@ -1027,11 +1028,16 @@
   .calblk .grip{ position:absolute; right:0; bottom:0; width:30px; height:28px; display:flex; align-items:flex-end; justify-content:flex-end; padding:0 3px 3px 0; cursor:nwse-resize; touch-action:none; z-index:4; }
   .calblk .gript{ display:none; }
   .calblk .grip::after{ content:""; width:15px; height:15px; border-right:2px solid rgba(0,0,0,.26); border-bottom:2px solid rgba(0,0,0,.26); border-bottom-right-radius:11px; } /* subtle curved line echoing the bubble's rounded corner (David 2026-06-24) */
-  .backfill{ position:absolute; border:2px dashed #9a6a86; border-radius:9px; color:#cd9bb6; font-size:11px; font-weight:600; padding:3px 8px; cursor:pointer; display:flex; align-items:center; gap:5px; z-index:1; }
+  /* THE GAP WHISPER (design R21 mode 3A, David's verdict 2026-08-16 — mode 3D, the dashed "slot frame" this used to be, was CUT). The affordance is SPLIT in two by design: .backfill is an INVISIBLE hit rectangle over EVERY untracked gap (it carries the tap), and .bf-say is the one faint line, drawn inside the BIGGEST gap only and pointer-events:none so it is a LABEL, never the target. One whisper, many silent targets — that split is what keeps the timeline quiet instead of noisy. */
+  .backfill{ position:absolute; background:none; border:none; padding:0; cursor:pointer; z-index:3; -webkit-tap-highlight-color:transparent; }
+  .backfill .bf-say{ position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center; font-size:12.5px; font-weight:600; color:rgba(201,140,166,.55); pointer-events:none; white-space:nowrap; } /* top:50% + translateY(-50%) INSIDE the (flow-mapped) hit rect = the design's "gap vertical CENTER" with no second element to keep on the flow map */
+  /* THE UNDO PILL (design R21 mode 3C values, David's verdict 2026-08-16): rides the just-filled block's bottom edge, then leaves on its own at 3200ms. The design's var(--sh-chip)/var(--sh-press) have no app token — resolved to the app's own hard-ink chip shadow, which is what its translateY(2px) press state is arithmetic for. */
+  .bf-undo{ position:absolute; right:30px; z-index:20; display:inline-flex; align-items:center; gap:8px; box-sizing:border-box; min-height:44px; padding:9px 20px; background:#22091a; border:2.5px solid #160510; border-radius:999px; box-shadow:0 4px 0 #160510; color:#ffe3f1; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; cursor:pointer; animation:popIn .14s var(--ease-spring) both; -webkit-tap-highlight-color:transparent; }
+  .bf-undo i{ font-size:17px; color:#ff8fc0; }
+  .bf-undo:active{ transform:translateY(2px); box-shadow:0 2px 0 #160510; }
   /* empty-day PLAN-lane invite (David 2026-06-24 night) */
   .plan-empty{ position:absolute; left:34px; right:calc(50% + 4px); display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; border:2px dashed #ff5fa0; border-radius:12px; background:repeating-linear-gradient(45deg,rgba(255,95,160,.13),rgba(255,95,160,.13) 7px,rgba(255,95,160,.04) 7px,rgba(255,95,160,.04) 14px); color:#ff9dc6; font-family:"Jost",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; z-index:3; text-transform:capitalize; }
   .plan-empty:active{ transform:scale(.97); }
-  .backfill .ti{ font-size:13px; }
   .nowline{ position:absolute; left:26px; right:4px; height:0; border-top:3px solid #ff5fa0; z-index:6; box-shadow:0 0 8px rgba(255,95,160,.5); } /* slim clean pink line with a soft glow — the mockup's now-line (David 2026-07-20) */
   .nowline::before, .nowline::after{ content:""; position:absolute; top:-5px; width:7px; height:7px; border-radius:50%; background:#ff5fa0; box-shadow:0 0 8px #ff5fa8; display:block; } /* small balls capping each end of the now-line (David 2026-06-27) */
   .nowline::before{ left:-3px; } .nowline::after{ right:-3px; }
@@ -3214,7 +3220,7 @@
   .day-stacksep .dss-bat i{ width:5px; height:11px; border-radius:1.5px; background:rgba(255,255,255,.14); }
   .day-stacksep .dss-bat i.on{ background:#ffc41f; }
   .day-sep, .day-sepauto, .day-done{ display:none !important; }
-  .plan-empty, .backfill, .startnew{ display:none !important; }
+  .plan-empty, .startnew{ display:none !important; } /* .backfill LEFT this list 2026-08-16: the gap engine has been built + hidden since v~700 and David's R21 verdict 3A turns it on (an invisible hit rect per gap + one faint whisper on the biggest). .plan-empty / .startnew stay dead. */
   .lanediv{ display:none !important; }
   .calblk.emptyblk{ background:#1c1228 !important; border:2px dashed #6a4a60 !important; } /* empty bubble no longer a loud pink candy box */
   /* THE RIM — kill EVERY frame around the timeline once and for all (David, repeatedly): sheet drop-shadow + outline, the header wine band + its border, the lanehead wine band. The sky bg now runs edge to edge with nothing framing it. (David 2026-06-27) */
@@ -3365,6 +3371,8 @@
   /* GHOST / MISSED plan bubble = domain-tinted-dark hollow + clear domain outline + domain title (David's image 4) — no heavy fade */
   .calblk.ghost{ opacity:1 !important; filter:none !important; }
   .calblk.ghost .cn{ opacity:1 !important; }
+  /* MISSED / LEFT ALONE (design R21 mode 5, David's verdict 2026-08-16): a past undone PLAN, once the day has moved on, reads quieter than a live one. Never red, nothing nags. This is NEWER than the 2026-06-27 "no heavy fade" rule directly above — which is why it needs !important — and it is scoped to .missed so a PARTIAL match's ghost base (you did some of it) keeps the un-faded look David approved then. A past DAY's undone plans do carry it: a missed block is a missed block whatever day it sat on. */
+  .calblk.ghost.missed{ opacity:.45 !important; filter:saturate(.6) !important; }
   /* STREAK tiers: epic+ shimmer their gradient (David's image 2) */
   .streakfill.epic, .streakfill.superepic, .streakfill.legendary{ background-size:200% 100% !important; animation:streakFlow 2.6s linear infinite; }
   .streakfill.legendary{ animation-duration:1.8s; }
@@ -4089,6 +4097,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1308"></script>
+  <script src="app.js?v=1310"></script>
 </body>
 </html>
