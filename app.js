@@ -15777,13 +15777,15 @@
   ];
   function stretchMoveSegs(secs, tag) { // fill `secs` with as many DISTINCT moves as it needs (never looped); more time = more moves, each held; long time lengthens the holds rather than repeating. Returns timelinePlayer segments.
     secs = Math.max(30, secs || 75);
-    var n = Math.max(3, Math.min(STRETCH_MOVES.length, Math.round(secs / 13))); // ~13s per held move
-    var dwell = Math.max(11, secs / n); // if time exceeds the whole pool, holds lengthen to fill instead of looping
+    var _per = PK.speechEst + PK.held;                        // one move = the spoken cue + its short hold
+    var n = Math.max(3, Math.round(secs / _per));             // NO pool cap: a longer dose buys MORE MOVES, and the pool LOOPS past its 14th (David 2026-08-16: "if the user chooses a longer stretch, you simply have to loop certain stuff if you have to"). Looping repeats a move; lengthening the silence repeated NOTHING, which is what felt broken.
     // HOLD CAP (David 2026-08-15: "in the stretching stack a line is said, then a long pause… the long pause feels out of
     // place"). `max(7, dwell - 3.5)` had no ceiling, so a long dose bought SILENCE instead of moves: 120s -> 9.8s holds,
     // 300s -> 17.9s. A held position past PK.held stops being a stretch and becomes waiting. Tagged `held` so the player
     // clamps it again after the real clip length is known, and so the dose re-fit may squeeze it (it never stretches it).
-    return STRETCH_MOVES.slice(0, n).map(function (p) { var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: Math.max(7, Math.min(PK.held, dwell - 3.5)), _pk: "held" }; if (tag != null) o._act = tag; return o; });
+    var out = [];
+    for (var i = 0; i < n; i++) { var p = STRETCH_MOVES[i % STRETCH_MOVES.length]; var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: PK.held, _pk: "held" }; if (tag != null) o._act = tag; out.push(o); }
+    return out;
   }
   // Body floor: a slow head-to-toe stretch flow, on the reliable Web-Audio player (David 2026-07-13: replaced the fixed-3-pose + timer-speak overlay — the long-pause / only-3-moves / iOS-silent bug). The highest-ROI reset for a screen-slumped body.
   function stretchFloor(onDone, secs) {
@@ -15974,7 +15976,7 @@
     somatic: 2.0,      // muscle-to-muscle beat: one breath's worth, fixed. NEVER dose-derived, NEVER depth-scaled.
     somaticRest: 12,   // the rest at a body-group boundary (face · shoulders+chest · arms+legs)
     somaticRelease: 45, // the rest AFTER the last cue — the PMR rebound, and the only place a somatic act is allowed a long silence, because by then there is nothing left to cue
-    held: 12,          // ceiling on a stretch hold — a held position past ~12s stops being a stretch and becomes waiting
+    held: 4,           // THE STRETCH HOLD BEAT (David 2026-08-16: "the first line and you have to wait nine seconds of silence. It just feels empty and weird... make those pauses minimum unless it's specifically about meditation"). Was a 12s CEILING over a 7s floor, so every stretch line was followed by 7-12s of nothing. It is now a flat short beat: long enough to get into the move, short enough that the app never reads as stalled. A longer dose buys MORE MOVES (looped), never longer silence. One-number tunable.
     transition: 2.0,   // act / section boundary: a beat to register the shift (it was literally 0 until today)
     affirmMul: 1.15, affirmMin: 3.0, affirmMax: 7.0, // say-it-back: anchored to the line's OWN spoken length, not the dose
     visualBase: 8, visualSpan: 7,                    // picture-a-scene: 8s guided → 15s spacious (was "cue" = 3.3s, far too short to picture anything)
