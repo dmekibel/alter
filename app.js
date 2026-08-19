@@ -6285,7 +6285,18 @@
   function tbxTrack(id) { return tbxTrackForDose(id, tbxDose(id)); } // the LIVE track for a stack AT ITS CURRENT DOSE: edit → band → legacy track. All consumers (dose card steps, Start, hero launches, the picker's stack picks, the Session Editor seed) read through here so an edit takes effect everywhere and a banded stack never resolves empty. Dose scaling still applies at launch.
   function tbxSetEdit(id, t) { try { S.tools = S.tools || {}; S.tools.tbxEdit = S.tools.tbxEdit || {}; S.tools.tbxEdit[id] = (t || []).map(tbxStep); save(); } catch (e) {} } // additive; NO SCHEMA bump
   function tbxResetEdit(id) { try { if (S.tools && S.tools.tbxEdit) { delete S.tools.tbxEdit[id]; save(); } } catch (e) {} }
-  function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(function (s) { return { k: s.k, d: s.d }; }); var f = target / base; return track.map(function (s) { return { k: s.k, d: Math.max(20, Math.round((s.d || 0) * f)) }; }); } // scale step durations proportionally to the chosen dose (2/5 min); floor 20s/step
+  function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(tbxStep); var f = target / base; return track.map(function (s) { var o = tbxStep(s); o.d = Math.max(20, Math.round((s.d || 0) * f)); return o; }); } // scale step durations proportionally to the chosen dose; floor 20s/step. Copies through tbxStep (2026-08-19) so `med` and the Session Editor's label carriage (t/i/dom/f) survive the scale — the old {k,d} literal silently dropped them, which is why the editor could only re-derive a scaled stack's words from the registry. runStack still reads k/d/med and ignores the rest.
+  function tbxEditSeed(id) { // THE EDITOR OPENS AT THE LENGTH THE RAIL SHOWS (David 2026-08-19 device: "when you click Adjust steps and timing, it does not reflect the length that you chose earlier"). tbxTrack(id) hands back the BAND — the right STEPS at their AUTHORED seconds — while the dose card above prints tbxScaleTrack of that same band, so the editor was the one surface still showing unscaled time: a 30-minute pick opened as a 15.5-minute session. Scale first (the dose card's own number), then apportion onto the editor's half-minute grid (SED_DURS) by largest remainder, so the header total is the chosen dose EXACTLY instead of the ±0.5 the old per-row rounding left. Save/Start write the seconds straight back, and tbxLaunch's re-scale is then a no-op factor of 1.
+    var m = tbxDose(id), t = tbxScaleTrack(tbxTrackForDose(id, m), m), n = t.length; if (!n) return t;
+    var units = Math.max(n, Math.round(m * 2)), q = t.map(function (s) { return (s.d || 0) / 30; }); // units = half-minutes to hand out; every step keeps at least one (the editor cannot show less)
+    var base = q.map(function (x) { return Math.max(1, Math.floor(x)); }), used = 0, i;
+    for (i = 0; i < n; i++) used += base[i];
+    var order = q.map(function (x, ix) { return { i: ix, f: x - Math.floor(x) }; }).sort(function (a, b) { return b.f - a.f; }), left = units - used, p = 0;
+    while (left > 0) { base[order[p % n].i]++; left--; p++; }                                   // the longest-changed steps take the remainder first
+    while (left < 0) { var mx = 0; for (i = 1; i < n; i++) if (base[i] > base[mx]) mx = i; if (base[mx] <= 1) break; base[mx]--; left++; } // over-budget only when a floor bit; shave the longest step
+    for (i = 0; i < n; i++) t[i].d = base[i] * 30;
+    return t;
+  }
   function tbxLaunch(id, mins) { // THE LAUNCH CONTRACT (decision 5): identical to the old tiles + logs the tbx id for most-used ordering (decision 6)
     var it = tbxItem(id); if (!it) return;
     var m = mins || tbxDose(id), track = tbxScaleTrack(tbxTrackForDose(id, m), m); // fold FIRST (which steps), scale second (how long each) — the dose picks the shape, not just the stretch
@@ -6436,7 +6447,7 @@
   function tbxEditSteps(id) { // per-stack step/timing edit: opens the SESSION EDITOR (@SEC:EDITOR) seeded from the stack's live track. Save persists additively to S.tools.tbxEdit[id] (or forks a new custom when "Keep it as a new stack" is on) and repaints the dose card behind it; Start runs the edited track at the chosen dose. Replaced openSessionComposer here 2026-07-27 — one editor, not two.
     var it = tbxItem(id); if (!it) return;
     sedOpen({
-      id: id, title: it.name, rows: sedRowsFromTrack(tbxTrack(id)),
+      id: id, title: it.name, rows: sedRowsFromTrack(tbxEditSeed(id)),
       onSave: function (t, asNew) { if (asNew) { tbxSaveCustom(t); return; } tbxSetEdit(id, t); tbxRepaintDose(id); try { toast(tr("Saved.")); } catch (e) {} },
       onStart: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Start → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
     });
@@ -14518,7 +14529,33 @@
       if (key !== _bPh) { _bPh = key; if (_bSup) { _bSup = false; return; } try { if (ctx) { var ck = breathCueKey(); (BREATH_CUES[ck] || BREATH_CUES.off).hit(s.phase, ctx, bgBus() || ctx.destination, s.phaseDur / 1000); _bHits.push({ t: +curElapsed().toFixed(2), ph: s.phase, key: key, set: ck }); if (_bHits.length > 200) _bHits.shift(); } } catch (e) {} } // the receipt records the boundary AND which set was live at it — "off" is a real, silent set, and a log that hid that would be lying by omission // ONE hit per phase ENTRY. _bSup is set by every jump (pause, seek, ±15, act-nav, the end of a fast-scan) so landing mid-phase never fires a cue the ear already had.
     }
     var _bLiveHook = function () { _bTk = null; }; _breathLive = _bLiveHook; // a settings change forces the tone to be re-made from the new key on the next frame; the cue set is read per hit
-    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice() }, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
+    // ===== THE VISUAL REGISTRY, ON THE FRONT DOOR (David 2026-08-19: "the wave visualization still doesn't work").
+    // Same shape of miss as the cue sounds a round earlier: BREATH_VIZ / breathVizKey() were read ONLY at the top of
+    // breathwork() — the STANDALONE breath tool — so S.breathViz was inert everywhere the main stack actually runs, which
+    // is this player. The picked renderer now draws the BREATH segments here, through its own html/mount/paint contract
+    // (no second renderer, and a third entry in the registry needs no code here).
+    // WHY "orb" MOUNTS NOTHING: the shared orb IS that renderer's element, and it has three other jobs in this player —
+    // the drift-tap target, the ambient breather on every non-breath segment, and the per-act color tint that slides with
+    // the page. Giving "orb" a second .bw-orb would fork the tap target and double the sphere. So "orb" = the shipped
+    // path, untouched; any OTHER key mounts its own node beside the orb, and the orb steps aside only for the breath run.
+    var _vzK = null, _vzN = null, _vzEl = null, _vzOrb = null;
+    function vizDrop() { if (_vzEl && _vzEl.parentNode) _vzEl.parentNode.removeChild(_vzEl); if (_vzOrb) _vzOrb.style.display = ""; _vzEl = null; _vzN = null; _vzK = null; _vzOrb = null; } // restores the orb WE hid, not whichever page is current — an act slide mid-run must not leave a blank page behind it
+    function vizPaint(s) { // s = a makeBreathClock sample on a breath segment, else null. Returns true when the registry visual owns the frame (the orb then sits it out).
+      var k = breathVizKey();
+      if (!s || k === "orb" || !BREATH_VIZ[k] || !orb || !orb.parentNode) { if (_vzEl) vizDrop(); return false; }
+      if (_vzK !== k || !_vzEl || _vzEl.parentNode !== orb.parentNode) { // remount on a live settings change AND on an act slide (the pages each own their own centre column)
+        vizDrop();
+        var host = document.createElement("div"); host.className = "bw-viz"; host.style.cssText = "position:relative;z-index:2;display:flex;align-items:center;justify-content:center;";
+        host.innerHTML = BREATH_VIZ[k].html; // the registry's own markup, verbatim — .bw-wave's px/stroke/glow all live in the #breatheOv CSS the standalone tool already uses, and this overlay carries that same id
+        orb.parentNode.insertBefore(host, orb);
+        var run = _bRun && _bRun.clock, cyc = (run && run.cycles) ? run.total / run.cycles : 16000; // the wave sizes its window to ONE WHOLE CYCLE; the run clock knows both numbers
+        _vzEl = host; _vzK = k; _vzOrb = orb; _vzN = BREATH_VIZ[k].mount(host, cyc); orb.style.display = "none";
+      }
+      BREATH_VIZ[k].paint(_vzN, s);
+      return true;
+    }
+    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
+      ready: ready, transport: bar ? (getComputedStyle(bar).visibility) : null, label: lab ? lab.textContent : null, decoded: segs.filter(function (sg) { return !!sg.buf; }).length, voiced: segs.filter(function (sg) { return !!sg.text; }).length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
 
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
@@ -14584,10 +14621,35 @@
       else { playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; dbg2("ready · tap play"); }
       tick();
     }
+    // ===== THE BOUNDED WAIT (David 2026-08-19, his friend's phone: "the circle appeared, but then the play button below
+    // and the timeline never appeared, and then he had to restart for it to work… even if the internet is slow, it still
+    // opens up the full player"). TTS.getBuffer never REJECTS — it resolves null on every failure — so the old
+    // Promise.all could not throw. What it could do is PEND FOREVER: one stalled `fetch` on a bad link never settles, so
+    // .then never ran, layout() never ran, and `ready` stayed false with bar.style.visibility stuck at "hidden" and the
+    // label stuck on "preparing…". A dead player with a disc in it, clearable only by killing the app. Now every clip
+    // races a timer; a clip that misses the boat resolves null and relayoutFrom's EXISTING no-clip path carries the
+    // segment (0.6s for a line that has words, 0 for a voiceless breath phase) — the session runs, silent lines and all,
+    // instead of stranding the user. Nothing is thrown away: the late fetch still lands in TTS's own bufCache, so the
+    // next open of the same session has the voice. No retry loop — a retry over a link that is already stalling is how
+    // you build an infinite one.
+    var GP_ASSET_WAIT = 5000;
+    function bufWithin(sg, ms) { // ONE clip, bounded. Resolves the buffer if it arrives in time, else null. Never rejects.
+      if (!sg.text) return Promise.resolve(null);
+      return new Promise(function (res) {
+        var t = setTimeout(function () { t = 0; res(null); }, ms);
+        function land(b) { if (!t) return; clearTimeout(t); t = 0; res(b || null); }
+        try { TTS.getBuffer(sg.text).then(land, function () { land(null); }); } catch (e) { land(null); }
+      });
+    }
+    function layoutSafe(bufs, autoplay) { if (ready || done) return; try { layout(bufs, autoplay); } catch (e) { try { if (!ready) { segs.forEach(function (sg) { sg.buf = null; }); relayoutFrom(0); tick(); } } catch (e2) {} } } // even a throw inside layout must not leave the transport hidden: fall back to a voiceless layout, which is the one path that cannot depend on a decoded clip
     // If every clip is ALREADY decoded (pre-warmed on the config screen), lay out + START synchronously — still inside the Begin gesture, so iOS plays it. Otherwise decode async and show the Play button (starting from that tap).
     var syncBufs = opts.autostart ? segs.map(function (sg) { return sg.text ? TTS.getBufferSync(sg.text) : null; }) : null;
-    if (syncBufs && segs.every(function (sg, i) { return !sg.text || syncBufs[i]; })) { layout(syncBufs, true); }
-    else { Promise.all(segs.map(function (sg) { return sg.text ? TTS.getBuffer(sg.text) : Promise.resolve(null); })).then(function (bufs) { var c2 = TTS.ctx(); layout(bufs, !!opts.autostart && !!c2 && c2.state === "running"); }); } // David on device v800: "it didn't play automatically". If the context is already unlocked (any prior tap — toolbox open, the play press that launched us), starting sources after an async decode is legal on iOS → honor autostart. Only a still-suspended context falls back to tap-to-play.
+    if (syncBufs && segs.every(function (sg, i) { return !sg.text || syncBufs[i]; })) { layoutSafe(syncBufs, true); }
+    else {
+      lab.textContent = tr("preparing…"); // the acts player re-points `lab` at page 1, whose label was EMPTY — so a slow open showed a bare disc and nothing else. relayoutFrom clears this the moment the timeline exists.
+      Promise.all(segs.map(function (sg) { return bufWithin(sg, GP_ASSET_WAIT); })).then(function (bufs) { var c2 = TTS.ctx(); layoutSafe(bufs, !!opts.autostart && !!c2 && c2.state === "running"); }, function () { layoutSafe(segs.map(function () { return null; }), false); }); // David on device v800: "it didn't play automatically". If the context is already unlocked (any prior tap — toolbox open, the play press that launched us), starting sources after an async decode is legal on iOS → honor autostart. Only a still-suspended context falls back to tap-to-play.
+      setTimeout(function () { layoutSafe(segs.map(function () { return null; }), false); }, GP_ASSET_WAIT + 1500); // THE WATCHDOG: fires once, and is a no-op the instant `ready` is true. It exists for the stalls the per-clip race cannot see — a hung decodeAudioData, a promise the platform never settles either way — so "the transport is visible" stops depending on any promise keeping its word.
+    }
 
     function stopSources() { sources.forEach(function (s) { try { s.onended = null; s.stop(0); } catch (e) {} }); sources = []; sourceGains = []; }
     function fadeStopSources(ms) { // gentle: ramp the current voice down and stop after, so an act-jump crossfades instead of hard-cutting (David 2026-07-07)
@@ -14660,7 +14722,8 @@
       if (seg && seg.breath) { _bRun = null; for (var _r = 0; _r < _bRuns.length; _r++) if (_si >= _bRuns[_r].a && _si <= _bRuns[_r].b) { _bRun = _bRuns[_r]; break; } if (_bRun) _bs = _bRun.clock.at((e - _bRun.t0) * 1000); }
       if (_bs && playing) breathAudio(_bs); else if (!_bs && _bTone) breathAudioOff(); // the tone lives exactly as long as the breath run does, so a meditation act that follows is never left with a drone under it
       paintPhaseEl(_bs);
-      if (orb) {
+      var _vzOn = vizPaint(_bs); // S.breathViz drives the BREATH segments; "orb" (the default) returns false and the shared sphere below keeps every frame, exactly as it always has
+      if (orb && !_vzOn) {
         var _sc, _op;
         if (_bs) { _sc = 0.84 + 0.30 * _bs.level; _op = 0.60 + 0.40 * Math.min(1, _bs.level); }
         else { var _amb = 0.5 - 0.5 * Math.cos(e * ORB_AMB_W); _sc = 0.90 + 0.15 * _amb; _op = 0.76 + 0.22 * _amb; } // AMBIENT BREATH — DELIBERATELY DECOUPLED from the segment span (re-checked 2026-08-15 when somatic gaps dropped to 2s): it runs off the session's ABSOLUTE elapsed clock at a fixed ~11s period, so shortening a cue's pause can never make the orb pant.
@@ -14789,7 +14852,7 @@
     }
 
     function finish(skip) {
-      if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff();
+      if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff(); vizDrop(); // the breath visual goes with the run — a session that ENDS on a breath phase must hand the closing "Done ✓" beat back to the orb it was hiding
       _activeBed = null; _gpRevoice = null; _gpProbe = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
@@ -18832,6 +18895,8 @@
   window.DEV.segs = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player open"; var sg = p.segs || [], out = [], i; for (i = 0; i < sg.length; i++) { var nxt = sg[i + 1]; out.push({ t: (sg[i].t || "").slice(0, 26), start: sg[i].start, dur: sg[i].dur, gap: (nxt && sg[i].start != null && sg[i].dur != null) ? +(nxt.start - sg[i].start - sg[i].dur).toFixed(2) : null }); } return { n: out.length, elapsed: p.elapsed, total: p.total, segs: out }; }; // the REAL laid-out gap between consecutive segments = next.start - (this.start + this.dur). This is the number the ear hears; the composer's declared `gap` is only its input.
   window.DEV.breathStack = function (pat, secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#63d3c9" }, d: secs || 60, pat: pat || "resonance" }]); return "composed breath session (the toolbox front door's engine) · pat=" + (pat || "resonance"); }; // the same runStackCarousel → composeStackSegs → timelinePlayer path breatheLadder takes, without walking the toolbox
   window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseWord: ov && ov.querySelector(".gp-track .bw-phase:not([style*='hidden']) .bw-phw") ? ov.querySelector(".gp-track .bw-phase .bw-phw").textContent : null, phaseLeft: ov && ov.querySelector(".gp-track .bw-phase .bw-phn") ? ov.querySelector(".gp-track .bw-phase .bw-phn").textContent : null, orb: ov && ov.querySelector(".gp-track .bw-orb") ? ov.querySelector(".gp-track .bw-orb").style.transform : null, label: ov && ov.querySelector(".gp-track .bw-label") ? ov.querySelector(".gp-track .bw-label").textContent : null }; }; // read the running composed player's breath surface without a finger
+  window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
+  window.DEV.viz = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player"; var ov = document.querySelector(".gp-ov"); return { pick: p.breath.viz.pick, mounted: p.breath.viz.mounted, nodeInDom: p.breath.viz.node, orbParked: p.breath.viz.orbParked, pathLen: p.breath.viz.path, samples: p.breath.viz.pts, waveEls: ov ? ov.querySelectorAll(".bw-wave").length : 0, orbs: ov ? ov.querySelectorAll(".bw-orb").length : 0, breathRuns: p.breath.runs, elapsed: p.elapsed }; }; // does the PICKED breath visual actually exist and move in the composed player (the stack's player), not just in the standalone tool
   window.DEV.breathPrefs = function () { return { stored: { breathCue: S.breathCue, breathTone: S.breathTone, breathViz: S.breathViz, legacyBreathSound: S.breathSound }, resolved: { cue: breathCueKey(), tone: breathToneKey(), viz: breathVizKey() }, cueSets: BREATH_CUE_KEYS, tones: BREATH_TONE_KEYS, visuals: BREATH_VIZ_KEYS }; };
   window.DEV.grove = function (act, pid, n) { // DEV: drive THE GROVE without waiting 66 days — plant / set days / witness a stage-up / open any of the three sheet modes.
     pid = pid || "meditation";

@@ -1984,7 +1984,7 @@
   .tbx-dose-2c .tbx-stepcoin i{ font-size:16px; }
   .tbx-dose-2c .tbx-step-tx{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; }
   .tbx-dose-2c .tbx-step-tm{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#b596ad; }
-  .tbx-dose-2c .tbx-dose-foot{ margin-top:0; gap:8px; overflow-x:auto; scrollbar-width:none; }
+  .tbx-dose-2c .tbx-dose-foot{ margin-top:0; gap:8px; overflow-x:auto; overflow-y:hidden; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none; } /* SIDEWAYS ONLY (David 2026-08-19 device: "you're also able to scroll downwards within those numbers"). `overflow-x:auto` alone leaves overflow-y computing to auto, which makes the dose ladder a VERTICAL scroll container too — on iOS that rubber-bands the row under the finger. overflow-y:hidden + the app's own rail idiom (touch-action:pan-x, as .sed-rail / .pk-rail already declare) pins the axis; overscroll-behavior-x:contain stops the ladder's own end from chaining into the world column behind it. */
   .tbx-dose-2c .tbx-dose-foot::-webkit-scrollbar{ display:none; }
   .tbx-dose-2c .tbx-chips{ flex:0 0 auto; gap:8px; }
   .tbx-dose-2c .tbx-chip{ flex:0 0 auto; padding:10px 17px; border-radius:15px; border:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; white-space:nowrap; }
@@ -2005,7 +2005,7 @@
   #tfToolsHint span{ font-family:"Jost",sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; color:#8a6d85; }
   #tfToolsHint i{ font-size:20px; color:#c77ea3; line-height:1; animation:hintFloat 2.2s ease-in-out infinite; }
   /* ===== @SEC:EDITOR — the SESSION EDITOR overlay (design "Session Editor" 2b; 4a = 2b from empty). Every px/hex here is ported from the design markup; only hue-derived fills come from JS. Selection follows the DS choice-row v3 law: the option's OWN hue in 45°/9px candy stripes + ink text, never gold (gold = totals only). ===== */
-  .sed-ov{ position:fixed; inset:0; z-index:98; animation:ovFade var(--dur-micro) var(--ease-settle) both; }
+  .sed-ov{ position:fixed; inset:0; z-index:98; overscroll-behavior:none; animation:ovFade var(--dur-micro) var(--ease-settle) both; } /* the editor owns every finger inside it: nothing it does chains out to the document, whose iOS rubber-band drags a position:fixed overlay off the top/bottom of the screen (David 2026-08-19: "because you can scroll it, it slightly doesn't fit onto the screen") */
   .sed{ position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; background:radial-gradient(120% 72% at 50% 0%, #2c1442 0%, #1c0d26 58%, #150a1a 100%); font-family:"Jost",sans-serif; --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --play:#ffc83d; --restore:#2ab8c4; --upkeep:#7f9bc4; }
   .sed *{ box-sizing:border-box; }
   .sed ::-webkit-scrollbar{ width:0; height:0; }
@@ -2015,7 +2015,7 @@
   .sed-back:active{ transform:translateY(2px); }
   .sed-title{ flex:1; min-width:0; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:27px; color:#fff2f9; line-height:1; }
   .sed-total{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:21px; color:#ffc41f; }
-  .sed-body{ flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; }
+  .sed-body{ flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; } /* the block list's own end stops here — no scroll chaining, no document bounce carrying the fixed shell with it */
   .sed-list{ padding:8px 38px 18px; display:flex; flex-direction:column; gap:12px; }
   .sed-row{ border-radius:22px; border:3px solid #160510; overflow:hidden; background:#1b0b16; }
   .sed-row.sel{ border-color:#ff4fa0; box-shadow:0 8px 20px rgba(0,0,0,.5), 0 0 0 5px rgba(255,79,160,.2), 0 0 38px rgba(255,79,160,.5); }
@@ -4097,6 +4097,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1312"></script>
+  <script src="app.js?v=1314"></script>
 </body>
 </html>
