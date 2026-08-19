@@ -3669,11 +3669,20 @@
     tf.style.height = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); if (bd) bd.classList.add("on");
     if (dk) dk.classList.add("ld-morphing"); // hide the mini dock elements during the morph (their big twins are flying)
     tfMorph(true, function () { TF_ANIM = false; if (ONEPAGE) { try { worldScrollHome(); } catch (e) {} } }); } // ONE-PAGE: land HOME mid-column AFTER the open-morph settles (setting scrollTop mid-morph doesn't hold)
+  // THE CLOSE-LANDING CONTRACT (David 2026-08-19, on his device shot: "what happens when you're done — you see this weird empty screen with an old-looking menu that should never be there").
+  // Closing the cockpit EXPOSES the pane underneath, so it has to hand the adopted journey trail back FIRST. leaveHomeForPlayer() has always
+  // done that on the tool-launch road; the CLOSE paths never did, so #jpTrail stayed parented inside #tfWorldSky (a now-hidden overlay) while
+  // #journeyPath below rendered its header, gem pill, briefcase and progress bar over an EMPTY #jpScroll. That empty screen IS the bug: the
+  // chrome is live, it was simply drawn over nothing. Reproduced in the preview from the night face's Close chevron, v1314.
+  function tfLeaveToPanes() {
+    if (ONEPAGE) { try { teardownWorld(); } catch (e) {} }                                          // releaseTrailFromSky() + jpFocusCur() ride inside it, so the trail comes home parked on its live node
+    try { var jt = el("jpTrail"), js = el("jpScroll"); if (jt && js && !js.contains(jt)) js.appendChild(jt); if (js && (!jt || !jt.children.length)) drawJourney(true); } catch (e) {} // re-home into the SCROLLER (never bare into the pane), and if the trail was never drawn at all, draw it — the pane must never show chrome over nothing
+  }
   function closeTrackerFull() { var tf = el("trackerFull"), dk = el("liveDock"), bd = el("tfBackdrop"); if (!tf) return;
     if (!TF_OPEN || TF_ANIM) return; TF_ANIM = true; if (bd) bd.classList.remove("on"); document.body.classList.remove("home-pane");
     // CRITICAL FLIP GUARD (CKPT-2): clear the stage mode + un-stage the ring BEFORE tfMorph(false), so the close FLIP never measures a corner-posed ring and flies to the wrong spot. (David 2026-06-28)
     TF_MODE = null; TF_MODE_USERSET = false; tf.classList.remove("tf-staged");
-    tfMorph(false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); }
+    tfMorph(false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; tfLeaveToPanes(); }); }
   function tfDrag(ev, opening) { // folded: drag UP on the dock → expand (FINGER-FOLLOWED morph). open: drag DOWN on the sheet → close (morph). A real drag past threshold commits; otherwise it snaps back. A plain tap plays the full animated morph. (David 2026-06-28)
     var tf = el("trackerFull"); if (!tf) return;
     if (!opening && tf.classList.contains("tf-onepage") && tf.classList.contains("tf-onehome")) return; // SCROLL FIX (David 2026-07-22 "hard to scroll... thumb in certain places"): on the ONE-PAGE home the whole column scrolls — the stage's drag-to-close must NOT preventDefault the vertical pan. Bail BEFORE preventDefault so the circle area scrolls like everything else. (CSS also forces touch-action:pan-y on .tf-stage there.)
@@ -3696,7 +3705,7 @@
         var f = Math.max(0, Math.min(1, (-dy) / TARGET));
         if (!dragging) { if (-dy > H * 0.06) openTrackerFull(); return; } // tiny flick before begin armed → just open
         if (f >= 0.35) { tfSettle(pairs, f, true, function () { TF_OPEN = true; TF_ANIM = false; }); } // past threshold → finish opening
-        else { tfSettle(pairs, f, false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (bd) bd.classList.remove("on"); if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; }); } // snap back closed
+        else { tfSettle(pairs, f, false, function () { tf.classList.remove("on", "tf-bg"); tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; if (bd) bd.classList.remove("on"); if (dk) dk.classList.remove("ld-morphing"); TF_OPEN = false; TF_ANIM = false; tfLeaveToPanes(); }); } // snap back closed — the drag road takes the same close-landing contract as the button (or the drag-close lands on the same empty journey page)
       }
       else { if (moved && dy > H * 0.10) closeTrackerFull(); } } // drag DOWN past threshold → close; a tap on the sheet body does nothing
     function openTrackerFull_fromDrag(wasArmed, pr) { // tap path: if we already armed (laid out + measured), just run the full morph from f=0; else go through the normal open
@@ -3761,6 +3770,7 @@
     blocks(k).push(nb); reflow(k); save();
     var t = startTrackerNow(); assignTimer(t, { title: e.title, color: e.color, catK: e.catK, domain: e.dom }); if (t) t.commit = mins; maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
   }
+  function tfDateKicker() { var k = el("tfDateKick"); if (!k) return; var d = new Date(), l = curLang(); k.textContent = (d.toLocaleDateString(l, { weekday: "long" }) + " · " + d.toLocaleDateString(l, { month: "long", day: "numeric" })).toUpperCase(); } // FP3 §1: the date line between the story strip and the stone. ONE writer for BOTH calm boards (idle + night) — the night face used to have no kicker at all, which is what made its whole composition sit 78px high. Real locale names, so no dict keys for weekday/month.
   function renderTrackerFull() {
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return;
     var _sfEl = el("sfReadout"); if (_sfEl) { var _sfv = sfNow(); _sfEl.innerHTML = "✦ Soul Force <b>" + _sfv.sf + "</b>"; } // B: live Soul Force readout (updates on every cockpit render)
@@ -3793,16 +3803,21 @@
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
     var _tt0 = el("tfTitle"); if (_tt0) { _tt0.classList.remove("switchable"); _tt0.style.background = ""; _tt0.style.color = ""; _tt0.style.borderColor = ""; _tt0.onclick = null; } // reset the title-pill (only the active states make it a tappable colored switch-pill)
     // FP3 §3: the old claim FACE (its own disc/title/"away" clock + the stacked Track now / Did it already / Not mine column) is RETIRED. The state is remapped to idle above and its trio is re-housed in tfCatchUp() as a card over the home face; handlers unchanged.
+    // THE NIGHT BOARD **IS** THE HOME BOARD (David 2026-08-19, on his device shot: "I never designed a red looking circle outside the thing. The proportions are all off. It's all moved up… the app should always provide tools. So the home screen should look like the original home screen instead of this broken version of it, even if the middle circle is purple.").
+    // What night legitimately changes: the moon disc, its violet hue + the "rest / no plan tonight" copy, and the one wind-down door the disc itself carries. EVERYTHING else is the idle face's own composition path — renderHomeFace(), not a second frame builder — so the two boards cannot drift apart again. renderTFControls("night") is GONE: its column (a solid "Breathe with me" door over a "Close" chevron) was standing exactly where the board's Planner pill and practice deck belong, which is why the bottom half of the screen was empty and the app offered no tools at night. Home is a PLACE (the 2026-07-20 law), so it carries no close chevron on ANY calm face.
     if (S0.id === "night") { tf.classList.add("st-night");
-      if (tile) { tile.style.background = "#2e2650"; tile.style.border = "none"; tile.style.color = "#b8a8e0"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-moon"></i>'; } // FOUNDATION RESKIN F2: calm solid deep-violet moon disc (no stripe, no harsh filter) inside the breathing violet nightlight ring
-      el("tfTitle").textContent = "rest";
-      el("tfVerdict").textContent = "no plan tonight";
+      if (tile) { tile.style.background = "#2e2650"; tile.style.border = "none"; tile.style.color = "#b8a8e0"; tile.style.filter = ""; tile.innerHTML = '<i class="ti ti-moon"></i>'; tile.style.cursor = "pointer"; tile.onclick = tfNightBreathe; } // FOUNDATION RESKIN F2: calm solid deep-violet moon disc (no stripe, no harsh filter) inside the breathing violet nightlight ring. THE MOON IS THE DOOR: the idle face's pink disc is its play button, so night's disc is its breathe button — the 402x874 board has no spare height for a separate control (planner→deck is the frame's own fixed 78px and the column already fills the zone exactly).
+      el("tfTitle").textContent = tr("rest");
+      el("tfVerdict").textContent = tr("no plan tonight");
       el("tfTime").removeAttribute("data-tid"); el("tfTime").textContent = "";
       el("tfElabel").textContent = "";
-      el("tfCtx").textContent = "rest. I've got the morning";
+      el("tfCtx").textContent = tr("rest. I've got the morning");
       el("tfSpark").innerHTML = "";
-      setRing(1, "#5a4a86"); renderSwitchChips(""); renderTFControls("night");
-      renderHomeFrame(true); // ONE-HOME: night is a CALM face — full frame + tool grid; the moon disc + calm line + one quiet wind-down control (Breathe with me) already render above
+      tfDateKicker();   // the SAME strip → date → stone rhythm the idle board has. Without it the whole night composition sat 78px high against the frame — "the proportions are off on the top, the streaks thing is too close to the very top".
+      tfEarlyPill(null); // the idle face's ghost pill never leaks onto this face
+      setRing(1, "#5a4a86"); renderSwitchChips("");
+      renderHomeFace(); // THE one composition path: strip · date · stone · title · sub · Planner pill · practice deck · TOOLS fold hint
+      if (ONEHOME) { tf.classList.add("tf-onehome"); var _hgN = el("tfHomeGrid"); if (_hgN) { _hgN.style.display = "none"; while (_hgN.firstChild) _hgN.removeChild(_hgN.firstChild); } } // mirrors the idle branch exactly: the shared grid host stays empty+hidden so the deck never doubles
       return;
     }
     if (S0.id === "idle") { tf.classList.add("st-idle"); var nb = nextPlannedBlock(todayK()); var ND = nb ? (DOM[domainOf(nb)] || DOM.focus) : DOM.focus;
@@ -3810,7 +3825,7 @@
       //   (b) the next block is UP (due now, or starting within TF_UPNEXT_MIN) → the disc WEARS that activity (its hue + the FP3 stripe overlay + its own glyph in ink), title "Next: <block>", sub-line "starts at H:MM · play begins it now".
       //   (a) the next block is LATER, or there is none → the flat PINK play disc, title "What now?", the PNG's next-line, plus a ghost mini-pill offering to start it early.
       // Every em dash in the PNG is a "·" here: Gate 1 (copy-audit.py) zero-tolerates em/en dashes app-wide.
-      var _dk = el("tfDateKick"); if (_dk) { var _dd = new Date(), _dl = curLang(); _dk.textContent = (_dd.toLocaleDateString(_dl, { weekday: "long" }) + " · " + _dd.toLocaleDateString(_dl, { month: "long", day: "numeric" })).toUpperCase(); } // real locale names — RU renders natively, so no dict keys for weekday/month
+      tfDateKicker(); // the shared writer (night draws the same line) — real locale names, so no dict keys for weekday/month
       var _upn = !!nb && (hm(nb.time) - nowMin()) <= TF_UPNEXT_MIN; tf.classList.toggle("st-upnext", _upn);
       el("tfTitle").textContent = _upn ? (tr("Next:") + " " + nb.title) : tr("What now?"); // the QUESTION is the title until the block is actually up, then the block NAMES itself
       if (_upn) { el("tfVerdict").textContent = tr("starts at") + " " + fmt(hm(nb.time)) + " · " + tr("play begins it now"); }
@@ -19045,7 +19060,12 @@
       if (_2c) chk("stone has NO rim (2c: halo only)", rim <= 0.5, Math.round(rim * 10) / 10, "0 — the disc fills the stone flush; the frame draws no plum bezel");
       else chk("ring rim px/side", rim >= 5 && rim <= 11, Math.round(rim), "5-11"); }
     if (_2c) { var _hl = tile ? getComputedStyle(tile).boxShadow : ""; // the 2c light is a HALO ON THE DISC and nothing else — the ring's own lift + tuner bloom are a pre-2c recipe and are gone on this face
-      chk("stone halo (2c frame)", _hl.indexOf("rgba(255, 79, 160, 0.09)") >= 0 && _hl.indexOf("rgba(255, 79, 160, 0.28)") >= 0 && _hl.indexOf("11px") >= 0 && _hl.indexOf("64px") >= 0, _hl.slice(0, 64) || "none", "0 0 0 11px rgba(255,79,160,.09) + 0 0 64px rgba(255,79,160,.28) on the DISC (the frame's authored 12/70 as it RENDERS through its scale .91)");
+      // THE HALO RECIPE IS FIXED, THE HUE FOLLOWS THE DISC (David 2026-08-19: "I never designed a red looking circle outside the thing"). The
+      // frame's 11px/64px at .09/.28 is the law on every calm board; the HEX is authored per face. Pink on the day board (its pink stone), and
+      // on the night board the moon's own #5a4a86 — the same hue the night nightlight bloom is already registered in. Painting the day's pink
+      // around a violet moon is what read to him as an undesigned maroon ring.
+      var _tfN = el("trackerFull"), _hh = (_tfN && _tfN.classList.contains("st-night")) ? "rgba(90, 74, 134, " : "rgba(255, 79, 160, ";
+      chk("stone halo (2c frame)", _hl.indexOf(_hh + "0.09)") >= 0 && _hl.indexOf(_hh + "0.28)") >= 0 && _hl.indexOf("11px") >= 0 && _hl.indexOf("64px") >= 0, _hl.slice(0, 64) || "none", "0 0 0 11px " + _hh + ".09) + 0 0 64px " + _hh + ".28) on the DISC (the frame's authored 12/70 as it RENDERS through its scale .91)");
     } else { var bl = ring ? getComputedStyle(ring).boxShadow : ""; var bm = bl.match(/rgba\(255,\s*95,\s*168,\s*([\d.]+)\)\s*0px\s*0px\s*([\d.]+)px/);
       chk("bloom calm", bm ? (+bm[1] <= 0.14 && +bm[2] <= 32) : false, bm ? (bm[1] + "/" + bm[2] + "px") : bl.slice(0, 40), "≤.14/≤32px"); }
     chk("plan button present on home face", !!plan, plan ? "present" : "missing", "present"); // PLAN-ON-HOME (David 2026-07-23 device): the Plan-my-day sticker moved to the home face (#tfCtrls, below the circle block); it must exist once
