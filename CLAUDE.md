@@ -36,6 +36,7 @@ Before writing ANY user-facing line (tool cards, pools, onboarding, journey, toa
 ## How David works (this is why things got rejected — honor it)
 - **Ship-and-test on his phone.** When he says "ship": run `bash _dev/preship.sh`, commit, push, hand him the `/fresh.html` link (cache-bust — he hits Pages deploy-lag constantly). Don't ask permission to ship.
 - **Less ceremony.** "Faster" = build → verify → ship, fewer check-in questions. Take charge, end with one move.
+- **SHORT ANSWERS. HARD RULE (David 2026-08-20: "stop giving me walls of text").** Default to a few lines. Lead with the answer or the one thing he must decide. No recaps of what he just said, no restating the plan, no listing what I did not do. Detail goes in the commit message and the specs, never in chat. Long form ONLY when he asks for it, or for a genuine options-first design call — and even then, options as one line each. If a reply is longer than a phone screen, cut it.
 - **Design choices = options-first** (show 2–3 in chat, he picks, then build). **Bug fixes = just fix.**
 - **Build in the REAL app, never mockups.** Every off-palette mockup got rejected. Palette is locked in `index.html` `:root` (pink/blue/purple/yellow on the sky→lilac→pink gradient).
 - **Don't burn the whole token budget** — pace so he doesn't wake to zero.
