@@ -14605,7 +14605,11 @@
       try {
         var c = card.getBoundingClientRect(); if (!c || !c.width) return;
         _notch.style.top = (c.top - 11) + "px";           // the frame's own -11 from the card's TOP edge
-        _notch.style.left = (c.right - 13 - 16) + "px";   // and 13 in from its RIGHT, for a 16px square
+        _notch.style.left = (c.right - 26 - 16) + "px";   // 26 in from its RIGHT, NOT the frame's 13, for a 16px square.
+        // THE CARD'S CORNER RADIUS IS 22px. At the frame's 13 the notch's right edge lands 9px INSIDE that curve,
+        // where the card's top edge has already fallen away — so its right flank overhangs nothing and reads as a
+        // step, the "line separating it" David kept seeing. 26 puts the whole square on the STRAIGHT part of the top
+        // edge with 4px to spare. The frame could use 13 because its own card is drawn at a different radius.
         _notch.style.right = "auto";
       } catch (e) {}
     }
@@ -19241,6 +19245,28 @@
     var n = live(".bw-phn"), b = live(".bw-phbar i"), o = live(".bw-orb"), l = live(".bw-label");
     return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseLeft: n ? n.textContent : null, phaseBar: b ? b.style.transform : null, orb: o ? o.style.transform : null, label: l ? l.textContent : null }; }; // read the running composed player's breath surface without a finger. The phase WORD is gone (David 2026-08-20 — it repeated the headline); `label` is that headline, `phaseLeft` the seconds now sitting beside it.
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
+  window.DEV.notchAudit = function () { // THE SETTINGS CARD'S TAIL — gated, because four rounds of eyeballing it failed.
+    var card = document.querySelector(".ps-card"), n = document.querySelector(".ps-notch");
+    if (!card || !n) return "open the settings card first (DEV.psPanel())";
+    var c = card.getBoundingClientRect(), r = n.getBoundingClientRect();
+    var cs = getComputedStyle(n), cc = getComputedStyle(card);
+    var rad = parseFloat(cc.borderTopRightRadius) || 0, out = [], pass = 0;
+    function chk(name, ok, got, want) { out.push((ok ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); if (ok) pass++; }
+    chk("tail paints ON TOP of the card", (+cs.zIndex) > (+cc.zIndex), cs.zIndex + " vs " + cc.zIndex,
+        "above, so its fill covers the card's top border and the two read as one shape");
+    chk("tail fill is the card's fill", cs.backgroundColor === cc.backgroundColor, cs.backgroundColor + " vs " + cc.backgroundColor,
+        "identical, or the overlap shows a seam");
+    chk("ink on the two UPPER edges only", parseFloat(cs.borderTopWidth) > 0 && parseFloat(cs.borderLeftWidth) > 0 && parseFloat(cs.borderRightWidth) === 0 && parseFloat(cs.borderBottomWidth) === 0,
+        "t" + cs.borderTopWidth + " l" + cs.borderLeftWidth + " r" + cs.borderRightWidth + " b" + cs.borderBottomWidth,
+        "top+left only — at 45deg those are the tail's outer edges; ink on the others draws a diamond");
+    chk("tail overlaps the card's top edge", r.bottom > c.top + 2, Math.round(r.bottom - c.top) + "px into the card",
+        "> 2px, or it floats detached");
+    chk("tail clears the corner radius", r.right <= c.right - rad + 0.5, Math.round(c.right - r.right) + "px in, radius " + rad,
+        ">= the " + rad + "px radius — inside it the top edge has curved away and the tail overhangs nothing");
+    chk("tail points at the cog", Math.abs((r.left + r.width / 2) - (c.right - rad - 8)) < 26, Math.round(r.left + r.width / 2 - c.left) + "px from the card's left",
+        "near the card's top-right, under the cog it dropped from");
+    return (pass === out.length ? "ALL PASS (" + pass + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
+  };
   window.DEV.waveProbe = function (patKey, steps) { // HEADLESS: drive the SHIPPING wave renderer with a synthetic clock and measure what it actually draws.
     // rAF freezes while the preview pane is hidden, so `ext` never grows there and the on-screen canvas is unmeasurable.
     // This mounts the real registry entry on a detached, explicitly-sized host, runs the real paint with `now` pushed
