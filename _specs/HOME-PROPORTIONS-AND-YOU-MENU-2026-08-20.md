@@ -114,3 +114,51 @@ copy goes through the gates.
 The gear currently opens **The Vital** (the virtue ladder with levels). That surface is not deleted by this
 port, only unhooked from this door. Ask him: should The Vital live behind one of the six rows, move somewhere
 else, or be retired?
+
+---
+
+# ADDENDUM — authored numbers pulled from `design_handoff_home_screen/README.md` (2026-08-20)
+
+Pulled complete (`truncated:false`). This is the handoff David wrote for the 2c home. Authoritative values:
+
+**The home zone's own box:** `[data-z="home"]` is `min-height:874px; flex column; padding:42px 20px 0`.
+So the streak header's top inside the home zone is **42px** — that is the authored gap between the top of the
+home zone and the strip. **Gate it.** (Measured in the app today: strip top 95px from the viewport at the home
+landing, on both the idle and night faces.) The top HUD is an OVERLAY outside the scroller, so it does not
+push the strip down; the 42px is the whole budget.
+
+**Element values, authored:**
+| element | authored |
+|---|---|
+| streak pills | 13px tall; `#36b3f0 #ffc41f #ff4fa0 #2e1a28 #2e1a28`; icon row 17px, spent `#5a3f55` |
+| both strip rows | `perspective:520px; transform-style:preserve-3d` (for the sweep) |
+| date kicker | Jost 800 15px, letter-spacing 6px, `#cdb3cf` |
+| **the stone** | **198px** `#ff4fa0`, halo `0 0 0 12px rgba(255,79,160,.09), 0 0 70px rgba(255,79,160,.28)`, play glyph 58px `#2a0d1c` |
+| "What now?" | Baloo 2 800 36px `#fff2f9` |
+| sub-line | 700 16px `#a487a0` |
+| planner pill | `#8a5cf0`, `0 4px 0 #4e2f96`, Baloo 2 800 16.5px `#f3ecff` |
+| practice tiles | 50px squares, radius 18-20, sticker `0 4px 0 <deep>` |
+| TOOLS hint | 9px 800, 2px tracking, `#8a6d85`; fades over the first 110px of downward travel |
+| home puck | 64px `#ff4fa0`, ink border, `0 5px 0 #160510`, bottom-left |
+
+## THE STRONGEST CANDIDATE FOR "PROPORTIONS ARE OFF"
+The design's stone is **198px**. The app deliberately renders it at **180px** — its own gate says so:
+`"180x180px (the frame's 198px disc at scale .91), the same on every viewport"` (app.js, `designAudit`).
+
+**Someone applied a 0.91 shrink to ONE element.** If the rest of the column was not shrunk by the same 0.91,
+then the app's home is not the design's home scaled — it is the design's home with a smaller circle in it, and
+every ratio around that circle is wrong BY CONSTRUCTION, on every phone. That is exactly what David is
+describing, and it is invisible to the audit because the gate was written to expect 180.
+
+**Do not just change 180 to 198 and ship it.** Establish first, by measurement, whether the whole 2c column was
+authored against a scaled-down copy of the frame (in which case 180 is correct and consistent and the gate is
+right) or whether only the disc was scaled (in which case the column is internally inconsistent). Compare
+several authored values above — the 13px pills, the 36px headline, the 16.5px pill text, the 50px tiles —
+against what the app actually renders at 402x874. **If those match the frame 1:1 while the stone is at 0.91,
+the stone is the odd one out and that is the bug.** Report the full comparison table before changing anything.
+
+## STILL OPEN
+The README also records that the JOURNEY zone's look is explicitly unfinished ("i need to fix the journey
+look... going up from home to journey doesnt work and gets stuck") — David's own note at handoff, and the same
+symptom he reported on device 2026-08-20 (item I). That confirms item I is a KNOWN, deferred design gap, not a
+regression this codebase introduced. He is redesigning the journey now.
