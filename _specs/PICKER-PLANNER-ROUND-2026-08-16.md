@@ -122,3 +122,16 @@ Two separate things, both currently ON by default:
 2. **THE QUIT SOUND EFFECT** — `sfx()` (`grep -n "function sfx" app.js`) already self-guards inside a session (`if (document.getElementById("breatheOv")) return;`) and honours `S.audio.sfx === false`. Find the one fired on leaving/closing the app or the player and remove that call specifically. Do not blanket-disable `sfx()` — other cues (charge, completion) may be wanted; David named only the quit sound.
 
 Both are audio defaults, so verify by measurement (no live source on `_bgBus` outside a session; no sfx call on the quit path), and note that FEEL cannot be judged in the preview.
+
+## L. SESSION EDITOR · a dead grip line, no press-and-hold reorder, and a duration the rail cannot show
+David 2026-08-20, in "Adjust steps & timing" on the Morning Stack.
+
+**L1 — the fake stretch handle.** *"each of the activities has that little line in the middle on the bottom that represents ability to make it stretch, but it can't stretch. So get rid of that little middle line."*
+It is `.sed-grip` — `add(face, "span", "sed-grip")` (app.js) and a `32x4px` bar at `bottom:6px; left:50%` (index.html). It affords a drag that does not exist. **Delete both.**
+
+**L2 — press-and-hold to reorder.** *"you should be able to change the order just by pressing and holding one of them, which should make it kind of float up a little bit towards you, and then you should be able to reorder them in a convenient manner."*
+Long-press lifts the row (scale/shadow toward the viewer), then drag to reorder. Reuse the app's existing drag grammar rather than inventing a third: the planner's GESTURE-OWNS-THE-DOM rule, and the v1317 Arrange drag (transform on the row's own column, node lists cached at pointerdown, no per-frame DOM queries, no full repaint). Hold duration should match the app's menu-open hold (`BLK_HOLD_EDIT_MS`, 480ms) rather than the 820ms charge-ritual holds.
+
+**L3 — a step's real duration is not on the rail. THIS IS A BUG v1318 CREATED.** *"I click on Visualization, which is four minutes, but then the timing of the visualization doesn't show four minutes anywhere. That's not even one of the options."*
+`SED_DURS = [0.5, 1, 1.5, 2, 3, 5, 8, 10, 15]` — **4 is not in it.** v1318's `tbxEditSeed` scales the track to the live dose and apportions the remainder onto "the editor's half-minute grid" by largest remainder, which can land on values (4, 2.5, 3.5, 6...) that have no chip. So the row genuinely holds 4 minutes and the rail shows nothing selected.
+**Fix by showing the truth, not by changing his content:** when a step's duration is not on the rail, insert it as a chip in sorted position and mark it selected. Do NOT snap the step to the nearest rail value — that silently rewrites a timing the dose apportionment computed. Verify with a dose that produces an off-rail value (the Morning Stack at the dose David is on) and report the rail before and after.
