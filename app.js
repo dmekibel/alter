@@ -5307,10 +5307,12 @@
   }
   function tfhPaintDose(scroll, animate) {
     var host = el("tfHeroDose"); if (!host) return;
+    var was = host.querySelector(".tbx-dose"), keep = (was && was.getAttribute("data-tbxdose") === _tfhOpen) ? tbxDoseScroll(was) : null; // the SAME stack's ladder keeps its place across a board re-render (the per-minute sweep rebuilds this card); a DIFFERENT stack must not inherit its neighbour's scroll
     while (host.firstChild) host.removeChild(host.firstChild); // child-drain, never an innerHTML wipe
     if (!_tfhOpen) return;
     var card = tbxBuildDose(_tfhOpen, true); if (!animate) card.classList.remove("tbx-open");
     host.appendChild(card);
+    if (!(keep && keep(card))) tbxDoseSee(card); // restore wins where there is something to restore; otherwise land on the selected chip
     if (scroll) setTimeout(tfhRevealCard, 20); // let the card lay out, then ease the world down until it is fully in view
   }
   function tfhRevealCard() { // TOP-ANCHOR (David's card-open frame 2026-08-11): the frame's first readable row is the HERO TILES, sitting at the very top with the HUD row scrolled away and the pink circle gone. Here the HUD is FIXED chrome, so it can't scroll off — it FADES instead (tfhCardOpenClass → .tfh-cardopen), and the tiles park on the SAFE-AREA LINE the faded HUD still marks: its own top edge is env(safe-area-inset-top)+11, so +1 lands the tiles at env+12. (Two earlier misses: bottom-anchoring the card left the circle half-cut; anchoring under the HUD's BOTTOM parked the Plan-my-day sticker inside the HUD band, painting over the JOURNEY label.)
@@ -6483,7 +6485,16 @@
   }
   function tbxDoseScroll(old) { // THE DOSE ROW KEEPS ITS PLACE (David 2026-08-20: "if you select one, it doesn't magically jump to the left. It stays in the spot where you selected it"). The chips are built in ladder order, so nothing ever reorders — the apparent jump was this whole-card rebuild handing back a fresh scroller parked at 0. Read before, restore after.
     var o = old && old.querySelector ? old.querySelector(".tbx-dose-foot") : null, sl = o ? o.scrollLeft : 0;
-    return function (fresh) { if (!sl || !fresh) return; var n = fresh.querySelector(".tbx-dose-foot"); if (n) n.scrollLeft = sl; };
+    return function (fresh) { if (!sl || !fresh) return false; var n = fresh.querySelector(".tbx-dose-foot"); if (!n) return false; n.scrollLeft = sl; return true; }; // returns whether a REAL saved position was put back — restore always wins, and tbxDoseSee only runs when there was nothing to restore
+  }
+  function tbxDoseSee(card) { // FIRST OPEN LANDS ON THE PICK (David 2026-08-20, PICKER-PLANNER item J: "if you press the Morning Stack, it's selected at thirty minutes but you can't see it because it scrolled all the way to the right. If something is selected, make it visible"). tbxDoseScroll only PRESERVES a position; on a first open there is none, so the row started at 0 and a late dose (30m, 45m) sat past the right edge. Centre the lit chip where the row can, clamped at both ends so neither end shows dead space.
+    if (!card || !card.querySelector) return false;
+    var row = card.querySelector(".tbx-dose-foot"), chip = card.querySelector(".tbx-chip.on"); if (!row || !chip) return false;
+    var max = row.scrollWidth - row.clientWidth; if (max <= 0) return false; // the whole ladder already fits — there is nothing to scroll and nothing to hide
+    var x = 0, e = chip, guard = 8; while (e && e !== row && guard--) { x += e.offsetLeft; e = e.offsetParent; } // LAYOUT px, walked to the row: the card opens under a spring animation and the 2c face is transform-scaled, so a getBoundingClientRect diff would read scaled pixels and centre on the wrong chip
+    if (e !== row) x = chip.offsetLeft - row.offsetLeft; // fallback for the day .tbx-chips or the row itself becomes positioned
+    row.scrollLeft = Math.max(0, Math.min(max, x - (row.clientWidth - chip.offsetWidth) / 2));
+    return true;
   }
   function tbxRepaintDose(id) { // swap the open dose card for a freshly-built one so an edit/reset shows immediately (single-open; the card carries data-tbxdose)
     if (HOME2C && _tfhOpen === id) { var fh = el("tfHeroDose"); if (fh) { var old = fh.querySelector(".tbx-dose"), keep = tbxDoseScroll(old), nf = tbxBuildDose(id, true); nf.classList.remove("tbx-open"); if (old) fh.replaceChild(nf, old); else fh.appendChild(nf); keep(nf); } } // the HOME 2c face card lives outside .tbx — repaint it on the same path (dose chips, band folding, edits and resets all land here)
@@ -6499,7 +6510,7 @@
     _tbxOpenStack = null;
     if (wasOpen) return;
     var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
-    var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
+    var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id; tbxDoseSee(card); // a first open has no saved scroll — land on the chosen dose instead of at 0
     try { var cr = cell.getBoundingClientRect(), pr = card.getBoundingClientRect(); card.style.transformOrigin = Math.round(cr.left + cr.width / 2 - pr.left) + "px 0"; } catch (e) {} // 21e: the panel springs open OUT OF the tapped tile's column
   }
   function tbxBuilderTile(host) { // the PINNED 8th tile: the same STACK CARD face in create-purple with ti-plus + label "Build", no shards (it holds no steps yet). Tap → build-a-custom-stack flow.
@@ -12020,15 +12031,22 @@
     orb: { name: "Orb", html: '<div class="bw-orb"></div>',
       mount: function (root) { return { orb: root.querySelector(".bw-orb") }; },
       paint: function (n, s) { if (n.orb) n.orb.style.transform = "scale(" + (0.5 + s.level * 0.82).toFixed(3) + ")"; } },
-    wave: { name: "Wave", html: '<div class="bw-wave"><svg viewBox="0 0 300 180" preserveAspectRatio="none"><line class="bw-wmid" x1="0" y1="90" x2="300" y2="90"/><path class="bw-wpath" fill="none"/><circle class="bw-wdot" r="6.5" cx="290" cy="150"/></svg></div>',
-      mount: function (root, cycleMs) { var c = Math.max(1000, cycleMs || 16000), push = Math.max(55, c / 200); return { path: root.querySelector(".bw-wpath"), dot: root.querySelector(".bw-wdot"), pts: [], last: -1e9, push: push, cap: Math.round(c / push) + 6 }; }, // the window is sized to ONE WHOLE CYCLE (was a fixed 96 × 55ms ≈ 5.3s, so a 16s calming breath only ever showed a quarter of itself)
+    wave: { name: "Wave", html: '<div class="bw-wave"><svg viewBox="0 0 300 180" preserveAspectRatio="none"><path class="bw-wpath" fill="none"/><circle class="bw-wdot" r="6.5" cx="150" cy="150"/></svg></div>', // the dotted mid-line is DELETED (David 2026-08-20: "there is a little dotted line in the middle of the screen. I don't like that either. Get rid of that") — it was decoration only, nothing measured or read it
+      mount: function (root, cycleMs) { var c = Math.max(1000, cycleMs || 16000), push = Math.max(55, c / 200), pxms = 300 / c; return { path: root.querySelector(".bw-wpath"), dot: root.querySelector(".bw-wdot"), pts: [], last: -1e9, push: push, pxms: pxms, cap: Math.floor(150 / (push * pxms)) + 1 }; }, // pxms holds the SHIPPED density — one whole cycle still measures 300 units wide, so the wave keeps exactly the shape and steepness David already has; only the anchor moves. cap = how many samples fit in the visible half, which is all the buffer ever needs to hold.
+      // THE LIVE EDGE IS THE CENTRE, ALWAYS (David 2026-08-20: "it starts in the middle and then starts going right and then gets off center. Let's keep it always in the middle"). The old draw laid the buffer across the FULL 300 and let the newest sample walk to x=300; v1318's symmetric-fill patch only hid that for the first cycle. Now x is measured BACKWARD IN TIME from x=150: the newest point is pinned dead centre every frame, the past scrolls left, the right half stays empty.
+      // AND THE LINE IS CLEAN (David 2026-08-20: "sometimes it randomly becomes jagged, which doesn't make sense in the context of regular breathing"). Cause, measured with DEV.waveSmooth: x came from the sample's INDEX, not its TIME. Samples are captured on whatever frame first crosses the push threshold, so their spacing in TIME varies — 1.25x on a clean 60fps train, 6.6x across a 350ms hitch (a dropped frame, a GC pause, an audio-decode stall) — while their spacing in X was always identical. Same rise over less run = a near-vertical kink in a curve that is analytically smooth. Mapping x from elapsed removes the cause outright: a segment is now exactly as wide as the time it covers, so a dropped frame draws a straight chord at the correct slope instead of a spike. No smoothing filter, because there is nothing left to smooth.
       paint: function (n, s) {
         if (!n.path) return;
-        if (s.elapsed - n.last > n.push) { n.last = s.elapsed; n.pts.push(s.level); if (n.pts.length > n.cap) n.pts.shift(); }
-        var m = n.pts.length, den = Math.max(1, n.cap - 1), off = Math.round((n.cap - m) / 2), d = "", i; // CENTRED (David 2026-08-20: "make the breathing wave always in the middle of the screen instead of off to the right"). While the buffer is still filling — the whole first cycle, up to 16s of every session — a right-aligned partial path drew ONLY in the right half and read as a wave shoved to the edge. Splitting the empty remainder evenly grows it out from the middle instead. Once the buffer is full off = 0 and this is byte-for-byte the shipped full-width drawing, so nothing changes for the other 99% of a session.
-        for (i = 0; i < m; i++) d += (i ? "L" : "M") + (((i + off) / den) * 300).toFixed(1) + " " + (160 - n.pts[i] * 132).toFixed(1) + " ";
+        var t = s.elapsed, L = n.pts, k;
+        if (L.length && (t < L[L.length - 1].t || t - L[L.length - 1].t > 4000)) { L.length = 0; n.last = -1e9; } // a seek, a scrub, or the NEXT breath run restarting its own clock at 0 — never stretch a stale buffer across the jump
+        if (t - n.last >= n.push) { n.last = t; L.push({ t: t, v: s.level }); }
+        while (L.length && (t - L[0].t) * n.pxms > 150) L.shift(); // the buffer IS the visible half; anything older than the left edge is gone, so every drawn x lands in 0..150
+        var d = "";
+        for (k = 0; k < L.length; k++) d += (k ? "L" : "M") + (150 - (t - L[k].t) * n.pxms).toFixed(1) + " " + (160 - L[k].v * 132).toFixed(1) + " ";
+        var cy = (160 - s.level * 132).toFixed(1);
+        d += (d ? "L" : "M") + "150.0 " + cy + " "; // the live point, drawn EVERY frame at the true current level — the leading edge now moves at 60fps instead of stepping once per captured sample
         n.path.setAttribute("d", d);
-        if (m && n.dot) { n.dot.setAttribute("cx", (((m - 1 + off) / den) * 300).toFixed(1)); n.dot.setAttribute("cy", (160 - n.pts[m - 1] * 132).toFixed(1)); } // the live dot rides the path's own live end, so it sits mid-screen while the wave grows and reaches the right edge exactly when the window is full
+        if (n.dot) { n.dot.setAttribute("cx", "150"); n.dot.setAttribute("cy", cy); }
       } }
   };
   var BREATH_VIZ_KEYS = ["orb", "wave"];
@@ -12048,7 +12066,7 @@
   var BREATH_SOUND_MIGRATE = { silent: "off", bell: "bell", bells3: "bell", chime: "bell", harp: "bell", bowl: "gong", wood: "woodblock", flute: "bell", chord: "bell", ocean: "bell" };
   function breathCueKey() { try { if (BREATH_CUES[S.breathCue]) return S.breathCue; var m = BREATH_SOUND_MIGRATE[S.breathSound]; return m || "woodblock"; } catch (e) { return "woodblock"; } } // default: cues ON, the WOODBLOCK set (David 2026-08-20; was bell). A stored pick — including "off", a real cue set — still wins, and so does a legacy S.breathSound choice.
   function breathToneKey() { try { if (S.breathTone == null) return "ocean"; return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "ocean"; } } // default: the OCEAN tone (David 2026-08-20; was off). An explicit stored "off" is a real choice and is honoured — only an unset pref gets the new default.
-  function breathVizKey() { try { return BREATH_VIZ[S.breathViz] ? S.breathViz : "orb"; } catch (e) { return "orb"; } }
+  function breathVizKey() { try { if (S.breathViz == null) return "wave"; return BREATH_VIZ[S.breathViz] ? S.breathViz : "wave"; } catch (e) { return "wave"; } } // default: the WAVE (David 2026-08-20; was orb). Resolved here, the same shape as breathCueKey/breathToneKey a build earlier, so a user who actually TAPPED "Orb" keeps the orb and only an unset preference gets the new default.
   var _breathLive = null; // the running breath surface's "re-read the sound prefs" door, so a change in the settings applies to the session you are IN (the same shape as _activeBed). Cleared on teardown.
   // BREATH PREVIEW (BUILD 2026-07-19, David: "when you press on the sounds you can't hear them"): a short in / hold / out demo so you can choose BEFORE the session. It runs the SAME makeBreathClock, the SAME cue-set `hit` at each turn and the SAME tone the live session runs, so what you preview is byte-for-byte what you get. Routed through the bg bus (the Sound slider applies). Returns { stop }.
   function breathPreview(cueKey, toneKey) {
@@ -12146,11 +12164,11 @@
     var cycleMs = 0; for (var _q = 0; _q < PAT.ph.length; _q++) cycleMs += PAT.ph[_q][1]; // the headline pattern's own round — the wave sizes its window to it
     var vizKey = breathVizKey(), VIZ = BREATH_VIZ[vizKey];
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "bw-" + vizKey;
-    ov.innerHTML = '<button class="bw-x">skip</button>' + VIZ.html + '<div class="bw-cap"><div class="bw-label">Get comfy…</div><div class="bw-sub">' + (vizKey === "wave" ? "follow the wave" : "follow the orb") + '</div><div class="bw-phase"><div class="bw-phrow"><span class="bw-phw"></span><b class="bw-phn"></b></div><div class="bw-phbar"><i></i></div></div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the viz (David 2026-07-12). .bw-phase is THE EXPLICIT INDICATOR (David 2026-08-15): the canonical phase word + the seconds left in it + a line that empties over the phase — the pattern's own label can read "Long exhale", this always reads Inhale / Hold / Exhale / Rest.
+    ov.innerHTML = '<button class="bw-x">skip</button>' + VIZ.html + '<div class="bw-cap"><div class="bw-lrow"><div class="bw-label">Get comfy…</div><b class="bw-phn"></b></div><div class="bw-sub">' + (vizKey === "wave" ? "follow the wave" : "follow the orb") + '</div><div class="bw-phase"><div class="bw-phbar"><i></i></div></div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the viz (David 2026-07-12). THE INDICATOR, SAID ONCE (David 2026-08-20: "get rid of repeating the same thing twice — the text that says inhale and the numbers. And you can add the counter next to the big text above"): the 2026-08-15 block printed its own phase WORD and seconds under a headline already reading "Breathe in". The word is gone, the seconds moved up beside the headline (.bw-lrow), and what is left below is the draining line alone — longer now, because it is the only thing left to track.
     document.body.appendChild(ov); var _bvBtn = addVoiceToggle(ov); var _bvPaint = function () { if (_bvBtn) _bvBtn.innerHTML = (S && S.breathVoice) ? '<i class="ti ti-volume"></i>' : '<i class="ti ti-volume-off"></i>'; }; _bvPaint(); if (_bvBtn) _bvBtn.onclick = function (e) { e.stopPropagation(); S.breathVoice = !(S && S.breathVoice); save(); _bvPaint(); if (!(S && S.breathVoice)) { try { TTS.stop(); } catch (_e) {} try { schedSrcs.forEach(function (s) { try { s.stop(); } catch (er) {} }); } catch (_e2) {} } }; // GUIDED BREATH = VOICELESS by default (David 2026-07-20): this toggle controls S.breathVoice (breath-only, default off), NOT global voice — breath never talks unless opted in; turning it off mid-session stops the scheduled clips.
     var lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     var vnodes = VIZ.mount(ov, cycleMs);
-    var phEl = ov.querySelector(".bw-phase"), phW = ov.querySelector(".bw-phw"), phN = ov.querySelector(".bw-phn"), phB = ov.querySelector(".bw-phbar i");
+    var phEl = ov.querySelector(".bw-phase"), phN = ov.querySelector(".bw-phn"), phB = ov.querySelector(".bw-phbar i");
     // THE TWO AUDIO LAYERS, INDEPENDENT (David 2026-08-15). S.breathCue picks the per-phase cue set, S.breathTone picks the guiding tone; either, both or neither. The old single S.breathSound could only ever be one of them.
     var actx = null; try { actx = sharedAudioCtx(); } catch (e) { actx = null; }
     var CU = BREATH_CUES.off, tone = null, toneKey = "off";
@@ -12197,13 +12215,13 @@
     var _bwScope = function () { return { hue: barCol, breath: true, stack: false }; };
     var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); _gpSettings = _bwScope; openVolumePanel(); }; ov.appendChild(cog);
     function paintBars(elMs) { for (var bi2 = 0; bi2 < bars.length; bi2++) { var b = bars[bi2], f = b.e > b.s ? (elMs - b.s) / (b.e - b.s) : (elMs >= b.s ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (barFills[bi2]) barFills[bi2].style.width = (f * 100) + "%"; } }
-    var curIdx = -1, _lw = "", _ln = "";
-    function paintPhase(s) { // THE EXPLICIT INDICATOR — write only what changed (the bar is a transform, so it never reflows)
+    var curIdx = -1, _ln = "";
+    function paintPhase(s) { // THE INDICATOR — write only what changed (the bar is a transform, so it never reflows)
       if (!phEl) return;
-      if (!s) { phEl.style.visibility = "hidden"; return; }
+      if (!s) { phEl.style.visibility = "hidden"; if (phN) phN.style.display = "none"; return; } // display, not visibility, on the counter: it shares a centred row with the headline, and a reserved-but-blank slot would hold the headline off-centre
       phEl.style.visibility = "";
-      var w = tr(s.word); if (w !== _lw) { _lw = w; if (phW) phW.textContent = w; }
       var n = "" + Math.max(1, Math.ceil(s.remain / 1000)); if (n !== _ln) { _ln = n; if (phN) phN.textContent = n; }
+      if (phN) phN.style.display = "";
       if (phB) phB.style.transform = "scaleX(" + (1 - s.progress).toFixed(3) + ")";
     }
     function frame() {
@@ -14485,17 +14503,16 @@
     TTS.unlock(); // gesture-bound: schedule while the context is awake
     var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "gp-ov";
-    var BW_PHASE_INNER = '<div class="bw-phrow"><span class="bw-phw"></span><b class="bw-phn"></b></div><div class="bw-phbar"><i></i></div>'; // THE EXPLICIT INDICATOR (David 2026-08-15: "an explicit indicator of whether I should be inhaling, holding or exhaling") — the canonical phase word, the seconds left in it, and a line that empties over the phase. Hidden on every non-breath segment.
-    ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div><div class="bw-phase">' + BW_PHASE_INNER + '</div>';
+    var BW_PHASE_INNER = '<div class="bw-phbar"><i></i></div>'; // THE INDICATOR (David 2026-08-20): the draining line ALONE. Its old phase word and seconds repeated the headline right above them; the seconds now ride beside that headline in .bw-lrow and the word is gone. Hidden on every non-breath segment.
+    ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-lrow"><div class="bw-label">preparing…</div><b class="bw-phn"></b></div><div class="bw-sub"></div><div class="bw-phase">' + BW_PHASE_INNER + '</div>';
     document.body.appendChild(ov);
-    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), phEl = ov.querySelector(".bw-phase");
-    function paintPhaseEl(s) { // targeted writes on three nodes; the emptying line is a transform, so it never reflows the cue text above it
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), phEl = ov.querySelector(".bw-phase"), phN = ov.querySelector(".bw-phn");
+    function paintPhaseEl(s) { // targeted writes on two nodes; the emptying line is a transform, so it never reflows the cue text above it
       if (!phEl) return;
-      if (!s) { phEl.style.visibility = "hidden"; return; }
+      if (!s) { phEl.style.visibility = "hidden"; if (phN) phN.style.display = "none"; return; } // the counter shares the headline's centred row, so it LEAVES the row on a non-breath segment instead of holding a blank slot that would push the line off-centre
       phEl.style.visibility = "";
-      var _w = phEl.querySelector(".bw-phw"), _n = phEl.querySelector(".bw-phn"), _b = phEl.querySelector(".bw-phbar i");
-      if (_w) _w.textContent = tr(s.word);
-      if (_n) _n.textContent = "" + Math.max(1, Math.ceil(s.remain / 1000));
+      var _b = phEl.querySelector(".bw-phbar i");
+      if (phN) { phN.textContent = "" + Math.max(1, Math.ceil(s.remain / 1000)); phN.style.display = ""; }
       if (_b) _b.style.transform = "scaleX(" + (1 - s.progress).toFixed(3) + ")";
     }
     paintPhaseEl(null);
@@ -14524,11 +14541,11 @@
       var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:9px;z-index:6;pointer-events:none;"; // FULL-WIDTH story bars (David 2026-07-13): the ✕ / gear drop BELOW the bars (gp-ov CSS) so the bars span the whole screen, like the stack carousel
       acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(a.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + (a.color || col) + ";transition:width .2s linear;"; actFills.push(fl); var ic = add(colx, "i", "ti " + (a.icon || "ti-circle-filled")); ic.style.cssText = "font-size:22px;line-height:1;color:" + (a.color || col) + ";opacity:.34;transition:opacity .3s;"; actLabels.push(ic); actResume.push(null); }); // the LINE on top, a bigger COLORED SYMBOL below it; brightens as you pass through (David 2026-07-08)
       // HORIZONTAL TRACK OF PER-ACTIVITY PAGES (David 2026-07-07): the WHOLE page slides sideways and the next identical page slides in, Instagram-story style — you see the slide. Each page has its own color-tinted orb. Top bars + bottom transport are the fixed frame.
-      orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; if (phEl) phEl.style.display = "none"; // the single template content is unused in acts mode
+      orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; if (phN) phN.style.display = "none"; if (phEl) phEl.style.display = "none"; if (lab.parentNode && lab.parentNode.className === "bw-lrow") lab.parentNode.style.display = "none"; // the single template content is unused in acts mode — the headline row goes too, so it can never sit in the centring flow as an empty flex item
       track = add(ov, "div", "gp-track"); track.style.cssText = "position:fixed;inset:0;display:flex;width:" + (acts.length * 100) + "vw;z-index:2;transition:transform .44s cubic-bezier(.4,0,.2,1);will-change:transform;pointer-events:none;";
       pages = [];
-      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); var pph = add(pg, "div", "bw-phase"); pph.innerHTML = BW_PHASE_INNER; pph.style.visibility = "hidden"; pages.push({ orb: porb, lab: plab, sub: psub, ph: pph }); }); // each page carries its own phase indicator, so it slides with its activity like the cue line does
-      orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; phEl = pages[0].ph; // live refs point at the current page
+      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var prow = add(pg, "div", "bw-lrow"); var plab = add(prow, "div", "bw-label"); var pn = add(prow, "b", "bw-phn"); pn.style.display = "none"; var psub = add(pg, "div", "bw-sub"); var pph = add(pg, "div", "bw-phase"); pph.innerHTML = BW_PHASE_INNER; pph.style.visibility = "hidden"; pages.push({ orb: porb, lab: plab, n: pn, sub: psub, ph: pph }); }); // each page carries its own phase indicator, so it slides with its activity like the cue line does
+      orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; phEl = pages[0].ph; phN = pages[0].n; // live refs point at the current page
     }
     // F5 · ACT-BARS (David 2026-07-13): a bars-ONLY sequence indicator (meditation blocks) — the same top story-bars as the stack, but with the single continuous orb below (no page-slide, no block-nav). Independent of `acts`, so it touches none of the acts/pages/nav machinery.
     var actBars = (!acts && opts.actBars && opts.actBars.length > 1) ? opts.actBars : null, abFills = [], abIcons = [];
@@ -14540,7 +14557,7 @@
     }
     function onActEnter(ai) { // SLIDE the whole page to activity ai (its page is pre-tinted) + point the live refs at that page + set its current line + tint the shared transport
       if (!acts || !pages || !pages[ai]) return;
-      orb = pages[ai].orb; lab = pages[ai].lab; sub = pages[ai].sub; phEl = pages[ai].ph;
+      orb = pages[ai].orb; lab = pages[ai].lab; sub = pages[ai].sub; phEl = pages[ai].ph; phN = pages[ai].n;
       if (track) track.style.transform = "translateX(" + (-ai * 100) + "vw)"; // THE SLIDE
       var c = acts[ai].color || col; try { ov.style.setProperty("--gp-c", c); if (bPlay) bPlay.style.background = c; if (fill) fill.style.background = "linear-gradient(90deg," + mixHex(c, "#ffffff", 0.4) + "," + c + ")"; } catch (e) {}
       var e2 = curElapsed(), seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e2) seg = segs[i]; else break; }
@@ -18973,7 +18990,10 @@
   window.DEV.stack = function (id, secs, pat) { runStackCarousel([{ k: { id: id || "stretch", name: id || "stretch", ti: "ti-yoga", col: "#46e2a4" }, d: secs || 120, pat: pat }]); return "running " + (id || "stretch") + " for " + (secs || 120) + "s — read DEV.segs() once it is ready"; }; // DEV: launch ANY tool as a real one-act stack through the SAME carousel a real tap uses, so a pause can be measured where it actually plays (after relayoutFrom's dose re-fit and the real decoded clip lengths) rather than where the composer merely declared it. DEV.breathStack is this with id "breathe" pre-filled.
   window.DEV.segs = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player open"; var sg = p.segs || [], out = [], i; for (i = 0; i < sg.length; i++) { var nxt = sg[i + 1]; out.push({ t: (sg[i].t || "").slice(0, 26), start: sg[i].start, dur: sg[i].dur, gap: (nxt && sg[i].start != null && sg[i].dur != null) ? +(nxt.start - sg[i].start - sg[i].dur).toFixed(2) : null }); } return { n: out.length, elapsed: p.elapsed, total: p.total, segs: out }; }; // the REAL laid-out gap between consecutive segments = next.start - (this.start + this.dur). This is the number the ear hears; the composer's declared `gap` is only its input.
   window.DEV.breathStack = function (pat, secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#63d3c9" }, d: secs || 60, pat: pat || "resonance" }]); return "composed breath session (the toolbox front door's engine) · pat=" + (pat || "resonance"); }; // the same runStackCarousel → composeStackSegs → timelinePlayer path breatheLadder takes, without walking the toolbox
-  window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseWord: ov && ov.querySelector(".gp-track .bw-phase:not([style*='hidden']) .bw-phw") ? ov.querySelector(".gp-track .bw-phase .bw-phw").textContent : null, phaseLeft: ov && ov.querySelector(".gp-track .bw-phase .bw-phn") ? ov.querySelector(".gp-track .bw-phase .bw-phn").textContent : null, orb: ov && ov.querySelector(".gp-track .bw-orb") ? ov.querySelector(".gp-track .bw-orb").style.transform : null, label: ov && ov.querySelector(".gp-track .bw-label") ? ov.querySelector(".gp-track .bw-label").textContent : null }; }; // read the running composed player's breath surface without a finger
+  window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov");
+    function live(sel) { var ns = ov ? ov.querySelectorAll(".gp-track " + sel) : []; for (var i = 0; i < ns.length; i++) if (ns[i].offsetParent) return ns[i]; return null; } // the SHOWN one, across the carousel's pages — offsetParent is null on a display:none page or a hidden counter, so this can never report a stale page's text as live
+    var n = live(".bw-phn"), b = live(".bw-phbar i"), o = live(".bw-orb"), l = live(".bw-label");
+    return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseLeft: n ? n.textContent : null, phaseBar: b ? b.style.transform : null, orb: o ? o.style.transform : null, label: l ? l.textContent : null }; }; // read the running composed player's breath surface without a finger. The phase WORD is gone (David 2026-08-20 — it repeated the headline); `label` is that headline, `phaseLeft` the seconds now sitting beside it.
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
   window.DEV.viz = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player"; var ov = document.querySelector(".gp-ov"); return { pick: p.breath.viz.pick, mounted: p.breath.viz.mounted, nodeInDom: p.breath.viz.node, orbParked: p.breath.viz.orbParked, pathLen: p.breath.viz.path, samples: p.breath.viz.pts, waveEls: ov ? ov.querySelectorAll(".bw-wave").length : 0, orbs: ov ? ov.querySelectorAll(".bw-orb").length : 0, breathRuns: p.breath.runs, elapsed: p.elapsed }; }; // does the PICKED breath visual actually exist and move in the composed player (the stack's player), not just in the standalone tool
   window.DEV.waveGeom = function (fillPct, cycleMs) { // THE WAVE'S ARITHMETIC, headless. rAF is frozen whenever the preview pane is hidden, so the live wave can never be watched growing there — this runs the SHIPPING BREATH_VIZ.wave mount/paint over n synthetic samples on a detached node and reports where it actually draws. viewBox is 0 0 300 180, so 150 is the centre.
@@ -18981,12 +19001,29 @@
     var n = BREATH_VIZ.wave.mount(host, cyc), want = Math.max(1, Math.round(n.cap * (fillPct == null ? 1 : fillPct)));
     for (var i = 0; i < want; i++) BREATH_VIZ.wave.paint(n, { elapsed: i * (n.push + 1), level: 0.5 + 0.4 * Math.sin(i / 6) });
     var d = n.path.getAttribute("d") || "", xs = (d.match(/[ML]([0-9.]+)/g) || []).map(function (s) { return +s.slice(1); });
-    var lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs);
-    return { cap: n.cap, pushMs: n.push, samples: n.pts.length, drawnFrom: +lo.toFixed(1), drawnTo: +hi.toFixed(1), drawnCentre: +((lo + hi) / 2).toFixed(1), dotCx: n.dot.getAttribute("cx"), viewBoxCentre: 150 };
+    var lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs), liveX = xs.length ? xs[xs.length - 1] : null;
+    return { cap: n.cap, pushMs: n.push, samples: n.pts.length, drawnFrom: +lo.toFixed(1), drawnTo: +hi.toFixed(1), liveX: liveX, dotCx: +n.dot.getAttribute("cx"), viewBoxCentre: 150, liveAtCentre: (liveX === 150 && +n.dot.getAttribute("cx") === 150) };
   };
   window.DEV.psPanel = function (openIt) { if (openIt !== false && !document.querySelector(".ps-ov")) openVolumePanel(); var c = document.querySelector(".ps-card"); if (!c) return "no settings card"; c.style.animation = "none"; /* the drop-in animation is CSS, and CSS animations FREEZE while the preview pane is hidden — measuring through it reads the psCog 0% keyframe (scale .72) as the card geometry. Clearing it measures the settled card, which is what the frame specifies. */ var p = window.__psProbe ? window.__psProbe() : {}; var r = c.getBoundingClientRect(), cs = getComputedStyle(c), n = c.querySelector(".ps-notch"), nr = n ? n.getBoundingClientRect() : null, ns = n ? getComputedStyle(n) : null, gd = c.querySelector(".ps-bedgrid"); var big = c.querySelector(".ps-chip:not(.sm)"), sm = c.querySelector(".ps-chip.sm"), tk = c.querySelector(".ps-track"), kn = c.querySelector(".ps-knob"); function box(e) { if (!e) return null; var b = e.getBoundingClientRect(), s = getComputedStyle(e); return { w: +b.width.toFixed(1), h: +b.height.toFixed(1), pad: s.padding, radius: s.borderRadius, border: s.borderTopWidth, shadow: s.boxShadow, font: s.fontSize + "/" + s.fontWeight }; }
     return { scope: p, card: { top: +r.top.toFixed(1), right: +(window.innerWidth - r.right).toFixed(1), w: +r.width.toFixed(1), radius: cs.borderRadius, border: cs.borderTopWidth, pad: cs.padding, gap: cs.gap, bg: cs.backgroundColor, shadow: cs.boxShadow, origin: cs.transformOrigin, z: cs.zIndex }, notch: nr ? { right: +(r.right - nr.right).toFixed(1), topFromCard: +(nr.top - r.top).toFixed(1), w: +nr.width.toFixed(1), h: +nr.height.toFixed(1), radius: ns.borderRadius, border: ns.borderLeftWidth } : null, chipBig: box(big), chipSmall: box(sm), track: tk ? { h: +tk.getBoundingClientRect().height.toFixed(1), radius: getComputedStyle(tk).borderRadius } : null, knob: box(kn), bedGrid: gd ? { rows: getComputedStyle(gd).gridTemplateRows, gap: getComputedStyle(gd).gap, overflowY: getComputedStyle(gd).overflowY, touch: getComputedStyle(gd).touchAction, mask: (getComputedStyle(gd).webkitMaskImage || getComputedStyle(gd).maskImage || "").slice(0, 60), chips: gd.children.length } : null, beds: bedKeys(), sliders: Array.prototype.map.call(c.querySelectorAll(".ps-fill"), function (f) { return f.style.width; }) }; }; // the card measured against the frame's quoted numbers, without a finger
   window.DEV.beds = function () { return { selected: bedKeys(), cats: bedKeys().map(function (k) { return BED_CAT[k]; }), stored: S.audio && S.audio.bed, filesLive: BGBED.running(), bgmRunning: BGM.running(), padsLive: _padLive, appMusic: !!(S.audio && S.audio.appMusic), order: BED_ORDER }; }; // filesLive = keys with a LIVE BufferSource; bgmRunning = the Mysterious sequencer. Two beds AUDIBLE is these two numbers, not two lit chips.
+  window.DEV.waveSmooth = function (cycleMs, jankMs, jankEvery) { // THE JAGGED-LINE PROBE (David 2026-08-20: "sometimes it randomly becomes jagged, which doesn't make sense"). Drives the SHIPPING wave renderer over a real 60fps frame train with periodic jank gaps (a dropped frame, a GC pause, an audio-decode hitch) and asks ONE question of the drawn path: is each segment as wide as the time it covers? distortion = the true horizontal width of a segment / the width it was actually drawn at. 1.00 = the line is the breath. >1 = that segment was squeezed, and a squeezed segment IS the kink — the same rise over less run.
+    var c = cycleMs || 10000, jank = jankMs == null ? 350 : jankMs, every = jankEvery || 37;
+    var host = document.createElement("div"); host.innerHTML = BREATH_VIZ.wave.html;
+    var n = BREATH_VIZ.wave.mount(host, c), inMs = c * 0.4, t = 0, f = 0, times = [], seen = n.last;
+    function lvl(e) { var p = e % c, prog = p < inMs ? p / inMs : (p - inMs) / (c - inMs), ez = 0.5 - 0.5 * Math.cos(Math.PI * prog); return p < inMs ? ez : 1 - ez; } // easeInOutSine, the clock's own curve
+    while (t < c * 2.2) { BREATH_VIZ.wave.paint(n, { elapsed: t, level: lvl(t) }); if (n.last !== seen) { seen = n.last; times.push(t); } f++; t += (f % every === 0) ? jank : 16.7; }
+    var d = n.path.getAttribute("d") || "", pts = (d.match(/[ML][-0-9.]+ [-0-9.]+/g) || []).map(function (s) { var a = s.slice(1).split(" "); return { x: +a[0], y: +a[1] }; });
+    var buf = n.pts.length, ts = times.slice(Math.max(0, times.length - buf));
+    if (pts.length === ts.length + 1) ts.push(t - ((f % every === 0) ? jank : 16.7)); // the live point, drawn at the frame's own elapsed
+    var pxms = 300 / c, worst = 1, worstAt = null, maxDrawn = 0, maxTrue = 0, i, dxd, dxt, dy;
+    for (i = 1; i < Math.min(pts.length, ts.length); i++) {
+      dxd = pts[i].x - pts[i - 1].x; dxt = (ts[i] - ts[i - 1]) * pxms; dy = Math.abs(pts[i].y - pts[i - 1].y);
+      if (dxd > 0.001) { if (dxt / dxd > worst) { worst = dxt / dxd; worstAt = +ts[i].toFixed(0); } maxDrawn = Math.max(maxDrawn, dy / dxd); }
+      if (dxt > 0.001) maxTrue = Math.max(maxTrue, dy / dxt);
+    }
+    return { frames: f, jankGaps: Math.floor(f / every), jankMs: jank, drawnPts: pts.length, maxDistortion: +worst.toFixed(3), worstAtMs: worstAt, maxDrawnSlope: +maxDrawn.toFixed(3), maxTrueSlope: +maxTrue.toFixed(3), slopeBlowup: +(maxDrawn / (maxTrue || 1)).toFixed(3) };
+  };
   window.DEV.breathPrefs = function () { return { stored: { breathCue: S.breathCue, breathTone: S.breathTone, breathViz: S.breathViz, legacyBreathSound: S.breathSound }, resolved: { cue: breathCueKey(), tone: breathToneKey(), viz: breathVizKey() }, cueSets: BREATH_CUE_KEYS, tones: BREATH_TONE_KEYS, visuals: BREATH_VIZ_KEYS }; };
   window.DEV.grove = function (act, pid, n) { // DEV: drive THE GROVE without waiting 66 days — plant / set days / witness a stage-up / open any of the three sheet modes.
     pid = pid || "meditation";
