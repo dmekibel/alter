@@ -14861,6 +14861,12 @@
         var run = _bRun && _bRun.clock, cyc = (run && run.cycles) ? run.total / run.cycles : 16000; // the wave sizes its window to ONE WHOLE CYCLE; the run clock knows both numbers
         _vzEl = host; _vzK = k; _vzOrb = orb; _vzN = BREATH_VIZ[k].mount(host, cyc); orb.style.display = "none";
       }
+      // THE WAVE NEEDS A LEVEL FUNCTION, NOT A LEVEL (David on device 2026-08-20: "wave visualization is still broken,
+      // it's just a flat line"). It draws history to the left of centre and the ghost to the right, so it evaluates the
+      // breath at t +/- several seconds — that is what `s.lvl(ms)` is for. A clock sample only carries `s.level`, ONE
+      // number for right now, so the renderer's fallback returned that same constant for every x and drew a dead
+      // horizontal line. The run clock can already answer any instant, so hand its `at()` over.
+      if (!s.lvl && _bRun && _bRun.clock && _bRun.clock.at) { var _ck = _bRun.clock; s.lvl = function (ms) { try { var q = _ck.at(ms); return q ? q.level : s.level; } catch (e) { return s.level; } }; }
       BREATH_VIZ[k].paint(_vzN, s);
       return true;
     }
@@ -19214,6 +19220,37 @@
     var n = live(".bw-phn"), b = live(".bw-phbar i"), o = live(".bw-orb"), l = live(".bw-label");
     return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseLeft: n ? n.textContent : null, phaseBar: b ? b.style.transform : null, orb: o ? o.style.transform : null, label: l ? l.textContent : null }; }; // read the running composed player's breath surface without a finger. The phase WORD is gone (David 2026-08-20 — it repeated the headline); `label` is that headline, `phaseLeft` the seconds now sitting beside it.
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
+  window.DEV.waveProbe = function (patKey, steps) { // HEADLESS: drive the SHIPPING wave renderer with a synthetic clock and measure what it actually draws.
+    // rAF freezes while the preview pane is hidden, so `ext` never grows there and the on-screen canvas is unmeasurable.
+    // This mounts the real registry entry on a detached, explicitly-sized host, runs the real paint with `now` pushed
+    // past the grow-in, and reads the pixels back. A FLAT result here is a real bug; a flat on-screen canvas is not.
+    try {
+      var pat = patKey || "box", N = steps || 1;
+      var host = document.createElement("div");
+      host.style.cssText = "position:fixed;left:-9999px;top:0;width:340px;height:280px;";
+      document.body.appendChild(host);
+      host.innerHTML = BREATH_VIZ.wave.html;
+      var n = BREATH_VIZ.wave.mount(host.firstChild || host, 16000);
+      var ck = makeBreathClock(breathPhaseList(breathStages(pat, 2)));
+      var t0 = Date.now(), out = [];
+      for (var k = 0; k < N; k++) {
+        var el = 4000 + k * 1000;
+        var cur = ck.at(el);
+        BREATH_VIZ.wave.paint(n, { elapsed: el, level: cur ? cur.level : 0,
+          lvl: function (ms) { var q = ck.at(ms); return q ? q.level : 0; },
+          now: t0 + 5000 + k * 1000, run: true });                       // +5s: past WAVE_GROW_MS, so ext is 1
+        var cv = n.cv, c2 = cv.getContext("2d"), d = c2.getImageData(0, 0, cv.width, cv.height).data, ys = [];
+        for (var x = 0; x < cv.width; x += Math.max(1, Math.floor(cv.width / 40))) {
+          for (var y = 0; y < cv.height; y++) { if (d[(y * cv.width + x) * 4 + 3] > 40) { ys.push(y); break; } }
+        }
+        var span = ys.length ? Math.max.apply(null, ys) - Math.min.apply(null, ys) : 0;
+        out.push({ elapsed: el, ext: n.geom && n.geom.ext, amp: n.geom && n.geom.amp, cols: ys.length,
+                   ySpan: span, verdict: span > 20 ? "WAVE" : "FLAT" });
+      }
+      host.remove();
+      return out;
+    } catch (e) { return "ERR " + e.message; }
+  };
   window.DEV.viz = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player"; var ov = document.querySelector(".gp-ov"); return { pick: p.breath.viz.pick, mounted: p.breath.viz.mounted, nodeInDom: p.breath.viz.node, orbParked: p.breath.viz.orbParked, pathLen: p.breath.viz.path, samples: p.breath.viz.pts, waveEls: ov ? ov.querySelectorAll(".bw-wave").length : 0, orbs: ov ? ov.querySelectorAll(".bw-orb").length : 0, breathRuns: p.breath.runs, elapsed: p.elapsed }; }; // does the PICKED breath visual actually exist and move in the composed player (the stack's player), not just in the standalone tool
   window.DEV.waveGeom = function (fillPct, cycleMs) { // THE WAVE'S ARITHMETIC, headless. rAF is frozen whenever the preview pane is hidden, so the live wave can never be watched growing there — this runs the SHIPPING BREATH_VIZ.wave mount/paint over n synthetic samples on a detached node and reports where it actually draws. viewBox is 0 0 300 180, so 150 is the centre.
     var cyc = cycleMs || 16000, host = document.createElement("div"); host.innerHTML = BREATH_VIZ.wave.html;

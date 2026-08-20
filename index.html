@@ -687,11 +687,16 @@
   #breatheOv .bw-sub{font-size:13px;color:#bcb0e8;font-weight:600;margin-top:4px;}
   /* THE ORB STAYS PERFECTLY STILL (David 2026-07-12): the cue text lives in .bw-cap, pulled OUT of the centered flex flow and hung from a fixed line below the orb, so cue lines of any length grow DOWNWARD and can never push the orb up or down. The orb is now the only centered flow child. */
   /* THE PHASE INDICATOR, SAID ONCE (David 2026-08-20: "the little thing on the bottom that shows you how much time is left is redundant... get rid of repeating the same thing twice — the text that says inhale and the numbers. And you can add the counter next to the big text above. And you can make the loading bar longer so it's easier to track"). The 2026-08-15 block's phase word is deleted, its seconds moved into .bw-lrow beside the headline, and the draining line is all that remains below — widened 96px -> min(70vw,288px) because it is now the only thing to track. The line is still driven by transform:scaleX so it never reflows the cue above it. */
-  #breatheOv .bw-lrow{display:flex;align-items:baseline;justify-content:center;gap:11px;position:relative;z-index:2;}
+  /* STACKED, NOT SIDE BY SIDE (David 2026-08-20: "the number should be below text and above the loading", and earlier
+     "when it says 'breathe in 1' it looks like it's saying breathe in ONE SECOND"). Beside the word the count reads as
+     part of the sentence; under it, the word is a word and the number is a number. R25 frame: word, then the count on
+     its own line pulled up 6px, then the bar. */
+  #breatheOv .bw-lrow{display:flex;flex-direction:column;align-items:center;gap:0;position:relative;z-index:2;}
+  #breatheOv .bw-lrow > *:last-child{margin-top:-6px;}
   #breatheOv .bw-phn{font-family:var(--bub);font-size:20px;font-weight:800;color:#f2ecff;font-variant-numeric:tabular-nums;letter-spacing:0;opacity:.88;}
   #breatheOv .bw-phase{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;z-index:2;}
-  #breatheOv .bw-phbar{width:min(70vw,288px);height:3px;border-radius:2px;background:rgba(255,255,255,.13);overflow:hidden;}
-  #breatheOv .bw-phbar i{display:block;height:100%;width:100%;border-radius:2px;background:#9a7cff;transform-origin:left center;}
+  #breatheOv .bw-phbar{width:176px;height:6px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;}
+  #breatheOv .bw-phbar i{display:block;height:100%;width:100%;border-radius:4px;background:#9a7cff;transform-origin:left center;}
   #breatheOv.gp-ov .bw-phn{font-family:"Jost",sans-serif;font-size:16px;color:#fff2f9;}
   #breatheOv.gp-ov .bw-phbar i{background:var(--gp-c,#9a7cff);}
   #breatheOv .bw-cap{position:absolute;left:0;right:0;top:calc(50% + 72px);z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 18px;pointer-events:none;}
@@ -4168,6 +4173,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1330"></script>
+  <script src="app.js?v=1333"></script>
 </body>
 </html>
