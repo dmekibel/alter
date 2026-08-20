@@ -790,12 +790,13 @@
   .ps-chip.sel:active{box-shadow:0 1px 0 #160510 !important;}
   .ps-beds{position:relative;}
   /* overflow-y:hidden + touch-action:pan-x = the v1313 dose-rail lesson: without them this three-row field scrolls VERTICALLY under a finger */
-  .ps-bedgrid{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,30px);gap:6px;justify-content:start;padding-right:20px;grid-auto-columns:97px;scroll-snap-type:x mandatory;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);}
+  .ps-bedgrid{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,30px);gap:6px;justify-content:start;padding-right:20px;grid-auto-columns:107px;scroll-snap-type:x mandatory;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);}
   .ps-bedgrid::-webkit-scrollbar{display:none;}
   /* UNIFORM COLUMNS + SNAP (David 2026-08-20: "each button is the same size and they aren't cut off half way when you open settings").
      Content-sized columns gave four different widths (60/51/68/76 measured) and left the last one sliced by the field edge.
-     calc((100% - 6px)/2) makes every column identical and lands exactly TWO of them on the content box, so the third begins
-     past the padding and is wholly out of view rather than halved; the snap keeps every scrolled rest position on a column too. */
+     107px makes every column identical AND puts the third column's left edge at exactly 226px — the field's own width — so
+     it is entirely out of view rather than sliced. 97px left 20px of a chip showing inside the fade, which David saw as a
+     button cut in half. Two full columns beat three with a severed one; the chevron and the snap say there is more. */
   .ps-bedgrid > *{scroll-snap-align:start;}
   .ps-more{position:absolute;right:-9px;top:50%;transform:translateY(-50%);font-size:14px;color:#7d6d92;pointer-events:none;}
   .ps-vol{display:flex;align-items:center;gap:8px;margin:2px 4px 4px 0;}
@@ -4167,6 +4168,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1325"></script>
+  <script src="app.js?v=1326"></script>
 </body>
 </html>
