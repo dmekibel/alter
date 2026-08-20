@@ -14604,8 +14604,11 @@
     function _psNotch() {
       try {
         var c = card.getBoundingClientRect(); if (!c || !c.width) return;
-        _notch.style.top = (c.top - 11) + "px";           // the frame's own -11 from the card's TOP edge
-        _notch.style.left = (c.right - 26 - 16) + "px";   // 26 in from its RIGHT, NOT the frame's 13, for a 16px square.
+        _notch.style.top = (c.top - 13 + 3) + "px";      // BASE on the card's top edge: the 13px triangle ends 3px inside it, so its fill covers the card's 3px border
+        var _rad = parseFloat(getComputedStyle(card).borderTopRightRadius) || 22;
+        _notch.style.left = (c.right - _rad - 2 - 26) + "px"; // right edge 2px clear of where the corner starts curving
+        // The cog sits ABOVE the card's rounded corner, so a tail that pointed exactly at it would have to stand on
+        // the curve. It goes as far right as a flat base allows and reads as coming from that corner regardless.
         // THE CARD'S CORNER RADIUS IS 22px. At the frame's 13 the notch's right edge lands 9px INSIDE that curve,
         // where the card's top edge has already fallen away — so its right flank overhangs nothing and reads as a
         // step, the "line separating it" David kept seeing. 26 puts the whole square on the STRAIGHT part of the top
@@ -19254,13 +19257,18 @@
     function chk(name, ok, got, want) { out.push((ok ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); if (ok) pass++; }
     chk("tail paints ON TOP of the card", (+cs.zIndex) > (+cc.zIndex), cs.zIndex + " vs " + cc.zIndex,
         "above, so its fill covers the card's top border and the two read as one shape");
-    chk("tail fill is the card's fill", cs.backgroundColor === cc.backgroundColor, cs.backgroundColor + " vs " + cc.backgroundColor,
-        "identical, or the overlap shows a seam");
-    chk("ink on the two UPPER edges only", parseFloat(cs.borderTopWidth) > 0 && parseFloat(cs.borderLeftWidth) > 0 && parseFloat(cs.borderRightWidth) === 0 && parseFloat(cs.borderBottomWidth) === 0,
-        "t" + cs.borderTopWidth + " l" + cs.borderLeftWidth + " r" + cs.borderRightWidth + " b" + cs.borderBottomWidth,
-        "top+left only — at 45deg those are the tail's outer edges; ink on the others draws a diamond");
-    chk("tail overlaps the card's top edge", r.bottom > c.top + 2, Math.round(r.bottom - c.top) + "px into the card",
-        "> 2px, or it floats detached");
+    chk("tail's OUTER triangle is the card's INK", cs.backgroundColor === cc.borderTopColor, cs.backgroundColor + " vs " + cc.borderTopColor,
+        "the card's own border colour — the outer triangle IS the tail's border, so it must match the card's edge, not its fill");
+    chk("tail is a TRIANGLE, not a rotated square", (cs.clipPath || "").indexOf("polygon") >= 0,
+        cs.clipPath || "none",
+        "a clip-path triangle — a rotated square shows all four corners and cannot merge with a curved edge");
+    var _in = getComputedStyle(n, "::after");
+    chk("tail's inner fill is the card's fill", _in.backgroundColor === cc.backgroundColor, _in.backgroundColor + " vs " + cc.backgroundColor,
+        "identical — the inner triangle is what covers the card's top border and joins the two shapes");
+    chk("inner fill runs PAST the base", parseFloat(_in.bottom) < 0, _in.bottom,
+        "a negative bottom, so the fill overshoots into the card and no border line survives between them");
+    chk("tail's BASE sits on the card's top edge", Math.abs(r.bottom - c.top - 3) <= 2, Math.round(r.bottom - c.top) + "px past the card's top",
+        "~3px, so the base is seated on the edge and its fill covers the 3px border");
     chk("tail clears the corner radius", r.right <= c.right - rad + 0.5, Math.round(c.right - r.right) + "px in, radius " + rad,
         ">= the " + rad + "px radius — inside it the top edge has curved away and the tail overhangs nothing");
     chk("tail points at the cog", Math.abs((r.left + r.width / 2) - (c.right - rad - 8)) < 26, Math.round(r.left + r.width / 2 - c.left) + "px from the card's left",
