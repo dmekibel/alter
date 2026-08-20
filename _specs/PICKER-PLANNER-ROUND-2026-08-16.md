@@ -105,3 +105,11 @@ The magnet's above-home branch (`wSnapIntent`, exposed as `DEV.wIntent`) reads, 
 **Reproduction plan:** measure `wSkyY()`, `wHomeY()`, `#tfWorldSky.offsetHeight`, `#jpTrail.offsetHeight`, `#tfWorld.scrollHeight` and `clientHeight` at the home landing, with BOTH a short trail (few nodes) and a long one (`DEV.seedDay` / a day with many nodes). Then sweep `DEV.wIntent` across the above-home range and print what it returns at each offset. The fix follows the measurement: if the escape threshold is unreachable for short trails, the release condition must key off the sky zone's REAL height rather than a fixed viewport, and the journey must be reachable to its top in every case.
 
 Regression contract: item 1 (vertical scroll flows continuously, no snap-back bounce) is exactly what this violates. Re-verify all four after any change, and remember the preview lies about scroll — a programmatic `scrollTop` fires no scroll event, so verify the ENGINE with the pure-decision probe (`DEV.wIntent`), never by watching landings.
+
+## J. BUG · the dose ladder opens at scrollLeft 0, hiding the chip that is already selected
+David 2026-08-20: *"In the home, if you press the Morning Stack, right now for me it's selected at thirty minutes, but you can't see it because it scrolled all the way to the right. So if something is selected, make it visible. You have to scroll to the spot of selection so the user doesn't wonder where it's at."*
+
+The exact complement of item G. G made `tbxDoseScroll()` PRESERVE `scrollLeft` across `tbxRepaintDose`, which is right for a repaint — but on the FIRST open there is no saved position, so the row starts at 0 and a dose late in the ladder (30m, 45m) sits off the right edge with nothing visibly selected.
+
+Fix: when the dose card is built and no scroll position is being restored, scroll the row so the SELECTED chip is in view. Centre it if the row can scroll that far, otherwise clamp to the ends (a chip near either end must not leave dead space). Do not fight the G restore — restore wins when there is a saved position, this only fills the first-open case. Same rule applies to both dose cards now that the non-2c one was unified in v1317.
+Keep the v1313 axis lock (`overflow-y:hidden; touch-action:pan-x`) intact.
