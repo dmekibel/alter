@@ -19248,6 +19248,58 @@
     var n = live(".bw-phn"), b = live(".bw-phbar i"), o = live(".bw-orb"), l = live(".bw-label");
     return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseLeft: n ? n.textContent : null, phaseBar: b ? b.style.transform : null, orb: o ? o.style.transform : null, label: l ? l.textContent : null }; }; // read the running composed player's breath surface without a finger. The phase WORD is gone (David 2026-08-20 — it repeated the headline); `label` is that headline, `phaseLeft` the seconds now sitting beside it.
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
+  // ===== AUDIT ROBUSTNESS (David 2026-08-20: "can we make the design audit tool more robust?") =====
+  // Built from how it actually failed us this week, not from principle:
+  //   1. it reported 74/74 while the night face was broken  -> it only knew ONE surface
+  //   2. it reported 13 FAIL while everything was fine       -> it measured a board with no box
+  //   3. the notch passed 6/6 while visibly wrong            -> gates only encode what I already thought of
+  //   4. one gate failed when the GATE was wrong, not the code -> nothing proved a gate could fail
+  // (2) is handled by designAudit's bail. These three help with (1), (3) and (4).
+
+  window.DEV.auditAll = function () { // ONE entry point. Runs every surface's audit and says plainly which it could not reach.
+    var parts = [], tot = 0, bad = 0, skipped = [];
+    [["home board", window.DEV.designAudit], ["settings tail", window.DEV.notchAudit]].forEach(function (a) {
+      var r; try { r = a[1](); } catch (e) { r = "ERR " + e.message; }
+      var txt = String(r);
+      if (txt.indexOf("PASS") < 0 && txt.indexOf("FAIL") < 0) { skipped.push(a[0] + " — " + txt.slice(0, 90)); return; }
+      var lines = txt.split("\n"), p = 0, f = 0;
+      lines.forEach(function (l) { if (/^PASS/.test(l.trim())) p++; else if (/^FAIL/.test(l.trim())) f++; });
+      tot += p + f; bad += f;
+      parts.push((f ? "FAIL " : "ok   ") + a[0] + " · " + p + " pass / " + f + " fail");
+    });
+    return (bad ? "FAILURES PRESENT" : "ALL PASS") + " · " + tot + " gates across " + parts.length + " surfaces\n" +
+      parts.join("\n") + (skipped.length ? "\nNOT REACHED (open the surface, then re-run):\n  " + skipped.join("\n  ") : "");
+  };
+
+  window.DEV.auditProve = function () { // CAN EACH GATE ACTUALLY FAIL? Perturb the thing a gate watches and demand it flips.
+    // A gate that cannot fail is decoration. The vh sentinel was proven this way by hand (injecting 2.06vh, which
+    // resolves to 18.0044px at the artboard and slips past every pixel gate); this automates the same idea for the
+    // tail, whose eight gates all passed while David was looking at something visibly wrong.
+    var n = document.querySelector(".ps-notch"), card = document.querySelector(".ps-card");
+    if (!n || !card) return "open the settings card first (DEV.psPanel())";
+    var base = String(window.DEV.notchAudit());
+    if (base.indexOf("FAIL") >= 0) return "fix the live failures before proving the gates:\n" + base;
+    var saved = n.getAttribute("style") || "";
+    var probes = [
+      ["tail paints ON TOP", function () { n.style.zIndex = "1"; }],
+      ["OUTER triangle is the card's INK", function () { n.style.background = "#ff0000"; }],
+      ["tail is a TRIANGLE", function () { n.style.clipPath = "none"; }],
+      ["BASE sits on the card's top edge", function () { n.style.top = (parseFloat(n.style.top) - 40) + "px"; }],
+      ["clears the corner radius", function () { n.style.left = (card.getBoundingClientRect().right - 20) + "px"; }]
+    ];
+    var out = [], blind = 0;
+    probes.forEach(function (pr) {
+      n.setAttribute("style", saved); pr[1]();
+      var got = String(window.DEV.notchAudit());
+      var caught = got.split("\n").some(function (l) { return /^FAIL/.test(l.trim()) && l.indexOf(pr[0]) >= 0; });
+      if (!caught) blind++;
+      out.push((caught ? "CATCHES" : "BLIND  ") + " · " + pr[0]);
+    });
+    n.setAttribute("style", saved);
+    return (blind ? blind + " GATE(S) CANNOT FAIL — they are decoration" : "every probed gate catches its own break") +
+      "\n" + out.join("\n");
+  };
+
   window.DEV.notchAudit = function () { // THE SETTINGS CARD'S TAIL — gated, because four rounds of eyeballing it failed.
     var card = document.querySelector(".ps-card"), n = document.querySelector(".ps-notch");
     if (!card || !n) return "open the settings card first (DEV.psPanel())";
