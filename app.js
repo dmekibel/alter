@@ -14596,7 +14596,23 @@
 
     var ov = add(document.body, "div", "ps-ov");
     var card = add(ov, "div", "ps-card");
-    add(ov, "div", "ps-notch");                                  // points at the cog it dropped from. ON THE OVERLAY, NEVER THE CARD
+    var _notch = add(ov, "div", "ps-notch");
+    // POSITION IT FROM THE CARD'S MEASURED BOX, never from arithmetic. Twice now this notch has been placed by
+    // computing where the card "should" be (top 156 / right 14) and twice it landed wrong — once clipped, once
+    // floating. The card's real rect is the only thing that knows where its corner is, so ask it. Re-measured after
+    // the entry animation settles, and again on resize/rotate.
+    function _psNotch() {
+      try {
+        var c = card.getBoundingClientRect(); if (!c || !c.width) return;
+        _notch.style.top = (c.top - 11) + "px";           // the frame's own -11 from the card's TOP edge
+        _notch.style.left = (c.right - 13 - 16) + "px";   // and 13 in from its RIGHT, for a 16px square
+        _notch.style.right = "auto";
+      } catch (e) {}
+    }
+    _psNotch();
+    requestAnimationFrame(function () { _psNotch(); setTimeout(_psNotch, 320); }); // again after the psCog spring settles
+    window.addEventListener("resize", _psNotch);
+    ov.addEventListener("psclose", function () { window.removeEventListener("resize", _psNotch); });                                  // points at the cog it dropped from. ON THE OVERLAY, NEVER THE CARD
     // (David device 2026-08-20: "the diamond shape is in the wrong spot"). .ps-card carries the psCog entry TRANSFORM, and a
     // transformed element becomes the containing block for its position:fixed CHILDREN — so a notch inside it measured its
     // 145px from the CARD's top rather than the viewport and sat ~155px too low. As a child of the scrim it shares the
