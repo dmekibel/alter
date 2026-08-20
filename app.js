@@ -47,6 +47,13 @@
   function _audioCfg() { return (typeof S !== "undefined" && S && S.audio) ? S.audio : { voice: 1, bg: 1 }; }
   function sharedAudioCtx() {
     try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; if (!_sharedACtx) _sharedACtx = new AC(); if (_sharedACtx.state === "suspended") { try { _sharedACtx.resume(); } catch (e) {} }
+      // PLAY THROUGH THE RING/SILENT SWITCH (David on device 2026-08-20: "the app sound doesn't work unless the iPhone
+      // speaker is turned on, in other words vibrate is turned off — I want the sound to work regardless"). By default
+      // iOS files web audio under the "ambient" session, which the hardware mute switch silences: correct for a game,
+      // wrong for a guided session the user deliberately started. `navigator.audioSession.type = "playback"` is
+      // WebKit's own opt-out (iOS 16.4+) and is the ONLY supported way — there is no CSS or Web Audio flag for it.
+      // Set on every call because the session can be reset by an interruption (a phone call, another app taking audio).
+      try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) {}
       // TWO master buses (David 2026-07-01): every VOICE clip routes through _voiceBus, every ambient/drone through _bgBus → the volume sliders set these and affect ALL audio live, including a running tool.
       if (!_voiceBus) { _voiceBus = _sharedACtx.createGain(); _voiceBus.gain.value = _audioCfg().voice != null ? _audioCfg().voice : 1; _voiceBus.connect(_sharedACtx.destination); }
       if (!_bgBus) { _bgBus = _sharedACtx.createGain(); _bgBus.gain.value = _audioCfg().bg != null ? _audioCfg().bg : 1; _bgBus.connect(_sharedACtx.destination); }
@@ -12197,10 +12204,25 @@
       // centre, history runs to its LEFT, and x is measured by TIME (spp seconds per pixel) — never by sample index.
       mount: function (root) {
         var cv = root.querySelector(".bw-cv"); if (!cv) return { c: null };
-        var dpr = Math.min(3, (window.devicePixelRatio || 1)); // the backing store is DPR-scaled and the context pre-scaled, so every coordinate below stays in the frame's own 340x280 px while the line stops looking chewed on a 3x screen
-        cv.width = Math.round(WAVE_W * dpr); cv.height = Math.round(WAVE_H * dpr);
+        var dpr = Math.min(3, (window.devicePixelRatio || 1)); // the backing store is DPR-scaled and the context pre-scaled, so every coordinate below stays in LAYOUT px while the line stops looking chewed on a 3x screen
+        // THE CANVAS MUST BE TOLD ITS CSS SIZE (David's device 2026-08-20: "it's broken and produces some random line
+        // on screen"). A canvas with no CSS width/height lays out at its ATTRIBUTE size, so a DPR-scaled backing store
+        // of 680x560 became a 680px-wide element inside a 288px box and spilled a flat band clean across the phone.
+        // Size the backing store from the HOST's real box, not the frame's 340x280: the renderer is already
+        // proportional (midX = w/2, baseY = h*0.78), so it adapts, and the drawing can never stretch against the host.
+        cv.style.width = "100%"; cv.style.height = "100%"; cv.style.display = "block";
+        var _r = root.getBoundingClientRect();
+        var _w = Math.round(_r.width) || WAVE_W, _h = Math.round(_r.height) || WAVE_H;
+        cv.width = Math.round(_w * dpr); cv.height = Math.round(_h * dpr);
         var c = cv.getContext("2d"); if (c) c.setTransform(dpr, 0, 0, dpr, 0, 0);
-        return { cv: cv, c: c, dpr: dpr, ext: 0, run: false, tw: 0, geom: null };
+        // EVERY coordinate is derived from the host's REAL box, never from the frame's literal 340x280. The frame's
+        // own numbers are all proportional (midX = w/2, baseY = 0.78h, amplitude 120 of 280, fade 56 of 340), so they
+        // carry over exactly; only SPP is scaled the other way, by WAVE_W/w, so the visible TIME WINDOW stays the
+        // design's regardless of how wide the host is. Hardcoding 340x280 is what drew the band off the screen.
+        return { cv: cv, c: c, dpr: dpr, ext: 0, run: false, tw: 0, geom: null,
+                 w: _w, h: _h, midX: _w / 2, baseY: _h * 0.78,
+                 fade: WAVE_FADE * (_w / WAVE_W), ampBase: WAVE_HEIGHT * (_h / WAVE_H),
+                 spp: WAVE_SPP * (WAVE_W / _w) };
       },
       paint: function (n, s) {
         var c = n.c; if (!c) return;
@@ -12208,40 +12230,41 @@
         if (run !== n.run) { n.run = run; n.tw = now - (run ? n.ext : 1 - n.ext) * WAVE_GROW_MS; } // reverse the ramp FROM WHERE IT IS, so a pause 400ms into the grow folds back from 18%, not from full
         var e = (now - n.tw) / WAVE_GROW_MS; e = e < 0 ? 0 : e > 1 ? 1 : e;
         var ext = n.ext = run ? e : 1 - e;
-        var amp = WAVE_HEIGHT * (WAVE_REST + (1 - WAVE_REST) * ext), baseY = WAVE_BASEY;
+        var W = n.w || WAVE_W, H = n.h || WAVE_H, MX = n.midX != null ? n.midX : WAVE_MIDX, FADE = n.fade || WAVE_FADE, SPP = n.spp || WAVE_SPP;
+        var amp = (n.ampBase || WAVE_HEIGHT) * (WAVE_REST + (1 - WAVE_REST) * ext), baseY = n.baseY != null ? n.baseY : WAVE_BASEY;
         var lvl = s.lvl, flat = s.level;
         function sm(ms) { if (!lvl) return flat; var v = 0, i; for (i = 0; i < WAVE_SMOOTH.length; i++) v += WAVE_SMOOTH[i][1] * lvl(ms + WAVE_SMOOTH[i][0] * 1000); return v; } // the 5-tap smoothing the prototype applies before it draws anything
-        function yAt(x, dir) { return baseY - sm(t + dir * (x - WAVE_MIDX) * WAVE_SPP * 1000) * amp; }
-        c.clearRect(0, 0, WAVE_W, WAVE_H);
-        var x, y, x0 = WAVE_MIDX - WAVE_MIDX * ext, x1 = WAVE_MIDX + (WAVE_W - WAVE_MIDX) * ext;
+        function yAt(x, dir) { return baseY - sm(t + dir * (x - MX) * SPP * 1000) * amp; }
+        c.clearRect(0, 0, W, H);
+        var x, y, x0 = MX - MX * ext, x1 = MX + (W - MX) * ext;
         // HISTORY — left of centre, one column per pixel, each column's y read from the level the breath was AT that many pixel-seconds ago
         c.beginPath(); c.moveTo(x0, yAt(x0, 1));
-        for (x = Math.ceil(x0); x < WAVE_MIDX; x++) c.lineTo(x, yAt(x, 1));
-        c.lineTo(WAVE_MIDX, yAt(WAVE_MIDX, 1));
-        if (WAVE_FILL > 0) { c.save(); c.lineTo(WAVE_MIDX, WAVE_H); c.lineTo(x0, WAVE_H); c.closePath(); c.fillStyle = "rgba(169,155,220," + WAVE_FILL + ")"; c.fill(); c.restore(); c.beginPath(); c.moveTo(x0, yAt(x0, 1)); for (x = Math.ceil(x0); x <= WAVE_MIDX; x++) c.lineTo(x, yAt(x, 1)); }
+        for (x = Math.ceil(x0); x < MX; x++) c.lineTo(x, yAt(x, 1));
+        c.lineTo(MX, yAt(MX, 1));
+        if (WAVE_FILL > 0) { c.save(); c.lineTo(MX, H); c.lineTo(x0, H); c.closePath(); c.fillStyle = "rgba(169,155,220," + WAVE_FILL + ")"; c.fill(); c.restore(); c.beginPath(); c.moveTo(x0, yAt(x0, 1)); for (x = Math.ceil(x0); x <= MX; x++) c.lineTo(x, yAt(x, 1)); }
         c.lineWidth = WAVE_LINE; c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = WAVE_STROKE; c.stroke();
         // THE GHOST — the half-cycle that has not happened yet, on the empty right half
-        if (WAVE_GHOST_AHEAD > 0 && x1 > WAVE_MIDX + 0.5) {
-          c.beginPath(); c.moveTo(WAVE_MIDX, yAt(WAVE_MIDX, 1));
-          for (x = WAVE_MIDX + 1; x < x1; x++) c.lineTo(x, yAt(x, 1));
+        if (WAVE_GHOST_AHEAD > 0 && x1 > MX + 0.5) {
+          c.beginPath(); c.moveTo(MX, yAt(MX, 1));
+          for (x = MX + 1; x < x1; x++) c.lineTo(x, yAt(x, 1));
           c.lineTo(x1, yAt(x1, 1));
           c.strokeStyle = "rgba(169,155,220," + (WAVE_GHOST_AHEAD * 0.55).toFixed(4) + ")"; c.stroke();
         }
         // EDGE FADES — a 56px cosine ramp eats each vertical edge so the line arrives and leaves instead of being cut off
         c.globalCompositeOperation = "destination-out";
-        [[0, WAVE_FADE, 0], [WAVE_W, WAVE_W - WAVE_FADE, WAVE_W - WAVE_FADE]].forEach(function (f) {
+        [[0, FADE, 0], [W, W - FADE, W - FADE]].forEach(function (f) {
           var g = c.createLinearGradient(f[0], 0, f[1], 0), i, u;
           for (i = 0; i <= 9; i++) { u = i / 9; g.addColorStop(u, "rgba(0,0,0," + (0.5 + 0.5 * Math.cos(Math.PI * u)).toFixed(4) + ")"); }
-          c.fillStyle = g; c.fillRect(f[2], 0, WAVE_FADE, WAVE_H);
+          c.fillStyle = g; c.fillRect(f[2], 0, FADE, H);
         });
         c.globalCompositeOperation = "source-over";
         // THE LIVE DOT — pinned at the centre at every fill level, on the same smoothed curve so the line runs THROUGH it
-        var dotY = yAt(WAVE_MIDX, 1);
+        var dotY = yAt(MX, 1);
         c.save(); c.shadowColor = "rgba(138,92,240,.65)"; c.shadowBlur = 10;
-        c.beginPath(); c.arc(WAVE_MIDX, dotY, WAVE_DOT_R, 0, Math.PI * 2); c.fillStyle = WAVE_DOT; c.fill();
+        c.beginPath(); c.arc(MX, dotY, WAVE_DOT_R, 0, Math.PI * 2); c.fillStyle = WAVE_DOT; c.fill();
         c.restore();
         c.lineWidth = 2.5; c.strokeStyle = "#160510"; c.stroke();
-        n.geom = { t: t, ext: +ext.toFixed(4), amp: +amp.toFixed(3), baseY: baseY, x0: +x0.toFixed(3), x1: +x1.toFixed(3), dotX: WAVE_MIDX, dotY: +dotY.toFixed(3), ghost: +(WAVE_GHOST_AHEAD * 0.55).toFixed(4), run: run }; // the receipt DEV.waveGeom reads — the numbers the renderer actually drew at, not a re-derivation
+        n.geom = { t: t, ext: +ext.toFixed(4), amp: +amp.toFixed(3), baseY: baseY, x0: +x0.toFixed(3), x1: +x1.toFixed(3), dotX: MX, dotY: +dotY.toFixed(3), ghost: +(WAVE_GHOST_AHEAD * 0.55).toFixed(4), run: run }; // the receipt DEV.waveGeom reads — the numbers the renderer actually drew at, not a re-derivation
       } }
   };
   var BREATH_VIZ_KEYS = ["orb", "wave"];
@@ -14580,12 +14603,13 @@
     function row(labelKey) { var r = add(card, "div", "ps-row"); add(r, "div", "ps-lab", tr(labelKey)); return add(r, "div", "ps-right"); }
     function chip(host, text, small, checkPx, isOn, onTap) { // returns its OWN paint fn — every repaint is a targeted style write, never a wipe-and-rebuild
       var b = add(host, "button", "ps-chip" + (small ? " sm" : ""));
-      var ck = add(b, "i", "ti ti-check"); ck.style.cssText = "font-size:" + checkPx + "px;color:" + PS_INK + ";line-height:1;";
+      // NO CHECKMARK (David 2026-08-20: "no need for [it] being redundant since selecting it already makes it visually
+      // selected"). It cost ~18px inside a fixed-width chip, so ONLY the selected chip truncated — "Distant thunde",
+      // "Gamma · 33 H" — while its unselected neighbours fitted. The striped ignite fill already carries selection.
       var tx = add(b, "span", null, text);
       function paint() {
         var on = !!isOn();
         b.classList.toggle("sel", on);
-        ck.style.display = on ? "" : "none";
         tx.style.color = on ? PS_INK : "color-mix(in oklab, #fff 68%, " + E + ")";
         b.style.backgroundColor = on ? E : mixE(10);
         b.style.backgroundImage = on ? "repeating-linear-gradient(115deg, rgba(255,255,255,.28) 0 13px, transparent 13px 26px)" : "none";
