@@ -88,3 +88,20 @@ David 2026-08-20: *"I need a method for bringing the time back to what it is now
 2. **Make the dev panel presentable.** Not a redesign round: bring it to the app's own component language (chunky chips, domain hues, Tabler icons, no emoji) so it stops reading as scaffolding. Keep every existing control.
 
 **NOT a bug, and worth recording so it is not re-investigated:** David reported "I simulated evening and the circle is still pink." `nowMin()` DOES honour `devSimMin()`, so the sim reaches the face selector. The night face is gated on `ln >= bedHour() * 60 || ln < DAYSTART + 60` (app.js `grep -n 'id: "night"'`) — i.e. **after BEDTIME, not "evening"**. Simulating 20:00 with a 23:00 bedtime correctly yields the pink idle face. If David wants an evening face distinct from both day and night, that is a NEW state and a design decision, not a fix.
+
+## I. BUG (HIGH) · scrolling up into the journey sticks, then the magnet drags you back to home
+David 2026-08-20: *"Scrolling up to the journey works, but then it gets stuck, and you're not able to scroll anymore, and then it kind of naturally scrolls you back down to home as you try to scroll up. So it's kinda broken in that regard."*
+
+Region: `@SEC:WORLD-MOTION` (the one-page world's spring/magnet) plus the sky zone. **Reproduce before fixing.**
+
+The magnet's above-home branch (`wSnapIntent`, exposed as `DEV.wIntent`) reads, in substance:
+- `if (d < -w.clientHeight) return null;` — more than ONE viewport above home = free scroll, magnet off.
+- otherwise `return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY();`
+
+**Leading hypothesis: the trail is shorter than the escape distance.** `#jpTrail` is adopted into `#tfWorldSky` at full height, so the sky zone is as tall as the trail. If the trail is shorter than ~one viewport (few journey nodes, or a short day), the scroller can never reach `d < -clientHeight`, so the magnet NEVER releases — every upward gesture ends in `hy` and you are dragged back to home. That reproduces all three of his symptoms at once: it scrolls, it stops, it returns.
+
+**Second candidate:** the sky zone is materialized by `#trackerFull.tf-onepage.tf-onehome #tfWorld > .tfw-sky{ display:block }` over a `display:contents` default — if the class combination lapses, or the trail is adopted while the zone is still `display:contents`, the zone contributes no height and the same starvation occurs.
+
+**Reproduction plan:** measure `wSkyY()`, `wHomeY()`, `#tfWorldSky.offsetHeight`, `#jpTrail.offsetHeight`, `#tfWorld.scrollHeight` and `clientHeight` at the home landing, with BOTH a short trail (few nodes) and a long one (`DEV.seedDay` / a day with many nodes). Then sweep `DEV.wIntent` across the above-home range and print what it returns at each offset. The fix follows the measurement: if the escape threshold is unreachable for short trails, the release condition must key off the sky zone's REAL height rather than a fixed viewport, and the journey must be reachable to its top in every case.
+
+Regression contract: item 1 (vertical scroll flows continuously, no snap-back bounce) is exactly what this violates. Re-verify all four after any change, and remember the preview lies about scroll — a programmatic `scrollTop` fires no scroll event, so verify the ENGINE with the pure-decision probe (`DEV.wIntent`), never by watching landings.
