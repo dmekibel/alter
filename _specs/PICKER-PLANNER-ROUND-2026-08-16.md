@@ -81,3 +81,10 @@ Located: the 2c dose card (`grep -n "tbx-dose-foot" app.js`). The face branch bu
 2. **Preserve the row's `scrollLeft` across `tbxRepaintDose`.** The chips are built in ladder order so nothing is reordered — the apparent jump is the rebuild resetting scroll to 0, which throws the chosen chip back to the left edge. Capture the rail's scrollLeft before the repaint and restore it after the rebuild.
 Note the non-2c `else` branch has the same [2,5]+grid-behind-more shape; check whether it is still reachable and, if it is, make it match rather than leaving two grammars.
 Row must keep the v1313 axis lock (`overflow-y:hidden; touch-action:pan-x`).
+
+## H. DEV TIME-SIM · a reset, and the dev panel is ugly
+David 2026-08-20: *"I need a method for bringing the time back to what it is now. So whenever I use the dev tools, I need a method of resetting. Also, the dev tools looks kind of ugly. Maybe we can make it a little bit more user friendly."*
+1. **Reset to real time.** `DEV.hour(v)` / the dev panel's sim-time control set `devSimMin()`; there is no visible way back to the wall clock. Add an explicit reset (and make the panel show, plainly, that a simulated time is ACTIVE — a silent override is how David lost an evening thinking the sim was broken).
+2. **Make the dev panel presentable.** Not a redesign round: bring it to the app's own component language (chunky chips, domain hues, Tabler icons, no emoji) so it stops reading as scaffolding. Keep every existing control.
+
+**NOT a bug, and worth recording so it is not re-investigated:** David reported "I simulated evening and the circle is still pink." `nowMin()` DOES honour `devSimMin()`, so the sim reaches the face selector. The night face is gated on `ln >= bedHour() * 60 || ln < DAYSTART + 60` (app.js `grep -n 'id: "night"'`) — i.e. **after BEDTIME, not "evening"**. Simulating 20:00 with a 23:00 bedtime correctly yields the pink idle face. If David wants an evening face distinct from both day and night, that is a NEW state and a design decision, not a fix.
