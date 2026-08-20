@@ -14596,7 +14596,12 @@
 
     var ov = add(document.body, "div", "ps-ov");
     var card = add(ov, "div", "ps-card");
-    add(card, "div", "ps-notch");                                // points at the cog it dropped from
+    add(ov, "div", "ps-notch");                                  // points at the cog it dropped from. ON THE OVERLAY, NEVER THE CARD
+    // (David device 2026-08-20: "the diamond shape is in the wrong spot"). .ps-card carries the psCog entry TRANSFORM, and a
+    // transformed element becomes the containing block for its position:fixed CHILDREN — so a notch inside it measured its
+    // 145px from the CARD's top rather than the viewport and sat ~155px too low. As a child of the scrim it shares the
+    // card's own coordinate space again. (It cannot go back to position:absolute inside the card either: the card scrolls,
+    // and the notch lives above its top edge, so overflow clipped it away — that was the bug before this one.)
     add(card, "div", "ps-title", tr(title));
     add(card, "div", "ps-kick", tr("sound"));
 
