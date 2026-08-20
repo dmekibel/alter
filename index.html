@@ -781,7 +781,7 @@
   .ps-ov{position:fixed;inset:0;z-index:118;background:rgba(18,8,24,.52);}
   .ps-card{position:fixed;z-index:120;top:156px;right:14px;width:322px;max-height:calc(100vh - 178px);overflow-y:auto;box-sizing:border-box;background:#221126;border:3px solid #160510;border-radius:22px;box-shadow:0 6px 0 #160510,0 18px 40px rgba(0,0,0,.5);padding:13px 14px 15px;display:flex;flex-direction:column;gap:13px;font-family:var(--bub);color:#efeaff;transform-origin:calc(100% - 18px) -10px;animation:psCog .28s var(--ease-spring) both;}
   @keyframes psCog{0%{transform:scale(.72);opacity:0;}60%{transform:scale(1.02);opacity:1;}100%{transform:scale(1);opacity:1;}}
-  .ps-notch{position:absolute;z-index:119;right:27px;top:145px;width:16px;height:16px;background:#221126;border-left:3px solid #160510;border-top:3px solid #160510;border-radius:3px 2px 0 2px;transform:rotate(45deg);} /* z-index 119 sits BEHIND the card (120), so the card hides the square's lower half and only the pointer shows. At 121 it drew ON TOP and read as a whole floating diamond. /* placed from the card's measured corner, not (2026-08-20): .ps-card scrolls (overflow-y:auto), and the notch sits at top:-11px OUTSIDE it, so the card was clipping its own pointer away. Fixed coords track the card's own fixed 156/14 origin: 156-11=145 top, 14+13=27 right. */
+  .ps-notch{position:absolute;z-index:121;right:27px;top:145px;width:16px;height:16px;background:#221126;border-left:3px solid #160510;border-top:3px solid #160510;border-radius:3px 2px 0 2px;transform:rotate(45deg);} /* z-index 121 sits ON TOP of the card (120) ON PURPOSE. Only the square's TOP and LEFT edges carry ink, and at 45deg those are precisely the tail's two upper edges - the lower half has no border and shares the card's #221126, so it vanishes into it. Behind the card (119) the card's own 3px top border drew a line straight across the tail's base and split them in two, which is what David saw. /* placed from the card's measured corner, not (2026-08-20): .ps-card scrolls (overflow-y:auto), and the notch sits at top:-11px OUTSIDE it, so the card was clipping its own pointer away. Fixed coords track the card's own fixed 156/14 origin: 156-11=145 top, 14+13=27 right. */
   .ps-title{font-family:var(--bub);font-weight:800;font-size:18px;line-height:1;color:#efeaff;margin-bottom:-4px;}
   .ps-kick{font-size:10.5px;font-weight:800;letter-spacing:1.8px;color:#bcb0e8;margin-bottom:-3px;text-transform:uppercase;}
   .ps-row{display:flex;align-items:flex-start;gap:10px;}
@@ -4173,6 +4173,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1336"></script>
+  <script src="app.js?v=1337"></script>
 </body>
 </html>
