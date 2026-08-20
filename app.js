@@ -106,11 +106,11 @@
   // `floating` sits in binaural, not music: that is where the app's own Sound panel has filed it since 2026-07-10 (it ships
   // beside the 4/6/13/33 Hz loops and carries the same headphones warning), and the shipped label is the only evidence I have
   // about what the asset actually is. Flagged to David — if Floating is really an ambient pad, move one word here.
-  var BED_CAT = { pad: "music", music: "music", forest: "nature", birds: "nature", floating: "binaural", focus13: "binaural", theta6: "binaural", deep4: "binaural", gamma33: "binaural" };
+  var BED_CAT = { pad: "music", music: "music", bowl: "music", forest: "nature", birds: "nature", rain: "nature", ocean: "nature", fireplace: "nature", stream: "nature", thunder: "nature", crickets: "nature", nightforest: "nature", darkforest: "nature", woods: "nature", woods2: "nature", floating: "binaural", focus13: "binaural", theta6: "binaural", deep4: "binaural", gamma33: "binaural", brownnoise: "binaural" }; // BROWN NOISE IS FILED BINAURAL, NOT NATURE (2026-08-20). It is not a binaural beat, but the category governs SELECTION: with only two slots and one per family, filing it under nature would make "rain + brown noise" illegal — and that is the pair people actually want. The bowl is a sustained drone, so it sits with the other music beds.
   var BED_MAX = 2; // "select multiple, like 2 at a time" — two beds, never more. The app has THREE families (music · nature · binaural), so "one per category" alone would still have allowed three; the cap is its own rule.
   var BED_DEFAULT = ["birds"]; // David 2026-08-20: the default background sound is birds (was the peaceful pad)
-  var BED_NAME = { pad: "Peaceful", music: "Mysterious", forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" }; // the design's peaceful/mysterious/birdsong ARE the app's pad/music/birds — same beds, and the app's own shipped words win. The design's rain · ocean · fireplace · wind · stream · crickets · thunder have no audio and are not offered until they do.
-  var BED_ORDER = ["pad", "music", "forest", "birds", "floating", "deep4", "theta6", "focus13", "gamma33"]; // ONE visual list (David 2026-08-20: "for now let's keep one list") — the category governs SELECTION only
+  var BED_NAME = { pad: "Peaceful", music: "Mysterious", bowl: "Singing bowl", forest: "Forest", birds: "Birds", rain: "Rain", ocean: "Ocean", fireplace: "Fireplace", stream: "Stream", thunder: "Distant thunder", crickets: "Crickets", nightforest: "Night forest", darkforest: "Deep night", woods: "Woods", woods2: "Woods at dusk", brownnoise: "Brown noise", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" }; // the design's peaceful/mysterious/birdsong ARE the app's pad/music/birds — same beds, and the app's own shipped words win. The design's rain · ocean · fireplace · wind · stream · crickets · thunder have no audio and are not offered until they do.
+  var BED_ORDER = ["rain", "ocean", "fireplace", "stream", "thunder", "crickets", "woods", "woods2", "nightforest", "darkforest", "birds", "forest", "brownnoise", "bowl", "pad", "music", "floating", "deep4", "theta6", "focus13", "gamma33"]; // ONE visual list (David 2026-08-20: "for now let's keep one list") — the category governs SELECTION only
   function bedKeys() { // THE selected set — always an array, always valid keys, always inside the rule (one per category, at most BED_MAX). Enforced on READ so an imported or hand-edited save can never sneak three beds past the toggle.
     try {
       var v = S.audio && S.audio.bed;
@@ -130,7 +130,7 @@
   }
   function bedSet(keys) { S.audio = S.audio || { voice: 1, bg: 1 }; S.audio.bed = (keys || []).slice(); S.audioBedPick = 1; } // audioBedPick = "a human chose this", so no future default-change migration overwrites a real pick
   // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). MULTI since 2026-08-20: `live` is a MAP, not one source, so a nature bed and a binaural bed can sound together. =====
-  var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" };
+  var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz", rain: "rain", ocean: "ocean", fireplace: "fireplace", stream: "stream", thunder: "thunder", crickets: "crickets", nightforest: "nightforest", darkforest: "darkforest", woods: "woods", woods2: "woods2", brownnoise: "brownnoise", bowl: "bowl" }; // the twelve David picked 2026-08-20 (CC0, verified per file), rendered to the same recipe as the originals: 90s body, a 3s equal-power tail-into-head crossfade so the loop point is inaudible, every bed soft-limited to -23 dBFS RMS.
   var BGBED = (function () {
     var cache = {}, live = {}, lvl = 0.5; // live[key] = { src, gain }; src stays null while that key's buffer is still decoding (start() re-attaches when it lands)
     function attach(key) { var ctx = sharedAudioCtx(), b = cache[key], e = live[key]; if (!ctx || !b || !e || e.src) return;
@@ -11939,29 +11939,35 @@
     }
   }
   // THE REAL BREATH PROTOCOLS (David 2026-07-08 depth mandate — don't oversimplify the real counterpart): breathwork isn't one generic pace. Each is an evidence-based pattern matched to a goal, named with its mechanism. PH rows = [screenLabel, ms, kind, spokenKey?]; spokenKey lets the on-screen label differ from the reused voice clip (so new patterns need ZERO new audio — every cue reuses "Breathe in"/"Hold"/"Breathe out"). kind: in | in2 (top-up) | hold | out | rest(silent).
+  // THE PATTERN GLYPHS (Round 25 FORK 2, settled by David 2026-08-20). Every glyph is the SHAPE OF THE BREATH — never an
+  // organ, never a mood: wave-sine = even in, even out · chevrons-up = the sigh's two stacked inhales · wave-square = the
+  // box's four equal sides · wave-saw-tool = 4-7-8's short rise and longer fall (its seven-count hold cannot live in a glyph,
+  // so the hold stays in the count) · switch-horizontal = alternating sides · ripple = coherent's evenly spaced waves, the
+  // SYMMETRIC breath against resonance's gentle-in/longer-out · trending-down = the extended exhale's short rise and long
+  // descent · activity = Wim Hof's rapid jagged burst, with a flat minus for the retention that closes each round.
   var BREATH_PATTERNS = {
-    resonance: { name: "Calming breath", goal: "Just settle me", thinker: "Coherence", why: "A gentle in, a longer out. The extended exhale pulls the vagal brake and downshifts you in about ninety seconds.", cyc: 4,
+    resonance: { name: "Calming breath", ti: "ti-wave-sine", goal: "Just settle me", thinker: "Coherence", why: "A gentle in, a longer out. The extended exhale pulls the vagal brake and downshifts you in about ninety seconds.", cyc: 4,
       ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 6000, "out"], ["Rest", 2000, "rest"]] },
-    sigh: { name: "Physiological sigh", goal: "Wired right now", thinker: "Huberman", why: "Two inhales stack air into collapsed sacs, then one long exhale offloads the CO2. The fastest way to drop stress in real time.", cyc: 5,
+    sigh: { name: "Physiological sigh", ti: "ti-chevrons-up", goal: "Wired right now", thinker: "Huberman", why: "Two inhales stack air into collapsed sacs, then one long exhale offloads the CO2. The fastest way to drop stress in real time.", cyc: 5,
       ph: [["Breathe in", 3200, "in"], ["and a little more", 900, "in2", "Breathe in"], ["Long exhale", 7000, "out", "Breathe out"]] },
-    box: { name: "Box breath", goal: "Need to focus", thinker: "Tactical breathing", why: "Four counts each, all equal. Steadies the nervous system without dulling your alertness. Used under real pressure.", cyc: 5,
+    box: { name: "Box breath", ti: "ti-wave-square", goal: "Need to focus", thinker: "Tactical breathing", why: "Four counts each, all equal. Steadies the nervous system without dulling your alertness. Used under real pressure.", cyc: 5,
       ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 4000, "out"], ["Hold empty", 4000, "rest"]] },
-    calm478: { name: "4-7-8 breath", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
+    calm478: { name: "4-7-8 breath", ti: "ti-wave-saw-tool", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
       ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] },
     // VARIANT LIBRARY (David 2026-07-23): more real breathing types, each driving the SAME per-phase pacing engine (ph rows = [label, ms, kind, spokenKey?]). Every cue reuses an existing recorded word (Breathe in / Hold / Breathe out) so ZERO new audio is needed; breath is voiceless-by-default anyway (the ph timings pace the orb).
-    coherent: { name: "Coherent breath", goal: "Even out the heart", thinker: "Heart-rate coherence", why: "Five and a half in, five and a half out, no holds. The even rhythm tunes the heart and the breath to one steady wave.", cyc: 6,
+    coherent: { name: "Coherent breath", ti: "ti-ripple", goal: "Even out the heart", thinker: "Heart-rate coherence", why: "Five and a half in, five and a half out, no holds. The even rhythm tunes the heart and the breath to one steady wave.", cyc: 6,
       ph: [["Breathe in", 5500, "in"], ["Breathe out", 5500, "out"]] },
-    exhale48: { name: "Extended exhale", goal: "Slow a racing system", thinker: "Vagal brake", why: "In for four, out for eight. The exhale runs twice the in-breath, and the longer it is, the harder it pulls the brake.", cyc: 5,
+    exhale48: { name: "Extended exhale", ti: "ti-trending-down", goal: "Slow a racing system", thinker: "Vagal brake", why: "In for four, out for eight. The exhale runs twice the in-breath, and the longer it is, the harder it pulls the brake.", cyc: 5,
       ph: [["Breathe in", 4000, "in"], ["Breathe out", 8000, "out"]] },
-    nostril: { name: "Alternate nostril", goal: "Balance and steady", thinker: "Nadi shodhana", why: "In one side, out the other, then swap. A slow, even paced round that steadies the mind. Use a finger to close each nostril.", cyc: 5,
+    nostril: { name: "Alternate nostril", ti: "ti-switch-horizontal", goal: "Balance and steady", thinker: "Nadi shodhana", why: "In one side, out the other, then swap. A slow, even paced round that steadies the mind. Use a finger to close each nostril.", cyc: 5,
       ph: [["Breathe in, left", 4000, "in", "Breathe in"], ["Breathe out, right", 4000, "out", "Breathe out"], ["Breathe in, right", 4000, "in", "Breathe in"], ["Breathe out, left", 4000, "out", "Breathe out"]] },
     // Wim Hof helper stages (internal — reached only via BREATH_FLOWS.wimhof, never shown in the picker directly)
-    wimPower: { name: "Power breaths", cyc: 20, ph: [["Breathe in", 1700, "in"], ["Let it go", 1700, "out", "Breathe out"]] },
-    wimHold:  { name: "Retention", cyc: 1, ph: [["Breathe out, hold empty", 30000, "hold", "Breathe out"], ["Big breath in, hold", 4000, "in", "Breathe in"], ["Hold", 15000, "hold"]] }
+    wimPower: { name: "Power breaths", ti: "ti-activity", cyc: 20, ph: [["Breathe in", 1700, "in"], ["Let it go", 1700, "out", "Breathe out"]] },
+    wimHold:  { name: "Retention", ti: "ti-minus", cyc: 1, ph: [["Breathe out, hold empty", 30000, "hold", "Breathe out"], ["Big breath in, hold", 4000, "in", "Breathe in"], ["Hold", 15000, "hold"]] }
   };
   // BREATH FLOWS (David 2026-07-23): multi-stage breathing built on the SAME stage engine the guided ladder uses (breathwork's `stages` array). A flow is a list of {k (a BREATH_PATTERNS key), cyc}; the engine concatenates them into one continuous `flow` exactly like the ladder. Wim Hof = rounds of fast power breaths, each closed by a long retention hold.
   var BREATH_FLOWS = {
-    wimhof: { name: "Wim Hof rounds", goal: "Charge the body up", why: "Rounds of fast, full breaths, each closed by a long hold on empty lungs. It fires the body up and sharpens you. Sit or lie down, and keep it away from water.",
+    wimhof: { name: "Wim Hof rounds", ti: "ti-activity", goal: "Charge the body up", why: "Rounds of fast, full breaths, each closed by a long hold on empty lungs. It fires the body up and sharpens you. Sit or lie down, and keep it away from water.",
       stages: [{ k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }, { k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }, { k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }] }
   };
   // THE GUIDED LADDER (BUILD 2026-07-19): a beginner's on-ramp — three real patterns back to back, easing from the gentlest (a calming breath, no holds to speak of) up to the deepest (the long 4-7-8 holds). Runs as ONE continuous session via the flow engine below, so a first-timer learns the harder breaths only after the easy one has already settled them. Stages ordered easy → hard; cyc kept short so the whole ladder is ~2.5 min. (BREATH_PATTERNS keys.)
@@ -11993,6 +11999,19 @@
         return { phase: p.kind, phaseIdx: idx, word: BREATH_PHASE_WORD[p.kind] || "Rest", label: p.label || "", name: p.name || "", stage: p.si || 0,
           tInPhase: tIn, phaseDur: dur, remain: dur - tIn, progress: prog, cycle: cyc[idx],
           level: from[idx] + (to[idx] - from[idx]) * ez, elapsed: e, done: over };
+      },
+      // THE LEVEL, AS A FUNCTION OF TIME (2026-08-20, Round 25 wave port). `at()` allocates a whole sample object and
+      // walks the phase list linearly — fine once a frame, ruinous 1700 times a frame, which is what the canvas wave
+      // asks for (340 columns x a 5-tap smoothing kernel). This is the same arithmetic, binary-searched and scalar:
+      // one number in, one number out, no object. It is ALSO what lets the wave draw its own past and its ghosted
+      // future analytically instead of from a recorded buffer — the sample-spacing kink v1319 chased can no longer
+      // exist, because x is now the time axis itself rather than a list of frames that happened to be captured.
+      lvlAt: function (ms) {
+        if (!ph.length) return 0;
+        var e = ms < 0 ? 0 : (ms > total ? total : ms), lo = 0, hi = ph.length - 1, mid;
+        while (lo < hi) { mid = (lo + hi + 1) >> 1; if (e >= cum[mid]) lo = mid; else hi = mid - 1; }
+        var d = ph[lo].ms, pr = d > 0 ? (e - cum[lo]) / d : 1; if (pr > 1) pr = 1; if (pr < 0) pr = 0;
+        return from[lo] + (to[lo] - from[lo]) * (0.5 - 0.5 * Math.cos(Math.PI * pr));
       } };
   }
   // THE FLAT PHASE LIST across every stage — a single pattern is one stage repeated `cyc` times, the ladder is easy→hard stages concatenated. Each entry carries its stage's name + index + round so the sub-label, the spoken cues, the bars and the clock all read ONE list. `cycle` is explicit because alternate nostril has two in/out pairs per round and the clock's fallback heuristic would count them as two. Lifted out of breathwork 2026-08-15 so DEV.breathAgree can build the standalone tool's clock without opening a session.
@@ -12111,27 +12130,118 @@
     return { update: update, setPhase: function (kind) { update(_lv, kind); }, stop: stop, key: key, span: span,
       probe: function () { return { key: key, level: +_lv.toFixed(4), kind: curKind, cents: +(_lv * span).toFixed(2), gain: +master.gain.value.toFixed(5), cutoff: +lp.frequency.value.toFixed(1) }; } };
   } catch (e) { return null; } }
+  // ===== THE BREATHING PLAYER'S NUMBERS — Round 25 "Breathing Player" frame, extracted from David's RUNNING prototype
+  // (_specs/BREATHING-PLAYER-PORT-2026-08-20.md). Its header COMMENT disagrees with its own logic in five places
+  // (line width, dot colour, phase-bar width, grow duration, orb ring); LAW 8 says the running program outranks its own
+  // comments, David confirmed it in chat ("the comments in theory are wrong, cuz for example the dot correctly should be
+  // violet"), so the CODE values are the ones below. Do not "correct" them back toward the comment. =====
+  var BREATH_HUE = "#2ab8c4"; // the breathing session's element colour — DOM.restore.c, which is exactly the frame's teal
+  var WAVE_W = 340, WAVE_H = 280, WAVE_MIDX = 170, WAVE_BASEY = 280 * 0.78, WAVE_SPP = 0.033; // stage 340x280, live point dead centre, 0.033 SECONDS of breath per horizontal pixel
+  var WAVE_HEIGHT = 120;        // full amplitude, in stage px
+  var WAVE_REST = 0.06;         // AT REST the wave is 6% tall — only the dot visibly bobs. There is no morph to the orb; a wave session is a wave from its first frame (David settled this)
+  var WAVE_GROW_MS = 2200;      // play GROWS the wave out of the dot over 2200ms; pause FOLDS it back over the same span (the prototype's `(now - _tw)/2200`, not the comment's ~650)
+  var WAVE_GHOST_AHEAD = 0.3;   // THE GHOST — the upcoming half-cycle, drawn at ghostAhead * 0.55 alpha = 0.165. Explicitly a PROPOSAL: set this ONE number to 0 and the ghost is gone, no rebuild
+  var WAVE_FILL = 0;            // a knob, not a feature: >0 washes the area under the curve at that alpha
+  var WAVE_FADE = 56;           // the cosine ramp that dissolves each vertical edge (destination-out, 10 stops)
+  var WAVE_STROKE = "#a99bdc", WAVE_LINE = 5, WAVE_DOT_R = 10, WAVE_DOT = "#8a5cf0"; // dot fill is VIOLET, not the comment's white
+  var WAVE_SMOOTH = [[-0.40, 0.12], [-0.18, 0.24], [0, 0.28], [0.18, 0.24], [0.40, 0.12]]; // the 5-tap kernel over +/-0.4s, in [seconds, weight]
+  // THE ORB'S LIT FACE. The frame's sphere is a radial gradient from upper-left — #63dcd0 / #3cc4b6 / #2ab8c4 — and those
+  // three stops are NOT a mix toward white: measured in HSL they are the base hue lifted in lightness and nudged ~11 degrees
+  // toward green. mixHex cannot express that, so the relationship is stored as HSL deltas and applied to whichever hue the
+  // session is wearing. At #2ab8c4 (the breathing session, DOM.restore.c) this reproduces the frame's three hexes exactly;
+  // on any other act's colour it lights the same way instead of leaving the sphere flat.
+  var ORB_LIT = [[-10.6, -0.014, 0.159], [-10.9, -0.112, 0.035]]; // [dH degrees, dS, dL] for the 0% and 50% stops
+  var ORB_GLOW = [[-13.3, 0.072, 0.269], [-8.6, 0.023, 0.082]];   // the same treatment for the near-halo and the wide bloom
+  function hslShift(hex, d, a) {
+    hex = String(hex).replace("#", ""); if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    var r = parseInt(hex.substr(0, 2), 16) / 255, g = parseInt(hex.substr(2, 2), 16) / 255, b = parseInt(hex.substr(4, 2), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn, L = (mx + mn) / 2, S = 0, H = 0;
+    if (dl) { S = L > 0.5 ? dl / (2 - mx - mn) : dl / (mx + mn);
+      H = (mx === r) ? ((g - b) / dl + (g < b ? 6 : 0)) : (mx === g) ? ((b - r) / dl + 2) : ((r - g) / dl + 4); H *= 60; }
+    H = (H + d[0] + 360) % 360; S = Math.max(0, Math.min(1, S + d[1])); L = Math.max(0, Math.min(1, L + d[2]));
+    var q = L < 0.5 ? L * (1 + S) : L + S - L * S, p = 2 * L - q;
+    function ch(tt) { tt = (tt + 1) % 1; return Math.round(255 * (tt < 1 / 6 ? p + (q - p) * 6 * tt : tt < 0.5 ? q : tt < 2 / 3 ? p + (q - p) * (2 / 3 - tt) * 6 : p)); }
+    var hh = H / 360, R = ch(hh + 1 / 3), G = ch(hh), B = ch(hh - 1 / 3);
+    return a == null ? "rgb(" + R + "," + G + "," + B + ")" : "rgba(" + R + "," + G + "," + B + "," + a + ")";
+  }
+  function breathOrbGrad(c) { return "radial-gradient(circle at 42% 32%," + hslShift(c, ORB_LIT[0]) + " 0%," + hslShift(c, ORB_LIT[1]) + " 50%," + c + " 100%)"; }
+  function breathOrbGlow(c) { return "0 0 30px " + hslShift(c, ORB_GLOW[0], 0.5) + ", 0 0 100px 14px " + hslShift(c, ORB_GLOW[1], 0.28); } // the frame's LIT glow only — the dimmer bottom-of-exhale glow is the same shadow seen through the live brightness/saturate filter, which CSS applies to a box-shadow too
+  // THE ORB'S LIVE DRIVE (Round 25). scale runs 0.72 -> 1.00 across the breath and the brightness/saturation ride the SAME
+  // level, so the sphere dims as it empties instead of just shrinking. The tremble is EXHALE-WEIGHTED and that is the whole
+  // character of it: `wgt` is a third as strong while the level is rising, so it shakes on the way down and barely on the
+  // way up. Do NOT simplify this to a uniform wobble. `st` carries the previous [time, level] so the velocity is measured.
+  function breathOrbPaint(orbEl, level, tSec, st) {
+    if (!orbEl) return;
+    var vel = 0, dt = (st && st.t != null) ? (tSec - st.t) : 0;
+    if (dt > 0.0005) vel = (level - st.v) / dt;
+    if (st) { st.t = tSec; st.v = level; }
+    var wgt = Math.min(1, Math.abs(vel) * 2.2) * (vel < 0 ? 1 : 0.35);
+    var jit = (Math.sin(tSec * 13.7) * 0.5 + Math.sin(tSec * 23.3 + 1.7) * 0.35 + Math.sin(tSec * 8.1 + 0.6) * 0.15) * 0.008 * wgt;
+    orbEl.style.transform = "scale(" + (0.72 + 0.28 * level + jit).toFixed(4) + ")";
+    orbEl.style.filter = "brightness(" + (0.74 + 0.26 * level).toFixed(3) + ") saturate(" + (0.82 + 0.18 * level).toFixed(3) + ")";
+    return { vel: +vel.toFixed(4), wgt: +wgt.toFixed(4), jit: +jit.toFixed(6) };
+  }
   // ===== THE VISUAL REGISTRY (David 2026-08-15: "I want a switchable visual"). S.breathViz picks a renderer; a renderer is html + mount(root, cycleMs) + paint(nodes, sample) and knows nothing about the clock, the audio, or the pattern. Adding one is a data entry, not a fork of the engine. The two that ship are the two that already existed — the orb and the wave — so nothing was invented into David's design language on the way. =====
+  // THE SAMPLE grew two optional fields for the Round 25 port, both back-compatible: `lvl` = the clock's lvlAt (level as a
+  // pure function of time, so a renderer can draw the past AND the future analytically) and `run` = is the session actually
+  // playing (the grow/fold ramp). A sample without them still paints — flat history, permanently grown — which is what keeps
+  // every existing caller and every DEV probe honest.
   var BREATH_VIZ = {
     orb: { name: "Orb", html: '<div class="bw-orb"></div>',
-      mount: function (root) { return { orb: root.querySelector(".bw-orb") }; },
-      paint: function (n, s) { if (n.orb) n.orb.style.transform = "scale(" + (0.5 + s.level * 0.82).toFixed(3) + ")"; } },
-    wave: { name: "Wave", html: '<div class="bw-wave"><svg viewBox="0 0 300 180" preserveAspectRatio="none"><path class="bw-wpath" fill="none"/><circle class="bw-wdot" r="6.5" cx="150" cy="150"/></svg></div>', // the dotted mid-line is DELETED (David 2026-08-20: "there is a little dotted line in the middle of the screen. I don't like that either. Get rid of that") — it was decoration only, nothing measured or read it
-      mount: function (root, cycleMs) { var c = Math.max(1000, cycleMs || 16000), push = Math.max(55, c / 200), pxms = 300 / c; return { path: root.querySelector(".bw-wpath"), dot: root.querySelector(".bw-wdot"), pts: [], last: -1e9, push: push, pxms: pxms, cap: Math.floor(150 / (push * pxms)) + 1 }; }, // pxms holds the SHIPPED density — one whole cycle still measures 300 units wide, so the wave keeps exactly the shape and steepness David already has; only the anchor moves. cap = how many samples fit in the visible half, which is all the buffer ever needs to hold.
-      // THE LIVE EDGE IS THE CENTRE, ALWAYS (David 2026-08-20: "it starts in the middle and then starts going right and then gets off center. Let's keep it always in the middle"). The old draw laid the buffer across the FULL 300 and let the newest sample walk to x=300; v1318's symmetric-fill patch only hid that for the first cycle. Now x is measured BACKWARD IN TIME from x=150: the newest point is pinned dead centre every frame, the past scrolls left, the right half stays empty.
-      // AND THE LINE IS CLEAN (David 2026-08-20: "sometimes it randomly becomes jagged, which doesn't make sense in the context of regular breathing"). Cause, measured with DEV.waveSmooth: x came from the sample's INDEX, not its TIME. Samples are captured on whatever frame first crosses the push threshold, so their spacing in TIME varies — 1.25x on a clean 60fps train, 6.6x across a 350ms hitch (a dropped frame, a GC pause, an audio-decode stall) — while their spacing in X was always identical. Same rise over less run = a near-vertical kink in a curve that is analytically smooth. Mapping x from elapsed removes the cause outright: a segment is now exactly as wide as the time it covers, so a dropped frame draws a straight chord at the correct slope instead of a spike. No smoothing filter, because there is nothing left to smooth.
+      mount: function (root) { return { orb: root.querySelector(".bw-orb"), st: { t: null, v: 0 } }; },
+      paint: function (n, s) { if (n.orb) breathOrbPaint(n.orb, s.level, s.elapsed / 1000, n.st); } },
+    wave: { name: "Wave", html: '<div class="bw-wave"><canvas class="bw-cv"></canvas></div>',
+      // THE CANVAS (Round 25). The SVG path could carry the line but not the two things the frame is actually made of:
+      // the destination-out cosine edge fades and the ghosted upcoming half-cycle. Both are composite operations.
+      // WHAT SURVIVES FROM v1319, unchanged and now structural rather than patched: the live point is pinned at the
+      // centre, history runs to its LEFT, and x is measured by TIME (spp seconds per pixel) — never by sample index.
+      mount: function (root) {
+        var cv = root.querySelector(".bw-cv"); if (!cv) return { c: null };
+        var dpr = Math.min(3, (window.devicePixelRatio || 1)); // the backing store is DPR-scaled and the context pre-scaled, so every coordinate below stays in the frame's own 340x280 px while the line stops looking chewed on a 3x screen
+        cv.width = Math.round(WAVE_W * dpr); cv.height = Math.round(WAVE_H * dpr);
+        var c = cv.getContext("2d"); if (c) c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { cv: cv, c: c, dpr: dpr, ext: 0, run: false, tw: 0, geom: null };
+      },
       paint: function (n, s) {
-        if (!n.path) return;
-        var t = s.elapsed, L = n.pts, k;
-        if (L.length && (t < L[L.length - 1].t || t - L[L.length - 1].t > 4000)) { L.length = 0; n.last = -1e9; } // a seek, a scrub, or the NEXT breath run restarting its own clock at 0 — never stretch a stale buffer across the jump
-        if (t - n.last >= n.push) { n.last = t; L.push({ t: t, v: s.level }); }
-        while (L.length && (t - L[0].t) * n.pxms > 150) L.shift(); // the buffer IS the visible half; anything older than the left edge is gone, so every drawn x lands in 0..150
-        var d = "";
-        for (k = 0; k < L.length; k++) d += (k ? "L" : "M") + (150 - (t - L[k].t) * n.pxms).toFixed(1) + " " + (160 - L[k].v * 132).toFixed(1) + " ";
-        var cy = (160 - s.level * 132).toFixed(1);
-        d += (d ? "L" : "M") + "150.0 " + cy + " "; // the live point, drawn EVERY frame at the true current level — the leading edge now moves at 60fps instead of stepping once per captured sample
-        n.path.setAttribute("d", d);
-        if (n.dot) { n.dot.setAttribute("cx", "150"); n.dot.setAttribute("cy", cy); }
+        var c = n.c; if (!c) return;
+        var t = s.elapsed, now = (s.now != null ? s.now : Date.now()), run = (s.run !== false);
+        if (run !== n.run) { n.run = run; n.tw = now - (run ? n.ext : 1 - n.ext) * WAVE_GROW_MS; } // reverse the ramp FROM WHERE IT IS, so a pause 400ms into the grow folds back from 18%, not from full
+        var e = (now - n.tw) / WAVE_GROW_MS; e = e < 0 ? 0 : e > 1 ? 1 : e;
+        var ext = n.ext = run ? e : 1 - e;
+        var amp = WAVE_HEIGHT * (WAVE_REST + (1 - WAVE_REST) * ext), baseY = WAVE_BASEY;
+        var lvl = s.lvl, flat = s.level;
+        function sm(ms) { if (!lvl) return flat; var v = 0, i; for (i = 0; i < WAVE_SMOOTH.length; i++) v += WAVE_SMOOTH[i][1] * lvl(ms + WAVE_SMOOTH[i][0] * 1000); return v; } // the 5-tap smoothing the prototype applies before it draws anything
+        function yAt(x, dir) { return baseY - sm(t + dir * (x - WAVE_MIDX) * WAVE_SPP * 1000) * amp; }
+        c.clearRect(0, 0, WAVE_W, WAVE_H);
+        var x, y, x0 = WAVE_MIDX - WAVE_MIDX * ext, x1 = WAVE_MIDX + (WAVE_W - WAVE_MIDX) * ext;
+        // HISTORY — left of centre, one column per pixel, each column's y read from the level the breath was AT that many pixel-seconds ago
+        c.beginPath(); c.moveTo(x0, yAt(x0, 1));
+        for (x = Math.ceil(x0); x < WAVE_MIDX; x++) c.lineTo(x, yAt(x, 1));
+        c.lineTo(WAVE_MIDX, yAt(WAVE_MIDX, 1));
+        if (WAVE_FILL > 0) { c.save(); c.lineTo(WAVE_MIDX, WAVE_H); c.lineTo(x0, WAVE_H); c.closePath(); c.fillStyle = "rgba(169,155,220," + WAVE_FILL + ")"; c.fill(); c.restore(); c.beginPath(); c.moveTo(x0, yAt(x0, 1)); for (x = Math.ceil(x0); x <= WAVE_MIDX; x++) c.lineTo(x, yAt(x, 1)); }
+        c.lineWidth = WAVE_LINE; c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = WAVE_STROKE; c.stroke();
+        // THE GHOST — the half-cycle that has not happened yet, on the empty right half
+        if (WAVE_GHOST_AHEAD > 0 && x1 > WAVE_MIDX + 0.5) {
+          c.beginPath(); c.moveTo(WAVE_MIDX, yAt(WAVE_MIDX, 1));
+          for (x = WAVE_MIDX + 1; x < x1; x++) c.lineTo(x, yAt(x, 1));
+          c.lineTo(x1, yAt(x1, 1));
+          c.strokeStyle = "rgba(169,155,220," + (WAVE_GHOST_AHEAD * 0.55).toFixed(4) + ")"; c.stroke();
+        }
+        // EDGE FADES — a 56px cosine ramp eats each vertical edge so the line arrives and leaves instead of being cut off
+        c.globalCompositeOperation = "destination-out";
+        [[0, WAVE_FADE, 0], [WAVE_W, WAVE_W - WAVE_FADE, WAVE_W - WAVE_FADE]].forEach(function (f) {
+          var g = c.createLinearGradient(f[0], 0, f[1], 0), i, u;
+          for (i = 0; i <= 9; i++) { u = i / 9; g.addColorStop(u, "rgba(0,0,0," + (0.5 + 0.5 * Math.cos(Math.PI * u)).toFixed(4) + ")"); }
+          c.fillStyle = g; c.fillRect(f[2], 0, WAVE_FADE, WAVE_H);
+        });
+        c.globalCompositeOperation = "source-over";
+        // THE LIVE DOT — pinned at the centre at every fill level, on the same smoothed curve so the line runs THROUGH it
+        var dotY = yAt(WAVE_MIDX, 1);
+        c.save(); c.shadowColor = "rgba(138,92,240,.65)"; c.shadowBlur = 10;
+        c.beginPath(); c.arc(WAVE_MIDX, dotY, WAVE_DOT_R, 0, Math.PI * 2); c.fillStyle = WAVE_DOT; c.fill();
+        c.restore();
+        c.lineWidth = 2.5; c.strokeStyle = "#160510"; c.stroke();
+        n.geom = { t: t, ext: +ext.toFixed(4), amp: +amp.toFixed(3), baseY: baseY, x0: +x0.toFixed(3), x1: +x1.toFixed(3), dotX: WAVE_MIDX, dotY: +dotY.toFixed(3), ghost: +(WAVE_GHOST_AHEAD * 0.55).toFixed(4), run: run }; // the receipt DEV.waveGeom reads — the numbers the renderer actually drew at, not a re-derivation
       } }
   };
   var BREATH_VIZ_KEYS = ["orb", "wave"];
@@ -12283,14 +12393,14 @@
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
     // PLAYER CHROME (BUILD 2026-07-19, David: "combine it altogether into one player"): the same top story-bars + settings cog as the composed player. Bars = one per cycle (single pattern) or one per stage (the ladder), filling as you move through. The cog opens the breath settings + live volume, mid-session.
-    var barCol = "#9a7cff";
-    var bars = []; for (var bi = 0; bi < phases.length; bi++) { var bk = LADDER ? phases[bi].si : phases[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + phases[bi].ms }); else _lb.e = cum[bi] + phases[bi].ms; }
-    var barFills = [];
-    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:9px;z-index:6;pointer-events:none;";
-    bars.forEach(function () { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(barCol, "#160510", 0.62) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); barWrap.appendChild(colx); barFills.push(fl); });
+    var barCol = BREATH_HUE; // Round 25: a breathing session wears the frame's teal (DOM.restore.c), not the old generic violet
+    var bars = []; for (var bi = 0; bi < phases.length; bi++) { var bk = LADDER ? phases[bi].si : phases[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + phases[bi].ms, ti: breathGlyph(stages[phases[bi].si || 0]) }); else _lb.e = cum[bi] + phases[bi].ms; }
+    var barFills = [], barTracks = [], barIcons = [];
+    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:" + STORY_TOP + "px;left:" + STORY_SIDE + "px;right:" + STORY_SIDE + "px;display:flex;gap:" + STORY_GAP + "px;z-index:6;pointer-events:none;"; // ARTBOARD px, no safe-area added on top: the 402x874 frame draws its own status-bar space (DESIGN-PORT-CHECKLIST law 1)
+    bars.forEach(function (b) { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:" + STORY_COLGAP + "px;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:" + STORY_BAR_H + "px;border-radius:" + STORY_BAR_R + "px;background:" + storyUpcoming(barCol) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:" + STORY_BAR_R + "px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); var ic = document.createElement("i"); ic.className = "ti " + b.ti; ic.style.cssText = "font-size:" + STORY_ICON + "px;line-height:1;color:" + barCol + ";opacity:.34;"; colx.appendChild(ic); barWrap.appendChild(colx); barFills.push(fl); barTracks.push(bar); barIcons.push(ic); });
     ov.appendChild(barWrap);
     // drop the ✕ / voice-toggle below the new bars, and add the settings cog beside the voice toggle
-    var _topOff = "calc(env(safe-area-inset-top,0px) + 40px)";
+    var _topOff = CHROME_TOP + "px";
     var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
     var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff;
     // THE THIRD DOOR, CLOSED (David 2026-08-20, "no separate settings screen"). This cog used to open its OWN popover —
