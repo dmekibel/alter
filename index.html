@@ -674,7 +674,7 @@
   /* guided breathwork overlay (first self-help module) */
   #breatheOv{position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
   @keyframes toolIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
-  .vol-ov,.dur-ov{animation:toolIn .24s ease both;}
+  .dur-ov{animation:toolIn .24s ease both;}
   .bento-ov .bento-card{animation:sheetUp .3s cubic-bezier(.2,.9,.3,1.02) both;}
   @keyframes sheetUp{from{opacity:.4;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
   #breatheOv .bw-orb{width:165px;height:165px;border-radius:50%;background:radial-gradient(circle,rgba(205,185,255,.92),rgba(150,120,255,.3) 58%,rgba(150,120,255,0) 74%);box-shadow:0 0 80px rgba(170,140,255,.55);transform:scale(.55);will-change:transform;}
@@ -773,6 +773,38 @@
   .gpm-lab{flex:1;min-width:0;color:#fff2f9;font-family:"Jost",sans-serif;font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .gpm-pp{flex:none;width:42px;height:42px;border-radius:50%;background:var(--gp-c,#9a5cf0);border:2px solid #160510;box-shadow:0 3px 0 #160510;color:#160510;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .gpm-up{flex:none;width:34px;height:34px;border-radius:50%;background:none;border:none;color:rgba(240,230,239,.6);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  /* ===== THE PLAYER SETTINGS CARD (David 2026-08-20, Round 24 v2). Every value quoted from his prototype via
+     _specs/PLAYER-SETTINGS-PORT-2026-08-20.md; --ps-e is passed inline per card because E = the session's own hue.
+     The frame stacks scrim 38 / card 40; rebased to 118/120 because #breatheOv is z 98 and this drops over it. ===== */
+  .ps-ov{position:fixed;inset:0;z-index:118;background:rgba(18,8,24,.52);}
+  .ps-card{position:fixed;z-index:120;top:156px;right:14px;width:322px;max-height:calc(100vh - 178px);overflow-y:auto;box-sizing:border-box;background:#221126;border:3px solid #160510;border-radius:22px;box-shadow:0 6px 0 #160510,0 18px 40px rgba(0,0,0,.5);padding:13px 14px 15px;display:flex;flex-direction:column;gap:13px;font-family:var(--bub);color:#efeaff;transform-origin:calc(100% - 18px) -10px;animation:psCog .28s var(--ease-spring) both;}
+  @keyframes psCog{0%{transform:scale(.72);opacity:0;}60%{transform:scale(1.02);opacity:1;}100%{transform:scale(1);opacity:1;}}
+  .ps-notch{position:absolute;right:13px;top:-11px;width:16px;height:16px;background:#221126;border-left:3px solid #160510;border-top:3px solid #160510;border-radius:3px 2px 0 2px;transform:rotate(45deg);}
+  .ps-title{font-family:var(--bub);font-weight:800;font-size:18px;line-height:1;color:#efeaff;margin-bottom:-4px;}
+  .ps-kick{font-size:10.5px;font-weight:800;letter-spacing:1.8px;color:#bcb0e8;margin-bottom:-3px;text-transform:uppercase;}
+  .ps-row{display:flex;align-items:flex-start;gap:10px;}
+  .ps-lab{flex:none;width:52px;padding-top:9px;font-size:11px;font-weight:700;color:#7d6d92;}
+  .ps-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
+  .ps-chips{display:flex;gap:6px;}
+  .ps-chip{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;min-height:36px;padding:0 12px;border-radius:11px;font-family:var(--bub);font-weight:800;font-size:13.5px;white-space:nowrap;cursor:pointer;} /* nowrap: the bed field's rows are a fixed 30px, so a wrapping label ("Deep · 4 Hz") bleeds over its neighbours */
+  .ps-chip.sm{flex:none;min-height:30px;padding:0 8px;font-size:11.5px;}
+  .ps-chip:active{transform:translateY(2px);}
+  .ps-chip.sm:active{transform:translateY(1px);}
+  .ps-chip.sel:active{box-shadow:0 1px 0 #160510 !important;}
+  .ps-beds{position:relative;}
+  /* overflow-y:hidden + touch-action:pan-x = the v1313 dose-rail lesson: without them this three-row field scrolls VERTICALLY under a finger */
+  .ps-bedgrid{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,30px);gap:6px;justify-content:start;padding-right:20px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);}
+  .ps-bedgrid::-webkit-scrollbar{display:none;}
+  .ps-more{position:absolute;right:-3px;top:50%;transform:translateY(-50%);font-size:14px;color:#7d6d92;pointer-events:none;}
+  .ps-vol{display:flex;align-items:center;gap:8px;margin:2px 4px 4px 0;}
+  .ps-vol > i{flex:none;font-size:15px;color:#7d6d92;line-height:1;}
+  .ps-track{position:relative;flex:1;height:9px;border-radius:6px;background:rgba(255,255,255,.09);cursor:pointer;touch-action:none;}
+  .ps-fill{height:100%;border-radius:6px;}
+  .ps-knob{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;border:2.5px solid #160510;box-shadow:0 2px 0 #160510;transform:translate(-50%,-50%);}
+  .ps-tog{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:rgba(255,255,255,.05);border:2px solid #4b3a56;border-radius:14px;padding:9px 12px;color:#cbb8d6;font-family:var(--bub);font-weight:800;font-size:12.5px;text-align:left;cursor:pointer;}
+  .ps-foot{display:flex;gap:9px;margin-top:3px;position:sticky;bottom:-15px;background:#221126;padding:5px 0 0;} /* sticky only bites when the card overflows — the SESSION scopes fit the frame exactly, but the off-session Sound scope carries every row plus the two app toggles, and a half-clipped primary is not a button */
+  .ps-done{flex:1;min-height:42px;border-radius:14px;border:2.5px solid #160510;box-shadow:0 4px 0 #160510;color:#160510;font-family:var(--bub);font-weight:800;font-size:14px;text-transform:lowercase;cursor:pointer;}
+  .ps-done:active{transform:translateY(3px);box-shadow:0 1px 0 #160510;}
   @keyframes gpWave1{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-8%) scale(1.09);}}
   @keyframes gpWave2{0%,100%{transform:translateY(0) scale(1.05);}50%{transform:translateY(7%) scale(1);}}
   @keyframes gpWave3{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(6%) scale(1.1);}}
@@ -4076,6 +4108,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1317"></script>
+  <script src="app.js?v=1318"></script>
 </body>
 </html>

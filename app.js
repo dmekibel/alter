@@ -56,6 +56,7 @@
   function bgBus() { sharedAudioCtx(); return _bgBus; }
   function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
   // PEACEFUL PAD (David 2026-07-01): the original meditation drone he liked best — an open A pad (A2·E3·A3) with a gentle breathing swell, that slowly + OCCASIONALLY drifts to a warm neighbour chord (F2·C3·A3, common A3 top) and back for a touch of nuance. Reused for the tool bed AND the whole-app music. Returns { stop }.
+  var _padLive = 0; // how many peaceful pads are actually sounding — the honest receipt DEV.beds() reads (a lit chip is not a running oscillator)
   function startPad(ctx, out, level) {
     if (!ctx || !out) return { stop: function () {} };
     var CHA = [110, 164.81, 220], CHB = [87.31, 130.81, 220]; // A(A2 E3 A3) ⟷ F(F2 C3 A3)
@@ -64,10 +65,10 @@
     for (var i = 0; i < 3; i++) { var o = ctx.createOscillator(); o.type = types[i]; o.frequency.value = CHA[i]; var og = ctx.createGain(); og.gain.value = vols[i]; o.connect(og); og.connect(g); o.start(); oscs.push(o); }
     var lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.07; var la = ctx.createGain(); la.gain.value = level * 0.32; lfo.connect(la); la.connect(g.gain); lfo.start(); // slow breathing swell
     g.gain.linearRampToValueAtTime(level, ctx.currentTime + 2.5);
-    var stopped = false, timers = [], atB = false;
+    var stopped = false, timers = [], atB = false; _padLive++;
     function glide() { if (stopped) return; var c = sharedAudioCtx(); if (!c) return; atB = !atB; var tgt = atB ? CHB : CHA, now = c.currentTime; oscs.forEach(function (o, i) { o.frequency.cancelScheduledValues(now); o.frequency.setValueAtTime(o.frequency.value, now); o.frequency.linearRampToValueAtTime(tgt[i], now + 4.5); }); timers.push(setTimeout(glide, atB ? 9000 : 22000)); } // mostly on A (~22s), a brief drift to F (~9s)
     timers.push(setTimeout(glide, 22000));
-    return { stop: function () { stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + 1.2); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 1400); } };
+    return { stop: function () { if (stopped) return; _padLive = Math.max(0, _padLive - 1); stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + 1.2); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 1400); } };
   }
   // ===== BACKGROUND MUSIC — "Mysterious" (David 2026-07-01): the deep, hypnotic, spacious Mario-Paint-BGM-3 vibe. ~70 BPM, a slow 2-chord vamp — Ab min9 ⟷ Db dom9 — each swelling for 2 bars. Sub-bass root on the downbeat, a warm low-passed saw pad washing the upper extensions in and out, and sparse glassy pentatonic plucks drifting on top like stars. Big reverb. Routes into _bgBus. =====
   var BGM = (function () {
@@ -98,20 +99,51 @@
     function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { [bassBus, padBus, pluckBus, revGain, conv].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); bassBus = padBus = pluckBus = revGain = conv = null; }, 2600); }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
-  function bedMode() { return (S.audio && S.audio.bed) || "pad"; } // 'pad' (peaceful drone, DEFAULT) · 'music' (Mysterious) · 'off' · or a BG_FILES key
-  // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). =====
+  // ===== THE BED SET (David 2026-08-20: "make it so you can select multiple, like 2 at a time, as long as they're different
+  // categories — one music and one nature. But you can't select 2 music."). S.audio.bed used to be ONE key; it is a LIST now
+  // (SCHEMA 9 / MIG 8→9 migrates the old string). The CATEGORY is the only rule: at most one bed per category, so the set can
+  // never hold two of a family. They stay in ONE visual list in the settings card — the category governs SELECTION, not layout.
+  // `floating` sits in binaural, not music: that is where the app's own Sound panel has filed it since 2026-07-10 (it ships
+  // beside the 4/6/13/33 Hz loops and carries the same headphones warning), and the shipped label is the only evidence I have
+  // about what the asset actually is. Flagged to David — if Floating is really an ambient pad, move one word here.
+  var BED_CAT = { pad: "music", music: "music", forest: "nature", birds: "nature", floating: "binaural", focus13: "binaural", theta6: "binaural", deep4: "binaural", gamma33: "binaural" };
+  var BED_MAX = 2; // "select multiple, like 2 at a time" — two beds, never more. The app has THREE families (music · nature · binaural), so "one per category" alone would still have allowed three; the cap is its own rule.
+  var BED_DEFAULT = ["birds"]; // David 2026-08-20: the default background sound is birds (was the peaceful pad)
+  var BED_NAME = { pad: "Peaceful", music: "Mysterious", forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" }; // the design's peaceful/mysterious/birdsong ARE the app's pad/music/birds — same beds, and the app's own shipped words win. The design's rain · ocean · fireplace · wind · stream · crickets · thunder have no audio and are not offered until they do.
+  var BED_ORDER = ["pad", "music", "forest", "birds", "floating", "deep4", "theta6", "focus13", "gamma33"]; // ONE visual list (David 2026-08-20: "for now let's keep one list") — the category governs SELECTION only
+  function bedKeys() { // THE selected set — always an array, always valid keys, always inside the rule (one per category, at most BED_MAX). Enforced on READ so an imported or hand-edited save can never sneak three beds past the toggle.
+    try {
+      var v = S.audio && S.audio.bed;
+      if (v == null) return BED_DEFAULT.slice();
+      if (typeof v === "string") return BED_CAT[v] ? [v] : [];
+      var seen = {}, out = [];
+      (v || []).filter(function (k) { return BED_CAT[k]; }).forEach(function (k) { if (seen[BED_CAT[k]] != null) out.splice(seen[BED_CAT[k]], 1); out.push(k); seen = {}; out.forEach(function (x, i) { seen[BED_CAT[x]] = i; }); }); // later pick wins its category
+      return out.slice(Math.max(0, out.length - BED_MAX));
+    } catch (e) { return []; }
+  }
+  function bedToggle(k) { // returns the NEW set — same key = deselect · same category = replace it · different category = add alongside, and a third pick pushes the OLDEST out
+    var cur = bedKeys();
+    if (k === "off" || !BED_CAT[k]) return [];
+    if (cur.indexOf(k) !== -1) return cur.filter(function (x) { return x !== k; });
+    var next = cur.filter(function (x) { return BED_CAT[x] !== BED_CAT[k]; }).concat([k]);
+    return next.slice(Math.max(0, next.length - BED_MAX));
+  }
+  function bedSet(keys) { S.audio = S.audio || { voice: 1, bg: 1 }; S.audio.bed = (keys || []).slice(); S.audioBedPick = 1; } // audioBedPick = "a human chose this", so no future default-change migration overwrites a real pick
+  // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). MULTI since 2026-08-20: `live` is a MAP, not one source, so a nature bed and a binaural bed can sound together. =====
   var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" };
   var BGBED = (function () {
-    var cache = {}, src = null, gain = null, wanted = null, lvl = 0.5;
+    var cache = {}, live = {}, lvl = 0.5; // live[key] = { src, gain }; src stays null while that key's buffer is still decoding (start() re-attaches when it lands)
+    function attach(key) { var ctx = sharedAudioCtx(), b = cache[key], e = live[key]; if (!ctx || !b || !e || e.src) return;
+      try { if (ctx.state === "suspended") ctx.resume(); var s = ctx.createBufferSource(); s.buffer = b; s.loop = true; var g = ctx.createGain(); g.gain.value = lvl; s.connect(g); g.connect(bgBus() || ctx.destination); s.start(); e.src = s; e.gain = g; } catch (er) {} }
     function load(key) { if (cache[key] || !BG_FILES[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return;
-      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { cache[key] = b; if (wanted === key) start(key, lvl); }).catch(function () {}); }
-    function start(key, level) { stop(); if (!BG_FILES[key]) { wanted = null; return; } wanted = key; if (level != null) lvl = level; var ctx = sharedAudioCtx(); if (!ctx) return;
-      var b = cache[key]; if (!b) { load(key); return; } // decode async, then auto-starts if still wanted
-      try { if (ctx.state === "suspended") ctx.resume(); src = ctx.createBufferSource(); src.buffer = b; src.loop = true; gain = ctx.createGain(); gain.gain.value = lvl; src.connect(gain); gain.connect(bgBus() || ctx.destination); src.start(); } catch (e) {} }
-    function stop() { wanted = null; try { if (src) { src.onended = null; src.stop(0); } } catch (e) {} src = null; gain = null; }
-    return { load: load, start: start, stop: stop };
+      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { cache[key] = b; attach(key); }).catch(function () {}); }
+    function start(key, level) { if (!BG_FILES[key] || live[key]) return; if (level != null) lvl = level; live[key] = { src: null, gain: null }; if (cache[key]) attach(key); else load(key); }
+    function stop(key) { if (key == null) { Object.keys(live).forEach(function (k) { stop(k); }); return; } var e = live[key]; if (!e) return; delete live[key]; try { if (e.src) { e.src.onended = null; e.src.stop(0); } } catch (er) {} } // stop() with no key = stop every bed (the old single-source signature, unchanged for its callers)
+    function running() { return Object.keys(live).filter(function (k) { return !!live[k].src; }); } // the honest receipt: which keys have a LIVE BufferSource, not which chips are lit
+    return { load: load, start: start, stop: stop, running: running };
   })();
-  var _activeBed = null; // the running timelinePlayer registers a (mode)=>switch fn here so the Sound panel can live-swap its bed
+  var _activeBed = null; // the running timelinePlayer registers a (keys[])=>switch fn here so the settings card can live-swap its bed SET
+  var _gpSettings = null; // …and a read-only "what is in this session" dump, so the settings card can COMPUTE its rows (hue · does it contain breathing · is it a stack) instead of being told. Cleared on both teardown paths, same as _activeBed.
   var _gpRevoice = null; // …and its "the voice just changed, re-cut your remaining lines" door, called straight from TTS.setVoice/setRuVoice. Same idiom as _activeBed, and for the same reason: a running session has to be told, not left to notice. (The player ALSO polls TTS.voiceGen() in its rAF loop as a safety net for changes that skip the setters — a language switch — but rAF is frozen whenever the page is hidden, so it can never be the primary trigger.)
   var _gpProbe = null;   // …and a read-only state dump here, for DEV.voice(). The preview cannot judge audio FEEL, but it CAN prove the buffers were genuinely re-decoded from the new bank and the transport did not jump — which is the whole 2026-08-15 voice-swap fix. Cleared on both teardown paths, same as _activeBed.
   // ===== APP BACKGROUND MUSIC (David 2026-07-01): the SAME peaceful pad, at a very low level, drifting under the whole app. Auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
@@ -375,7 +407,7 @@
   }
   var el = function (id) { return document.getElementById(id); };
   // @SEC:TIME — KEY/SCHEMA constants + THE 4AM LAW: logicalK() rolls the day at 4am and EVERYTHING keys off it. SCHEMA's migrations live in load() (@SEC:STATE) — bump them TOGETHER.
-  var KEY = "alter_plan2", SCHEMA = 8, lastSaveErr = 0; // 8 = THE STATUES (S.goals[] EXTENDED in place — garden menu 3 of 4, frames R1b-R9a, engine _specs/GOAL-ENGINE-2026-08-11.md); 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
+  var KEY = "alter_plan2", SCHEMA = 9, lastSaveErr = 0; // 9 = THE BED SET (S.audio.bed: one key → a LIST of at most one bed per BED_CAT category — David 2026-08-20 "select multiple, one music and one nature"); 8 = THE STATUES (S.goals[] EXTENDED in place — garden menu 3 of 4, frames R1b-R9a, engine _specs/GOAL-ENGINE-2026-08-11.md); 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -1757,7 +1789,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -1796,7 +1828,7 @@
       if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
       multi = false; on = false; cur = null;
       // CONTEXT-AWARE (David 2026-07-01): while ANY overlay/menu is open — a tool/player, a modal sheet, the expanded tracker (cockpit) or toolbox, the plan-a-day bento, a radial/duration/onboarding sheet — DON'T let a horizontal swipe switch app panes. The swipe belongs to that surface; close it to switch.
-      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
+      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .ps-ov, .goal-ov, .mind-ov, .nb-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
       // THUMBSTICK MISTAKE ROOM (David 2026-07-15): in the game, don't let a swipe near either stick (bottom-left / bottom-right corners) steal to Journey. The sticks are canvas-drawn so a near-miss lands on the world; disarm the pane-swipe in those corner bands. Intentional pane swipes come from higher up / center.
       var _vh = window.innerHeight || 800, _vw = window.innerWidth || 390;
@@ -5370,7 +5402,7 @@
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return false;
     if (!tf.classList.contains("tf-onehome") || tf.classList.contains("tf-staged")) return false; // only the calm home faces own the axis; a guided/staged cockpit does not
     if (_paneAnim || (typeof _dragLock !== "undefined" && _dragLock)) return false; // never while a pane settle or a timeline block-drag owns the DOM
-    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov, .sed-ov, .pk-ov, #sheet.on")) return false; // an overlay above home owns touch
+    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .ps-ov, .goal-ov, .mind-ov, .nb-ov, .sed-ov, .pk-ov, #sheet.on")) return false; // an overlay above home owns touch
     if (e.target && e.target.closest && e.target.closest(PANE_GUARD)) return false; // buttons/inputs/the circle/doors keep their own taps (the disc = playFirst, doors = their handlers)
     return true;
   }
@@ -6596,7 +6628,7 @@
     { k: "rewire", lab: "Rewire", i: "ti-quote", d: "create", tools: [
       { i: "ti-bulb", t: "Mantra", m: 2, sk: "mantra" }, { i: "ti-rotate-2", t: "Visualisation", m: 3, sk: "reprogram" } ] } // t_mantra's + STACK_TOOLS reprogram's shipped labels
   ];
-  var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: "Calm pad", i: "ti-wave-saw-tool" }, { k: "music", n: "Music", i: "ti-music" }, { k: "forest", n: "Forest", i: "ti-trees" }, { k: "birds", n: "Birds", i: "ti-feather" }, { k: "floating", n: "Floating", i: "ti-cloud" }]; // the REAL bed keys (bedMode/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
+  var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: BED_NAME.pad, i: "ti-wave-saw-tool" }, { k: "music", n: BED_NAME.music, i: "ti-music" }, { k: "forest", n: BED_NAME.forest, i: "ti-trees" }, { k: "birds", n: BED_NAME.birds, i: "ti-feather" }, { k: "floating", n: BED_NAME.floating, i: "ti-cloud" }]; // names come from BED_NAME so this grid and the settings card can never call the same bed two things (it used to say "Calm pad"/"Music" while the Sound panel said "Peaceful"/"Mysterious"). The REAL bed keys (bedKeys/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
   var SED_VOLLAB = ["off", "faint", "quiet", "there", "up", "loud"];
   var _sed = null; // the live editor (null = closed). Transient; nothing here is state until Save/Start.
   function sedFmt(m) { return m < 1 ? Math.round(m * 60) + "s" : (m % 1 ? Math.floor(m) + ":" + pad(Math.round((m % 1) * 60)) : m + " " + tr("min")); }
@@ -6707,12 +6739,12 @@
     var vk = sedVoiceKey(), vlist = sedVoices(), vnow = vlist.filter(function (v) { return v.k === vk; })[0] || vlist[0];
     var vb = sedSetCard(wrap, "voice", "connect", "ti-microphone", "Voice", tr(vnow.n));
     if (vb) { var vr = add(vb, "div", "sed-vrow"); vlist.forEach(function (v) { var on = v.k === vk, c = add(vr, "button", "sed-vcard"); var vi = add(c, "i", "ti " + (v.k === "none" ? "ti-microphone-off" : "ti-user")); add(c, "span", "sed-vn", tr(v.n)); add(c, "span", "sed-vs", tr(v.s)); if (on) { c.style.background = tbxCandy(sedHue("connect")); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("connect") + " 45%, #000)"; c.classList.add("on"); } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("connect") + " 34%, #33192a)"; vi.style.color = sedHue("connect"); } c.onclick = function () { sedSetVoiceKey(v.k); sedPaint(); }; }); }
-    var bed = (S.audio && S.audio.bed) || "pad", bnow = SED_BEDS.filter(function (x) { return x.k === bed; })[0] || SED_BEDS[1];
+    var bedsOn = bedKeys(), bedSum = bedsOn.length ? bedsOn.map(function (k) { return tr(BED_NAME[k] || k); }).join(" + ") : tr("None"); // MULTI (2026-08-20): the summary line names every bed in the set, not just one — and reads BED_NAME so a binaural bed picked in the settings card still shows here
     var vol = Math.max(0, Math.min(5, Math.round(((S.audio && S.audio.bg != null ? S.audio.bg : 1)) * 5)));
-    var sb = sedSetCard(wrap, "sound", "move", "ti-volume", "Sound", tr(bnow.n) + " · " + tr(SED_VOLLAB[vol]));
+    var sb = sedSetCard(wrap, "sound", "move", "ti-volume", "Sound", bedSum + " · " + tr(SED_VOLLAB[vol]));
     if (sb) {
       var g = add(sb, "div", "sed-sgrid");
-      SED_BEDS.forEach(function (x) { var on = x.k === bed, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = "#160510"; c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, #000)"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, #33192a)"; si.style.color = sedHue("move"); } c.onclick = function () { S.audio = S.audio || { voice: 1, bg: 1 }; S.audio.bed = x.k; save(); sedPaint(); }; });
+      SED_BEDS.forEach(function (x) { var on = x.k === "off" ? !bedsOn.length : bedsOn.indexOf(x.k) !== -1, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = "#160510"; c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, #000)"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, #33192a)"; si.style.color = sedHue("move"); } c.onclick = function () { bedSet(bedToggle(x.k)); save(); if (_activeBed) _activeBed(bedKeys()); sedPaint(); }; }); // same one-per-category toggle as the settings card, so the two doors can never disagree
       var vr2 = add(sb, "div", "sed-vol"); add(vr2, "i", "ti ti-volume");
       var bars = add(vr2, "span", "sed-bars");
       [1, 2, 3, 4, 5].forEach(function (v) { var bq = add(bars, "button", "sed-bar"); bq.style.height = (7 + v * 4) + "px"; bq.style.background = v <= vol ? sedHue("move") : "#2c1522"; bq.setAttribute("aria-label", tr(SED_VOLLAB[v])); bq.onclick = function () { setAudioVol("bg", v / 5); save(); sedPaint(); }; });
@@ -7861,8 +7893,8 @@
     S.audio = S.audio || { voice: 1, bg: 1 };
     if (S.audio.voice == null) S.audio.voice = 1;
     if (S.audio.bg == null) S.audio.bg = 1;
-    if (S.audio.bed == null) S.audio.bed = "pad";
-    if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */
+    if (S.audio.bed == null) S.audio.bed = BED_DEFAULT.slice(); /* David 2026-08-20: the background sound default is BIRDS (was the peaceful pad) */
+    if (!S.audioMigPad) S.audioMigPad = 1; /* the 2026-07-01 "everyone gets the peaceful pad" one-time migration is SPENT. The flag stays stamped so no save can re-run it, but its WRITE is gone: birds is the default now, and MIG 8→9 turns that un-chosen pad into it. */
     if (S.audio.appMusic == null) S.audio.appMusic = false;
     if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; } /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */
     /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */
@@ -7959,6 +7991,18 @@
       if (typeof g.whyText !== "string") g.whyText = "";
       if (!g.size) g.size = (g.steps.length >= 6 ? "big" : g.steps.length >= 3 ? "medium" : "small");
     });
+    // MIG 8→9 — THE BED SET (David 2026-08-20). S.audio.bed was ONE key; it is a LIST now, holding at most one bed per BED_CAT
+    // category, so a music bed and a nature bed can sound together. The old string becomes a one-item list — EXCEPT "pad",
+    // which nobody chose: the 2026-07-01 audioMigPad wrote it into every save on the planet, so a stored "pad" is the un-chosen
+    // default and lands on the new default (birds). Every OTHER stored key is a real pick and survives untouched, and the two
+    // breath defaults that change with it (tone → ocean, cue → woodblock) are resolved from an UNSET pref in breathToneKey/
+    // breathCueKey rather than written here, so a real prior pick — including an explicit "off" — is never overwritten.
+    if (prevSchema < 9) {
+      var _b0 = S.audio && S.audio.bed;
+      if (typeof _b0 === "string") S.audio.bed = (_b0 === "pad" && !S.audioBedPick) ? BED_DEFAULT.slice() : (BED_CAT[_b0] ? [_b0] : []);
+      else if (!Array.isArray(_b0)) S.audio.bed = BED_DEFAULT.slice();
+    }
+    if (!Array.isArray(S.audio.bed)) S.audio.bed = (typeof S.audio.bed === "string" && BED_CAT[S.audio.bed]) ? [S.audio.bed] : []; // shape guard on EVERY load: a hand-edited or imported save can still carry the old string
     S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
     } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged · backed up + started fresh"); } // NEVER let load() throw past here: damaged save → _bak + fresh() — David's data survives every crash
   }
@@ -11981,10 +12025,10 @@
       paint: function (n, s) {
         if (!n.path) return;
         if (s.elapsed - n.last > n.push) { n.last = s.elapsed; n.pts.push(s.level); if (n.pts.length > n.cap) n.pts.shift(); }
-        var m = n.pts.length, den = Math.max(1, n.cap - 1), off = n.cap - m, d = "", i; // RIGHT-ALIGNED: the live dot sits at the right edge from the first frame and the history grows leftward behind it, which is what the authored SVG's cx="290" always meant. Left-anchoring made the opening of every session look like a different visual until the buffer filled — tolerable at the old 5.3s window, wrong now that the window is a whole cycle.
+        var m = n.pts.length, den = Math.max(1, n.cap - 1), off = Math.round((n.cap - m) / 2), d = "", i; // CENTRED (David 2026-08-20: "make the breathing wave always in the middle of the screen instead of off to the right"). While the buffer is still filling — the whole first cycle, up to 16s of every session — a right-aligned partial path drew ONLY in the right half and read as a wave shoved to the edge. Splitting the empty remainder evenly grows it out from the middle instead. Once the buffer is full off = 0 and this is byte-for-byte the shipped full-width drawing, so nothing changes for the other 99% of a session.
         for (i = 0; i < m; i++) d += (i ? "L" : "M") + (((i + off) / den) * 300).toFixed(1) + " " + (160 - n.pts[i] * 132).toFixed(1) + " ";
         n.path.setAttribute("d", d);
-        if (m && n.dot) { n.dot.setAttribute("cx", "300"); n.dot.setAttribute("cy", (160 - n.pts[m - 1] * 132).toFixed(1)); }
+        if (m && n.dot) { n.dot.setAttribute("cx", (((m - 1 + off) / den) * 300).toFixed(1)); n.dot.setAttribute("cy", (160 - n.pts[m - 1] * 132).toFixed(1)); } // the live dot rides the path's own live end, so it sits mid-screen while the wave grows and reaches the right edge exactly when the window is full
       } }
   };
   var BREATH_VIZ_KEYS = ["orb", "wave"];
@@ -12002,8 +12046,8 @@
   // three sustain keys (flute / chord / ocean) land on the bell cue with the tone OFF, deliberately — those three WERE the
   // broken tone, and David has only ever heard the broken one. He opts into the new tone and judges it on its own.
   var BREATH_SOUND_MIGRATE = { silent: "off", bell: "bell", bells3: "bell", chime: "bell", harp: "bell", bowl: "gong", wood: "woodblock", flute: "bell", chord: "bell", ocean: "bell" };
-  function breathCueKey() { try { if (BREATH_CUES[S.breathCue]) return S.breathCue; var m = BREATH_SOUND_MIGRATE[S.breathSound]; return m || "bell"; } catch (e) { return "bell"; } } // default: cues ON, the bell set
-  function breathToneKey() { try { return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "off"; } } // default: tone OFF
+  function breathCueKey() { try { if (BREATH_CUES[S.breathCue]) return S.breathCue; var m = BREATH_SOUND_MIGRATE[S.breathSound]; return m || "woodblock"; } catch (e) { return "woodblock"; } } // default: cues ON, the WOODBLOCK set (David 2026-08-20; was bell). A stored pick — including "off", a real cue set — still wins, and so does a legacy S.breathSound choice.
+  function breathToneKey() { try { if (S.breathTone == null) return "ocean"; return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "ocean"; } } // default: the OCEAN tone (David 2026-08-20; was off). An explicit stored "off" is a real choice and is honoured — only an unset pref gets the new default.
   function breathVizKey() { try { return BREATH_VIZ[S.breathViz] ? S.breathViz : "orb"; } catch (e) { return "orb"; } }
   var _breathLive = null; // the running breath surface's "re-read the sound prefs" door, so a change in the settings applies to the session you are IN (the same shape as _activeBed). Cleared on teardown.
   // BREATH PREVIEW (BUILD 2026-07-19, David: "when you press on the sounds you can't hear them"): a short in / hold / out demo so you can choose BEFORE the session. It runs the SAME makeBreathClock, the SAME cue-set `hit` at each turn and the SAME tone the live session runs, so what you preview is byte-for-byte what you get. Routed through the bg bus (the Sound slider applies). Returns { stop }.
@@ -12129,6 +12173,7 @@
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
       if (tone) { try { tone.stop(); } catch (e) {} tone = null; }
       if (_breathLive === readSound) _breathLive = null;
+      if (_gpSettings === _bwScope) _gpSettings = null; // only if it is still OURS (a composed player opened over this one owns it now) — same rule as the _breathLive hook above
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); tickTool("breathe"); save(); renderAll(); }
       if (onDone) onDone();
@@ -12145,18 +12190,12 @@
     var _topOff = "calc(env(safe-area-inset-top,0px) + 40px)";
     var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
     var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff;
-    function breathSettingsPopover() { // was volume-only (David 2026-08-15: the visual + sound switches lived ONLY in the picker, so every quick call and the whole toolbox path could never reach them)
-      var pov = document.createElement("div"); pov.style.cssText = "position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(10,4,14,.55);";
-      var card = document.createElement("div"); card.style.cssText = "width:84%;max-width:330px;max-height:86vh;overflow-y:auto;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;display:flex;flex-direction:column;";
-      var t = document.createElement("div"); t.textContent = tr("Breathing"); t.style.cssText = "font-size:17px;font-weight:800;margin-bottom:1px;"; card.appendChild(t);
-      var s2 = document.createElement("div"); s2.textContent = tr("adjust anytime, even while it plays"); s2.style.cssText = "font-size:11.5px;color:#b39ab0;margin-bottom:4px;"; card.appendChild(s2);
-      breathControls(card, { preview: false }); // the running session IS the preview — readSound() applies the pick on the next frame
-      var vh = document.createElement("div"); vh.textContent = tr("volume"); vh.style.cssText = "width:100%;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9a86c0;margin:12px 0 1px;"; card.appendChild(vh);
-      breathVolRows(card);
-      var dn = document.createElement("button"); dn.className = "done2"; dn.textContent = tr("Done"); dn.style.cssText = "margin-top:16px;"; dn.onclick = function () { pov.remove(); }; card.appendChild(dn);
-      pov.appendChild(card); pov.addEventListener("click", function (e) { if (e.target === pov) pov.remove(); }); ov.appendChild(pov);
-    }
-    var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); breathSettingsPopover(); }; ov.appendChild(cog);
+    // THE THIRD DOOR, CLOSED (David 2026-08-20, "no separate settings screen"). This cog used to open its OWN popover —
+    // a bespoke card wrapping breathControls + breathVolRows, the last surface that could disagree with the settings card.
+    // It now registers what this session IS (a single breathing session, its own hue) and opens the ONE card, which computes
+    // the Breathing scope from it: guide · backdrop · cue · tone · visual. _breathLive still applies every pick on the next frame.
+    var _bwScope = function () { return { hue: barCol, breath: true, stack: false }; };
+    var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); _gpSettings = _bwScope; openVolumePanel(); }; ov.appendChild(cog);
     function paintBars(elMs) { for (var bi2 = 0; bi2 < bars.length; bi2++) { var b = bars[bi2], f = b.e > b.s ? (elMs - b.s) / (b.e - b.s) : (elMs >= b.s ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (barFills[bi2]) barFills[bi2].style.width = (f * 100) + "%"; } }
     var curIdx = -1, _lw = "", _ln = "";
     function paintPhase(s) { // THE EXPLICIT INDICATOR — write only what changed (the bar is a transform, so it never reflows)
@@ -14297,81 +14336,136 @@
       begin.onclick = function () { S.tools = S.tools || {}; S.tools.seen = S.tools.seen || {}; S.tools.seen[opts.id] = 1; save(); card.remove(); orb.style.display = ""; lab.style.display = ""; sub.style.display = ""; nextB.style.display = ""; setTimeout(paint, 250); };
     }
   }
-  // Sound panel — two live volume sliders (voice + background), for every audio tool (David 2026-07-01). Adjusts the master buses in real time.
+  // ===== THE PLAYER SETTINGS CARD (David 2026-08-20, Round 24 v2 — spec _specs/PLAYER-SETTINGS-PORT-2026-08-20.md, every
+  // number quoted from his prototype, never eyeballed). THE RULE, his words: "All player settings live in one place: the card
+  // that drops from the cog, top-right. What's inside the card follows what's inside the session — a single-type session gets
+  // only its own settings; a stack gets the whole-stack settings (guide, backdrop) plus a section per segment type that has
+  // its own sound, like breathing. No separate settings screen."
+  // So there is exactly ONE function and every door opens it: the player cog, the cockpit gear, the menu's Sound row. Its rows
+  // are COMPUTED from _gpSettings() — the session tells the card what it is holding. Off-session (the menu door) the card IS
+  // the app's sound settings, which is the only place the two app-level toggles live: they are not session settings and the
+  // frame has no home for them, so they sit in an APP block that a session never draws.
+  // NOT BUILT, on David's cut (2026-08-20): the frame's "save as default" button. Settings stay global and immediate.
+  // Z: the frame stacks scrim 38 / card 40; rebased to 118/120 here because #breatheOv is z 98 and the card drops over it.
+  var PS_INK = "#160510";
   function openVolumePanel() {
     S.audio = S.audio || { voice: 1, bg: 1 };
-    var ov = add(document.body, "div", "vol-ov"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(10,4,14,.55);display:flex;align-items:center;justify-content:center;";
-    var card = add(ov, "div"); card.style.cssText = "width:82%;max-width:340px;max-height:86vh;overflow-y:auto;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;";
-    add(card, "div", null, tr("Sound")).style.cssText = "font-size:19px;font-weight:800;";
-    add(card, "div", null, tr("adjust anytime, even while it plays")).style.cssText = "font-size:12px;color:#b39ab0;margin-bottom:8px;";
-    function slider(label, kind) {
-      var row = add(card, "div"); row.style.cssText = "margin:16px 0 4px;";
-      var lr = add(row, "div"); lr.style.cssText = "display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:7px;"; add(lr, "span", null, label); var pct = add(lr, "span", null, Math.round(S.audio[kind] * 100) + "%"); pct.style.color = "#ff8fc4";
-      var s = add(row, "input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round(S.audio[kind] * 100); s.style.cssText = "width:100%;accent-color:#9a7cff;height:26px;";
-      s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
+    var G = null; try { G = _gpSettings && _gpSettings(); } catch (e) { G = null; }
+    var inSession = !!G;
+    var E = ((G && G.hue) || "").trim() || "#9a7cff";          // E = the session's own hue; every chip, fill and knob is tinted by it
+    var hasBreath = G ? !!G.breath : true;                     // off-session the card owns the breath prefs too — there is no other door to them
+    var isStack = !!(G && G.stack);
+    var title = !inSession ? "Sound" : isStack ? "Full stack" : hasBreath ? "Breathing" : "Session";
+    var mixE = function (p) { return "color-mix(in oklab, " + E + " " + p + "%, transparent)"; };
+
+    var ov = add(document.body, "div", "ps-ov");
+    var card = add(ov, "div", "ps-card");
+    add(card, "div", "ps-notch");                                // points at the cog it dropped from
+    add(card, "div", "ps-title", tr(title));
+    add(card, "div", "ps-kick", tr("sound"));
+
+    function row(labelKey) { var r = add(card, "div", "ps-row"); add(r, "div", "ps-lab", tr(labelKey)); return add(r, "div", "ps-right"); }
+    function chip(host, text, small, checkPx, isOn, onTap) { // returns its OWN paint fn — every repaint is a targeted style write, never a wipe-and-rebuild
+      var b = add(host, "button", "ps-chip" + (small ? " sm" : ""));
+      var ck = add(b, "i", "ti ti-check"); ck.style.cssText = "font-size:" + checkPx + "px;color:" + PS_INK + ";line-height:1;";
+      var tx = add(b, "span", null, text);
+      function paint() {
+        var on = !!isOn();
+        b.classList.toggle("sel", on);
+        ck.style.display = on ? "" : "none";
+        tx.style.color = on ? PS_INK : "color-mix(in oklab, #fff 68%, " + E + ")";
+        b.style.backgroundColor = on ? E : mixE(10);
+        b.style.backgroundImage = on ? "repeating-linear-gradient(115deg, rgba(255,255,255,.28) 0 13px, transparent 13px 26px)" : "none";
+        b.style.border = on ? ("2.5px solid " + PS_INK) : ("2px solid color-mix(in oklab, " + E + " 55%, transparent)");
+        b.style.boxShadow = on ? ("0 3px 0 " + PS_INK) : "none";
+      }
+      paint(); b.onclick = onTap;
+      return paint;
     }
-    // GUIDE'S VOICE on/off (BUILD 2026-07-19): a plain toggle for the spoken narration, separate from its volume — some sessions you want the bed and the orb without a voice talking. Reuses S.voice, which voiceOn()/say() already honor everywhere.
-    var vxRow = add(card, "button"); vxRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:11px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
-    function vxOn() { return typeof S === "undefined" || !S || S.voice !== false; }
-    function vxPaint() { vxRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("Guide's voice") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("the spoken guide during a session") + '</span></span><i class="ti ' + (vxOn() ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + (vxOn() ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
-    vxPaint();
-    vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
-    // GUARDIAN VOICE PICK — language-gated (David 2026-07-22): RU → izo (the only RU voice, no toggle); EN → Dave | Millie. Tap plays a sample. Persists as S.voicePick (EN only). The bank resolves live from curBank() so the chip and the audio always agree.
-    add(card, "div", null, tr("Guide")).style.cssText = "font-size:13.5px;font-weight:700;margin:16px 0 6px;";
-    if (curLang() === "ru") { // TWO RU voices (David 2026-07-22): izo | Aida — tap to switch, a sample plays. Persists as S.ruVoice.
-      var ruRow = add(card, "div"); ruRow.style.cssText = "display:flex;gap:8px;";
-      var ruChips = [];
-      var ruPaint = function () { var cur = (S.ruVoice === "aida") ? "aida" : "izo"; ruChips.forEach(function (c) { var on = c.dataset.v === cur; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; c.style.color = "#f0e6ef"; }); };
-      [["izo", "izo"], ["aida", "Aida"]].forEach(function (o) {
-        var b = add(ruRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
-        ruChips.push(b);
-        b.onclick = function () { S.ruVoice = o[0]; S.voice = true; save(); try { TTS.unlock(); TTS.setRuVoice(o[0]); TTS.stop(); } catch (e) {} ruPaint(); vxPaint(); // S.voice = true: picking a REAL voice must switch the guide back on. The session editor's "No voice" card writes S.voice=false (sedSetVoiceKey), and these chips never wrote it back — so after one "No voice" the chip lit up, the preview played (TTS.speak bypasses voiceOn()) and every session stayed silent forever. (David 2026-08-15 pass.)
-          if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } }; // confirm the pick unless a session is actually SOUNDING (that overlap was the "two voices at once"); a live session takes the new voice from its next line instead
-      });
-      ruPaint();
-    } else {
-      var gvRow = add(card, "div"); gvRow.style.cssText = "display:flex;gap:8px;";
-      var gvChips = [];
-      var gvPaint = function () { var cur = (S.voicePick === "millie") ? "millie" : "dave"; gvChips.forEach(function (c) { var on = c.dataset.v === cur; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; c.style.color = "#f0e6ef"; }); };
-      [["dave", tr("Dave")], ["millie", tr("Millie")]].forEach(function (o) {
-        var b = add(gvRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
-        gvChips.push(b);
-        b.onclick = function () { S.voicePick = o[0]; S.voice = true; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.stop(); } catch (e) {} gvPaint(); vxPaint(); // NO warmAll (David 2026-07-19: decoding 500 clips on every tap janked/broke the app); the live curBank() resolve applies the switch, cold clips decode lazily. TTS.stop() cuts any prior preview. S.voice = true (2026-08-15): picking a REAL voice must switch the guide back on — the editor's "No voice" card sets S.voice=false and these chips never wrote it back, so after one "No voice" the chip lit, the preview played (TTS.speak bypasses voiceOn()) and every session stayed silent.
-          if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } }; // confirm the pick unless a session is actually SOUNDING; a minimized or paused player no longer swallows the confirmation, and a LIVE one takes the new voice from its next line (revoice)
-      });
-      gvPaint();
+    function slider(host, get, set) { // the frame's own slider, not an <input type=range>: 9px track, gradient fill, 20px ink-ringed knob
+      var w = add(host, "div", "ps-vol"); add(w, "i", "ti ti-volume");
+      var tk = add(w, "div", "ps-track"), fl = add(tk, "div", "ps-fill"), kn = add(tk, "div", "ps-knob");
+      fl.style.background = "linear-gradient(90deg, color-mix(in oklab,#fff 35%," + E + "), " + E + ")"; kn.style.background = E;
+      function paint() { var p = Math.max(0, Math.min(1, get())); fl.style.width = (p * 100).toFixed(2) + "%"; kn.style.left = (p * 100).toFixed(2) + "%"; }
+      paint();
+      var dragging = false;
+      function at(e) { var r = tk.getBoundingClientRect(); set(Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)))); paint(); }
+      tk.addEventListener("pointerdown", function (e) { dragging = true; try { tk.setPointerCapture(e.pointerId); } catch (x) {} at(e); e.preventDefault(); e.stopPropagation(); });
+      tk.addEventListener("pointermove", function (e) { if (dragging) { at(e); e.preventDefault(); } });
+      tk.addEventListener("pointerup", function (e) { if (!dragging) return; dragging = false; try { tk.releasePointerCapture(e.pointerId); } catch (x) {} save(); });
+      tk.addEventListener("pointercancel", function () { dragging = false; save(); });
+      return paint;
     }
-    slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
-    // BACKGROUND BED — categorized so a sound is quick to pick (David 2026-07-10). Selecting one live-swaps the running player's bed via _activeBed.
-    add(card, "div", null, tr("Background sound")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 4px;";
-    var bedChips = [];
-    function paintBed() { bedChips.forEach(function (c) { var on = bedMode() === c.dataset.bed; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; }); }
-    var previewPad = null;
-    function stopPreview() { try { BGBED.stop(); } catch (e) {} try { BGM.stop(); } catch (e) {} try { if (previewPad) { previewPad.stop(); previewPad = null; } } catch (e) {} } // David 2026-07-10: preview beds right in Settings, no player needed
-    function preview(key) { stopPreview(); var pctx = sharedAudioCtx(); if (!pctx) return;
-      if (key === "music") { BGM.start(); } else if (key === "pad") { previewPad = startPad(pctx, bgBus() || pctx.destination, 0.22); } else if (BG_FILES[key]) { BGBED.start(key, 0.5); } }
-    function setBed(key) { S.audio.bed = key; save(); paintBed(); if (_activeBed) _activeBed(key); preview(key); } // update the (paused) player's target bed AND preview the sound now
-    [ { n: tr("Ambient"), o: [["pad", tr("Peaceful")], ["music", tr("Mysterious")]] },
-      { n: tr("Nature"), o: [["forest", tr("Forest")], ["birds", tr("Birds")]] },
-      { n: tr("Binaural · headphones"), o: [["deep4", "Deep · 4 Hz"], ["theta6", "Theta · 6 Hz"], ["focus13", "Focus · 13 Hz"], ["gamma33", "Gamma · 33 Hz"], ["floating", tr("Floating")]] },
-      { n: "", o: [["off", tr("Off")]] }
-    ].forEach(function (cat) {
-      if (cat.n) add(card, "div", null, cat.n).style.cssText = "font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#b39ab0;margin:11px 0 5px;";
-      var rowc = add(card, "div"); rowc.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
-      cat.o.forEach(function (o) { var b = add(rowc, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "border:2px solid #6a4a6a;border-radius:11px;padding:8px 12px;font-family:var(--bub);font-weight:800;font-size:12.5px;cursor:pointer;color:#f0e6ef;"; bedChips.push(b); b.onclick = function () { setBed(o[0]); }; });
+
+    // GUIDE — the EN banks (Dave / Millie) or the RU pair, plus the guide's own volume. A mid-session swap re-voices the line
+    // that is sounding (v1305), so the chip and the audio can never disagree.
+    var gr = row("guide"), gch = add(gr, "div", "ps-chips"), gPaints = [];
+    var VOICES = curLang() === "ru" ? [["izo", "izo"], ["aida", "Aida"]] : [["dave", tr("Dave")], ["millie", tr("Millie")]];
+    function curVoice() { return curLang() === "ru" ? ((S.ruVoice === "aida") ? "aida" : "izo") : ((S.voicePick === "millie") ? "millie" : "dave"); }
+    VOICES.forEach(function (o) {
+      gPaints.push(chip(gch, o[1], false, 13, function () { return curVoice() === o[0]; }, function () {
+        if (curLang() === "ru") S.ruVoice = o[0]; else S.voicePick = o[0];
+        S.voice = true; save(); // picking a REAL voice switches the guide back on — the editor's "No voice" card writes S.voice=false and these chips must write it back
+        try { TTS.unlock(); if (curLang() === "ru") TTS.setRuVoice(o[0]); else TTS.setVoice(o[0]); TTS.stop(); } catch (e) {}
+        gPaints.forEach(function (p) { p(); });
+        if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } // confirm the pick unless a session is actually SOUNDING (that overlap was the "two voices at once")
+      }));
     });
-    paintBed();
-    // BREATHING (David 2026-08-15). This panel is what the composed player's gear opens, and the composed player is the toolbox "Breathe" front door — so this is where the visual / cue set / guiding tone have to be reachable. Until now they lived only inside breathPicker, behind nine pattern chips, on the one path David rarely takes. Same block, same words as the picker and the in-session cog.
-    add(card, "div", null, tr("Breathing")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 0;";
-    breathControls(card, { preview: false }); // a live breath session applies the pick on its next frame (_breathLive); previewing over a running session would double the sound
-    // whole-app subtle background music toggle
-    var amRow = add(card, "button"); amRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:12px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
-    function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("App background music") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("warm, slow chords while you browse") + '</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
-    amPaint();
-    amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
-    var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { stopPreview(); ov.remove(); };
-    ov.addEventListener("click", function (e) { if (e.target === ov) { stopPreview(); ov.remove(); } });
+    slider(gr, function () { return S.audio.voice != null ? S.audio.voice : 1; }, function (v) { setAudioVol("voice", v); });
+
+    // BACKDROP — the real beds only (BED_ORDER @SEC:AUDIO), one scrolling three-row field, MULTI-SELECT by category:
+    // at most two lit, never two of a family. Tapping a second bed of the same family REPLACES it; a different family ADDS.
+    var previewPad = null;
+    function canPreview() { try { return !voiceSessionAudible(); } catch (e) { return true; } } // a SOUNDING session already plays the set through _activeBed — previewing over it would double every bed
+    function stopPreview() { try { BGBED.stop(); } catch (e) {} try { BGM.stop(); } catch (e) {} if (previewPad) { try { previewPad.stop(); } catch (e) {} previewPad = null; } }
+    function preview(keys) { stopPreview(); var pctx = sharedAudioCtx(); if (!pctx) return; keys.forEach(function (k) { if (k === "music") BGM.start(); else if (k === "pad") previewPad = startPad(pctx, bgBus() || pctx.destination, 0.22); else if (BG_FILES[k]) BGBED.start(k, 0.5); }); }
+    var bedPaints = [];
+    function setBed(k) { var next = bedToggle(k); bedSet(next); save(); bedPaints.forEach(function (p) { p(); }); if (_activeBed) _activeBed(next); if (canPreview()) preview(next); }
+    var br = row("backdrop"), bwrap = add(br, "div", "ps-beds"), bgrid = add(bwrap, "div", "ps-bedgrid");
+    bedPaints.push(chip(bgrid, tr("Off"), true, 11.5, function () { return !bedKeys().length; }, function () { setBed("off"); }));
+    BED_ORDER.forEach(function (k) { bedPaints.push(chip(bgrid, tr(BED_NAME[k]), true, 11.5, function () { return bedKeys().indexOf(k) !== -1; }, function () { setBed(k); })); });
+    add(bwrap, "i", "ti ti-chevron-right ps-more");
+    slider(br, function () { return S.audio.bg != null ? S.audio.bg : 1; }, function (v) { setAudioVol("bg", v); });
+
+    // BREATHING — drawn only when the session actually contains breath segments. In a STACK it is its own titled block with
+    // its own SOUND kicker (the frame's shape); in a single breathing session the cue/tone rows just continue the one block.
+    var bPaints = [];
+    function breathRow(labelKey, keys, nameOf, getCur, setCur) {
+      var r = row(labelKey), cw = add(r, "div", "ps-chips"); cw.style.flexWrap = "wrap";
+      keys.forEach(function (k) { bPaints.push(chip(cw, tr(nameOf(k)), true, 11, function () { return getCur() === k; }, function () { setCur(k); save(); bPaints.forEach(function (p) { p(); }); if (_breathLive) { try { _breathLive(); } catch (e) {} } })); }); // _breathLive = the running breath surface re-reads the prefs on its next frame
+    }
+    if (hasBreath) {
+      if (isStack) { add(card, "div", "ps-title", tr("Breathing")); add(card, "div", "ps-kick", tr("sound")); }
+      breathRow("cue", BREATH_CUE_KEYS, function (k) { return BREATH_CUES[k].name; }, breathCueKey, function (k) { S.breathCue = k; });
+      breathRow("tone", ["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; });
+      add(card, "div", "ps-kick", tr("visual"));
+      breathRow("visual", BREATH_VIZ_KEYS, function (k) { return BREATH_VIZ[k].name; }, breathVizKey, function (k) { S.breathViz = k; });
+    }
+
+    // APP — the two whole-app switches, off-session only. They are not session settings; a player's card never draws them.
+    if (!inSession) {
+      add(card, "div", "ps-kick", tr("app"));
+      var vxOn = function () { return typeof S === "undefined" || !S || S.voice !== false; };
+      var vxRow = add(card, "button", "ps-tog"); add(vxRow, "span", null, tr("Guide's voice")); var vxI = add(vxRow, "i", "ti");
+      var vxPaint = function () { vxI.className = "ti " + (vxOn() ? "ti-toggle-right" : "ti-toggle-left"); vxI.style.cssText = "font-size:26px;line-height:1;color:" + (vxOn() ? E : "#6a4a6a") + ";"; };
+      vxPaint();
+      vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
+      var amRow = add(card, "button", "ps-tog"); add(amRow, "span", null, tr("App background music")); var amI = add(amRow, "i", "ti");
+      var amPaint = function () { amI.className = "ti " + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left"); amI.style.cssText = "font-size:26px;line-height:1;color:" + ((S.audio && S.audio.appMusic) ? E : "#6a4a6a") + ";"; };
+      amPaint();
+      amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
+    }
+
+    var foot = add(card, "div", "ps-foot");
+    var doneB = add(foot, "button", "ps-done", tr("Done")); doneB.style.backgroundColor = E;
+    function closePanel() { stopPreview(); if (ov.parentNode) ov.remove(); }
+    doneB.onclick = closePanel;
+    ov.addEventListener("click", function (e) { if (e.target === ov) closePanel(); });
+    window.__psProbe = function () { return { title: title, hue: E, inSession: inSession, breath: hasBreath, stack: isStack, rows: Array.prototype.map.call(card.querySelectorAll(".ps-lab"), function (n) { return n.textContent; }), kickers: Array.prototype.map.call(card.querySelectorAll(".ps-kick"), function (n) { return n.textContent; }), titles: Array.prototype.map.call(card.querySelectorAll(".ps-title"), function (n) { return n.textContent; }) }; }; // DEV.psPanel() reads this — what the card COMPUTED, without a finger
   }
+  Object.assign(I18N.ru, { // B4 law: EN source + RU dict in the SAME edit. The settings card's own chrome (its scope titles, kickers and row labels) — the bed names, Voice/Sound, Guide's voice and App background music already carry RU above.
+    "Session": "Сессия", "Full stack": "Вся связка", "sound": "звук", "backdrop": "фон", "cue": "сигнал", "tone": "тон", "app": "приложение", "Dave": "Дэйв", "Millie": "Милли"
+  });
   // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
   var ORB_AMB_W = 0.5712; // 2π/11 → the calm ~11s resting breath the orb keeps under any non-breath segment, on the session clock (see ORB DRIVE below)
@@ -14484,11 +14578,12 @@
     var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
     bar.style.visibility = "hidden";
     // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
-    var padCtl = null, usedBGM = false, bedM = bedMode(), bedOn = false;
-    if (BG_FILES[bedM]) BGBED.load(bedM); // pre-decode the file bed so it is ready by play time
-    function bedStart() { if (bedOn || opts.drone === false) return; try { if (bedM === "music") { BGM.start(); usedBGM = true; bedOn = true; } else if (bedM === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); bedOn = true; } else if (BG_FILES[bedM] && ctx) { BGBED.start(bedM, 0.5); bedOn = true; } } catch (e) {} } // the background bed follows play/pause (David 2026-07-08: pausing should pause the music too)
-    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} try { if (padCtl) padCtl.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} padCtl = null; bedOn = false; }
-    _activeBed = function (m) { bedM = m; if (BG_FILES[m]) BGBED.load(m); bedStop(); bedOn = false; if (playing) bedStart(); }; // Sound panel live-swap of the running bed (David 2026-07-10)
+    var padCtl = null, usedBGM = false, bedSel = bedKeys(), bedOn = false;
+    function bedPre() { bedSel.forEach(function (k) { if (BG_FILES[k]) BGBED.load(k); }); } // pre-decode every file bed in the set so they are ready by play time
+    bedPre();
+    function bedStart() { if (bedOn || opts.drone === false) return; bedOn = true; bedSel.forEach(function (k) { try { if (k === "music") { BGM.start(); usedBGM = true; } else if (k === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); } else if (BG_FILES[k] && ctx) { BGBED.start(k, 0.5); } } catch (e) {} }); } // the background bed(s) follow play/pause (David 2026-07-08: pausing should pause the music too). Up to two run at once now — the category rule guarantees they come from different families, so BGM/startPad/BGBED never collide with themselves.
+    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} usedBGM = false; try { if (padCtl) padCtl.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} padCtl = null; bedOn = false; }
+    _activeBed = function (keys) { bedSel = (keys && keys.slice) ? keys.slice() : bedKeys(); bedPre(); bedStop(); if (playing) bedStart(); }; // settings-card live-swap of the running bed SET (David 2026-07-10, multi 2026-08-20)
     bedStart();
     _gpRevoice = function () { if (!done) revoice(TTS.voiceGen()); }; // the live door TTS.setVoice knocks on
     // ===== BREATH AUDIO ON THE FRONT DOOR (David 2026-08-15: "we kind of set that up somewhere in the app"). The toolbox
@@ -14536,6 +14631,11 @@
     _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
       ready: ready, transport: bar ? (getComputedStyle(bar).visibility) : null, label: lab ? lab.textContent : null, decoded: segs.filter(function (sg) { return !!sg.buf; }).length, voiced: segs.filter(function (sg) { return !!sg.text; }).length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
 
+    // WHAT IS IN THIS SESSION (David 2026-08-20, the settings-card rule): "a single-type session gets only its own settings;
+    // a stack gets the whole-stack settings plus a section per segment type that owns sound." So the card ASKS the player what
+    // it is holding instead of being handed a mode — hue from the live act tint, breathing from the segments themselves.
+    _gpSettings = function () { var hue = ""; try { hue = ov.style.getPropertyValue("--gp-c") || ""; } catch (e) {}
+      return { hue: (hue || col).trim(), breath: segs.some(function (sg) { return !!sg.breath; }), stack: !!((acts && acts.length > 1) || (actBars && actBars.length > 1)) }; };
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
     var _fitK = 1; // the dose re-fit factor (≤1), computed once at open in relayoutFrom(0) and held across a live voice swap so re-voicing a running session never re-negotiates its pacing mid-flight
@@ -14795,7 +14895,7 @@
       function navBy(dir) { if (!ready || done) return; // one tap = one STEP, meditation included (2026-08-15: the zoom used to eat the first taps as section-steps, then fall out of zoom permanently at the section edge)
         var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
-        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
+        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
       // SIDE-CLICK NAV (David 2026-07-10): left third = back, right third = forward. Zones start BELOW the story bars / ✕ / gear and stop ABOVE the transport.
       var _tzTop = "top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);z-index:5;";
@@ -14832,7 +14932,7 @@
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff(); vizDrop(); // the breath visual goes with the run — a session that ENDS on a breath phase must hand the closing "Done ✓" beat back to the orb it was hiding
-      _activeBed = null; _gpRevoice = null; _gpProbe = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
+      _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
       if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
@@ -16588,7 +16688,7 @@
     var doneB = add(ov, "button", "done2", tr("Done ✓")); doneB.style.cssText = "margin-top:24px;max-width:240px;";
     function paint() { clk.textContent = Math.floor(left / 60) + ":" + pad(left % 60); }
     paint();
-    try { if (bedMode() !== "off") BGM.start(); } catch (e) {}
+    try { if (bedKeys().length) BGM.start(); } catch (e) {}
     iv = setInterval(function () { left--; if (left <= 0) { finish(); return; } paint(); }, 1000);
     function finish() { if (!ov.parentNode) return; clearInterval(iv); try { BGM.stop(); } catch (e) {} ov.remove(); onDone(); }
     doneB.onclick = finish;
@@ -18876,6 +18976,17 @@
   window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseWord: ov && ov.querySelector(".gp-track .bw-phase:not([style*='hidden']) .bw-phw") ? ov.querySelector(".gp-track .bw-phase .bw-phw").textContent : null, phaseLeft: ov && ov.querySelector(".gp-track .bw-phase .bw-phn") ? ov.querySelector(".gp-track .bw-phase .bw-phn").textContent : null, orb: ov && ov.querySelector(".gp-track .bw-orb") ? ov.querySelector(".gp-track .bw-orb").style.transform : null, label: ov && ov.querySelector(".gp-track .bw-label") ? ov.querySelector(".gp-track .bw-label").textContent : null }; }; // read the running composed player's breath surface without a finger
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
   window.DEV.viz = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player"; var ov = document.querySelector(".gp-ov"); return { pick: p.breath.viz.pick, mounted: p.breath.viz.mounted, nodeInDom: p.breath.viz.node, orbParked: p.breath.viz.orbParked, pathLen: p.breath.viz.path, samples: p.breath.viz.pts, waveEls: ov ? ov.querySelectorAll(".bw-wave").length : 0, orbs: ov ? ov.querySelectorAll(".bw-orb").length : 0, breathRuns: p.breath.runs, elapsed: p.elapsed }; }; // does the PICKED breath visual actually exist and move in the composed player (the stack's player), not just in the standalone tool
+  window.DEV.waveGeom = function (fillPct, cycleMs) { // THE WAVE'S ARITHMETIC, headless. rAF is frozen whenever the preview pane is hidden, so the live wave can never be watched growing there — this runs the SHIPPING BREATH_VIZ.wave mount/paint over n synthetic samples on a detached node and reports where it actually draws. viewBox is 0 0 300 180, so 150 is the centre.
+    var cyc = cycleMs || 16000, host = document.createElement("div"); host.innerHTML = BREATH_VIZ.wave.html;
+    var n = BREATH_VIZ.wave.mount(host, cyc), want = Math.max(1, Math.round(n.cap * (fillPct == null ? 1 : fillPct)));
+    for (var i = 0; i < want; i++) BREATH_VIZ.wave.paint(n, { elapsed: i * (n.push + 1), level: 0.5 + 0.4 * Math.sin(i / 6) });
+    var d = n.path.getAttribute("d") || "", xs = (d.match(/[ML]([0-9.]+)/g) || []).map(function (s) { return +s.slice(1); });
+    var lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs);
+    return { cap: n.cap, pushMs: n.push, samples: n.pts.length, drawnFrom: +lo.toFixed(1), drawnTo: +hi.toFixed(1), drawnCentre: +((lo + hi) / 2).toFixed(1), dotCx: n.dot.getAttribute("cx"), viewBoxCentre: 150 };
+  };
+  window.DEV.psPanel = function (openIt) { if (openIt !== false && !document.querySelector(".ps-ov")) openVolumePanel(); var c = document.querySelector(".ps-card"); if (!c) return "no settings card"; c.style.animation = "none"; /* the drop-in animation is CSS, and CSS animations FREEZE while the preview pane is hidden — measuring through it reads the psCog 0% keyframe (scale .72) as the card geometry. Clearing it measures the settled card, which is what the frame specifies. */ var p = window.__psProbe ? window.__psProbe() : {}; var r = c.getBoundingClientRect(), cs = getComputedStyle(c), n = c.querySelector(".ps-notch"), nr = n ? n.getBoundingClientRect() : null, ns = n ? getComputedStyle(n) : null, gd = c.querySelector(".ps-bedgrid"); var big = c.querySelector(".ps-chip:not(.sm)"), sm = c.querySelector(".ps-chip.sm"), tk = c.querySelector(".ps-track"), kn = c.querySelector(".ps-knob"); function box(e) { if (!e) return null; var b = e.getBoundingClientRect(), s = getComputedStyle(e); return { w: +b.width.toFixed(1), h: +b.height.toFixed(1), pad: s.padding, radius: s.borderRadius, border: s.borderTopWidth, shadow: s.boxShadow, font: s.fontSize + "/" + s.fontWeight }; }
+    return { scope: p, card: { top: +r.top.toFixed(1), right: +(window.innerWidth - r.right).toFixed(1), w: +r.width.toFixed(1), radius: cs.borderRadius, border: cs.borderTopWidth, pad: cs.padding, gap: cs.gap, bg: cs.backgroundColor, shadow: cs.boxShadow, origin: cs.transformOrigin, z: cs.zIndex }, notch: nr ? { right: +(r.right - nr.right).toFixed(1), topFromCard: +(nr.top - r.top).toFixed(1), w: +nr.width.toFixed(1), h: +nr.height.toFixed(1), radius: ns.borderRadius, border: ns.borderLeftWidth } : null, chipBig: box(big), chipSmall: box(sm), track: tk ? { h: +tk.getBoundingClientRect().height.toFixed(1), radius: getComputedStyle(tk).borderRadius } : null, knob: box(kn), bedGrid: gd ? { rows: getComputedStyle(gd).gridTemplateRows, gap: getComputedStyle(gd).gap, overflowY: getComputedStyle(gd).overflowY, touch: getComputedStyle(gd).touchAction, mask: (getComputedStyle(gd).webkitMaskImage || getComputedStyle(gd).maskImage || "").slice(0, 60), chips: gd.children.length } : null, beds: bedKeys(), sliders: Array.prototype.map.call(c.querySelectorAll(".ps-fill"), function (f) { return f.style.width; }) }; }; // the card measured against the frame's quoted numbers, without a finger
+  window.DEV.beds = function () { return { selected: bedKeys(), cats: bedKeys().map(function (k) { return BED_CAT[k]; }), stored: S.audio && S.audio.bed, filesLive: BGBED.running(), bgmRunning: BGM.running(), padsLive: _padLive, appMusic: !!(S.audio && S.audio.appMusic), order: BED_ORDER }; }; // filesLive = keys with a LIVE BufferSource; bgmRunning = the Mysterious sequencer. Two beds AUDIBLE is these two numbers, not two lit chips.
   window.DEV.breathPrefs = function () { return { stored: { breathCue: S.breathCue, breathTone: S.breathTone, breathViz: S.breathViz, legacyBreathSound: S.breathSound }, resolved: { cue: breathCueKey(), tone: breathToneKey(), viz: breathVizKey() }, cueSets: BREATH_CUE_KEYS, tones: BREATH_TONE_KEYS, visuals: BREATH_VIZ_KEYS }; };
   window.DEV.grove = function (act, pid, n) { // DEV: drive THE GROVE without waiting 66 days — plant / set days / witness a stage-up / open any of the three sheet modes.
     pid = pid || "meditation";
