@@ -19455,6 +19455,18 @@
     var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, in FIXED design order (the arc, never tbxOrder'd). DECK-ANCHORED 2026-08-14: on the 2c face the four deck stacks are FILTERED OUT of this grid (they ride up as row one of the tools screen), so the sequence is Body · Heart · Vision · Build there and the full seven + Build everywhere else — which is why the hue gates below read each cell's own id instead of naming a fixed position
     function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
+    // REFUSE TO REPORT ON A BOARD THAT IS NOT LAID OUT (David's on-device run 2026-08-20: 13 FAIL, and nearly all of
+    // them read "0px", "renders 0px", "unmeasurable" or a wild negative offset — he had run it from inside the player,
+    // where the home column exists in the DOM but has no box. Every position gate then measured against zero and
+    // invented a failure. An audit that cries wolf is worse than none: he has already been told 74/74 while things
+    // were wrong, and now 13 FAIL while they were right. Bail with the reason instead.
+    var _hz0 = el("tfWorldHome"), _hzr = _hz0 ? _hz0.getBoundingClientRect() : null;
+    if (ONEPAGE && (!_hzr || _hzr.height < 100 || !ring.getBoundingClientRect().width))
+      return "designAudit: the home board is in the DOM but has NO BOX (height " + (_hzr ? Math.round(_hzr.height) : "none") +
+             "). You are almost certainly inside a tool, the player or a sheet. Close back to home and run it again — " +
+             "every position gate would measure against zero and report a failure that is not real.";
+    if (tfh2c() && !el("trackerFull").classList.contains("tf-2c"))
+      return "designAudit: the 2c home is not the live face — its px rules are not applying, so the gates would read defaults.";
     // THE ARTBOARD SCALE NORMALIZER. Every locked number in this audit is a LAYOUT px off David's 402x874 frame, but on a wider phone the
     // face is transform-scaled to fill the screen, so getBoundingClientRect answers in VISUAL px. _nr() divides a rect back into frame px,
     // which is what makes the SAME gates pass at 402x874 (scale 1) and at 440x956 (scale 1.0945) — the alternative was 8 gates that only
