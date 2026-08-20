@@ -5243,7 +5243,7 @@
     return out;
   }
   var TFH_HEROES = ["firstLight", "breatheLadder", "mind", "shutdown"]; // 2c §5: Morning Stack · Breathe · Meditate · Night Stack (the artifact's gIdx 0/1/3/6 into the practice grid). Ids, not names — the registry owns the words and the hues.
-  var _tfhOpen = null, _tfhLadder = false;                              // the face card's single-open id + whether its chip row has swapped to the full ladder
+  var _tfhOpen = null;                                                  // the face card's single-open id (the _tfhLadder collapse latch died with the dose row's More button, David 2026-08-20)
   function tfhHeroRow(host) { // the four tiles + the inline dose host. COMPOSITION AMENDMENT (David 2026-08-02, "too high up, too close to plan my day, too far from tools"): the row is NOT a child of #tfCtrls — it is its own block in the HOME ZONE, placed AFTER the ctrls' margin-bottom:auto spacer, so the order reads Plan-my-day → spacer → hero row → dose card → TOOLS hint, and the row hugs the bottom band just above the fold invitation. NO selection chrome on any tile — no outline, no ring, no highlight; the open card below is the only selection signal.
     if (!tfh2c() || !host) return;
     var wrap = el("tfHeroWrap"); if (!wrap) { wrap = document.createElement("div"); wrap.id = "tfHeroWrap"; }
@@ -5268,7 +5268,7 @@
   }
   function tfhOpenDose(id) { // SINGLE-OPEN on the face: another tile swaps the content, the open one (or the card's close chevron) folds it away
     var was = _tfhOpen === id;
-    _tfhOpen = was ? null : id; _tfhLadder = false;
+    _tfhOpen = was ? null : id;
     tfhCardOpenClass(); // BEFORE the paint: opening fades the fixed HUD out as the world eases down, closing fades it back in as the world eases home
     tfhPaintDose(!was, true);
     if (was) { var w = el("tfWorld"); if (w && w.scrollTop > worldHomeTarget() + 40) tfhScrollTo(worldHomeTarget()); } // FOLD-AWAY RETURN (David 2026-08-11): closing the card used to strand the viewport mid-column with no way back to the calm face (the magnet band is only 56px) — ease back to the landing seam. Covers the card's own collapse chevron too (it calls this). The >40 guard keeps the designAudit's parked open/close probe from ever issuing a scroll.
@@ -6079,7 +6079,7 @@
     if (d > 2 && d <= 180) wSpring(wHomeY(), true);
   }
   function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
-    _tfhOpen = null; _tfhLadder = false; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
+    _tfhOpen = null; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
     var tf = el("trackerFull"); if (tf) tf.classList.remove("tf-onepage");
     releaseTrailFromSky();
     document.body.classList.remove("home-onepage"); // leaving the one-page home → the puck is a plain always-visible return again (panes keep it lit)
@@ -6262,8 +6262,6 @@
     { id: "wins",    name: "Wins",    dom: "play",    ti: "ti-trophy",          items: ["lockTheWin", "t_journal", "t_meditate"] }
   ];
   var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
-  var _tbxMore = false;        // the dose card's "more" minute grid, open/closed. Module-level so an in-place repaint (dose change) keeps it open.
-  var TBX_MINS = [1, 3, 8, 10, 15, 20, 30, 45]; // the 21a minute grid (4-col × 2). The design's own ladder is unreadable (its data script is past the 256KB import cut) — this one brackets the 2/5 fast chips on both sides. Flagged in the handoff.
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
   // (The FP3 "deep muted" deck fill and its tbxHexOf helper are DELETED. They were least-squares fitted to home-idle-ref.jpeg, which is a photograph of a screen: the fit captured camera exposure + warm white balance, not the design. Fills are the tool's own colour, never sampled from photos — David 2026-07-28.)
@@ -6411,7 +6409,7 @@
     var sq = bento.querySelector('[data-tbxcat="' + catId + '"]'); if (!sq) return;
     var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
   }
-  var TBX_FACE_LADDER = [2, 5, 10, 15, 20, 30, 45]; // HOME 2c §5: the FACE card's "More" swaps the two fast chips for this full ladder and hides itself (the ground card keeps its shipped minute-grid panel until David rules — flagged in the report).
+  var TBX_FACE_LADDER = [2, 5, 10, 15, 20, 30, 45]; // THE DOSE LADDER — ONE horizontally scrolling row, on BOTH dose surfaces (David 2026-08-20: "I don't even want a More button. I just want a single row of time options that you can scroll"). The 2c card's [2,5]-then-More swap and the shelf card's 21a minute grid behind "more" are both deleted; two grammars for one choice was the bug.
   function tbxBuildDose(id, face) { // frame 21e: face + hue kicker + name, plain-word steps WITH their scaled times, 2/5 dose chips + "more" minute grid (21a) + pink Start, Plus row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
     // `face` = the HOME 2c placement (spec §5): the SAME card, the same dose / band / edit / Start / Adjust code path — only the placement (the home hero row instead of the toolbox grid), the .tbx-dose-2c skin and the chips-swap ladder differ. One builder, two surfaces; nothing is duplicated.
     var it = tbxItem(id); if (!it) return document.createElement("div"); var d = tbxVar(it.dom);
@@ -6427,31 +6425,15 @@
     var sc = add(card, "div", "tbx-dose-steps");
     steps.forEach(function (st, i) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); if (times && times[i]) add(row, "span", "tbx-step-tm", times[i]); });
     var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips");
-    if (face) { // 2c chip row: [2,5] by default, "More" SWAPS the row for the full ladder and disappears. Same tbxSetDose/tbxRepaintDose path as the shelf — only the shape of the picker differs.
-      var _lad = _tfhLadder || (cur !== 2 && cur !== 5); // a dose already chosen OFF the ladder (15, 45…) keeps the ladder OPEN: the collapsed [2,5] row would light nothing while Start silently ran 45 minutes. Same honesty the shelf card buys by tinting its More button when the minute grid is folded.
-      (_lad ? TBX_FACE_LADDER : [2, 5]).forEach(function (m) {
-        var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), _lad ? (m + tr("m")) : (m + " " + tr("min")));
-        if (m === cur) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, #fff) 13px 26px)"; chip.style.border = "2.5px solid #160510"; chip.style.color = "#160510"; chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
-        else { chip.style.border = "2px solid color-mix(in srgb, " + d + " 40%, #1c0b15)"; chip.style.background = "#1c0b15"; chip.style.color = "#d8a9bb"; }
-        chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
-      });
-      if (!_lad) { var mf = add(foot, "button", "tbx-more"); add(mf, "i", "ti ti-adjustments-horizontal"); add(mf, "span", null, tr("More")); mf.onclick = function () { _tfhLadder = true; tbxRepaintDose(id); }; }
-    } else {
-    [2, 5].forEach(function (m) { // the two fast-path chips stay first (David's 2/5 grammar); anything else lives in the grid behind "more"
-      var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + " " + tr("min"));
-      if (m === cur) { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); } else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
+    TBX_FACE_LADDER.forEach(function (m) { // ONE ROW, ALL THE DOSES, scrolled sideways (David 2026-08-20). No More button, no collapse, no second picker underneath — and tbxRepaintDose puts the row back where you left it, so the chip you tap stays under your thumb instead of jumping to the left edge.
+      var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + tr("m"));
+      if (m === cur) {
+        if (face) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, #fff) 13px 26px)"; chip.style.border = "2.5px solid #160510"; chip.style.color = "#160510"; chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
+        else { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); }
+      } else if (face) { chip.style.border = "2px solid color-mix(in srgb, " + d + " 40%, #1c0b15)"; chip.style.background = "#1c0b15"; chip.style.color = "#d8a9bb"; }
+      else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
       chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
     });
-    var more = add(foot, "button", "tbx-more"); add(more, "i", "ti ti-adjustments-horizontal"); add(more, "span", null, tr("More"));
-    if (_tbxMore) { more.style.background = tbxCandy(d); more.style.color = "#160510"; }
-    else if (cur !== 2 && cur !== 5) { more.style.background = "color-mix(in srgb, " + d + " 34%, #180a14)"; more.style.color = "#fff2f9"; } // a grid-chosen dose keeps the row honest when the grid is folded
-    more.onclick = function () { _tbxMore = !_tbxMore; tbxRepaintDose(id); };
-    if (_tbxMore) { // 21a minute grid: tap, never type — the steps above resize live
-      var mg = add(card, "div", "tbx-mgrid"); add(mg, "div", "tbx-mgrid-lbl", tr("YOUR MINUTES · THE STEPS RESIZE ABOVE"));
-      var mrow = add(mg, "div", "tbx-mrow");
-      TBX_MINS.forEach(function (v) { var c = add(mrow, "button", "tbx-mchip", v + tr("m")); if (v === cur) { c.style.background = tbxCandy(d); c.style.color = "#160510"; c.style.boxShadow = tbxLip(d); } else c.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)"; c.onclick = function () { tbxSetDose(id, v); tbxRepaintDose(id); }; });
-    }
-    }
     var start = add(card, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start")); // 21e: Start is the full-width row UNDER the dose row (was inline in the foot)
     start.onclick = function () { try { tbxLaunch(id, tbxDose(id)); } catch (e) {} };
     var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti " + (TBX_PLUS ? "ti-adjustments-horizontal" : "ti-lock")); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); var gr = add(gate, "span", "tbx-gate-r"); add(gr, "span", "tbx-gate-badge", tr("PLUS")); if (TBX_PLUS) add(gr, "i", "ti ti-chevron-right tbx-gate-chev"); // 21f: with Plus the row is a live chevron row into the Session Editor; the PLUS badge stays (it signals the future paywall)
@@ -6467,18 +6449,22 @@
       onStart: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Start → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
     });
   }
+  function tbxDoseScroll(old) { // THE DOSE ROW KEEPS ITS PLACE (David 2026-08-20: "if you select one, it doesn't magically jump to the left. It stays in the spot where you selected it"). The chips are built in ladder order, so nothing ever reorders — the apparent jump was this whole-card rebuild handing back a fresh scroller parked at 0. Read before, restore after.
+    var o = old && old.querySelector ? old.querySelector(".tbx-dose-foot") : null, sl = o ? o.scrollLeft : 0;
+    return function (fresh) { if (!sl || !fresh) return; var n = fresh.querySelector(".tbx-dose-foot"); if (n) n.scrollLeft = sl; };
+  }
   function tbxRepaintDose(id) { // swap the open dose card for a freshly-built one so an edit/reset shows immediately (single-open; the card carries data-tbxdose)
-    if (HOME2C && _tfhOpen === id) { var fh = el("tfHeroDose"); if (fh) { var old = fh.querySelector(".tbx-dose"), nf = tbxBuildDose(id, true); nf.classList.remove("tbx-open"); if (old) fh.replaceChild(nf, old); else fh.appendChild(nf); } } // the HOME 2c face card lives outside .tbx — repaint it on the same path (dose chips, band folding, edits and resets all land here)
+    if (HOME2C && _tfhOpen === id) { var fh = el("tfHeroDose"); if (fh) { var old = fh.querySelector(".tbx-dose"), keep = tbxDoseScroll(old), nf = tbxBuildDose(id, true); nf.classList.remove("tbx-open"); if (old) fh.replaceChild(nf, old); else fh.appendChild(nf); keep(nf); } } // the HOME 2c face card lives outside .tbx — repaint it on the same path (dose chips, band folding, edits and resets all land here)
     if (_tbxOpenStack !== id) return;
     var card = document.querySelector('.tbx .tbx-dose[data-tbxdose="' + id + '"]'); if (!card || !card.parentNode) return;
-    var fresh = tbxBuildDose(id); fresh.classList.remove("tbx-open"); // no re-animate on an in-place refresh
-    card.parentNode.replaceChild(fresh, card);
+    var keep2 = tbxDoseScroll(card), fresh = tbxBuildDose(id); fresh.classList.remove("tbx-open"); // no re-animate on an in-place refresh
+    card.parentNode.replaceChild(fresh, card); keep2(fresh);
   }
   function tbxOpenDose(id, cell) { // SINGLE-OPEN dose card, inserted right after the tapped tile's grid (full width in the flow). Toggle on re-tap.
     var root = cell.closest ? cell.closest(".tbx") : null; if (!root) return;
     var wasOpen = _tbxOpenStack === id;
     var existing = root.querySelector(".tbx-dose"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-    _tbxOpenStack = null; _tbxMore = false;
+    _tbxOpenStack = null;
     if (wasOpen) return;
     var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
     var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
@@ -6794,11 +6780,11 @@
   var PK_LENS = [10, 15, 20, 30, 45, 60, 90, 120, 180];                                   // the length rail (minutes); a chain's rail scales ALL its steps proportionally
   var PK_PRIS = [{ v: 3, l: "Must" }, { v: 2, l: "Should" }, { v: 1, l: "Whenever" }];     // priority shows its VALUE once set; the word "Priority" only when unset (David 2026-07-27)
   var PK_TOPN = 11; // activities shown in a folder before the dashed "More" tile opens the grouped view
+  var PK_ARR_PXMIN = 2; // THE ARRANGER'S TIME SCALE (David 2026-08-16, "you should be able to move it down, like in the regular timeline"): 2px of drag = 1 minute, so one 66px row pitch reads as ~30 min and the 5-minute snap is a 10px pull. The arranger is a list, not a minute grid, so this is the one place the two spaces meet.
   var _pk = null;   // the live picker (null = closed). Nothing here is state until Start.
   var _pkUse = null; // pkActUse memo for one picker session (cleared in pkOpen) — the 30-day log walk is identical for every folder in a paint
   function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
   function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60) : "")); } // UNPADDED per the artifact's plate bar ("3 things · 3h5"); the zero-pad was ours
-  function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : pkShort(m); } // the one-pick button's duration: spelled out under an hour ("30 min"), and above it the plate bar's own compact token ("1h5") rather than a second padded form
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
   var PK_INK = "#2a1730"; // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. #160510 is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
   var PK_EDGE = "#34172d"; // THE RESTING FOLDER EDGE (David 2026-07-31, on his frame): ONE neutral plum for all eight cards, a hair lighter than the #241022 shell so the card has a rim without a colour. The per-domain color-mix(HUE 30%, #160510) edge that lived here made Play gold-rimmed and Nourish green-rimmed — the frame shows eight identical edges. Hue on a folder edge is now ONLY the pink pick ring.
@@ -6834,7 +6820,7 @@
       if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
     });
-    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, stepFor: null, aOpen: null, aPri: false, aSteps: false };
+    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], stepFor: null, aOpen: null, aPri: false, aSteps: false }; // focus/priOpen/stepsOpen/wallMin died with the picked-activities tray (David 2026-08-16, his THIRD cut of it) — a pick's length, priority and steps are set in the Arranger, which is the only surface that shows them now.
     var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
     pkPaintShell();
   }
@@ -6849,13 +6835,13 @@
     if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
     add(htx, "span", "pk-title", tr("What next?")); // the artifact says "What next?" — the apostrophe form was fix-pass invention
     _pk.wbody = add(wall, "div", "pk-body");
-    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // the queue tab + panel + plate bar, byte-identical to the sheet's footer
+    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // the bottom bar, byte-identical to the sheet's footer
     pkPaint();
   }
   function pkPaint() { // in-place repaint of everything that can change: the wall body, the shared footer, and (when open) the sheet's head + body
     if (!_pk || _pk.view !== "pick") return;
-    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot, "#130609");
-    if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17"); }
+    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot);
+    if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot); }
   }
   function pkFolder(host, dash) { var b = add(host, "button", "pk-folder" + (dash ? " dash" : "")); return b; }
   function pkPaintWall(host) {
@@ -6904,46 +6890,19 @@
         b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
       });
   }
-  // ===== THE SHARED FOOTER — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
-  function pkFoot(host, bg) {
+  // ===== THE BOTTOM BAR — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
+  // THE TRAY IS GONE (David 2026-08-16, his THIRD cut of this surface — "I wanna remove the whole footer… that's redundant because after that, there's an Arrange button anyway"; DECISIONS.md 2026-08-16 kills it by name). The chevron tab, the queue strip and the tune panel (length rail / Priority / Steps) are deleted, not shrunk: a picked tile is already ignited on the wall, and the Arranger is where order, length, priority and steps are actually set. The primary no longer MORPHS by count either (same decision: "a primary action must not change identity by count") — it is Arrange at every count, so one pick and five picks take the same door and both get to see the time they will land at.
+  function pkFoot(host) {
     pkDrain(host);
     var q = _pk.queue, n = q.length;
-    if (n) { var tab = add(host, "button", "pk-tab"); var ti = add(tab, "i", "ti ti-chevron-up"); ti.style.transform = _pk.wallMin ? "none" : "rotate(180deg)"; tab.setAttribute("aria-label", tr("Show picks")); tab.onclick = function () { _pk.wallMin = !_pk.wallMin; pkPaint(); }; } // "minimizes" default: up when minimized, down when expanded
-    if (n && !_pk.wallMin) pkPanel(add(host, "div", "pk-panel"), bg || "#130609");
     var bar = add(host, "div", "pk-bar"), tx = add(bar, "span", "pk-bartx");
-    var kick = add(tx, "span", "pk-bark"), lab = add(tx, "span", "pk-barl");
-    // FP4 5 — ONE ActionBar, three states. The kicker never changes WORDS (only its colour), so the bar reads as one instrument instead of three; the label carries the state in plain words; the right verb is disabled-Arrange / Add to today / Arrange.
-    kick.textContent = tr("ON YOUR PLATE"); kick.style.color = n ? "#ff8fc0" : "#96637e";
+    var lab = add(tx, "span", "pk-barl");
     if (!n) { lab.classList.add("hint"); lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like"); } // DS: the populated label is 18px on ONE line; the empty-state hint drops to 14px/#c98ca6 so the whole sentence fits at 375px instead of being clipped
     else if (n === 1) lab.textContent = q[0].title + " · " + pkShort(q[0].mins || 0);
     else lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); // never a name → name → name list (David 2026-07-27)
-    var go = add(bar, "button", "pk-go" + (n === 1 ? " one" : "")); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-arrows-sort")); add(go, "span", null, n === 1 ? (tr("Add to today") + " · " + pkLong(q[0].mins || 0)) : tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list. The one-pick primary CARRIES ITS DURATION ("Add to today · 30 min") so the verb states the whole commitment.
+    var go = add(bar, "button", "pk-go"); add(go, "i", "ti ti-arrows-sort"); add(go, "span", null, tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list
     if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
-    else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
-  }
-  function pkPanel(host, bg) { // queue strip + (when a pick is focused) the tune panel
-    var qrow = add(host, "div", "pk-queue");
-    _pk.queue.forEach(function (p, i) {
-      var b = add(qrow, "button", "pk-q"), hue = pkHue(p.dom), on = _pk.focus === i;
-      var deck = (p.kind === "chain" || (p.st0 && p.st0.length)); // ANYTHING MADE OF STEPS renders as a deck — THE STACK CARD with its two up-left shards. Stacks already arrive as kind "chain" (pkStackPick), so they deck today; the st0 test keeps that true if a stack ever gets its own kind. A plain activity is not a stack and keeps a bare card.
-      var C = stkCard(b, { s: PK_Q_S, glyph: PK_Q_GLYPH, hue: hue, ti: p.ti, shards: deck ? stkShards(hue, p.st0) : null, on: on, ignite: true, cls: "pk-qc" }); // the FOCUSED chip is the one that ignites (stripes + the ring ALONE, no lip under it); the rest stay flat hue on their hue lip
-      var x = add(C.wrap, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
-      var l = add(b, "span", "pk-ql stk-lab", p.title); l.style.color = on ? "#ff4fa0" : hue; // the NAME under the card, never the time: the FACE hue at rest, pink when this is the focused one
-      b.onclick = function () { _pk.focus = on ? null : i; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); };
-    });
-    var f = (_pk.focus != null) ? _pk.queue[_pk.focus] : null; if (!f) return;
-    var tune = add(host, "div", "pk-tune"), hue = pkHue(f.dom), isChain = f.kind === "chain";
-    var fh = add(tune, "div", "pk-fh"), ftx = add(fh, "span", "pk-bartx"); // header = name + hint + big time; NO icon coin (the ringed queue icon is the identifier)
-    add(ftx, "span", "pk-fht", f.title); add(ftx, "span", "pk-fhs", isChain ? tr("for how long? scales every step") : tr("for how long?"));
-    add(fh, "span", "pk-fhm", pkShort(f.mins)); // the frame's big value is COMPACT ("10m"), the same token the rail chips and the plate bar speak — the long "30 min" form was ours
-    pkRail(tune, f.mins, hue, function (v) { f.mins = v; pkPaint(); }, bg);
-    var btns = add(tune, "div", "pk-btns");
-    var pb = add(btns, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (f.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, f.prio ? tr(pkPriLab(f.prio)) : tr("Priority"));
-    pkSkinTune(pb, pbi, hue, !!f.prio); pb.onclick = function () { _pk.priOpen = !_pk.priOpen; _pk.stepsOpen = false; pkPaint(); };
-    var sb = add(btns, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
-    pkSkinTune(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); }; // Priority + Steps ONLY (the frame): taking a pick back off the plate is the chip's own x badge, so a second delete affordance down here was ours, not David's
-    if (_pk.priOpen) pkPriRow(tune, f, hue);
-    if (_pk.stepsOpen) { if (isChain) pkStepList(add(tune, "div", "pk-steps"), pkSteps(f)); else pkActSteps(tune, f); }
+    else go.onclick = function () { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); };
   }
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
   function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
@@ -6962,16 +6921,7 @@
     var fade = add(box, "div", "pk-fade"); fade.style.background = "linear-gradient(90deg, " + hexA("#1b0b16", 0) + ", #1b0b16 88%)";
     var fwd = add(w, "button", "pk-fwd"); add(fwd, "i", "ti ti-chevron-right"); fwd.setAttribute("aria-label", tr("More lengths")); fwd.onclick = function () { try { rail.scrollBy({ left: 150, behavior: "smooth" }); } catch (e) { rail.scrollLeft += 150; } };
   }
-  function pkPriRow(host, p, hue) { var row = add(host, "div", "pk-pris");
-    PK_PRIS.forEach(function (P) { var b = add(row, "button", "pk-pri", tr(P.l)); pkSkin(b, null, hue, p.prio === P.v); b.onclick = function () { p.prio = (p.prio === P.v) ? 0 : P.v; _pk.priOpen = false; pkPaint(); }; }); }
   function pkStepList(host, steps) { steps.forEach(function (s) { var r = add(host, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = s.c; c.style.boxShadow = "0 2px 0 " + mixHex(s.c, "#160510", 0.45) + ", 0 0 0 2px #160510"; add(c, "i", "ti " + s.i); add(r, "span", "pk-stept", s.t); add(r, "span", "pk-stepm", pkShort(s.m)); }); } // read-only scaled readout — a chain's steps are set in the Session Editor, not here
-  function pkActSteps(host, p) { // an activity's steps ARE the block's own sub-steps (the existing b.subs model) — tap to add one from the same folder sheet, never a keyboard
-    var box = add(host, "div", "pk-steps");
-    (p.subs || []).forEach(function (s, i) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(pkHue(p.dom), "#160510", 0.35); add(c, "i", "ti ti-point").style.color = "#f0dceb"; add(r, "span", "pk-stept", s.t); // the sub-step dot rides a DARKENED hue coin, so it keeps a light glyph (the ink-on-hue law applies to full-hue fills)
-      var x = add(r, "button", "pk-qx"); x.style.position = "static"; add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function () { p.subs.splice(i, 1); pkPaint(); }; });
-    var b = add(box, "button", "pk-addstep"); add(b, "i", "ti ti-plus"); add(b, "span", null, tr("Add a step"));
-    b.onclick = function () { _pk.stepFor = p.uid; _pk.sheet = { kind: "dom", dom: p.dom, more: false, naming: false, draft: "" }; pkBuildSheet(); };
-  }
   // ===== THE FOLDER SHEET =====
   function pkBuildSheet() {
     if (!_pk) return; if (_pk.sh && _pk.sh.parentNode) _pk.sh.parentNode.removeChild(_pk.sh);
@@ -6982,7 +6932,7 @@
     _pk.shhead = add(sheet, "div", "pk-shheadwrap"); _pk.shhead.style.cssText = "flex:none;display:flex;flex-direction:column;";
     _pk.shbody = add(sheet, "div", "pk-shbody");
     _pk.shfoot = add(sheet, "div", "pk-footwrap"); _pk.shfoot.style.cssText = "flex:none;display:flex;flex-direction:column;";
-    pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17");
+    pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot);
   }
   function pkCloseSheet() { if (_pk.sh && _pk.sh.parentNode) _pk.sh.parentNode.removeChild(_pk.sh); _pk.sh = null; _pk.sheet = null; _pk.stepFor = null; pkPaint(); }
   function pkSheetMeta() { var s = _pk.sheet;
@@ -7010,11 +6960,11 @@
       s.naming = false; s.draft = ""; pkTake({ title: v, catK: null, domain: s.dom }); };
     setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
   }
-  function pkTake(a) { // one door for every pick: in step-mode it becomes a sub-step of the focused block, otherwise it joins the queue and takes focus
+  function pkTake(a) { // one door for every pick: in step-mode it becomes a sub-step of the focused block, otherwise it joins the queue and the expanded category folds back to the wall
     if (_pk.stepFor) { var f = null; _pk.queue.forEach(function (p) { if (p.uid === _pk.stepFor) f = p; }); if (f) { f.subs = f.subs || []; f.subs.push({ t: a.title }); } _pk.stepFor = null; pkCloseSheet(); return; }
-    _pk.queue.push(pkActPick(a)); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint();
+    _pk.queue.push(pkActPick(a)); pkCloseSheet(); // THE CATEGORY COLLAPSES ON A PICK (David 2026-08-16): the pick is pushed FIRST, so pkCloseSheet's repaint draws the wall with this folder's tile already ignited and its count moved — multi-select across categories still works, you just do it from the wall
   }
-  function pkTakePick(p) { _pk.queue.push(p); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); }
+  function pkTakePick(p) { _pk.queue.push(p); pkCloseSheet(); } // same order for stacks / chains / the Just-<domain> timebox: register, then fold
   function pkActUse() { // THE RANKING SOURCE: the last 30 days of logs, the same signal actCount() reads for badges. (S.tools.use — what TBX_TOP/tbxOrder rank by — is keyed by TOOL id, not activity title, so it cannot rank this grid.)
     if (_pkUse) return _pkUse; // memo: one wall paint asks all 8 folders for the SAME 30-day walk. Nothing inside the picker writes a log, so it can't go stale before pkOpen clears it.
     var m = {}; try { lastDays(30).forEach(function (k) { (logs(k) || []).forEach(function (e) { var t = (e.title || "").toLowerCase(); if (t) m[t] = (m[t] || 0) + 1; }); }); } catch (e) {}
@@ -7081,7 +7031,7 @@
     pkDashCell(og, "ti-plus", tr("New")).onclick = function () { s.naming = true; pkPaintSheetHead(); };
   }
   // ===== THE ARRANGER (18a isArr) =====
-  function pkArrTimes() { var t = _pk.gapStart, out = []; _pk.queue.forEach(function (p) { out.push(t); t = Math.min(1439, t + (p.mins || 30)); }); return out; } // blocks lay end-to-end from the gap start — no overlaps, sequential recompute on every reorder
+  function pkArrTimes() { var t = _pk.gapStart, out = []; _pk.queue.forEach(function (p) { t = Math.min(1439, t + (p.gap || 0)); out.push(t); t = Math.min(1439, t + (p.mins || 30)); }); return out; } // blocks lay end-to-end from the gap start — no overlaps, sequential recompute on every reorder. `p.gap` (David 2026-08-16) is REAL EMPTY TIME held in front of a pick: pull a row down in the Arranger and every row under it walks later by the same amount, because this walk is sequential. The 1439 caps are the day-edge clamp and belong to the midnight pass, not here.
   function pkBuildArr() {
     var arr = add(_pk.ov, "div", "pk-arr");
     var head = add(arr, "div", "pk-arrhead");
@@ -7090,7 +7040,7 @@
     _pk.alist = add(arr, "div", "pk-arrlist");
     var foot = add(arr, "div", "pk-arrfoot");
     var sv = add(foot, "button", "pk-arrsave"); add(sv, "i", "ti ti-device-floppy"); sv.setAttribute("aria-label", tr("Save")); sv.onclick = pkSaveChain;
-    var go = add(foot, "button", "pk-arrgo"); add(go, "i", "ti ti-player-play-filled"); add(go, "span", null, tr("Start")); go.onclick = function () { pkLand(true); };
+    var go = add(foot, "button", "pk-arrgo"); add(go, "i", "ti ti-plus"); add(go, "span", null, tr("Add to planner")); go.onclick = function () { pkLand(); }; // David 2026-08-16: "the Start button doesn't make sense. It should be Add to the planner instead." The play glyph went with the word — this button no longer starts anything.
     pkPaintArr();
   }
   function pkPaintArr() {
@@ -7098,6 +7048,7 @@
     var host = _pk.alist; pkDrain(host); _pk.aTot.textContent = pkShort(pkTotal());
     var times = pkArrTimes(), prevH = -1;
     _pk.queue.forEach(function (p, i) {
+      if (p.gap > 0) { var gp = add(host, "div", "pk-agap"); gp.style.height = Math.max(24, Math.min(120, Math.round(p.gap * PK_ARR_PXMIN))) + "px"; add(gp, "span", "pk-agaptx", pkShort(p.gap)); } // the inserted time is VISIBLE time: a dashed stretch as tall as the gap it holds, carrying its own duration. The gutter prints hour numerals only (canvas 603), so without this the minutes you pushed in would be invisible.
       var row = add(host, "div", "pk-arow"); row.dataset.i = String(i);
       var h = Math.floor(times[i] / 60), same = h === prevH; prevH = h;
       var gut = add(row, "div", "pk-gut");
@@ -7121,7 +7072,7 @@
     });
     var addrow = add(host, "div", "pk-arradd"); add(addrow, "span");
     var ab = add(addrow, "button", "pk-arraddb"); add(ab, "i", "ti ti-plus"); add(ab, "span", null, tr("Add a block"));
-    ab.onclick = function () { _pk.view = "pick"; _pk.wallMin = false; pkPaintShell(); };
+    ab.onclick = function () { _pk.view = "pick"; pkPaintShell(); };
   }
   function pkArrBody(host, p, i, hue, isChain) {
     if (isChain) pkStepList(add(host, "div", "pk-steps"), pkSteps(p));
@@ -7152,31 +7103,45 @@
     onSave: function (t) { var tot = 0; t.forEach(function (x) { tot += (x.d || 0) / 60; });
       p.st0 = t.map(function (x) { return { t: x.t, i: x.i, c: pkHue(x.dom || p.dom), m: (x.d || 60) / 60 }; }); p.bm = Math.max(1, tot); p.mins = Math.max(1, Math.round(tot)); pkPaintArr(); },
     onStart: function () { pkPaintArr(); } }); }
-  function pkDragWire(hd, row, i) { // WHOLE bubble = the drag handle (David 2026-07-27): press + pull >6px reorders, a clean tap toggles the unfold, tapping B while A is open closes A and opens B in ONE tap. No grip line.
-    var y0 = 0, moved = false, mids = null, target = i, host = null;
+  function pkDragWire(hd, row, i) { // WHOLE bubble = the drag handle (David 2026-07-27): press + pull >6px, a clean tap toggles the unfold, tapping B while A is open closes A and opens B in ONE tap. No grip line.
+    // TWO THINGS FIXED HERE (David 2026-08-16).
+    // (a) THE TIME COLUMN STAYS PUT: the translate moves .pk-acol, never .pk-arow — the hour gutter is a row-level child, so translating the row dragged the numerals along with the bubble ("it's lagging, because when you move an activity, the time on the left moves with it as well"). Times re-resolve on drop, in one repaint.
+    // (b) PULL DOWN = LATER, timeline-style: a downward drop inserts real minutes in front of this pick (p.gap) and every row below walks down with it — order is untouched, and the rows below preview that push live. Pulling UP eats that gap first and only then reorders past the row you crossed. GESTURE-OWNS-THE-DOM: the row/column lists are cached at pointerdown so the move handler never queries or repaints.
+    var y0 = 0, moved = false, live = false, target = i, mids = null, rows = null, cols = null, below = null;
     hd.addEventListener("pointerdown", function (e) {
       if (e.button != null && e.button !== 0) return;
-      y0 = e.clientY; moved = false; target = i; host = _pk.alist;
-      mids = [].slice.call(host.querySelectorAll(".pk-arow")).map(function (r) { return r.offsetTop + r.offsetHeight / 2; });
+      y0 = e.clientY; moved = false; live = true; target = i;
+      rows = [].slice.call(_pk.alist.querySelectorAll(".pk-arow"));
+      cols = rows.map(function (r) { return r.querySelector(".pk-acol"); });
+      below = cols.slice(i + 1);
+      mids = rows.map(function (r) { return r.offsetTop + r.offsetHeight / 2; });
       try { hd.setPointerCapture(e.pointerId); } catch (er) {}
     });
     hd.addEventListener("pointermove", function (e) {
-      if (!mids) return; var dy = e.clientY - y0;
+      if (!live) return; var dy = e.clientY - y0;
       if (!moved && Math.abs(dy) > 6) { moved = true; row.classList.add("drag"); row.style.transition = "none"; }
       if (!moved) return;
-      row.style.transform = "translateY(" + dy + "px)";
-      var c = mids[i] + dy, best = 0, bd = 1e9;
-      mids.forEach(function (m, j) { var d2 = Math.abs(m - c); if (d2 < bd) { bd = d2; best = j; } });
+      if (cols[i]) cols[i].style.transform = "translateY(" + dy + "px)";
+      var push = dy > 0 ? ("translateY(" + dy + "px)") : "";
+      below.forEach(function (c) { if (c) c.style.transform = push; }); // pulling down pushes everything under it down, live — the whole point of the gesture
+      var best = i;
+      if (dy < 0) { var c0 = mids[i] + dy, bd = 1e9; mids.forEach(function (m, j) { var d2 = Math.abs(m - c0); if (d2 < bd) { bd = d2; best = j; } }); if (best > i) best = i; } // only an UPWARD pull can reorder; downward is displacement in time
       if (best !== target) { target = best;
-        [].slice.call(host.querySelectorAll(".pk-arow")).forEach(function (r, j) { r.style.outline = (j === target && j !== i) ? "2.5px dashed #ff4fa0" : ""; r.style.outlineOffset = "4px"; });
+        rows.forEach(function (r, j) { r.style.outline = (j === target && j !== i) ? "2.5px dashed #ff4fa0" : ""; r.style.outlineOffset = "4px"; });
       }
     });
-    function end() {
-      if (!mids) return; mids = null;
-      row.style.transform = ""; row.style.transition = ""; row.classList.remove("drag");
-      [].slice.call(_pk.alist.querySelectorAll(".pk-arow")).forEach(function (r) { r.style.outline = ""; });
+    function end(e) {
+      if (!live) return; live = false;
+      var dy = (moved && e && e.clientY != null) ? (e.clientY - y0) : 0;
+      if (cols[i]) cols[i].style.transform = "";
+      below.forEach(function (c) { if (c) c.style.transform = ""; });
+      row.style.transition = ""; row.classList.remove("drag");
+      rows.forEach(function (r) { r.style.outline = ""; });
       if (!moved) { _pk.aOpen = (_pk.aOpen === i) ? null : i; _pk.aPri = false; _pk.aSteps = false; pkPaintArr(); return; }
-      if (target !== i) { var q = _pk.queue; q.splice(target, 0, q.splice(i, 1)[0]); _pk.aOpen = null; }
+      var p = _pk.queue[i], step = Math.round(Math.abs(dy) / PK_ARR_PXMIN / 5) * 5;
+      if (dy > 0) p.gap = Math.max(0, (p.gap || 0) + step);                                        // later
+      else if (target < i) { var q = _pk.queue; p.gap = 0; q.splice(target, 0, q.splice(i, 1)[0]); _pk.aOpen = null; } // earlier, past a row: reorder and close the gap it was holding
+      else p.gap = Math.max(0, (p.gap || 0) - step);                                               // earlier, within its own slot: eat the gap
       pkPaintArr();
     }
     hd.addEventListener("pointerup", end); hd.addEventListener("pointercancel", end);
@@ -7190,7 +7155,8 @@
       save(); try { toast(tr("Saved as a chain.")); } catch (e) {}
     });
   }
-  function pkLand(fromArr) { // Start / Add to today: write EVERY pick into blocks(k) at the arranged times, then the app's existing behavior for a block that starts now
+  function pkLand() { // Add to planner: write EVERY pick into blocks(k) at the arranged times, and STOP.
+    // ADD-ONLY (David 2026-08-16). This used to call startPlanned() whenever the first block landed within 5 minutes of now, so the button silently began tracking a session. A button must not do something its label does not say — the same complaint that killed the primary which morphed into "Arrange". Starting is the timeline's own tap and the puck; nothing here.
     if (!_pk || !_pk.queue.length) return;
     var k = _pk.k, times = pkArrTimes(), made = [];
     _pk.queue.forEach(function (p, i) {
@@ -7201,15 +7167,13 @@
     reflow(k); save(); pkClose();
     try { renderToday(); } catch (e) {}
     try { renderTrackerFull(); } catch (e) {}
-    var first = made[0];
-    if (fromArr && first && k === todayK() && Math.abs(hm(first.time) - logicalNowMin()) <= 5) { try { startPlanned(first); } catch (e) {} } // a block that starts NOW starts tracking, exactly as everywhere else
-    else { try { toast((made.length > 1 ? (made.length + " " + tr("things")) : made[0].title) + " · " + fmt(times[0])); } catch (e) {} }
+    try { toast((made.length > 1 ? (made.length + " " + tr("things")) : made[0].title) + " · " + fmt(times[0])); } catch (e) {}
   }
   Object.assign(I18N.ru, { // ACTIVITY PICKER strings (B4 law: EN source + RU dict, same commit).
     "What next?": "Что дальше?", "open": "свободно", "after": "после", "SAVED & READY-MADE": "СОХРАНЁННОЕ И ГОТОВОЕ",
     "Chains": "Цепочки", "Stacks": "Стеки", "your arrangements": "твои связки", "on your shelf": "на твоей полке", "saved arrangements": "сохранённые связки", "saved": "сохранено",
     "Tap what you feel like": "Коснись того, чего хочется", "ONE THING": "ОДНО ДЕЛО", "ON YOUR PLATE": "НА СЕГОДНЯ", "things": "дела", "steps": "шага", "chain": "цепочка",
-    "Add to today": "Добавить в день", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
+    "Add to today": "Добавить в день", "Add to planner": "Добавить в план", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
     "for how long?": "на сколько?", "for how long? scales every step": "на сколько? подстроятся все шаги", "Priority": "Важность", "Must": "Обязательно", "Should": "Желательно", "Whenever": "Когда угодно",
     "Steps": "Шаги", "Add a step": "Добавить шаг", "pick a step": "выбери шаг", "More": "Ещё", "New": "Новое", "YOUR OWN": "СВОИ", "name it": "назови",
     "Arrange two things and Save keeps it here.": "Разложи два дела — и Сохранить оставит их здесь.", "Nothing here yet.": "Пока пусто.",

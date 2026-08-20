@@ -1823,19 +1823,13 @@
   .tbx-step-tm{ flex:0 0 auto; font-size:10.5px; font-weight:800; color:#9a6a86; font-variant-numeric:tabular-nums; } /* 21e per-step time column — the duration this step actually runs at the chosen dose */
   .tbx-dose-chev{ margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:9px; border:none; background:#180a14; color:#9a6a86; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-dose-chev i{ font-size:13px; }
-  .tbx-dose-foot{ display:flex; align-items:center; gap:7px; margin-top:12px; }
-  .tbx-chips{ display:flex; gap:7px; }
-  .tbx-chip{ padding:8px 13px; border-radius:11px; border:1.5px solid transparent; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* THE DOSE ROW IS ONE SCROLLING LADDER (David 2026-08-20: "I just want a single row of time options that you can scroll"). The axis lock is the v1313 law, hoisted from the 2c override so BOTH dose cards obey it: overflow-x:auto alone leaves overflow-y computing to auto, which makes the ladder a vertical scroller too and rubber-bands the row under the finger on iOS. touch-action:pan-x is the app's own rail idiom (.sed-rail / .pk-rail declare it); overscroll-behavior-x:contain stops the ladder's end from chaining into whatever scrolls behind it. */
+  .tbx-dose-foot{ display:flex; align-items:center; gap:7px; margin-top:8px; margin-bottom:-4px; padding:4px 0; overflow-x:auto; overflow-y:hidden; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none; } /* LIP ROOM, the same idiom .pk-rail already carries: a scroller clips at its padding edge, and the chosen chip's lip is a box-shadow OUTSIDE its border box (0 4px 0 on the shelf card, 0 3px 0 on 2c) — with the row hugging the chips exactly, that lip was shaved off. 4px of interior room top and bottom, cancelled by the matching margins, so not one pixel of the row moves. */
+  .tbx-dose-foot::-webkit-scrollbar{ display:none; }
+  .tbx-chips{ display:flex; gap:7px; flex:0 0 auto; }
+  .tbx-chip{ flex:0 0 auto; white-space:nowrap; padding:8px 13px; border-radius:11px; border:1.5px solid transparent; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-chip.on{ color:#160510; }
   .tbx-chip:active{ transform:translateY(2px); }
-  .tbx-more{ margin-left:auto; display:flex; align-items:center; gap:5px; padding:8px 11px; border-radius:11px; border:none; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .tbx-more i{ font-size:13px; }
-  .tbx-more:active{ transform:translateY(2px); }
-  .tbx-mgrid{ margin-top:9px; background:#1d0e18; border-radius:13px; padding:10px; } /* 21a: "more" opens the minute grid in-card — tap, never type */
-  .tbx-mgrid-lbl{ font-size:9px; font-weight:800; letter-spacing:1.1px; color:#9a6a86; margin-bottom:8px; }
-  .tbx-mrow{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
-  .tbx-mchip{ padding:8px 0; border-radius:11px; border:1.5px solid transparent; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; text-align:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .tbx-mchip:active{ transform:translateY(2px); }
   .tbx-start{ width:100%; display:flex; align-items:center; justify-content:center; gap:7px; margin-top:12px; padding:11px 0; border-radius:13px; border:none; background:#ff5fa8; box-shadow:0 4px 0 color-mix(in srgb,#ff5fa8 45%,#000); color:#2a1730; font-family:"Jost",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-start i{ font-size:14px; }
   .tbx-start:active{ transform:translateY(2px); box-shadow:0 1px 0 color-mix(in srgb,#ff5fa8 45%,#000); }
@@ -1986,12 +1980,9 @@
   .tbx-dose-2c .tbx-stepcoin i{ font-size:16px; }
   .tbx-dose-2c .tbx-step-tx{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; }
   .tbx-dose-2c .tbx-step-tm{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#b596ad; }
-  .tbx-dose-2c .tbx-dose-foot{ margin-top:0; gap:8px; overflow-x:auto; overflow-y:hidden; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none; } /* SIDEWAYS ONLY (David 2026-08-19 device: "you're also able to scroll downwards within those numbers"). `overflow-x:auto` alone leaves overflow-y computing to auto, which makes the dose ladder a VERTICAL scroll container too — on iOS that rubber-bands the row under the finger. overflow-y:hidden + the app's own rail idiom (touch-action:pan-x, as .sed-rail / .pk-rail already declare) pins the axis; overscroll-behavior-x:contain stops the ladder's own end from chaining into the world column behind it. */
-  .tbx-dose-2c .tbx-dose-foot::-webkit-scrollbar{ display:none; }
-  .tbx-dose-2c .tbx-chips{ flex:0 0 auto; gap:8px; }
+  .tbx-dose-2c .tbx-dose-foot{ margin-top:-4px; gap:8px; } /* the SIDEWAYS-ONLY axis lock (David 2026-08-19 device: "you're also able to scroll downwards within those numbers") now lives on the base .tbx-dose-foot, so the shelf card's ladder is pinned the same way; only the 2c spacing is left here, and the -4 cancels the base row's 4px lip padding so this foot still sits at its designed 0 offset. */
+  .tbx-dose-2c .tbx-chips{ gap:8px; }
   .tbx-dose-2c .tbx-chip{ flex:0 0 auto; padding:10px 17px; border-radius:15px; border:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; white-space:nowrap; }
-  .tbx-dose-2c .tbx-more{ flex:0 0 auto; margin-left:0; padding:10px 15px; border-radius:15px; background:#170a12; color:#e8c7d8; font-weight:800; font-size:14px; white-space:nowrap; }
-  .tbx-dose-2c .tbx-more i{ font-size:15px; }
   .tbx-dose-2c .tbx-start{ margin-top:0; padding:15px 0; border-radius:19px; background:#ff4fa0; box-shadow:0 5px 0 #a41d60; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; color:#2a0d1c; }
   .tbx-dose-2c .tbx-start i{ font-size:16px; }
   .tbx-dose-2c .tbx-start:active{ transform:translateY(4px); box-shadow:0 1px 0 #a41d60; }
@@ -2141,7 +2132,7 @@
   .stk-face{ position:absolute; inset:0; z-index:3; border-radius:35%; display:flex; align-items:center; justify-content:center; }
   .stk-face i{ color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); } /* white glyph, soft drop — the ink glyph on a deck face is dead everywhere except an IGNITED card, which stkCard sets inline */
   .stk-lab{ font-family:"Baloo 2",sans-serif; font-weight:800; line-height:1.15; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; } /* the name under the card: the FACE hue (set in JS), centered, wrapping to two lines instead of the old one-line ellipsis */
-  /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-panel/.pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
+  /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
   .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --restore:#2ab8c4; --upkeep:#7f9bc4; } /* the domain vars, mirrored from .tbx: a chain step carried out of the Session Editor stores its hue as var(--dom), and it must resolve here too (an unresolved var painted a transparent coin). --play is deliberately ABSENT: DOM.play.c is now #ffc83d itself, so the picker-scoped copy was the last trace of the old two-golds split. */
   .pk-ov *{ box-sizing:border-box; }
   .pk-ov ::-webkit-scrollbar{ width:0; height:0; }
@@ -2183,23 +2174,9 @@
   .pk-ftx{ flex:1; min-width:0; }
   .pk-ftl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; line-height:1.05; }
   .pk-fts{ display:block; font-size:10.5px; font-weight:800; }
-  /* ---- the shared footer (wall + sheet render these IDENTICALLY) ---- */
-  .pk-tab{ flex:none; align-self:center; width:64px; height:24px; margin-bottom:-6px; border:none; background:none; color:#96637e; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
-  .pk-tab i{ font-size:17px; transition:transform .25s ease; }
-  .pk-panel{ flex:none; padding:4px 22px 0; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; } /* NO DIVIDER (David 2026-07-31): the 2px #24101c border-top under the chevron read as a berry rule cutting the footer off. Line gone, and the 13px it occupied (2 border + 11 pad) pulled back to 4 so the footer sits tighter under the tab. The chevron stays. */
-  /* the plate strip at the footer frame's size (David 2026-07-31 correction: 64 was an overshoot) — 48px face, ~20px glyph, 13px name. The top/left padding is load-bearing: a deck chip's shards fan up-LEFT by 0.14·S / 0.086·S (6.7px left, 4.1px up on a 48px card) and .pk-queue clips vertically (overflow-x:auto forces overflow-y). */
-  .pk-queue{ display:flex; gap:18px; padding:6px 4px 2px 9px; overflow-x:auto; touch-action:pan-x; }
-  .pk-q{ display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
-  .pk-q:active{ transform:translateY(2px); }
-  .pk-qc{ width:48px; height:48px; } /* the chip IS a stack card (.stk): shards, face and radius all come from the .stk block */
+  /* ---- the bottom bar (wall + sheet render these IDENTICALLY). The picked-activities tray that lived here — .pk-tab / .pk-panel / .pk-queue / .pk-q* / .pk-tune / .pk-fh* — is DELETED with it (David 2026-08-16). .pk-qx survives: the Arranger's sub-step rows still wear it. ---- */
   .pk-qx{ position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; z-index:4; } /* z4: above the card's z3 face, which now stacks explicitly */
   .pk-qx i{ font-size:11px; }
-  .pk-ql{ font-size:13px; max-width:64px; } /* family/weight/wrap live in .stk-lab; the colour is the face hue (pink when focused), set in JS. 64px, not 78: the chip pitch is 48 + 18 = 66. */
-  .pk-tune{ display:flex; flex-direction:column; gap:10px; }
-  .pk-fh{ display:flex; align-items:center; gap:9px; }
-  .pk-fht{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.05; }
-  .pk-fhs{ display:block; font-size:11px; font-weight:700; color:#8a5f76; }
-  .pk-fhm{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:22px; color:#fff2f9; }
   .pk-railw{ display:flex; gap:4px; align-items:stretch; }
   .pk-railb{ position:relative; flex:1; min-width:0; }
   .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; padding:4px 0 4px 4px; margin:-4px 0 -4px -4px; } /* RING ROOM (David 2026-07-31, on device: "the ring is cut off"). The picked chip wears pkRing() = a 2.5px box-shadow, and a shadow lives OUTSIDE the border box — an overflow-x:auto scroller whose content box hugged the chip exactly clipped that ring on every straight edge (only the rounded-corner wedges survived), and the picked chip renders FIRST (current-first order), so its left edge clipped too. 4px of interior room (ring 2.5 + 1.5 slack) on top/bottom/left, cancelled by the matching -4px margins so not one pixel of the rail, the chips or the fade moves. The RIGHT stays flush on purpose: a scroller clips at its PADDING edge, so right padding would let a scrolled chip paint 4px past .pk-fade and print an unfaded sliver. Nothing is lost there — the picked chip always sits first, and the right edge is the fade's job. */
@@ -2230,15 +2207,11 @@
   .pk-addstep i{ font-size:15px; }
   .pk-bar{ flex:none; padding:10px 22px calc(env(safe-area-inset-bottom,0px) + 28px); display:flex; align-items:center; gap:9px; }
   .pk-bartx{ flex:1; min-width:0; }
-  .pk-bark{ display:block; font-size:10px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* ONE LINE, always. The one-pick button carries its duration now, so the plate slot narrows; David's tiebreak is that the plate text gives way rather than the button wrapping — and a kicker that REFLOWS to two lines breaks the "same level" row exactly the way a wrapped button would. */
   .pk-barl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#fff2f9; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* DS: the populated label holds ONE line */
   .pk-barl.hint{ font-size:14px; color:#c98ca6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; line-height:1.15; } /* DS: the empty state is a HINT (14px #c98ca6), not a title. MEASURED at 375px: the label slot is 190px beside the 131px Arrange, and the sentence needs 220px at 14px — so nowrap clips it to "…you feel li". The DS's stated purpose is the WHOLE hint being readable, so only this state wraps, to two lines. The populated label above keeps its single nowrap line. */
   .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 18px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #662040; color:#2a1730; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: under-shadow is HUE-derived — color-mix(in srgb, #ff4fa0 40%, #000) = #662040 — never plain ink; label is ink-on-fill #2a1730 */
   .pk-go i{ font-size:19px; }
   .pk-go:active{ transform:translateY(4px); box-shadow:0 1px 0 #662040; } /* press ladder: 5px sticker → 4px travel */
-  /* THE ONE-PICK PRIMARY (David's reference 2026-07-31, correction: SKIN ONLY). The bar keeps its row — kicker + item label left, the button bottom-right on the same level; it never takes the whole bottom. Only the button's material changes. n==0 (disabled) and n>1 (Arrange) keep their own skin untouched. */
-  .pk-go.one{ padding:14px 16px; border-radius:22px; border:none; background:#ff5fa0; box-shadow:0 6px 0 color-mix(in srgb, #ff5fa0 50%, black); color:#4a1126; font-size:17px; white-space:nowrap; } /* --alter-pink-soft #ff5fa0 (the harder #ff4fa0 stays the RING and the Arrange fill); ink is the plum #4a1126, not #160510 and not PK_INK; the lip is hue-derived at 50%, replacing this button's #662040. nowrap + .pk-go's flex:none is what makes the "· X min" suffix push the PLATE LABEL into its ellipsis instead of breaking the button onto two lines. MEASURED at 375px: at 18px/14-20 the button ate 239 of the bar's 331 and the fixed "ON YOUR PLATE" kicker (100px) clipped to "ON YOUR P…"; 17px/14-16 gives the plate slot the ~104px it needs, so the kicker reads whole and only the variable item label ever truncates. The glyph stays at .pk-go's 19px with the type back at 17. */
-  .pk-go.one:active{ transform:translateY(5px); box-shadow:0 1px 0 color-mix(in srgb, #ff5fa0 50%, black); } /* same press behaviour one step taller: 6px lip → 5px travel → 1px residual, and the pressed shadow is the hue-mix too, never ink */
   /* ---- the folder sheet ---- */
   .pk-sh-ov{ position:absolute; inset:0; }
   .pk-scrim{ position:absolute; inset:0; border:none; background:rgba(7,3,8,.6); cursor:pointer; padding:0; }
@@ -2299,6 +2272,9 @@
   .pk-guth{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; line-height:24px; color:#efd7e6; }
   .pk-gutd{ display:block; width:11px; height:4px; border-radius:2px; background:#6b4a5e; margin-top:10px; } /* canvas 603: rendered ONLY on a same-hour row (no numeral) — gutter pad-top 10 + 10 = the 20px optical seat */
   .pk-acol{ flex:1; min-width:0; position:relative; }
+  /* INSERTED TIME (David 2026-08-16, "you should be able to move it down… it will push everything below it down"): a pick that starts later than the one above it holds a real gap, and the gap is drawn as real height in the Arranger's own column. 2px per minute (PK_ARR_PXMIN), floored at 24 so a 5-minute nudge still reads, capped at 120 so a 3-hour wait doesn't push the list off the screen. */
+  .pk-agap{ margin-left:53px; border-left:2.5px dashed #4b2a44; display:flex; align-items:center; padding-left:11px; }
+  .pk-agaptx{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; color:#96637e; }
   .pk-apk2{ position:absolute; left:-8px; top:-8px; right:16px; height:54px; border-radius:15px; border:2px solid #160510; }
   .pk-apk1{ position:absolute; left:-4px; top:-4px; right:8px; height:58px; border-radius:16px; border:2.5px solid #160510; }
   .pk-abub{ position:relative; border-radius:19px; border:3px solid #160510; overflow:hidden; box-shadow:0 5px 0 #160510; transition:border-color .3s ease; }
@@ -4100,6 +4076,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1315"></script>
+  <script src="app.js?v=1317"></script>
 </body>
 </html>
