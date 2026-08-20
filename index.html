@@ -1611,7 +1611,7 @@
   /* ===== §10f.7 HOME (David ✓ 2026-07-13, "Refined C2"): the idle cockpit AS the app's landing — story bars on top → greeting → the big pink Track CIRCLE (lower, near the tools) → Plan-my-day → a tinted tools side-scroll. Additive layer on st-idle; without .tf-home the idle frame is byte-identical. ===== */
   /* balanced full-height composition: header row (top) · greeting+circle (centered) · Plan+tools (bottom) — space-between fills the screen instead of clustering low */
   #trackerFull.tf-home.st-idle .tf-inner{ justify-content:flex-start; padding-top:calc(env(safe-area-inset-top,0px) + 54px); } /* FIDELITY FIX (David 2026-07-22 approved board): space-between blew a giant dead band between strip and circle. flex-start + measured margins (strip→air→circle) match the mockup rhythm; the circle sits centered-ish with breathing room, not floated to the middle by justify. */
-  #trackerFull.tf-home.st-idle #tfHomeBars{ margin-bottom:var(--tun-gap, 3vh); } /* NUMERIC PASS: strip→circle gap target ≈10% of viewport total (was rendering 13.7%); 6vh→3vh, tuner-var driven */
+  #trackerFull.tf-home.st-idle #tfHomeBars{ margin-bottom:var(--tun-gap, 26.2px); } /* NUMERIC PASS: strip→circle gap target ≈10% of viewport total (was rendering 13.7%); 6vh→3vh, tuner-var driven */
   #trackerFull.tf-home.st-idle .tf-stage{ flex:0 0 auto; }
   #trackerFull.tf-home.st-idle .tf-livemeta{ display:none; }
   /* bring the top back: clock (left), streak+today (right), settings gear + the close/PULL-DOWN chevron (center) — re-shown over the st-idle hide */
@@ -1640,7 +1640,7 @@
   .tf-hb-fill{ height:100%; border-radius:5px; }
   .tf-hb i{ font-size:18px; line-height:1; }
   /* Plan-my-day ghost + the tools side-scroll panel (built into #tfCtrls in home mode) */
-  #trackerFull.tf-home.st-idle .tf-ctrls{ margin-top:5vh; width:100%; } /* FIDELITY FIX (David 2026-07-22): air between the next-line and the grid (was 14px, part of the giant-dead-band problem now that the inner is flex-start) */
+  #trackerFull.tf-home.st-idle .tf-ctrls{ margin-top:43.7px; width:100%; } /* FIDELITY FIX (David 2026-07-22): air between the next-line and the grid (was 14px, part of the giant-dead-band problem now that the inner is flex-start) */
   .tf-planday{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; background:transparent; border:2px dashed #4a3358; border-radius:13px; color:#d2aae8; font-family:"Jost",sans-serif; font-weight:800; font-size:14.5px; padding:13px 14px; cursor:pointer; }
   .tf-planday i{ font-size:17px; }
   .tf-toolspanel{ margin-top:12px; background:#1c0a18; border:2px solid #160510; border-radius:16px; padding:12px 0 10px; }
@@ -1762,13 +1762,20 @@
   #trackerFull.tf-onepage.tf-onehome .tfw-sky{ width:100%; box-sizing:border-box; }
   /* the home zone carries the SAME balanced full-height composition the .tf-inner used to (space-between: story strip top · circle centered · controls+grid bottom); it always fills one viewport so the sky/ground peeks sit just off each edge. The fixed status row (clock/spark/gear) floats over its top via .tf-inner. */
   #trackerFull.tf-onepage.tf-onehome .tfw-home{ position:relative; width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:calc(env(safe-area-inset-top,0px) + var(--tun-sky-gap, 54px)) 0 calc(env(safe-area-inset-bottom,0px) + 34px); } /* NUMERIC PASS (David 2026-07-22): space-between WAS the dead band — flex distributed the spare viewport as giant gaps between strip/circle/grid. flex-start + explicit rhythm below. --tun-sky-gap = the space above the strip = also the trail→circle gap when scrolled up (David 2026-07-22 video "the timeline should be closer to the circle, feel connected"): default 54 unchanged, tune DOWN on device to hug the journey to the circle. */
-  #trackerFull.tf-onepage.tf-onehome .tfw-home #tfHomeBars{ margin-top:0; margin-bottom:var(--tun-gap, 8vh); } /* FACE-UP (David 2026-07-27 device "the face rides too low; dead sky between the HUD and the strip"): the margin-top:auto is GONE — it was splitting the zone's spare height into a ~15%vh dead band ABOVE the strip. The strip now sits at the zone's padding-top = env(safe-area-inset-top) + --tun-sky-gap (54px) = the HUD's bottom edge (gear = env+11 + 30px) + 13px, on every safe-area. ALL the freed height falls BELOW the stack (.tf-ctrls keeps margin-bottom:auto), which is where the toolbox deck now rises into. SUPERSEDES the 2026-07-22 "centered stack" proportion; the strip→circle gap is still var(--tun-gap). */
-  #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-ctrls{ margin-top:var(--tun-tools-gap, 5vh); margin-bottom:auto; } /* the tools sit a small fixed gap UNDER the circle, then free space below → the stack centers (was margin-top:auto = grid pinned to the bottom with a big void above). Tunable gap. */
+  /* THE vh-IN-AN-ARTBOARD CONVERSION (2026-08-20). The one-page home column is a FIXED artboard that is transform-scaled to fill the phone, so a
+     `vh` spacing inside it resolves against the REAL screen and ignores the transform: it equals the designed pixel at the 874 artboard (which is
+     exactly why every gate passed) and inflates ~9% on a 440x956 phone while every fixed-px element beside it stays put. The three defaults below
+     are now the artboard px they resolved to at 874 (8vh=69.9 · 5vh=43.7 · -19vh=-166.1; and 3vh=26.2 / 5vh=43.7 on the older .tf-home face above).
+     The --tun-* vars are untouched so the Design tuner still writes real pixels. NOTE, measured: on the LIVE .tf-2c face all three of these are
+     already overridden by the 2026-08-14 RHYTHM pass below (strip margin-bottom:0 · .tf-ctrls margin-top:18px · .tfw-ground margin:-52px), so this
+     conversion changes nothing David can see — it removes the class from the fallback faces, and designAudit now gates it mechanically. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home #tfHomeBars{ margin-top:0; margin-bottom:var(--tun-gap, 69.9px); } /* FACE-UP (David 2026-07-27 device "the face rides too low; dead sky between the HUD and the strip"): the margin-top:auto is GONE — it was splitting the zone's spare height into a ~15%vh dead band ABOVE the strip. The strip now sits at the zone's padding-top = env(safe-area-inset-top) + --tun-sky-gap (54px) = the HUD's bottom edge (gear = env+11 + 30px) + 13px, on every safe-area. ALL the freed height falls BELOW the stack (.tf-ctrls keeps margin-bottom:auto), which is where the toolbox deck now rises into. SUPERSEDES the 2026-07-22 "centered stack" proportion; the strip→circle gap is still var(--tun-gap). */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-ctrls{ margin-top:var(--tun-tools-gap, 43.7px); margin-bottom:auto; } /* the tools sit a small fixed gap UNDER the circle, then free space below → the stack centers (was margin-top:auto = grid pinned to the bottom with a big void above). Tunable gap. */
   #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-stage{ flex:0 0 auto; }
   /* ONE-PAGE (David 2026-07-22): the story strip is a normal in-flow part of the HOME zone — it must SCROLL NATURALLY with the content, never animate. Kill any transition on it so a re-render/scroll layout shift can't make it "slide up and disappear". */
   #trackerFull.tf-onepage.tf-onehome #tfHomeBars{ transition:none !important; }
   #trackerFull.tf-onepage.tf-onehome .tf-stage{ touch-action:pan-y !important; } /* SCROLL FIX (David 2026-07-22): the stage carries an inline touch-action:none for drag-to-close — a dead scroll zone dead-center on the one-page home. Force pan-y so the circle area scrolls the column like everything else (tfDrag also bails here). */
-  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -19vh) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px + 32px); } /* GROUND BOTTOM AIR (David device 2026-08-01, "the tools on the bottom are too close to the bottom, gotta leave a little space below"): +32px on top of the existing 40 + safe-area. MEASURED at 375x812: the last folder-square row ended 60px above the viewport floor while the fixed #guardPuck occupies y 730-796 — the row sat inside the puck's band, which is what reads as "too close". The band is transparent (neither .tfw-ground nor .tbx paints a fill), so it shows the same night ground as behind the tiles — no dead colour stripe. designAudit's "ground bottom air" gate locks it at ≥32px. */ /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -166.1px) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px + 32px); } /* GROUND BOTTOM AIR (David device 2026-08-01, "the tools on the bottom are too close to the bottom, gotta leave a little space below"): +32px on top of the existing 40 + safe-area. MEASURED at 375x812: the last folder-square row ended 60px above the viewport floor while the fixed #guardPuck occupies y 730-796 — the row sat inside the puck's band, which is what reads as "too close". The band is transparent (neither .tfw-ground nor .tbx paints a fill), so it shows the same night ground as behind the tiles — no dead colour stripe. designAudit's "ground bottom air" gate locks it at ≥32px. */ /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
   /* FIX PASS 2 D (design 2026-07-28) "live mode hides the tool deck": the ground PULL is cancelled while tracking, so the deck starts exactly at the fold instead of rising into the live face. Reconciles the design law with David's 2026-07-22 device law ("when tracking you should still be able to scroll down and see the tools") — the deck is hidden on the live screen, one scroll away, not deleted. */
   #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
   /* HOME 2c (David 2026-08-02): the -19vh pull is CANCELLED on the 2c face, by the same idiom the live face already uses. The pull existed to fill the home zone's empty bottom band with the peeking deck; on 2c that band is the HERO ROW + the TOOLS fold hint, and the artifact's chevron-down is an INVITATION — the toolbox is one scroll below, not half-visible on top of the hero row. CONFLICT FLAGGED to David: this retires the deck's above-the-fold peek on the home face (designAudit's fold gate now measures the TOOLS hint, same 26px threshold, same home-zone slab). */
@@ -2351,7 +2358,7 @@
   .tf-datekick{ display:none; font-family:"Jost",sans-serif; font:800 17px "Jost",sans-serif; letter-spacing:2.8px; color:#e8c7d8; text-align:center; }
   #trackerFull.tf-home.st-idle .tf-datekick{ display:block; order:-1; margin-bottom:14px; } /* §1: nothing else above the circle — .tf-say / .tf-sf are already display:none on .tf-onehome */
   #trackerFull.tf-onehome.tf-2c.st-night .tf-datekick{ display:block; order:-1; } /* THE NIGHT BOARD IS THE HOME BOARD (David 2026-08-19: "the home screen should look like the original home screen … even if the middle circle is purple"). Same strip → date → stone rhythm; without the kicker the whole night composition rendered 78px high against the frame ("the proportions are off on the top, the streaks thing is too close to the very top"). Margin stays the 2c rule's own 56px 0 0 (higher specificity, above). */
-  #trackerFull.tf-home.st-idle .tf-verdict{ display:block; max-width:78vw; margin:6px auto 0; text-align:center; font-size:15px; font-weight:600; line-height:1.35; color:#b98ba3; letter-spacing:0; text-transform:none; } /* the sub-line wraps to two lines in the PNG — inline-flex could not wrap */
+  #trackerFull.tf-home.st-idle .tf-verdict{ display:block; max-width:313.6px; /* 78vw at the 402 artboard — the sweep of 2026-08-20 found this and .tf-nextup as the two viewport-relative widths still LIVE inside the 402 column (the ring's three vw rules are all overridden to 180px on the 2c face, and .tf-inner/.tfw-home read the viewport deliberately, to derive the artboard). A vw max-width here let the sub-line wrap at 343px on a 440 phone and 314px on the artboard, which is a different line break for the same sentence. */ margin:6px auto 0; text-align:center; font-size:15px; font-weight:600; line-height:1.35; color:#b98ba3; letter-spacing:0; text-transform:none; } /* the sub-line wraps to two lines in the PNG — inline-flex could not wrap */
   .tf-earlypill{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 13px; border-radius:12px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e8c7d8; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* §2a: the PNG's tiny ghost mini-pill — start the next block early. Ghost recipe, no fill, no bloom. */
   #trackerFull.tf-home.st-idle .tf-earlypill{ order:3; } /* the stage is order-driven on the idle home (ring 0 · title 1 · sub-line 2) — the pill must land AFTER the sub-line, not above the circle */
   .tf-earlypill i{ font-size:12px; }
@@ -2558,7 +2565,7 @@
   .tf-livemeta .tf-lm-spark i{ font-size:14px; }
   #trackerFull.st-onplan .tf-livemeta, #trackerFull.st-off .tf-livemeta{ display:flex; }
   #trackerFull.tf-morphing .tf-livemeta{ opacity:0; }
-  .tf-nextup{ display:none; margin-top:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; color:#8a6f84; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:82vw; }
+  .tf-nextup{ display:none; margin-top:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; color:#8a6f84; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:329.6px; } /* 82vw at the 402 artboard (see .tf-verdict above) */
   .tf-nextup i{ font-size:12px; }
   #trackerFull.st-onplan .tf-nextup, #trackerFull.st-off .tf-nextup{ display:inline-flex; align-items:center; justify-content:center; gap:10px; }
   .tf-nextup .tf-nu-lab{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:74vw; } /* A6 (David 2026-07-21): widened the "next: …" budget — it was needlessly ellipsizing "next: Make art · 17:31" while the row had room (was 60vw; the play button is only 30px, so 74vw fits comfortably) */
@@ -3120,6 +3127,56 @@
   .you-adv .you-advlbl{ flex:1 1 auto; }
   .you-adv .you-advchev{ font-size:18px; transition:transform .2s; }
   .you-adv.open .you-advchev{ transform:rotate(180deg); }
+  /* ===== THE YOU MENU (David's "Settings Menus" frame, ported 2026-08-20 — "get rid of that [The Vital] and make it the settings I
+     designed, at least the main menu"). ARTBOARD CONFLICT, flagged not silently resolved: the frame is authored at 390x893 while home
+     is pinned to 402x874. Two artboards. The column is therefore pinned at an ABSOLUTE 390px and centred, exactly as home pins 402,
+     and the 893 is simply "taller than the screen" so the list scrolls. Unlike home this column is NOT transform-scaled — scaling a
+     scrolling list would blow its type up on a wide phone; it centres in the extra width instead. Every value below is the frame's own.
+     The dashed edge on the Advanced row is the ONE dashed edge in the design and is deliberate: it marks the expandable dev drawer. */
+  .ym-ov{ position:fixed; inset:0; z-index:112; background:linear-gradient(180deg,#3a1630 0%,#32152e 22%,#251436 54%,#180b25 86%,#0d050f 100%); }
+  .ym-scroll{ position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+  .ym-col{ width:390px; margin:0 auto; box-sizing:border-box; display:flex; flex-direction:column; align-items:stretch; }
+  .ym-head{ margin:66px 25px 0; height:28px; display:flex; align-items:center; justify-content:space-between; }
+  .ym-x{ width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,242,249,.16); background:#2a1220; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; }
+  .ym-x i{ font-size:13px; color:#ff8fc0; }
+  .ym-gems{ display:flex; align-items:center; gap:9px; }
+  .ym-gems i{ font-size:21px; color:#ffc41f; }
+  .ym-gems b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; line-height:1; color:#ffc41f; }
+  .ym-title{ margin:32px 25px 0; display:flex; align-items:center; gap:17px; }
+  .ym-h1{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:38px; line-height:1; color:#fff2f9; }
+  .ym-rank{ padding:10px 14px; border-radius:999px; background:rgba(226,74,140,.32); color:#fd58a2; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; line-height:1; }
+  .ym-card{ margin:29px 22px 0; height:95px; border-radius:20px; background:#241020; border:3px solid #160510; box-shadow:0 8px 0 #160510; padding:0 17px 0 20px; display:flex; box-sizing:border-box; }
+  .ym-cardic{ align-self:center; flex:none; width:45px; height:45px; border-radius:15px; background:#3a0822; display:flex; align-items:center; justify-content:center; }
+  .ym-cardic i{ font-size:26px; color:#f0559b; }
+  .ym-cardb{ margin-left:26px; margin-top:21px; flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:19px; }
+  .ym-cardr{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .ym-cardn{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; line-height:1; color:#fff2f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ym-cardgo{ font-family:"Jost",sans-serif; font-weight:700; font-size:15px; line-height:1; color:#c79ab4; flex:none; }
+  .ym-bar{ height:11px; border-radius:999px; background:#190913; overflow:hidden; }
+  .ym-bar i{ display:block; height:100%; border-radius:999px; background:#ff5da8; }
+  .ym-row{ margin:0 22px; width:calc(100% - 44px); height:78px; border-radius:20px; border:3px solid #160510; box-shadow:0 8px 0 #160510; padding:0 22px 0 27px; display:flex; align-items:center; box-sizing:border-box; cursor:pointer; }
+  .ym-row:active{ transform:translateY(3px); box-shadow:0 5px 0 #160510; }
+  .ym-row > i.ym-rico{ font-size:38px; flex:none; line-height:1; }
+  .ym-rb{ margin-left:13px; flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left; }
+  .ym-rt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; line-height:1.05; color:#fff2f9; }
+  .ym-rs{ font-family:"Jost",sans-serif; font-weight:600; font-size:15px; line-height:1.15; color:rgba(255,242,249,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ym-rchev{ font-size:24px; color:rgba(255,242,249,.66); flex:none; }
+  .ym-advrow{ margin:18px 22px 0; width:calc(100% - 44px); height:74px; border-radius:22px; background:transparent; border:3px dashed rgba(190,158,190,.5); padding:0 22px 0 28px; display:flex; align-items:center; box-sizing:border-box; cursor:pointer; }
+  .ym-advrow > i.ym-advic{ font-size:28px; color:#a97ff0; flex:none; line-height:1; }
+  .ym-advlbl{ margin-left:13px; flex:1 1 auto; text-align:left; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; color:#c9b2c9; }
+  .ym-advchev{ font-size:24px; color:rgba(255,242,249,.66); flex:none; transition:transform .2s; }
+  .ym-advrow.open .ym-advchev{ transform:rotate(180deg); }
+  .ym-advbox{ display:none; flex-direction:column; margin-top:14px; }
+  .ym-advbox.on{ display:flex; }
+  .ym-advbox .ym-row{ height:62px; margin-top:10px; border-radius:16px; box-shadow:0 5px 0 #160510; background:#241020; padding:0 20px 0 22px; }
+  .ym-advbox .ym-row > i.ym-rico{ font-size:26px; }
+  .ym-advbox .ym-rt{ font-size:18px; }
+  .ym-advbox .ym-rs{ font-size:13px; }
+  .ym-tail{ height:124px; flex:none; }
+  .ym-fade{ position:absolute; left:2px; right:2px; bottom:0; height:150px; background:linear-gradient(to top, rgba(13,5,15,.94) 30%, transparent); pointer-events:none; }
+  .ym-home{ position:absolute; left:13px; bottom:25px; width:64px; height:64px; border-radius:50%; border:2.5px solid #160510; background:#241534; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; }
+  .ym-home i{ font-size:27px; color:#ff4fa0; }
+  .ym-home:active{ transform:translateY(2px); }
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
@@ -4105,6 +4162,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1319"></script>
+  <script src="app.js?v=1320"></script>
 </body>
 </html>

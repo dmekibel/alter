@@ -68,7 +68,7 @@
     var stopped = false, timers = [], atB = false; _padLive++;
     function glide() { if (stopped) return; var c = sharedAudioCtx(); if (!c) return; atB = !atB; var tgt = atB ? CHB : CHA, now = c.currentTime; oscs.forEach(function (o, i) { o.frequency.cancelScheduledValues(now); o.frequency.setValueAtTime(o.frequency.value, now); o.frequency.linearRampToValueAtTime(tgt[i], now + 4.5); }); timers.push(setTimeout(glide, atB ? 9000 : 22000)); } // mostly on A (~22s), a brief drift to F (~9s)
     timers.push(setTimeout(glide, 22000));
-    return { stop: function () { if (stopped) return; _padLive = Math.max(0, _padLive - 1); stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + 1.2); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 1400); } };
+    return { stop: function (fade) { if (stopped) return; var FD = (fade == null ? 1.2 : Math.max(0.01, fade)); _padLive = Math.max(0, _padLive - 1); stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + FD); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, FD * 1000 + 200); } }; // stop(fade) — the default 1.2s ramp is unchanged for every existing caller; a HARD stop (fade 0.01) exists only so quitting the app can never make a sound (David 2026-08-20)
   }
   // ===== BACKGROUND MUSIC — "Mysterious" (David 2026-07-01): the deep, hypnotic, spacious Mario-Paint-BGM-3 vibe. ~70 BPM, a slow 2-chord vamp — Ab min9 ⟷ Db dom9 — each swelling for 2 bars. Sub-bass root on the downbeat, a warm low-passed saw pad washing the upper extensions in and out, and sparse glassy pentatonic plucks drifting on top like stars. Big reverb. Routes into _bgBus. =====
   var BGM = (function () {
@@ -150,7 +150,7 @@
   var APPMUSIC = (function () {
     var ctl = null, running = false;
     function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } ctl = startPad(ctx, bgBus() || ctx.destination, 0.05); running = true; }
-    function stop() { if (!running) return; running = false; if (ctl) { try { ctl.stop(); } catch (e) {} ctl = null; } }
+    function stop(hard) { if (!running) return; running = false; if (ctl) { try { ctl.stop(hard ? 0.01 : null); } catch (e) {} ctl = null; } } // hard = no 1.2s tail: leaving/backgrounding the app must be SILENT (David 2026-08-20: "get rid of ... that sound effect when you quit the app")
     return { start: start, stop: stop, running: function () { return running; } };
   })();
   // keep app music in sync: play only when enabled, past the start screen, and NO tool/player overlay is open (tool audio takes over). Idempotent + debounced.
@@ -160,7 +160,7 @@
       var want = !!(S.audio && S.audio.appMusic) && S.profile && S.profile.set
         && !(el("startScreen") && el("startScreen").classList.contains("on"))
         && !document.getElementById("breatheOv") && !document.hidden;
-      if (want) APPMUSIC.start(); else APPMUSIC.stop();
+      if (want) APPMUSIC.start(); else APPMUSIC.stop(document.hidden);
     } catch (e) {}
   }
   function appMusicPoke() { if (_amTO) clearTimeout(_amTO); _amTO = setTimeout(appMusicSync, 250); }
@@ -1789,7 +1789,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -3172,7 +3172,7 @@
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("cleared " + relLabel(k).toLowerCase() + " · Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
     item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
-    item("", "ti-settings", "Settings", function () { settingsSheet(); }); // David 2026-07-01: the giant menu was overwhelming — the config/rare items (Goals, Guidance, Brain, Away, Redo setup, Test day) now live behind one Settings door
+    item("", "ti-settings", "Settings", function () { youMenu(); }); // ONE menu since 2026-08-20 (the designed You list). The old settingsSheet() is PARKED behind DEV.oldSettings so nothing it held is lost while David designs the rooms. // David 2026-07-01: the giant menu was overwhelming — the config/rare items (Goals, Guidance, Brain, Away, Redo setup, Test day) now live behind one Settings door
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
   }
   // ===== SETTINGS SHEET (David 2026-07-01): one calm home for the config/rare items pulled out of the overwhelming ⋯ menu. Each row opens its own flow. =====
@@ -3239,6 +3239,90 @@
     adv.onclick = function () { var open = advBox.style.display !== "none"; advBox.style.display = open ? "none" : "flex"; adv.classList.toggle("open", !open); };
     add(B, "button", "done2", tr("Done")).onclick = closeSheet;
   }
+  // ===== THE YOU MENU (David's "Settings Menus" frame, ported 2026-08-20 — spec _specs/HOME-PROPORTIONS-AND-YOU-MENU-2026-08-20.md §2,
+  // every value quoted from his pull, none eyeballed). His words: "fix the settings, because right now when you click settings it opens
+  // some old menu I don't like where it says The Vital and it tells me the level of everything. Get rid of that and make it the settings
+  // I designed, at least the main menu. I can design the submenus later."
+  // THE LIST ONLY. The frame's own note says the six rooms behind these rows are still undesigned, so every row opens the app's EXISTING
+  // surface for its concern and nothing new is invented: Profile → langPicker, Sound → the settings card (openVolumePanel, whose own header
+  // already names "the menu's Sound row" as one of its three doors — it DROPS OVER this list rather than replacing it), Data → shareSnapshot,
+  // Guidance → guidanceSheet, Rest mode → the S.away toggle this app has always had (the one row that ACTS instead of navigating, because
+  // its "existing surface" is an inline switch), Advanced → the drawer that keeps every row the old settingsSheet held.
+  // THE VITAL IS PARKED, NOT RETIRED (DECISIONS.md 2026-08-20): characterCard() is unhooked from THIS door only and keeps its other two
+  // (the island's tree, the guardian mirror) plus DEV.vital — David is redesigning it and will attach it to a row later.
+  // ARTBOARD CONFLICT, flagged: the frame is 390x893 while home is pinned to 402x874. The column is pinned at an absolute 390 and centred.
+  // Built node by node and removed whole — no innerHTML wipe, and every sub-line is repainted in place.
+  function youMenu() {
+    if (!(S.profile && S.profile.set)) { onboard(); return; }
+    var old = el("youMenu"); if (old) { try { old.remove(); } catch (e) {} }
+    var ov = add(document.body, "div", "ym-ov"); ov.id = "youMenu";
+    var sc = add(ov, "div", "ym-scroll"), col = add(sc, "div", "ym-col");
+    function close() { try { ov.remove(); } catch (e) {} }
+    var hd = add(col, "div", "ym-head");
+    var xb = add(hd, "button", "ym-x"); add(xb, "i", "ti ti-x"); xb.setAttribute("aria-label", tr("Done")); xb.onclick = close;
+    var gm = add(hd, "div", "ym-gems"); add(gm, "i", "ti ti-diamond"); add(gm, "b", null, ((S.game && S.game.spark) || 0).toLocaleString());
+    var st = youStats();
+    var ti = add(col, "div", "ym-title");
+    add(ti, "div", "ym-h1", tr("You"));
+    add(ti, "div", "ym-rank", tr("rank") + " " + st.rank);
+    var cd = add(col, "div", "ym-card");
+    var ci = add(cd, "div", "ym-cardic"); add(ci, "i", "ti ti-compass");
+    var cb = add(cd, "div", "ym-cardb"), r1 = add(cb, "div", "ym-cardr");
+    add(r1, "div", "ym-cardn", tr("Explorer"));
+    add(r1, "div", "ym-cardgo", tr("another") + " " + st.leftH + " " + tr("h"));
+    var bar = add(cb, "div", "ym-bar"); add(bar, "i").style.width = st.pct + "%";
+    function row(host, mt, bg, ic, icCol, title, sub, fn) { // one 78px card. Returns its sub-line node so a row that acts in place can repaint just that node.
+      var b = add(host, "button", "ym-row"); if (mt != null) b.style.marginTop = mt + "px"; if (bg) b.style.background = bg;
+      var i = add(b, "i", "ti " + ic + " ym-rico"); i.style.color = icCol;
+      var tx = add(b, "span", "ym-rb"); add(tx, "span", "ym-rt", tr(title)); var sl = add(tx, "span", "ym-rs", sub);
+      add(b, "i", "ti ti-chevron-right ym-rchev");
+      b.onclick = function () { try { fn(sl, b); } catch (e) {} };
+      return sl;
+    }
+    function later(fn) { close(); setTimeout(fn, 60); } // let the overlay leave before the next surface draws (the settingsSheet idiom)
+    var _lang = (LANGS.filter(function (L) { return L.code === curLang(); })[0] || LANGS[0]).name;
+    row(col, 21, "#932b69", "ti-user", "#f75ba4", "Profile", tr("wake-up") + " " + ((S.profile && S.profile.wake) || "7:30") + " · " + _lang, function () { later(langPicker); });
+    row(col, 18, "#924f31", "ti-volume", "#ef912c", "Sound", tr("voice") + " · " + tr("beds") + " · " + tr("rewards"), function () { try { openVolumePanel(); } catch (e) {} }); // the card drops OVER the list (z 118/120 vs the menu's 112) — no close
+    var _snapAgo = S.lastSnapK ? daysSinceK(S.lastSnapK) : 12;
+    row(col, 18, "#2f7660", "ti-shield-check", "#3fd98e", "Data", tr("snapshot") + " · " + _snapAgo + " " + tr("days ago"), function (sl) { try { shareSnapshot(); } catch (e) {} S.lastSnapK = todayK(); save(); sl.textContent = tr("snapshot") + " · 0 " + tr("days ago"); });
+    function _gLbl() { var m = ((S.guide && S.guide.mode) || "off"); return tr(m === "guided" ? "Guided" : m === "light" ? "Light" : "Off"); }
+    row(col, 18, "#2c6392", "ti-compass", "#46b0ef", "Guidance", _gLbl(), function () { later(guidanceSheet); });
+    var _awaySub = function () { return S.away ? tr("paused · streaks are held") : tr("travel or off-days · streaks held"); };
+    var _awayRow = null;
+    _awayRow = row(col, 17, "#673999", "ti-moon", "#a86ff0", "Rest mode", _awaySub(), function (sl) {
+      S.away = !S.away; S.awaySince = S.away ? todayK() : null; save();
+      sl.textContent = _awaySub(); toast(S.away ? tr("Resting · your streaks are held") : tr("welcome back · let's ease in"));
+      try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {}
+    });
+    // THE ADVANCED DRAWER. Its dashed edge is the ONE dashed edge in the design and it is DELIBERATE (it marks the expandable dev drawer) —
+    // never "fixed" to a solid border. Everything the old settingsSheet kept behind Advanced lives on here, nothing lost.
+    var adv = add(col, "button", "ym-advrow");
+    add(adv, "i", "ti ti-flask ym-advic"); add(adv, "span", "ym-advlbl", tr("Advanced")); add(adv, "i", "ti ti-chevron-down ym-advchev");
+    var box = add(col, "div", "ym-advbox");
+    adv.onclick = function () { var on = box.classList.toggle("on"); adv.classList.toggle("open", on); };
+    row(box, 0, null, "ti-world", "#ff5fa0", "Language", tr("flat flags, all of them"), function () { later(langPicker); });
+    row(box, null, null, "ti-clock-hour-9", "#36b3f0", "Clock", tr(S.clock24 ? "24-hour" : "12-hour"), function (sl) { S.clock24 = !S.clock24; save(); sl.textContent = tr(S.clock24 ? "24-hour" : "12-hour"); try { renderToday(); } catch (e) {} });
+    var _stormRow = row(box, null, null, "ti-umbrella", "#7f9bc4", S.storm ? "Leave storm mode" : "Storm mode", tr(S.storm ? "bring the full path back" : "when it's too much, we hold the fort"), function (sl, b) {
+      S.storm = !S.storm; save(); toast(S.storm ? "✦ " + tr("We hold the fort. Nothing else.") : "✦ " + tr("welcome back · let's ease in"));
+      var t2 = b.querySelector(".ym-rt"); if (t2) t2.textContent = tr(S.storm ? "Leave storm mode" : "Storm mode");
+      sl.textContent = tr(S.storm ? "bring the full path back" : "when it's too much, we hold the fort");
+      try { drawJourney(true); } catch (e) {}
+    });
+    if (devOn() || (S.badges && Object.keys(S.badges.earned || {}).length)) row(box, null, null, "ti-cards", "#ffc83d", "Your marks", tr("the collection"), function () { later(binderSheet); });
+    if (devOn()) row(box, null, null, "ti-brain", "#36b3f0", "Brain", tr("AI tailoring · bring your own key"), function () { later(brainSheet); });
+    if (devOn()) row(box, null, null, "ti-sparkles", "#b07aff", "Redo setup", tr("re-run onboarding"), function () { later(onboard); });
+    if (devOn()) row(box, null, null, "ti-flask", "#2ab8c4", "Test day", tr("fill a demo day (dev)"), function () { later(fillTestDay); });
+    add(col, "div", "ym-tail");
+    add(ov, "div", "ym-fade");
+    var hp = add(ov, "button", "ym-home"); add(hp, "i", "ti ti-home"); hp.setAttribute("aria-label", tr("Home"));
+    hp.onclick = function () { close(); try { if (!TF_OPEN) openHomeInstant(); } catch (e) {} };
+    if (curLang() !== "en") { try { translateTree(col); } catch (e) {} }
+    return ov;
+  }
+  Object.assign(I18N.ru, { // B4 law: EN source + RU dict in the SAME edit. The You menu reuses the surface's existing lines wherever it can; these five had no RU entry (four are pre-existing gaps the old Advanced rows carried, now closed because this menu emits them).
+    "Home": "Домой", "the collection": "коллекция", "AI tailoring · bring your own key": "настройка ИИ · свой ключ",
+    "fill a demo day (dev)": "заполнить демо-день (dev)", "welcome back · let's ease in": "с возвращением · начнём мягко"
+  });
   // ===== GUIDANCE DIAL (JX-GUIDANCE-TOGGLE, David 2026-06-28): the autonomy knob — Guided / Light / Off. Clones the brainSheet engine-picker idiom (pchips). Default 'off' restores today's behavior + reveals everything; choosing less is framed as leveling up, never desertion. Off silences journey nudges but the engine keeps computing silently. =====
   function guidanceSheet() {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
@@ -5250,7 +5334,7 @@
       var gc = document.createElement("button"); gc.id = "tfHudGarden"; gc.className = "tfh-garden"; gc.setAttribute("aria-label", "Garden"); gc.appendChild(tfhI("ti-leaf")); hud.appendChild(gc);
       var gm = document.createElement("div"); gm.id = "tfHudGems"; gm.className = "tfh-gems"; gm.appendChild(tfhI("ti-diamond-filled")); gm.appendChild(document.createElement("b")); hud.appendChild(gm);
       inner.appendChild(hud);
-      sp.onclick = function (e) { if (e) e.stopPropagation(); try { characterCard(); } catch (e2) {} };                                                              // the guardian mirror's own card (spec §1 — MY inference, David verdicts)
+      sp.onclick = function (e) { if (e) e.stopPropagation(); try { youMenu(); } catch (e2) {} }; // THE YOU MENU (David 2026-08-20: "when you click settings it opens some old menu I don't like where it says The Vital"). The Vital (characterCard) is PARKED, not retired — unhooked from THIS door only; its island-tree and guardian-mirror doors and DEV.vital still reach it, and David will attach it to a menu row once he has designed its room.
       hj.onclick = function (e) { if (e) e.stopPropagation(); tfhGoJourney(); };
       gc.onclick = function (e) { if (e) e.stopPropagation(); if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e2) {} } try { setPaneRest("game"); } catch (e2) {} }; // the app's OWN garden door path (it tears the cockpit down first); a bare openGame() would leave home layered over the world
     } else if (hud.parentNode !== inner) inner.appendChild(hud);
@@ -7907,7 +7991,8 @@
     if (S.audio.bed == null) S.audio.bed = BED_DEFAULT.slice(); /* David 2026-08-20: the background sound default is BIRDS (was the peaceful pad) */
     if (!S.audioMigPad) S.audioMigPad = 1; /* the 2026-07-01 "everyone gets the peaceful pad" one-time migration is SPENT. The flag stays stamped so no save can re-run it, but its WRITE is gone: birds is the default now, and MIG 8→9 turns that un-chosen pad into it. */
     if (S.audio.appMusic == null) S.audio.appMusic = false;
-    if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; } /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */
+    if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; }
+    if (!S.audioMigMusicOff2) { S.audioMigMusicOff2 = 1; S.audio.appMusic = false; } /* David 2026-08-20 device: "get rid of the background sound when using the regular app". The 2026-07-02 mute is SPENT (its flag is stamped on every save), so a save that opted back IN kept the pad forever. A second one-time flag re-mutes those saves once; the toggle in the settings card stays, and session backdrop beds are untouched. */ /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */
     /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */
     TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */
     S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); });
@@ -19139,6 +19224,9 @@
     var b = el("tfHomeBars");
     return { blocks: HC_IDS.map(function (id) { return id + ":" + nm(el(id)); }), cols: b ? [].slice.call(b.children).map(function (c) { return nm(c); }) : [], rows: tcEls().slice(0, 4).map(nm) };
   };
+  window.DEV.you = function () { youMenu(); return "you menu"; };
+  window.DEV.vital = function () { characterCard(); return "the vital (PARKED 2026-08-20 — unhooked from the gear, not deleted; David is redesigning it)"; };
+  window.DEV.oldSettings = function () { settingsSheet(); return "the pre-2026-08-20 settings sheet (PARKED)"; };
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.
     var W = innerWidth, H = innerHeight, out = [], ok = true;
     function chk(name, pass, got, want) { ok = ok && !!pass; out.push((pass ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); }
@@ -19155,6 +19243,24 @@
     // held on one phone. offsetWidth/offsetTop/clientHeight reads need no help: the transform never touches layout.
     var _AS = tfScale();
     function _nr(n) { var b = n.getBoundingClientRect(); return { top: b.top / _AS, bottom: b.bottom / _AS, left: b.left / _AS, right: b.right / _AS, width: b.width / _AS, height: b.height / _AS }; }
+    // THE VIEWPORT-UNIT SENTINEL (David 2026-08-20 "the proportions on my phone are a little off"). Every number in this audit is an
+    // ARTBOARD px and the board is ONE uniform transform-scale, so a gate that passes at 402x874 passes at 440x956 BY CONSTRUCTION —
+    // but only while nothing in the column is viewport-relative. `vh` ignores the transform and resolves against the REAL screen, so a
+    // single vh margin equals the designed pixel at the 874 artboard (where every gate runs, so every gate passes) and inflates ~9% on a
+    // 440x956 phone while every fixed-px element beside it stays put. A gate that can only ever pass is not a gate. _winDecl reads the
+    // CASCADE-WINNING declaration for a property (an OVERRIDDEN vh rule is correctly ignored — the .tf-2c face overrides all three of the
+    // historical ones), which makes this catchable at ANY viewport, with no resize.
+    function _specOf(sel) { var a = (sel.match(/#[\w-]+/g) || []).length, b = (sel.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g) || []).length, c = (sel.replace(/[#.][\w-]+|\[[^\]]*\]|::?[\w-]+(\([^)]*\))?/g, " ").match(/[a-zA-Z][\w-]*/g) || []).length; return a * 10000 + b * 100 + c; }
+    function _winDecl(node, prop) { var best = null, bestSp = -1;
+      function walk(rules) { if (!rules) return; for (var j = 0; j < rules.length; j++) { var r = rules[j]; if (!r) continue;
+          if (r.cssRules && !r.selectorText) { walk(r.cssRules); continue; } // @media / @supports — recurse, the nested rules are live too
+          if (!r.selectorText || !r.style) continue; var v = r.style.getPropertyValue(prop); if (!v) continue;
+          var sels = r.selectorText.split(","); for (var q = 0; q < sels.length; q++) { var sel = sels[q].trim(), hit = false; try { hit = node.matches(sel); } catch (e) { hit = false; }
+            if (!hit) continue; var sp = _specOf(sel) + (r.style.getPropertyPriority(prop) ? 1e6 : 0); if (sp >= bestSp) { bestSp = sp; best = { sel: sel, val: v.trim() }; } } } }
+      for (var i = 0; i < document.styleSheets.length; i++) { var rs = null; try { rs = document.styleSheets[i].cssRules; } catch (e) { rs = null; } walk(rs); }
+      var inl = node.style ? node.style.getPropertyValue(prop) : ""; if (inl) best = { sel: "inline", val: inl.trim() };
+      return best; }
+    var _VPUNIT = /[-+]?[\d.]+\s*(vh|vw|dvh|dvw|svh|svw|lvh|lvw)\b/i;
     var rr = _nr(ring), br = _nr(bars);
     var _dkE = el("tfDateKick"), _dkOn = !!(_dkE && _dkE.offsetParent !== null && _dkE.textContent); // FP3 §1 (2026-07-28): the date kicker now legitimately LIVES in this band — the v2 idle PNG reads strip → date line → circle. The 7-12% window predates it, so it only applies when the kicker is absent; with the kicker rendered the band is 7-16%. Kept as ONE gate (not two segments) so it stays cheap and cannot drift out of sync with the kicker being show/hidden.
     // THE 402 BOARD PIN (David's device frames 2026-08-14). On the 2c face the board is now the design's ABSOLUTE pixels inside a 402px
@@ -19394,6 +19500,19 @@
     var _fi = _gf && _gf.querySelector("i"), _fcol = _fi ? getComputedStyle(_fi).color : "missing";
     chk("flower glyph + purple", !!_fi && _fi.classList.contains("ti-flower") && _fcol === "rgb(169, 93, 255)", (_fi ? _fi.className : "missing") + " · " + _fcol, "ti ti-flower · rgb(169, 93, 255)");
     chk("flower 64px (the coins read as its children)", !!_gf && getComputedStyle(_gf).width === "64px", _gf ? getComputedStyle(_gf).width : "missing", "64px");
+    // ===== GEOMETRY GATES (2026-08-20). The four spacings that set the home column's rhythm, as ABSOLUTE artboard px, plus the sentinel
+    // that proves they stay that way. Together these are what make one run at 402x874 a statement about 440x956 too.
+    if (_2c) {
+      var _ctrls = document.querySelector("#trackerFull .tf-ctrls"), _grnd = document.querySelector("#trackerFull .tfw-ground");
+      var _lock = [[bars, "margin-top", 40], [bars, "margin-bottom", 0], [ring, "margin-top", 72], [_ctrls, "margin-top", 18], [_grnd, "margin-top", -52]];
+      var _lockBad = [];
+      _lock.forEach(function (t) { if (!t[0]) { _lockBad.push(t[1] + " (node missing)"); return; } var got = parseFloat(getComputedStyle(t[0])[t[1].replace(/-(\w)/g, function (m, c) { return c.toUpperCase(); })]) || 0; if (Math.abs(got - t[2]) > 0.6) _lockBad.push((t[0].id || t[0].className) + " " + t[1] + " " + Math.round(got * 10) / 10 + " (want " + t[2] + ")"); });
+      chk("home column rhythm is absolute artboard px", !_lockBad.length, _lockBad.length ? _lockBad.join(" · ") : "strip 40/0 · stone 72 · tools 18 · ground -52", "strip margin 40 above / 0 below · stone margin-top 72 · .tf-ctrls margin-top 18 · .tfw-ground margin-top -52 — the 2026-08-14 RHYTHM numbers, identical on every viewport");
+      var _vpBad = [];
+      [[bars, "margin-top"], [bars, "margin-bottom"], [ring, "margin-top"], [ring, "width"], [ring, "height"], [_ctrls, "margin-top"], [_grnd, "margin-top"], [document.querySelector("#trackerFull .tf-verdict"), "max-width"], [document.querySelector("#trackerFull .tf-nextup"), "max-width"]].forEach(function (t) {
+        if (!t[0]) return; var d = _winDecl(t[0], t[1]); if (d && _VPUNIT.test(d.val)) _vpBad.push(t[1] + ": " + d.val + "  {" + d.sel + "}"); });
+      chk("NO viewport units in the home column (the 440x956 drift class)", !_vpBad.length, _vpBad.length ? _vpBad.join(" · ") : "every winning declaration is absolute px", "no vh/vw/dvh in the cascade-winning strip/stone/tools/ground declarations — a vh here reads the phone, not the artboard, and passes at 402x874 by construction");
+    }
     var _sheets = ["groveSheet", "virtueSheet", "goalSheet", "storeSheet"], _alpha = [], _snap = [];
     _sheets.forEach(function (id) { var s = el(id); if (!s) { _alpha.push(id + ":missing"); _snap.push(id + ":missing"); return; }
       var bg = getComputedStyle(s).backgroundColor; if (bg.indexOf("rgba") >= 0) _alpha.push(id + ":" + bg);
@@ -19405,7 +19524,12 @@
     });
     chk("garden sheets OPAQUE (no alpha)", !_alpha.length, _alpha.length ? _alpha.join(" ") : "all rgb()", "rgb(22, 7, 20) on all four, never rgba");
     chk("garden sheets rest at the PARTIAL snap", !_snap.length, _snap.length ? _snap.join(" ") : "all " + Math.round(window.innerHeight * 0.38) + "px", "38% of viewport (" + Math.round(window.innerHeight * 0.38) + "px), gv-exp off");
-    return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
+    // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
+    // board is one uniform scale of a 402x874 artboard, so with the sentinel above passing, every artboard px in this report renders at
+    // x(scale) on the other phone and the PROPORTIONS are identical — that projection is what the two runs verify empirically.
+    var _other = (Math.abs(W - 440) < 1 && Math.abs(H - 956) < 1) ? { w: 402, h: 874 } : { w: 440, h: 956 };
+    var _geo = "GEOMETRY " + W + "x" + H + " · artboard 402x874 · scale " + _AS.toFixed(4) + " · board " + Math.round(402 * _AS) + "px · the other phone (" + _other.w + "x" + _other.h + ") renders these same artboard px at scale " + (Math.min(1.15, Math.max(1, _other.w / 402))).toFixed(4);
+    return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + " · " + _geo + "\n" + out.join("\n");
   };
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
   window.DEV.isleSize = function (r2) { var S = new Set(); var R = r2 || 13; for (var i = -8; i <= 8; i++) for (var j = -8; j <= 8; j++) if (i * i + j * j <= R) S.add(tkey(i, j)); ISLE = { tiles: S, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 0) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; return "island set to " + S.size + " tiles (r2=" + R + ")"; }; // DEV: set island to a radius^2 for proportion checks (small/med/large)
@@ -19891,7 +20015,7 @@
   var TUNER_FIELDS = [
     { k: "ringVw", lbl: "Circle size", min: 45, max: 90, step: 1, def: 52, unit: "vw", vars: function (v) { return { "--tun-ring-vw": v + "vw" }; } }, // THE HERO CIRCLE size — tuner starts at the current default (52vw; David 2026-07-23 "circle way too giant even at 64"). Drag on real pixels, then send me the value to lock.
     { k: "gridW", lbl: "Tools size", min: 38, max: 90, step: 1, def: 56, unit: "vw", vars: function (v) { return { "--tun-grid-w": v + "vw" }; } }, // the tool row width — narrower = smaller tiles (David "buttons below smaller")
-    { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 16, step: 1, def: 5, unit: "vh", vars: function (v) { return { "--tun-tools-gap": v + "vh" }; } }, // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
+    { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 140, step: 2, def: 44, unit: "px", vars: function (v) { return { "--tun-tools-gap": v + "px" }; } }, // ARTBOARD px, not vh (2026-08-20). The def MUST track the CSS fallback (the doorCY law two rows down) — the fallback is now 43.7px, so a vh here would have let tunerApply silently re-plant the viewport-relative value on every dev boot // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
     { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
     { k: "doorH", lbl: "Door height", min: 56, max: 160, step: 2, def: 80, unit: "px", vars: function (v) { return { "--tun-door-h": v + "px" }; } },
     { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 23, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } }, // DOORS-TRACK-THE-STRIP (David 2026-07-27): CSS default moved 32→23dvh when the face rose — the def must track the CSS fallback or tunerApply un-fixes it for dev users (v1225's lesson). Was 23→32 on 2026-07-23 (DOORS-DOWN) while the strip still sat low.
