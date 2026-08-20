@@ -113,3 +113,12 @@ The exact complement of item G. G made `tbxDoseScroll()` PRESERVE `scrollLeft` a
 
 Fix: when the dose card is built and no scroll position is being restored, scroll the row so the SELECTED chip is in view. Centre it if the row can scroll that far, otherwise clamp to the ends (a chip near either end must not leave dead space). Do not fight the G restore — restore wins when there is a saved position, this only fills the first-open case. Same rule applies to both dose cards now that the non-2c one was unified in v1317.
 Keep the v1313 axis lock (`overflow-y:hidden; touch-action:pan-x`) intact.
+
+## K. CHANGE · kill the app-wide background music, and the quit sound effect
+David 2026-08-20: *"please get rid of the background sound when using the regular app, and that sound effect when you quit the app."*
+
+Two separate things, both currently ON by default:
+1. **APP BACKGROUND MUSIC** (`grep -n "APP BACKGROUND MUSIC" app.js`, added 2026-07-01): the peaceful pad drifting under the WHOLE app at a low level, auto-pausing when a player opens, routed into `_bgBus`. Its toggle lives in the new settings card's APP block (`grep -n "App background music" app.js`). David wants it gone as an ambient default — it is NOT the same thing as a session's backdrop bed, which he likes and which stays. Decide with him whether to (a) default it OFF and keep the toggle, or (b) delete the feature. **Default OFF is the smaller, reversible move and is the recommendation** — his words are "get rid of the background sound when using the REGULAR app", i.e. outside sessions, which default-off achieves without destroying a feature he may want later.
+2. **THE QUIT SOUND EFFECT** — `sfx()` (`grep -n "function sfx" app.js`) already self-guards inside a session (`if (document.getElementById("breatheOv")) return;`) and honours `S.audio.sfx === false`. Find the one fired on leaving/closing the app or the player and remove that call specifically. Do not blanket-disable `sfx()` — other cues (charge, completion) may be wanted; David named only the quit sound.
+
+Both are audio defaults, so verify by measurement (no live source on `_bgBus` outside a session; no sfx call on the quit path), and note that FEEL cannot be judged in the preview.
