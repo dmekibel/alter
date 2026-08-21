@@ -754,8 +754,10 @@
   #breatheOv.gp-ov .gp-knob{width:19px;height:19px;}
   #breatheOv.gp-ov .gp-ticks i{top:0;height:100%;width:3px;border-radius:0;transform:none;background:#170a15;} /* ref: the ticks are dark CELL GAPS cutting THROUGH the fill (battery cells), invisible on the empty track */
   #breatheOv.gp-ov .gp-play{width:92px;height:92px;font-size:34px;border:3px solid #160510;box-shadow:0 6px 0 #160510;color:#160510 !important;} /* ref: bigger disc, ink ring, INK pause glyph, chunky shadow */
-  #breatheOv.gp-ov .bw-label{font-family:"Jost",sans-serif;font-size:21px;line-height:1.3;color:#fff2f9;max-width:82vw;text-align:center;margin-top:40px;}
-  #breatheOv.gp-ov .bw-sub{max-width:82vw;text-align:center;font-size:21px;line-height:1.3;color:#e7d9f2;font-weight:600;margin-top:8px;} /* SAME size as the label — one uniform cue size, no big/small split (David 2026-07-13); hierarchy from color, not size */
+  /* ONE FORMATTING (David on device 2026-08-21: "the top line of the text is more bold while the bottom line is less bold, should be one formatting"). The cue's two halves were Jost 800 over Baloo 2 600 — a different FAMILY and a different WEIGHT, not just a tint. The 2026-07-13 pass unified the SIZE only and left the split in the type, which is why it still read as two different things. They now share ONE declaration, so neither half can drift from the other again; only the margins differ. */
+  #breatheOv.gp-ov .bw-label,#breatheOv.gp-ov .bw-sub{font-family:"Jost",sans-serif;font-size:21px;font-weight:800;line-height:1.3;color:#fff2f9;max-width:82vw;text-align:center;}
+  #breatheOv.gp-ov .bw-label{margin-top:40px;}
+  #breatheOv.gp-ov .bw-sub{margin-top:8px;}
   #breatheOv.gp-ov .bw-cap{top:calc(50% + 126px);} /* the composed player's orb is bigger — hang the cue line lower so it clears the resting orb (still never moves it) */
   #breatheOv.gp-ov .gp-knob{background:#ff5fa8;box-shadow:0 0 8px rgba(255,95,168,.8);}
   #breatheOv.gp-ov .gp-times{align-items:center;}
@@ -4180,6 +4182,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1343"></script>
+  <script src="app.js?v=1353"></script>
 </body>
 </html>

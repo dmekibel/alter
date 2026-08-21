@@ -1938,6 +1938,15 @@
     { t: "The Fundamentals",   why: "Eat, move, sleep, breathe. The floor everything else stands on.", ic: "ti-heart-rate-monitor" },
     { t: "Soul Force",         why: "Live it. The record now shows who you actually are.", ic: "ti-star" }
   ];
+  Object.assign(I18N.ru, { // THE EIGHT WHY-LINES under the chapter titles. All eight TITLES were translated and all eight SUBTITLES were not, so the RU trail read a Russian heading over an English sentence. B4 law, in place; found by the registry sweep in DEV.ruAudit, not by David.
+    "See who you're becoming, then just show up. Showing up is the first proof.": "\u0423\u0432\u0438\u0434\u044c, \u043a\u0435\u043c \u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0448\u044c\u0441\u044f, \u0438 \u043f\u0440\u043e\u0441\u0442\u043e \u043f\u0440\u0438\u0445\u043e\u0434\u0438. \u0422\u043e, \u0447\u0442\u043e \u0442\u044b \u043f\u0440\u0438\u0448\u0451\u043b, \u0443\u0436\u0435 \u043f\u0435\u0440\u0432\u043e\u0435 \u0434\u043e\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e.",
+    "Name who you are at your best. Every day you get to vote for him.": "\u041d\u0430\u0437\u043e\u0432\u0438 \u0441\u0435\u0431\u044f \u0432 \u043b\u0443\u0447\u0448\u0435\u0439 \u0444\u043e\u0440\u043c\u0435. \u041a\u0430\u0436\u0434\u044b\u0439 \u0434\u0435\u043d\u044c \u0442\u044b \u0433\u043e\u043b\u043e\u0441\u0443\u0435\u0448\u044c \u0437\u0430 \u043d\u0435\u0433\u043e.",
+    "What you're avoiding shrinks the second you name it and take one step.": "\u0422\u043e, \u0447\u0435\u0433\u043e \u0442\u044b \u0438\u0437\u0431\u0435\u0433\u0430\u0435\u0448\u044c, \u0443\u043c\u0435\u043d\u044c\u0448\u0430\u0435\u0442\u0441\u044f \u0432 \u0442\u0443 \u0441\u0435\u043a\u0443\u043d\u0434\u0443, \u043a\u043e\u0433\u0434\u0430 \u0442\u044b \u043d\u0430\u0437\u044b\u0432\u0430\u0435\u0448\u044c \u044d\u0442\u043e \u0438 \u0434\u0435\u043b\u0430\u0435\u0448\u044c \u0448\u0430\u0433.",
+    "Energy, work, love. One honest move in each and the day has a shape.": "\u042d\u043d\u0435\u0440\u0433\u0438\u044f, \u0440\u0430\u0431\u043e\u0442\u0430, \u043b\u044e\u0431\u043e\u0432\u044c. \u041f\u043e \u043e\u0434\u043d\u043e\u043c\u0443 \u0447\u0435\u0441\u0442\u043d\u043e\u043c\u0443 \u0448\u0430\u0433\u0443 \u0432 \u043a\u0430\u0436\u0434\u043e\u0439, \u0438 \u0443 \u0434\u043d\u044f \u043f\u043e\u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u0444\u043e\u0440\u043c\u0430.",
+    "A day worth repeating: aim it in the morning, close it at night.": "\u0414\u0435\u043d\u044c, \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u0441\u0442\u043e\u0438\u0442 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c: \u043d\u0430\u0446\u0435\u043b\u044c \u0435\u0433\u043e \u0443\u0442\u0440\u043e\u043c, \u0437\u0430\u043a\u0440\u043e\u0439 \u0432\u0435\u0447\u0435\u0440\u043e\u043c.",
+    "Make the good things run on their own, especially on the boring days.": "\u0421\u0434\u0435\u043b\u0430\u0439 \u0442\u0430\u043a, \u0447\u0442\u043e\u0431\u044b \u0445\u043e\u0440\u043e\u0448\u0435\u0435 \u0448\u043b\u043e \u0441\u0430\u043c\u043e, \u043e\u0441\u043e\u0431\u0435\u043d\u043d\u043e \u0432 \u0441\u043a\u0443\u0447\u043d\u044b\u0435 \u0434\u043d\u0438.",
+    "Eat, move, sleep, breathe. The floor everything else stands on.": "\u0415\u0434\u0430, \u0434\u0432\u0438\u0436\u0435\u043d\u0438\u0435, \u0441\u043e\u043d, \u0434\u044b\u0445\u0430\u043d\u0438\u0435. \u041f\u043e\u043b, \u043d\u0430 \u043a\u043e\u0442\u043e\u0440\u043e\u043c \u0441\u0442\u043e\u0438\u0442 \u0432\u0441\u0451 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u043e\u0435.",
+    "Live it. The record now shows who you actually are.": "\u0416\u0438\u0432\u0438 \u044d\u0442\u043e. \u0417\u0430\u043f\u0438\u0441\u044c \u0442\u0435\u043f\u0435\u0440\u044c \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u043a\u0442\u043e \u0442\u044b \u043d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435." });
   var JP_WORLDS = [ // JOURNEY WORLDS (David 2026-07-03 epic: "colorful and exciting and mysterious"): each chapter is a BIOME with its own jewel hue — the future glows in color, never gray. Aligned 1:1 with JP_CHAPTERS.
     { c: "#ff8a3a", g: "#3a1a08" },  // I    Ember — why you're here
     { c: "#b07aff", g: "#241038" },  // II   Starlight — who you are
@@ -11983,6 +11992,10 @@
   // phases: [{ label, ms, kind, name?, si?, c?, cyc?, cycle? }] · kind ∈ in | in2 | hold | out | rest
   function breathLevelTo(kind, from) { return kind === "in" ? 1 : kind === "in2" ? 1.14 : kind === "out" ? 0 : from; } // hold/rest CARRY the level they arrived with — that carrying IS the hold
   var BREATH_PHASE_WORD = { in: "Inhale", in2: "Inhale", hold: "Hold", out: "Exhale", rest: "Rest" }; // THE EXPLICIT INDICATOR's canonical word. A pattern's own label reads "Long exhale" / "Breathe in, left" / "Hold empty"; this never varies, so the answer to "am I inhaling, holding or exhaling" is always in the same place in the same four words.
+  Object.assign(I18N.ru, { // THE PHASE WORDS a pattern prints under the visual (David on device 2026-08-21: the RU player was still saying "Long exhale" / "Hold empty" / "Breathe in, left"). Extended in place per the B4 law; the canonical four (Inhale/Exhale/Hold/Rest) were already in the dict, only the patterns' OWN labels were missing. Register matched to those four: a bare noun phrase, no pronoun.
+    "and a little more": "\u0438 \u0435\u0449\u0451 \u043d\u0435\u043c\u043d\u043e\u0433\u043e", "Long exhale": "\u0414\u043e\u043b\u0433\u0438\u0439 \u0432\u044b\u0434\u043e\u0445", "Hold empty": "\u0417\u0430\u0434\u0435\u0440\u0436\u0438 \u043d\u0430 \u0432\u044b\u0434\u043e\u0445\u0435", "Breathe out slowly": "\u041c\u0435\u0434\u043b\u0435\u043d\u043d\u044b\u0439 \u0432\u044b\u0434\u043e\u0445",
+    "Breathe in, left": "\u0412\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043b\u0435\u0432\u0443\u044e", "Breathe out, right": "\u0412\u044b\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043f\u0440\u0430\u0432\u0443\u044e", "Breathe in, right": "\u0412\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043f\u0440\u0430\u0432\u0443\u044e", "Breathe out, left": "\u0412\u044b\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043b\u0435\u0432\u0443\u044e",
+    "Let it go": "\u041e\u0442\u043f\u0443\u0441\u0442\u0438", "Breathe out, hold empty": "\u0412\u044b\u0434\u043e\u0445\u043d\u0438 \u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u0438", "Big breath in, hold": "\u0413\u043b\u0443\u0431\u043e\u043a\u0438\u0439 \u0432\u0434\u043e\u0445, \u0437\u0430\u0434\u0435\u0440\u0436\u0438" });
   function makeBreathClock(phases) {
     var ph = [], i;
     for (i = 0; i < (phases || []).length; i++) if (phases[i] && phases[i].ms > 0) ph.push(phases[i]);
@@ -12528,6 +12541,8 @@
       pool: ["Bring your attention back to the body. The weight, the contact, the sounds around you.", "And in your own time, gently open your eyes."] }
   };
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
+  Object.assign(I18N.ru, { // THE SECTION NAMES the player prints as its sub-line (the six that had no RU: the sit was Russian, its section label was not). B4 law, in place. Nouns, matching the ones already in the dict (Settle/Awareness/Rest).
+    "Stillness": "\u0422\u0438\u0448\u0438\u043d\u0430", "Count": "\u0421\u0447\u0451\u0442", "Note": "\u041e\u0442\u043c\u0435\u0447\u0430\u043d\u0438\u0435", "Sounds": "\u0417\u0432\u0443\u043a\u0438", "Feeling": "\u041e\u0449\u0443\u0449\u0435\u043d\u0438\u0435", "Look": "\u0412\u0437\u0433\u043b\u044f\u0434", "Open": "\u041e\u0442\u043a\u0440\u044b\u0442\u043e\u0441\u0442\u044c" });
   // SESSIONS (arcs): beginner/intermediate/advanced = ordered blocks with time weights. The engine allocates the chosen length across the blocks by weight, so a long sit stays ON the block's technique instead of looping the last 3 lines (the retired tail hack). Adding a new session or the missing heart/love block is a data edit, not an engine change.
   // MED LANES (David 2026-07-14, SPIRITUAL-PROGRESSION-CANON "MEDITATION LANE SYSTEM"): depth is a CONSCIOUS lane choice, never a length side-effect. The user picks the lane = their ceiling; length only deepens WITHIN the lane by walking its spine block's tiered pool further (one-shot authored-order fill). Each lane = settle -> brief breath anchor -> its heavily-weighted SPINE block (tiered along that lane's canon ladder) -> close. Keys are UI-facing lanes now (was anchor/explore/open/heart); `concentration` is the default. `gated:true` = Insight (opt-in + energy-door suppressed, see the picker).
   var MED_SESSIONS = {
@@ -16169,7 +16184,7 @@
     for (var k = out.length - 1; k > 0; k--) { if (out[k].split(/\s+/).length <= 1 && out[k].length <= 8) { out[k - 1] = out[k - 1] + " " + out[k]; out.splice(k, 1); } } // merge a lone tiny orphan ("love.") back into the previous caption
     return out.length ? out : [text];
   }
-  function medSeg(ln, gap, subName, act) { var caps = capSplit(ln); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles
+  function medSeg(ln, gap, subName, act) { var caps = capSplit(tr(ln)); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles. TRANSLATE-THEN-SPLIT (David on device 2026-08-21, "sometimes the text is English when it should be in Russian"): the caption is cut from the LOCALIZED line, never from the English one. translateTree can only translate a DICT KEY, and a chunk is not a key — splitting first meant every fully-translated long line still printed English on screen while the voice spoke Russian. `text` stays the EN line: it is the voice clip's key (TTS localizes it itself via vline).
   // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The player takes as many moves as the chosen time needs (never loops, never stretches 3 over 2 min) — more time = more moves, each a held ~13s. Both gates passed. Add moves here to deepen (a data edit).
   var STRETCH_MOVES = [
     ["Reach for the ceiling", "stand tall, both arms long and slow"],
@@ -16187,6 +16202,32 @@
     ["And twist the other way", "easy, all the way around"],
     ["Clasp your hands behind you and lift your chest", "open the front of the shoulders"]
   ];
+  Object.assign(I18N.ru, { // THE STRETCH FLOW's own move lines (David on device 2026-08-21: the RU player printed all 14 moves in English). B4 law, in place. Register matched to the relax cues already in the dict: the move is an imperative to ты, its second half a lowercase continuation. These lines have NO RU voice clip either way (hasClip is false with or without this entry), so nothing that is audible today goes silent — the screen simply stops speaking English. They are now dict keys, so the next RU voice-gen pass picks them up.
+    "Reach for the ceiling": "\u041f\u043e\u0442\u044f\u043d\u0438\u0441\u044c \u043a \u043f\u043e\u0442\u043e\u043b\u043a\u0443",
+    "stand tall, both arms long and slow": "\u0432\u0441\u0442\u0430\u043d\u044c \u043f\u0440\u044f\u043c\u043e, \u043e\u0431\u0435 \u0440\u0443\u043a\u0438 \u0432\u044b\u0442\u044f\u043d\u0443\u0442\u044b, \u043c\u0435\u0434\u043b\u0435\u043d\u043d\u043e",
+    "hang heavy, let the neck and arms go": "\u043f\u043e\u0432\u0438\u0441\u043d\u0438 \u0442\u044f\u0436\u0435\u043b\u043e, \u043e\u0442\u043f\u0443\u0441\u0442\u0438 \u0448\u0435\u044e \u0438 \u0440\u0443\u043a\u0438",
+    "stack the spine, head comes up last": "\u0441\u043e\u0431\u0438\u0440\u0430\u0439 \u043f\u043e\u0437\u0432\u043e\u043d\u043e\u043a \u0437\u0430 \u043f\u043e\u0437\u0432\u043e\u043d\u043a\u043e\u043c, \u0433\u043e\u043b\u043e\u0432\u0430 \u043f\u043e\u0434\u043d\u0438\u043c\u0430\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0439",
+    "big and slow, a few times around": "\u0448\u0438\u0440\u043e\u043a\u043e \u0438 \u043c\u0435\u0434\u043b\u0435\u043d\u043d\u043e, \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043a\u0440\u0443\u0433\u043e\u0432",
+    "Drop one ear toward your shoulder": "\u041d\u0430\u043a\u043b\u043e\u043d\u0438 \u0443\u0445\u043e \u043a \u043f\u043b\u0435\u0447\u0443",
+    "let the weight of your head do the work": "\u043f\u0443\u0441\u0442\u044c \u0432\u0435\u0441 \u0433\u043e\u043b\u043e\u0432\u044b \u0441\u0434\u0435\u043b\u0430\u0435\u0442 \u0432\u0441\u0451 \u0441\u0430\u043c",
+    "Now the other side": "\u0422\u0435\u043f\u0435\u0440\u044c \u0434\u0440\u0443\u0433\u0430\u044f \u0441\u0442\u043e\u0440\u043e\u043d\u0430",
+    "just as slow": "\u0442\u0430\u043a \u0436\u0435 \u043c\u0435\u0434\u043b\u0435\u043d\u043d\u043e",
+    "Pull one arm across your chest": "\u041f\u043e\u0442\u044f\u043d\u0438 \u0440\u0443\u043a\u0443 \u043f\u043e\u043f\u0435\u0440\u0451\u043a \u0433\u0440\u0443\u0434\u0438",
+    "hold it, and feel the shoulder open": "\u0434\u0435\u0440\u0436\u0438 \u0438 \u043f\u043e\u0447\u0443\u0432\u0441\u0442\u0432\u0443\u0439, \u043a\u0430\u043a \u0440\u0430\u0441\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u043f\u043b\u0435\u0447\u043e",
+    "Switch arms": "\u0421\u043c\u0435\u043d\u0438 \u0440\u0443\u043a\u0443",
+    "same easy hold on the other side": "\u0442\u0430 \u0436\u0435 \u043b\u0451\u0433\u043a\u0430\u044f \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0441 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b",
+    "Press your palms forward and round your back": "\u0412\u044b\u0442\u044f\u043d\u0438 \u043b\u0430\u0434\u043e\u043d\u0438 \u0432\u043f\u0435\u0440\u0451\u0434 \u0438 \u043e\u043a\u0440\u0443\u0433\u043b\u0438 \u0441\u043f\u0438\u043d\u0443",
+    "open the space between the shoulder blades": "\u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043c\u0435\u0436\u0434\u0443 \u043b\u043e\u043f\u0430\u0442\u043a\u0430\u043c\u0438",
+    "Reach up and lean to one side": "\u041f\u043e\u0442\u044f\u043d\u0438\u0441\u044c \u0432\u0432\u0435\u0440\u0445 \u0438 \u043d\u0430\u043a\u043b\u043e\u043d\u0438\u0441\u044c \u0432 \u0441\u0442\u043e\u0440\u043e\u043d\u0443",
+    "a long stretch down your ribs": "\u0434\u043b\u0438\u043d\u043d\u043e\u0435 \u0432\u044b\u0442\u044f\u0436\u0435\u043d\u0438\u0435 \u0432\u0434\u043e\u043b\u044c \u0440\u0451\u0431\u0435\u0440",
+    "And lean the other way": "\u0418 \u043d\u0430\u043a\u043b\u043e\u043d\u0438\u0441\u044c \u0432 \u0434\u0440\u0443\u0433\u0443\u044e \u0441\u0442\u043e\u0440\u043e\u043d\u0443",
+    "keep breathing into it": "\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439 \u0442\u0443\u0434\u0430 \u0434\u044b\u0448\u0430\u0442\u044c",
+    "Twist slowly to look behind you": "\u041c\u0435\u0434\u043b\u0435\u043d\u043d\u043e \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0438\u0441\u044c, \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0438 \u043d\u0430\u0437\u0430\u0434",
+    "let your eyes lead the turn": "\u043f\u0443\u0441\u0442\u044c \u0433\u043b\u0430\u0437\u0430 \u0432\u0435\u0434\u0443\u0442 \u043f\u043e\u0432\u043e\u0440\u043e\u0442",
+    "And twist the other way": "\u0418 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0438\u0441\u044c \u0432 \u0434\u0440\u0443\u0433\u0443\u044e \u0441\u0442\u043e\u0440\u043e\u043d\u0443",
+    "easy, all the way around": "\u0441\u043f\u043e\u043a\u043e\u0439\u043d\u043e, \u0434\u043e \u043a\u043e\u043d\u0446\u0430",
+    "Clasp your hands behind you and lift your chest": "\u0421\u0446\u0435\u043f\u0438 \u0440\u0443\u043a\u0438 \u0437\u0430 \u0441\u043f\u0438\u043d\u043e\u0439 \u0438 \u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u0433\u0440\u0443\u0434\u044c",
+    "open the front of the shoulders": "\u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u043d\u044e\u044e \u043f\u043e\u0432\u0435\u0440\u0445\u043d\u043e\u0441\u0442\u044c \u043f\u043b\u0435\u0447" });
   function stretchMoveSegs(secs, tag) { // fill `secs` with as many DISTINCT moves as it needs (never looped); more time = more moves, each held; long time lengthens the holds rather than repeating. Returns timelinePlayer segments.
     secs = Math.max(30, secs || 75);
     var _per = PK.speechEst + PK.held;                        // one move = the spoken cue + its short hold
@@ -19258,12 +19299,12 @@
 
   window.DEV.auditAll = function () { // ONE entry point. Runs every surface's audit and says plainly which it could not reach.
     var parts = [], tot = 0, bad = 0, skipped = [];
-    [["home board", window.DEV.designAudit], ["settings tail", window.DEV.notchAudit]].forEach(function (a) {
+    [["home board", window.DEV.designAudit], ["settings tail", window.DEV.notchAudit], ["language", function () { return window.DEV.ruAudit(600); }]].forEach(function (a) {
       var r; try { r = a[1](); } catch (e) { r = "ERR " + e.message; }
       var txt = String(r);
       if (txt.indexOf("PASS") < 0 && txt.indexOf("FAIL") < 0) { skipped.push(a[0] + " — " + txt.slice(0, 90)); return; }
       var lines = txt.split("\n"), p = 0, f = 0;
-      lines.forEach(function (l) { if (/^PASS/.test(l.trim())) p++; else if (/^FAIL/.test(l.trim())) f++; });
+      lines.forEach(function (l) { var t = l.trim(); if (/^PASS · /.test(t)) p++; else if (/^FAIL · /.test(t)) f++; }); // " · " is required: a gate line always has it, and the summary HEADER "FAILURES PRESENT" does not — without it the header counted itself as a ninth failing gate and every tail failure was reported as two.
       tot += p + f; bad += f;
       parts.push((f ? "FAIL " : "ok   ") + a[0] + " · " + p + " pass / " + f + " fail");
     });
@@ -19298,6 +19339,49 @@
     n.setAttribute("style", saved);
     return (blind ? blind + " GATE(S) CANNOT FAIL — they are decoration" : "every probed gate catches its own break") +
       "\n" + out.join("\n");
+  };
+
+  window.DEV.tr = function (t) { return tr(t); };                 // what the dict answers for one exact string
+  window.DEV.dict = function () { return I18N[curLang()] || {}; }; // the live dictionary, for counting/searching
+  window.DEV.ruAudit = function (secs) { // WHAT WILL PRINT IN ENGLISH while the app runs in another language.
+    // The player prints `label` / `caps[]` / `sub`. translateTree can only translate a string that is a DICT KEY —
+    // and a caption CHUNK is not a key, because capSplit cut it out of a whole line. So a line that IS translated
+    // still printed English the moment it was long enough to be chunked (David on device 2026-08-21: "sometimes the
+    // text is English when it should be in Russian"). This composes every guided tool through the SHIPPING composer
+    // and reports every string that would reach the screen untranslated. A leak here = a leak on his phone.
+    if (curLang() === "en") return "ruAudit: English IS the source language, nothing to translate (switch to Русский and re-run)";
+    var d = secs || 120, out = [], seen = {}, ids = Object.keys(STACK_CONTENT), chunks = 0, lines = 0, checked = 0;
+    function look(kind, id, t) {
+      t = (t == null ? "" : "" + t).trim();
+      if (!t || !/[a-zA-Z]{3,}/.test(t)) return;      // nothing latin to leak
+      var k = kind + "|" + t; if (seen[k]) return; seen[k] = 1;
+      checked++;
+      if (tr(t) !== t) return;                        // the dict answers it → the observer translates it on paint
+      if (kind === "chunk") chunks++; else lines++;
+      out.push("   " + kind + " · " + id + " · " + t.slice(0, 78));
+    }
+    ids.forEach(function (id) {
+      var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }, { k: "aware" }, { k: "rest" }] : undefined;
+      var r; try { r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: d, med: med }]); } catch (e) { out.push("ERR   · " + id + " · " + e.message); return; }
+      (r.segs || []).forEach(function (s) {
+        if (s.caps && s.caps.length > 1) s.caps.forEach(function (c) { look("chunk", id, c); });
+        else look("line ", id, s.label);
+        look("line ", id, s.sub);
+      });
+      (r.acts || []).forEach(function (a) { if (a.name !== id) look("line ", id, a.name); }); // the synthetic nm we pass in is not a real act name
+    });
+    // THE REGISTRY SWEEP — composing at one dose only reaches the lines that dose happens to select. These are the
+    // pools themselves, so a line that only surfaces on a 40-minute sit is audited at the same time as the first cue.
+    try { STRETCH_MOVES.forEach(function (m) { look("line ", "stretch", m[0]); look("line ", "stretch", m[1]); }); } catch (e) {}
+    try { Object.keys(MED_SEC).forEach(function (k) { var d2 = MED_SEC[k]; if (!d2) return; look("line ", "medSec:" + k, d2.name); (d2.lines || []).forEach(function (l) { look("line ", "medSec:" + k, l); }); }); } catch (e) {}
+    try { Object.keys(MED_BLOCKS).forEach(function (k) { var b = MED_BLOCKS[k]; if (!b) return; look("line ", "medBlock:" + k, b.name); look("line ", "medBlock:" + k, b.entry); (b.pool || []).forEach(function (l) { look("line ", "medBlock:" + k, l); }); }); } catch (e) {}
+    try { Object.keys(BREATH_PATTERNS).forEach(function (k) { var P = BREATH_PATTERNS[k]; if (!P) return; look("line ", "breath:" + k, P.name); (P.ph || []).forEach(function (ph) { look("line ", "breath:" + k, ph[0]); }); }); } catch (e) {}
+    try { JP_CHAPTERS.forEach(function (c, i) { look("line ", "chapter:" + i, c.t); look("line ", "chapter:" + i, c.why); }); } catch (e) {} // not the player, but the same failure: eight translated titles over eight untranslated subtitles
+    // ONE gate line so DEV.auditAll can count this like every other surface; the leaks themselves are detail below it.
+    return (out.length
+      ? "FAIL · every player string resolves in " + curLang().toUpperCase() + " · got " + out.length + " still in English (" + chunks + " caption chunks, " + lines + " whole lines) of " + checked + " checked"
+      : "PASS · every player string resolves in " + curLang().toUpperCase() + " · " + checked + " strings checked across " + ids.length + " tools at " + d + "s · want zero Latin reaching the screen while the app is not in English") +
+      (out.length ? "\n" + out.join("\n") : "");
   };
 
   window.DEV.notchAudit = function () { // THE SETTINGS CARD'S TAIL — gated, because four rounds of eyeballing it failed.
@@ -19367,7 +19451,7 @@
     var lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs), liveX = xs.length ? xs[xs.length - 1] : null;
     return { cap: n.cap, pushMs: n.push, samples: n.pts.length, drawnFrom: +lo.toFixed(1), drawnTo: +hi.toFixed(1), liveX: liveX, dotCx: +n.dot.getAttribute("cx"), viewBoxCentre: 150, liveAtCentre: (liveX === 150 && +n.dot.getAttribute("cx") === 150) };
   };
-  window.DEV.psPanel = function (openIt) { if (openIt !== false && !document.querySelector(".ps-ov")) openVolumePanel(); var c = document.querySelector(".ps-card"); if (!c) return "no settings card"; c.style.animation = "none"; /* the drop-in animation is CSS, and CSS animations FREEZE while the preview pane is hidden — measuring through it reads the psCog 0% keyframe (scale .72) as the card geometry. Clearing it measures the settled card, which is what the frame specifies. */ var p = window.__psProbe ? window.__psProbe() : {}; var r = c.getBoundingClientRect(), cs = getComputedStyle(c), n = c.querySelector(".ps-notch"), nr = n ? n.getBoundingClientRect() : null, ns = n ? getComputedStyle(n) : null, gd = c.querySelector(".ps-bedgrid"); var big = c.querySelector(".ps-chip:not(.sm)"), sm = c.querySelector(".ps-chip.sm"), tk = c.querySelector(".ps-track"), kn = c.querySelector(".ps-knob"); function box(e) { if (!e) return null; var b = e.getBoundingClientRect(), s = getComputedStyle(e); return { w: +b.width.toFixed(1), h: +b.height.toFixed(1), pad: s.padding, radius: s.borderRadius, border: s.borderTopWidth, shadow: s.boxShadow, font: s.fontSize + "/" + s.fontWeight }; }
+  window.DEV.psPanel = function (openIt) { if (openIt !== false && !document.querySelector(".ps-ov")) openVolumePanel(); var c = document.querySelector(".ps-card"); if (!c) return "no settings card"; c.style.animation = "none"; /* the drop-in animation is CSS, and CSS animations FREEZE while the preview pane is hidden — measuring through it reads the psCog 0% keyframe (scale .72) as the card geometry. Clearing it measures the settled card, which is what the frame specifies. */ try { window.dispatchEvent(new Event("resize")); } catch (e) {} /* clearing the animation MOVED the card, and the tail is positioned by a measurer that already ran. Without this the audit reports a failure IT caused: the tail measured against the frozen 0% keyframe (the preview pane freezes CSS animations) and was never re-measured against the settled card. The measurer listens on resize, so this is its own re-run door, not a second implementation. */ var p = window.__psProbe ? window.__psProbe() : {}; var r = c.getBoundingClientRect(), cs = getComputedStyle(c), n = c.querySelector(".ps-notch"), nr = n ? n.getBoundingClientRect() : null, ns = n ? getComputedStyle(n) : null, gd = c.querySelector(".ps-bedgrid"); var big = c.querySelector(".ps-chip:not(.sm)"), sm = c.querySelector(".ps-chip.sm"), tk = c.querySelector(".ps-track"), kn = c.querySelector(".ps-knob"); function box(e) { if (!e) return null; var b = e.getBoundingClientRect(), s = getComputedStyle(e); return { w: +b.width.toFixed(1), h: +b.height.toFixed(1), pad: s.padding, radius: s.borderRadius, border: s.borderTopWidth, shadow: s.boxShadow, font: s.fontSize + "/" + s.fontWeight }; }
     return { scope: p, card: { top: +r.top.toFixed(1), right: +(window.innerWidth - r.right).toFixed(1), w: +r.width.toFixed(1), radius: cs.borderRadius, border: cs.borderTopWidth, pad: cs.padding, gap: cs.gap, bg: cs.backgroundColor, shadow: cs.boxShadow, origin: cs.transformOrigin, z: cs.zIndex }, notch: nr ? { right: +(r.right - nr.right).toFixed(1), topFromCard: +(nr.top - r.top).toFixed(1), w: +nr.width.toFixed(1), h: +nr.height.toFixed(1), radius: ns.borderRadius, border: ns.borderLeftWidth } : null, chipBig: box(big), chipSmall: box(sm), track: tk ? { h: +tk.getBoundingClientRect().height.toFixed(1), radius: getComputedStyle(tk).borderRadius } : null, knob: box(kn), bedGrid: gd ? { rows: getComputedStyle(gd).gridTemplateRows, gap: getComputedStyle(gd).gap, overflowY: getComputedStyle(gd).overflowY, touch: getComputedStyle(gd).touchAction, mask: (getComputedStyle(gd).webkitMaskImage || getComputedStyle(gd).maskImage || "").slice(0, 60), chips: gd.children.length } : null, beds: bedKeys(), sliders: Array.prototype.map.call(c.querySelectorAll(".ps-fill"), function (f) { return f.style.width; }) }; }; // the card measured against the frame's quoted numbers, without a finger
   window.DEV.beds = function () { return { selected: bedKeys(), cats: bedKeys().map(function (k) { return BED_CAT[k]; }), stored: S.audio && S.audio.bed, filesLive: BGBED.running(), bgmRunning: BGM.running(), padsLive: _padLive, appMusic: !!(S.audio && S.audio.appMusic), order: BED_ORDER }; }; // filesLive = keys with a LIVE BufferSource; bgmRunning = the Mysterious sequencer. Two beds AUDIBLE is these two numbers, not two lit chips.
   window.DEV.waveSmooth = function (cycleMs, jankMs, jankEvery) { // THE JAGGED-LINE PROBE (David 2026-08-20: "sometimes it randomly becomes jagged, which doesn't make sense"). Drives the SHIPPING wave renderer over a real 60fps frame train with periodic jank gaps (a dropped frame, a GC pause, an audio-decode hitch) and asks ONE question of the drawn path: is each segment as wide as the time it covers? distortion = the true horizontal width of a segment / the width it was actually drawn at. 1.00 = the line is the breath. >1 = that segment was squeezed, and a squeezed segment IS the kink — the same rise over less run.
